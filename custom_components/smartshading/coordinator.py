@@ -1440,10 +1440,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # --- Night Hard Hold ---------------------------------------------------
             # Block non-safety commands that would move a night-configured cover
             # more open than night_position during the active night interval.
-            # This guard is independent of wdi.lifecycle_state so it cannot be
-            # defeated by window-behavior-mode overrides (ABSENCE_ONLY / DISABLED_AUTOMATIC
-            # both force lifecycle_state=DAY in the WDI, causing NightEvaluator to
-            # skip — that is the confirmed root cause of the P0 mass-open incident).
+            #
+            # Only applies to FULLY_AUTOMATIC windows: ABSENCE_ONLY and
+            # DISABLED_AUTOMATIC explicitly opt out of night lifecycle, so the
+            # Night Hard Hold must not fire for them.  Those modes already force
+            # lifecycle_state=DAY in the WDI, causing NightEvaluator to skip and
+            # TierOrchestrator to fall back to OPEN — applying the hold here would
+            # incorrectly drive the cover to night_position against the user's
+            # explicit mode choice.
             #
             # Priority: Safety (STORM_SAFE / WIND_SAFE) > Manual Override > Night Hard Hold.
             # Covers without a configured night_position are not guarded (night shading
@@ -1451,6 +1455,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _night_hard_hold_applied = False
             if (
                 _night_interval_active
+                and _window_behavior is WindowBehaviorMode.FULLY_AUTOMATIC
                 and tier_decision.shading_state not in (
                     ShadingState.STORM_SAFE,
                     ShadingState.WIND_SAFE,
@@ -1475,6 +1480,45 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     _blocked_decided_by,
                     _night_pos,
                 )
+
+            # --- Behavior Mode Dispatch Suppression --------------------------------
+            # For ABSENCE_ONLY and DISABLED_AUTOMATIC windows, automatic cover
+            # commands are limited to: Safety (Storm/Wind), Manual Override, and
+            # (ABSENCE_ONLY only) active absence or controlled absence-release.
+            #
+            # Absence-release: when absence just ended (previous state was
+            # ABSENCE_CLOSED) and no manual override is active, the OPEN dispatch
+            # is allowed so SmartShading can retract the cover it previously moved
+            # to absence_position.  This is the only OPEN command permitted for
+            # ABSENCE_ONLY — it is NOT a generic "open when presence resumes" rule.
+            #
+            # All other tier results — including the steady-state TierOrchestrator
+            # fallback OPEN — are suppressed: target_position is set to None so
+            # CommandFilter blocks the command (BLOCKED_NO_TARGET_POSITION), and
+            # decided_by="BehaviorMode:hold" prevents false learning outcomes and
+            # signals the state machine to stay at current_state (see below).
+            if _window_behavior is not WindowBehaviorMode.FULLY_AUTOMATIC:
+                _is_absence_release = (
+                    _window_behavior is WindowBehaviorMode.ABSENCE_ONLY
+                    and current_state is ShadingState.ABSENCE_CLOSED
+                    and tier_decision.shading_state is ShadingState.OPEN
+                    and active_override is None
+                )
+                _mode_dispatch_allowed = (
+                    tier_decision.shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
+                    or tier_decision.shading_state is ShadingState.MANUAL_OVERRIDE
+                    or (
+                        _window_behavior is WindowBehaviorMode.ABSENCE_ONLY
+                        and tier_decision.shading_state is ShadingState.ABSENCE_CLOSED
+                    )
+                    or _is_absence_release
+                )
+                if not _mode_dispatch_allowed:
+                    tier_decision = replace(
+                        tier_decision,
+                        target_position=None,
+                        decided_by="BehaviorMode:hold",
+                    )
 
             # Override lifecycle: Safety beats override → clear it.
             # Otherwise, run override detection (position delta comparison).
@@ -1563,6 +1607,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 )
 
             proposed_state = tier_decision.shading_state
+            # BehaviorMode:hold: no command was sent, no state transition should be
+            # recorded.  The suppressed orchestrator result (OPEN fallback) must not
+            # become a published state change or a misleading snapshot entry — e.g.
+            # "State=OPEN, cover=20%" would be factually wrong when no dispatch ran.
+            # Hold the state machine at current_state so no StateTransitionRecord or
+            # PendingOutcome is created for this suppressed cycle.
+            if tier_decision.decided_by == "BehaviorMode:hold":
+                proposed_state = current_state
 
             # StateGuard — same logic as the former DecisionEngine.decide().
             # bypasses_guard() covers: no-ops, escalations, lifecycle-direct
@@ -1626,10 +1678,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     # Phase 9F4b-3: create PendingOutcome for evaluator-driven states.
                     # MANUAL_OVERRIDE / safety states are excluded — they are not
                     # evaluator decisions and must not generate outcome observations.
+                    # BehaviorMode:hold is also excluded: no command was sent, so
+                    # there is no evaluator outcome to observe or score.
                     # When a new pending is created, replace() returns the old one
                     # (if any) so it can be resolved as STATE_CHANGE before the new
                     # observation window starts.
-                    if new_state not in _NO_OUTCOME_STATES:
+                    if new_state not in _NO_OUTCOME_STATES and tier_decision.decided_by != "BehaviorMode:hold":
                         try:
                             _new_pending = PendingOutcome(
                                 window_id=window_id,

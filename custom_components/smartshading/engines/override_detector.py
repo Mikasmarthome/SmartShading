@@ -69,7 +69,7 @@ class OverrideDetector:
         *,
         window_id: str,
         observed_position: int | None,
-        smartshading_target: int,
+        smartshading_target: int | None,
         smartshading_assumed: int | None = None,
         prev_state: ShadingState,
         tolerance: int,
@@ -87,7 +87,9 @@ class OverrideDetector:
             window_id:            The window being evaluated.
             observed_position:    Actual cover position in internal convention
                                   (0=open, 100=shaded); None if unknown/unavailable.
-            smartshading_target:  TierOrchestrator's target_position (internal).
+            smartshading_target:  TierOrchestrator's target_position (internal);
+                                  None when the behavior mode suppresses dispatch
+                                  (ABSENCE_ONLY / DISABLED_AUTOMATIC hold).
             smartshading_assumed: SmartShading's last commanded position in internal
                                   convention (from AssumedStateManager); None if not
                                   yet available (e.g. first cycle after HA restart).
@@ -132,6 +134,10 @@ class OverrideDetector:
                 smartshading_assumed is not None
                 and abs(observed_position - smartshading_assumed) <= tolerance
             ):
+                return
+            # No target planned (behavior mode suppressed dispatch): no reference
+            # to compare against, so override detection is skipped for this cycle.
+            if smartshading_target is None:
                 return
             # Check for a new override.
             if abs(observed_position - smartshading_target) > tolerance:

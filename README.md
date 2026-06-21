@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="custom_components/smartshading/brand/logo.png" alt="SmartShading" width="256"/>
+  <img src="https://raw.githubusercontent.com/Mikasmarthome/SmartShading/main/brand/logo.png" alt="SmartShading" width="256"/>
 </p>
 
 <h1 align="center">SmartShading</h1>

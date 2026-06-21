@@ -1324,6 +1324,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         glare_protection_enabled=False,
                     ),
                 )
+            elif _window_behavior is WindowBehaviorMode.ABSENCE_AND_SCHEDULE:
+                # Night/morning lifecycle remains active (no lifecycle_state override).
+                # Absence shading is active.  Only solar/heat/glare are suppressed.
+                wdi = replace(
+                    wdi,
+                    effective_behavior=replace(
+                        wdi.effective_behavior,
+                        heat_outdoor_threshold_c=None,
+                        heat_indoor_threshold_c=None,
+                        solar_gain_suppresses_shading=True,
+                        glare_protection_enabled=False,
+                    ),
+                )
             elif _window_behavior is WindowBehaviorMode.DISABLED_AUTOMATIC:
                 wdi = replace(
                     wdi,
@@ -1441,13 +1454,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Block non-safety commands that would move a night-configured cover
             # more open than night_position during the active night interval.
             #
-            # Only applies to FULLY_AUTOMATIC windows: ABSENCE_ONLY and
-            # DISABLED_AUTOMATIC explicitly opt out of night lifecycle, so the
-            # Night Hard Hold must not fire for them.  Those modes already force
-            # lifecycle_state=DAY in the WDI, causing NightEvaluator to skip and
-            # TierOrchestrator to fall back to OPEN — applying the hold here would
-            # incorrectly drive the cover to night_position against the user's
-            # explicit mode choice.
+            # Only applies to FULLY_AUTOMATIC and ABSENCE_AND_SCHEDULE windows.
+            # ABSENCE_ONLY and DISABLED_AUTOMATIC force lifecycle_state=DAY, so
+            # NightEvaluator skips and TierOrchestrator falls back to OPEN —
+            # applying the hold there would incorrectly drive the cover to
+            # night_position against the user's explicit mode choice.
+            # ABSENCE_AND_SCHEDULE keeps the night lifecycle active, so the hold
+            # must guard it the same way as FULLY_AUTOMATIC.
             #
             # Priority: Safety (STORM_SAFE / WIND_SAFE) > Manual Override > Night Hard Hold.
             # Covers without a configured night_position are not guarded (night shading
@@ -1455,7 +1468,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _night_hard_hold_applied = False
             if (
                 _night_interval_active
-                and _window_behavior is WindowBehaviorMode.FULLY_AUTOMATIC
+                and _window_behavior in (
+                    WindowBehaviorMode.FULLY_AUTOMATIC,
+                    WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+                )
                 and tier_decision.shading_state not in (
                     ShadingState.STORM_SAFE,
                     ShadingState.WIND_SAFE,
@@ -1482,25 +1498,45 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 )
 
             # --- Behavior Mode Dispatch Suppression --------------------------------
-            # For ABSENCE_ONLY and DISABLED_AUTOMATIC windows, automatic cover
-            # commands are limited to: Safety (Storm/Wind), Manual Override, and
-            # (ABSENCE_ONLY only) active absence or controlled absence-release.
+            # For non-FULLY_AUTOMATIC windows, automatic cover commands are limited
+            # to specific allowed states per mode.
             #
-            # Absence-release: when absence just ended (previous state was
-            # ABSENCE_CLOSED) and no manual override is active, the OPEN dispatch
-            # is allowed so SmartShading can retract the cover it previously moved
-            # to absence_position.  This is the only OPEN command permitted for
-            # ABSENCE_ONLY — it is NOT a generic "open when presence resumes" rule.
+            # ABSENCE_AND_SCHEDULE allows: Safety, Manual Override, NIGHT_CLOSED,
+            # ABSENCE_CLOSED, absence-release (ABSENCE_CLOSED → OPEN), and
+            # lifecycle-release (NIGHT_CLOSED → OPEN when night ends).
+            # Daytime OPEN fallback and all solar/heat/glare decisions are suppressed.
             #
-            # All other tier results — including the steady-state TierOrchestrator
-            # fallback OPEN — are suppressed: target_position is set to None so
-            # CommandFilter blocks the command (BLOCKED_NO_TARGET_POSITION), and
+            # ABSENCE_ONLY allows: Safety, Manual Override, ABSENCE_CLOSED, and
+            # absence-release.  All lifecycle tiers (night/morning) are skipped via
+            # lifecycle_state=DAY in the WDI.
+            #
+            # DISABLED_AUTOMATIC allows: Safety and Manual Override only.
+            #
+            # Absence-release: previous state was ABSENCE_CLOSED, no active override,
+            # tier returns OPEN → one controlled OPEN dispatch is allowed so
+            # SmartShading retracts the cover it moved to absence_position.
+            #
+            # Lifecycle-release (ABSENCE_AND_SCHEDULE only): previous state was
+            # NIGHT_CLOSED, no active override, tier returns OPEN → morning or
+            # post-night OPEN dispatch is allowed to retract the cover from night pos.
+            #
+            # All other tier results are suppressed: target_position=None so
+            # CommandFilter blocks (BLOCKED_NO_TARGET_POSITION), and
             # decided_by="BehaviorMode:hold" prevents false learning outcomes and
             # signals the state machine to stay at current_state (see below).
             if _window_behavior is not WindowBehaviorMode.FULLY_AUTOMATIC:
                 _is_absence_release = (
-                    _window_behavior is WindowBehaviorMode.ABSENCE_ONLY
+                    _window_behavior in (
+                        WindowBehaviorMode.ABSENCE_ONLY,
+                        WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+                    )
                     and current_state is ShadingState.ABSENCE_CLOSED
+                    and tier_decision.shading_state is ShadingState.OPEN
+                    and active_override is None
+                )
+                _is_lifecycle_release = (
+                    _window_behavior is WindowBehaviorMode.ABSENCE_AND_SCHEDULE
+                    and current_state is ShadingState.NIGHT_CLOSED
                     and tier_decision.shading_state is ShadingState.OPEN
                     and active_override is None
                 )
@@ -1508,10 +1544,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     tier_decision.shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
                     or tier_decision.shading_state is ShadingState.MANUAL_OVERRIDE
                     or (
-                        _window_behavior is WindowBehaviorMode.ABSENCE_ONLY
+                        _window_behavior in (
+                            WindowBehaviorMode.ABSENCE_ONLY,
+                            WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+                        )
                         and tier_decision.shading_state is ShadingState.ABSENCE_CLOSED
                     )
+                    or (
+                        _window_behavior is WindowBehaviorMode.ABSENCE_AND_SCHEDULE
+                        and tier_decision.shading_state is ShadingState.NIGHT_CLOSED
+                    )
                     or _is_absence_release
+                    or _is_lifecycle_release
                 )
                 if not _mode_dispatch_allowed:
                     tier_decision = replace(

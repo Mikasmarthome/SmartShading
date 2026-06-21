@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Laat leeg om de standaard afwezigheidspositie van de zone te erven. Stel een waarde in om deze alleen voor dit specifieke venster te overschrijven.",
-          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief."
+          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Afwezigheid en schema: afwezigheidsregeling, nacht- en ochtendschema actief; geen zonne-, warmte- of verblindingsbescherming. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Laat leeg om de standaard afwezigheidspositie van de zone te erven. Stel een waarde in om deze alleen voor dit venster te overschrijven.",
-          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief.",
+          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Afwezigheid en schema: afwezigheidsregeling, nacht- en ochtendschema actief; geen zonne-, warmte- of verblindingsbescherming. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief.",
           "light_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor lichte schaduw alleen voor dit venster te overschrijven.",
           "normal_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor normale schaduw alleen voor dit venster te overschrijven.",
           "strong_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor sterke schaduw alleen voor dit venster te overschrijven.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Laat leeg om de standaard afwezigheidspositie van de zone te erven. Stel een waarde in om deze alleen voor dit specifieke venster te overschrijven.",
-          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief."
+          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Afwezigheid en schema: afwezigheidsregeling, nacht- en ochtendschema actief; geen zonne-, warmte- of verblindingsbescherming. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Volledig automatisch",
+        "absence_and_schedule": "Afwezigheid en schema",
         "absence_only": "Alleen afwezigheid",
         "disabled_automatic": "Automatisering uitgeschakeld"
       }

@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Laissez vide pour hériter de la position d'absence par défaut de la zone. Indiquez une valeur pour la remplacer uniquement pour cette fenêtre.",
-          "window_behavior_mode": "Entièrement automatique : soleil, confort, absence et horaire actifs. Absence uniquement : seul le contrôle par absence. Automatisation désactivée : aucun ombrage automatique. Les protections de sécurité (tempête/vent) restent toujours actives."
+          "window_behavior_mode": "Entièrement automatique : soleil, confort, absence et horaire actifs. Absence et horaire : contrôle par absence, horaire de nuit et de matin actifs ; pas d'ombrage solaire, thermique ou antiéblouissement. Absence uniquement : seul le contrôle par absence. Automatisation désactivée : aucun ombrage automatique. Les protections de sécurité (tempête/vent) restent toujours actives."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Laissez vide pour hériter de la position d'absence par défaut de la zone. Indiquez une valeur pour la remplacer uniquement pour cette fenêtre.",
-          "window_behavior_mode": "Entièrement automatique : soleil, confort, absence et horaire actifs. Absence uniquement : seul le contrôle par absence. Automatisation désactivée : aucun ombrage automatique. Les protections de sécurité (tempête/vent) restent toujours actives.",
+          "window_behavior_mode": "Entièrement automatique : soleil, confort, absence et horaire actifs. Absence et horaire : contrôle par absence, horaire de nuit et de matin actifs ; pas d'ombrage solaire, thermique ou antiéblouissement. Absence uniquement : seul le contrôle par absence. Automatisation désactivée : aucun ombrage automatique. Les protections de sécurité (tempête/vent) restent toujours actives.",
           "light_shade_position": "Laissez vide pour utiliser la valeur par défaut de la zone. Indiquez une valeur pour remplacer la position cible d'ombrage léger uniquement pour cette fenêtre.",
           "normal_shade_position": "Laissez vide pour utiliser la valeur par défaut de la zone. Indiquez une valeur pour remplacer la position cible d'ombrage normal uniquement pour cette fenêtre.",
           "strong_shade_position": "Laissez vide pour utiliser la valeur par défaut de la zone. Indiquez une valeur pour remplacer la position cible d'ombrage fort uniquement pour cette fenêtre.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Laissez vide pour hériter de la position d'absence par défaut de la zone. Indiquez une valeur pour la remplacer uniquement pour cette fenêtre.",
-          "window_behavior_mode": "Entièrement automatique : soleil, confort, absence et horaire actifs. Absence uniquement : seul le contrôle par absence. Automatisation désactivée : aucun ombrage automatique. Les protections de sécurité (tempête/vent) restent toujours actives."
+          "window_behavior_mode": "Entièrement automatique : soleil, confort, absence et horaire actifs. Absence et horaire : contrôle par absence, horaire de nuit et de matin actifs ; pas d'ombrage solaire, thermique ou antiéblouissement. Absence uniquement : seul le contrôle par absence. Automatisation désactivée : aucun ombrage automatique. Les protections de sécurité (tempête/vent) restent toujours actives."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Entièrement automatique",
+        "absence_and_schedule": "Absence et horaire",
         "absence_only": "Absence uniquement",
         "disabled_automatic": "Automatisation désactivée"
       }

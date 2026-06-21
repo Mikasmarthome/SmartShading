@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Bölgenin varsayılan yokluk konumunu devralmak için boş bırakın. Yalnızca bu belirli pencere için geçersiz kılmak üzere bir değer girin.",
-          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır."
+          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yokluk ve program: yokluk denetimi, gece ve sabah programı etkin; güneş, ısı veya parıltı koruması yok. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Bölgenin varsayılan yokluk konumunu devralmak için boş bırakın. Yalnızca bu pencere için geçersiz kılmak üzere bir değer girin.",
-          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır.",
+          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yokluk ve program: yokluk denetimi, gece ve sabah programı etkin; güneş, ısı veya parıltı koruması yok. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır.",
           "light_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için hafif gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",
           "normal_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için normal gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",
           "strong_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için güçlü gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Bölgenin varsayılan yokluk konumunu devralmak için boş bırakın. Yalnızca bu belirli pencere için geçersiz kılmak üzere bir değer girin.",
-          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır."
+          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yokluk ve program: yokluk denetimi, gece ve sabah programı etkin; güneş, ısı veya parıltı koruması yok. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Tamamen otomatik",
+        "absence_and_schedule": "Yokluk ve program",
         "absence_only": "Yalnızca yokluk",
         "disabled_automatic": "Otomasyon devre dışı"
       }

@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Pustite prazno za prevzem privzetega položaja odsotnosti območja. Vnesite vrednost, da ga preglasite samo za to določeno okno.",
-          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne."
+          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Odsotnost in urnik: nadzor odsotnosti, nočni in jutranji urnik aktivni; brez sončnega, toplotnega ali protisijajnega senčenja. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Pustite prazno za prevzem privzetega položaja odsotnosti območja. Vnesite vrednost, da ga preglasite samo za to okno.",
-          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne.",
+          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Odsotnost in urnik: nadzor odsotnosti, nočni in jutranji urnik aktivni; brez sončnega, toplotnega ali protisijajnega senčenja. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne.",
           "light_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja rahlega senčenja samo za to okno.",
           "normal_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja normalnega senčenja samo za to okno.",
           "strong_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja močnega senčenja samo za to okno.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Pustite prazno za prevzem privzetega položaja odsotnosti območja. Vnesite vrednost, da ga preglasite samo za to določeno okno.",
-          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne."
+          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Odsotnost in urnik: nadzor odsotnosti, nočni in jutranji urnik aktivni; brez sončnega, toplotnega ali protisijajnega senčenja. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Popolnoma samodejno",
+        "absence_and_schedule": "Odsotnost in urnik",
         "absence_only": "Samo odsotnost",
         "disabled_automatic": "Avtomatizacija onemogočena"
       }

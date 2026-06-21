@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră specifică.",
-          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active."
+          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Absență și program: control prin absență, program de noapte și dimineață active; fără umbrire solară, termică sau anti-strălucire. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră.",
-          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active.",
+          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Absență și program: control prin absență, program de noapte și dimineață active; fără umbrire solară, termică sau anti-strălucire. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active.",
           "light_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire ușoară doar pentru această fereastră.",
           "normal_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire normală doar pentru această fereastră.",
           "strong_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire puternică doar pentru această fereastră.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră specifică.",
-          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active."
+          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Absență și program: control prin absență, program de noapte și dimineață active; fără umbrire solară, termică sau anti-strălucire. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Complet automat",
+        "absence_and_schedule": "Absență și program",
         "absence_only": "Doar absență",
         "disabled_automatic": "Automatizare dezactivată"
       }

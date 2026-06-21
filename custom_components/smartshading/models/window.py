@@ -14,14 +14,17 @@ from .obstruction import ObstructionZone
 class WindowBehaviorMode(Enum):
     """Controls how much automatic logic applies to a window.
 
-    FULLY_AUTOMATIC  — all tiers active (default).
-    ABSENCE_ONLY     — only absence shading + safety guards; normal solar/heat/glare/lifecycle tiers skip.
-    DISABLED_AUTOMATIC — only safety guards (storm/wind); all automatic logic including absence skips.
+    FULLY_AUTOMATIC       — all tiers active (default).
+    ABSENCE_AND_SCHEDULE  — absence shading + night/morning lifecycle + safety guards;
+                            solar/heat/glare/daytime-fallback tiers skip.
+    ABSENCE_ONLY          — only absence shading + safety guards; normal solar/heat/glare/lifecycle tiers skip.
+    DISABLED_AUTOMATIC    — only safety guards (storm/wind); all automatic logic including absence skips.
 
     Safety (Tier 1) always takes precedence regardless of mode.
     """
 
     FULLY_AUTOMATIC = "fully_automatic"
+    ABSENCE_AND_SCHEDULE = "absence_and_schedule"
     ABSENCE_ONLY = "absence_only"
     DISABLED_AUTOMATIC = "disabled_automatic"
 

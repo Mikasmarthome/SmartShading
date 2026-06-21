@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Lad stå tom for at arve zonens standardfraværsposition. Angiv en værdi for at tilsidesætte den kun for dette specifikke vindue.",
-          "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive."
+          "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, nat- og morgentidsplan aktive; ingen sol-, varme- eller blændingsbeskyttelse. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Lad stå tom for at arve zonens standardfraværsposition. Angiv en værdi for at tilsidesætte den kun for dette vindue.",
-          "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive.",
+          "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, nat- og morgentidsplan aktive; ingen sol-, varme- eller blændingsbeskyttelse. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive.",
           "light_shade_position": "Lad stå tom for at bruge zonens standard. Angiv en værdi for at tilsidesætte målpositionen for let afskærmning kun for dette vindue.",
           "normal_shade_position": "Lad stå tom for at bruge zonens standard. Angiv en værdi for at tilsidesætte målpositionen for normal afskærmning kun for dette vindue.",
           "strong_shade_position": "Lad stå tom for at bruge zonens standard. Angiv en værdi for at tilsidesætte målpositionen for kraftig afskærmning kun for dette vindue.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Lad stå tom for at arve zonens standardfraværsposition. Angiv en værdi for at tilsidesætte den kun for dette specifikke vindue.",
-          "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive."
+          "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, nat- og morgentidsplan aktive; ingen sol-, varme- eller blændingsbeskyttelse. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Fuldautomatisk",
+        "absence_and_schedule": "Fravær og tidsplan",
         "absence_only": "Kun fravær",
         "disabled_automatic": "Automatisering deaktiveret"
       }

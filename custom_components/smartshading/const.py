@@ -217,4 +217,4 @@ LIFECYCLE_SCHEDULE_MODE_OPTIONS = ["same_every_day", "weekday_weekend"]
 
 # Per-window behavior/participation mode (v1.0 UX fix batch).
 CONF_WINDOW_BEHAVIOR_MODE = "window_behavior_mode"
-WINDOW_BEHAVIOR_MODE_OPTIONS = ["fully_automatic", "absence_only", "disabled_automatic"]
+WINDOW_BEHAVIOR_MODE_OPTIONS = ["fully_automatic", "absence_and_schedule", "absence_only", "disabled_automatic"]

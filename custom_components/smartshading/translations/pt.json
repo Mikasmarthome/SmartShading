@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Deixe vazio para herdar a posição de ausência predefinida da zona. Defina um valor para a substituir apenas nesta janela específica.",
-          "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas."
+          "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Ausência e horário: controlo por ausência, horário noturno e matinal ativos; sem sombreamento solar, térmico ou antissolamento. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Deixe vazio para herdar a posição de ausência predefinida da zona. Defina um valor para a substituir apenas nesta janela.",
-          "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas.",
+          "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Ausência e horário: controlo por ausência, horário noturno e matinal ativos; sem sombreamento solar, térmico ou antissolamento. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas.",
           "light_shade_position": "Deixe vazio para usar o valor predefinido da zona. Defina um valor para substituir a posição-alvo de sombra ligeira apenas nesta janela.",
           "normal_shade_position": "Deixe vazio para usar o valor predefinido da zona. Defina um valor para substituir a posição-alvo de sombra normal apenas nesta janela.",
           "strong_shade_position": "Deixe vazio para usar o valor predefinido da zona. Defina um valor para substituir a posição-alvo de sombra forte apenas nesta janela.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Deixe vazio para herdar a posição de ausência predefinida da zona. Defina um valor para a substituir apenas nesta janela específica.",
-          "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas."
+          "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Ausência e horário: controlo por ausência, horário noturno e matinal ativos; sem sombreamento solar, térmico ou antissolamento. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Totalmente automático",
+        "absence_and_schedule": "Ausência e horário",
         "absence_only": "Apenas ausência",
         "disabled_automatic": "Automação desativada"
       }

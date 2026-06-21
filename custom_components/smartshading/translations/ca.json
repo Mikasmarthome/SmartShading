@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Deixa-ho buit per heretar la posició d'absència per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra concreta.",
-          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives."
+          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Absència i horari: control per absència, horari de nit i matí actius; sense ombra solar, tèrmica o antireflex. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Deixa-ho buit per heretar la posició d'absència per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra.",
-          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives.",
+          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Absència i horari: control per absència, horari de nit i matí actius; sense ombra solar, tèrmica o antireflex. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives.",
           "light_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra lleugera només en aquesta finestra.",
           "normal_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra normal només en aquesta finestra.",
           "strong_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra forta només en aquesta finestra.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Deixa-ho buit per heretar la posició d'absència per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra concreta.",
-          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives."
+          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Absència i horari: control per absència, horari de nit i matí actius; sense ombra solar, tèrmica o antireflex. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Totalment automàtic",
+        "absence_and_schedule": "Absència i horari",
         "absence_only": "Només absència",
         "disabled_automatic": "Automatització desactivada"
       }

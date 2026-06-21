@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Lämna tomt för att ärva zonens standardfrånvaroposition. Ange ett värde för att åsidosätta den endast för det här specifika fönstret.",
-          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva."
+          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Frånvaro och schema: frånvarostyrning, natt- och morgonschema aktiva; ingen sol-, värme- eller bländningsskuggning. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Lämna tomt för att ärva zonens standardfrånvaroposition. Ange ett värde för att åsidosätta den endast för det här fönstret.",
-          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva.",
+          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Frånvaro och schema: frånvarostyrning, natt- och morgonschema aktiva; ingen sol-, värme- eller bländningsskuggning. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva.",
           "light_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för lätt skugga endast för det här fönstret.",
           "normal_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för normal skugga endast för det här fönstret.",
           "strong_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för kraftig skugga endast för det här fönstret.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Lämna tomt för att ärva zonens standardfrånvaroposition. Ange ett värde för att åsidosätta den endast för det här specifika fönstret.",
-          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva."
+          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Frånvaro och schema: frånvarostyrning, natt- och morgonschema aktiva; ingen sol-, värme- eller bländningsskuggning. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Helautomatiskt",
+        "absence_and_schedule": "Frånvaro och schema",
         "absence_only": "Endast frånvaro",
         "disabled_automatic": "Automatisering inaktiverad"
       }

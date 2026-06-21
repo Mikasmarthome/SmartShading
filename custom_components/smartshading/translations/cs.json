@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Ponechte prázdné pro zdědění výchozí polohy nepřítomnosti zóny. Zadejte hodnotu pro její přepsání pouze pro toto konkrétní okno.",
-          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní."
+          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Nepřítomnost a plán: řízení podle nepřítomnosti, noční a ranní plán aktivní; bez slunečního, tepelného nebo protioslnivého stínění. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Ponechte prázdné pro zdědění výchozí polohy nepřítomnosti zóny. Zadejte hodnotu pro její přepsání pouze pro toto okno.",
-          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní.",
+          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Nepřítomnost a plán: řízení podle nepřítomnosti, noční a ranní plán aktivní; bez slunečního, tepelného nebo protioslnivého stínění. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní.",
           "light_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy lehkého stínění pouze pro toto okno.",
           "normal_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy normálního stínění pouze pro toto okno.",
           "strong_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy silného stínění pouze pro toto okno.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Ponechte prázdné pro zdědění výchozí polohy nepřítomnosti zóny. Zadejte hodnotu pro její přepsání pouze pro toto konkrétní okno.",
-          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní."
+          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Nepřítomnost a plán: řízení podle nepřítomnosti, noční a ranní plán aktivní; bez slunečního, tepelného nebo protioslnivého stínění. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Plně automatický",
+        "absence_and_schedule": "Nepřítomnost a plán",
         "absence_only": "Pouze nepřítomnost",
         "disabled_automatic": "Automatizace vypnuta"
       }

@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Ponechajte prázdne na zdedenie predvolenej polohy neprítomnosti zóny. Zadajte hodnotu na jej prepísanie iba pre toto konkrétne okno.",
-          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne."
+          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Neprítomnosť a plán: riadenie podľa neprítomnosti, nočný a ranný plán aktívne; bez slnečného, tepelného alebo antioslnivého tienenia. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Ponechajte prázdne na zdedenie predvolenej polohy neprítomnosti zóny. Zadajte hodnotu na jej prepísanie iba pre toto okno.",
-          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne.",
+          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Neprítomnosť a plán: riadenie podľa neprítomnosti, nočný a ranný plán aktívne; bez slnečného, tepelného alebo antioslnivého tienenia. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne.",
           "light_shade_position": "Ponechajte prázdne na použitie predvolenej hodnoty zóny. Zadajte hodnotu na prepísanie cieľovej polohy ľahkého tienenia iba pre toto okno.",
           "normal_shade_position": "Ponechajte prázdne na použitie predvolenej hodnoty zóny. Zadajte hodnotu na prepísanie cieľovej polohy normálneho tienenia iba pre toto okno.",
           "strong_shade_position": "Ponechajte prázdne na použitie predvolenej hodnoty zóny. Zadajte hodnotu na prepísanie cieľovej polohy silného tienenia iba pre toto okno.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Ponechajte prázdne na zdedenie predvolenej polohy neprítomnosti zóny. Zadajte hodnotu na jej prepísanie iba pre toto konkrétne okno.",
-          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne."
+          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Neprítomnosť a plán: riadenie podľa neprítomnosti, nočný a ranný plán aktívne; bez slnečného, tepelného alebo antioslnivého tienenia. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Plne automatický",
+        "absence_and_schedule": "Neprítomnosť a plán",
         "absence_only": "Iba neprítomnosť",
         "disabled_automatic": "Automatizácia vypnutá"
       }

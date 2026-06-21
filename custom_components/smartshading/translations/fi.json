@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle tietylle ikkunalle.",
-          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina."
+          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Poissaolo ja aikataulu: poissaolo-ohjaus, yö- ja aamuaikataulu aktiivisia; ei aurinko-, lämpö- tai häikäisysuojavarjostusta. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle ikkunalle.",
-          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina.",
+          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Poissaolo ja aikataulu: poissaolo-ohjaus, yö- ja aamuaikataulu aktiivisia; ei aurinko-, lämpö- tai häikäisysuojavarjostusta. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina.",
           "light_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi kevyen varjostuksen tavoitesijainnin vain tälle ikkunalle.",
           "normal_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi normaalin varjostuksen tavoitesijainnin vain tälle ikkunalle.",
           "strong_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi voimakkaan varjostuksen tavoitesijainnin vain tälle ikkunalle.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle tietylle ikkunalle.",
-          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina."
+          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Poissaolo ja aikataulu: poissaolo-ohjaus, yö- ja aamuaikataulu aktiivisia; ei aurinko-, lämpö- tai häikäisysuojavarjostusta. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Täysin automaattinen",
+        "absence_and_schedule": "Poissaolo ja aikataulu",
         "absence_only": "Vain poissaolo",
         "disabled_automatic": "Automaatio poistettu käytöstä"
       }

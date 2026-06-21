@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this specific window only.",
-          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active."
+          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence and schedule: absence control, night, and morning schedule active; no solar, heat, or glare shading. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this window only.",
-          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active.",
+          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence and schedule: absence control, night, and morning schedule active; no solar, heat, or glare shading. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active.",
           "light_shade_position": "Leave empty to use the zone default. Set a value to override the light shade target position for this window only.",
           "normal_shade_position": "Leave empty to use the zone default. Set a value to override the normal shade target position for this window only.",
           "strong_shade_position": "Leave empty to use the zone default. Set a value to override the strong shade target position for this window only.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this specific window only.",
-          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active."
+          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence and schedule: absence control, night, and morning schedule active; no solar, heat, or glare shading. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Fully automatic",
+        "absence_and_schedule": "Absence and schedule",
         "absence_only": "Absence only",
         "disabled_automatic": "Automation disabled"
       }

@@ -118,7 +118,7 @@
         },
         "data_description": {
           "absence_position": "Hagyja üresen a zóna alapértelmezett távolléti pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél a konkrét ablaknál.",
-          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak."
+          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Távollét és ütemezés: távollétvezérlés, éjszakai és reggeli ütemezés aktív; nincs napfény-, hő- vagy tükröződésvédelmi árnyékolás. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak."
         }
       },
       "add_window_cover_group": {
@@ -179,7 +179,7 @@
         },
         "data_description": {
           "absence_position": "Hagyja üresen a zóna alapértelmezett távolléti pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél az ablaknál.",
-          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak.",
+          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Távollét és ütemezés: távollétvezérlés, éjszakai és reggeli ütemezés aktív; nincs napfény-, hő- vagy tükröződésvédelmi árnyékolás. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak.",
           "light_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket az enyhe árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
           "normal_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket a normál árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
           "strong_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket az erős árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
@@ -305,7 +305,7 @@
         },
         "data_description": {
           "absence_position": "Hagyja üresen a zóna alapértelmezett távolléti pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél a konkrét ablaknál.",
-          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak."
+          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Távollét és ütemezés: távollétvezérlés, éjszakai és reggeli ütemezés aktív; nincs napfény-, hő- vagy tükröződésvédelmi árnyékolás. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak."
         }
       },
       "cover_group": {
@@ -398,6 +398,7 @@
     "window_behavior_mode": {
       "options": {
         "fully_automatic": "Teljesen automatikus",
+        "absence_and_schedule": "Távollét és ütemezés",
         "absence_only": "Csak távollét",
         "disabled_automatic": "Automatizálás letiltva"
       }

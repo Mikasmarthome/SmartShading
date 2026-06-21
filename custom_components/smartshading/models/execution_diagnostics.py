@@ -1,0 +1,234 @@
+"""WindowExecutionDiagnostics — per-window execution runtime snapshot.
+
+Produced each coordinator cycle alongside WindowObservation.
+Captures the full execution-layer state for diagnostics, debugging,
+and future UI/sensor entities.
+
+No Home Assistant dependency. Pure frozen dataclass.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+
+
+@dataclass(frozen=True)
+class WindowExecutionDiagnostics:
+    """Execution state snapshot for one window, one coordinator cycle.
+
+    Stored in SmartShadingData.execution_diagnostics[window_id].
+    Not yet exposed as HA entities — RuntimeData only in Step 9G5a.
+    All position fields clearly document their convention so no implicit
+    mixing is possible at the reader side.
+
+    In Step 9G5a (dry-run), service_call_sent, service_call_failed,
+    last_command_sent_at, and safety_result_failed are always False/None.
+    They are reserved for Step 9G5b/9G6 when actual dispatch is enabled.
+    """
+
+    # --- Zone configuration (source of truth for this cycle) ---------------
+
+    observation_enabled: bool
+    """True when the zone's observation/learning pipeline is active."""
+
+    active_control_enabled: bool
+    """True when the zone allows cover commands to be dispatched."""
+
+    execution_mode: str
+    """ExecutionMode.value: "automatic" when active_control_enabled=True,
+    "recommendation_only" when active_control_enabled=False."""
+
+    # --- Cover entity state (from CoverEntitySnapshot, first cover) ---------
+
+    cover_entity_id: str | None
+    """HA entity_id of the representative cover for this window.
+    None when the window has no cover group or no covers configured."""
+
+    cover_available: bool | None
+    """True when the cover entity is reachable and not in unknown/unavailable.
+    None when no cover entity_id is configured."""
+
+    actual_position_ha: int | None
+    """Raw position from the cover's current_position attribute,
+    in HA convention: 0=closed, 100=open. None if unavailable or absent."""
+
+    actual_position_internal: int | None
+    """Same position converted to SmartShading internal convention:
+    0=open/retracted, 100=shaded/closed. None if actual_position_ha is None."""
+
+    assumed_position_internal: int | None
+    """Best-estimate position from AssumedStateManager,
+    in SmartShading internal convention. None if no assumed state yet."""
+
+    has_position_feedback: bool | None
+    """True when the cover provides reliable position feedback (not Somfy RTS).
+    None when no cover entity_id is configured."""
+
+    # --- TierDecision output ------------------------------------------------
+
+    tier_decided_by: str | None
+    """Evaluator name that produced the TierDecision (e.g. "SolarEvaluator").
+    None when sun data is unavailable this cycle."""
+
+    target_position_internal: int | None
+    """Target position from TierDecision, SmartShading internal convention
+    (0=open, 100=shaded). None if TierOrchestrator produced no position."""
+
+    target_position_ha: int | None
+    """target_position_internal converted to HA convention (0=closed, 100=open)
+    by CommandFilter / CoverIntent. None when target_position_internal is None."""
+
+    is_safety: bool
+    """True when TierDecision is STORM_SAFE or WIND_SAFE (Tier 1 Safety)."""
+
+    # --- CommandFilter result -----------------------------------------------
+
+    command_allowed: bool | None
+    """True when CommandFilter permitted the command.
+    None when no cover entity_id or no TierDecision is available."""
+
+    command_blocked_reason: str | None
+    """BLOCKED_* constant explaining why execution was prevented.
+    None when command_allowed=True or no filter result available."""
+
+    # --- ExecutionResult (most recent result per window) --------------------
+
+    last_command_status: str | None
+    """ExecutionStatus.value for the dry-run result:
+    "blocked" when CommandFilter blocked, "not_attempted" for all others
+    in 9G5a (dispatch not yet enabled). None when no intents were built."""
+
+    last_command_sent_at: datetime | None
+    """UTC timestamp when the HA service call was dispatched.
+    Always None in Step 9G5a (no dispatch). Reserved for 9G5b/9G6."""
+
+    service_call_sent: bool
+    """True when a cover.set_cover_position call was dispatched.
+    Always False in Step 9G5a."""
+
+    service_call_failed: bool
+    """True when dispatch raised an exception.
+    Always False in Step 9G5a."""
+
+    execution_error: str | None
+    """Exception text when service_call_failed=True.
+    None when dispatch succeeded or was never attempted."""
+
+    safety_result_failed: bool
+    """True when is_safety=True AND the service call failed (FAILED status).
+    Always False when no dispatch has occurred."""
+
+    dispatch_suppressed_reason: str | None
+    """Human-readable reason dispatch was suppressed for an otherwise-allowed intent.
+    None when dispatch was not suppressed (either allowed+sent, blocked by CommandFilter,
+    or no intent at all).
+
+    Current values:
+      "startup_grace_active"  — dispatch suppressed during the post-restart hydration
+                                period (_startup_cycles_remaining > 0) for non-safety intents.
+    Reserved for future suppression reasons (TravelTracker, maintenance mode, etc.)."""
+
+    night_hard_hold_applied: bool = False
+    """True when Night Hard Hold suppressed a non-safety OPEN/raise command that
+    would have moved the cover past night_position during the active night interval.
+    The decision is replaced with NIGHT_CLOSED at the configured night_position."""
+
+    startup_grace_remaining: int | None = None
+    """Number of coordinator startup grace cycles remaining at the time this
+    diagnostic was produced. 0 when the grace period has expired and dispatch
+    is fully allowed; None in the no-sun path (diagnostics not fully built)."""
+
+    dispatch_throttled: bool = False
+    """True when the global dispatch throttle (GlobalDispatchThrottle) delayed this
+    dispatch by sleeping before the HA service call.
+
+    False when no throttle wait was applied:
+      - First dispatch in this coordinator session (no previous SENT recorded).
+      - Minimum inter-dispatch interval had already elapsed.
+      - Safety command (STORM_SAFE / WIND_SAFE): bypasses the throttle wait.
+      - Command was BLOCKED, NOT_ATTEMPTED, or startup-grace suppressed (no dispatch).
+
+    See throttle_wait_ms for the actual delay duration."""
+
+    throttle_wait_ms: int | None = None
+    """Duration in milliseconds the global dispatch throttle slept before dispatching.
+    None when dispatch_throttled=False.
+
+    Populated only when dispatch_throttled=True — the integer value is the actual
+    wait computed by GlobalDispatchThrottle.time_until_next_allowed(), rounded to
+    the nearest millisecond."""
+
+    # --- ShadingGroup harmonization fields (Step 9G10e) ----------------------
+
+    shading_group_id: str | None = None
+    """The shading_group_id from WindowConfig, or None when no group is assigned.
+    Zone-scoped string key (e.g. 'south', 'west')."""
+
+    shading_group_harmonized: bool = False
+    """True when ShadingGroup harmonization changed this window's target_position_ha
+    from its own window-level recommendation to the group's minimum value.
+    False when: not in a group, group had < 2 eligible members, or this window
+    already had the minimum target in the group (target unchanged)."""
+
+    pre_harmonization_target_position_ha: int | None = None
+    """This window's own target_position_ha (HA convention, 0=closed/100=open)
+    before ShadingGroup harmonization was applied.
+    Only populated when shading_group_harmonized=True; None otherwise."""
+
+    # --- Daytime Minimum Open Position fields (Step 9G10f-b) ------------------
+
+    daytime_min_open_applied: bool = False
+    """True when the daytime minimum open position clamp raised target_position_ha
+    above the TierOrchestrator's original recommendation.
+    False when: hardware type has no minimum (GENERIC, VENETIAN_BLIND, AWNING),
+    the original target was already at or above the minimum, or the current
+    ShadingState is exempt (STORM_SAFE, WIND_SAFE, MANUAL_OVERRIDE,
+    NIGHT_CLOSED, ABSENCE_CLOSED)."""
+
+    pre_daytime_min_target_position_ha: int | None = None
+    """The target_position_ha value before the daytime minimum open clamp was
+    applied (HA convention, 0=closed/100=open).
+    Only populated when daytime_min_open_applied=True; None otherwise."""
+
+    # --- Anti-Heat-Buildup fields (Step 9G10f-c) ----------------------------------
+
+    anti_heat_buildup_applied: bool = False
+    """True when the anti-heat-buildup clamp raised target_position_ha above
+    the TierOrchestrator's recommendation.
+    Active only for CoverHardwareType.ROLLER_SHUTTER with anti_heat_buildup_enabled=True,
+    when the window is in the solar sector, effective solar exposure meets the
+    threshold, and the current ShadingState is not exempt
+    (STORM_SAFE, WIND_SAFE, MANUAL_OVERRIDE, NIGHT_CLOSED, or
+    ABSENCE_CLOSED unless allow_anti_heat_buildup_during_absence=True)."""
+
+    pre_anti_heat_buildup_target_position_ha: int | None = None
+    """The target_position_ha value before the anti-heat-buildup clamp was
+    applied (HA convention, 0=closed/100=open).
+    Only populated when anti_heat_buildup_applied=True; None otherwise."""
+
+    # --- Tilt execution fields (Step 9G10f-d) ------------------------------------
+
+    target_tilt_ha: int | None = None
+    """Target tilt position in HA tilt convention [0, 100].
+    None when no tilt target was computed this cycle (position-only covers or
+    before Step 9G10f-e implements tilt calculation)."""
+
+    current_tilt_ha: int | None = None
+    """Current tilt position as reported by the cover entity [0, 100] HA convention.
+    None when the cover does not report tilt or tilt feedback is unavailable."""
+
+    has_tilt_feedback: bool = False
+    """True when the cover entity provided a valid numeric tilt value this cycle.
+    Mirrors CoverEntitySnapshot.has_tilt_feedback for the representative cover."""
+
+    tilt_command_sent: bool = False
+    """True when cover.set_cover_tilt_position was successfully dispatched.
+    False for position-only commands, blocked intents, or failed tilt dispatches."""
+
+    tilt_command_failed: bool = False
+    """True when the tilt service call raised an exception or HA returned an error.
+    When True, tilt_error contains the exception text."""
+
+    tilt_error: str | None = None
+    """Exception text when tilt_command_failed=True.
+    None when tilt was not attempted, succeeded, or was not part of this command."""

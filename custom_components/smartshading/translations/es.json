@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Editar ajustes de SmartShading",
+        "description": "Aquí puedes editar los ajustes de tiempo, confort, horario, presencia y sombreado de esta zona, y añadir, editar o eliminar ventanas.",
+        "menu_options": {
+          "weather": "Entradas de tiempo y solares",
+          "lifecycle": "Ajustes de horario",
+          "presence": "Ajustes de presencia",
+          "comfort": "Ajustes de confort",
+          "behavior": "Comportamiento de sombreado",
+          "add_window": "Añadir ventana",
+          "edit_window": "Editar ventana",
+          "remove_window": "Eliminar ventana"
+        }
+      },
+      "weather": {
+        "title": "Entradas de tiempo y solares",
+        "description": "Todo opcional. Una entidad de tiempo (p. ej. DWD, yr.no) proporciona condición, nubosidad y viento automáticamente. Los sensores dedicados sustituyen a la entidad de tiempo para lecturas locales más precisas. La radiación solar debe provenir de un sensor dedicado: no se lee de las entidades de tiempo.",
+        "data": {
+          "weather_entity_id": "Entidad de tiempo",
+          "solar_radiation_sensor_id": "Sensor de radiación solar (W/m²)",
+          "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
+          "cloud_cover_sensor_id": "Sensor de nubosidad (0–100 %)",
+          "wind_speed_sensor_id": "Sensor de velocidad del viento (m/s) — usa la racha de viento para toldos/pantallas si está disponible"
+        }
+      },
+      "lifecycle": {
+        "title": "Ajustes de horario",
+        "description": "Elige cómo SmartShading detecta la noche y la mañana. «Ambos» se activa con la primera condición que se cumpla: hora o elevación solar.",
+        "data": {
+          "night_trigger": "Disparador de noche",
+          "morning_trigger": "Disparador de mañana",
+          "schedule_mode": "Modo de horario"
+        },
+        "data_description": {
+          "schedule_mode": "«Igual cada día» usa un único horario para toda la semana. «Entre semana / Fin de semana» permite fijar horas y posiciones distintas para lunes–viernes y sábado–domingo."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Detalles del horario",
+        "description": "Introduce la hora o la elevación solar de cada disparador. Solo se muestran los campos relevantes para el disparador seleccionado.",
+        "data": {
+          "night_fixed_time": "Hora de noche",
+          "night_elevation_preset": "Noche: posición del sol",
+          "night_sun_elevation": "Elevación nocturna personalizada (°) — solo se usa cuando se selecciona Personalizada",
+          "morning_fixed_time": "Hora de mañana",
+          "morning_elevation_preset": "Mañana: posición del sol",
+          "morning_sun_elevation": "Elevación matinal personalizada (°) — solo se usa cuando se selecciona Personalizada",
+          "night_position": "Posición de noche",
+          "morning_position": "Posición de mañana",
+          "weekday_night_fixed_time": "Hora de noche entre semana (lun–vie)",
+          "weekday_night_position": "Posición de noche entre semana (lun–vie)",
+          "weekday_morning_fixed_time": "Hora de mañana entre semana (lun–vie)",
+          "weekday_morning_position": "Posición de mañana entre semana (lun–vie)",
+          "weekend_night_fixed_time": "Hora de noche en fin de semana (sáb–dom)",
+          "weekend_night_position": "Posición de noche en fin de semana (sáb–dom)",
+          "weekend_morning_fixed_time": "Hora de mañana en fin de semana (sáb–dom)",
+          "weekend_morning_position": "Posición de mañana en fin de semana (sáb–dom)"
+        },
+        "data_description": {
+          "night_position": "Posición de la persiana durante la fase nocturna (0 = cerrada, 100 = abierta).",
+          "morning_position": "Posición de la persiana al inicio de la fase matinal (0 = cerrada, 100 = abierta).",
+          "weekday_night_position": "Posición de la persiana durante la fase nocturna entre semana (0 = cerrada, 100 = abierta).",
+          "weekday_morning_position": "Posición de la persiana al inicio de la fase matinal entre semana (0 = cerrada, 100 = abierta).",
+          "weekend_night_position": "Posición de la persiana durante la fase nocturna en fin de semana (0 = cerrada, 100 = abierta).",
+          "weekend_morning_position": "Posición de la persiana al inicio de la fase matinal en fin de semana (0 = cerrada, 100 = abierta)."
+        }
+      },
+      "presence": {
+        "title": "Ajustes de presencia",
+        "description": "Opcional. Si no se selecciona a nadie, SmartShading siempre asume que hay alguien presente y nunca activa el cierre por ausencia.",
+        "data": {
+          "presence_entity_ids": "Entidades de presencia",
+          "absence_delay_min": "Retardo de ausencia",
+          "absence_position": "Posición de ausencia"
+        },
+        "data_description": {
+          "absence_position": "Posición de la persiana mientras la zona está desocupada, salvo que aplique una decisión de protección más fuerte (0 = totalmente cerrada, 100 = totalmente abierta). Se aplica a todas las ventanas de esta zona."
+        }
+      },
+      "comfort": {
+        "title": "Ajustes de confort",
+        "description": "Configura las funciones de protección por sombreado. Los sensores de temperatura interior son opcionales.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Sensores de temperatura interior (opcional)",
+          "heat_protection_enabled": "Activar protección contra el calor",
+          "glare_protection_enabled": "Activar protección contra deslumbramiento",
+          "solar_gain_enabled": "Activar ganancia solar (sol de invierno)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Uno o más sensores interiores. Cuando se configuran varios sensores, se usa el promedio de todas las lecturas válidas.",
+          "heat_protection_enabled": "Evita el sobrecalentamiento sombreando de forma proactiva según la posición del sol, el tiempo y las temperaturas.",
+          "glare_protection_enabled": "Reduce la luz solar directa cuando el sol incide en la ventana.",
+          "solar_gain_enabled": "Mantiene el sombreado más abierto en clima fresco para favorecer el calentamiento pasivo. La protección contra el calor tiene prioridad."
+        }
+      },
+      "behavior": {
+        "title": "Comportamiento básico de sombreado",
+        "description": "Posiciones objetivo base de la persiana según la intensidad del sombreado. SmartShading usa estos valores como punto de partida y puede adaptarlos por ventana cuando hay suficientes datos de aprendizaje.",
+        "data": {
+          "light_shade_position": "Posición de sombra ligera",
+          "normal_shade_position": "Posición de sombra normal",
+          "strong_shade_position": "Posición de sombra fuerte"
+        }
+      },
+      "add_window": {
+        "title": "Añadir una ventana",
+        "description": "Añade otra ventana a esta zona. SmartShading trabaja con un acimut preciso: la dirección de la brújula es solo un atajo cómodo.",
+        "data": {
+          "window_name": "Nombre de la ventana",
+          "floor_level": "Planta (0 = planta baja)",
+          "compass_direction": "Orientación",
+          "custom_azimuth": "Acimut personalizado (0-359°, solo se usa si la Orientación es Personalizada)",
+          "absence_position": "Posición de ausencia (anula el valor por defecto de la zona)",
+          "window_behavior_mode": "Modo de sombreado automático"
+        },
+        "data_description": {
+          "absence_position": "Déjalo vacío para heredar la posición de ausencia por defecto de la zona. Indica un valor para anularla solo en esta ventana concreta.",
+          "window_behavior_mode": "Totalmente automático: sol, confort, ausencia y horario activos. Solo ausencia: solo control por ausencia. Automatización desactivada: sin sombreado automático. Las protecciones de seguridad (tormenta/viento) permanecen siempre activas."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Persianas de esta ventana",
+        "description": "Selecciona la entidad o entidades de persiana que dan sombra a la ventana «{window_name}». Añade solo persianas que cubran exactamente esta superficie de ventana. Para ventanas separadas, añade ventanas separadas.",
+        "data": {
+          "cover_entities": "Persianas de esta ventana",
+          "cover_hardware_type": "Tipo de hardware de la persiana"
+        }
+      },
+      "add_window_loop": {
+        "title": "¿Añadir otra ventana?",
+        "description": "{window_count} ventana(s) nueva(s) añadida(s) a esta zona. ¿Quieres añadir otra ventana?",
+        "data": {
+          "add_another_window": "Añadir otra ventana"
+        }
+      },
+      "edit_window": {
+        "title": "Editar ventana",
+        "description": "Selecciona la ventana que quieres editar.",
+        "data": {
+          "window_id": "Ventana"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Editar ventana: {window_name}",
+        "description": "Actualiza los ajustes de la ventana «{window_name}». Los cambios de persiana se aplican al guardar.",
+        "data": {
+          "window_name": "Nombre de la ventana",
+          "floor_level": "Planta (0 = planta baja)",
+          "compass_direction": "Orientación",
+          "custom_azimuth": "Acimut personalizado (0-359°, solo se usa si la Orientación es Personalizada)",
+          "cover_entities": "Persianas de esta ventana",
+          "cover_hardware_type": "Tipo de hardware de la persiana",
+          "absence_position": "Posición de ausencia (anula el valor por defecto de la zona)",
+          "window_behavior_mode": "Modo de sombreado automático",
+          "light_shade_position": "Posición de sombra ligera (anula el valor por defecto de la zona)",
+          "normal_shade_position": "Posición de sombra normal (anula el valor por defecto de la zona)",
+          "strong_shade_position": "Posición de sombra fuerte (anula el valor por defecto de la zona)",
+          "manual_sun_sector_enabled": "Activar anulación manual del sector solar",
+          "manual_sun_sector_start_deg": "Acimut de inicio del sector solar (°)",
+          "manual_sun_sector_end_deg": "Acimut de fin del sector solar (°)",
+          "obstruction_1_enabled": "Zona de obstrucción 1 activa",
+          "obstruction_1_azimuth_start_deg": "Acimut de inicio de la zona 1 (°)",
+          "obstruction_1_azimuth_end_deg": "Acimut de fin de la zona 1 (°)",
+          "obstruction_1_block_from_elevation_deg": "Zona 1 bloqueada desde la elevación (°)",
+          "obstruction_1_block_until_elevation_deg": "Zona 1 bloqueada hasta la elevación (°)",
+          "obstruction_2_enabled": "Zona de obstrucción 2 activa",
+          "obstruction_2_azimuth_start_deg": "Acimut de inicio de la zona 2 (°)",
+          "obstruction_2_azimuth_end_deg": "Acimut de fin de la zona 2 (°)",
+          "obstruction_2_block_from_elevation_deg": "Zona 2 bloqueada desde la elevación (°)",
+          "obstruction_2_block_until_elevation_deg": "Zona 2 bloqueada hasta la elevación (°)",
+          "obstruction_3_enabled": "Zona de obstrucción 3 activa",
+          "obstruction_3_azimuth_start_deg": "Acimut de inicio de la zona 3 (°)",
+          "obstruction_3_azimuth_end_deg": "Acimut de fin de la zona 3 (°)",
+          "obstruction_3_block_from_elevation_deg": "Zona 3 bloqueada desde la elevación (°)",
+          "obstruction_3_block_until_elevation_deg": "Zona 3 bloqueada hasta la elevación (°)"
+        },
+        "data_description": {
+          "absence_position": "Déjalo vacío para heredar la posición de ausencia por defecto de la zona. Indica un valor para anularla solo en esta ventana.",
+          "window_behavior_mode": "Totalmente automático: sol, confort, ausencia y horario activos. Solo ausencia: solo control por ausencia. Automatización desactivada: sin sombreado automático. Las protecciones de seguridad (tormenta/viento) permanecen siempre activas.",
+          "light_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra ligera solo en esta ventana.",
+          "normal_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra normal solo en esta ventana.",
+          "strong_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra fuerte solo en esta ventana.",
+          "manual_sun_sector_enabled": "Actívalo para sustituir el sector solar automático basado en acimut por un rango manual. Los acimuts de inicio y fin definen cuándo se considera que el sol incide en esta ventana. Admite cruce por el norte (p. ej. de 330° a 30°).",
+          "obstruction_1_enabled": "Actívalo para marcar un rango de acimut donde una obstrucción física (árbol, edificio, alero del tejado) bloquea el sol directo. Deja vacíos los campos de elevación para bloquear en toda elevación solar dentro del rango de acimut.",
+          "obstruction_1_block_from_elevation_deg": "Opcional. La obstrucción bloquea solo cuando la elevación solar es igual o superior a este valor. Ejemplo: 45° bloquea un alero que solo da sombra con ángulos solares altos. Déjalo vacío si no hay límite inferior.",
+          "obstruction_1_block_until_elevation_deg": "Opcional. La obstrucción bloquea solo cuando la elevación solar es igual o inferior a este valor. Ejemplo: 18° bloquea una montaña o un edificio vecino que solo afecta con el sol bajo. Déjalo vacío si no hay límite superior.",
+          "obstruction_2_enabled": "Segunda zona de obstrucción opcional para esta ventana.",
+          "obstruction_2_block_from_elevation_deg": "Límite inferior de elevación opcional para la zona 2 (ver la descripción de la zona 1).",
+          "obstruction_2_block_until_elevation_deg": "Límite superior de elevación opcional para la zona 2 (ver la descripción de la zona 1).",
+          "obstruction_3_enabled": "Tercera zona de obstrucción opcional para esta ventana.",
+          "obstruction_3_block_from_elevation_deg": "Límite inferior de elevación opcional para la zona 3 (ver la descripción de la zona 1).",
+          "obstruction_3_block_until_elevation_deg": "Límite superior de elevación opcional para la zona 3 (ver la descripción de la zona 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Eliminar ventana",
+        "description": "Selecciona la ventana que quieres eliminar. Esto eliminará permanentemente la ventana y sus asignaciones de persianas de esta zona. Las entidades de persiana en sí no se eliminan.",
+        "data": {
+          "window_id": "Ventana a eliminar"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Confirmar eliminación",
+        "description": "¿Eliminar la ventana «{window_name}»? Esto no se puede deshacer.",
+        "data": {
+          "remove_confirmed": "Sí, eliminar esta ventana"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "No se puede eliminar la última ventana. Una zona debe tener al menos una ventana.",
+      "obstruction_elevation_range_invalid": "«Bloqueada desde la elevación» no puede ser mayor que «Bloqueada hasta la elevación»."
+    },
+    "abort": {
+      "no_options_for_system_entry": "La entrada de Sistema de SmartShading no tiene opciones configurables."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Configura SmartShading. Puedes añadir ventanas en las siguientes pantallas.",
+        "data": {
+          "zone_name": "Nombre de la zona"
+        }
+      },
+      "weather": {
+        "title": "Entradas de tiempo y solares (opcional)",
+        "description": "Todo opcional. Una entidad de tiempo (p. ej. DWD, yr.no) proporciona condición, nubosidad y viento automáticamente. Los sensores dedicados la sustituyen para lecturas locales más precisas. La radiación solar requiere un sensor dedicado. Puedes omitir este paso y añadir entradas más tarde.",
+        "data": {
+          "weather_entity_id": "Entidad de tiempo",
+          "solar_radiation_sensor_id": "Sensor de radiación solar (W/m²)",
+          "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
+          "cloud_cover_sensor_id": "Sensor de nubosidad (0–100 %)",
+          "wind_speed_sensor_id": "Sensor de velocidad del viento (m/s) — usa la racha de viento para toldos/pantallas si está disponible"
+        }
+      },
+      "lifecycle": {
+        "title": "Ajustes de horario",
+        "description": "Elige cómo SmartShading detecta la noche y la mañana. «Ambos» se activa con la primera condición que se cumpla: hora o elevación solar.",
+        "data": {
+          "night_trigger": "Disparador de noche",
+          "morning_trigger": "Disparador de mañana",
+          "schedule_mode": "Modo de horario"
+        },
+        "data_description": {
+          "schedule_mode": "«Igual cada día» usa un único horario para toda la semana. «Entre semana / Fin de semana» permite fijar horas y posiciones distintas para lunes–viernes y sábado–domingo."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Detalles del horario",
+        "description": "Introduce la hora o la elevación solar de cada disparador. Solo se muestran los campos relevantes para el disparador seleccionado.",
+        "data": {
+          "night_fixed_time": "Hora de noche",
+          "night_elevation_preset": "Noche: posición del sol",
+          "night_sun_elevation": "Elevación nocturna personalizada (°) — solo se usa cuando se selecciona Personalizada",
+          "morning_fixed_time": "Hora de mañana",
+          "morning_elevation_preset": "Mañana: posición del sol",
+          "morning_sun_elevation": "Elevación matinal personalizada (°) — solo se usa cuando se selecciona Personalizada",
+          "night_position": "Posición de noche",
+          "morning_position": "Posición de mañana",
+          "weekday_night_fixed_time": "Hora de noche entre semana (lun–vie)",
+          "weekday_night_position": "Posición de noche entre semana (lun–vie)",
+          "weekday_morning_fixed_time": "Hora de mañana entre semana (lun–vie)",
+          "weekday_morning_position": "Posición de mañana entre semana (lun–vie)",
+          "weekend_night_fixed_time": "Hora de noche en fin de semana (sáb–dom)",
+          "weekend_night_position": "Posición de noche en fin de semana (sáb–dom)",
+          "weekend_morning_fixed_time": "Hora de mañana en fin de semana (sáb–dom)",
+          "weekend_morning_position": "Posición de mañana en fin de semana (sáb–dom)"
+        },
+        "data_description": {
+          "night_position": "Posición de la persiana durante la fase nocturna (0 = cerrada, 100 = abierta).",
+          "morning_position": "Posición de la persiana al inicio de la fase matinal (0 = cerrada, 100 = abierta).",
+          "weekday_night_position": "Posición de la persiana durante la fase nocturna entre semana (0 = cerrada, 100 = abierta).",
+          "weekday_morning_position": "Posición de la persiana al inicio de la fase matinal entre semana (0 = cerrada, 100 = abierta).",
+          "weekend_night_position": "Posición de la persiana durante la fase nocturna en fin de semana (0 = cerrada, 100 = abierta).",
+          "weekend_morning_position": "Posición de la persiana al inicio de la fase matinal en fin de semana (0 = cerrada, 100 = abierta)."
+        }
+      },
+      "presence": {
+        "title": "Ajustes de presencia",
+        "description": "Opcional. Si no se selecciona a nadie, SmartShading siempre asume que hay alguien presente y nunca activa el cierre por ausencia.",
+        "data": {
+          "presence_entity_ids": "Entidades de presencia",
+          "absence_delay_min": "Retardo de ausencia",
+          "absence_position": "Posición de ausencia"
+        },
+        "data_description": {
+          "absence_position": "Posición de la persiana mientras la zona está desocupada, salvo que aplique una decisión de protección más fuerte (0 = totalmente cerrada, 100 = totalmente abierta). Se aplica a todas las ventanas de esta zona."
+        }
+      },
+      "window": {
+        "title": "Añadir una ventana",
+        "description": "Configura una ventana. SmartShading trabaja con un acimut preciso: la dirección de la brújula es solo un atajo cómodo.",
+        "data": {
+          "window_name": "Nombre de la ventana",
+          "floor_level": "Planta (0 = planta baja)",
+          "compass_direction": "Orientación",
+          "custom_azimuth": "Acimut personalizado (0-359°, solo se usa si la Orientación es Personalizada)",
+          "absence_position": "Posición de ausencia (anula el valor por defecto de la zona)",
+          "window_behavior_mode": "Modo de sombreado automático"
+        },
+        "data_description": {
+          "absence_position": "Déjalo vacío para heredar la posición de ausencia por defecto de la zona. Indica un valor para anularla solo en esta ventana concreta.",
+          "window_behavior_mode": "Totalmente automático: sol, confort, ausencia y horario activos. Solo ausencia: solo control por ausencia. Automatización desactivada: sin sombreado automático. Las protecciones de seguridad (tormenta/viento) permanecen siempre activas."
+        }
+      },
+      "cover_group": {
+        "title": "Persianas de esta ventana",
+        "description": "Selecciona la entidad o entidades de persiana que dan sombra a la ventana «{window_name}». Añade solo persianas que cubran exactamente esta superficie de ventana. Para ventanas separadas, añade ventanas separadas.",
+        "data": {
+          "cover_entities": "Persianas de esta ventana",
+          "cover_hardware_type": "Tipo de hardware de la persiana"
+        }
+      },
+      "add_another_window": {
+        "title": "¿Añadir otra ventana?",
+        "description": "{window_count} ventana(s) configurada(s) hasta ahora.",
+        "data": {
+          "add_another_window": "Añadir otra ventana"
+        }
+      },
+      "comfort": {
+        "title": "Ajustes de confort",
+        "description": "Configura las funciones de protección por sombreado. Los sensores de temperatura interior son opcionales.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Sensores de temperatura interior (opcional)",
+          "heat_protection_enabled": "Activar protección contra el calor",
+          "glare_protection_enabled": "Activar protección contra deslumbramiento",
+          "solar_gain_enabled": "Activar ganancia solar (sol de invierno)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Uno o más sensores interiores. Cuando se configuran varios sensores, se usa el promedio de todas las lecturas válidas.",
+          "heat_protection_enabled": "Evita el sobrecalentamiento sombreando de forma proactiva según la posición del sol, el tiempo y las temperaturas.",
+          "glare_protection_enabled": "Reduce la luz solar directa cuando el sol incide en la ventana.",
+          "solar_gain_enabled": "Mantiene el sombreado más abierto en clima fresco para favorecer el calentamiento pasivo. La protección contra el calor tiene prioridad."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Introduce un acimut personalizado entre 0 y 359 grados, o elige una dirección de la brújula.",
+      "no_covers_selected": "Selecciona al menos una entidad de persiana para esta ventana.",
+      "empty_zone_name": "El nombre de la zona es obligatorio.",
+      "obstruction_elevation_range_invalid": "«Bloqueada desde la elevación» no puede ser mayor que «Bloqueada hasta la elevación»."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading ya está configurado.",
+      "system_already_exists": "La entrada de Sistema de SmartShading ya existe."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Norte (0°)",
+        "northeast": "Noreste (45°)",
+        "east": "Este (90°)",
+        "southeast": "Sureste (135°)",
+        "south": "Sur (180°)",
+        "southwest": "Suroeste (225°)",
+        "west": "Oeste (270°)",
+        "northwest": "Noroeste (315°)",
+        "custom": "Acimut personalizado"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "En la puesta de sol (0°)",
+        "dusk": "Al anochecer — crepúsculo civil (-6°)",
+        "dark": "Cuando está oscuro — crepúsculo náutico (-12°)",
+        "custom": "Personalizada"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "En la salida del sol (0°)",
+        "dawn": "Al amanecer — crepúsculo civil (-6°)",
+        "bright": "Cuando empieza a clarear — crepúsculo náutico (-12°)",
+        "custom": "Personalizada"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Hora fija",
+        "sun_elevation": "Elevación solar",
+        "both": "Ambos",
+        "disabled": "Desactivado"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Igual cada día",
+        "weekday_weekend": "Entre semana / Fin de semana"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Totalmente automático",
+        "absence_only": "Solo ausencia",
+        "disabled_automatic": "Automatización desactivada"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Persiana enrollable",
+        "venetian_blind": "Persiana veneciana",
+        "exterior_screen": "Pantalla",
+        "awning": "Toldo",
+        "generic": "Otra persiana"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Crear exportación de soporte"
+      },
+      "export_research_data": {
+        "name": "Crear exportación de investigación"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Modo de observación",
+        "state": {
+          "on": "Observando",
+          "off": "En pausa"
+        }
+      },
+      "active_control": {
+        "name": "Control activo",
+        "state": {
+          "on": "Activo",
+          "off": "Inactivo"
+        }
+      },
+      "debug_logging": {
+        "name": "Registro de depuración"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Estado de sombreado",
+        "state": {
+          "storm_safe": "Protección por tormenta",
+          "wind_safe": "Protección por viento",
+          "manual_override": "Anulación manual",
+          "night_closed": "Noche – cerrada",
+          "absence_closed": "Ausencia – cerrada",
+          "strong_shade": "Sombreado fuerte",
+          "normal_shade": "Sombreado normal",
+          "light_shade": "Sombreado ligero",
+          "open": "Abierta"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Estado de sombreado",
+        "state": {
+          "storm_safe": "Protección por tormenta",
+          "wind_safe": "Protección por viento",
+          "manual_override": "Anulación manual",
+          "night_closed": "Noche – cerrada",
+          "absence_closed": "Ausencia – cerrada",
+          "strong_shade": "Sombreado fuerte",
+          "normal_shade": "Sombreado normal",
+          "light_shade": "Sombreado ligero",
+          "open": "Abierta"
+        }
+      },
+      "exposure": {
+        "name": "Exposición"
+      },
+      "exposure_indexed": {
+        "name": "{index} Exposición"
+      },
+      "cover_position": {
+        "name": "Posición de la persiana"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Posición de la persiana"
+      },
+      "recommendation": {
+        "name": "Recomendación"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Recomendación"
+      },
+      "zone_summary": {
+        "name": "Resumen de zona",
+        "state": {
+          "safety": "Modo de seguridad",
+          "override": "Anulación manual",
+          "automatic": "Automático",
+          "recommendation_only": "Solo recomendación",
+          "disabled": "Desactivado"
+        }
+      },
+      "learning_progress": {
+        "name": "Progreso de aprendizaje"
+      },
+      "shading_result": {
+        "name": "Resultado de sombreado",
+        "state": {
+          "excellent": "Excelente",
+          "good": "Bueno",
+          "acceptable": "Aceptable",
+          "poor": "Pobre",
+          "unknown": "Desconocido"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Sector solar",
+        "state": {
+          "on": "En el sector solar",
+          "off": "Fuera del sector solar"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Sector solar",
+        "state": {
+          "on": "En el sector solar",
+          "off": "Fuera del sector solar"
+        }
+      },
+      "override_active": {
+        "name": "Anulación activa",
+        "state": {
+          "on": "Anulación activa",
+          "off": "Control normal"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Anulación activa",
+        "state": {
+          "on": "Anulación activa",
+          "off": "Control normal"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "SmartShading ayarlarını düzenle",
+        "description": "Burada bu bölgenin hava durumu, konfor, zamanlama, mevcudiyet ve gölgeleme ayarlarını düzenleyebilir ve pencere ekleyebilir, düzenleyebilir veya kaldırabilirsiniz.",
+        "menu_options": {
+          "weather": "Hava durumu ve güneş girdileri",
+          "lifecycle": "Zamanlama ayarları",
+          "presence": "Mevcudiyet ayarları",
+          "comfort": "Konfor ayarları",
+          "behavior": "Gölgeleme davranışı",
+          "add_window": "Pencere ekle",
+          "edit_window": "Pencereyi düzenle",
+          "remove_window": "Pencereyi kaldır"
+        }
+      },
+      "weather": {
+        "title": "Hava durumu ve güneş girdileri",
+        "description": "Tümü isteğe bağlı. Bir hava durumu varlığı (ör. DWD, yr.no) durumu, bulutluluğu ve rüzgârı otomatik olarak sağlar. Özel sensörler, daha hassas yerel okumalar için hava durumu varlığının yerini alır. Güneş radyasyonu özel bir sensörden gelmelidir: hava durumu varlıklarından okunmaz.",
+        "data": {
+          "weather_entity_id": "Hava durumu varlığı",
+          "solar_radiation_sensor_id": "Güneş radyasyonu sensörü (W/m²)",
+          "outdoor_temperature_sensor_id": "Dış mekân sıcaklık sensörü",
+          "cloud_cover_sensor_id": "Bulutluluk sensörü (0–100 %)",
+          "wind_speed_sensor_id": "Rüzgâr hızı sensörü (m/s) — tente/screenler için varsa rüzgâr hamlesini kullanın"
+        }
+      },
+      "lifecycle": {
+        "title": "Zamanlama ayarları",
+        "description": "SmartShading'in geceyi ve sabahı nasıl algılayacağını seçin. „Her ikisi“, ilk karşılanan koşulda tetiklenir: zaman veya güneş yüksekliği.",
+        "data": {
+          "night_trigger": "Gece tetikleyicisi",
+          "morning_trigger": "Sabah tetikleyicisi",
+          "schedule_mode": "Zamanlama modu"
+        },
+        "data_description": {
+          "schedule_mode": "„Her gün aynı“ tüm hafta için tek bir zamanlama kullanır. „Hafta içi / Hafta sonu“, Pzt–Cum ve Cmt–Paz için farklı saatler ve konumlar ayarlamanıza olanak tanır."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Zamanlama ayrıntıları",
+        "description": "Her tetikleyici için saati veya güneş yüksekliğini girin. Yalnızca seçili tetikleyiciyle ilgili alanlar gösterilir.",
+        "data": {
+          "night_fixed_time": "Gece saati",
+          "night_elevation_preset": "Gece: güneş konumu",
+          "night_sun_elevation": "Özel gece yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
+          "morning_fixed_time": "Sabah saati",
+          "morning_elevation_preset": "Sabah: güneş konumu",
+          "morning_sun_elevation": "Özel sabah yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
+          "night_position": "Gece konumu",
+          "morning_position": "Sabah konumu",
+          "weekday_night_fixed_time": "Hafta içi gece saati (Pzt–Cum)",
+          "weekday_night_position": "Hafta içi gece konumu (Pzt–Cum)",
+          "weekday_morning_fixed_time": "Hafta içi sabah saati (Pzt–Cum)",
+          "weekday_morning_position": "Hafta içi sabah konumu (Pzt–Cum)",
+          "weekend_night_fixed_time": "Hafta sonu gece saati (Cmt–Paz)",
+          "weekend_night_position": "Hafta sonu gece konumu (Cmt–Paz)",
+          "weekend_morning_fixed_time": "Hafta sonu sabah saati (Cmt–Paz)",
+          "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)"
+        },
+        "data_description": {
+          "night_position": "Gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "morning_position": "Sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "weekday_night_position": "Hafta içi gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "weekday_morning_position": "Hafta içi sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "weekend_night_position": "Hafta sonu gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "weekend_morning_position": "Hafta sonu sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık)."
+        }
+      },
+      "presence": {
+        "title": "Mevcudiyet ayarları",
+        "description": "İsteğe bağlı. Kimse seçilmezse, SmartShading her zaman birinin mevcut olduğunu varsayar ve yokluk nedeniyle asla kapatma tetiklemez.",
+        "data": {
+          "presence_entity_ids": "Mevcudiyet varlıkları",
+          "absence_delay_min": "Yokluk gecikmesi",
+          "absence_position": "Yokluk konumu"
+        },
+        "data_description": {
+          "absence_position": "Daha güçlü bir koruma kararı geçerli olmadıkça, bölge boşken gölgeliğin konumu (0 = tamamen kapalı, 100 = tamamen açık). Bu bölgedeki tüm pencerelere uygulanır."
+        }
+      },
+      "comfort": {
+        "title": "Konfor ayarları",
+        "description": "Gölgeleme yoluyla koruma işlevlerini yapılandırın. İç mekân sıcaklık sensörleri isteğe bağlıdır.",
+        "data": {
+          "indoor_temperature_sensor_ids": "İç mekân sıcaklık sensörleri (isteğe bağlı)",
+          "heat_protection_enabled": "Isı korumasını etkinleştir",
+          "glare_protection_enabled": "Parlama korumasını etkinleştir",
+          "solar_gain_enabled": "Güneş kazancını etkinleştir (kış güneşi)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Bir veya daha fazla iç mekân sensörü. Birden fazla sensör yapılandırıldığında tüm geçerli okumaların ortalaması kullanılır.",
+          "heat_protection_enabled": "Güneş konumuna, hava durumuna ve sıcaklıklara göre proaktif gölgeleme yaparak aşırı ısınmayı önler.",
+          "glare_protection_enabled": "Güneş pencereye vurduğunda doğrudan güneş ışığını azaltır.",
+          "solar_gain_enabled": "Pasif ısınmayı desteklemek için serin havalarda gölgelemeyi daha açık tutar. Isı koruması önceliklidir."
+        }
+      },
+      "behavior": {
+        "title": "Temel gölgeleme davranışı",
+        "description": "Gölgeleme yoğunluğuna göre temel hedef gölgelik konumları. SmartShading bu değerleri başlangıç noktası olarak kullanır ve yeterli öğrenme verisi mevcut olduğunda bunları pencere başına uyarlayabilir.",
+        "data": {
+          "light_shade_position": "Hafif gölgeleme konumu",
+          "normal_shade_position": "Normal gölgeleme konumu",
+          "strong_shade_position": "Güçlü gölgeleme konumu"
+        }
+      },
+      "add_window": {
+        "title": "Pencere ekle",
+        "description": "Bu bölgeye başka bir pencere ekleyin. SmartShading hassas bir azimutla çalışır: pusula yönü yalnızca kullanışlı bir kısayoldur.",
+        "data": {
+          "window_name": "Pencere adı",
+          "floor_level": "Kat (0 = zemin kat)",
+          "compass_direction": "Yönelim",
+          "custom_azimuth": "Özel azimut (0-359°, yalnızca Yönelim Özel olarak ayarlanmışsa kullanılır)",
+          "absence_position": "Yokluk konumu (bölge varsayılanını geçersiz kılar)",
+          "window_behavior_mode": "Otomatik gölgeleme modu"
+        },
+        "data_description": {
+          "absence_position": "Bölgenin varsayılan yokluk konumunu devralmak için boş bırakın. Yalnızca bu belirli pencere için geçersiz kılmak üzere bir değer girin.",
+          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Bu pencere için gölgelikler",
+        "description": "„{window_name}“ penceresini gölgeleyen gölgelik varlığını veya varlıklarını seçin. Yalnızca tam olarak bu pencere yüzeyini kaplayan gölgelikler ekleyin. Ayrı pencereler için ayrı pencereler ekleyin.",
+        "data": {
+          "cover_entities": "Bu pencere için gölgelikler",
+          "cover_hardware_type": "Gölgelik donanım türü"
+        }
+      },
+      "add_window_loop": {
+        "title": "Başka bir pencere eklensin mi?",
+        "description": "Bu bölgeye {window_count} yeni pencere eklendi. Başka bir pencere eklemek ister misiniz?",
+        "data": {
+          "add_another_window": "Başka bir pencere ekle"
+        }
+      },
+      "edit_window": {
+        "title": "Pencereyi düzenle",
+        "description": "Düzenlenecek pencereyi seçin.",
+        "data": {
+          "window_id": "Pencere"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Pencereyi düzenle: {window_name}",
+        "description": "„{window_name}“ penceresinin ayarlarını güncelleyin. Gölgelik değişiklikleri kaydetmeden sonra geçerli olur.",
+        "data": {
+          "window_name": "Pencere adı",
+          "floor_level": "Kat (0 = zemin kat)",
+          "compass_direction": "Yönelim",
+          "custom_azimuth": "Özel azimut (0-359°, yalnızca Yönelim Özel olarak ayarlanmışsa kullanılır)",
+          "cover_entities": "Bu pencere için gölgelikler",
+          "cover_hardware_type": "Gölgelik donanım türü",
+          "absence_position": "Yokluk konumu (bölge varsayılanını geçersiz kılar)",
+          "window_behavior_mode": "Otomatik gölgeleme modu",
+          "light_shade_position": "Hafif gölgeleme konumu (bölge varsayılanını geçersiz kılar)",
+          "normal_shade_position": "Normal gölgeleme konumu (bölge varsayılanını geçersiz kılar)",
+          "strong_shade_position": "Güçlü gölgeleme konumu (bölge varsayılanını geçersiz kılar)",
+          "manual_sun_sector_enabled": "Güneş sektörünün manuel geçersiz kılınmasını etkinleştir",
+          "manual_sun_sector_start_deg": "Güneş sektörü başlangıç azimutu (°)",
+          "manual_sun_sector_end_deg": "Güneş sektörü bitiş azimutu (°)",
+          "obstruction_1_enabled": "Engel bölgesi 1 etkin",
+          "obstruction_1_azimuth_start_deg": "Bölge 1 başlangıç azimutu (°)",
+          "obstruction_1_azimuth_end_deg": "Bölge 1 bitiş azimutu (°)",
+          "obstruction_1_block_from_elevation_deg": "Bölge 1 şu yükseklikten itibaren engellenir (°)",
+          "obstruction_1_block_until_elevation_deg": "Bölge 1 şu yüksekliğe kadar engellenir (°)",
+          "obstruction_2_enabled": "Engel bölgesi 2 etkin",
+          "obstruction_2_azimuth_start_deg": "Bölge 2 başlangıç azimutu (°)",
+          "obstruction_2_azimuth_end_deg": "Bölge 2 bitiş azimutu (°)",
+          "obstruction_2_block_from_elevation_deg": "Bölge 2 şu yükseklikten itibaren engellenir (°)",
+          "obstruction_2_block_until_elevation_deg": "Bölge 2 şu yüksekliğe kadar engellenir (°)",
+          "obstruction_3_enabled": "Engel bölgesi 3 etkin",
+          "obstruction_3_azimuth_start_deg": "Bölge 3 başlangıç azimutu (°)",
+          "obstruction_3_azimuth_end_deg": "Bölge 3 bitiş azimutu (°)",
+          "obstruction_3_block_from_elevation_deg": "Bölge 3 şu yükseklikten itibaren engellenir (°)",
+          "obstruction_3_block_until_elevation_deg": "Bölge 3 şu yüksekliğe kadar engellenir (°)"
+        },
+        "data_description": {
+          "absence_position": "Bölgenin varsayılan yokluk konumunu devralmak için boş bırakın. Yalnızca bu pencere için geçersiz kılmak üzere bir değer girin.",
+          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır.",
+          "light_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için hafif gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",
+          "normal_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için normal gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",
+          "strong_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için güçlü gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",
+          "manual_sun_sector_enabled": "Azimut tabanlı otomatik güneş sektörünü manuel bir aralıkla değiştirmek için etkinleştirin. Başlangıç ve bitiş azimutları, güneşin bu pencereye vurduğunun kabul edildiği zamanı tanımlar. Kuzeyden geçişi destekler (ör. 330°'den 30°'ye).",
+          "obstruction_1_enabled": "Fiziksel bir engelin (ağaç, bina, çatı saçağı) doğrudan güneşi engellediği bir azimut aralığını işaretlemek için etkinleştirin. Azimut aralığındaki her güneş yüksekliğinde engellemek için yükseklik alanlarını boş bırakın.",
+          "obstruction_1_block_from_elevation_deg": "İsteğe bağlı. Engel yalnızca güneş yüksekliği bu değere eşit veya daha yüksek olduğunda engeller. Örnek: 45°, yalnızca dik güneş açılarında gölge yapan bir çatı saçağını engeller. Alt sınır olmaması için boş bırakın.",
+          "obstruction_1_block_until_elevation_deg": "İsteğe bağlı. Engel yalnızca güneş yüksekliği bu değere eşit veya daha düşük olduğunda engeller. Örnek: 18°, yalnızca alçak güneşte etkili olan bir dağı veya komşu binayı engeller. Üst sınır olmaması için boş bırakın.",
+          "obstruction_2_enabled": "Bu pencere için ikinci isteğe bağlı engel bölgesi.",
+          "obstruction_2_block_from_elevation_deg": "Bölge 2 için isteğe bağlı alt yükseklik sınırı (bölge 1 açıklamasına bakın).",
+          "obstruction_2_block_until_elevation_deg": "Bölge 2 için isteğe bağlı üst yükseklik sınırı (bölge 1 açıklamasına bakın).",
+          "obstruction_3_enabled": "Bu pencere için üçüncü isteğe bağlı engel bölgesi.",
+          "obstruction_3_block_from_elevation_deg": "Bölge 3 için isteğe bağlı alt yükseklik sınırı (bölge 1 açıklamasına bakın).",
+          "obstruction_3_block_until_elevation_deg": "Bölge 3 için isteğe bağlı üst yükseklik sınırı (bölge 1 açıklamasına bakın)."
+        }
+      },
+      "remove_window": {
+        "title": "Pencereyi kaldır",
+        "description": "Kaldırılacak pencereyi seçin. Bu, pencereyi ve gölgelik atamalarını bu bölgeden kalıcı olarak kaldırır. Gölgelik varlıklarının kendileri silinmez.",
+        "data": {
+          "window_id": "Kaldırılacak pencere"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Kaldırmayı onayla",
+        "description": "„{window_name}“ penceresi kaldırılsın mı? Bu geri alınamaz.",
+        "data": {
+          "remove_confirmed": "Evet, bu pencereyi kaldır"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Son pencere kaldırılamaz. Bir bölgenin en az bir penceresi olmalıdır.",
+      "obstruction_elevation_range_invalid": "„Şu yükseklikten itibaren engellenir“, „Şu yüksekliğe kadar engellenir“ değerinden büyük olmamalıdır."
+    },
+    "abort": {
+      "no_options_for_system_entry": "SmartShading Sistem girişinin yapılandırılabilir seçeneği yoktur."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "SmartShading'i yapılandırın. Sonraki ekranlarda pencere ekleyebilirsiniz.",
+        "data": {
+          "zone_name": "Bölge adı"
+        }
+      },
+      "weather": {
+        "title": "Hava durumu ve güneş girdileri (isteğe bağlı)",
+        "description": "Tümü isteğe bağlı. Bir hava durumu varlığı (ör. DWD, yr.no) durumu, bulutluluğu ve rüzgârı otomatik olarak sağlar. Özel sensörler, daha hassas yerel okumalar için bunun yerini alır. Güneş radyasyonu özel bir sensör gerektirir. Bu adımı atlayıp girdileri daha sonra ekleyebilirsiniz.",
+        "data": {
+          "weather_entity_id": "Hava durumu varlığı",
+          "solar_radiation_sensor_id": "Güneş radyasyonu sensörü (W/m²)",
+          "outdoor_temperature_sensor_id": "Dış mekân sıcaklık sensörü",
+          "cloud_cover_sensor_id": "Bulutluluk sensörü (0–100 %)",
+          "wind_speed_sensor_id": "Rüzgâr hızı sensörü (m/s) — tente/screenler için varsa rüzgâr hamlesini kullanın"
+        }
+      },
+      "lifecycle": {
+        "title": "Zamanlama ayarları",
+        "description": "SmartShading'in geceyi ve sabahı nasıl algılayacağını seçin. „Her ikisi“, ilk karşılanan koşulda tetiklenir: zaman veya güneş yüksekliği.",
+        "data": {
+          "night_trigger": "Gece tetikleyicisi",
+          "morning_trigger": "Sabah tetikleyicisi",
+          "schedule_mode": "Zamanlama modu"
+        },
+        "data_description": {
+          "schedule_mode": "„Her gün aynı“ tüm hafta için tek bir zamanlama kullanır. „Hafta içi / Hafta sonu“, Pzt–Cum ve Cmt–Paz için farklı saatler ve konumlar ayarlamanıza olanak tanır."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Zamanlama ayrıntıları",
+        "description": "Her tetikleyici için saati veya güneş yüksekliğini girin. Yalnızca seçili tetikleyiciyle ilgili alanlar gösterilir.",
+        "data": {
+          "night_fixed_time": "Gece saati",
+          "night_elevation_preset": "Gece: güneş konumu",
+          "night_sun_elevation": "Özel gece yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
+          "morning_fixed_time": "Sabah saati",
+          "morning_elevation_preset": "Sabah: güneş konumu",
+          "morning_sun_elevation": "Özel sabah yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
+          "night_position": "Gece konumu",
+          "morning_position": "Sabah konumu",
+          "weekday_night_fixed_time": "Hafta içi gece saati (Pzt–Cum)",
+          "weekday_night_position": "Hafta içi gece konumu (Pzt–Cum)",
+          "weekday_morning_fixed_time": "Hafta içi sabah saati (Pzt–Cum)",
+          "weekday_morning_position": "Hafta içi sabah konumu (Pzt–Cum)",
+          "weekend_night_fixed_time": "Hafta sonu gece saati (Cmt–Paz)",
+          "weekend_night_position": "Hafta sonu gece konumu (Cmt–Paz)",
+          "weekend_morning_fixed_time": "Hafta sonu sabah saati (Cmt–Paz)",
+          "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)"
+        },
+        "data_description": {
+          "night_position": "Gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "morning_position": "Sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "weekday_night_position": "Hafta içi gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "weekday_morning_position": "Hafta içi sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "weekend_night_position": "Hafta sonu gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "weekend_morning_position": "Hafta sonu sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık)."
+        }
+      },
+      "presence": {
+        "title": "Mevcudiyet ayarları",
+        "description": "İsteğe bağlı. Kimse seçilmezse, SmartShading her zaman birinin mevcut olduğunu varsayar ve yokluk nedeniyle asla kapatma tetiklemez.",
+        "data": {
+          "presence_entity_ids": "Mevcudiyet varlıkları",
+          "absence_delay_min": "Yokluk gecikmesi",
+          "absence_position": "Yokluk konumu"
+        },
+        "data_description": {
+          "absence_position": "Daha güçlü bir koruma kararı geçerli olmadıkça, bölge boşken gölgeliğin konumu (0 = tamamen kapalı, 100 = tamamen açık). Bu bölgedeki tüm pencerelere uygulanır."
+        }
+      },
+      "window": {
+        "title": "Pencere ekle",
+        "description": "Bir pencere yapılandırın. SmartShading hassas bir azimutla çalışır: pusula yönü yalnızca kullanışlı bir kısayoldur.",
+        "data": {
+          "window_name": "Pencere adı",
+          "floor_level": "Kat (0 = zemin kat)",
+          "compass_direction": "Yönelim",
+          "custom_azimuth": "Özel azimut (0-359°, yalnızca Yönelim Özel olarak ayarlanmışsa kullanılır)",
+          "absence_position": "Yokluk konumu (bölge varsayılanını geçersiz kılar)",
+          "window_behavior_mode": "Otomatik gölgeleme modu"
+        },
+        "data_description": {
+          "absence_position": "Bölgenin varsayılan yokluk konumunu devralmak için boş bırakın. Yalnızca bu belirli pencere için geçersiz kılmak üzere bir değer girin.",
+          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır."
+        }
+      },
+      "cover_group": {
+        "title": "Bu pencere için gölgelikler",
+        "description": "„{window_name}“ penceresini gölgeleyen gölgelik varlığını veya varlıklarını seçin. Yalnızca tam olarak bu pencere yüzeyini kaplayan gölgelikler ekleyin. Ayrı pencereler için ayrı pencereler ekleyin.",
+        "data": {
+          "cover_entities": "Bu pencere için gölgelikler",
+          "cover_hardware_type": "Gölgelik donanım türü"
+        }
+      },
+      "add_another_window": {
+        "title": "Başka bir pencere eklensin mi?",
+        "description": "Şimdiye kadar {window_count} pencere yapılandırıldı.",
+        "data": {
+          "add_another_window": "Başka bir pencere ekle"
+        }
+      },
+      "comfort": {
+        "title": "Konfor ayarları",
+        "description": "Gölgeleme yoluyla koruma işlevlerini yapılandırın. İç mekân sıcaklık sensörleri isteğe bağlıdır.",
+        "data": {
+          "indoor_temperature_sensor_ids": "İç mekân sıcaklık sensörleri (isteğe bağlı)",
+          "heat_protection_enabled": "Isı korumasını etkinleştir",
+          "glare_protection_enabled": "Parlama korumasını etkinleştir",
+          "solar_gain_enabled": "Güneş kazancını etkinleştir (kış güneşi)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Bir veya daha fazla iç mekân sensörü. Birden fazla sensör yapılandırıldığında tüm geçerli okumaların ortalaması kullanılır.",
+          "heat_protection_enabled": "Güneş konumuna, hava durumuna ve sıcaklıklara göre proaktif gölgeleme yaparak aşırı ısınmayı önler.",
+          "glare_protection_enabled": "Güneş pencereye vurduğunda doğrudan güneş ışığını azaltır.",
+          "solar_gain_enabled": "Pasif ısınmayı desteklemek için serin havalarda gölgelemeyi daha açık tutar. Isı koruması önceliklidir."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "0 ile 359 derece arasında özel bir azimut girin veya bir pusula yönü seçin.",
+      "no_covers_selected": "Bu pencere için en az bir gölgelik varlığı seçin.",
+      "empty_zone_name": "Bölge adı gereklidir.",
+      "obstruction_elevation_range_invalid": "„Şu yükseklikten itibaren engellenir“, „Şu yüksekliğe kadar engellenir“ değerinden büyük olmamalıdır."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading zaten yapılandırılmış.",
+      "system_already_exists": "SmartShading Sistem girişi zaten mevcut."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Kuzey (0°)",
+        "northeast": "Kuzeydoğu (45°)",
+        "east": "Doğu (90°)",
+        "southeast": "Güneydoğu (135°)",
+        "south": "Güney (180°)",
+        "southwest": "Güneybatı (225°)",
+        "west": "Batı (270°)",
+        "northwest": "Kuzeybatı (315°)",
+        "custom": "Özel azimut"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Gün batımında (0°)",
+        "dusk": "Alacakaranlıkta — sivil alacakaranlık (-6°)",
+        "dark": "Karanlık olduğunda — denizci alacakaranlığı (-12°)",
+        "custom": "Özel"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "Gün doğumunda (0°)",
+        "dawn": "Şafakta — sivil alacakaranlık (-6°)",
+        "bright": "Aydınlandığında — denizci alacakaranlığı (-12°)",
+        "custom": "Özel"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Sabit saat",
+        "sun_elevation": "Güneş yüksekliği",
+        "both": "Her ikisi",
+        "disabled": "Devre dışı"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Her gün aynı",
+        "weekday_weekend": "Hafta içi / Hafta sonu"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Tamamen otomatik",
+        "absence_only": "Yalnızca yokluk",
+        "disabled_automatic": "Otomasyon devre dışı"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Stor perde",
+        "venetian_blind": "Jaluzi",
+        "exterior_screen": "Screen",
+        "awning": "Tente",
+        "generic": "Diğer gölgelik"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Destek dışa aktarımı oluştur"
+      },
+      "export_research_data": {
+        "name": "Araştırma dışa aktarımı oluştur"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Gözlem modu",
+        "state": {
+          "on": "Gözlemliyor",
+          "off": "Duraklatıldı"
+        }
+      },
+      "active_control": {
+        "name": "Etkin denetim",
+        "state": {
+          "on": "Etkin",
+          "off": "Etkin değil"
+        }
+      },
+      "debug_logging": {
+        "name": "Hata ayıklama günlüğü"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Gölgeleme durumu",
+        "state": {
+          "storm_safe": "Fırtınaya karşı güvenli",
+          "wind_safe": "Rüzgâra karşı güvenli",
+          "manual_override": "Manuel geçersiz kılma",
+          "night_closed": "Gece – kapalı",
+          "absence_closed": "Yokluk – kapalı",
+          "strong_shade": "Güçlü gölgeleme",
+          "normal_shade": "Normal gölgeleme",
+          "light_shade": "Hafif gölgeleme",
+          "open": "Açık"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Gölgeleme durumu",
+        "state": {
+          "storm_safe": "Fırtınaya karşı güvenli",
+          "wind_safe": "Rüzgâra karşı güvenli",
+          "manual_override": "Manuel geçersiz kılma",
+          "night_closed": "Gece – kapalı",
+          "absence_closed": "Yokluk – kapalı",
+          "strong_shade": "Güçlü gölgeleme",
+          "normal_shade": "Normal gölgeleme",
+          "light_shade": "Hafif gölgeleme",
+          "open": "Açık"
+        }
+      },
+      "exposure": {
+        "name": "Maruziyet"
+      },
+      "exposure_indexed": {
+        "name": "{index} Maruziyet"
+      },
+      "cover_position": {
+        "name": "Gölgelik konumu"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Gölgelik konumu"
+      },
+      "recommendation": {
+        "name": "Öneri"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Öneri"
+      },
+      "zone_summary": {
+        "name": "Bölge özeti",
+        "state": {
+          "safety": "Güvenlik modu",
+          "override": "Manuel geçersiz kılma",
+          "automatic": "Otomatik",
+          "recommendation_only": "Yalnızca öneri",
+          "disabled": "Devre dışı"
+        }
+      },
+      "learning_progress": {
+        "name": "Öğrenme ilerlemesi"
+      },
+      "shading_result": {
+        "name": "Gölgeleme sonucu",
+        "state": {
+          "excellent": "Mükemmel",
+          "good": "İyi",
+          "acceptable": "Kabul edilebilir",
+          "poor": "Zayıf",
+          "unknown": "Bilinmiyor"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Güneş sektörü",
+        "state": {
+          "on": "Güneş sektöründe",
+          "off": "Güneş sektöründe değil"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Güneş sektörü",
+        "state": {
+          "on": "Güneş sektöründe",
+          "off": "Güneş sektöründe değil"
+        }
+      },
+      "override_active": {
+        "name": "Geçersiz kılma etkin",
+        "state": {
+          "on": "Geçersiz kılma etkin",
+          "off": "Normal denetim"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Geçersiz kılma etkin",
+        "state": {
+          "on": "Geçersiz kılma etkin",
+          "off": "Normal denetim"
+        }
+      }
+    }
+  }
+}

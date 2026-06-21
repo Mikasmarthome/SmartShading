@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Modifica impostazioni di SmartShading",
+        "description": "Qui puoi modificare le impostazioni di meteo, comfort, programmazione, presenza e ombreggiatura di questa zona e aggiungere, modificare o rimuovere finestre.",
+        "menu_options": {
+          "weather": "Ingressi meteo e solari",
+          "lifecycle": "Impostazioni di programmazione",
+          "presence": "Impostazioni di presenza",
+          "comfort": "Impostazioni di comfort",
+          "behavior": "Comportamento di ombreggiatura",
+          "add_window": "Aggiungi finestra",
+          "edit_window": "Modifica finestra",
+          "remove_window": "Rimuovi finestra"
+        }
+      },
+      "weather": {
+        "title": "Ingressi meteo e solari",
+        "description": "Tutto facoltativo. Un'entità meteo (es. DWD, yr.no) fornisce automaticamente condizioni, nuvolosità e vento. Sensori dedicati sostituiscono l'entità meteo per letture locali più precise. La radiazione solare deve provenire da un sensore dedicato: non viene letta dalle entità meteo.",
+        "data": {
+          "weather_entity_id": "Entità meteo",
+          "solar_radiation_sensor_id": "Sensore di radiazione solare (W/m²)",
+          "outdoor_temperature_sensor_id": "Sensore di temperatura esterna",
+          "cloud_cover_sensor_id": "Sensore di nuvolosità (0–100 %)",
+          "wind_speed_sensor_id": "Sensore di velocità del vento (m/s) — usa le raffiche per tende da sole/screen se disponibili"
+        }
+      },
+      "lifecycle": {
+        "title": "Impostazioni di programmazione",
+        "description": "Scegli come SmartShading rileva notte e mattino. «Entrambi» si attiva alla prima condizione soddisfatta: ora o elevazione solare.",
+        "data": {
+          "night_trigger": "Trigger notturno",
+          "morning_trigger": "Trigger mattutino",
+          "schedule_mode": "Modalità di programmazione"
+        },
+        "data_description": {
+          "schedule_mode": "«Uguale ogni giorno» usa un'unica programmazione per tutta la settimana. «Settimana / Fine settimana» consente orari e posizioni diverse per lun–ven e sab–dom."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Dettagli della programmazione",
+        "description": "Inserisci l'ora o l'elevazione solare per ciascun trigger. Vengono mostrati solo i campi pertinenti al trigger selezionato.",
+        "data": {
+          "night_fixed_time": "Ora notturna",
+          "night_elevation_preset": "Notte: posizione del sole",
+          "night_sun_elevation": "Elevazione notturna personalizzata (°) — usata solo quando è selezionato Personalizzata",
+          "morning_fixed_time": "Ora mattutina",
+          "morning_elevation_preset": "Mattino: posizione del sole",
+          "morning_sun_elevation": "Elevazione mattutina personalizzata (°) — usata solo quando è selezionato Personalizzata",
+          "night_position": "Posizione notturna",
+          "morning_position": "Posizione mattutina",
+          "weekday_night_fixed_time": "Ora notturna nei giorni feriali (lun–ven)",
+          "weekday_night_position": "Posizione notturna nei giorni feriali (lun–ven)",
+          "weekday_morning_fixed_time": "Ora mattutina nei giorni feriali (lun–ven)",
+          "weekday_morning_position": "Posizione mattutina nei giorni feriali (lun–ven)",
+          "weekend_night_fixed_time": "Ora notturna nel fine settimana (sab–dom)",
+          "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)",
+          "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
+          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)"
+        },
+        "data_description": {
+          "night_position": "Posizione della tapparella durante la fase notturna (0 = chiusa, 100 = aperta).",
+          "morning_position": "Posizione della tapparella all'inizio della fase mattutina (0 = chiusa, 100 = aperta).",
+          "weekday_night_position": "Posizione della tapparella durante la fase notturna nei giorni feriali (0 = chiusa, 100 = aperta).",
+          "weekday_morning_position": "Posizione della tapparella all'inizio della fase mattutina nei giorni feriali (0 = chiusa, 100 = aperta).",
+          "weekend_night_position": "Posizione della tapparella durante la fase notturna nel fine settimana (0 = chiusa, 100 = aperta).",
+          "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "presence": {
+        "title": "Impostazioni di presenza",
+        "description": "Facoltativo. Se non è selezionato nessuno, SmartShading presume sempre che qualcuno sia presente e non attiva mai la chiusura per assenza.",
+        "data": {
+          "presence_entity_ids": "Entità di presenza",
+          "absence_delay_min": "Ritardo di assenza",
+          "absence_position": "Posizione di assenza"
+        },
+        "data_description": {
+          "absence_position": "Posizione della tapparella quando la zona è non occupata, salvo che si applichi una decisione di protezione più forte (0 = completamente chiusa, 100 = completamente aperta). Si applica a tutte le finestre di questa zona."
+        }
+      },
+      "comfort": {
+        "title": "Impostazioni di comfort",
+        "description": "Configura le funzioni di protezione tramite ombreggiatura. I sensori di temperatura interna sono facoltativi.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Sensori di temperatura interna (facoltativo)",
+          "heat_protection_enabled": "Abilita protezione dal caldo",
+          "glare_protection_enabled": "Abilita protezione dall'abbagliamento",
+          "solar_gain_enabled": "Abilita guadagno solare (sole invernale)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Uno o più sensori interni. Quando sono configurati più sensori, viene usata la media di tutte le letture valide.",
+          "heat_protection_enabled": "Previene il surriscaldamento ombreggiando in modo proattivo in base alla posizione del sole, al meteo e alle temperature.",
+          "glare_protection_enabled": "Riduce la luce solare diretta quando il sole colpisce la finestra.",
+          "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità."
+        }
+      },
+      "behavior": {
+        "title": "Comportamento di ombreggiatura di base",
+        "description": "Posizioni target di base della tapparella per intensità di ombreggiatura. SmartShading usa questi valori come punto di partenza e può adattarli per finestra quando sono disponibili dati di apprendimento sufficienti.",
+        "data": {
+          "light_shade_position": "Posizione ombra leggera",
+          "normal_shade_position": "Posizione ombra normale",
+          "strong_shade_position": "Posizione ombra forte"
+        }
+      },
+      "add_window": {
+        "title": "Aggiungi una finestra",
+        "description": "Aggiungi un'altra finestra a questa zona. SmartShading lavora con un azimut preciso: la direzione della bussola è solo una scorciatoia comoda.",
+        "data": {
+          "window_name": "Nome della finestra",
+          "floor_level": "Piano (0 = piano terra)",
+          "compass_direction": "Orientamento",
+          "custom_azimuth": "Azimut personalizzato (0-359°, usato solo se l'Orientamento è Personalizzato)",
+          "absence_position": "Posizione di assenza (sostituisce il valore predefinito della zona)",
+          "window_behavior_mode": "Modalità di ombreggiatura automatica"
+        },
+        "data_description": {
+          "absence_position": "Lascia vuoto per ereditare la posizione di assenza predefinita della zona. Imposta un valore per sostituirla solo per questa finestra specifica.",
+          "window_behavior_mode": "Completamente automatico: sole, comfort, assenza e programmazione attivi. Solo assenza: solo controllo per assenza. Automazione disattivata: nessuna ombreggiatura automatica. Le protezioni di sicurezza (tempesta/vento) restano sempre attive."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Tapparelle di questa finestra",
+        "description": "Seleziona l'entità o le entità tapparella che ombreggiano la finestra «{window_name}». Aggiungi solo tapparelle che coprono esattamente questa superficie della finestra. Per finestre separate, aggiungi finestre separate.",
+        "data": {
+          "cover_entities": "Tapparelle di questa finestra",
+          "cover_hardware_type": "Tipo di hardware della tapparella"
+        }
+      },
+      "add_window_loop": {
+        "title": "Aggiungere un'altra finestra?",
+        "description": "{window_count} nuova/e finestra/e aggiunta/e a questa zona. Vuoi aggiungere un'altra finestra?",
+        "data": {
+          "add_another_window": "Aggiungi un'altra finestra"
+        }
+      },
+      "edit_window": {
+        "title": "Modifica finestra",
+        "description": "Seleziona la finestra da modificare.",
+        "data": {
+          "window_id": "Finestra"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Modifica finestra: {window_name}",
+        "description": "Aggiorna le impostazioni della finestra «{window_name}». Le modifiche alle tapparelle hanno effetto dopo il salvataggio.",
+        "data": {
+          "window_name": "Nome della finestra",
+          "floor_level": "Piano (0 = piano terra)",
+          "compass_direction": "Orientamento",
+          "custom_azimuth": "Azimut personalizzato (0-359°, usato solo se l'Orientamento è Personalizzato)",
+          "cover_entities": "Tapparelle di questa finestra",
+          "cover_hardware_type": "Tipo di hardware della tapparella",
+          "absence_position": "Posizione di assenza (sostituisce il valore predefinito della zona)",
+          "window_behavior_mode": "Modalità di ombreggiatura automatica",
+          "light_shade_position": "Posizione ombra leggera (sostituisce il valore predefinito della zona)",
+          "normal_shade_position": "Posizione ombra normale (sostituisce il valore predefinito della zona)",
+          "strong_shade_position": "Posizione ombra forte (sostituisce il valore predefinito della zona)",
+          "manual_sun_sector_enabled": "Abilita sostituzione manuale del settore solare",
+          "manual_sun_sector_start_deg": "Azimut iniziale del settore solare (°)",
+          "manual_sun_sector_end_deg": "Azimut finale del settore solare (°)",
+          "obstruction_1_enabled": "Zona di ostruzione 1 attiva",
+          "obstruction_1_azimuth_start_deg": "Azimut iniziale della zona 1 (°)",
+          "obstruction_1_azimuth_end_deg": "Azimut finale della zona 1 (°)",
+          "obstruction_1_block_from_elevation_deg": "Zona 1 bloccata dall'elevazione (°)",
+          "obstruction_1_block_until_elevation_deg": "Zona 1 bloccata fino all'elevazione (°)",
+          "obstruction_2_enabled": "Zona di ostruzione 2 attiva",
+          "obstruction_2_azimuth_start_deg": "Azimut iniziale della zona 2 (°)",
+          "obstruction_2_azimuth_end_deg": "Azimut finale della zona 2 (°)",
+          "obstruction_2_block_from_elevation_deg": "Zona 2 bloccata dall'elevazione (°)",
+          "obstruction_2_block_until_elevation_deg": "Zona 2 bloccata fino all'elevazione (°)",
+          "obstruction_3_enabled": "Zona di ostruzione 3 attiva",
+          "obstruction_3_azimuth_start_deg": "Azimut iniziale della zona 3 (°)",
+          "obstruction_3_azimuth_end_deg": "Azimut finale della zona 3 (°)",
+          "obstruction_3_block_from_elevation_deg": "Zona 3 bloccata dall'elevazione (°)",
+          "obstruction_3_block_until_elevation_deg": "Zona 3 bloccata fino all'elevazione (°)"
+        },
+        "data_description": {
+          "absence_position": "Lascia vuoto per ereditare la posizione di assenza predefinita della zona. Imposta un valore per sostituirla solo per questa finestra.",
+          "window_behavior_mode": "Completamente automatico: sole, comfort, assenza e programmazione attivi. Solo assenza: solo controllo per assenza. Automazione disattivata: nessuna ombreggiatura automatica. Le protezioni di sicurezza (tempesta/vento) restano sempre attive.",
+          "light_shade_position": "Lascia vuoto per usare il valore predefinito della zona. Imposta un valore per sostituire la posizione target di ombra leggera solo per questa finestra.",
+          "normal_shade_position": "Lascia vuoto per usare il valore predefinito della zona. Imposta un valore per sostituire la posizione target di ombra normale solo per questa finestra.",
+          "strong_shade_position": "Lascia vuoto per usare il valore predefinito della zona. Imposta un valore per sostituire la posizione target di ombra forte solo per questa finestra.",
+          "manual_sun_sector_enabled": "Abilita per sostituire il settore solare automatico basato sull'azimut con un intervallo manuale. Gli azimut iniziale e finale definiscono quando si considera che il sole colpisca questa finestra. Supporta il passaggio per il nord (es. da 330° a 30°).",
+          "obstruction_1_enabled": "Abilita per contrassegnare un intervallo di azimut in cui un'ostruzione fisica (albero, edificio, sporgenza del tetto) blocca il sole diretto. Lascia vuoti i campi di elevazione per bloccare a ogni elevazione solare nell'intervallo di azimut.",
+          "obstruction_1_block_from_elevation_deg": "Facoltativo. L'ostruzione blocca solo quando l'elevazione solare è pari o superiore a questo valore. Esempio: 45° blocca una sporgenza del tetto che ombreggia solo con angoli solari elevati. Lascia vuoto per nessun limite inferiore.",
+          "obstruction_1_block_until_elevation_deg": "Facoltativo. L'ostruzione blocca solo quando l'elevazione solare è pari o inferiore a questo valore. Esempio: 18° blocca una montagna o un edificio vicino che influisce solo con il sole basso. Lascia vuoto per nessun limite superiore.",
+          "obstruction_2_enabled": "Seconda zona di ostruzione facoltativa per questa finestra.",
+          "obstruction_2_block_from_elevation_deg": "Limite di elevazione inferiore facoltativo per la zona 2 (vedi descrizione della zona 1).",
+          "obstruction_2_block_until_elevation_deg": "Limite di elevazione superiore facoltativo per la zona 2 (vedi descrizione della zona 1).",
+          "obstruction_3_enabled": "Terza zona di ostruzione facoltativa per questa finestra.",
+          "obstruction_3_block_from_elevation_deg": "Limite di elevazione inferiore facoltativo per la zona 3 (vedi descrizione della zona 1).",
+          "obstruction_3_block_until_elevation_deg": "Limite di elevazione superiore facoltativo per la zona 3 (vedi descrizione della zona 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Rimuovi finestra",
+        "description": "Seleziona la finestra da rimuovere. Questo rimuoverà permanentemente la finestra e le sue assegnazioni di tapparelle da questa zona. Le entità tapparella stesse non vengono eliminate.",
+        "data": {
+          "window_id": "Finestra da rimuovere"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Conferma rimozione",
+        "description": "Rimuovere la finestra «{window_name}»? L'operazione non può essere annullata.",
+        "data": {
+          "remove_confirmed": "Sì, rimuovi questa finestra"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Impossibile rimuovere l'ultima finestra. Una zona deve avere almeno una finestra.",
+      "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione»."
+    },
+    "abort": {
+      "no_options_for_system_entry": "La voce Sistema di SmartShading non ha opzioni configurabili."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Configura SmartShading. Puoi aggiungere finestre nelle schermate successive.",
+        "data": {
+          "zone_name": "Nome della zona"
+        }
+      },
+      "weather": {
+        "title": "Ingressi meteo e solari (facoltativo)",
+        "description": "Tutto facoltativo. Un'entità meteo (es. DWD, yr.no) fornisce automaticamente condizioni, nuvolosità e vento. Sensori dedicati la sostituiscono per letture locali più precise. La radiazione solare richiede un sensore dedicato. Puoi saltare questo passaggio e aggiungere gli ingressi in seguito.",
+        "data": {
+          "weather_entity_id": "Entità meteo",
+          "solar_radiation_sensor_id": "Sensore di radiazione solare (W/m²)",
+          "outdoor_temperature_sensor_id": "Sensore di temperatura esterna",
+          "cloud_cover_sensor_id": "Sensore di nuvolosità (0–100 %)",
+          "wind_speed_sensor_id": "Sensore di velocità del vento (m/s) — usa le raffiche per tende da sole/screen se disponibili"
+        }
+      },
+      "lifecycle": {
+        "title": "Impostazioni di programmazione",
+        "description": "Scegli come SmartShading rileva notte e mattino. «Entrambi» si attiva alla prima condizione soddisfatta: ora o elevazione solare.",
+        "data": {
+          "night_trigger": "Trigger notturno",
+          "morning_trigger": "Trigger mattutino",
+          "schedule_mode": "Modalità di programmazione"
+        },
+        "data_description": {
+          "schedule_mode": "«Uguale ogni giorno» usa un'unica programmazione per tutta la settimana. «Settimana / Fine settimana» consente orari e posizioni diverse per lun–ven e sab–dom."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Dettagli della programmazione",
+        "description": "Inserisci l'ora o l'elevazione solare per ciascun trigger. Vengono mostrati solo i campi pertinenti al trigger selezionato.",
+        "data": {
+          "night_fixed_time": "Ora notturna",
+          "night_elevation_preset": "Notte: posizione del sole",
+          "night_sun_elevation": "Elevazione notturna personalizzata (°) — usata solo quando è selezionato Personalizzata",
+          "morning_fixed_time": "Ora mattutina",
+          "morning_elevation_preset": "Mattino: posizione del sole",
+          "morning_sun_elevation": "Elevazione mattutina personalizzata (°) — usata solo quando è selezionato Personalizzata",
+          "night_position": "Posizione notturna",
+          "morning_position": "Posizione mattutina",
+          "weekday_night_fixed_time": "Ora notturna nei giorni feriali (lun–ven)",
+          "weekday_night_position": "Posizione notturna nei giorni feriali (lun–ven)",
+          "weekday_morning_fixed_time": "Ora mattutina nei giorni feriali (lun–ven)",
+          "weekday_morning_position": "Posizione mattutina nei giorni feriali (lun–ven)",
+          "weekend_night_fixed_time": "Ora notturna nel fine settimana (sab–dom)",
+          "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)",
+          "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
+          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)"
+        },
+        "data_description": {
+          "night_position": "Posizione della tapparella durante la fase notturna (0 = chiusa, 100 = aperta).",
+          "morning_position": "Posizione della tapparella all'inizio della fase mattutina (0 = chiusa, 100 = aperta).",
+          "weekday_night_position": "Posizione della tapparella durante la fase notturna nei giorni feriali (0 = chiusa, 100 = aperta).",
+          "weekday_morning_position": "Posizione della tapparella all'inizio della fase mattutina nei giorni feriali (0 = chiusa, 100 = aperta).",
+          "weekend_night_position": "Posizione della tapparella durante la fase notturna nel fine settimana (0 = chiusa, 100 = aperta).",
+          "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "presence": {
+        "title": "Impostazioni di presenza",
+        "description": "Facoltativo. Se non è selezionato nessuno, SmartShading presume sempre che qualcuno sia presente e non attiva mai la chiusura per assenza.",
+        "data": {
+          "presence_entity_ids": "Entità di presenza",
+          "absence_delay_min": "Ritardo di assenza",
+          "absence_position": "Posizione di assenza"
+        },
+        "data_description": {
+          "absence_position": "Posizione della tapparella quando la zona è non occupata, salvo che si applichi una decisione di protezione più forte (0 = completamente chiusa, 100 = completamente aperta). Si applica a tutte le finestre di questa zona."
+        }
+      },
+      "window": {
+        "title": "Aggiungi una finestra",
+        "description": "Configura una finestra. SmartShading lavora con un azimut preciso: la direzione della bussola è solo una scorciatoia comoda.",
+        "data": {
+          "window_name": "Nome della finestra",
+          "floor_level": "Piano (0 = piano terra)",
+          "compass_direction": "Orientamento",
+          "custom_azimuth": "Azimut personalizzato (0-359°, usato solo se l'Orientamento è Personalizzato)",
+          "absence_position": "Posizione di assenza (sostituisce il valore predefinito della zona)",
+          "window_behavior_mode": "Modalità di ombreggiatura automatica"
+        },
+        "data_description": {
+          "absence_position": "Lascia vuoto per ereditare la posizione di assenza predefinita della zona. Imposta un valore per sostituirla solo per questa finestra specifica.",
+          "window_behavior_mode": "Completamente automatico: sole, comfort, assenza e programmazione attivi. Solo assenza: solo controllo per assenza. Automazione disattivata: nessuna ombreggiatura automatica. Le protezioni di sicurezza (tempesta/vento) restano sempre attive."
+        }
+      },
+      "cover_group": {
+        "title": "Tapparelle di questa finestra",
+        "description": "Seleziona l'entità o le entità tapparella che ombreggiano la finestra «{window_name}». Aggiungi solo tapparelle che coprono esattamente questa superficie della finestra. Per finestre separate, aggiungi finestre separate.",
+        "data": {
+          "cover_entities": "Tapparelle di questa finestra",
+          "cover_hardware_type": "Tipo di hardware della tapparella"
+        }
+      },
+      "add_another_window": {
+        "title": "Aggiungere un'altra finestra?",
+        "description": "{window_count} finestra/e configurata/e finora.",
+        "data": {
+          "add_another_window": "Aggiungi un'altra finestra"
+        }
+      },
+      "comfort": {
+        "title": "Impostazioni di comfort",
+        "description": "Configura le funzioni di protezione tramite ombreggiatura. I sensori di temperatura interna sono facoltativi.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Sensori di temperatura interna (facoltativo)",
+          "heat_protection_enabled": "Abilita protezione dal caldo",
+          "glare_protection_enabled": "Abilita protezione dall'abbagliamento",
+          "solar_gain_enabled": "Abilita guadagno solare (sole invernale)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Uno o più sensori interni. Quando sono configurati più sensori, viene usata la media di tutte le letture valide.",
+          "heat_protection_enabled": "Previene il surriscaldamento ombreggiando in modo proattivo in base alla posizione del sole, al meteo e alle temperature.",
+          "glare_protection_enabled": "Riduce la luce solare diretta quando il sole colpisce la finestra.",
+          "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Inserisci un azimut personalizzato tra 0 e 359 gradi, oppure scegli una direzione della bussola.",
+      "no_covers_selected": "Seleziona almeno un'entità tapparella per questa finestra.",
+      "empty_zone_name": "Il nome della zona è obbligatorio.",
+      "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione»."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading è già configurato.",
+      "system_already_exists": "La voce Sistema di SmartShading esiste già."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Nord (0°)",
+        "northeast": "Nord-est (45°)",
+        "east": "Est (90°)",
+        "southeast": "Sud-est (135°)",
+        "south": "Sud (180°)",
+        "southwest": "Sud-ovest (225°)",
+        "west": "Ovest (270°)",
+        "northwest": "Nord-ovest (315°)",
+        "custom": "Azimut personalizzato"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Al tramonto (0°)",
+        "dusk": "Al crepuscolo — crepuscolo civile (-6°)",
+        "dark": "Quando è buio — crepuscolo nautico (-12°)",
+        "custom": "Personalizzata"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "All'alba (0°)",
+        "dawn": "All'aurora — crepuscolo civile (-6°)",
+        "bright": "Quando si fa chiaro — crepuscolo nautico (-12°)",
+        "custom": "Personalizzata"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Ora fissa",
+        "sun_elevation": "Elevazione solare",
+        "both": "Entrambi",
+        "disabled": "Disattivato"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Uguale ogni giorno",
+        "weekday_weekend": "Settimana / Fine settimana"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Completamente automatico",
+        "absence_only": "Solo assenza",
+        "disabled_automatic": "Automazione disattivata"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Tapparella",
+        "venetian_blind": "Veneziana",
+        "exterior_screen": "Screen",
+        "awning": "Tenda da sole",
+        "generic": "Altra tapparella"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Crea export di supporto"
+      },
+      "export_research_data": {
+        "name": "Crea export di ricerca"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Modalità di osservazione",
+        "state": {
+          "on": "In osservazione",
+          "off": "In pausa"
+        }
+      },
+      "active_control": {
+        "name": "Controllo attivo",
+        "state": {
+          "on": "Attivo",
+          "off": "Inattivo"
+        }
+      },
+      "debug_logging": {
+        "name": "Log di debug"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Stato di ombreggiatura",
+        "state": {
+          "storm_safe": "Protezione tempesta",
+          "wind_safe": "Protezione vento",
+          "manual_override": "Sostituzione manuale",
+          "night_closed": "Notte – chiusa",
+          "absence_closed": "Assenza – chiusa",
+          "strong_shade": "Ombreggiatura forte",
+          "normal_shade": "Ombreggiatura normale",
+          "light_shade": "Ombreggiatura leggera",
+          "open": "Aperta"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Stato di ombreggiatura",
+        "state": {
+          "storm_safe": "Protezione tempesta",
+          "wind_safe": "Protezione vento",
+          "manual_override": "Sostituzione manuale",
+          "night_closed": "Notte – chiusa",
+          "absence_closed": "Assenza – chiusa",
+          "strong_shade": "Ombreggiatura forte",
+          "normal_shade": "Ombreggiatura normale",
+          "light_shade": "Ombreggiatura leggera",
+          "open": "Aperta"
+        }
+      },
+      "exposure": {
+        "name": "Esposizione"
+      },
+      "exposure_indexed": {
+        "name": "{index} Esposizione"
+      },
+      "cover_position": {
+        "name": "Posizione tapparella"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Posizione tapparella"
+      },
+      "recommendation": {
+        "name": "Raccomandazione"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Raccomandazione"
+      },
+      "zone_summary": {
+        "name": "Riepilogo zona",
+        "state": {
+          "safety": "Modalità di sicurezza",
+          "override": "Sostituzione manuale",
+          "automatic": "Automatico",
+          "recommendation_only": "Solo raccomandazione",
+          "disabled": "Disattivato"
+        }
+      },
+      "learning_progress": {
+        "name": "Avanzamento apprendimento"
+      },
+      "shading_result": {
+        "name": "Risultato di ombreggiatura",
+        "state": {
+          "excellent": "Eccellente",
+          "good": "Buono",
+          "acceptable": "Accettabile",
+          "poor": "Scarso",
+          "unknown": "Sconosciuto"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Settore solare",
+        "state": {
+          "on": "Nel settore solare",
+          "off": "Fuori dal settore solare"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Settore solare",
+        "state": {
+          "on": "Nel settore solare",
+          "off": "Fuori dal settore solare"
+        }
+      },
+      "override_active": {
+        "name": "Sostituzione attiva",
+        "state": {
+          "on": "Sostituzione attiva",
+          "off": "Controllo normale"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Sostituzione attiva",
+        "state": {
+          "on": "Sostituzione attiva",
+          "off": "Controllo normale"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Muokkaa SmartShading-asetuksia",
+        "description": "Täällä voit muokata tämän vyöhykkeen sää-, mukavuus-, aikataulu-, läsnäolo- ja varjostusasetuksia sekä lisätä, muokata tai poistaa ikkunoita.",
+        "menu_options": {
+          "weather": "Sää- ja aurinkosyötteet",
+          "lifecycle": "Aikatauluasetukset",
+          "presence": "Läsnäoloasetukset",
+          "comfort": "Mukavuusasetukset",
+          "behavior": "Varjostuskäyttäytyminen",
+          "add_window": "Lisää ikkuna",
+          "edit_window": "Muokkaa ikkunaa",
+          "remove_window": "Poista ikkuna"
+        }
+      },
+      "weather": {
+        "title": "Sää- ja aurinkosyötteet",
+        "description": "Kaikki valinnaista. Sääentiteetti (esim. DWD, yr.no) tarjoaa automaattisesti olosuhteet, pilvisyyden ja tuulen. Erilliset anturit korvaavat sääentiteetin tarkempia paikallisia lukemia varten. Auringon säteilyn on tultava erillisestä anturista: sitä ei lueta sääentiteeteistä.",
+        "data": {
+          "weather_entity_id": "Sääentiteetti",
+          "solar_radiation_sensor_id": "Auringon säteilyn anturi (W/m²)",
+          "outdoor_temperature_sensor_id": "Ulkolämpötila-anturi",
+          "cloud_cover_sensor_id": "Pilvisyysanturi (0–100 %)",
+          "wind_speed_sensor_id": "Tuulennopeusanturi (m/s) — käytä tuulenpuuskia markiiseille/screeneille, jos saatavilla"
+        }
+      },
+      "lifecycle": {
+        "title": "Aikatauluasetukset",
+        "description": "Valitse, miten SmartShading tunnistaa yön ja aamun. ”Molemmat” laukeaa ensimmäisestä täyttyvästä ehdosta: aika tai auringon korkeus.",
+        "data": {
+          "night_trigger": "Yön laukaisin",
+          "morning_trigger": "Aamun laukaisin",
+          "schedule_mode": "Aikataulutila"
+        },
+        "data_description": {
+          "schedule_mode": "”Sama joka päivä” käyttää yhtä aikataulua koko viikolle. ”Arki / Viikonloppu” antaa asettaa eri ajat ja sijainnit ma–pe ja la–su."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Aikataulun tiedot",
+        "description": "Anna aika tai auringon korkeus jokaiselle laukaisimelle. Vain valittuun laukaisimeen liittyvät kentät näytetään.",
+        "data": {
+          "night_fixed_time": "Yön aika",
+          "night_elevation_preset": "Yö: auringon sijainti",
+          "night_sun_elevation": "Mukautettu yön korkeus (°) — käytetään vain, kun Mukautettu on valittu",
+          "morning_fixed_time": "Aamun aika",
+          "morning_elevation_preset": "Aamu: auringon sijainti",
+          "morning_sun_elevation": "Mukautettu aamun korkeus (°) — käytetään vain, kun Mukautettu on valittu",
+          "night_position": "Yön sijainti",
+          "morning_position": "Aamun sijainti",
+          "weekday_night_fixed_time": "Yön aika arkisin (ma–pe)",
+          "weekday_night_position": "Yön sijainti arkisin (ma–pe)",
+          "weekday_morning_fixed_time": "Aamun aika arkisin (ma–pe)",
+          "weekday_morning_position": "Aamun sijainti arkisin (ma–pe)",
+          "weekend_night_fixed_time": "Yön aika viikonloppuisin (la–su)",
+          "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)",
+          "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
+          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)"
+        },
+        "data_description": {
+          "night_position": "Varjostimen sijainti yövaiheessa (0 = suljettu, 100 = avoin).",
+          "morning_position": "Varjostimen sijainti aamuvaiheen alussa (0 = suljettu, 100 = avoin).",
+          "weekday_night_position": "Varjostimen sijainti yövaiheessa arkisin (0 = suljettu, 100 = avoin).",
+          "weekday_morning_position": "Varjostimen sijainti aamuvaiheen alussa arkisin (0 = suljettu, 100 = avoin).",
+          "weekend_night_position": "Varjostimen sijainti yövaiheessa viikonloppuisin (0 = suljettu, 100 = avoin).",
+          "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "presence": {
+        "title": "Läsnäoloasetukset",
+        "description": "Valinnainen. Jos ketään ei ole valittu, SmartShading olettaa aina jonkun olevan paikalla eikä koskaan laukaise sulkemista poissaolon vuoksi.",
+        "data": {
+          "presence_entity_ids": "Läsnäoloentiteetit",
+          "absence_delay_min": "Poissaoloviive",
+          "absence_position": "Poissaolosijainti"
+        },
+        "data_description": {
+          "absence_position": "Varjostimen sijainti, kun vyöhyke on tyhjä, ellei vahvempi suojauspäätös ole voimassa (0 = täysin suljettu, 100 = täysin avoin). Koskee kaikkia tämän vyöhykkeen ikkunoita."
+        }
+      },
+      "comfort": {
+        "title": "Mukavuusasetukset",
+        "description": "Määritä suojaustoiminnot varjostuksella. Sisälämpötila-anturit ovat valinnaisia.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Sisälämpötila-anturit (valinnainen)",
+          "heat_protection_enabled": "Ota käyttöön lämpösuojaus",
+          "glare_protection_enabled": "Ota käyttöön häikäisysuojaus",
+          "solar_gain_enabled": "Ota käyttöön aurinkolämpö (talviaurinko)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Yksi tai useampi sisäanturi. Kun useita antureita on määritetty, käytetään kaikkien kelvollisten lukemien keskiarvoa.",
+          "heat_protection_enabled": "Estää ylikuumenemisen varjostamalla ennakoivasti auringon sijainnin, sään ja lämpötilojen perusteella.",
+          "glare_protection_enabled": "Vähentää suoraa auringonvaloa, kun aurinko osuu ikkunaan.",
+          "solar_gain_enabled": "Pitää varjostuksen avoimempana viileällä säällä passiivisen lämpenemisen tukemiseksi. Lämpösuojaus on etusijalla."
+        }
+      },
+      "behavior": {
+        "title": "Perusvarjostuskäyttäytyminen",
+        "description": "Varjostimen perustavoitesijainnit varjostusvoimakkuuden mukaan. SmartShading käyttää näitä arvoja lähtökohtana ja voi mukauttaa niitä ikkunakohtaisesti, kun oppimisdataa on riittävästi.",
+        "data": {
+          "light_shade_position": "Kevyen varjostuksen sijainti",
+          "normal_shade_position": "Normaalin varjostuksen sijainti",
+          "strong_shade_position": "Voimakkaan varjostuksen sijainti"
+        }
+      },
+      "add_window": {
+        "title": "Lisää ikkuna",
+        "description": "Lisää toinen ikkuna tähän vyöhykkeeseen. SmartShading toimii tarkalla atsimuutilla: kompassisuunta on vain kätevä pikavalinta.",
+        "data": {
+          "window_name": "Ikkunan nimi",
+          "floor_level": "Kerros (0 = pohjakerros)",
+          "compass_direction": "Suuntaus",
+          "custom_azimuth": "Mukautettu atsimuutti (0-359°, käytetään vain, jos Suuntaus on asetettu Mukautettu-tilaan)",
+          "absence_position": "Poissaolosijainti (ohittaa vyöhykkeen oletuksen)",
+          "window_behavior_mode": "Automaattinen varjostustila"
+        },
+        "data_description": {
+          "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle tietylle ikkunalle.",
+          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Tämän ikkunan varjostimet",
+        "description": "Valitse varjostinentiteetti tai -entiteetit, jotka varjostavat ikkunaa ”{window_name}”. Lisää vain varjostimia, jotka peittävät täsmälleen tämän ikkunapinnan. Erillisille ikkunoille lisää erilliset ikkunat.",
+        "data": {
+          "cover_entities": "Tämän ikkunan varjostimet",
+          "cover_hardware_type": "Varjostimen laitteistotyyppi"
+        }
+      },
+      "add_window_loop": {
+        "title": "Lisätäänkö toinen ikkuna?",
+        "description": "{window_count} uutta ikkunaa lisätty tähän vyöhykkeeseen. Haluatko lisätä toisen ikkunan?",
+        "data": {
+          "add_another_window": "Lisää toinen ikkuna"
+        }
+      },
+      "edit_window": {
+        "title": "Muokkaa ikkunaa",
+        "description": "Valitse muokattava ikkuna.",
+        "data": {
+          "window_id": "Ikkuna"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Muokkaa ikkunaa: {window_name}",
+        "description": "Päivitä ikkunan ”{window_name}” asetukset. Varjostinten muutokset tulevat voimaan tallennuksen jälkeen.",
+        "data": {
+          "window_name": "Ikkunan nimi",
+          "floor_level": "Kerros (0 = pohjakerros)",
+          "compass_direction": "Suuntaus",
+          "custom_azimuth": "Mukautettu atsimuutti (0-359°, käytetään vain, jos Suuntaus on asetettu Mukautettu-tilaan)",
+          "cover_entities": "Tämän ikkunan varjostimet",
+          "cover_hardware_type": "Varjostimen laitteistotyyppi",
+          "absence_position": "Poissaolosijainti (ohittaa vyöhykkeen oletuksen)",
+          "window_behavior_mode": "Automaattinen varjostustila",
+          "light_shade_position": "Kevyen varjostuksen sijainti (ohittaa vyöhykkeen oletuksen)",
+          "normal_shade_position": "Normaalin varjostuksen sijainti (ohittaa vyöhykkeen oletuksen)",
+          "strong_shade_position": "Voimakkaan varjostuksen sijainti (ohittaa vyöhykkeen oletuksen)",
+          "manual_sun_sector_enabled": "Ota käyttöön aurinkosektorin manuaalinen ohitus",
+          "manual_sun_sector_start_deg": "Aurinkosektorin aloitusatsimuutti (°)",
+          "manual_sun_sector_end_deg": "Aurinkosektorin lopetusatsimuutti (°)",
+          "obstruction_1_enabled": "Estevyöhyke 1 aktiivinen",
+          "obstruction_1_azimuth_start_deg": "Vyöhykkeen 1 aloitusatsimuutti (°)",
+          "obstruction_1_azimuth_end_deg": "Vyöhykkeen 1 lopetusatsimuutti (°)",
+          "obstruction_1_block_from_elevation_deg": "Vyöhyke 1 estetty korkeudesta (°)",
+          "obstruction_1_block_until_elevation_deg": "Vyöhyke 1 estetty korkeuteen asti (°)",
+          "obstruction_2_enabled": "Estevyöhyke 2 aktiivinen",
+          "obstruction_2_azimuth_start_deg": "Vyöhykkeen 2 aloitusatsimuutti (°)",
+          "obstruction_2_azimuth_end_deg": "Vyöhykkeen 2 lopetusatsimuutti (°)",
+          "obstruction_2_block_from_elevation_deg": "Vyöhyke 2 estetty korkeudesta (°)",
+          "obstruction_2_block_until_elevation_deg": "Vyöhyke 2 estetty korkeuteen asti (°)",
+          "obstruction_3_enabled": "Estevyöhyke 3 aktiivinen",
+          "obstruction_3_azimuth_start_deg": "Vyöhykkeen 3 aloitusatsimuutti (°)",
+          "obstruction_3_azimuth_end_deg": "Vyöhykkeen 3 lopetusatsimuutti (°)",
+          "obstruction_3_block_from_elevation_deg": "Vyöhyke 3 estetty korkeudesta (°)",
+          "obstruction_3_block_until_elevation_deg": "Vyöhyke 3 estetty korkeuteen asti (°)"
+        },
+        "data_description": {
+          "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle ikkunalle.",
+          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina.",
+          "light_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi kevyen varjostuksen tavoitesijainnin vain tälle ikkunalle.",
+          "normal_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi normaalin varjostuksen tavoitesijainnin vain tälle ikkunalle.",
+          "strong_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi voimakkaan varjostuksen tavoitesijainnin vain tälle ikkunalle.",
+          "manual_sun_sector_enabled": "Ota käyttöön korvataksesi automaattisen, atsimuuttiin perustuvan aurinkosektorin manuaalisella alueella. Aloitus- ja lopetusatsimuutit määrittävät, milloin auringon katsotaan osuvan tähän ikkunaan. Tukee pohjoisen ylitystä (esim. 330°:sta 30°:een).",
+          "obstruction_1_enabled": "Ota käyttöön merkitäksesi atsimuuttialueen, jossa fyysinen este (puu, rakennus, katon räystäs) estää suoran auringon. Jätä korkeuskentät tyhjiksi estääksesi jokaisella auringon korkeudella atsimuuttialueella.",
+          "obstruction_1_block_from_elevation_deg": "Valinnainen. Este estää vain, kun auringon korkeus on yhtä suuri kuin tämä arvo tai suurempi. Esimerkki: 45° estää katon räystään, joka varjostaa vain jyrkillä aurinkokulmilla. Jätä tyhjäksi, jos ei alarajaa.",
+          "obstruction_1_block_until_elevation_deg": "Valinnainen. Este estää vain, kun auringon korkeus on yhtä suuri kuin tämä arvo tai pienempi. Esimerkki: 18° estää vuoren tai naapurirakennuksen, joka vaikuttaa vain matalalla auringolla. Jätä tyhjäksi, jos ei ylärajaa.",
+          "obstruction_2_enabled": "Toinen valinnainen estevyöhyke tälle ikkunalle.",
+          "obstruction_2_block_from_elevation_deg": "Valinnainen alempi korkeusraja vyöhykkeelle 2 (katso vyöhykkeen 1 kuvaus).",
+          "obstruction_2_block_until_elevation_deg": "Valinnainen ylempi korkeusraja vyöhykkeelle 2 (katso vyöhykkeen 1 kuvaus).",
+          "obstruction_3_enabled": "Kolmas valinnainen estevyöhyke tälle ikkunalle.",
+          "obstruction_3_block_from_elevation_deg": "Valinnainen alempi korkeusraja vyöhykkeelle 3 (katso vyöhykkeen 1 kuvaus).",
+          "obstruction_3_block_until_elevation_deg": "Valinnainen ylempi korkeusraja vyöhykkeelle 3 (katso vyöhykkeen 1 kuvaus)."
+        }
+      },
+      "remove_window": {
+        "title": "Poista ikkuna",
+        "description": "Valitse poistettava ikkuna. Tämä poistaa pysyvästi ikkunan ja sen varjostinmääritykset tästä vyöhykkeestä. Itse varjostinentiteettejä ei poisteta.",
+        "data": {
+          "window_id": "Poistettava ikkuna"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Vahvista poisto",
+        "description": "Poistetaanko ikkuna ”{window_name}”? Tätä ei voi kumota.",
+        "data": {
+          "remove_confirmed": "Kyllä, poista tämä ikkuna"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Viimeistä ikkunaa ei voi poistaa. Vyöhykkeellä on oltava vähintään yksi ikkuna.",
+      "obstruction_elevation_range_invalid": "”Estetty korkeudesta” ei saa olla suurempi kuin ”Estetty korkeuteen asti”."
+    },
+    "abort": {
+      "no_options_for_system_entry": "SmartShading-järjestelmämerkinnällä ei ole määritettäviä asetuksia."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Määritä SmartShading. Voit lisätä ikkunoita seuraavilla näytöillä.",
+        "data": {
+          "zone_name": "Vyöhykkeen nimi"
+        }
+      },
+      "weather": {
+        "title": "Sää- ja aurinkosyötteet (valinnainen)",
+        "description": "Kaikki valinnaista. Sääentiteetti (esim. DWD, yr.no) tarjoaa automaattisesti olosuhteet, pilvisyyden ja tuulen. Erilliset anturit korvaavat sen tarkempia paikallisia lukemia varten. Auringon säteily vaatii erillisen anturin. Voit ohittaa tämän vaiheen ja lisätä syötteet myöhemmin.",
+        "data": {
+          "weather_entity_id": "Sääentiteetti",
+          "solar_radiation_sensor_id": "Auringon säteilyn anturi (W/m²)",
+          "outdoor_temperature_sensor_id": "Ulkolämpötila-anturi",
+          "cloud_cover_sensor_id": "Pilvisyysanturi (0–100 %)",
+          "wind_speed_sensor_id": "Tuulennopeusanturi (m/s) — käytä tuulenpuuskia markiiseille/screeneille, jos saatavilla"
+        }
+      },
+      "lifecycle": {
+        "title": "Aikatauluasetukset",
+        "description": "Valitse, miten SmartShading tunnistaa yön ja aamun. ”Molemmat” laukeaa ensimmäisestä täyttyvästä ehdosta: aika tai auringon korkeus.",
+        "data": {
+          "night_trigger": "Yön laukaisin",
+          "morning_trigger": "Aamun laukaisin",
+          "schedule_mode": "Aikataulutila"
+        },
+        "data_description": {
+          "schedule_mode": "”Sama joka päivä” käyttää yhtä aikataulua koko viikolle. ”Arki / Viikonloppu” antaa asettaa eri ajat ja sijainnit ma–pe ja la–su."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Aikataulun tiedot",
+        "description": "Anna aika tai auringon korkeus jokaiselle laukaisimelle. Vain valittuun laukaisimeen liittyvät kentät näytetään.",
+        "data": {
+          "night_fixed_time": "Yön aika",
+          "night_elevation_preset": "Yö: auringon sijainti",
+          "night_sun_elevation": "Mukautettu yön korkeus (°) — käytetään vain, kun Mukautettu on valittu",
+          "morning_fixed_time": "Aamun aika",
+          "morning_elevation_preset": "Aamu: auringon sijainti",
+          "morning_sun_elevation": "Mukautettu aamun korkeus (°) — käytetään vain, kun Mukautettu on valittu",
+          "night_position": "Yön sijainti",
+          "morning_position": "Aamun sijainti",
+          "weekday_night_fixed_time": "Yön aika arkisin (ma–pe)",
+          "weekday_night_position": "Yön sijainti arkisin (ma–pe)",
+          "weekday_morning_fixed_time": "Aamun aika arkisin (ma–pe)",
+          "weekday_morning_position": "Aamun sijainti arkisin (ma–pe)",
+          "weekend_night_fixed_time": "Yön aika viikonloppuisin (la–su)",
+          "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)",
+          "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
+          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)"
+        },
+        "data_description": {
+          "night_position": "Varjostimen sijainti yövaiheessa (0 = suljettu, 100 = avoin).",
+          "morning_position": "Varjostimen sijainti aamuvaiheen alussa (0 = suljettu, 100 = avoin).",
+          "weekday_night_position": "Varjostimen sijainti yövaiheessa arkisin (0 = suljettu, 100 = avoin).",
+          "weekday_morning_position": "Varjostimen sijainti aamuvaiheen alussa arkisin (0 = suljettu, 100 = avoin).",
+          "weekend_night_position": "Varjostimen sijainti yövaiheessa viikonloppuisin (0 = suljettu, 100 = avoin).",
+          "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "presence": {
+        "title": "Läsnäoloasetukset",
+        "description": "Valinnainen. Jos ketään ei ole valittu, SmartShading olettaa aina jonkun olevan paikalla eikä koskaan laukaise sulkemista poissaolon vuoksi.",
+        "data": {
+          "presence_entity_ids": "Läsnäoloentiteetit",
+          "absence_delay_min": "Poissaoloviive",
+          "absence_position": "Poissaolosijainti"
+        },
+        "data_description": {
+          "absence_position": "Varjostimen sijainti, kun vyöhyke on tyhjä, ellei vahvempi suojauspäätös ole voimassa (0 = täysin suljettu, 100 = täysin avoin). Koskee kaikkia tämän vyöhykkeen ikkunoita."
+        }
+      },
+      "window": {
+        "title": "Lisää ikkuna",
+        "description": "Määritä yksi ikkuna. SmartShading toimii tarkalla atsimuutilla: kompassisuunta on vain kätevä pikavalinta.",
+        "data": {
+          "window_name": "Ikkunan nimi",
+          "floor_level": "Kerros (0 = pohjakerros)",
+          "compass_direction": "Suuntaus",
+          "custom_azimuth": "Mukautettu atsimuutti (0-359°, käytetään vain, jos Suuntaus on asetettu Mukautettu-tilaan)",
+          "absence_position": "Poissaolosijainti (ohittaa vyöhykkeen oletuksen)",
+          "window_behavior_mode": "Automaattinen varjostustila"
+        },
+        "data_description": {
+          "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle tietylle ikkunalle.",
+          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina."
+        }
+      },
+      "cover_group": {
+        "title": "Tämän ikkunan varjostimet",
+        "description": "Valitse varjostinentiteetti tai -entiteetit, jotka varjostavat ikkunaa ”{window_name}”. Lisää vain varjostimia, jotka peittävät täsmälleen tämän ikkunapinnan. Erillisille ikkunoille lisää erilliset ikkunat.",
+        "data": {
+          "cover_entities": "Tämän ikkunan varjostimet",
+          "cover_hardware_type": "Varjostimen laitteistotyyppi"
+        }
+      },
+      "add_another_window": {
+        "title": "Lisätäänkö toinen ikkuna?",
+        "description": "Toistaiseksi määritetty {window_count} ikkunaa.",
+        "data": {
+          "add_another_window": "Lisää toinen ikkuna"
+        }
+      },
+      "comfort": {
+        "title": "Mukavuusasetukset",
+        "description": "Määritä suojaustoiminnot varjostuksella. Sisälämpötila-anturit ovat valinnaisia.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Sisälämpötila-anturit (valinnainen)",
+          "heat_protection_enabled": "Ota käyttöön lämpösuojaus",
+          "glare_protection_enabled": "Ota käyttöön häikäisysuojaus",
+          "solar_gain_enabled": "Ota käyttöön aurinkolämpö (talviaurinko)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Yksi tai useampi sisäanturi. Kun useita antureita on määritetty, käytetään kaikkien kelvollisten lukemien keskiarvoa.",
+          "heat_protection_enabled": "Estää ylikuumenemisen varjostamalla ennakoivasti auringon sijainnin, sään ja lämpötilojen perusteella.",
+          "glare_protection_enabled": "Vähentää suoraa auringonvaloa, kun aurinko osuu ikkunaan.",
+          "solar_gain_enabled": "Pitää varjostuksen avoimempana viileällä säällä passiivisen lämpenemisen tukemiseksi. Lämpösuojaus on etusijalla."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Anna mukautettu atsimuutti väliltä 0–359 astetta tai valitse kompassisuunta.",
+      "no_covers_selected": "Valitse vähintään yksi varjostinentiteetti tälle ikkunalle.",
+      "empty_zone_name": "Vyöhykkeen nimi vaaditaan.",
+      "obstruction_elevation_range_invalid": "”Estetty korkeudesta” ei saa olla suurempi kuin ”Estetty korkeuteen asti”."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading on jo määritetty.",
+      "system_already_exists": "SmartShading-järjestelmämerkintä on jo olemassa."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Pohjoinen (0°)",
+        "northeast": "Koillinen (45°)",
+        "east": "Itä (90°)",
+        "southeast": "Kaakko (135°)",
+        "south": "Etelä (180°)",
+        "southwest": "Lounas (225°)",
+        "west": "Länsi (270°)",
+        "northwest": "Luode (315°)",
+        "custom": "Mukautettu atsimuutti"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Auringonlaskussa (0°)",
+        "dusk": "Hämärässä — kansalaishämärä (-6°)",
+        "dark": "Kun on pimeää — merenkulkuhämärä (-12°)",
+        "custom": "Mukautettu"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "Auringonnousussa (0°)",
+        "dawn": "Sarastuksessa — kansalaishämärä (-6°)",
+        "bright": "Kun valkenee — merenkulkuhämärä (-12°)",
+        "custom": "Mukautettu"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Kiinteä aika",
+        "sun_elevation": "Auringon korkeus",
+        "both": "Molemmat",
+        "disabled": "Poistettu käytöstä"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Sama joka päivä",
+        "weekday_weekend": "Arki / Viikonloppu"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Täysin automaattinen",
+        "absence_only": "Vain poissaolo",
+        "disabled_automatic": "Automaatio poistettu käytöstä"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Rullaverho",
+        "venetian_blind": "Sälekaihdin",
+        "exterior_screen": "Screen",
+        "awning": "Markiisi",
+        "generic": "Muu varjostin"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Luo tukivienti"
+      },
+      "export_research_data": {
+        "name": "Luo tutkimusvienti"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Tarkkailutila",
+        "state": {
+          "on": "Tarkkailee",
+          "off": "Keskeytetty"
+        }
+      },
+      "active_control": {
+        "name": "Aktiivinen ohjaus",
+        "state": {
+          "on": "Aktiivinen",
+          "off": "Ei-aktiivinen"
+        }
+      },
+      "debug_logging": {
+        "name": "Virheenkorjausloki"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Varjostustila",
+        "state": {
+          "storm_safe": "Myrskyturvallinen",
+          "wind_safe": "Tuuliturvallinen",
+          "manual_override": "Manuaalinen ohitus",
+          "night_closed": "Yö – suljettu",
+          "absence_closed": "Poissaolo – suljettu",
+          "strong_shade": "Voimakas varjostus",
+          "normal_shade": "Normaali varjostus",
+          "light_shade": "Kevyt varjostus",
+          "open": "Avoin"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Varjostustila",
+        "state": {
+          "storm_safe": "Myrskyturvallinen",
+          "wind_safe": "Tuuliturvallinen",
+          "manual_override": "Manuaalinen ohitus",
+          "night_closed": "Yö – suljettu",
+          "absence_closed": "Poissaolo – suljettu",
+          "strong_shade": "Voimakas varjostus",
+          "normal_shade": "Normaali varjostus",
+          "light_shade": "Kevyt varjostus",
+          "open": "Avoin"
+        }
+      },
+      "exposure": {
+        "name": "Altistus"
+      },
+      "exposure_indexed": {
+        "name": "{index} Altistus"
+      },
+      "cover_position": {
+        "name": "Varjostimen sijainti"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Varjostimen sijainti"
+      },
+      "recommendation": {
+        "name": "Suositus"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Suositus"
+      },
+      "zone_summary": {
+        "name": "Vyöhykkeen yhteenveto",
+        "state": {
+          "safety": "Turvatila",
+          "override": "Manuaalinen ohitus",
+          "automatic": "Automaattinen",
+          "recommendation_only": "Vain suositus",
+          "disabled": "Poistettu käytöstä"
+        }
+      },
+      "learning_progress": {
+        "name": "Oppimisen edistyminen"
+      },
+      "shading_result": {
+        "name": "Varjostustulos",
+        "state": {
+          "excellent": "Erinomainen",
+          "good": "Hyvä",
+          "acceptable": "Hyväksyttävä",
+          "poor": "Heikko",
+          "unknown": "Tuntematon"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Aurinkosektori",
+        "state": {
+          "on": "Aurinkosektorissa",
+          "off": "Ei aurinkosektorissa"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Aurinkosektori",
+        "state": {
+          "on": "Aurinkosektorissa",
+          "off": "Ei aurinkosektorissa"
+        }
+      },
+      "override_active": {
+        "name": "Ohitus aktiivinen",
+        "state": {
+          "on": "Ohitus aktiivinen",
+          "off": "Normaali ohjaus"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Ohitus aktiivinen",
+        "state": {
+          "on": "Ohitus aktiivinen",
+          "off": "Normaali ohjaus"
+        }
+      }
+    }
+  }
+}

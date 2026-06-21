@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Upravit nastavení SmartShading",
+        "description": "Zde můžete upravit nastavení počasí, komfortu, plánu, přítomnosti a stínění pro tuto zónu a přidávat, upravovat nebo odebírat okna.",
+        "menu_options": {
+          "weather": "Vstupy počasí a slunce",
+          "lifecycle": "Nastavení plánu",
+          "presence": "Nastavení přítomnosti",
+          "comfort": "Nastavení komfortu",
+          "behavior": "Chování stínění",
+          "add_window": "Přidat okno",
+          "edit_window": "Upravit okno",
+          "remove_window": "Odebrat okno"
+        }
+      },
+      "weather": {
+        "title": "Vstupy počasí a slunce",
+        "description": "Vše volitelné. Entita počasí (např. DWD, yr.no) automaticky poskytuje podmínky, oblačnost a vítr. Vyhrazené senzory nahrazují entitu počasí pro přesnější místní hodnoty. Solární záření musí pocházet z vyhrazeného senzoru: z entit počasí se nečte.",
+        "data": {
+          "weather_entity_id": "Entita počasí",
+          "solar_radiation_sensor_id": "Senzor solárního záření (W/m²)",
+          "outdoor_temperature_sensor_id": "Senzor venkovní teploty",
+          "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
+          "wind_speed_sensor_id": "Senzor rychlosti větru (m/s) — pro markýzy/screeny použijte nárazy větru, pokud jsou k dispozici"
+        }
+      },
+      "lifecycle": {
+        "title": "Nastavení plánu",
+        "description": "Vyberte, jak SmartShading rozpoznává noc a ráno. „Obojí“ se spustí při první splněné podmínce: čas nebo výška slunce.",
+        "data": {
+          "night_trigger": "Spouštěč noci",
+          "morning_trigger": "Spouštěč rána",
+          "schedule_mode": "Režim plánu"
+        },
+        "data_description": {
+          "schedule_mode": "„Stejně každý den“ používá jeden plán pro celý týden. „Pracovní den / Víkend“ umožňuje nastavit různé časy a polohy pro po–pá a so–ne."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Podrobnosti plánu",
+        "description": "Zadejte čas nebo výšku slunce pro každý spouštěč. Zobrazují se pouze pole relevantní pro vybraný spouštěč.",
+        "data": {
+          "night_fixed_time": "Čas noci",
+          "night_elevation_preset": "Noc: poloha slunce",
+          "night_sun_elevation": "Vlastní noční výška (°) — použije se pouze při výběru Vlastní",
+          "morning_fixed_time": "Čas rána",
+          "morning_elevation_preset": "Ráno: poloha slunce",
+          "morning_sun_elevation": "Vlastní ranní výška (°) — použije se pouze při výběru Vlastní",
+          "night_position": "Noční poloha",
+          "morning_position": "Ranní poloha",
+          "weekday_night_fixed_time": "Čas noci v pracovní dny (po–pá)",
+          "weekday_night_position": "Noční poloha v pracovní dny (po–pá)",
+          "weekday_morning_fixed_time": "Čas rána v pracovní dny (po–pá)",
+          "weekday_morning_position": "Ranní poloha v pracovní dny (po–pá)",
+          "weekend_night_fixed_time": "Čas noci o víkendu (so–ne)",
+          "weekend_night_position": "Noční poloha o víkendu (so–ne)",
+          "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
+          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)"
+        },
+        "data_description": {
+          "night_position": "Poloha stínění během noční fáze (0 = zavřeno, 100 = otevřeno).",
+          "morning_position": "Poloha stínění na začátku ranní fáze (0 = zavřeno, 100 = otevřeno).",
+          "weekday_night_position": "Poloha stínění během noční fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
+          "weekday_morning_position": "Poloha stínění na začátku ranní fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
+          "weekend_night_position": "Poloha stínění během noční fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
+          "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "presence": {
+        "title": "Nastavení přítomnosti",
+        "description": "Volitelné. Pokud není nikdo vybrán, SmartShading vždy předpokládá přítomnost a nikdy nespustí zavírání kvůli nepřítomnosti.",
+        "data": {
+          "presence_entity_ids": "Entity přítomnosti",
+          "absence_delay_min": "Zpoždění nepřítomnosti",
+          "absence_position": "Poloha při nepřítomnosti"
+        },
+        "data_description": {
+          "absence_position": "Poloha stínění, když je zóna neobsazená, pokud neplatí silnější ochranné rozhodnutí (0 = zcela zavřeno, 100 = zcela otevřeno). Platí pro všechna okna v této zóně."
+        }
+      },
+      "comfort": {
+        "title": "Nastavení komfortu",
+        "description": "Nakonfigurujte ochranné funkce pomocí stínění. Senzory vnitřní teploty jsou volitelné.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Senzory vnitřní teploty (volitelné)",
+          "heat_protection_enabled": "Povolit ochranu před teplem",
+          "glare_protection_enabled": "Povolit ochranu před oslněním",
+          "solar_gain_enabled": "Povolit solární zisk (zimní slunce)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Jeden nebo více vnitřních senzorů. Při konfiguraci více senzorů se použije průměr všech platných hodnot.",
+          "heat_protection_enabled": "Zabraňuje přehřívání proaktivním stíněním na základě polohy slunce, počasí a teplot.",
+          "glare_protection_enabled": "Snižuje přímé sluneční světlo, když slunce dopadá na okno.",
+          "solar_gain_enabled": "Udržuje stínění více otevřené v chladném počasí pro podporu pasivního ohřevu. Ochrana před teplem má prioritu."
+        }
+      },
+      "behavior": {
+        "title": "Základní chování stínění",
+        "description": "Základní cílové polohy stínění podle intenzity stínění. SmartShading používá tyto hodnoty jako výchozí bod a může je přizpůsobovat pro jednotlivá okna, jakmile je k dispozici dostatek dat učení.",
+        "data": {
+          "light_shade_position": "Poloha lehkého stínění",
+          "normal_shade_position": "Poloha normálního stínění",
+          "strong_shade_position": "Poloha silného stínění"
+        }
+      },
+      "add_window": {
+        "title": "Přidat okno",
+        "description": "Přidejte do této zóny další okno. SmartShading pracuje s přesným azimutem: směr kompasu je jen pohodlná zkratka.",
+        "data": {
+          "window_name": "Název okna",
+          "floor_level": "Podlaží (0 = přízemí)",
+          "compass_direction": "Orientace",
+          "custom_azimuth": "Vlastní azimut (0-359°, použije se pouze pokud je Orientace nastavena na Vlastní)",
+          "absence_position": "Poloha při nepřítomnosti (přepíše výchozí hodnotu zóny)",
+          "window_behavior_mode": "Automatický režim stínění"
+        },
+        "data_description": {
+          "absence_position": "Ponechte prázdné pro zdědění výchozí polohy nepřítomnosti zóny. Zadejte hodnotu pro její přepsání pouze pro toto konkrétní okno.",
+          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Stínění pro toto okno",
+        "description": "Vyberte entitu nebo entity stínění, které stíní okno „{window_name}“. Přidávejte pouze stínění, která pokrývají přesně tuto plochu okna. Pro samostatná okna přidávejte samostatná okna.",
+        "data": {
+          "cover_entities": "Stínění pro toto okno",
+          "cover_hardware_type": "Typ hardwaru stínění"
+        }
+      },
+      "add_window_loop": {
+        "title": "Přidat další okno?",
+        "description": "Do této zóny bylo přidáno {window_count} nové/ých okno/oken. Chcete přidat další okno?",
+        "data": {
+          "add_another_window": "Přidat další okno"
+        }
+      },
+      "edit_window": {
+        "title": "Upravit okno",
+        "description": "Vyberte okno k úpravě.",
+        "data": {
+          "window_id": "Okno"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Upravit okno: {window_name}",
+        "description": "Aktualizujte nastavení okna „{window_name}“. Změny stínění se projeví po uložení.",
+        "data": {
+          "window_name": "Název okna",
+          "floor_level": "Podlaží (0 = přízemí)",
+          "compass_direction": "Orientace",
+          "custom_azimuth": "Vlastní azimut (0-359°, použije se pouze pokud je Orientace nastavena na Vlastní)",
+          "cover_entities": "Stínění pro toto okno",
+          "cover_hardware_type": "Typ hardwaru stínění",
+          "absence_position": "Poloha při nepřítomnosti (přepíše výchozí hodnotu zóny)",
+          "window_behavior_mode": "Automatický režim stínění",
+          "light_shade_position": "Poloha lehkého stínění (přepíše výchozí hodnotu zóny)",
+          "normal_shade_position": "Poloha normálního stínění (přepíše výchozí hodnotu zóny)",
+          "strong_shade_position": "Poloha silného stínění (přepíše výchozí hodnotu zóny)",
+          "manual_sun_sector_enabled": "Povolit ruční přepsání slunečního sektoru",
+          "manual_sun_sector_start_deg": "Počáteční azimut slunečního sektoru (°)",
+          "manual_sun_sector_end_deg": "Koncový azimut slunečního sektoru (°)",
+          "obstruction_1_enabled": "Zóna překážky 1 aktivní",
+          "obstruction_1_azimuth_start_deg": "Počáteční azimut zóny 1 (°)",
+          "obstruction_1_azimuth_end_deg": "Koncový azimut zóny 1 (°)",
+          "obstruction_1_block_from_elevation_deg": "Zóna 1 blokována od výšky (°)",
+          "obstruction_1_block_until_elevation_deg": "Zóna 1 blokována do výšky (°)",
+          "obstruction_2_enabled": "Zóna překážky 2 aktivní",
+          "obstruction_2_azimuth_start_deg": "Počáteční azimut zóny 2 (°)",
+          "obstruction_2_azimuth_end_deg": "Koncový azimut zóny 2 (°)",
+          "obstruction_2_block_from_elevation_deg": "Zóna 2 blokována od výšky (°)",
+          "obstruction_2_block_until_elevation_deg": "Zóna 2 blokována do výšky (°)",
+          "obstruction_3_enabled": "Zóna překážky 3 aktivní",
+          "obstruction_3_azimuth_start_deg": "Počáteční azimut zóny 3 (°)",
+          "obstruction_3_azimuth_end_deg": "Koncový azimut zóny 3 (°)",
+          "obstruction_3_block_from_elevation_deg": "Zóna 3 blokována od výšky (°)",
+          "obstruction_3_block_until_elevation_deg": "Zóna 3 blokována do výšky (°)"
+        },
+        "data_description": {
+          "absence_position": "Ponechte prázdné pro zdědění výchozí polohy nepřítomnosti zóny. Zadejte hodnotu pro její přepsání pouze pro toto okno.",
+          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní.",
+          "light_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy lehkého stínění pouze pro toto okno.",
+          "normal_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy normálního stínění pouze pro toto okno.",
+          "strong_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy silného stínění pouze pro toto okno.",
+          "manual_sun_sector_enabled": "Povolte pro nahrazení automatického slunečního sektoru založeného na azimutu ručním rozsahem. Počáteční a koncový azimut určují, kdy se slunce považuje za dopadající na toto okno. Podporuje přechod přes sever (např. z 330° na 30°).",
+          "obstruction_1_enabled": "Povolte pro označení rozsahu azimutu, kde fyzická překážka (strom, budova, přesah střechy) blokuje přímé slunce. Ponechte pole výšky prázdná pro blokování při každé výšce slunce v rozsahu azimutu.",
+          "obstruction_1_block_from_elevation_deg": "Volitelné. Překážka blokuje pouze tehdy, když je výška slunce rovna této hodnotě nebo vyšší. Příklad: 45° blokuje přesah střechy, který stíní pouze při strmých úhlech slunce. Ponechte prázdné pro žádný dolní limit.",
+          "obstruction_1_block_until_elevation_deg": "Volitelné. Překážka blokuje pouze tehdy, když je výška slunce rovna této hodnotě nebo nižší. Příklad: 18° blokuje horu nebo sousední budovu, která ovlivňuje pouze nízké slunce. Ponechte prázdné pro žádný horní limit.",
+          "obstruction_2_enabled": "Druhá volitelná zóna překážky pro toto okno.",
+          "obstruction_2_block_from_elevation_deg": "Volitelná dolní mez výšky pro zónu 2 (viz popis zóny 1).",
+          "obstruction_2_block_until_elevation_deg": "Volitelná horní mez výšky pro zónu 2 (viz popis zóny 1).",
+          "obstruction_3_enabled": "Třetí volitelná zóna překážky pro toto okno.",
+          "obstruction_3_block_from_elevation_deg": "Volitelná dolní mez výšky pro zónu 3 (viz popis zóny 1).",
+          "obstruction_3_block_until_elevation_deg": "Volitelná horní mez výšky pro zónu 3 (viz popis zóny 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Odebrat okno",
+        "description": "Vyberte okno k odebrání. Tím se trvale odebere okno a jeho přiřazení stínění z této zóny. Samotné entity stínění se neodstraní.",
+        "data": {
+          "window_id": "Okno k odebrání"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Potvrdit odebrání",
+        "description": "Odebrat okno „{window_name}“? Tuto akci nelze vrátit zpět.",
+        "data": {
+          "remove_confirmed": "Ano, odebrat toto okno"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Poslední okno nelze odebrat. Zóna musí mít alespoň jedno okno.",
+      "obstruction_elevation_range_invalid": "„Blokována od výšky“ nesmí být větší než „Blokována do výšky“."
+    },
+    "abort": {
+      "no_options_for_system_entry": "Systémová položka SmartShading nemá žádné konfigurovatelné možnosti."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Nakonfigurujte SmartShading. Okna můžete přidat na dalších obrazovkách.",
+        "data": {
+          "zone_name": "Název zóny"
+        }
+      },
+      "weather": {
+        "title": "Vstupy počasí a slunce (volitelné)",
+        "description": "Vše volitelné. Entita počasí (např. DWD, yr.no) automaticky poskytuje podmínky, oblačnost a vítr. Vyhrazené senzory ji nahrazují pro přesnější místní hodnoty. Solární záření vyžaduje vyhrazený senzor. Tento krok můžete přeskočit a vstupy přidat později.",
+        "data": {
+          "weather_entity_id": "Entita počasí",
+          "solar_radiation_sensor_id": "Senzor solárního záření (W/m²)",
+          "outdoor_temperature_sensor_id": "Senzor venkovní teploty",
+          "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
+          "wind_speed_sensor_id": "Senzor rychlosti větru (m/s) — pro markýzy/screeny použijte nárazy větru, pokud jsou k dispozici"
+        }
+      },
+      "lifecycle": {
+        "title": "Nastavení plánu",
+        "description": "Vyberte, jak SmartShading rozpoznává noc a ráno. „Obojí“ se spustí při první splněné podmínce: čas nebo výška slunce.",
+        "data": {
+          "night_trigger": "Spouštěč noci",
+          "morning_trigger": "Spouštěč rána",
+          "schedule_mode": "Režim plánu"
+        },
+        "data_description": {
+          "schedule_mode": "„Stejně každý den“ používá jeden plán pro celý týden. „Pracovní den / Víkend“ umožňuje nastavit různé časy a polohy pro po–pá a so–ne."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Podrobnosti plánu",
+        "description": "Zadejte čas nebo výšku slunce pro každý spouštěč. Zobrazují se pouze pole relevantní pro vybraný spouštěč.",
+        "data": {
+          "night_fixed_time": "Čas noci",
+          "night_elevation_preset": "Noc: poloha slunce",
+          "night_sun_elevation": "Vlastní noční výška (°) — použije se pouze při výběru Vlastní",
+          "morning_fixed_time": "Čas rána",
+          "morning_elevation_preset": "Ráno: poloha slunce",
+          "morning_sun_elevation": "Vlastní ranní výška (°) — použije se pouze při výběru Vlastní",
+          "night_position": "Noční poloha",
+          "morning_position": "Ranní poloha",
+          "weekday_night_fixed_time": "Čas noci v pracovní dny (po–pá)",
+          "weekday_night_position": "Noční poloha v pracovní dny (po–pá)",
+          "weekday_morning_fixed_time": "Čas rána v pracovní dny (po–pá)",
+          "weekday_morning_position": "Ranní poloha v pracovní dny (po–pá)",
+          "weekend_night_fixed_time": "Čas noci o víkendu (so–ne)",
+          "weekend_night_position": "Noční poloha o víkendu (so–ne)",
+          "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
+          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)"
+        },
+        "data_description": {
+          "night_position": "Poloha stínění během noční fáze (0 = zavřeno, 100 = otevřeno).",
+          "morning_position": "Poloha stínění na začátku ranní fáze (0 = zavřeno, 100 = otevřeno).",
+          "weekday_night_position": "Poloha stínění během noční fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
+          "weekday_morning_position": "Poloha stínění na začátku ranní fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
+          "weekend_night_position": "Poloha stínění během noční fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
+          "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "presence": {
+        "title": "Nastavení přítomnosti",
+        "description": "Volitelné. Pokud není nikdo vybrán, SmartShading vždy předpokládá přítomnost a nikdy nespustí zavírání kvůli nepřítomnosti.",
+        "data": {
+          "presence_entity_ids": "Entity přítomnosti",
+          "absence_delay_min": "Zpoždění nepřítomnosti",
+          "absence_position": "Poloha při nepřítomnosti"
+        },
+        "data_description": {
+          "absence_position": "Poloha stínění, když je zóna neobsazená, pokud neplatí silnější ochranné rozhodnutí (0 = zcela zavřeno, 100 = zcela otevřeno). Platí pro všechna okna v této zóně."
+        }
+      },
+      "window": {
+        "title": "Přidat okno",
+        "description": "Nakonfigurujte jedno okno. SmartShading pracuje s přesným azimutem: směr kompasu je jen pohodlná zkratka.",
+        "data": {
+          "window_name": "Název okna",
+          "floor_level": "Podlaží (0 = přízemí)",
+          "compass_direction": "Orientace",
+          "custom_azimuth": "Vlastní azimut (0-359°, použije se pouze pokud je Orientace nastavena na Vlastní)",
+          "absence_position": "Poloha při nepřítomnosti (přepíše výchozí hodnotu zóny)",
+          "window_behavior_mode": "Automatický režim stínění"
+        },
+        "data_description": {
+          "absence_position": "Ponechte prázdné pro zdědění výchozí polohy nepřítomnosti zóny. Zadejte hodnotu pro její přepsání pouze pro toto konkrétní okno.",
+          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní."
+        }
+      },
+      "cover_group": {
+        "title": "Stínění pro toto okno",
+        "description": "Vyberte entitu nebo entity stínění, které stíní okno „{window_name}“. Přidávejte pouze stínění, která pokrývají přesně tuto plochu okna. Pro samostatná okna přidávejte samostatná okna.",
+        "data": {
+          "cover_entities": "Stínění pro toto okno",
+          "cover_hardware_type": "Typ hardwaru stínění"
+        }
+      },
+      "add_another_window": {
+        "title": "Přidat další okno?",
+        "description": "Dosud nakonfigurováno {window_count} okno/oken.",
+        "data": {
+          "add_another_window": "Přidat další okno"
+        }
+      },
+      "comfort": {
+        "title": "Nastavení komfortu",
+        "description": "Nakonfigurujte ochranné funkce pomocí stínění. Senzory vnitřní teploty jsou volitelné.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Senzory vnitřní teploty (volitelné)",
+          "heat_protection_enabled": "Povolit ochranu před teplem",
+          "glare_protection_enabled": "Povolit ochranu před oslněním",
+          "solar_gain_enabled": "Povolit solární zisk (zimní slunce)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Jeden nebo více vnitřních senzorů. Při konfiguraci více senzorů se použije průměr všech platných hodnot.",
+          "heat_protection_enabled": "Zabraňuje přehřívání proaktivním stíněním na základě polohy slunce, počasí a teplot.",
+          "glare_protection_enabled": "Snižuje přímé sluneční světlo, když slunce dopadá na okno.",
+          "solar_gain_enabled": "Udržuje stínění více otevřené v chladném počasí pro podporu pasivního ohřevu. Ochrana před teplem má prioritu."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Zadejte vlastní azimut mezi 0 a 359 stupni, nebo vyberte směr kompasu.",
+      "no_covers_selected": "Vyberte alespoň jednu entitu stínění pro toto okno.",
+      "empty_zone_name": "Název zóny je povinný.",
+      "obstruction_elevation_range_invalid": "„Blokována od výšky“ nesmí být větší než „Blokována do výšky“."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading je již nakonfigurován.",
+      "system_already_exists": "Systémová položka SmartShading již existuje."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Sever (0°)",
+        "northeast": "Severovýchod (45°)",
+        "east": "Východ (90°)",
+        "southeast": "Jihovýchod (135°)",
+        "south": "Jih (180°)",
+        "southwest": "Jihozápad (225°)",
+        "west": "Západ (270°)",
+        "northwest": "Severozápad (315°)",
+        "custom": "Vlastní azimut"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Při západu slunce (0°)",
+        "dusk": "Za soumraku — občanský soumrak (-6°)",
+        "dark": "Když je tma — nautický soumrak (-12°)",
+        "custom": "Vlastní"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "Při východu slunce (0°)",
+        "dawn": "Za svítání — občanský úsvit (-6°)",
+        "bright": "Když se rozednívá — nautický úsvit (-12°)",
+        "custom": "Vlastní"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Pevný čas",
+        "sun_elevation": "Výška slunce",
+        "both": "Obojí",
+        "disabled": "Vypnuto"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Stejně každý den",
+        "weekday_weekend": "Pracovní den / Víkend"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Plně automatický",
+        "absence_only": "Pouze nepřítomnost",
+        "disabled_automatic": "Automatizace vypnuta"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Roleta",
+        "venetian_blind": "Žaluzie",
+        "exterior_screen": "Screen",
+        "awning": "Markýza",
+        "generic": "Jiné stínění"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Vytvořit export podpory"
+      },
+      "export_research_data": {
+        "name": "Vytvořit výzkumný export"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Režim pozorování",
+        "state": {
+          "on": "Pozoruje",
+          "off": "Pozastaveno"
+        }
+      },
+      "active_control": {
+        "name": "Aktivní řízení",
+        "state": {
+          "on": "Aktivní",
+          "off": "Neaktivní"
+        }
+      },
+      "debug_logging": {
+        "name": "Protokol ladění"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Stav stínění",
+        "state": {
+          "storm_safe": "Ochrana před bouří",
+          "wind_safe": "Ochrana před větrem",
+          "manual_override": "Ruční přepsání",
+          "night_closed": "Noc – zavřeno",
+          "absence_closed": "Nepřítomnost – zavřeno",
+          "strong_shade": "Silné stínění",
+          "normal_shade": "Normální stínění",
+          "light_shade": "Lehké stínění",
+          "open": "Otevřeno"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Stav stínění",
+        "state": {
+          "storm_safe": "Ochrana před bouří",
+          "wind_safe": "Ochrana před větrem",
+          "manual_override": "Ruční přepsání",
+          "night_closed": "Noc – zavřeno",
+          "absence_closed": "Nepřítomnost – zavřeno",
+          "strong_shade": "Silné stínění",
+          "normal_shade": "Normální stínění",
+          "light_shade": "Lehké stínění",
+          "open": "Otevřeno"
+        }
+      },
+      "exposure": {
+        "name": "Expozice"
+      },
+      "exposure_indexed": {
+        "name": "{index} Expozice"
+      },
+      "cover_position": {
+        "name": "Poloha stínění"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Poloha stínění"
+      },
+      "recommendation": {
+        "name": "Doporučení"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Doporučení"
+      },
+      "zone_summary": {
+        "name": "Souhrn zóny",
+        "state": {
+          "safety": "Bezpečnostní režim",
+          "override": "Ruční přepsání",
+          "automatic": "Automatický",
+          "recommendation_only": "Pouze doporučení",
+          "disabled": "Vypnuto"
+        }
+      },
+      "learning_progress": {
+        "name": "Průběh učení"
+      },
+      "shading_result": {
+        "name": "Výsledek stínění",
+        "state": {
+          "excellent": "Vynikající",
+          "good": "Dobrý",
+          "acceptable": "Přijatelný",
+          "poor": "Špatný",
+          "unknown": "Neznámý"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Sluneční sektor",
+        "state": {
+          "on": "Ve slunečním sektoru",
+          "off": "Mimo sluneční sektor"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Sluneční sektor",
+        "state": {
+          "on": "Ve slunečním sektoru",
+          "off": "Mimo sluneční sektor"
+        }
+      },
+      "override_active": {
+        "name": "Přepsání aktivní",
+        "state": {
+          "on": "Přepsání aktivní",
+          "off": "Normální řízení"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Přepsání aktivní",
+        "state": {
+          "on": "Přepsání aktivní",
+          "off": "Normální řízení"
+        }
+      }
+    }
+  }
+}

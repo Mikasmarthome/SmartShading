@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "SmartShading-Einstellungen bearbeiten",
+        "description": "Hier kannst du Wetter-, Komfort-, Zeitplan-, Präsenz- und Beschattungseinstellungen dieser Zone bearbeiten sowie Fenster hinzufügen, bearbeiten oder entfernen.",
+        "menu_options": {
+          "weather": "Wetter und Solareingaben",
+          "lifecycle": "Zeitplan-Einstellungen",
+          "presence": "Präsenz-Einstellungen",
+          "comfort": "Komforteinstellungen",
+          "behavior": "Beschattungsverhalten",
+          "add_window": "Fenster hinzufügen",
+          "edit_window": "Fenster bearbeiten",
+          "remove_window": "Fenster entfernen"
+        }
+      },
+      "weather": {
+        "title": "Wetter und Solareingaben",
+        "description": "Alles optional. Eine Wetter-Entität (z. B. DWD, yr.no) liefert automatisch Wetterzustand, Bewölkungsgrad und Wind. Dedizierte Sensoren überschreiben die Wetter-Entität für präzisere lokale Messwerte. Sonnenstrahlung erfordert einen dedizierten Sensor – sie wird nicht aus Wetter-Entitäten gelesen.",
+        "data": {
+          "weather_entity_id": "Wetter-Entität",
+          "solar_radiation_sensor_id": "Solarstrahlungssensor (W/m²)",
+          "outdoor_temperature_sensor_id": "Außentemperatursensor",
+          "cloud_cover_sensor_id": "Bewölkungsgrad (0–100 %)",
+          "wind_speed_sensor_id": "Windgeschwindigkeit (m/s) – bei Markisen/Screens möglichst Böengeschwindigkeit verwenden"
+        }
+      },
+      "lifecycle": {
+        "title": "Zeitplan-Einstellungen",
+        "description": "Wähle, wie SmartShading Nacht und Morgen erkennt. \"Beides\" löst aus, sobald eine der beiden Bedingungen – Uhrzeit oder Sonnenhöhe – zuerst erfüllt ist.",
+        "data": {
+          "night_trigger": "Nacht-Auslöser",
+          "morning_trigger": "Morgen-Auslöser",
+          "schedule_mode": "Zeitplan-Modus"
+        },
+        "data_description": {
+          "schedule_mode": "\"Gleich jeden Tag\" verwendet einen Zeitplan für die gesamte Woche. \"Wochentag / Wochenende\" ermöglicht unterschiedliche Uhrzeiten und Positionen für Mo–Fr und Sa–So."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Zeitplan-Details",
+        "description": "Gib Uhrzeit oder Sonnenhöhe für den gewählten Auslöser ein. Es werden nur die Felder für den ausgewählten Auslöser angezeigt.",
+        "data": {
+          "night_fixed_time": "Nacht-Uhrzeit",
+          "night_elevation_preset": "Nacht: Sonnenstand",
+          "night_sun_elevation": "Eigener Nacht-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
+          "morning_fixed_time": "Morgen-Uhrzeit",
+          "morning_elevation_preset": "Morgen: Sonnenstand",
+          "morning_sun_elevation": "Eigener Morgen-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
+          "night_position": "Nachtposition",
+          "morning_position": "Morgenposition",
+          "weekday_night_fixed_time": "Nacht-Uhrzeit Wochentag (Mo–Fr)",
+          "weekday_night_position": "Nachtposition Wochentag (Mo–Fr)",
+          "weekday_morning_fixed_time": "Morgen-Uhrzeit Wochentag (Mo–Fr)",
+          "weekday_morning_position": "Morgenposition Wochentag (Mo–Fr)",
+          "weekend_night_fixed_time": "Nacht-Uhrzeit Wochenende (Sa–So)",
+          "weekend_night_position": "Nachtposition Wochenende (Sa–So)",
+          "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
+          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)"
+        },
+        "data_description": {
+          "night_position": "Behangsposition in der Nachtphase (0 = geschlossen, 100 = offen).",
+          "morning_position": "Behangsposition zu Beginn der Morgenphase (0 = geschlossen, 100 = offen).",
+          "weekday_night_position": "Behangsposition in der Nachtphase an Wochentagen (0 = geschlossen, 100 = offen).",
+          "weekday_morning_position": "Behangsposition zu Beginn der Morgenphase an Wochentagen (0 = geschlossen, 100 = offen).",
+          "weekend_night_position": "Behangsposition in der Nachtphase am Wochenende (0 = geschlossen, 100 = offen).",
+          "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "presence": {
+        "title": "Präsenz-Einstellungen",
+        "description": "Optional. Wenn niemand ausgewählt ist, geht SmartShading immer von Anwesenheit aus und löst nie eine abwesenheitsbasierte Schließung aus.",
+        "data": {
+          "presence_entity_ids": "Anwesenheits-Entitäten",
+          "absence_delay_min": "Abwesenheitsverzögerung",
+          "absence_position": "Abwesenheitsposition"
+        },
+        "data_description": {
+          "absence_position": "Position der Beschattung bei Abwesenheit, sofern keine stärkere Schutzentscheidung greift (0 = vollständig geschlossen, 100 = vollständig geöffnet). Gilt für alle Fenster dieser Zone."
+        }
+      },
+      "comfort": {
+        "title": "Komforteinstellungen",
+        "description": "Beschattungsschutz-Funktionen konfigurieren. Innentemperatursensoren sind optional.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Innentemperatursensoren (optional)",
+          "heat_protection_enabled": "Hitzeschutz aktivieren",
+          "glare_protection_enabled": "Blendschutz aktivieren",
+          "solar_gain_enabled": "Solar-Gewinn aktivieren (Wintersonne)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Ein oder mehrere Innensensoren. Bei mehreren Sensoren wird der Durchschnitt aller gültigen Messwerte verwendet.",
+          "heat_protection_enabled": "Beschattet vorbeugend, bevor Räume überhitzen – basierend auf Sonnenstand, Wetter und Temperaturen.",
+          "glare_protection_enabled": "Reduziert direkte Sonneneinstrahlung, wenn die Sonne direkt auf das Fenster trifft.",
+          "solar_gain_enabled": "Hält Beschattung bei kühlem Wetter offener, um passive Erwärmung zu unterstützen. Hitzeschutz hat Vorrang."
+        }
+      },
+      "behavior": {
+        "title": "Grundlegendes Beschattungsverhalten",
+        "description": "Basiszielpositionen je Beschattungsintensität. SmartShading verwendet diese Werte als Ausgangspunkt und kann sie pro Fenster anpassen, sobald genügend Lerndaten vorliegen.",
+        "data": {
+          "light_shade_position": "Position für leichte Beschattung",
+          "normal_shade_position": "Position für normale Beschattung",
+          "strong_shade_position": "Position für starke Beschattung"
+        }
+      },
+      "add_window": {
+        "title": "Fenster hinzufügen",
+        "description": "Weiteres Fenster zu dieser Zone hinzufügen. SmartShading arbeitet mit einem präzisen Azimut — die Himmelsrichtung ist nur eine Eingabehilfe.",
+        "data": {
+          "window_name": "Fenstername",
+          "floor_level": "Stockwerk (0 = Erdgeschoss)",
+          "compass_direction": "Ausrichtung",
+          "custom_azimuth": "Benutzerdefinierter Azimut (0-359°, nur wenn Ausrichtung auf Benutzerdefiniert gesetzt)",
+          "absence_position": "Abwesenheitsposition (überschreibt Zonen-Standard)",
+          "window_behavior_mode": "Automatischer Beschattungsmodus"
+        },
+        "data_description": {
+          "absence_position": "Leer lassen, um die Zonen-Standardposition zu übernehmen. Wert setzen, um sie nur für dieses Fenster zu überschreiben.",
+          "window_behavior_mode": "Vollautomatisch: Sonne, Komfort, Abwesenheit und Zeitplan aktiv. Nur Abwesenheit: nur Abwesenheitssteuerung aktiv. Automatik deaktiviert: keine automatische Beschattung. Sicherheitsschutz (Sturm/Wind) bleibt immer aktiv."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Rolladen für dieses Fenster",
+        "description": "Wähle die Rolladen-Entität oder -Entitäten, die das Fenster \"{window_name}\" beschatten. Füge nur Rolladen hinzu, die genau diese Fensterfläche beschatten. Für separate Fenster separate Fenster anlegen.",
+        "data": {
+          "cover_entities": "Rolladen dieses Fensters",
+          "cover_hardware_type": "Cover-Hardware-Typ"
+        }
+      },
+      "add_window_loop": {
+        "title": "Weiteres Fenster?",
+        "description": "{window_count} neues/neue Fenster zu dieser Zone hinzugefügt. Möchtest du ein weiteres Fenster hinzufügen?",
+        "data": {
+          "add_another_window": "Weiteres Fenster hinzufügen"
+        }
+      },
+      "edit_window": {
+        "title": "Fenster bearbeiten",
+        "description": "Wähle das Fenster aus, das du bearbeiten möchtest.",
+        "data": {
+          "window_id": "Fenster"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Fenster bearbeiten: {window_name}",
+        "description": "Einstellungen für Fenster \"{window_name}\" aktualisieren. Änderungen an den Rolladen-Entitäten werden nach dem Speichern wirksam.",
+        "data": {
+          "window_name": "Fenstername",
+          "floor_level": "Stockwerk (0 = Erdgeschoss)",
+          "compass_direction": "Ausrichtung",
+          "custom_azimuth": "Benutzerdefinierter Azimut (0–359°, nur wenn Ausrichtung auf 'Benutzerdefiniert' gesetzt)",
+          "cover_entities": "Rolladen dieses Fensters",
+          "cover_hardware_type": "Rolladen-Typ",
+          "absence_position": "Abwesenheitsposition (überschreibt Zonen-Standard)",
+          "window_behavior_mode": "Automatischer Beschattungsmodus",
+          "light_shade_position": "Leichte Beschattungsposition (überschreibt Zonen-Standard)",
+          "normal_shade_position": "Normale Beschattungsposition (überschreibt Zonen-Standard)",
+          "strong_shade_position": "Starke Beschattungsposition (überschreibt Zonen-Standard)",
+          "manual_sun_sector_enabled": "Manuellen Sonnenbereich aktivieren",
+          "manual_sun_sector_start_deg": "Sonnenbereich Startazimut (°)",
+          "manual_sun_sector_end_deg": "Sonnenbereich Endazimut (°)",
+          "obstruction_1_enabled": "Schattenzone 1 aktiv",
+          "obstruction_1_azimuth_start_deg": "Zone 1 Azimut-Start (°)",
+          "obstruction_1_azimuth_end_deg": "Zone 1 Azimut-Ende (°)",
+          "obstruction_1_block_from_elevation_deg": "Zone 1 blockiert ab Sonnenhöhe (°)",
+          "obstruction_1_block_until_elevation_deg": "Zone 1 blockiert bis Sonnenhöhe (°)",
+          "obstruction_2_enabled": "Schattenzone 2 aktiv",
+          "obstruction_2_azimuth_start_deg": "Zone 2 Azimut-Start (°)",
+          "obstruction_2_azimuth_end_deg": "Zone 2 Azimut-Ende (°)",
+          "obstruction_2_block_from_elevation_deg": "Zone 2 blockiert ab Sonnenhöhe (°)",
+          "obstruction_2_block_until_elevation_deg": "Zone 2 blockiert bis Sonnenhöhe (°)",
+          "obstruction_3_enabled": "Schattenzone 3 aktiv",
+          "obstruction_3_azimuth_start_deg": "Zone 3 Azimut-Start (°)",
+          "obstruction_3_azimuth_end_deg": "Zone 3 Azimut-Ende (°)",
+          "obstruction_3_block_from_elevation_deg": "Zone 3 blockiert ab Sonnenhöhe (°)",
+          "obstruction_3_block_until_elevation_deg": "Zone 3 blockiert bis Sonnenhöhe (°)"
+        },
+        "data_description": {
+          "absence_position": "Leer lassen, um die Zonen-Standardposition zu übernehmen. Wert setzen, um sie nur für dieses Fenster zu überschreiben.",
+          "window_behavior_mode": "Vollautomatisch: Sonne, Komfort, Abwesenheit und Zeitplan aktiv. Nur Abwesenheit: nur Abwesenheitssteuerung aktiv. Automatik deaktiviert: keine automatische Beschattung. Sicherheitsschutz (Sturm/Wind) bleibt immer aktiv.",
+          "light_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei leichter Beschattung nur für dieses Fenster zu überschreiben.",
+          "normal_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei normaler Beschattung nur für dieses Fenster zu überschreiben.",
+          "strong_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei starker Beschattung nur für dieses Fenster zu überschreiben.",
+          "manual_sun_sector_enabled": "Aktivieren, um den automatischen Azimutbereich durch einen manuell definierten Bereich zu ersetzen. Start- und Endazimut definieren, wann die Sonne als direkt auf dieses Fenster treffend gilt. Unterstützt Überläufe (z. B. 330° bis 30° über Nord).",
+          "obstruction_1_enabled": "Aktivieren, um einen Azimutbereich zu markieren, in dem ein physisches Hindernis (Baum, Gebäude, Dachüberstand) die direkte Sonne blockiert. Lege optional fest, bei welchen Sonnenhöhen das Hindernis wirkt. Ohne Angabe gilt die Schattenzone bei jeder Sonnenhöhe.",
+          "obstruction_1_block_from_elevation_deg": "Optional. Das Hindernis blockiert nur, wenn die Sonnenhöhe größer oder gleich diesem Wert ist. Beispiel: 45° für einen Dachüberstand, der nur bei steiler Sonne wirkt. Leer lassen für keine Untergrenze.",
+          "obstruction_1_block_until_elevation_deg": "Optional. Das Hindernis blockiert nur, wenn die Sonnenhöhe kleiner oder gleich diesem Wert ist. Beispiel: 18° für einen Berg oder ein Nachbargebäude, das nur bei tiefer Sonne wirkt. Leer lassen für keine Obergrenze.",
+          "obstruction_2_enabled": "Zweite optionale Schattenzone für dieses Fenster.",
+          "obstruction_2_block_from_elevation_deg": "Optionale untere Sonnenhöhengrenze für Zone 2 (siehe Zone-1-Beschreibung).",
+          "obstruction_2_block_until_elevation_deg": "Optionale obere Sonnenhöhengrenze für Zone 2 (siehe Zone-1-Beschreibung).",
+          "obstruction_3_enabled": "Dritte optionale Schattenzone für dieses Fenster.",
+          "obstruction_3_block_from_elevation_deg": "Optionale untere Sonnenhöhengrenze für Zone 3 (siehe Zone-1-Beschreibung).",
+          "obstruction_3_block_until_elevation_deg": "Optionale obere Sonnenhöhengrenze für Zone 3 (siehe Zone-1-Beschreibung)."
+        }
+      },
+      "remove_window": {
+        "title": "Fenster entfernen",
+        "description": "Wähle das zu entfernende Fenster. Der Fenster-Eintrag und seine Rolladen-Zuordnung werden dauerhaft aus dieser Zone entfernt. Die Rolladen-Entitäten selbst werden nicht gelöscht.",
+        "data": {
+          "window_id": "Zu entfernendes Fenster"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Entfernen bestätigen",
+        "description": "Fenster \"{window_name}\" entfernen? Dies kann nicht rückgängig gemacht werden.",
+        "data": {
+          "remove_confirmed": "Ja, dieses Fenster entfernen"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Das letzte Fenster kann nicht entfernt werden. Eine Zone muss mindestens ein Fenster haben.",
+      "obstruction_elevation_range_invalid": "\"Blockiert ab Sonnenhöhe\" darf nicht größer als \"Blockiert bis Sonnenhöhe\" sein."
+    },
+    "abort": {
+      "no_options_for_system_entry": "Der SmartShading-System-Eintrag hat keine konfigurierbaren Optionen."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Richte SmartShading ein. Fenster kannst du auf den nächsten Bildschirmen hinzufügen.",
+        "data": {
+          "zone_name": "Zonenname"
+        }
+      },
+      "weather": {
+        "title": "Wetter- und Solareingaben (optional)",
+        "description": "Alles optional. Eine Wetter-Entität (z. B. DWD, yr.no) liefert automatisch Wetterzustand, Bewölkungsgrad und Wind. Dedizierte Sensoren überschreiben sie für präzisere lokale Messwerte. Sonnenstrahlung erfordert einen dedizierten Sensor. Dieser Schritt kann übersprungen und später nachgeholt werden.",
+        "data": {
+          "weather_entity_id": "Wetter-Entität",
+          "solar_radiation_sensor_id": "Solarstrahlungssensor (W/m²)",
+          "outdoor_temperature_sensor_id": "Außentemperatursensor",
+          "cloud_cover_sensor_id": "Bewölkungsgrad (0–100 %)",
+          "wind_speed_sensor_id": "Windgeschwindigkeit (m/s) – bei Markisen/Screens möglichst Böengeschwindigkeit verwenden"
+        }
+      },
+      "lifecycle": {
+        "title": "Zeitplan-Einstellungen",
+        "description": "Wähle, wie SmartShading Nacht und Morgen erkennt. \"Beides\" löst aus, sobald eine der beiden Bedingungen – Uhrzeit oder Sonnenhöhe – zuerst erfüllt ist.",
+        "data": {
+          "night_trigger": "Nacht-Auslöser",
+          "morning_trigger": "Morgen-Auslöser",
+          "schedule_mode": "Zeitplan-Modus"
+        },
+        "data_description": {
+          "schedule_mode": "\"Gleich jeden Tag\" verwendet einen Zeitplan für die gesamte Woche. \"Wochentag / Wochenende\" ermöglicht unterschiedliche Uhrzeiten und Positionen für Mo–Fr und Sa–So."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Zeitplan-Details",
+        "description": "Gib Uhrzeit oder Sonnenhöhe für den gewählten Auslöser ein. Es werden nur die Felder für den ausgewählten Auslöser angezeigt.",
+        "data": {
+          "night_fixed_time": "Nacht-Uhrzeit",
+          "night_elevation_preset": "Nacht: Sonnenstand",
+          "night_sun_elevation": "Eigener Nacht-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
+          "morning_fixed_time": "Morgen-Uhrzeit",
+          "morning_elevation_preset": "Morgen: Sonnenstand",
+          "morning_sun_elevation": "Eigener Morgen-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
+          "night_position": "Nachtposition",
+          "morning_position": "Morgenposition",
+          "weekday_night_fixed_time": "Nacht-Uhrzeit Wochentag (Mo–Fr)",
+          "weekday_night_position": "Nachtposition Wochentag (Mo–Fr)",
+          "weekday_morning_fixed_time": "Morgen-Uhrzeit Wochentag (Mo–Fr)",
+          "weekday_morning_position": "Morgenposition Wochentag (Mo–Fr)",
+          "weekend_night_fixed_time": "Nacht-Uhrzeit Wochenende (Sa–So)",
+          "weekend_night_position": "Nachtposition Wochenende (Sa–So)",
+          "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
+          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)"
+        },
+        "data_description": {
+          "night_position": "Behangsposition in der Nachtphase (0 = geschlossen, 100 = offen).",
+          "morning_position": "Behangsposition zu Beginn der Morgenphase (0 = geschlossen, 100 = offen).",
+          "weekday_night_position": "Behangsposition in der Nachtphase an Wochentagen (0 = geschlossen, 100 = offen).",
+          "weekday_morning_position": "Behangsposition zu Beginn der Morgenphase an Wochentagen (0 = geschlossen, 100 = offen).",
+          "weekend_night_position": "Behangsposition in der Nachtphase am Wochenende (0 = geschlossen, 100 = offen).",
+          "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "presence": {
+        "title": "Präsenz-Einstellungen",
+        "description": "Optional. Wenn niemand ausgewählt ist, geht SmartShading immer von Anwesenheit aus und löst nie eine abwesenheitsbasierte Schließung aus.",
+        "data": {
+          "presence_entity_ids": "Anwesenheits-Entitäten",
+          "absence_delay_min": "Abwesenheitsverzögerung",
+          "absence_position": "Abwesenheitsposition"
+        },
+        "data_description": {
+          "absence_position": "Position der Beschattung bei Abwesenheit, sofern keine stärkere Schutzentscheidung greift (0 = vollständig geschlossen, 100 = vollständig geöffnet). Gilt für alle Fenster dieser Zone."
+        }
+      },
+      "window": {
+        "title": "Fenster hinzufügen",
+        "description": "Konfiguriere ein Fenster. SmartShading arbeitet mit einem präzisen Azimut-Wert – die Himmelsrichtung ist nur eine Eingabehilfe.",
+        "data": {
+          "window_name": "Fenstername",
+          "floor_level": "Stockwerk (0 = Erdgeschoss)",
+          "compass_direction": "Ausrichtung",
+          "custom_azimuth": "Benutzerdefinierter Azimut (0–359°, nur bei Ausrichtung 'Benutzerdefiniert' verwendet)",
+          "absence_position": "Abwesenheitsposition (überschreibt Zonen-Standard)",
+          "window_behavior_mode": "Automatischer Beschattungsmodus"
+        },
+        "data_description": {
+          "absence_position": "Leer lassen, um die Zonen-Standardposition zu übernehmen. Wert setzen, um sie nur für dieses Fenster zu überschreiben.",
+          "window_behavior_mode": "Vollautomatisch: Sonne, Komfort, Abwesenheit und Zeitplan aktiv. Nur Abwesenheit: nur Abwesenheitssteuerung aktiv. Automatik deaktiviert: keine automatische Beschattung. Sicherheitsschutz (Sturm/Wind) bleibt immer aktiv."
+        }
+      },
+      "cover_group": {
+        "title": "Rolladen für dieses Fenster",
+        "description": "Wähle die Rolladen-Entität oder -Entitäten, die das Fenster \"{window_name}\" beschatten. Füge nur Rolladen hinzu, die genau diese Fensterfläche beschatten. Für separate Fenster separate Fenster anlegen.",
+        "data": {
+          "cover_entities": "Rolladen dieses Fensters",
+          "cover_hardware_type": "Beschattungstyp"
+        }
+      },
+      "add_another_window": {
+        "title": "Weiteres Fenster hinzufügen?",
+        "description": "Bisher {window_count} Fenster konfiguriert.",
+        "data": {
+          "add_another_window": "Weiteres Fenster hinzufügen"
+        }
+      },
+      "comfort": {
+        "title": "Komforteinstellungen",
+        "description": "Beschattungsschutz-Funktionen konfigurieren. Innentemperatursensoren sind optional.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Innentemperatursensoren (optional)",
+          "heat_protection_enabled": "Hitzeschutz aktivieren",
+          "glare_protection_enabled": "Blendschutz aktivieren",
+          "solar_gain_enabled": "Solar-Gewinn aktivieren (Wintersonne)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Ein oder mehrere Innensensoren. Bei mehreren Sensoren wird der Durchschnitt aller gültigen Messwerte verwendet.",
+          "heat_protection_enabled": "Beschattet vorbeugend, bevor Räume überhitzen – basierend auf Sonnenstand, Wetter und Temperaturen.",
+          "glare_protection_enabled": "Reduziert direkte Sonneneinstrahlung, wenn die Sonne direkt auf das Fenster trifft.",
+          "solar_gain_enabled": "Hält Beschattung bei kühlem Wetter offener, um passive Erwärmung zu unterstützen. Hitzeschutz hat Vorrang."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Gib einen benutzerdefinierten Azimut zwischen 0 und 359 Grad ein oder wähle eine Himmelsrichtung.",
+      "no_covers_selected": "Wähle mindestens eine Cover-Entität für dieses Fenster aus.",
+      "empty_zone_name": "Zonenname ist erforderlich.",
+      "obstruction_elevation_range_invalid": "\"Blockiert ab Sonnenhöhe\" darf nicht größer als \"Blockiert bis Sonnenhöhe\" sein."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading ist bereits eingerichtet.",
+      "system_already_exists": "SmartShading-System-Eintrag existiert bereits."
+    }
+  },
+  "selector": {
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Bei Sonnenuntergang (0°)",
+        "dusk": "Wenn es dämmert – bürgerliche Dämmerung (-6°)",
+        "dark": "Wenn es dunkel wird – nautische Dämmerung (-12°)",
+        "custom": "Benutzerdefiniert"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "Bei Sonnenaufgang (0°)",
+        "dawn": "Bei Morgendämmerung – bürgerliche Dämmerung (-6°)",
+        "bright": "Wenn es hell wird – nautische Dämmerung (-12°)",
+        "custom": "Benutzerdefiniert"
+      }
+    },
+    "compass_direction": {
+      "options": {
+        "north": "Norden (0°)",
+        "northeast": "Nordosten (45°)",
+        "east": "Osten (90°)",
+        "southeast": "Südosten (135°)",
+        "south": "Süden (180°)",
+        "southwest": "Südwesten (225°)",
+        "west": "Westen (270°)",
+        "northwest": "Nordwesten (315°)",
+        "custom": "Benutzerdefinierter Azimut"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Feste Uhrzeit",
+        "sun_elevation": "Sonnenhöhe",
+        "both": "Beides",
+        "disabled": "Deaktiviert"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Gleich jeden Tag",
+        "weekday_weekend": "Wochentag / Wochenende"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Vollautomatisch",
+        "absence_only": "Nur Abwesenheit",
+        "disabled_automatic": "Automatik deaktiviert"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Rollladen",
+        "venetian_blind": "Raffstore / Jalousie",
+        "exterior_screen": "Screen",
+        "awning": "Markise",
+        "generic": "Sonstiges Cover"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Support-Export erstellen"
+      },
+      "export_research_data": {
+        "name": "Research-Export erstellen"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Beobachtungsmodus",
+        "state": {
+          "on": "Aktiv",
+          "off": "Pausiert"
+        }
+      },
+      "active_control": {
+        "name": "Aktive Steuerung",
+        "state": {
+          "on": "Aktiv",
+          "off": "Inaktiv"
+        }
+      },
+      "debug_logging": {
+        "name": "Debug-Log"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Beschattungszustand",
+        "state": {
+          "storm_safe": "Sturmsicherung",
+          "wind_safe": "Windsicherung",
+          "manual_override": "Manuelle Übersteuerung",
+          "night_closed": "Nacht – geschlossen",
+          "absence_closed": "Abwesenheit – geschlossen",
+          "strong_shade": "Starke Beschattung",
+          "normal_shade": "Normale Beschattung",
+          "light_shade": "Leichte Beschattung",
+          "open": "Geöffnet"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Beschattungszustand",
+        "state": {
+          "storm_safe": "Sturmsicherung",
+          "wind_safe": "Windsicherung",
+          "manual_override": "Manuelle Übersteuerung",
+          "night_closed": "Nacht – geschlossen",
+          "absence_closed": "Abwesenheit – geschlossen",
+          "strong_shade": "Starke Beschattung",
+          "normal_shade": "Normale Beschattung",
+          "light_shade": "Leichte Beschattung",
+          "open": "Geöffnet"
+        }
+      },
+      "exposure": {
+        "name": "Sonnenexposition"
+      },
+      "exposure_indexed": {
+        "name": "{index} Sonnenexposition"
+      },
+      "cover_position": {
+        "name": "Cover-Position"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Cover-Position"
+      },
+      "recommendation": {
+        "name": "Empfehlung"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Empfehlung"
+      },
+      "zone_summary": {
+        "name": "Zonenübersicht",
+        "state": {
+          "safety": "Sicherheitsmodus",
+          "override": "Manuelle Übersteuerung",
+          "automatic": "Automatisch",
+          "recommendation_only": "Nur Empfehlung",
+          "disabled": "Deaktiviert"
+        }
+      },
+      "learning_progress": {
+        "name": "Lernfortschritt"
+      },
+      "shading_result": {
+        "name": "Beschattungsergebnis",
+        "state": {
+          "excellent": "Ausgezeichnet",
+          "good": "Gut",
+          "acceptable": "Akzeptabel",
+          "poor": "Schlecht",
+          "unknown": "Unbekannt"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Sonnensektor",
+        "state": {
+          "on": "Im Sonnensektor",
+          "off": "Außerhalb des Sonnensektors"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Sonnensektor",
+        "state": {
+          "on": "Im Sonnensektor",
+          "off": "Außerhalb des Sonnensektors"
+        }
+      },
+      "override_active": {
+        "name": "Übersteuerung aktiv",
+        "state": {
+          "on": "Übersteuerung aktiv",
+          "off": "Normale Steuerung"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Übersteuerung aktiv",
+        "state": {
+          "on": "Übersteuerung aktiv",
+          "off": "Normale Steuerung"
+        }
+      }
+    }
+  }
+}

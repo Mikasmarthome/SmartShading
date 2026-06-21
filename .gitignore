@@ -1,0 +1,67 @@
+# Python caches / bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test / type / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Virtual environments / local env
+.venv/
+venv/
+env/
+.env
+
+# Build / packaging artifacts
+dist/
+build/
+*.egg-info/
+
+# Logs / temporary / dump files
+*.log
+*.tmp
+*.bak
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*~
+
+# Internal research material — must NOT be published.
+# external_analysis/ holds full copies of unrelated third-party projects kept
+# only for local study; it is third-party code and out of scope for this repo.
+external_analysis/
+*.zip
+
+# Internal working / audit / research documents — kept locally, not part of the
+# public release. The published package is the integration plus README/LICENSE/
+# hacs.json (see RELEASE_PREP_AUDIT.md for the release allowlist).
+docs/
+ARCHITECTURE.md
+*_AUDIT.md
+TODO.md
+RELEASE_NOTES*.md
+
+# Local-only development assets — kept locally, excluded from the public release
+# scope. Tests and scripts remain in the working tree and still run locally; they
+# are simply not part of the published repository.
+#
+# Published brand assets live inside the integration at
+# custom_components/smartshading/brand/ (icon.png, logo.png) — Home Assistant
+# serves these locally for the integration's icon/logo. They are intentionally
+# NOT ignored. The root source file "logo smartshading.png" is the local source
+# only and must never be published under that name.
+tests/
+scripts/
+logo smartshading.png

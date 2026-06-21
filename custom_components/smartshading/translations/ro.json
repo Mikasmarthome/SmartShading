@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Editați setările SmartShading",
+        "description": "Aici puteți edita setările de vreme, confort, program, prezență și umbrire pentru această zonă și puteți adăuga, edita sau elimina ferestre.",
+        "menu_options": {
+          "weather": "Intrări meteo și solare",
+          "lifecycle": "Setări de program",
+          "presence": "Setări de prezență",
+          "comfort": "Setări de confort",
+          "behavior": "Comportament de umbrire",
+          "add_window": "Adăugați fereastră",
+          "edit_window": "Editați fereastra",
+          "remove_window": "Eliminați fereastra"
+        }
+      },
+      "weather": {
+        "title": "Intrări meteo și solare",
+        "description": "Toate opționale. O entitate meteo (de ex. DWD, yr.no) furnizează automat condiția, nebulozitatea și vântul. Senzorii dedicați înlocuiesc entitatea meteo pentru citiri locale mai precise. Radiația solară trebuie să provină de la un senzor dedicat: nu este citită din entitățile meteo.",
+        "data": {
+          "weather_entity_id": "Entitate meteo",
+          "solar_radiation_sensor_id": "Senzor de radiație solară (W/m²)",
+          "outdoor_temperature_sensor_id": "Senzor de temperatură exterioară",
+          "cloud_cover_sensor_id": "Senzor de nebulozitate (0–100 %)",
+          "wind_speed_sensor_id": "Senzor de viteză a vântului (m/s) — folosiți rafalele de vânt pentru copertine/screenuri dacă sunt disponibile"
+        }
+      },
+      "lifecycle": {
+        "title": "Setări de program",
+        "description": "Alegeți cum detectează SmartShading noaptea și dimineața. „Ambele” se declanșează la prima condiție îndeplinită: oră sau înălțimea soarelui.",
+        "data": {
+          "night_trigger": "Declanșator de noapte",
+          "morning_trigger": "Declanșator de dimineață",
+          "schedule_mode": "Mod de program"
+        },
+        "data_description": {
+          "schedule_mode": "„La fel în fiecare zi” folosește un singur program pentru toată săptămâna. „Zi lucrătoare / Weekend” vă permite să setați ore și poziții diferite pentru lun–vin și sâm–dum."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Detalii program",
+        "description": "Introduceți ora sau înălțimea soarelui pentru fiecare declanșator. Sunt afișate doar câmpurile relevante pentru declanșatorul selectat.",
+        "data": {
+          "night_fixed_time": "Ora de noapte",
+          "night_elevation_preset": "Noapte: poziția soarelui",
+          "night_sun_elevation": "Înălțime de noapte personalizată (°) — folosită doar când este selectat Personalizat",
+          "morning_fixed_time": "Ora de dimineață",
+          "morning_elevation_preset": "Dimineață: poziția soarelui",
+          "morning_sun_elevation": "Înălțime de dimineață personalizată (°) — folosită doar când este selectat Personalizat",
+          "night_position": "Poziție de noapte",
+          "morning_position": "Poziție de dimineață",
+          "weekday_night_fixed_time": "Ora de noapte în zilele lucrătoare (lun–vin)",
+          "weekday_night_position": "Poziție de noapte în zilele lucrătoare (lun–vin)",
+          "weekday_morning_fixed_time": "Ora de dimineață în zilele lucrătoare (lun–vin)",
+          "weekday_morning_position": "Poziție de dimineață în zilele lucrătoare (lun–vin)",
+          "weekend_night_fixed_time": "Ora de noapte în weekend (sâm–dum)",
+          "weekend_night_position": "Poziție de noapte în weekend (sâm–dum)",
+          "weekend_morning_fixed_time": "Ora de dimineață în weekend (sâm–dum)",
+          "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)"
+        },
+        "data_description": {
+          "night_position": "Poziția umbrarului în faza de noapte (0 = închis, 100 = deschis).",
+          "morning_position": "Poziția umbrarului la începutul fazei de dimineață (0 = închis, 100 = deschis).",
+          "weekday_night_position": "Poziția umbrarului în faza de noapte în zilele lucrătoare (0 = închis, 100 = deschis).",
+          "weekday_morning_position": "Poziția umbrarului la începutul fazei de dimineață în zilele lucrătoare (0 = închis, 100 = deschis).",
+          "weekend_night_position": "Poziția umbrarului în faza de noapte în weekend (0 = închis, 100 = deschis).",
+          "weekend_morning_position": "Poziția umbrarului la începutul fazei de dimineață în weekend (0 = închis, 100 = deschis)."
+        }
+      },
+      "presence": {
+        "title": "Setări de prezență",
+        "description": "Opțional. Dacă nu este selectat nimeni, SmartShading presupune întotdeauna că este cineva prezent și nu declanșează niciodată închiderea din cauza absenței.",
+        "data": {
+          "presence_entity_ids": "Entități de prezență",
+          "absence_delay_min": "Întârziere de absență",
+          "absence_position": "Poziție de absență"
+        },
+        "data_description": {
+          "absence_position": "Poziția umbrarului cât timp zona este neocupată, cu excepția cazului în care se aplică o decizie de protecție mai puternică (0 = complet închis, 100 = complet deschis). Se aplică tuturor ferestrelor din această zonă."
+        }
+      },
+      "comfort": {
+        "title": "Setări de confort",
+        "description": "Configurați funcțiile de protecție prin umbrire. Senzorii de temperatură interioară sunt opționali.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Senzori de temperatură interioară (opțional)",
+          "heat_protection_enabled": "Activați protecția împotriva căldurii",
+          "glare_protection_enabled": "Activați protecția împotriva strălucirii",
+          "solar_gain_enabled": "Activați câștigul solar (soare de iarnă)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Unul sau mai mulți senzori interiori. Când sunt configurați mai mulți senzori, se folosește media tuturor citirilor valide.",
+          "heat_protection_enabled": "Previne supraîncălzirea umbrind proactiv pe baza poziției soarelui, a vremii și a temperaturilor.",
+          "glare_protection_enabled": "Reduce lumina solară directă când soarele lovește fereastra.",
+          "solar_gain_enabled": "Menține umbrirea mai deschisă pe vreme rece pentru a sprijini încălzirea pasivă. Protecția împotriva căldurii are prioritate."
+        }
+      },
+      "behavior": {
+        "title": "Comportament de umbrire de bază",
+        "description": "Poziții-țintă de bază ale umbrarului în funcție de intensitatea umbrei. SmartShading folosește aceste valori ca punct de plecare și le poate adapta per fereastră când există suficiente date de învățare.",
+        "data": {
+          "light_shade_position": "Poziție de umbrire ușoară",
+          "normal_shade_position": "Poziție de umbrire normală",
+          "strong_shade_position": "Poziție de umbrire puternică"
+        }
+      },
+      "add_window": {
+        "title": "Adăugați o fereastră",
+        "description": "Adăugați încă o fereastră în această zonă. SmartShading funcționează cu un azimut precis: direcția busolei este doar o scurtătură comodă.",
+        "data": {
+          "window_name": "Numele ferestrei",
+          "floor_level": "Etaj (0 = parter)",
+          "compass_direction": "Orientare",
+          "custom_azimuth": "Azimut personalizat (0-359°, folosit doar dacă Orientarea este setată pe Personalizat)",
+          "absence_position": "Poziție de absență (suprascrie valoarea implicită a zonei)",
+          "window_behavior_mode": "Mod de umbrire automată"
+        },
+        "data_description": {
+          "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră specifică.",
+          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Umbrare pentru această fereastră",
+        "description": "Selectați entitatea sau entitățile de umbrar care umbresc fereastra „{window_name}”. Adăugați doar umbrare care acoperă exact această suprafață de fereastră. Pentru ferestre separate, adăugați ferestre separate.",
+        "data": {
+          "cover_entities": "Umbrare pentru această fereastră",
+          "cover_hardware_type": "Tipul de hardware al umbrarului"
+        }
+      },
+      "add_window_loop": {
+        "title": "Adăugați încă o fereastră?",
+        "description": "{window_count} fereastră/ferestre nouă/noi adăugată/adăugate în această zonă. Doriți să adăugați încă o fereastră?",
+        "data": {
+          "add_another_window": "Adăugați încă o fereastră"
+        }
+      },
+      "edit_window": {
+        "title": "Editați fereastra",
+        "description": "Selectați fereastra de editat.",
+        "data": {
+          "window_id": "Fereastră"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Editați fereastra: {window_name}",
+        "description": "Actualizați setările ferestrei „{window_name}”. Modificările umbrarelor intră în vigoare după salvare.",
+        "data": {
+          "window_name": "Numele ferestrei",
+          "floor_level": "Etaj (0 = parter)",
+          "compass_direction": "Orientare",
+          "custom_azimuth": "Azimut personalizat (0-359°, folosit doar dacă Orientarea este setată pe Personalizat)",
+          "cover_entities": "Umbrare pentru această fereastră",
+          "cover_hardware_type": "Tipul de hardware al umbrarului",
+          "absence_position": "Poziție de absență (suprascrie valoarea implicită a zonei)",
+          "window_behavior_mode": "Mod de umbrire automată",
+          "light_shade_position": "Poziție de umbrire ușoară (suprascrie valoarea implicită a zonei)",
+          "normal_shade_position": "Poziție de umbrire normală (suprascrie valoarea implicită a zonei)",
+          "strong_shade_position": "Poziție de umbrire puternică (suprascrie valoarea implicită a zonei)",
+          "manual_sun_sector_enabled": "Activați suprascrierea manuală a sectorului solar",
+          "manual_sun_sector_start_deg": "Azimut de start al sectorului solar (°)",
+          "manual_sun_sector_end_deg": "Azimut de final al sectorului solar (°)",
+          "obstruction_1_enabled": "Zona de obstrucție 1 activă",
+          "obstruction_1_azimuth_start_deg": "Azimut de start al zonei 1 (°)",
+          "obstruction_1_azimuth_end_deg": "Azimut de final al zonei 1 (°)",
+          "obstruction_1_block_from_elevation_deg": "Zona 1 blocată de la înălțimea (°)",
+          "obstruction_1_block_until_elevation_deg": "Zona 1 blocată până la înălțimea (°)",
+          "obstruction_2_enabled": "Zona de obstrucție 2 activă",
+          "obstruction_2_azimuth_start_deg": "Azimut de start al zonei 2 (°)",
+          "obstruction_2_azimuth_end_deg": "Azimut de final al zonei 2 (°)",
+          "obstruction_2_block_from_elevation_deg": "Zona 2 blocată de la înălțimea (°)",
+          "obstruction_2_block_until_elevation_deg": "Zona 2 blocată până la înălțimea (°)",
+          "obstruction_3_enabled": "Zona de obstrucție 3 activă",
+          "obstruction_3_azimuth_start_deg": "Azimut de start al zonei 3 (°)",
+          "obstruction_3_azimuth_end_deg": "Azimut de final al zonei 3 (°)",
+          "obstruction_3_block_from_elevation_deg": "Zona 3 blocată de la înălțimea (°)",
+          "obstruction_3_block_until_elevation_deg": "Zona 3 blocată până la înălțimea (°)"
+        },
+        "data_description": {
+          "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră.",
+          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active.",
+          "light_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire ușoară doar pentru această fereastră.",
+          "normal_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire normală doar pentru această fereastră.",
+          "strong_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire puternică doar pentru această fereastră.",
+          "manual_sun_sector_enabled": "Activați pentru a înlocui sectorul solar automat bazat pe azimut cu un interval manual. Azimutul de start și de final definesc când se consideră că soarele lovește această fereastră. Acceptă trecerea peste nord (de ex. de la 330° la 30°).",
+          "obstruction_1_enabled": "Activați pentru a marca un interval de azimut în care o obstrucție fizică (copac, clădire, streașină) blochează soarele direct. Lăsați câmpurile de înălțime goale pentru a bloca la orice înălțime a soarelui în intervalul de azimut.",
+          "obstruction_1_block_from_elevation_deg": "Opțional. Obstrucția blochează doar când înălțimea soarelui este egală sau mai mare decât această valoare. Exemplu: 45° blochează o streașină care umbrește doar la unghiuri abrupte ale soarelui. Lăsați gol pentru nicio limită inferioară.",
+          "obstruction_1_block_until_elevation_deg": "Opțional. Obstrucția blochează doar când înălțimea soarelui este egală sau mai mică decât această valoare. Exemplu: 18° blochează un munte sau o clădire vecină care afectează doar soarele jos. Lăsați gol pentru nicio limită superioară.",
+          "obstruction_2_enabled": "A doua zonă de obstrucție opțională pentru această fereastră.",
+          "obstruction_2_block_from_elevation_deg": "Limită inferioară de înălțime opțională pentru zona 2 (vezi descrierea zonei 1).",
+          "obstruction_2_block_until_elevation_deg": "Limită superioară de înălțime opțională pentru zona 2 (vezi descrierea zonei 1).",
+          "obstruction_3_enabled": "A treia zonă de obstrucție opțională pentru această fereastră.",
+          "obstruction_3_block_from_elevation_deg": "Limită inferioară de înălțime opțională pentru zona 3 (vezi descrierea zonei 1).",
+          "obstruction_3_block_until_elevation_deg": "Limită superioară de înălțime opțională pentru zona 3 (vezi descrierea zonei 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Eliminați fereastra",
+        "description": "Selectați fereastra de eliminat. Aceasta va elimina permanent fereastra și atribuirile sale de umbrare din această zonă. Entitățile de umbrar în sine nu sunt șterse.",
+        "data": {
+          "window_id": "Fereastră de eliminat"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Confirmați eliminarea",
+        "description": "Eliminați fereastra „{window_name}”? Această acțiune nu poate fi anulată.",
+        "data": {
+          "remove_confirmed": "Da, eliminați această fereastră"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Nu se poate elimina ultima fereastră. O zonă trebuie să aibă cel puțin o fereastră.",
+      "obstruction_elevation_range_invalid": "„Blocată de la înălțimea” nu trebuie să fie mai mare decât „Blocată până la înălțimea”."
+    },
+    "abort": {
+      "no_options_for_system_entry": "Intrarea de Sistem SmartShading nu are opțiuni configurabile."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Configurați SmartShading. Puteți adăuga ferestre pe ecranele următoare.",
+        "data": {
+          "zone_name": "Numele zonei"
+        }
+      },
+      "weather": {
+        "title": "Intrări meteo și solare (opțional)",
+        "description": "Toate opționale. O entitate meteo (de ex. DWD, yr.no) furnizează automat condiția, nebulozitatea și vântul. Senzorii dedicați o înlocuiesc pentru citiri locale mai precise. Radiația solară necesită un senzor dedicat. Puteți sări peste acest pas și adăuga intrările mai târziu.",
+        "data": {
+          "weather_entity_id": "Entitate meteo",
+          "solar_radiation_sensor_id": "Senzor de radiație solară (W/m²)",
+          "outdoor_temperature_sensor_id": "Senzor de temperatură exterioară",
+          "cloud_cover_sensor_id": "Senzor de nebulozitate (0–100 %)",
+          "wind_speed_sensor_id": "Senzor de viteză a vântului (m/s) — folosiți rafalele de vânt pentru copertine/screenuri dacă sunt disponibile"
+        }
+      },
+      "lifecycle": {
+        "title": "Setări de program",
+        "description": "Alegeți cum detectează SmartShading noaptea și dimineața. „Ambele” se declanșează la prima condiție îndeplinită: oră sau înălțimea soarelui.",
+        "data": {
+          "night_trigger": "Declanșator de noapte",
+          "morning_trigger": "Declanșator de dimineață",
+          "schedule_mode": "Mod de program"
+        },
+        "data_description": {
+          "schedule_mode": "„La fel în fiecare zi” folosește un singur program pentru toată săptămâna. „Zi lucrătoare / Weekend” vă permite să setați ore și poziții diferite pentru lun–vin și sâm–dum."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Detalii program",
+        "description": "Introduceți ora sau înălțimea soarelui pentru fiecare declanșator. Sunt afișate doar câmpurile relevante pentru declanșatorul selectat.",
+        "data": {
+          "night_fixed_time": "Ora de noapte",
+          "night_elevation_preset": "Noapte: poziția soarelui",
+          "night_sun_elevation": "Înălțime de noapte personalizată (°) — folosită doar când este selectat Personalizat",
+          "morning_fixed_time": "Ora de dimineață",
+          "morning_elevation_preset": "Dimineață: poziția soarelui",
+          "morning_sun_elevation": "Înălțime de dimineață personalizată (°) — folosită doar când este selectat Personalizat",
+          "night_position": "Poziție de noapte",
+          "morning_position": "Poziție de dimineață",
+          "weekday_night_fixed_time": "Ora de noapte în zilele lucrătoare (lun–vin)",
+          "weekday_night_position": "Poziție de noapte în zilele lucrătoare (lun–vin)",
+          "weekday_morning_fixed_time": "Ora de dimineață în zilele lucrătoare (lun–vin)",
+          "weekday_morning_position": "Poziție de dimineață în zilele lucrătoare (lun–vin)",
+          "weekend_night_fixed_time": "Ora de noapte în weekend (sâm–dum)",
+          "weekend_night_position": "Poziție de noapte în weekend (sâm–dum)",
+          "weekend_morning_fixed_time": "Ora de dimineață în weekend (sâm–dum)",
+          "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)"
+        },
+        "data_description": {
+          "night_position": "Poziția umbrarului în faza de noapte (0 = închis, 100 = deschis).",
+          "morning_position": "Poziția umbrarului la începutul fazei de dimineață (0 = închis, 100 = deschis).",
+          "weekday_night_position": "Poziția umbrarului în faza de noapte în zilele lucrătoare (0 = închis, 100 = deschis).",
+          "weekday_morning_position": "Poziția umbrarului la începutul fazei de dimineață în zilele lucrătoare (0 = închis, 100 = deschis).",
+          "weekend_night_position": "Poziția umbrarului în faza de noapte în weekend (0 = închis, 100 = deschis).",
+          "weekend_morning_position": "Poziția umbrarului la începutul fazei de dimineață în weekend (0 = închis, 100 = deschis)."
+        }
+      },
+      "presence": {
+        "title": "Setări de prezență",
+        "description": "Opțional. Dacă nu este selectat nimeni, SmartShading presupune întotdeauna că este cineva prezent și nu declanșează niciodată închiderea din cauza absenței.",
+        "data": {
+          "presence_entity_ids": "Entități de prezență",
+          "absence_delay_min": "Întârziere de absență",
+          "absence_position": "Poziție de absență"
+        },
+        "data_description": {
+          "absence_position": "Poziția umbrarului cât timp zona este neocupată, cu excepția cazului în care se aplică o decizie de protecție mai puternică (0 = complet închis, 100 = complet deschis). Se aplică tuturor ferestrelor din această zonă."
+        }
+      },
+      "window": {
+        "title": "Adăugați o fereastră",
+        "description": "Configurați o fereastră. SmartShading funcționează cu un azimut precis: direcția busolei este doar o scurtătură comodă.",
+        "data": {
+          "window_name": "Numele ferestrei",
+          "floor_level": "Etaj (0 = parter)",
+          "compass_direction": "Orientare",
+          "custom_azimuth": "Azimut personalizat (0-359°, folosit doar dacă Orientarea este setată pe Personalizat)",
+          "absence_position": "Poziție de absență (suprascrie valoarea implicită a zonei)",
+          "window_behavior_mode": "Mod de umbrire automată"
+        },
+        "data_description": {
+          "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră specifică.",
+          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active."
+        }
+      },
+      "cover_group": {
+        "title": "Umbrare pentru această fereastră",
+        "description": "Selectați entitatea sau entitățile de umbrar care umbresc fereastra „{window_name}”. Adăugați doar umbrare care acoperă exact această suprafață de fereastră. Pentru ferestre separate, adăugați ferestre separate.",
+        "data": {
+          "cover_entities": "Umbrare pentru această fereastră",
+          "cover_hardware_type": "Tipul de hardware al umbrarului"
+        }
+      },
+      "add_another_window": {
+        "title": "Adăugați încă o fereastră?",
+        "description": "{window_count} fereastră/ferestre configurată/configurate până acum.",
+        "data": {
+          "add_another_window": "Adăugați încă o fereastră"
+        }
+      },
+      "comfort": {
+        "title": "Setări de confort",
+        "description": "Configurați funcțiile de protecție prin umbrire. Senzorii de temperatură interioară sunt opționali.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Senzori de temperatură interioară (opțional)",
+          "heat_protection_enabled": "Activați protecția împotriva căldurii",
+          "glare_protection_enabled": "Activați protecția împotriva strălucirii",
+          "solar_gain_enabled": "Activați câștigul solar (soare de iarnă)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Unul sau mai mulți senzori interiori. Când sunt configurați mai mulți senzori, se folosește media tuturor citirilor valide.",
+          "heat_protection_enabled": "Previne supraîncălzirea umbrind proactiv pe baza poziției soarelui, a vremii și a temperaturilor.",
+          "glare_protection_enabled": "Reduce lumina solară directă când soarele lovește fereastra.",
+          "solar_gain_enabled": "Menține umbrirea mai deschisă pe vreme rece pentru a sprijini încălzirea pasivă. Protecția împotriva căldurii are prioritate."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Introduceți un azimut personalizat între 0 și 359 de grade sau alegeți o direcție a busolei.",
+      "no_covers_selected": "Selectați cel puțin o entitate de umbrar pentru această fereastră.",
+      "empty_zone_name": "Numele zonei este obligatoriu.",
+      "obstruction_elevation_range_invalid": "„Blocată de la înălțimea” nu trebuie să fie mai mare decât „Blocată până la înălțimea”."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading este deja configurat.",
+      "system_already_exists": "Intrarea de Sistem SmartShading există deja."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Nord (0°)",
+        "northeast": "Nord-est (45°)",
+        "east": "Est (90°)",
+        "southeast": "Sud-est (135°)",
+        "south": "Sud (180°)",
+        "southwest": "Sud-vest (225°)",
+        "west": "Vest (270°)",
+        "northwest": "Nord-vest (315°)",
+        "custom": "Azimut personalizat"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "La apus (0°)",
+        "dusk": "În amurg — amurg civil (-6°)",
+        "dark": "Când este întuneric — amurg nautic (-12°)",
+        "custom": "Personalizat"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "La răsărit (0°)",
+        "dawn": "În zori — zori civil (-6°)",
+        "bright": "Când se luminează — zori nautic (-12°)",
+        "custom": "Personalizat"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Oră fixă",
+        "sun_elevation": "Înălțimea soarelui",
+        "both": "Ambele",
+        "disabled": "Dezactivat"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "La fel în fiecare zi",
+        "weekday_weekend": "Zi lucrătoare / Weekend"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Complet automat",
+        "absence_only": "Doar absență",
+        "disabled_automatic": "Automatizare dezactivată"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Rulou",
+        "venetian_blind": "Jaluzea venețiană",
+        "exterior_screen": "Screen",
+        "awning": "Copertină",
+        "generic": "Alt umbrar"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Creați export de asistență"
+      },
+      "export_research_data": {
+        "name": "Creați export de cercetare"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Mod de observare",
+        "state": {
+          "on": "Observă",
+          "off": "În pauză"
+        }
+      },
+      "active_control": {
+        "name": "Control activ",
+        "state": {
+          "on": "Activ",
+          "off": "Inactiv"
+        }
+      },
+      "debug_logging": {
+        "name": "Jurnal de depanare"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Stare de umbrire",
+        "state": {
+          "storm_safe": "Protejat la furtună",
+          "wind_safe": "Protejat la vânt",
+          "manual_override": "Suprascriere manuală",
+          "night_closed": "Noapte – închis",
+          "absence_closed": "Absență – închis",
+          "strong_shade": "Umbrire puternică",
+          "normal_shade": "Umbrire normală",
+          "light_shade": "Umbrire ușoară",
+          "open": "Deschis"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Stare de umbrire",
+        "state": {
+          "storm_safe": "Protejat la furtună",
+          "wind_safe": "Protejat la vânt",
+          "manual_override": "Suprascriere manuală",
+          "night_closed": "Noapte – închis",
+          "absence_closed": "Absență – închis",
+          "strong_shade": "Umbrire puternică",
+          "normal_shade": "Umbrire normală",
+          "light_shade": "Umbrire ușoară",
+          "open": "Deschis"
+        }
+      },
+      "exposure": {
+        "name": "Expunere"
+      },
+      "exposure_indexed": {
+        "name": "{index} Expunere"
+      },
+      "cover_position": {
+        "name": "Poziția umbrarului"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Poziția umbrarului"
+      },
+      "recommendation": {
+        "name": "Recomandare"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Recomandare"
+      },
+      "zone_summary": {
+        "name": "Rezumatul zonei",
+        "state": {
+          "safety": "Mod de siguranță",
+          "override": "Suprascriere manuală",
+          "automatic": "Automat",
+          "recommendation_only": "Doar recomandare",
+          "disabled": "Dezactivat"
+        }
+      },
+      "learning_progress": {
+        "name": "Progresul învățării"
+      },
+      "shading_result": {
+        "name": "Rezultatul umbririi",
+        "state": {
+          "excellent": "Excelent",
+          "good": "Bun",
+          "acceptable": "Acceptabil",
+          "poor": "Slab",
+          "unknown": "Necunoscut"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Sector solar",
+        "state": {
+          "on": "În sectorul solar",
+          "off": "În afara sectorului solar"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Sector solar",
+        "state": {
+          "on": "În sectorul solar",
+          "off": "În afara sectorului solar"
+        }
+      },
+      "override_active": {
+        "name": "Suprascriere activă",
+        "state": {
+          "on": "Suprascriere activă",
+          "off": "Control normal"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Suprascriere activă",
+        "state": {
+          "on": "Suprascriere activă",
+          "off": "Control normal"
+        }
+      }
+    }
+  }
+}

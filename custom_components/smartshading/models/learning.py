@@ -1,0 +1,221 @@
+"""Learning Foundation data models (Phase 9A).
+
+These dataclasses define the complete observation vocabulary for the future
+Learning Engine. They are pure domain models — no logic, no persistence, no
+adaptive decisions, no Home Assistant dependencies.
+
+Architecture invariants:
+  - Learning is supplementary intelligence. Missing, corrupt, or absent
+    learning data must never prevent normal shading decisions or cause any
+    Coordinator failure. The Learning Foundation is additive only.
+  - Learning may only influence Tier 4 and Tier 5 thresholds. Tiers 1
+    (Storm/Wind Safety), 2 (Manual Override), and 3 (Lifecycle) are
+    lernfest — the Learning Engine must never alter their behavior.
+  - All positions stored here use internal convention (0=open, 100=shaded),
+    consistent with the rest of the domain model.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Literal
+
+from ..state_machine.states import ShadingState
+
+# Valid values for OverrideRecord.event_type.
+# Provided as a module-level constant for runtime validation in Phase 9C.
+OverrideEventType = Literal[
+    "started", "expired", "renewed", "cleared_by_safety", "cleared_by_lifecycle"
+]
+OVERRIDE_EVENT_TYPES: tuple[str, ...] = (
+    "started",
+    "expired",
+    "renewed",
+    "cleared_by_safety",
+    "cleared_by_lifecycle",   # Step 8c: Night/Morning lifecycle transition cleared the override
+)
+
+
+@dataclass(frozen=True)
+class StateTransitionRecord:
+    """Immutable record of a single ShadingState transition for one window.
+
+    Captured whenever the active ShadingState changes (from_state != to_state).
+    Provides the event backbone the Learning Engine uses to build a decision
+    timeline and correlate conditions with outcomes.
+
+    All sensor fields are optional because SmartShading operates with
+    partial sensor coverage (fail-safe principle: missing data → no trigger).
+    """
+
+    timestamp: datetime
+    window_id: str
+    from_state: ShadingState
+    to_state: ShadingState
+    decided_by: str              # e.g. "HeatEvaluator", "ManualOverrideEvaluator"
+    lifecycle_state: str
+    absence_active: bool
+    is_in_solar_sector: bool
+    outdoor_temp_c: float | None = None
+    indoor_temp_c: float | None = None
+    solar_radiation_wm2: float | None = None
+    wind_speed_ms: float | None = None
+    # Step 9F1: sun position at transition time (from sun.sun + window.azimuth).
+    sun_azimuth: float | None = None
+    sun_elevation: float | None = None
+    solar_relative_azimuth: float | None = None  # sun_azimuth − window.azimuth
+    # Step 9F2: weather and exposure context at transition time.
+    weather_condition: str | None = None
+    cloud_cover_pct: float | None = None
+    raw_solar_radiation_wm2: float | None = None   # ExposureEngine input (pre-impact-factor)
+    effective_exposure_wm2: float | None = None    # ExposureEngine output (post-impact-factor)
+    learned_solar_impact_factor: float | None = None  # 1.0 = no learning in effect
+
+
+@dataclass(frozen=True)
+class OverrideRecord:
+    """Immutable record of a manual override lifecycle event.
+
+    Captured on four occasions:
+      "started"           — new override detected (position delta exceeded tolerance)
+      "renewed"           — user moved cover again while override active
+      "expired"           — override duration elapsed naturally
+      "cleared_by_safety" — Tier-1 Safety (Storm/Wind) cleared the override
+
+    override_duration_min is None on "started" and "renewed" events (duration
+    is not yet known) and populated on "expired" / "cleared_by_safety".
+    """
+
+    timestamp: datetime
+    window_id: str
+    event_type: OverrideEventType
+    lifecycle_state: str
+    override_position: int | None = None         # internal convention (0=open, 100=shaded)
+    overridden_state: ShadingState | None = None
+    overridden_position: int | None = None       # internal convention
+    override_duration_min: float | None = None   # None until the override ends
+    outdoor_temp_c: float | None = None
+    solar_radiation_wm2: float | None = None
+    # Step 9F3: evaluator active at the time of the event.
+    # Populated on started/renewed/cleared_by_safety (tier_decision available).
+    # None on expired/cleared_by_lifecycle (pre-sun-branch, tier_decision absent).
+    decided_by: str | None = None
+    # Step 9F1: sun position at override-event time.
+    sun_azimuth: float | None = None
+    sun_elevation: float | None = None
+    solar_relative_azimuth: float | None = None  # sun_azimuth − window.azimuth
+    # Step 9F2: weather and exposure context at override-event time.
+    weather_condition: str | None = None
+    cloud_cover_pct: float | None = None
+    raw_solar_radiation_wm2: float | None = None   # ExposureEngine input (pre-impact-factor)
+    effective_exposure_wm2: float | None = None    # ExposureEngine output (post-impact-factor)
+    learned_solar_impact_factor: float | None = None  # 1.0 = no learning in effect
+
+
+@dataclass(frozen=True)
+class WindowCycleSnapshot:
+    """Immutable periodic state snapshot for one window.
+
+    Captured every N coordinator cycles (default: 15, approximately once
+    per 15 minutes at a 1-minute cycle interval) rather than every cycle,
+    to limit storage volume. Provides the continuous-time signal the Learning
+    Engine needs to correlate environmental conditions with shading outcomes.
+
+    effective_exposure_wm2 is the ExposureEngine output after applying
+    learned_solar_impact_factor and seasonal_factor — it captures the
+    calibrated solar input the evaluators actually see.
+    """
+
+    timestamp: datetime
+    window_id: str
+    shading_state: ShadingState
+    decided_by: str
+    lifecycle_state: str
+    absence_active: bool
+    override_active: bool
+    target_position: int | None = None
+    outdoor_temp_c: float | None = None
+    indoor_temp_c: float | None = None
+    solar_radiation_wm2: float | None = None
+    effective_exposure_wm2: float | None = None  # ExposureEngine output
+    wind_speed_ms: float | None = None
+    # Step 9F1: sun position at snapshot time.
+    sun_azimuth: float | None = None
+    sun_elevation: float | None = None
+    solar_relative_azimuth: float | None = None  # sun_azimuth − window.azimuth
+    # Step 9F2: weather and exposure context at snapshot time.
+    # Note: effective_exposure_wm2 already exists above (original field).
+    weather_condition: str | None = None
+    cloud_cover_pct: float | None = None
+    raw_solar_radiation_wm2: float | None = None   # ExposureEngine input (pre-impact-factor)
+    learned_solar_impact_factor: float | None = None  # 1.0 = no learning in effect
+
+
+@dataclass(frozen=True)
+class DecisionOutcome:
+    """Immutable record linking a shading decision to its observable outcome.
+
+    The Learning Engine creates a DecisionOutcome when a state transition
+    occurs. The outcome fields (override_occurred, indoor_temp_outcome_c,
+    state_duration_min) are resolved later — a new DecisionOutcome instance
+    replaces the pending one when resolution data becomes available.
+
+    Outcome signals:
+      override_occurred    — strongest signal: user corrected the decision
+      override_delay_min   — shorter delay = stronger negative signal
+      indoor_temp_outcome_c — heat protection effectiveness (requires sensor)
+      state_duration_min   — how long the decision held before next transition
+
+    indoor_temp_outcome_delay_min controls when the Coordinator reads
+    indoor_temp_outcome_c (default: 30 minutes after the decision).
+    """
+
+    decision_timestamp: datetime
+    window_id: str
+    decided_state: ShadingState
+    decided_by: str
+    indoor_temp_outcome_delay_min: int = 30
+    lifecycle_state: str = "day"             # Step 9F4b-5: phase at decision time
+    from_state: ShadingState | None = None   # Step 9F4b-5: prior state before transition
+    override_occurred: bool = False
+    override_delay_min: float | None = None      # None if no override occurred
+    # Step 9F4a: event type of the override that corrected this decision
+    override_event_type: str | None = None       # "started" / "renewed" / None
+    indoor_temp_at_decision: float | None = None
+    indoor_temp_outcome_c: float | None = None   # None until resolved
+    indoor_temp_delta_c: float | None = None     # outcome_c − at_decision_c
+    state_duration_min: float | None = None      # None until next transition
+    # Step 9F4a: outcome metadata resolved after the decision
+    escalation_occurred: bool = False
+    outcome_score: float | None = None           # -1.0 … +1.0, set on resolution
+    resolution_status: str = "pending"           # pending/complete/partial_no_temp/…
+    evaluation_timestamp: datetime | None = None # when outcome was resolved
+
+    @property
+    def timestamp(self) -> datetime:
+        """Alias for decision_timestamp — required by prune_by_age_and_count."""
+        return self.decision_timestamp
+
+
+@dataclass
+class EvaluatorConfidenceRecord:
+    """Running tally of an evaluator's decision quality for one window.
+
+    Not frozen — the Learning Engine increments decision_count and
+    override_count and recomputes override_rate as new outcomes arrive.
+
+    Confidence model (Learning Engine, Phase 9+):
+        base_confidence = 1.0 - override_rate
+        sample_weight   = min(1.0, decision_count / 100)
+        confidence      = base_confidence * sample_weight
+
+    Records with fewer than ~30 decisions are statistically insignificant.
+    The Learning Engine must not use them to adjust evaluator thresholds.
+    """
+
+    window_id: str
+    evaluator_name: str
+    last_updated: datetime
+    decision_count: int = 0
+    override_count: int = 0
+    override_rate: float = 0.0

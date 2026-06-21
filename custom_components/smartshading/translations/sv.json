@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Redigera SmartShading-inställningar",
+        "description": "Här kan du redigera väder-, komfort-, schema-, närvaro- och solskyddsinställningar för den här zonen och lägga till, redigera eller ta bort fönster.",
+        "menu_options": {
+          "weather": "Väder- och solindata",
+          "lifecycle": "Schemainställningar",
+          "presence": "Närvaroinställningar",
+          "comfort": "Komfortinställningar",
+          "behavior": "Solskyddsbeteende",
+          "add_window": "Lägg till fönster",
+          "edit_window": "Redigera fönster",
+          "remove_window": "Ta bort fönster"
+        }
+      },
+      "weather": {
+        "title": "Väder- och solindata",
+        "description": "Allt är valfritt. En väderentitet (t.ex. DWD, yr.no) ger automatiskt förhållande, molnighet och vind. Dedikerade sensorer ersätter väderentiteten för mer exakta lokala avläsningar. Solstrålning måste komma från en dedikerad sensor: den läses inte från väderentiteter.",
+        "data": {
+          "weather_entity_id": "Väderentitet",
+          "solar_radiation_sensor_id": "Solstrålningssensor (W/m²)",
+          "outdoor_temperature_sensor_id": "Utomhustemperatursensor",
+          "cloud_cover_sensor_id": "Molnighetssensor (0–100 %)",
+          "wind_speed_sensor_id": "Vindhastighetssensor (m/s) — använd vindbyar för markiser/screens om tillgängligt"
+        }
+      },
+      "lifecycle": {
+        "title": "Schemainställningar",
+        "description": "Välj hur SmartShading upptäcker natt och morgon. \"Båda\" utlöses av det villkor som uppfylls först: tid eller solhöjd.",
+        "data": {
+          "night_trigger": "Nattutlösare",
+          "morning_trigger": "Morgonutlösare",
+          "schedule_mode": "Schemaläge"
+        },
+        "data_description": {
+          "schedule_mode": "\"Lika varje dag\" använder ett schema för hela veckan. \"Vardag / Helg\" låter dig ange olika tider och positioner för mån–fre och lör–sön."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Schemadetaljer",
+        "description": "Ange tid eller solhöjd för varje utlösare. Endast de fält som är relevanta för den valda utlösaren visas.",
+        "data": {
+          "night_fixed_time": "Nattid",
+          "night_elevation_preset": "Natt: solposition",
+          "night_sun_elevation": "Anpassad natthöjd (°) — används endast när Anpassad är vald",
+          "morning_fixed_time": "Morgontid",
+          "morning_elevation_preset": "Morgon: solposition",
+          "morning_sun_elevation": "Anpassad morgonhöjd (°) — används endast när Anpassad är vald",
+          "night_position": "Nattposition",
+          "morning_position": "Morgonposition",
+          "weekday_night_fixed_time": "Nattid på vardagar (mån–fre)",
+          "weekday_night_position": "Nattposition på vardagar (mån–fre)",
+          "weekday_morning_fixed_time": "Morgontid på vardagar (mån–fre)",
+          "weekday_morning_position": "Morgonposition på vardagar (mån–fre)",
+          "weekend_night_fixed_time": "Nattid på helgen (lör–sön)",
+          "weekend_night_position": "Nattposition på helgen (lör–sön)",
+          "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
+          "weekend_morning_position": "Morgonposition på helgen (lör–sön)"
+        },
+        "data_description": {
+          "night_position": "Solskyddets position under nattfasen (0 = stängt, 100 = öppet).",
+          "morning_position": "Solskyddets position vid morgonfasens början (0 = stängt, 100 = öppet).",
+          "weekday_night_position": "Solskyddets position under nattfasen på vardagar (0 = stängt, 100 = öppet).",
+          "weekday_morning_position": "Solskyddets position vid morgonfasens början på vardagar (0 = stängt, 100 = öppet).",
+          "weekend_night_position": "Solskyddets position under nattfasen på helgen (0 = stängt, 100 = öppet).",
+          "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet)."
+        }
+      },
+      "presence": {
+        "title": "Närvaroinställningar",
+        "description": "Valfritt. Om ingen är vald antar SmartShading alltid att någon är närvarande och utlöser aldrig stängning på grund av frånvaro.",
+        "data": {
+          "presence_entity_ids": "Närvaroentiteter",
+          "absence_delay_min": "Frånvarofördröjning",
+          "absence_position": "Frånvaroposition"
+        },
+        "data_description": {
+          "absence_position": "Solskyddets position när zonen är obebodd, om inte ett starkare skyddsbeslut gäller (0 = helt stängt, 100 = helt öppet). Gäller alla fönster i den här zonen."
+        }
+      },
+      "comfort": {
+        "title": "Komfortinställningar",
+        "description": "Konfigurera skyddsfunktionerna via solskydd. Inomhustemperatursensorer är valfria.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Inomhustemperatursensorer (valfritt)",
+          "heat_protection_enabled": "Aktivera värmeskydd",
+          "glare_protection_enabled": "Aktivera bländningsskydd",
+          "solar_gain_enabled": "Aktivera solinstrålning (vintersol)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "En eller flera inomhussensorer. När flera sensorer är konfigurerade används medelvärdet av alla giltiga avläsningar.",
+          "heat_protection_enabled": "Förhindrar överhettning genom att skugga proaktivt baserat på solposition, väder och temperaturer.",
+          "glare_protection_enabled": "Minskar direkt solljus när solen träffar fönstret.",
+          "solar_gain_enabled": "Håller solskyddet mer öppet vid svalt väder för att stödja passiv uppvärmning. Värmeskydd har prioritet."
+        }
+      },
+      "behavior": {
+        "title": "Grundläggande solskyddsbeteende",
+        "description": "Grundläggande målpositioner för solskyddet per solskyddsintensitet. SmartShading använder dessa värden som utgångspunkt och kan anpassa dem per fönster när tillräckligt med inlärningsdata finns.",
+        "data": {
+          "light_shade_position": "Position för lätt skugga",
+          "normal_shade_position": "Position för normal skugga",
+          "strong_shade_position": "Position för kraftig skugga"
+        }
+      },
+      "add_window": {
+        "title": "Lägg till ett fönster",
+        "description": "Lägg till ytterligare ett fönster i den här zonen. SmartShading arbetar med en exakt azimut: kompassriktningen är bara en praktisk genväg.",
+        "data": {
+          "window_name": "Fönsternamn",
+          "floor_level": "Våning (0 = bottenvåning)",
+          "compass_direction": "Orientering",
+          "custom_azimuth": "Anpassad azimut (0-359°, används endast om Orientering är inställd på Anpassad)",
+          "absence_position": "Frånvaroposition (åsidosätter zonens standard)",
+          "window_behavior_mode": "Automatiskt solskyddsläge"
+        },
+        "data_description": {
+          "absence_position": "Lämna tomt för att ärva zonens standardfrånvaroposition. Ange ett värde för att åsidosätta den endast för det här specifika fönstret.",
+          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Solskydd för det här fönstret",
+        "description": "Välj den eller de solskyddsentiteter som skuggar fönstret \"{window_name}\". Lägg endast till solskydd som täcker exakt den här fönsterytan. För separata fönster, lägg till separata fönster.",
+        "data": {
+          "cover_entities": "Solskydd för det här fönstret",
+          "cover_hardware_type": "Solskyddets hårdvarutyp"
+        }
+      },
+      "add_window_loop": {
+        "title": "Lägg till ytterligare ett fönster?",
+        "description": "{window_count} nytt/nya fönster tillagt/tillagda i den här zonen. Vill du lägga till ytterligare ett fönster?",
+        "data": {
+          "add_another_window": "Lägg till ytterligare ett fönster"
+        }
+      },
+      "edit_window": {
+        "title": "Redigera fönster",
+        "description": "Välj fönstret som ska redigeras.",
+        "data": {
+          "window_id": "Fönster"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Redigera fönster: {window_name}",
+        "description": "Uppdatera inställningarna för fönstret \"{window_name}\". Ändringar av solskydd träder i kraft efter att du sparat.",
+        "data": {
+          "window_name": "Fönsternamn",
+          "floor_level": "Våning (0 = bottenvåning)",
+          "compass_direction": "Orientering",
+          "custom_azimuth": "Anpassad azimut (0-359°, används endast om Orientering är inställd på Anpassad)",
+          "cover_entities": "Solskydd för det här fönstret",
+          "cover_hardware_type": "Solskyddets hårdvarutyp",
+          "absence_position": "Frånvaroposition (åsidosätter zonens standard)",
+          "window_behavior_mode": "Automatiskt solskyddsläge",
+          "light_shade_position": "Position för lätt skugga (åsidosätter zonens standard)",
+          "normal_shade_position": "Position för normal skugga (åsidosätter zonens standard)",
+          "strong_shade_position": "Position för kraftig skugga (åsidosätter zonens standard)",
+          "manual_sun_sector_enabled": "Aktivera manuell åsidosättning av solsektorn",
+          "manual_sun_sector_start_deg": "Solsektorns startazimut (°)",
+          "manual_sun_sector_end_deg": "Solsektorns slutazimut (°)",
+          "obstruction_1_enabled": "Hinderzon 1 aktiv",
+          "obstruction_1_azimuth_start_deg": "Zon 1 startazimut (°)",
+          "obstruction_1_azimuth_end_deg": "Zon 1 slutazimut (°)",
+          "obstruction_1_block_from_elevation_deg": "Zon 1 blockerad från höjd (°)",
+          "obstruction_1_block_until_elevation_deg": "Zon 1 blockerad till höjd (°)",
+          "obstruction_2_enabled": "Hinderzon 2 aktiv",
+          "obstruction_2_azimuth_start_deg": "Zon 2 startazimut (°)",
+          "obstruction_2_azimuth_end_deg": "Zon 2 slutazimut (°)",
+          "obstruction_2_block_from_elevation_deg": "Zon 2 blockerad från höjd (°)",
+          "obstruction_2_block_until_elevation_deg": "Zon 2 blockerad till höjd (°)",
+          "obstruction_3_enabled": "Hinderzon 3 aktiv",
+          "obstruction_3_azimuth_start_deg": "Zon 3 startazimut (°)",
+          "obstruction_3_azimuth_end_deg": "Zon 3 slutazimut (°)",
+          "obstruction_3_block_from_elevation_deg": "Zon 3 blockerad från höjd (°)",
+          "obstruction_3_block_until_elevation_deg": "Zon 3 blockerad till höjd (°)"
+        },
+        "data_description": {
+          "absence_position": "Lämna tomt för att ärva zonens standardfrånvaroposition. Ange ett värde för att åsidosätta den endast för det här fönstret.",
+          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva.",
+          "light_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för lätt skugga endast för det här fönstret.",
+          "normal_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för normal skugga endast för det här fönstret.",
+          "strong_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för kraftig skugga endast för det här fönstret.",
+          "manual_sun_sector_enabled": "Aktivera för att ersätta den automatiska, azimutbaserade solsektorn med ett manuellt intervall. Start- och slutazimut definierar när solen anses träffa det här fönstret. Stöder övergång förbi norr (t.ex. från 330° till 30°).",
+          "obstruction_1_enabled": "Aktivera för att markera ett azimutintervall där ett fysiskt hinder (träd, byggnad, takutsprång) blockerar direkt sol. Lämna höjdfälten tomma för att blockera vid varje solhöjd inom azimutintervallet.",
+          "obstruction_1_block_from_elevation_deg": "Valfritt. Hindret blockerar endast när solhöjden är lika med eller över detta värde. Exempel: 45° blockerar ett takutsprång som bara skuggar vid branta solvinklar. Lämna tomt för ingen nedre gräns.",
+          "obstruction_1_block_until_elevation_deg": "Valfritt. Hindret blockerar endast när solhöjden är lika med eller under detta värde. Exempel: 18° blockerar ett berg eller en grannbyggnad som bara påverkar vid låg sol. Lämna tomt för ingen övre gräns.",
+          "obstruction_2_enabled": "Andra valfria hinderzonen för det här fönstret.",
+          "obstruction_2_block_from_elevation_deg": "Valfri nedre höjdgräns för zon 2 (se beskrivningen av zon 1).",
+          "obstruction_2_block_until_elevation_deg": "Valfri övre höjdgräns för zon 2 (se beskrivningen av zon 1).",
+          "obstruction_3_enabled": "Tredje valfria hinderzonen för det här fönstret.",
+          "obstruction_3_block_from_elevation_deg": "Valfri nedre höjdgräns för zon 3 (se beskrivningen av zon 1).",
+          "obstruction_3_block_until_elevation_deg": "Valfri övre höjdgräns för zon 3 (se beskrivningen av zon 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Ta bort fönster",
+        "description": "Välj fönstret som ska tas bort. Detta tar permanent bort fönstret och dess solskyddstilldelningar från den här zonen. Själva solskyddsentiteterna tas inte bort.",
+        "data": {
+          "window_id": "Fönster att ta bort"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Bekräfta borttagning",
+        "description": "Ta bort fönstret \"{window_name}\"? Detta kan inte ångras.",
+        "data": {
+          "remove_confirmed": "Ja, ta bort det här fönstret"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Kan inte ta bort det sista fönstret. En zon måste ha minst ett fönster.",
+      "obstruction_elevation_range_invalid": "\"Blockerad från höjd\" får inte vara större än \"Blockerad till höjd\"."
+    },
+    "abort": {
+      "no_options_for_system_entry": "SmartShading-systemposten har inga konfigurerbara alternativ."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Konfigurera SmartShading. Du kan lägga till fönster på nästa skärmar.",
+        "data": {
+          "zone_name": "Zonnamn"
+        }
+      },
+      "weather": {
+        "title": "Väder- och solindata (valfritt)",
+        "description": "Allt är valfritt. En väderentitet (t.ex. DWD, yr.no) ger automatiskt förhållande, molnighet och vind. Dedikerade sensorer ersätter den för mer exakta lokala avläsningar. Solstrålning kräver en dedikerad sensor. Du kan hoppa över det här steget och lägga till indata senare.",
+        "data": {
+          "weather_entity_id": "Väderentitet",
+          "solar_radiation_sensor_id": "Solstrålningssensor (W/m²)",
+          "outdoor_temperature_sensor_id": "Utomhustemperatursensor",
+          "cloud_cover_sensor_id": "Molnighetssensor (0–100 %)",
+          "wind_speed_sensor_id": "Vindhastighetssensor (m/s) — använd vindbyar för markiser/screens om tillgängligt"
+        }
+      },
+      "lifecycle": {
+        "title": "Schemainställningar",
+        "description": "Välj hur SmartShading upptäcker natt och morgon. \"Båda\" utlöses av det villkor som uppfylls först: tid eller solhöjd.",
+        "data": {
+          "night_trigger": "Nattutlösare",
+          "morning_trigger": "Morgonutlösare",
+          "schedule_mode": "Schemaläge"
+        },
+        "data_description": {
+          "schedule_mode": "\"Lika varje dag\" använder ett schema för hela veckan. \"Vardag / Helg\" låter dig ange olika tider och positioner för mån–fre och lör–sön."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Schemadetaljer",
+        "description": "Ange tid eller solhöjd för varje utlösare. Endast de fält som är relevanta för den valda utlösaren visas.",
+        "data": {
+          "night_fixed_time": "Nattid",
+          "night_elevation_preset": "Natt: solposition",
+          "night_sun_elevation": "Anpassad natthöjd (°) — används endast när Anpassad är vald",
+          "morning_fixed_time": "Morgontid",
+          "morning_elevation_preset": "Morgon: solposition",
+          "morning_sun_elevation": "Anpassad morgonhöjd (°) — används endast när Anpassad är vald",
+          "night_position": "Nattposition",
+          "morning_position": "Morgonposition",
+          "weekday_night_fixed_time": "Nattid på vardagar (mån–fre)",
+          "weekday_night_position": "Nattposition på vardagar (mån–fre)",
+          "weekday_morning_fixed_time": "Morgontid på vardagar (mån–fre)",
+          "weekday_morning_position": "Morgonposition på vardagar (mån–fre)",
+          "weekend_night_fixed_time": "Nattid på helgen (lör–sön)",
+          "weekend_night_position": "Nattposition på helgen (lör–sön)",
+          "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
+          "weekend_morning_position": "Morgonposition på helgen (lör–sön)"
+        },
+        "data_description": {
+          "night_position": "Solskyddets position under nattfasen (0 = stängt, 100 = öppet).",
+          "morning_position": "Solskyddets position vid morgonfasens början (0 = stängt, 100 = öppet).",
+          "weekday_night_position": "Solskyddets position under nattfasen på vardagar (0 = stängt, 100 = öppet).",
+          "weekday_morning_position": "Solskyddets position vid morgonfasens början på vardagar (0 = stängt, 100 = öppet).",
+          "weekend_night_position": "Solskyddets position under nattfasen på helgen (0 = stängt, 100 = öppet).",
+          "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet)."
+        }
+      },
+      "presence": {
+        "title": "Närvaroinställningar",
+        "description": "Valfritt. Om ingen är vald antar SmartShading alltid att någon är närvarande och utlöser aldrig stängning på grund av frånvaro.",
+        "data": {
+          "presence_entity_ids": "Närvaroentiteter",
+          "absence_delay_min": "Frånvarofördröjning",
+          "absence_position": "Frånvaroposition"
+        },
+        "data_description": {
+          "absence_position": "Solskyddets position när zonen är obebodd, om inte ett starkare skyddsbeslut gäller (0 = helt stängt, 100 = helt öppet). Gäller alla fönster i den här zonen."
+        }
+      },
+      "window": {
+        "title": "Lägg till ett fönster",
+        "description": "Konfigurera ett fönster. SmartShading arbetar med en exakt azimut: kompassriktningen är bara en praktisk genväg.",
+        "data": {
+          "window_name": "Fönsternamn",
+          "floor_level": "Våning (0 = bottenvåning)",
+          "compass_direction": "Orientering",
+          "custom_azimuth": "Anpassad azimut (0-359°, används endast om Orientering är inställd på Anpassad)",
+          "absence_position": "Frånvaroposition (åsidosätter zonens standard)",
+          "window_behavior_mode": "Automatiskt solskyddsläge"
+        },
+        "data_description": {
+          "absence_position": "Lämna tomt för att ärva zonens standardfrånvaroposition. Ange ett värde för att åsidosätta den endast för det här specifika fönstret.",
+          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva."
+        }
+      },
+      "cover_group": {
+        "title": "Solskydd för det här fönstret",
+        "description": "Välj den eller de solskyddsentiteter som skuggar fönstret \"{window_name}\". Lägg endast till solskydd som täcker exakt den här fönsterytan. För separata fönster, lägg till separata fönster.",
+        "data": {
+          "cover_entities": "Solskydd för det här fönstret",
+          "cover_hardware_type": "Solskyddets hårdvarutyp"
+        }
+      },
+      "add_another_window": {
+        "title": "Lägg till ytterligare ett fönster?",
+        "description": "{window_count} fönster konfigurerade hittills.",
+        "data": {
+          "add_another_window": "Lägg till ytterligare ett fönster"
+        }
+      },
+      "comfort": {
+        "title": "Komfortinställningar",
+        "description": "Konfigurera skyddsfunktionerna via solskydd. Inomhustemperatursensorer är valfria.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Inomhustemperatursensorer (valfritt)",
+          "heat_protection_enabled": "Aktivera värmeskydd",
+          "glare_protection_enabled": "Aktivera bländningsskydd",
+          "solar_gain_enabled": "Aktivera solinstrålning (vintersol)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "En eller flera inomhussensorer. När flera sensorer är konfigurerade används medelvärdet av alla giltiga avläsningar.",
+          "heat_protection_enabled": "Förhindrar överhettning genom att skugga proaktivt baserat på solposition, väder och temperaturer.",
+          "glare_protection_enabled": "Minskar direkt solljus när solen träffar fönstret.",
+          "solar_gain_enabled": "Håller solskyddet mer öppet vid svalt väder för att stödja passiv uppvärmning. Värmeskydd har prioritet."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Ange en anpassad azimut mellan 0 och 359 grader, eller välj en kompassriktning.",
+      "no_covers_selected": "Välj minst en solskyddsentitet för det här fönstret.",
+      "empty_zone_name": "Zonnamn krävs.",
+      "obstruction_elevation_range_invalid": "\"Blockerad från höjd\" får inte vara större än \"Blockerad till höjd\"."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading är redan konfigurerat.",
+      "system_already_exists": "SmartShading-systemposten finns redan."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Norr (0°)",
+        "northeast": "Nordost (45°)",
+        "east": "Öst (90°)",
+        "southeast": "Sydost (135°)",
+        "south": "Syd (180°)",
+        "southwest": "Sydväst (225°)",
+        "west": "Väst (270°)",
+        "northwest": "Nordväst (315°)",
+        "custom": "Anpassad azimut"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Vid solnedgång (0°)",
+        "dusk": "I skymningen — borgerlig skymning (-6°)",
+        "dark": "När det är mörkt — nautisk skymning (-12°)",
+        "custom": "Anpassad"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "Vid soluppgång (0°)",
+        "dawn": "I gryningen — borgerlig skymning (-6°)",
+        "bright": "När det ljusnar — nautisk skymning (-12°)",
+        "custom": "Anpassad"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Fast tid",
+        "sun_elevation": "Solhöjd",
+        "both": "Båda",
+        "disabled": "Inaktiverad"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Lika varje dag",
+        "weekday_weekend": "Vardag / Helg"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Helautomatiskt",
+        "absence_only": "Endast frånvaro",
+        "disabled_automatic": "Automatisering inaktiverad"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Rulljalusi",
+        "venetian_blind": "Persienn",
+        "exterior_screen": "Screen",
+        "awning": "Markis",
+        "generic": "Annat solskydd"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Skapa supportexport"
+      },
+      "export_research_data": {
+        "name": "Skapa forskningsexport"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Observationsläge",
+        "state": {
+          "on": "Observerar",
+          "off": "Pausad"
+        }
+      },
+      "active_control": {
+        "name": "Aktiv styrning",
+        "state": {
+          "on": "Aktiv",
+          "off": "Inaktiv"
+        }
+      },
+      "debug_logging": {
+        "name": "Felsökningslogg"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Solskyddsstatus",
+        "state": {
+          "storm_safe": "Stormsäker",
+          "wind_safe": "Vindsäker",
+          "manual_override": "Manuell åsidosättning",
+          "night_closed": "Natt – stängt",
+          "absence_closed": "Frånvaro – stängt",
+          "strong_shade": "Kraftig skugga",
+          "normal_shade": "Normal skugga",
+          "light_shade": "Lätt skugga",
+          "open": "Öppet"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Solskyddsstatus",
+        "state": {
+          "storm_safe": "Stormsäker",
+          "wind_safe": "Vindsäker",
+          "manual_override": "Manuell åsidosättning",
+          "night_closed": "Natt – stängt",
+          "absence_closed": "Frånvaro – stängt",
+          "strong_shade": "Kraftig skugga",
+          "normal_shade": "Normal skugga",
+          "light_shade": "Lätt skugga",
+          "open": "Öppet"
+        }
+      },
+      "exposure": {
+        "name": "Exponering"
+      },
+      "exposure_indexed": {
+        "name": "{index} Exponering"
+      },
+      "cover_position": {
+        "name": "Solskyddsposition"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Solskyddsposition"
+      },
+      "recommendation": {
+        "name": "Rekommendation"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Rekommendation"
+      },
+      "zone_summary": {
+        "name": "Zonöversikt",
+        "state": {
+          "safety": "Säkerhetsläge",
+          "override": "Manuell åsidosättning",
+          "automatic": "Automatiskt",
+          "recommendation_only": "Endast rekommendation",
+          "disabled": "Inaktiverad"
+        }
+      },
+      "learning_progress": {
+        "name": "Inlärningsförlopp"
+      },
+      "shading_result": {
+        "name": "Solskyddsresultat",
+        "state": {
+          "excellent": "Utmärkt",
+          "good": "Bra",
+          "acceptable": "Acceptabelt",
+          "poor": "Dåligt",
+          "unknown": "Okänt"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Solsektor",
+        "state": {
+          "on": "I solsektor",
+          "off": "Inte i solsektor"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Solsektor",
+        "state": {
+          "on": "I solsektor",
+          "off": "Inte i solsektor"
+        }
+      },
+      "override_active": {
+        "name": "Åsidosättning aktiv",
+        "state": {
+          "on": "Åsidosättning aktiv",
+          "off": "Normal styrning"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Åsidosättning aktiv",
+        "state": {
+          "on": "Åsidosättning aktiv",
+          "off": "Normal styrning"
+        }
+      }
+    }
+  }
+}

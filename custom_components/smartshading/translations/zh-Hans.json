@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "编辑 SmartShading 设置",
+        "description": "您可以在此编辑该区域的天气、舒适度、计划、在场和遮阳设置，并添加、编辑或移除窗户。",
+        "menu_options": {
+          "weather": "天气和太阳输入",
+          "lifecycle": "计划设置",
+          "presence": "在场设置",
+          "comfort": "舒适度设置",
+          "behavior": "遮阳行为",
+          "add_window": "添加窗户",
+          "edit_window": "编辑窗户",
+          "remove_window": "移除窗户"
+        }
+      },
+      "weather": {
+        "title": "天气和太阳输入",
+        "description": "全部可选。天气实体（例如 DWD、yr.no）会自动提供状况、云量和风力。专用传感器会覆盖天气实体以获得更精确的本地读数。太阳辐射必须来自专用传感器：不会从天气实体读取。",
+        "data": {
+          "weather_entity_id": "天气实体",
+          "solar_radiation_sensor_id": "太阳辐射传感器（W/m²）",
+          "outdoor_temperature_sensor_id": "室外温度传感器",
+          "cloud_cover_sensor_id": "云量传感器（0–100 %）",
+          "wind_speed_sensor_id": "风速传感器（m/s）— 如有可用，遮阳篷/卷帘请使用阵风"
+        }
+      },
+      "lifecycle": {
+        "title": "计划设置",
+        "description": "选择 SmartShading 如何检测夜间和早晨。“两者”在首个满足的条件下触发：时间或太阳高度。",
+        "data": {
+          "night_trigger": "夜间触发",
+          "morning_trigger": "早晨触发",
+          "schedule_mode": "计划模式"
+        },
+        "data_description": {
+          "schedule_mode": "“每天相同”对整周使用一个计划。“工作日 / 周末”可让您为周一至周五和周六至周日设置不同的时间和位置。"
+        }
+      },
+      "lifecycle_detail": {
+        "title": "计划详情",
+        "description": "为每个触发输入时间或太阳高度。仅显示与所选触发相关的字段。",
+        "data": {
+          "night_fixed_time": "夜间时间",
+          "night_elevation_preset": "夜间：太阳位置",
+          "night_sun_elevation": "自定义夜间高度（°）— 仅在选择“自定义”时使用",
+          "morning_fixed_time": "早晨时间",
+          "morning_elevation_preset": "早晨：太阳位置",
+          "morning_sun_elevation": "自定义早晨高度（°）— 仅在选择“自定义”时使用",
+          "night_position": "夜间位置",
+          "morning_position": "早晨位置",
+          "weekday_night_fixed_time": "工作日夜间时间（周一至周五）",
+          "weekday_night_position": "工作日夜间位置（周一至周五）",
+          "weekday_morning_fixed_time": "工作日早晨时间（周一至周五）",
+          "weekday_morning_position": "工作日早晨位置（周一至周五）",
+          "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
+          "weekend_night_position": "周末夜间位置（周六至周日）",
+          "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
+          "weekend_morning_position": "周末早晨位置（周六至周日）"
+        },
+        "data_description": {
+          "night_position": "夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "morning_position": "早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "weekday_night_position": "工作日夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "weekday_morning_position": "工作日早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "weekend_night_position": "周末夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "presence": {
+        "title": "在场设置",
+        "description": "可选。如果未选择任何人，SmartShading 将始终假定有人在场，且绝不会因离开而触发关闭。",
+        "data": {
+          "presence_entity_ids": "在场实体",
+          "absence_delay_min": "离开延迟",
+          "absence_position": "离开位置"
+        },
+        "data_description": {
+          "absence_position": "区域无人时遮阳帘的位置，除非有更强的保护决策适用（0 = 完全关闭，100 = 完全打开）。适用于该区域的所有窗户。"
+        }
+      },
+      "comfort": {
+        "title": "舒适度设置",
+        "description": "配置通过遮阳实现的保护功能。室内温度传感器为可选。",
+        "data": {
+          "indoor_temperature_sensor_ids": "室内温度传感器（可选）",
+          "heat_protection_enabled": "启用隔热保护",
+          "glare_protection_enabled": "启用防眩光保护",
+          "solar_gain_enabled": "启用太阳得热（冬季阳光）"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "一个或多个室内传感器。配置多个传感器时，使用所有有效读数的平均值。",
+          "heat_protection_enabled": "根据太阳位置、天气和温度主动遮阳，从而防止过热。",
+          "glare_protection_enabled": "当阳光照射到窗户时减少直射阳光。",
+          "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。"
+        }
+      },
+      "behavior": {
+        "title": "基本遮阳行为",
+        "description": "按遮阳强度划分的遮阳帘基本目标位置。SmartShading 将这些值用作起点，并在有足够的学习数据时可按窗户进行调整。",
+        "data": {
+          "light_shade_position": "轻度遮阳位置",
+          "normal_shade_position": "正常遮阳位置",
+          "strong_shade_position": "强遮阳位置"
+        }
+      },
+      "add_window": {
+        "title": "添加窗户",
+        "description": "向该区域添加另一个窗户。SmartShading 使用精确方位角工作：罗盘方向只是一个方便的快捷方式。",
+        "data": {
+          "window_name": "窗户名称",
+          "floor_level": "楼层（0 = 一楼）",
+          "compass_direction": "朝向",
+          "custom_azimuth": "自定义方位角（0-359°，仅在朝向设为“自定义”时使用）",
+          "absence_position": "离开位置（覆盖区域默认值）",
+          "window_behavior_mode": "自动遮阳模式"
+        },
+        "data_description": {
+          "absence_position": "留空以继承区域的默认离开位置。设置一个值以仅为该特定窗户覆盖它。",
+          "window_behavior_mode": "全自动：太阳、舒适度、离开和计划均启用。仅离开：仅离开控制。自动化已禁用：无自动遮阳。安全保护（暴风/大风）始终保持启用。"
+        }
+      },
+      "add_window_cover_group": {
+        "title": "该窗户的遮阳帘",
+        "description": "选择遮蔽窗户“{window_name}”的遮阳帘实体。仅添加恰好遮蔽该窗户表面的遮阳帘。对于独立的窗户，请添加独立的窗户。",
+        "data": {
+          "cover_entities": "该窗户的遮阳帘",
+          "cover_hardware_type": "遮阳帘硬件类型"
+        }
+      },
+      "add_window_loop": {
+        "title": "再添加一个窗户？",
+        "description": "已向该区域添加 {window_count} 个新窗户。是否要再添加一个窗户？",
+        "data": {
+          "add_another_window": "再添加一个窗户"
+        }
+      },
+      "edit_window": {
+        "title": "编辑窗户",
+        "description": "选择要编辑的窗户。",
+        "data": {
+          "window_id": "窗户"
+        }
+      },
+      "edit_window_detail": {
+        "title": "编辑窗户：{window_name}",
+        "description": "更新窗户“{window_name}”的设置。遮阳帘更改在保存后生效。",
+        "data": {
+          "window_name": "窗户名称",
+          "floor_level": "楼层（0 = 一楼）",
+          "compass_direction": "朝向",
+          "custom_azimuth": "自定义方位角（0-359°，仅在朝向设为“自定义”时使用）",
+          "cover_entities": "该窗户的遮阳帘",
+          "cover_hardware_type": "遮阳帘硬件类型",
+          "absence_position": "离开位置（覆盖区域默认值）",
+          "window_behavior_mode": "自动遮阳模式",
+          "light_shade_position": "轻度遮阳位置（覆盖区域默认值）",
+          "normal_shade_position": "正常遮阳位置（覆盖区域默认值）",
+          "strong_shade_position": "强遮阳位置（覆盖区域默认值）",
+          "manual_sun_sector_enabled": "启用太阳扇区的手动覆盖",
+          "manual_sun_sector_start_deg": "太阳扇区起始方位角（°）",
+          "manual_sun_sector_end_deg": "太阳扇区结束方位角（°）",
+          "obstruction_1_enabled": "障碍区域 1 已启用",
+          "obstruction_1_azimuth_start_deg": "区域 1 起始方位角（°）",
+          "obstruction_1_azimuth_end_deg": "区域 1 结束方位角（°）",
+          "obstruction_1_block_from_elevation_deg": "区域 1 从该高度起被遮挡（°）",
+          "obstruction_1_block_until_elevation_deg": "区域 1 至该高度止被遮挡（°）",
+          "obstruction_2_enabled": "障碍区域 2 已启用",
+          "obstruction_2_azimuth_start_deg": "区域 2 起始方位角（°）",
+          "obstruction_2_azimuth_end_deg": "区域 2 结束方位角（°）",
+          "obstruction_2_block_from_elevation_deg": "区域 2 从该高度起被遮挡（°）",
+          "obstruction_2_block_until_elevation_deg": "区域 2 至该高度止被遮挡（°）",
+          "obstruction_3_enabled": "障碍区域 3 已启用",
+          "obstruction_3_azimuth_start_deg": "区域 3 起始方位角（°）",
+          "obstruction_3_azimuth_end_deg": "区域 3 结束方位角（°）",
+          "obstruction_3_block_from_elevation_deg": "区域 3 从该高度起被遮挡（°）",
+          "obstruction_3_block_until_elevation_deg": "区域 3 至该高度止被遮挡（°）"
+        },
+        "data_description": {
+          "absence_position": "留空以继承区域的默认离开位置。设置一个值以仅为该窗户覆盖它。",
+          "window_behavior_mode": "全自动：太阳、舒适度、离开和计划均启用。仅离开：仅离开控制。自动化已禁用：无自动遮阳。安全保护（暴风/大风）始终保持启用。",
+          "light_shade_position": "留空以使用区域默认值。设置一个值以仅为该窗户覆盖轻度遮阳目标位置。",
+          "normal_shade_position": "留空以使用区域默认值。设置一个值以仅为该窗户覆盖正常遮阳目标位置。",
+          "strong_shade_position": "留空以使用区域默认值。设置一个值以仅为该窗户覆盖强遮阳目标位置。",
+          "manual_sun_sector_enabled": "启用以用手动范围替换基于方位角的自动太阳扇区。起始和结束方位角定义何时视为阳光照射到该窗户。支持跨越正北（例如从 330° 到 30°）。",
+          "obstruction_1_enabled": "启用以标记一个方位角范围，在该范围内物理障碍物（树木、建筑、屋檐）会遮挡直射阳光。将高度字段留空可在该方位角范围内的任何太阳高度下进行遮挡。",
+          "obstruction_1_block_from_elevation_deg": "可选。仅当太阳高度等于或高于此值时障碍物才遮挡。示例：45° 可遮挡仅在陡峭太阳角度下产生阴影的屋檐。留空表示无下限。",
+          "obstruction_1_block_until_elevation_deg": "可选。仅当太阳高度等于或低于此值时障碍物才遮挡。示例：18° 可遮挡仅在低太阳时产生影响的山体或相邻建筑。留空表示无上限。",
+          "obstruction_2_enabled": "该窗户的第二个可选障碍区域。",
+          "obstruction_2_block_from_elevation_deg": "区域 2 的可选高度下限（参见区域 1 的说明）。",
+          "obstruction_2_block_until_elevation_deg": "区域 2 的可选高度上限（参见区域 1 的说明）。",
+          "obstruction_3_enabled": "该窗户的第三个可选障碍区域。",
+          "obstruction_3_block_from_elevation_deg": "区域 3 的可选高度下限（参见区域 1 的说明）。",
+          "obstruction_3_block_until_elevation_deg": "区域 3 的可选高度上限（参见区域 1 的说明）。"
+        }
+      },
+      "remove_window": {
+        "title": "移除窗户",
+        "description": "选择要移除的窗户。这将从该区域永久移除该窗户及其遮阳帘分配。遮阳帘实体本身不会被删除。",
+        "data": {
+          "window_id": "要移除的窗户"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "确认移除",
+        "description": "移除窗户“{window_name}”？此操作无法撤消。",
+        "data": {
+          "remove_confirmed": "是，移除该窗户"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "无法移除最后一个窗户。一个区域必须至少有一个窗户。",
+      "obstruction_elevation_range_invalid": "“从该高度起被遮挡”不得大于“至该高度止被遮挡”。"
+    },
+    "abort": {
+      "no_options_for_system_entry": "SmartShading 系统条目没有可配置的选项。"
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "设置 SmartShading。您可以在后续屏幕中添加窗户。",
+        "data": {
+          "zone_name": "区域名称"
+        }
+      },
+      "weather": {
+        "title": "天气和太阳输入（可选）",
+        "description": "全部可选。天气实体（例如 DWD、yr.no）会自动提供状况、云量和风力。专用传感器会覆盖它以获得更精确的本地读数。太阳辐射需要专用传感器。您可以跳过此步骤，稍后再添加输入。",
+        "data": {
+          "weather_entity_id": "天气实体",
+          "solar_radiation_sensor_id": "太阳辐射传感器（W/m²）",
+          "outdoor_temperature_sensor_id": "室外温度传感器",
+          "cloud_cover_sensor_id": "云量传感器（0–100 %）",
+          "wind_speed_sensor_id": "风速传感器（m/s）— 如有可用，遮阳篷/卷帘请使用阵风"
+        }
+      },
+      "lifecycle": {
+        "title": "计划设置",
+        "description": "选择 SmartShading 如何检测夜间和早晨。“两者”在首个满足的条件下触发：时间或太阳高度。",
+        "data": {
+          "night_trigger": "夜间触发",
+          "morning_trigger": "早晨触发",
+          "schedule_mode": "计划模式"
+        },
+        "data_description": {
+          "schedule_mode": "“每天相同”对整周使用一个计划。“工作日 / 周末”可让您为周一至周五和周六至周日设置不同的时间和位置。"
+        }
+      },
+      "lifecycle_detail": {
+        "title": "计划详情",
+        "description": "为每个触发输入时间或太阳高度。仅显示与所选触发相关的字段。",
+        "data": {
+          "night_fixed_time": "夜间时间",
+          "night_elevation_preset": "夜间：太阳位置",
+          "night_sun_elevation": "自定义夜间高度（°）— 仅在选择“自定义”时使用",
+          "morning_fixed_time": "早晨时间",
+          "morning_elevation_preset": "早晨：太阳位置",
+          "morning_sun_elevation": "自定义早晨高度（°）— 仅在选择“自定义”时使用",
+          "night_position": "夜间位置",
+          "morning_position": "早晨位置",
+          "weekday_night_fixed_time": "工作日夜间时间（周一至周五）",
+          "weekday_night_position": "工作日夜间位置（周一至周五）",
+          "weekday_morning_fixed_time": "工作日早晨时间（周一至周五）",
+          "weekday_morning_position": "工作日早晨位置（周一至周五）",
+          "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
+          "weekend_night_position": "周末夜间位置（周六至周日）",
+          "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
+          "weekend_morning_position": "周末早晨位置（周六至周日）"
+        },
+        "data_description": {
+          "night_position": "夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "morning_position": "早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "weekday_night_position": "工作日夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "weekday_morning_position": "工作日早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "weekend_night_position": "周末夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "presence": {
+        "title": "在场设置",
+        "description": "可选。如果未选择任何人，SmartShading 将始终假定有人在场，且绝不会因离开而触发关闭。",
+        "data": {
+          "presence_entity_ids": "在场实体",
+          "absence_delay_min": "离开延迟",
+          "absence_position": "离开位置"
+        },
+        "data_description": {
+          "absence_position": "区域无人时遮阳帘的位置，除非有更强的保护决策适用（0 = 完全关闭，100 = 完全打开）。适用于该区域的所有窗户。"
+        }
+      },
+      "window": {
+        "title": "添加窗户",
+        "description": "配置一个窗户。SmartShading 使用精确方位角工作：罗盘方向只是一个方便的快捷方式。",
+        "data": {
+          "window_name": "窗户名称",
+          "floor_level": "楼层（0 = 一楼）",
+          "compass_direction": "朝向",
+          "custom_azimuth": "自定义方位角（0-359°，仅在朝向设为“自定义”时使用）",
+          "absence_position": "离开位置（覆盖区域默认值）",
+          "window_behavior_mode": "自动遮阳模式"
+        },
+        "data_description": {
+          "absence_position": "留空以继承区域的默认离开位置。设置一个值以仅为该特定窗户覆盖它。",
+          "window_behavior_mode": "全自动：太阳、舒适度、离开和计划均启用。仅离开：仅离开控制。自动化已禁用：无自动遮阳。安全保护（暴风/大风）始终保持启用。"
+        }
+      },
+      "cover_group": {
+        "title": "该窗户的遮阳帘",
+        "description": "选择遮蔽窗户“{window_name}”的遮阳帘实体。仅添加恰好遮蔽该窗户表面的遮阳帘。对于独立的窗户，请添加独立的窗户。",
+        "data": {
+          "cover_entities": "该窗户的遮阳帘",
+          "cover_hardware_type": "遮阳帘硬件类型"
+        }
+      },
+      "add_another_window": {
+        "title": "再添加一个窗户？",
+        "description": "目前已配置 {window_count} 个窗户。",
+        "data": {
+          "add_another_window": "再添加一个窗户"
+        }
+      },
+      "comfort": {
+        "title": "舒适度设置",
+        "description": "配置通过遮阳实现的保护功能。室内温度传感器为可选。",
+        "data": {
+          "indoor_temperature_sensor_ids": "室内温度传感器（可选）",
+          "heat_protection_enabled": "启用隔热保护",
+          "glare_protection_enabled": "启用防眩光保护",
+          "solar_gain_enabled": "启用太阳得热（冬季阳光）"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "一个或多个室内传感器。配置多个传感器时，使用所有有效读数的平均值。",
+          "heat_protection_enabled": "根据太阳位置、天气和温度主动遮阳，从而防止过热。",
+          "glare_protection_enabled": "当阳光照射到窗户时减少直射阳光。",
+          "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。"
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "输入 0 到 359 度之间的自定义方位角，或选择一个罗盘方向。",
+      "no_covers_selected": "请为该窗户至少选择一个遮阳帘实体。",
+      "empty_zone_name": "区域名称为必填项。",
+      "obstruction_elevation_range_invalid": "“从该高度起被遮挡”不得大于“至该高度止被遮挡”。"
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading 已配置。",
+      "system_already_exists": "SmartShading 系统条目已存在。"
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "北（0°）",
+        "northeast": "东北（45°）",
+        "east": "东（90°）",
+        "southeast": "东南（135°）",
+        "south": "南（180°）",
+        "southwest": "西南（225°）",
+        "west": "西（270°）",
+        "northwest": "西北（315°）",
+        "custom": "自定义方位角"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "日落时（0°）",
+        "dusk": "黄昏时 — 民用暮光（-6°）",
+        "dark": "天黑时 — 航海暮光（-12°）",
+        "custom": "自定义"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "日出时（0°）",
+        "dawn": "破晓时 — 民用暮光（-6°）",
+        "bright": "天亮时 — 航海暮光（-12°）",
+        "custom": "自定义"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "固定时间",
+        "sun_elevation": "太阳高度",
+        "both": "两者",
+        "disabled": "已禁用"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "每天相同",
+        "weekday_weekend": "工作日 / 周末"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "全自动",
+        "absence_only": "仅离开",
+        "disabled_automatic": "自动化已禁用"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "卷帘",
+        "venetian_blind": "百叶帘",
+        "exterior_screen": "卷帘式遮阳",
+        "awning": "遮阳篷",
+        "generic": "其他遮阳帘"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "创建支持导出"
+      },
+      "export_research_data": {
+        "name": "创建研究导出"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "观察模式",
+        "state": {
+          "on": "观察中",
+          "off": "已暂停"
+        }
+      },
+      "active_control": {
+        "name": "主动控制",
+        "state": {
+          "on": "已启用",
+          "off": "未启用"
+        }
+      },
+      "debug_logging": {
+        "name": "调试日志"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "遮阳状态",
+        "state": {
+          "storm_safe": "暴风安全",
+          "wind_safe": "大风安全",
+          "manual_override": "手动覆盖",
+          "night_closed": "夜间 – 关闭",
+          "absence_closed": "离开 – 关闭",
+          "strong_shade": "强遮阳",
+          "normal_shade": "正常遮阳",
+          "light_shade": "轻度遮阳",
+          "open": "打开"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} 遮阳状态",
+        "state": {
+          "storm_safe": "暴风安全",
+          "wind_safe": "大风安全",
+          "manual_override": "手动覆盖",
+          "night_closed": "夜间 – 关闭",
+          "absence_closed": "离开 – 关闭",
+          "strong_shade": "强遮阳",
+          "normal_shade": "正常遮阳",
+          "light_shade": "轻度遮阳",
+          "open": "打开"
+        }
+      },
+      "exposure": {
+        "name": "曝照"
+      },
+      "exposure_indexed": {
+        "name": "{index} 曝照"
+      },
+      "cover_position": {
+        "name": "遮阳帘位置"
+      },
+      "cover_position_indexed": {
+        "name": "{index} 遮阳帘位置"
+      },
+      "recommendation": {
+        "name": "建议"
+      },
+      "recommendation_indexed": {
+        "name": "{index} 建议"
+      },
+      "zone_summary": {
+        "name": "区域摘要",
+        "state": {
+          "safety": "安全模式",
+          "override": "手动覆盖",
+          "automatic": "自动",
+          "recommendation_only": "仅建议",
+          "disabled": "已禁用"
+        }
+      },
+      "learning_progress": {
+        "name": "学习进度"
+      },
+      "shading_result": {
+        "name": "遮阳结果",
+        "state": {
+          "excellent": "优秀",
+          "good": "良好",
+          "acceptable": "可接受",
+          "poor": "差",
+          "unknown": "未知"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "太阳扇区",
+        "state": {
+          "on": "在太阳扇区内",
+          "off": "不在太阳扇区内"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} 太阳扇区",
+        "state": {
+          "on": "在太阳扇区内",
+          "off": "不在太阳扇区内"
+        }
+      },
+      "override_active": {
+        "name": "覆盖已启用",
+        "state": {
+          "on": "覆盖已启用",
+          "off": "正常控制"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} 覆盖已启用",
+        "state": {
+          "on": "覆盖已启用",
+          "off": "正常控制"
+        }
+      }
+    }
+  }
+}

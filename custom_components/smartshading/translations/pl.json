@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edytuj ustawienia SmartShading",
+        "description": "Tutaj możesz edytować ustawienia pogody, komfortu, harmonogramu, obecności i zacieniania dla tej strefy oraz dodawać, edytować lub usuwać okna.",
+        "menu_options": {
+          "weather": "Dane pogodowe i słoneczne",
+          "lifecycle": "Ustawienia harmonogramu",
+          "presence": "Ustawienia obecności",
+          "comfort": "Ustawienia komfortu",
+          "behavior": "Zachowanie zacieniania",
+          "add_window": "Dodaj okno",
+          "edit_window": "Edytuj okno",
+          "remove_window": "Usuń okno"
+        }
+      },
+      "weather": {
+        "title": "Dane pogodowe i słoneczne",
+        "description": "Wszystko opcjonalne. Encja pogodowa (np. DWD, yr.no) automatycznie dostarcza warunki, zachmurzenie i wiatr. Dedykowane czujniki zastępują encję pogodową, zapewniając dokładniejsze odczyty lokalne. Promieniowanie słoneczne musi pochodzić z dedykowanego czujnika: nie jest odczytywane z encji pogodowych.",
+        "data": {
+          "weather_entity_id": "Encja pogodowa",
+          "solar_radiation_sensor_id": "Czujnik promieniowania słonecznego (W/m²)",
+          "outdoor_temperature_sensor_id": "Czujnik temperatury zewnętrznej",
+          "cloud_cover_sensor_id": "Czujnik zachmurzenia (0–100 %)",
+          "wind_speed_sensor_id": "Czujnik prędkości wiatru (m/s) — w przypadku markiz/rolet zewnętrznych użyj porywów wiatru, jeśli są dostępne"
+        }
+      },
+      "lifecycle": {
+        "title": "Ustawienia harmonogramu",
+        "description": "Wybierz, jak SmartShading wykrywa noc i poranek. „Oba” uruchamia się przy pierwszym spełnionym warunku: czasie lub wysokości słońca.",
+        "data": {
+          "night_trigger": "Wyzwalacz nocy",
+          "morning_trigger": "Wyzwalacz poranka",
+          "schedule_mode": "Tryb harmonogramu"
+        },
+        "data_description": {
+          "schedule_mode": "„Tak samo każdego dnia” używa jednego harmonogramu dla całego tygodnia. „Dni robocze / Weekend” pozwala ustawić różne godziny i pozycje dla pon–pt oraz sob–niedz."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Szczegóły harmonogramu",
+        "description": "Wprowadź czas lub wysokość słońca dla każdego wyzwalacza. Wyświetlane są tylko pola istotne dla wybranego wyzwalacza.",
+        "data": {
+          "night_fixed_time": "Czas nocy",
+          "night_elevation_preset": "Noc: pozycja słońca",
+          "night_sun_elevation": "Niestandardowa wysokość nocna (°) — używana tylko, gdy wybrano Niestandardowa",
+          "morning_fixed_time": "Czas poranka",
+          "morning_elevation_preset": "Poranek: pozycja słońca",
+          "morning_sun_elevation": "Niestandardowa wysokość poranna (°) — używana tylko, gdy wybrano Niestandardowa",
+          "night_position": "Pozycja nocna",
+          "morning_position": "Pozycja poranna",
+          "weekday_night_fixed_time": "Czas nocy w dni robocze (pon–pt)",
+          "weekday_night_position": "Pozycja nocna w dni robocze (pon–pt)",
+          "weekday_morning_fixed_time": "Czas poranka w dni robocze (pon–pt)",
+          "weekday_morning_position": "Pozycja poranna w dni robocze (pon–pt)",
+          "weekend_night_fixed_time": "Czas nocy w weekend (sob–niedz)",
+          "weekend_night_position": "Pozycja nocna w weekend (sob–niedz)",
+          "weekend_morning_fixed_time": "Czas poranka w weekend (sob–niedz)",
+          "weekend_morning_position": "Pozycja poranna w weekend (sob–niedz)"
+        },
+        "data_description": {
+          "night_position": "Pozycja osłony w fazie nocnej (0 = zamknięta, 100 = otwarta).",
+          "morning_position": "Pozycja osłony na początku fazy porannej (0 = zamknięta, 100 = otwarta).",
+          "weekday_night_position": "Pozycja osłony w fazie nocnej w dni robocze (0 = zamknięta, 100 = otwarta).",
+          "weekday_morning_position": "Pozycja osłony na początku fazy porannej w dni robocze (0 = zamknięta, 100 = otwarta).",
+          "weekend_night_position": "Pozycja osłony w fazie nocnej w weekend (0 = zamknięta, 100 = otwarta).",
+          "weekend_morning_position": "Pozycja osłony na początku fazy porannej w weekend (0 = zamknięta, 100 = otwarta)."
+        }
+      },
+      "presence": {
+        "title": "Ustawienia obecności",
+        "description": "Opcjonalne. Jeśli nikt nie jest wybrany, SmartShading zawsze zakłada obecność i nigdy nie uruchamia zamykania z powodu nieobecności.",
+        "data": {
+          "presence_entity_ids": "Encje obecności",
+          "absence_delay_min": "Opóźnienie nieobecności",
+          "absence_position": "Pozycja przy nieobecności"
+        },
+        "data_description": {
+          "absence_position": "Pozycja osłony, gdy strefa jest niezajęta, chyba że obowiązuje silniejsza decyzja ochronna (0 = całkowicie zamknięta, 100 = całkowicie otwarta). Dotyczy wszystkich okien w tej strefie."
+        }
+      },
+      "comfort": {
+        "title": "Ustawienia komfortu",
+        "description": "Skonfiguruj funkcje ochrony przez zacienianie. Czujniki temperatury wewnętrznej są opcjonalne.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Czujniki temperatury wewnętrznej (opcjonalne)",
+          "heat_protection_enabled": "Włącz ochronę przed ciepłem",
+          "glare_protection_enabled": "Włącz ochronę przed olśnieniem",
+          "solar_gain_enabled": "Włącz zysk słoneczny (zimowe słońce)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Jeden lub więcej czujników wewnętrznych. Gdy skonfigurowano wiele czujników, używana jest średnia wszystkich prawidłowych odczytów.",
+          "heat_protection_enabled": "Zapobiega przegrzewaniu, zacieniając proaktywnie na podstawie pozycji słońca, pogody i temperatur.",
+          "glare_protection_enabled": "Redukuje bezpośrednie światło słoneczne, gdy słońce pada na okno.",
+          "solar_gain_enabled": "Utrzymuje osłonę bardziej otwartą przy chłodnej pogodzie, aby wspomóc pasywne nagrzewanie. Ochrona przed ciepłem ma priorytet."
+        }
+      },
+      "behavior": {
+        "title": "Podstawowe zachowanie zacieniania",
+        "description": "Podstawowe pozycje docelowe osłony według intensywności zacieniania. SmartShading używa tych wartości jako punktu wyjścia i może je dostosowywać dla poszczególnych okien, gdy dostępnych jest wystarczająco danych uczących.",
+        "data": {
+          "light_shade_position": "Pozycja lekkiego zacienienia",
+          "normal_shade_position": "Pozycja normalnego zacienienia",
+          "strong_shade_position": "Pozycja silnego zacienienia"
+        }
+      },
+      "add_window": {
+        "title": "Dodaj okno",
+        "description": "Dodaj kolejne okno do tej strefy. SmartShading działa z dokładnym azymutem: kierunek kompasu to tylko wygodny skrót.",
+        "data": {
+          "window_name": "Nazwa okna",
+          "floor_level": "Piętro (0 = parter)",
+          "compass_direction": "Orientacja",
+          "custom_azimuth": "Niestandardowy azymut (0-359°, używany tylko, gdy Orientacja jest ustawiona na Niestandardowa)",
+          "absence_position": "Pozycja przy nieobecności (zastępuje domyślną dla strefy)",
+          "window_behavior_mode": "Automatyczny tryb zacieniania"
+        },
+        "data_description": {
+          "absence_position": "Pozostaw puste, aby odziedziczyć domyślną pozycję nieobecności strefy. Ustaw wartość, aby zastąpić ją tylko dla tego konkretnego okna.",
+          "window_behavior_mode": "W pełni automatyczny: słońce, komfort, nieobecność i harmonogram aktywne. Tylko nieobecność: tylko sterowanie nieobecnością. Automatyka wyłączona: brak automatycznego zacieniania. Zabezpieczenia (burza/wiatr) pozostają zawsze aktywne."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Osłony dla tego okna",
+        "description": "Wybierz encję lub encje osłony, które zacieniają okno „{window_name}”. Dodawaj tylko osłony, które zakrywają dokładnie tę powierzchnię okna. Dla osobnych okien dodawaj osobne okna.",
+        "data": {
+          "cover_entities": "Osłony dla tego okna",
+          "cover_hardware_type": "Typ sprzętu osłony"
+        }
+      },
+      "add_window_loop": {
+        "title": "Dodać kolejne okno?",
+        "description": "Dodano {window_count} nowe okno/okna do tej strefy. Czy chcesz dodać kolejne okno?",
+        "data": {
+          "add_another_window": "Dodaj kolejne okno"
+        }
+      },
+      "edit_window": {
+        "title": "Edytuj okno",
+        "description": "Wybierz okno do edycji.",
+        "data": {
+          "window_id": "Okno"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Edytuj okno: {window_name}",
+        "description": "Zaktualizuj ustawienia okna „{window_name}”. Zmiany osłon zaczynają obowiązywać po zapisaniu.",
+        "data": {
+          "window_name": "Nazwa okna",
+          "floor_level": "Piętro (0 = parter)",
+          "compass_direction": "Orientacja",
+          "custom_azimuth": "Niestandardowy azymut (0-359°, używany tylko, gdy Orientacja jest ustawiona na Niestandardowa)",
+          "cover_entities": "Osłony dla tego okna",
+          "cover_hardware_type": "Typ sprzętu osłony",
+          "absence_position": "Pozycja przy nieobecności (zastępuje domyślną dla strefy)",
+          "window_behavior_mode": "Automatyczny tryb zacieniania",
+          "light_shade_position": "Pozycja lekkiego zacienienia (zastępuje domyślną dla strefy)",
+          "normal_shade_position": "Pozycja normalnego zacienienia (zastępuje domyślną dla strefy)",
+          "strong_shade_position": "Pozycja silnego zacienienia (zastępuje domyślną dla strefy)",
+          "manual_sun_sector_enabled": "Włącz ręczne zastąpienie sektora słonecznego",
+          "manual_sun_sector_start_deg": "Azymut początkowy sektora słonecznego (°)",
+          "manual_sun_sector_end_deg": "Azymut końcowy sektora słonecznego (°)",
+          "obstruction_1_enabled": "Strefa przeszkody 1 aktywna",
+          "obstruction_1_azimuth_start_deg": "Azymut początkowy strefy 1 (°)",
+          "obstruction_1_azimuth_end_deg": "Azymut końcowy strefy 1 (°)",
+          "obstruction_1_block_from_elevation_deg": "Strefa 1 blokowana od wysokości (°)",
+          "obstruction_1_block_until_elevation_deg": "Strefa 1 blokowana do wysokości (°)",
+          "obstruction_2_enabled": "Strefa przeszkody 2 aktywna",
+          "obstruction_2_azimuth_start_deg": "Azymut początkowy strefy 2 (°)",
+          "obstruction_2_azimuth_end_deg": "Azymut końcowy strefy 2 (°)",
+          "obstruction_2_block_from_elevation_deg": "Strefa 2 blokowana od wysokości (°)",
+          "obstruction_2_block_until_elevation_deg": "Strefa 2 blokowana do wysokości (°)",
+          "obstruction_3_enabled": "Strefa przeszkody 3 aktywna",
+          "obstruction_3_azimuth_start_deg": "Azymut początkowy strefy 3 (°)",
+          "obstruction_3_azimuth_end_deg": "Azymut końcowy strefy 3 (°)",
+          "obstruction_3_block_from_elevation_deg": "Strefa 3 blokowana od wysokości (°)",
+          "obstruction_3_block_until_elevation_deg": "Strefa 3 blokowana do wysokości (°)"
+        },
+        "data_description": {
+          "absence_position": "Pozostaw puste, aby odziedziczyć domyślną pozycję nieobecności strefy. Ustaw wartość, aby zastąpić ją tylko dla tego okna.",
+          "window_behavior_mode": "W pełni automatyczny: słońce, komfort, nieobecność i harmonogram aktywne. Tylko nieobecność: tylko sterowanie nieobecnością. Automatyka wyłączona: brak automatycznego zacieniania. Zabezpieczenia (burza/wiatr) pozostają zawsze aktywne.",
+          "light_shade_position": "Pozostaw puste, aby użyć wartości domyślnej strefy. Ustaw wartość, aby zastąpić docelową pozycję lekkiego zacienienia tylko dla tego okna.",
+          "normal_shade_position": "Pozostaw puste, aby użyć wartości domyślnej strefy. Ustaw wartość, aby zastąpić docelową pozycję normalnego zacienienia tylko dla tego okna.",
+          "strong_shade_position": "Pozostaw puste, aby użyć wartości domyślnej strefy. Ustaw wartość, aby zastąpić docelową pozycję silnego zacienienia tylko dla tego okna.",
+          "manual_sun_sector_enabled": "Włącz, aby zastąpić automatyczny sektor słoneczny oparty na azymucie zakresem ręcznym. Azymut początkowy i końcowy określają, kiedy uznaje się, że słońce pada na to okno. Obsługuje przejście przez północ (np. od 330° do 30°).",
+          "obstruction_1_enabled": "Włącz, aby oznaczyć zakres azymutu, w którym fizyczna przeszkoda (drzewo, budynek, okap dachu) blokuje bezpośrednie słońce. Pozostaw pola wysokości puste, aby blokować przy każdej wysokości słońca w zakresie azymutu.",
+          "obstruction_1_block_from_elevation_deg": "Opcjonalne. Przeszkoda blokuje tylko, gdy wysokość słońca jest równa tej wartości lub wyższa. Przykład: 45° blokuje okap dachu, który zacienia tylko przy stromych kątach słońca. Pozostaw puste, aby nie ustawiać dolnego limitu.",
+          "obstruction_1_block_until_elevation_deg": "Opcjonalne. Przeszkoda blokuje tylko, gdy wysokość słońca jest równa tej wartości lub niższa. Przykład: 18° blokuje górę lub sąsiedni budynek, który wpływa tylko przy niskim słońcu. Pozostaw puste, aby nie ustawiać górnego limitu.",
+          "obstruction_2_enabled": "Druga opcjonalna strefa przeszkody dla tego okna.",
+          "obstruction_2_block_from_elevation_deg": "Opcjonalny dolny limit wysokości dla strefy 2 (zob. opis strefy 1).",
+          "obstruction_2_block_until_elevation_deg": "Opcjonalny górny limit wysokości dla strefy 2 (zob. opis strefy 1).",
+          "obstruction_3_enabled": "Trzecia opcjonalna strefa przeszkody dla tego okna.",
+          "obstruction_3_block_from_elevation_deg": "Opcjonalny dolny limit wysokości dla strefy 3 (zob. opis strefy 1).",
+          "obstruction_3_block_until_elevation_deg": "Opcjonalny górny limit wysokości dla strefy 3 (zob. opis strefy 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Usuń okno",
+        "description": "Wybierz okno do usunięcia. Spowoduje to trwałe usunięcie okna i jego przypisań osłon z tej strefy. Same encje osłon nie zostaną usunięte.",
+        "data": {
+          "window_id": "Okno do usunięcia"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Potwierdź usunięcie",
+        "description": "Usunąć okno „{window_name}”? Tej operacji nie można cofnąć.",
+        "data": {
+          "remove_confirmed": "Tak, usuń to okno"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Nie można usunąć ostatniego okna. Strefa musi mieć co najmniej jedno okno.",
+      "obstruction_elevation_range_invalid": "„Blokowana od wysokości” nie może być większa niż „Blokowana do wysokości”."
+    },
+    "abort": {
+      "no_options_for_system_entry": "Wpis systemowy SmartShading nie ma konfigurowalnych opcji."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Skonfiguruj SmartShading. Okna możesz dodać na kolejnych ekranach.",
+        "data": {
+          "zone_name": "Nazwa strefy"
+        }
+      },
+      "weather": {
+        "title": "Dane pogodowe i słoneczne (opcjonalne)",
+        "description": "Wszystko opcjonalne. Encja pogodowa (np. DWD, yr.no) automatycznie dostarcza warunki, zachmurzenie i wiatr. Dedykowane czujniki zastępują ją, zapewniając dokładniejsze odczyty lokalne. Promieniowanie słoneczne wymaga dedykowanego czujnika. Możesz pominąć ten krok i dodać dane później.",
+        "data": {
+          "weather_entity_id": "Encja pogodowa",
+          "solar_radiation_sensor_id": "Czujnik promieniowania słonecznego (W/m²)",
+          "outdoor_temperature_sensor_id": "Czujnik temperatury zewnętrznej",
+          "cloud_cover_sensor_id": "Czujnik zachmurzenia (0–100 %)",
+          "wind_speed_sensor_id": "Czujnik prędkości wiatru (m/s) — w przypadku markiz/rolet zewnętrznych użyj porywów wiatru, jeśli są dostępne"
+        }
+      },
+      "lifecycle": {
+        "title": "Ustawienia harmonogramu",
+        "description": "Wybierz, jak SmartShading wykrywa noc i poranek. „Oba” uruchamia się przy pierwszym spełnionym warunku: czasie lub wysokości słońca.",
+        "data": {
+          "night_trigger": "Wyzwalacz nocy",
+          "morning_trigger": "Wyzwalacz poranka",
+          "schedule_mode": "Tryb harmonogramu"
+        },
+        "data_description": {
+          "schedule_mode": "„Tak samo każdego dnia” używa jednego harmonogramu dla całego tygodnia. „Dni robocze / Weekend” pozwala ustawić różne godziny i pozycje dla pon–pt oraz sob–niedz."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Szczegóły harmonogramu",
+        "description": "Wprowadź czas lub wysokość słońca dla każdego wyzwalacza. Wyświetlane są tylko pola istotne dla wybranego wyzwalacza.",
+        "data": {
+          "night_fixed_time": "Czas nocy",
+          "night_elevation_preset": "Noc: pozycja słońca",
+          "night_sun_elevation": "Niestandardowa wysokość nocna (°) — używana tylko, gdy wybrano Niestandardowa",
+          "morning_fixed_time": "Czas poranka",
+          "morning_elevation_preset": "Poranek: pozycja słońca",
+          "morning_sun_elevation": "Niestandardowa wysokość poranna (°) — używana tylko, gdy wybrano Niestandardowa",
+          "night_position": "Pozycja nocna",
+          "morning_position": "Pozycja poranna",
+          "weekday_night_fixed_time": "Czas nocy w dni robocze (pon–pt)",
+          "weekday_night_position": "Pozycja nocna w dni robocze (pon–pt)",
+          "weekday_morning_fixed_time": "Czas poranka w dni robocze (pon–pt)",
+          "weekday_morning_position": "Pozycja poranna w dni robocze (pon–pt)",
+          "weekend_night_fixed_time": "Czas nocy w weekend (sob–niedz)",
+          "weekend_night_position": "Pozycja nocna w weekend (sob–niedz)",
+          "weekend_morning_fixed_time": "Czas poranka w weekend (sob–niedz)",
+          "weekend_morning_position": "Pozycja poranna w weekend (sob–niedz)"
+        },
+        "data_description": {
+          "night_position": "Pozycja osłony w fazie nocnej (0 = zamknięta, 100 = otwarta).",
+          "morning_position": "Pozycja osłony na początku fazy porannej (0 = zamknięta, 100 = otwarta).",
+          "weekday_night_position": "Pozycja osłony w fazie nocnej w dni robocze (0 = zamknięta, 100 = otwarta).",
+          "weekday_morning_position": "Pozycja osłony na początku fazy porannej w dni robocze (0 = zamknięta, 100 = otwarta).",
+          "weekend_night_position": "Pozycja osłony w fazie nocnej w weekend (0 = zamknięta, 100 = otwarta).",
+          "weekend_morning_position": "Pozycja osłony na początku fazy porannej w weekend (0 = zamknięta, 100 = otwarta)."
+        }
+      },
+      "presence": {
+        "title": "Ustawienia obecności",
+        "description": "Opcjonalne. Jeśli nikt nie jest wybrany, SmartShading zawsze zakłada obecność i nigdy nie uruchamia zamykania z powodu nieobecności.",
+        "data": {
+          "presence_entity_ids": "Encje obecności",
+          "absence_delay_min": "Opóźnienie nieobecności",
+          "absence_position": "Pozycja przy nieobecności"
+        },
+        "data_description": {
+          "absence_position": "Pozycja osłony, gdy strefa jest niezajęta, chyba że obowiązuje silniejsza decyzja ochronna (0 = całkowicie zamknięta, 100 = całkowicie otwarta). Dotyczy wszystkich okien w tej strefie."
+        }
+      },
+      "window": {
+        "title": "Dodaj okno",
+        "description": "Skonfiguruj jedno okno. SmartShading działa z dokładnym azymutem: kierunek kompasu to tylko wygodny skrót.",
+        "data": {
+          "window_name": "Nazwa okna",
+          "floor_level": "Piętro (0 = parter)",
+          "compass_direction": "Orientacja",
+          "custom_azimuth": "Niestandardowy azymut (0-359°, używany tylko, gdy Orientacja jest ustawiona na Niestandardowa)",
+          "absence_position": "Pozycja przy nieobecności (zastępuje domyślną dla strefy)",
+          "window_behavior_mode": "Automatyczny tryb zacieniania"
+        },
+        "data_description": {
+          "absence_position": "Pozostaw puste, aby odziedziczyć domyślną pozycję nieobecności strefy. Ustaw wartość, aby zastąpić ją tylko dla tego konkretnego okna.",
+          "window_behavior_mode": "W pełni automatyczny: słońce, komfort, nieobecność i harmonogram aktywne. Tylko nieobecność: tylko sterowanie nieobecnością. Automatyka wyłączona: brak automatycznego zacieniania. Zabezpieczenia (burza/wiatr) pozostają zawsze aktywne."
+        }
+      },
+      "cover_group": {
+        "title": "Osłony dla tego okna",
+        "description": "Wybierz encję lub encje osłony, które zacieniają okno „{window_name}”. Dodawaj tylko osłony, które zakrywają dokładnie tę powierzchnię okna. Dla osobnych okien dodawaj osobne okna.",
+        "data": {
+          "cover_entities": "Osłony dla tego okna",
+          "cover_hardware_type": "Typ sprzętu osłony"
+        }
+      },
+      "add_another_window": {
+        "title": "Dodać kolejne okno?",
+        "description": "Skonfigurowano dotąd {window_count} okno/okien.",
+        "data": {
+          "add_another_window": "Dodaj kolejne okno"
+        }
+      },
+      "comfort": {
+        "title": "Ustawienia komfortu",
+        "description": "Skonfiguruj funkcje ochrony przez zacienianie. Czujniki temperatury wewnętrznej są opcjonalne.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Czujniki temperatury wewnętrznej (opcjonalne)",
+          "heat_protection_enabled": "Włącz ochronę przed ciepłem",
+          "glare_protection_enabled": "Włącz ochronę przed olśnieniem",
+          "solar_gain_enabled": "Włącz zysk słoneczny (zimowe słońce)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Jeden lub więcej czujników wewnętrznych. Gdy skonfigurowano wiele czujników, używana jest średnia wszystkich prawidłowych odczytów.",
+          "heat_protection_enabled": "Zapobiega przegrzewaniu, zacieniając proaktywnie na podstawie pozycji słońca, pogody i temperatur.",
+          "glare_protection_enabled": "Redukuje bezpośrednie światło słoneczne, gdy słońce pada na okno.",
+          "solar_gain_enabled": "Utrzymuje osłonę bardziej otwartą przy chłodnej pogodzie, aby wspomóc pasywne nagrzewanie. Ochrona przed ciepłem ma priorytet."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Wprowadź niestandardowy azymut od 0 do 359 stopni lub wybierz kierunek kompasu.",
+      "no_covers_selected": "Wybierz co najmniej jedną encję osłony dla tego okna.",
+      "empty_zone_name": "Nazwa strefy jest wymagana.",
+      "obstruction_elevation_range_invalid": "„Blokowana od wysokości” nie może być większa niż „Blokowana do wysokości”."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading jest już skonfigurowany.",
+      "system_already_exists": "Wpis systemowy SmartShading już istnieje."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Północ (0°)",
+        "northeast": "Północny wschód (45°)",
+        "east": "Wschód (90°)",
+        "southeast": "Południowy wschód (135°)",
+        "south": "Południe (180°)",
+        "southwest": "Południowy zachód (225°)",
+        "west": "Zachód (270°)",
+        "northwest": "Północny zachód (315°)",
+        "custom": "Niestandardowy azymut"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "O zachodzie słońca (0°)",
+        "dusk": "O zmierzchu — zmierzch cywilny (-6°)",
+        "dark": "Gdy jest ciemno — zmierzch żeglarski (-12°)",
+        "custom": "Niestandardowa"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "O wschodzie słońca (0°)",
+        "dawn": "O świcie — świt cywilny (-6°)",
+        "bright": "Gdy się rozjaśnia — świt żeglarski (-12°)",
+        "custom": "Niestandardowa"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Stała godzina",
+        "sun_elevation": "Wysokość słońca",
+        "both": "Oba",
+        "disabled": "Wyłączone"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Tak samo każdego dnia",
+        "weekday_weekend": "Dni robocze / Weekend"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "W pełni automatyczny",
+        "absence_only": "Tylko nieobecność",
+        "disabled_automatic": "Automatyka wyłączona"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Roleta",
+        "venetian_blind": "Żaluzja wenecka",
+        "exterior_screen": "Roleta zewnętrzna",
+        "awning": "Markiza",
+        "generic": "Inna osłona"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Utwórz eksport pomocy technicznej"
+      },
+      "export_research_data": {
+        "name": "Utwórz eksport badawczy"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Tryb obserwacji",
+        "state": {
+          "on": "Obserwuje",
+          "off": "Wstrzymano"
+        }
+      },
+      "active_control": {
+        "name": "Sterowanie aktywne",
+        "state": {
+          "on": "Aktywne",
+          "off": "Nieaktywne"
+        }
+      },
+      "debug_logging": {
+        "name": "Dziennik debugowania"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Stan zacieniania",
+        "state": {
+          "storm_safe": "Zabezpieczenie burzowe",
+          "wind_safe": "Zabezpieczenie wiatrowe",
+          "manual_override": "Ręczne zastąpienie",
+          "night_closed": "Noc – zamknięte",
+          "absence_closed": "Nieobecność – zamknięte",
+          "strong_shade": "Silne zacienienie",
+          "normal_shade": "Normalne zacienienie",
+          "light_shade": "Lekkie zacienienie",
+          "open": "Otwarte"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Stan zacieniania",
+        "state": {
+          "storm_safe": "Zabezpieczenie burzowe",
+          "wind_safe": "Zabezpieczenie wiatrowe",
+          "manual_override": "Ręczne zastąpienie",
+          "night_closed": "Noc – zamknięte",
+          "absence_closed": "Nieobecność – zamknięte",
+          "strong_shade": "Silne zacienienie",
+          "normal_shade": "Normalne zacienienie",
+          "light_shade": "Lekkie zacienienie",
+          "open": "Otwarte"
+        }
+      },
+      "exposure": {
+        "name": "Ekspozycja"
+      },
+      "exposure_indexed": {
+        "name": "{index} Ekspozycja"
+      },
+      "cover_position": {
+        "name": "Pozycja osłony"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Pozycja osłony"
+      },
+      "recommendation": {
+        "name": "Zalecenie"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Zalecenie"
+      },
+      "zone_summary": {
+        "name": "Podsumowanie strefy",
+        "state": {
+          "safety": "Tryb bezpieczeństwa",
+          "override": "Ręczne zastąpienie",
+          "automatic": "Automatyczny",
+          "recommendation_only": "Tylko zalecenie",
+          "disabled": "Wyłączone"
+        }
+      },
+      "learning_progress": {
+        "name": "Postęp uczenia"
+      },
+      "shading_result": {
+        "name": "Wynik zacieniania",
+        "state": {
+          "excellent": "Doskonały",
+          "good": "Dobry",
+          "acceptable": "Akceptowalny",
+          "poor": "Słaby",
+          "unknown": "Nieznany"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Sektor słoneczny",
+        "state": {
+          "on": "W sektorze słonecznym",
+          "off": "Poza sektorem słonecznym"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Sektor słoneczny",
+        "state": {
+          "on": "W sektorze słonecznym",
+          "off": "Poza sektorem słonecznym"
+        }
+      },
+      "override_active": {
+        "name": "Zastąpienie aktywne",
+        "state": {
+          "on": "Zastąpienie aktywne",
+          "off": "Sterowanie normalne"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Zastąpienie aktywne",
+        "state": {
+          "on": "Zastąpienie aktywne",
+          "off": "Sterowanie normalne"
+        }
+      }
+    }
+  }
+}

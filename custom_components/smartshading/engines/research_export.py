@@ -1,0 +1,399 @@
+"""Anonymized research export for SmartShading learning analysis.
+
+Builds a richer export than the Support Export, intended for development of
+Learning Engine 2.0.  The export is NEVER generated automatically, NEVER
+transmitted, and NEVER uploaded.  It is only created on explicit user request
+with a prior confirmation step.
+
+Privacy rules
+-------------
+  NEVER include: real zone or window names, entity IDs, config-entry IDs,
+  device IDs, addresses, lat/lon, HA instance identifiers, usernames, raw
+  file paths, exact cover entity names.
+  NEVER include: individual record timestamps — only aggregated statistics.
+  NEVER include: raw internal positions (0=open, 100=shaded) — convert to
+  HA convention (0=closed, 100=open) where exposed, or use coarse buckets.
+  Anonymized refs: zone_1, zone_2, window_1, window_2, ...
+
+LE 2.0 capability flags
+-----------------------
+  The export documents which analyses are possible with the current data
+  and which are not, so offline tooling can adapt without guessing.
+
+  Available for analysis:
+    - Evaluator attribution (decided_by distributions)
+    - Override patterns (direction, frequency, duration)
+    - Outcome scores (-1.0 to +1.0) and override rates
+    - Target adaptation profiles (adapted positions per intensity level)
+    - Forecast trust quality metrics
+    - Environmental context at transition time (aggregated)
+
+  Not available (not stored per-event in current architecture):
+    - Per-event baseline_target vs adapted_target comparison
+    - Per-event forecast_modifier_applied flag
+    - Per-event similarity_match_applied flag
+    - Exact per-event timestamps (only aggregate counts)
+
+No HA import — pure Python.  All HA interactions happen in config_flow.py.
+"""
+from __future__ import annotations
+
+import logging
+from datetime import datetime
+from typing import Any
+
+_LOGGER = logging.getLogger(__name__)
+
+RESEARCH_EXPORT_FORMAT_VERSION: int = 1
+RESEARCH_EXPORT_TYPE: str = "smartshading_research_export"
+RESEARCH_EXPORT_SCHEMA_VERSION: int = 1
+RESEARCH_EXPORT_NOTICE_VERSION: int = 1
+
+_INTENSITY_LEVELS = ("light", "normal", "strong")
+
+
+def _round5(value: float) -> int:
+    """Round a float to the nearest 5 for coarse position buckets."""
+    return round(round(value / 5) * 5)
+
+
+def _to_ha_position(internal: int) -> int:
+    """Convert internal position (0=open, 100=shaded) to HA (0=closed, 100=open)."""
+    return 100 - internal
+
+
+def _build_forecast_trust_summary(forecast_store: Any | None) -> dict:
+    """Aggregate forecast trust data from a ForecastLearningStore.  Never raises."""
+    if forecast_store is None:
+        return {"available": False}
+    try:
+        from .learning_export import build_learning_export
+        from datetime import timezone
+        dummy_ts = datetime.now(timezone.utc)
+        result = build_learning_export(forecast_store=forecast_store, generated_at_utc=dummy_ts)
+        return result.get("forecast_learning", {"available": False})
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: forecast trust summary failed")
+        return {"available": False}
+
+
+def _build_learned_profiles(target_adapter: Any | None) -> list[dict]:
+    """Build learned profile summaries from a TargetPositionAdapter.  Never raises.
+
+    Returns one entry per (window, intensity_level) combination that has data.
+    Positions are in HA convention (0=closed, 100=open), rounded to nearest 5
+    for coarse representation.  ShadeIntensityAdaptation already stores in HA
+    convention, so no conversion is needed.
+    """
+    if target_adapter is None:
+        return []
+    profiles: list[dict] = []
+    try:
+        window_ids = target_adapter.get_window_ids()
+        for window_id in sorted(window_ids):
+            window_data = getattr(target_adapter, "_windows", {}).get(window_id)
+            if window_data is None:
+                continue
+            for intensity in _INTENSITY_LEVELS:
+                adaptation = window_data.get_intensity(intensity) if hasattr(window_data, "get_intensity") else None
+                if adaptation is None or adaptation.sample_count == 0:
+                    continue
+                tw = adaptation.total_weight
+                if tw >= 25:
+                    confidence = "high"
+                elif tw >= 15:
+                    confidence = "medium"
+                elif tw >= 8:
+                    confidence = "low"
+                else:
+                    confidence = "insufficient"
+                adaptation_active = getattr(adaptation, "has_enough_data", False)
+                learned_avg = adaptation.learned_avg_ha
+                profiles.append({
+                    "intensity_level": intensity,
+                    "sample_count": adaptation.sample_count,
+                    "confidence_level": confidence,
+                    "adaptation_active": adaptation_active,
+                    # ShadeIntensityAdaptation stores positions in HA convention already.
+                    # Round to nearest 5 for coarse export.
+                    "adapted_target_ha": _round5(learned_avg) if learned_avg is not None else None,
+                    # base_target_ha is zone config — not available in this context.
+                    "base_target_ha": None,
+                })
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: learned profiles section failed")
+    return profiles
+
+
+def _build_evaluator_distribution(transitions: list[Any]) -> dict[str, int]:
+    """Count how many transitions each evaluator (decided_by) produced."""
+    dist: dict[str, int] = {}
+    for rec in transitions:
+        name = getattr(rec, "decided_by", None)
+        if name:
+            dist[name] = dist.get(name, 0) + 1
+    return dist
+
+
+def _build_override_analysis(overrides: list[Any]) -> dict:
+    """Aggregate override event statistics.  Never raises.
+
+    override_position and overridden_position are internal convention in
+    OverrideRecord; they are converted to HA convention before export.
+    """
+    if not overrides:
+        return {
+            "override_count": 0,
+            "started_count": 0,
+            "expired_count": 0,
+            "renewed_count": 0,
+            "cleared_by_safety_count": 0,
+            "avg_duration_min": None,
+        }
+    try:
+        started = sum(1 for r in overrides if getattr(r, "event_type", None) == "started")
+        expired = sum(1 for r in overrides if getattr(r, "event_type", None) == "expired")
+        renewed = sum(1 for r in overrides if getattr(r, "event_type", None) == "renewed")
+        cleared_safety = sum(1 for r in overrides if getattr(r, "event_type", None) == "cleared_by_safety")
+        durations = [
+            r.override_duration_min for r in overrides
+            if getattr(r, "override_duration_min", None) is not None
+        ]
+        avg_dur = round(sum(durations) / len(durations), 1) if durations else None
+        return {
+            "override_count": len(overrides),
+            "started_count": started,
+            "expired_count": expired,
+            "renewed_count": renewed,
+            "cleared_by_safety_count": cleared_safety,
+            "avg_duration_min": avg_dur,
+        }
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: override analysis failed")
+        return {"override_count": len(overrides)}
+
+
+def _build_outcome_summary(outcomes: list[Any]) -> dict:
+    """Aggregate DecisionOutcome statistics.  Never raises.
+
+    outcome_score is -1.0 … +1.0 (set on resolution).
+    """
+    if not outcomes:
+        return {
+            "total_count": 0,
+            "resolved_count": 0,
+            "pending_count": 0,
+            "mean_outcome_score": None,
+            "override_rate": None,
+        }
+    try:
+        resolved = [
+            r for r in outcomes
+            if getattr(r, "resolution_status", "pending") != "pending"
+        ]
+        pending_count = len(outcomes) - len(resolved)
+        override_count = sum(1 for r in resolved if getattr(r, "override_occurred", False))
+        scores = [
+            r.outcome_score for r in resolved
+            if getattr(r, "outcome_score", None) is not None
+        ]
+        mean_score = round(sum(scores) / len(scores), 3) if scores else None
+        override_rate = round(override_count / len(resolved), 3) if resolved else None
+        return {
+            "total_count": len(outcomes),
+            "resolved_count": len(resolved),
+            "pending_count": pending_count,
+            "mean_outcome_score": mean_score,
+            "override_rate": override_rate,
+        }
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: outcome summary failed")
+        return {"total_count": len(outcomes)}
+
+
+def _build_window_section(
+    window_ref: str,
+    window_id: str,
+    learning_store: Any | None,
+) -> dict:
+    """Build per-window summary for research export.  Never raises.
+
+    Includes evaluator distributions, override analysis, and outcome summaries
+    derived from the LearningStore ring buffers.
+    """
+    transitions: list[Any] = []
+    overrides: list[Any] = []
+    snapshots: list[Any] = []
+    outcomes: list[Any] = []
+
+    if learning_store is not None:
+        try:
+            transitions = learning_store.get_transitions(window_id)
+            overrides = learning_store.get_overrides(window_id)
+            snapshots = learning_store.get_snapshots(window_id)
+            outcomes = learning_store.get_outcomes(window_id)
+        except Exception:
+            _LOGGER.warning(
+                "SmartShading: research_export: error reading LearningStore for window"
+            )
+
+    has_data = (len(transitions) + len(overrides) + len(snapshots) + len(outcomes)) > 0
+
+    return {
+        "window_ref": window_ref,
+        "has_learning_data": has_data,
+        "transitions_count": len(transitions),
+        "overrides_count": len(overrides),
+        "snapshots_count": len(snapshots),
+        "outcomes_count": len(outcomes),
+        "evaluator_distribution": _build_evaluator_distribution(transitions),
+        "override_analysis": _build_override_analysis(overrides),
+        "outcome_summary": _build_outcome_summary(outcomes),
+        "capabilities": {
+            "per_event_baseline_target": False,
+            "per_event_adapted_target": False,
+            "per_event_forecast_modifier": False,
+            "per_event_similarity_match": False,
+            "outcome_scores_available": any(
+                getattr(r, "outcome_score", None) is not None for r in outcomes
+            ),
+            "evaluator_attribution_available": len(transitions) > 0,
+        },
+    }
+
+
+def _build_zone_section(
+    zone_ref: str,
+    zone_entry: dict,
+    generated_at_utc: datetime,
+) -> dict:
+    """Build per-zone section for research export.  Never raises."""
+    window_ids: list[str] = zone_entry.get("window_ids", [])
+    learning_store = zone_entry.get("learning_store")
+    forecast_store = zone_entry.get("forecast_store")
+    target_adapter = zone_entry.get("target_position_adapter")
+
+    windows_out: list[dict] = []
+    for w_idx, window_id in enumerate(sorted(window_ids), start=1):
+        window_ref = f"window_{w_idx}"
+        windows_out.append(_build_window_section(window_ref, window_id, learning_store))
+
+    forecast_trust = _build_forecast_trust_summary(forecast_store)
+    learned_profiles = _build_learned_profiles(target_adapter)
+
+    return {
+        "zone_ref": zone_ref,
+        "windows_count": len(windows_out),
+        "forecast_trust_summary": forecast_trust,
+        "learned_profiles": learned_profiles,
+        "windows": windows_out,
+    }
+
+
+def _build_application_summary(zone_entries: list[dict]) -> dict:
+    """Aggregate application counters across all zones.  Never raises."""
+    manual_override_count = 0
+    outcome_count = 0
+    resolved_with_score = 0
+
+    for zone_entry in zone_entries:
+        learning_store = zone_entry.get("learning_store")
+        window_ids: list[str] = zone_entry.get("window_ids", [])
+        if learning_store is None:
+            continue
+        try:
+            for window_id in window_ids:
+                override_records = learning_store.get_overrides(window_id)
+                outcome_records = learning_store.get_outcomes(window_id)
+                manual_override_count += sum(
+                    1 for r in override_records
+                    if getattr(r, "event_type", None) == "started"
+                )
+                outcome_count += len(outcome_records)
+                resolved_with_score += sum(
+                    1 for r in outcome_records
+                    if getattr(r, "outcome_score", None) is not None
+                )
+        except Exception:
+            _LOGGER.warning(
+                "SmartShading: research_export: error building application summary"
+            )
+
+    return {
+        "manual_override_count": manual_override_count,
+        "outcome_count": outcome_count,
+        "resolved_outcome_count": resolved_with_score,
+        # These require per-event flags not yet stored — marked unavailable.
+        "adaptive_target_applied_count": None,
+        "forecast_modifier_applied_count": None,
+        "similarity_match_applied_count": None,
+        "confidence_blocked_count": None,
+        "insufficient_data_count": None,
+    }
+
+
+def build_research_export(
+    *,
+    zone_entries: list[dict],
+    generated_at_utc: datetime,
+) -> dict:
+    """Build an anonymized research export covering all zones.
+
+    Parameters
+    ----------
+    zone_entries:
+        List of per-zone dicts, same format as build_global_learning_export():
+          "entry_id"            str               — raw config entry ID (not included in output)
+          "window_ids"          list[str]
+          "learning_store"      LearningStore | None
+          "forecast_store"      ForecastLearningStore | None
+          "target_position_adapter" TargetPositionAdapter | None
+
+    generated_at_utc:
+        UTC-aware datetime.  Raises ValueError for naive datetimes.
+
+    Returns
+    -------
+    dict
+        JSON-serializable research export.
+
+    Raises
+    ------
+    ValueError
+        If generated_at_utc has no timezone info.
+    """
+    if generated_at_utc.tzinfo is None:
+        raise ValueError(
+            "build_research_export: generated_at_utc must be timezone-aware (UTC policy)"
+        )
+
+    sorted_entries = sorted(zone_entries, key=lambda e: e.get("entry_id", ""))
+    zones_out: list[dict] = []
+
+    for z_idx, zone_entry in enumerate(sorted_entries, start=1):
+        zone_ref = f"zone_{z_idx}"
+        zone_section = _build_zone_section(zone_ref, zone_entry, generated_at_utc)
+        zones_out.append(zone_section)
+
+    application_summary = _build_application_summary(sorted_entries)
+
+    return {
+        "format_version": RESEARCH_EXPORT_FORMAT_VERSION,
+        "export_type": RESEARCH_EXPORT_TYPE,
+        "research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
+        "generated_at_utc": generated_at_utc.isoformat(),
+        "research_export_notice_version": RESEARCH_EXPORT_NOTICE_VERSION,
+        "zones_count": len(zones_out),
+        "zones": zones_out,
+        "learning_application_summary": application_summary,
+        "le2_capability_notes": {
+            "evaluator_attribution": "available — decided_by field on all transition records",
+            "override_patterns": "available — OverrideRecord with event_type, duration",
+            "outcome_scores": "available when resolved — DecisionOutcome.outcome_score",
+            "adapted_targets": "available — TargetPositionAdapter per intensity level",
+            "forecast_trust": "available — ForecastLearningStore trust scores",
+            "per_event_baseline_vs_adapted": "not_available — not stored per transition",
+            "per_event_forecast_modifier": "not_available — not stored per transition",
+            "per_event_similarity_match": "not_available — not yet implemented",
+        },
+    }

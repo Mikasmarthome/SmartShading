@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Uredi nastavitve SmartShading",
+        "description": "Tukaj lahko uredite nastavitve vremena, udobja, urnika, prisotnosti in senčenja za to območje ter dodate, uredite ali odstranite okna.",
+        "menu_options": {
+          "weather": "Vremenski in sončni vhodi",
+          "lifecycle": "Nastavitve urnika",
+          "presence": "Nastavitve prisotnosti",
+          "comfort": "Nastavitve udobja",
+          "behavior": "Vedenje senčenja",
+          "add_window": "Dodaj okno",
+          "edit_window": "Uredi okno",
+          "remove_window": "Odstrani okno"
+        }
+      },
+      "weather": {
+        "title": "Vremenski in sončni vhodi",
+        "description": "Vse neobvezno. Entiteta vremena (npr. DWD, yr.no) samodejno zagotavlja razmere, oblačnost in veter. Namenski senzorji nadomestijo vremensko entiteto za natančnejše lokalne meritve. Sončno sevanje mora prihajati iz namenskega senzorja: ne bere se iz vremenskih entitet.",
+        "data": {
+          "weather_entity_id": "Vremenska entiteta",
+          "solar_radiation_sensor_id": "Senzor sončnega sevanja (W/m²)",
+          "outdoor_temperature_sensor_id": "Senzor zunanje temperature",
+          "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
+          "wind_speed_sensor_id": "Senzor hitrosti vetra (m/s) — za tende/screene uporabite sunke vetra, če so na voljo"
+        }
+      },
+      "lifecycle": {
+        "title": "Nastavitve urnika",
+        "description": "Izberite, kako SmartShading zazna noč in jutro. »Oboje« se sproži ob prvem izpolnjenem pogoju: čas ali višina sonca.",
+        "data": {
+          "night_trigger": "Sprožilec noči",
+          "morning_trigger": "Sprožilec jutra",
+          "schedule_mode": "Način urnika"
+        },
+        "data_description": {
+          "schedule_mode": "»Enako vsak dan« uporablja en urnik za cel teden. »Delavnik / Vikend« omogoča nastavitev različnih časov in položajev za pon–pet in sob–ned."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Podrobnosti urnika",
+        "description": "Vnesite čas ali višino sonca za vsak sprožilec. Prikazana so samo polja, pomembna za izbrani sprožilec.",
+        "data": {
+          "night_fixed_time": "Čas noči",
+          "night_elevation_preset": "Noč: položaj sonca",
+          "night_sun_elevation": "Lastna nočna višina (°) — uporablja se samo, ko je izbrano Po meri",
+          "morning_fixed_time": "Čas jutra",
+          "morning_elevation_preset": "Jutro: položaj sonca",
+          "morning_sun_elevation": "Lastna jutranja višina (°) — uporablja se samo, ko je izbrano Po meri",
+          "night_position": "Nočni položaj",
+          "morning_position": "Jutranji položaj",
+          "weekday_night_fixed_time": "Čas noči ob delavnikih (pon–pet)",
+          "weekday_night_position": "Nočni položaj ob delavnikih (pon–pet)",
+          "weekday_morning_fixed_time": "Čas jutra ob delavnikih (pon–pet)",
+          "weekday_morning_position": "Jutranji položaj ob delavnikih (pon–pet)",
+          "weekend_night_fixed_time": "Čas noči ob vikendih (sob–ned)",
+          "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)",
+          "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
+          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)"
+        },
+        "data_description": {
+          "night_position": "Položaj senčila med nočno fazo (0 = zaprto, 100 = odprto).",
+          "morning_position": "Položaj senčila na začetku jutranje faze (0 = zaprto, 100 = odprto).",
+          "weekday_night_position": "Položaj senčila med nočno fazo ob delavnikih (0 = zaprto, 100 = odprto).",
+          "weekday_morning_position": "Položaj senčila na začetku jutranje faze ob delavnikih (0 = zaprto, 100 = odprto).",
+          "weekend_night_position": "Položaj senčila med nočno fazo ob vikendih (0 = zaprto, 100 = odprto).",
+          "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "presence": {
+        "title": "Nastavitve prisotnosti",
+        "description": "Neobvezno. Če ni izbran nihče, SmartShading vedno predpostavlja prisotnost in nikoli ne sproži zapiranja zaradi odsotnosti.",
+        "data": {
+          "presence_entity_ids": "Entitete prisotnosti",
+          "absence_delay_min": "Zakasnitev odsotnosti",
+          "absence_position": "Položaj ob odsotnosti"
+        },
+        "data_description": {
+          "absence_position": "Položaj senčila, ko je območje nezasedeno, razen če velja močnejša zaščitna odločitev (0 = popolnoma zaprto, 100 = popolnoma odprto). Velja za vsa okna v tem območju."
+        }
+      },
+      "comfort": {
+        "title": "Nastavitve udobja",
+        "description": "Konfigurirajte zaščitne funkcije prek senčenja. Senzorji notranje temperature so neobvezni.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Senzorji notranje temperature (neobvezno)",
+          "heat_protection_enabled": "Omogoči zaščito pred vročino",
+          "glare_protection_enabled": "Omogoči zaščito pred bleščanjem",
+          "solar_gain_enabled": "Omogoči sončni dobitek (zimsko sonce)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "En ali več notranjih senzorjev. Ko je konfiguriranih več senzorjev, se uporabi povprečje vseh veljavnih meritev.",
+          "heat_protection_enabled": "Preprečuje pregrevanje s proaktivnim senčenjem glede na položaj sonca, vreme in temperature.",
+          "glare_protection_enabled": "Zmanjšuje neposredno sončno svetlobo, ko sonce zadene okno.",
+          "solar_gain_enabled": "V hladnem vremenu ohranja senčenje bolj odprto za podporo pasivnemu ogrevanju. Zaščita pred vročino ima prednost."
+        }
+      },
+      "behavior": {
+        "title": "Osnovno vedenje senčenja",
+        "description": "Osnovni ciljni položaji senčila glede na intenzivnost senčenja. SmartShading uporablja te vrednosti kot izhodišče in jih lahko prilagaja za posamezno okno, ko je na voljo dovolj podatkov učenja.",
+        "data": {
+          "light_shade_position": "Položaj rahlega senčenja",
+          "normal_shade_position": "Položaj normalnega senčenja",
+          "strong_shade_position": "Položaj močnega senčenja"
+        }
+      },
+      "add_window": {
+        "title": "Dodaj okno",
+        "description": "Dodajte še eno okno v to območje. SmartShading deluje z natančnim azimutom: smer kompasa je le priročna bližnjica.",
+        "data": {
+          "window_name": "Ime okna",
+          "floor_level": "Nadstropje (0 = pritličje)",
+          "compass_direction": "Usmerjenost",
+          "custom_azimuth": "Azimut po meri (0-359°, uporablja se samo, če je Usmerjenost nastavljena na Po meri)",
+          "absence_position": "Položaj ob odsotnosti (preglasi privzeto vrednost območja)",
+          "window_behavior_mode": "Samodejni način senčenja"
+        },
+        "data_description": {
+          "absence_position": "Pustite prazno za prevzem privzetega položaja odsotnosti območja. Vnesite vrednost, da ga preglasite samo za to določeno okno.",
+          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Senčila za to okno",
+        "description": "Izberite entiteto ali entitete senčila, ki senčijo okno »{window_name}«. Dodajte samo senčila, ki pokrivajo natančno to površino okna. Za ločena okna dodajte ločena okna.",
+        "data": {
+          "cover_entities": "Senčila za to okno",
+          "cover_hardware_type": "Vrsta strojne opreme senčila"
+        }
+      },
+      "add_window_loop": {
+        "title": "Dodati še eno okno?",
+        "description": "V to območje je dodano {window_count} novo okno/oken. Želite dodati še eno okno?",
+        "data": {
+          "add_another_window": "Dodaj še eno okno"
+        }
+      },
+      "edit_window": {
+        "title": "Uredi okno",
+        "description": "Izberite okno za urejanje.",
+        "data": {
+          "window_id": "Okno"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Uredi okno: {window_name}",
+        "description": "Posodobite nastavitve okna »{window_name}«. Spremembe senčil začnejo veljati po shranjevanju.",
+        "data": {
+          "window_name": "Ime okna",
+          "floor_level": "Nadstropje (0 = pritličje)",
+          "compass_direction": "Usmerjenost",
+          "custom_azimuth": "Azimut po meri (0-359°, uporablja se samo, če je Usmerjenost nastavljena na Po meri)",
+          "cover_entities": "Senčila za to okno",
+          "cover_hardware_type": "Vrsta strojne opreme senčila",
+          "absence_position": "Položaj ob odsotnosti (preglasi privzeto vrednost območja)",
+          "window_behavior_mode": "Samodejni način senčenja",
+          "light_shade_position": "Položaj rahlega senčenja (preglasi privzeto vrednost območja)",
+          "normal_shade_position": "Položaj normalnega senčenja (preglasi privzeto vrednost območja)",
+          "strong_shade_position": "Položaj močnega senčenja (preglasi privzeto vrednost območja)",
+          "manual_sun_sector_enabled": "Omogoči ročno preglasitev sončnega sektorja",
+          "manual_sun_sector_start_deg": "Začetni azimut sončnega sektorja (°)",
+          "manual_sun_sector_end_deg": "Končni azimut sončnega sektorja (°)",
+          "obstruction_1_enabled": "Območje ovire 1 aktivno",
+          "obstruction_1_azimuth_start_deg": "Začetni azimut območja 1 (°)",
+          "obstruction_1_azimuth_end_deg": "Končni azimut območja 1 (°)",
+          "obstruction_1_block_from_elevation_deg": "Območje 1 blokirano od višine (°)",
+          "obstruction_1_block_until_elevation_deg": "Območje 1 blokirano do višine (°)",
+          "obstruction_2_enabled": "Območje ovire 2 aktivno",
+          "obstruction_2_azimuth_start_deg": "Začetni azimut območja 2 (°)",
+          "obstruction_2_azimuth_end_deg": "Končni azimut območja 2 (°)",
+          "obstruction_2_block_from_elevation_deg": "Območje 2 blokirano od višine (°)",
+          "obstruction_2_block_until_elevation_deg": "Območje 2 blokirano do višine (°)",
+          "obstruction_3_enabled": "Območje ovire 3 aktivno",
+          "obstruction_3_azimuth_start_deg": "Začetni azimut območja 3 (°)",
+          "obstruction_3_azimuth_end_deg": "Končni azimut območja 3 (°)",
+          "obstruction_3_block_from_elevation_deg": "Območje 3 blokirano od višine (°)",
+          "obstruction_3_block_until_elevation_deg": "Območje 3 blokirano do višine (°)"
+        },
+        "data_description": {
+          "absence_position": "Pustite prazno za prevzem privzetega položaja odsotnosti območja. Vnesite vrednost, da ga preglasite samo za to okno.",
+          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne.",
+          "light_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja rahlega senčenja samo za to okno.",
+          "normal_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja normalnega senčenja samo za to okno.",
+          "strong_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja močnega senčenja samo za to okno.",
+          "manual_sun_sector_enabled": "Omogočite za zamenjavo samodejnega sončnega sektorja, ki temelji na azimutu, z ročnim obsegom. Začetni in končni azimut določata, kdaj se šteje, da sonce zadene to okno. Podpira prehod čez sever (npr. od 330° do 30°).",
+          "obstruction_1_enabled": "Omogočite za označitev obsega azimuta, kjer fizična ovira (drevo, stavba, napušč strehe) blokira neposredno sonce. Pustite polja višine prazna za blokiranje pri vsaki višini sonca v obsegu azimuta.",
+          "obstruction_1_block_from_elevation_deg": "Neobvezno. Ovira blokira samo, ko je višina sonca enaka tej vrednosti ali višja. Primer: 45° blokira napušč strehe, ki senči samo pri strmih kotih sonca. Pustite prazno za brez spodnje meje.",
+          "obstruction_1_block_until_elevation_deg": "Neobvezno. Ovira blokira samo, ko je višina sonca enaka tej vrednosti ali nižja. Primer: 18° blokira goro ali sosednjo stavbo, ki vpliva samo pri nizkem soncu. Pustite prazno za brez zgornje meje.",
+          "obstruction_2_enabled": "Drugo neobvezno območje ovire za to okno.",
+          "obstruction_2_block_from_elevation_deg": "Neobvezna spodnja meja višine za območje 2 (glejte opis območja 1).",
+          "obstruction_2_block_until_elevation_deg": "Neobvezna zgornja meja višine za območje 2 (glejte opis območja 1).",
+          "obstruction_3_enabled": "Tretje neobvezno območje ovire za to okno.",
+          "obstruction_3_block_from_elevation_deg": "Neobvezna spodnja meja višine za območje 3 (glejte opis območja 1).",
+          "obstruction_3_block_until_elevation_deg": "Neobvezna zgornja meja višine za območje 3 (glejte opis območja 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Odstrani okno",
+        "description": "Izberite okno za odstranitev. S tem se trajno odstranita okno in njegove dodelitve senčil iz tega območja. Same entitete senčil se ne izbrišejo.",
+        "data": {
+          "window_id": "Okno za odstranitev"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Potrdi odstranitev",
+        "description": "Odstraniti okno »{window_name}«? Tega dejanja ni mogoče razveljaviti.",
+        "data": {
+          "remove_confirmed": "Da, odstrani to okno"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Zadnjega okna ni mogoče odstraniti. Območje mora imeti vsaj eno okno.",
+      "obstruction_elevation_range_invalid": "»Blokirano od višine« ne sme biti večje od »Blokirano do višine«."
+    },
+    "abort": {
+      "no_options_for_system_entry": "Sistemski vnos SmartShading nima nastavljivih možnosti."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Konfigurirajte SmartShading. Okna lahko dodate na naslednjih zaslonih.",
+        "data": {
+          "zone_name": "Ime območja"
+        }
+      },
+      "weather": {
+        "title": "Vremenski in sončni vhodi (neobvezno)",
+        "description": "Vse neobvezno. Entiteta vremena (npr. DWD, yr.no) samodejno zagotavlja razmere, oblačnost in veter. Namenski senzorji jo nadomestijo za natančnejše lokalne meritve. Sončno sevanje zahteva namenski senzor. Ta korak lahko preskočite in vhode dodate pozneje.",
+        "data": {
+          "weather_entity_id": "Vremenska entiteta",
+          "solar_radiation_sensor_id": "Senzor sončnega sevanja (W/m²)",
+          "outdoor_temperature_sensor_id": "Senzor zunanje temperature",
+          "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
+          "wind_speed_sensor_id": "Senzor hitrosti vetra (m/s) — za tende/screene uporabite sunke vetra, če so na voljo"
+        }
+      },
+      "lifecycle": {
+        "title": "Nastavitve urnika",
+        "description": "Izberite, kako SmartShading zazna noč in jutro. »Oboje« se sproži ob prvem izpolnjenem pogoju: čas ali višina sonca.",
+        "data": {
+          "night_trigger": "Sprožilec noči",
+          "morning_trigger": "Sprožilec jutra",
+          "schedule_mode": "Način urnika"
+        },
+        "data_description": {
+          "schedule_mode": "»Enako vsak dan« uporablja en urnik za cel teden. »Delavnik / Vikend« omogoča nastavitev različnih časov in položajev za pon–pet in sob–ned."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Podrobnosti urnika",
+        "description": "Vnesite čas ali višino sonca za vsak sprožilec. Prikazana so samo polja, pomembna za izbrani sprožilec.",
+        "data": {
+          "night_fixed_time": "Čas noči",
+          "night_elevation_preset": "Noč: položaj sonca",
+          "night_sun_elevation": "Lastna nočna višina (°) — uporablja se samo, ko je izbrano Po meri",
+          "morning_fixed_time": "Čas jutra",
+          "morning_elevation_preset": "Jutro: položaj sonca",
+          "morning_sun_elevation": "Lastna jutranja višina (°) — uporablja se samo, ko je izbrano Po meri",
+          "night_position": "Nočni položaj",
+          "morning_position": "Jutranji položaj",
+          "weekday_night_fixed_time": "Čas noči ob delavnikih (pon–pet)",
+          "weekday_night_position": "Nočni položaj ob delavnikih (pon–pet)",
+          "weekday_morning_fixed_time": "Čas jutra ob delavnikih (pon–pet)",
+          "weekday_morning_position": "Jutranji položaj ob delavnikih (pon–pet)",
+          "weekend_night_fixed_time": "Čas noči ob vikendih (sob–ned)",
+          "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)",
+          "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
+          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)"
+        },
+        "data_description": {
+          "night_position": "Položaj senčila med nočno fazo (0 = zaprto, 100 = odprto).",
+          "morning_position": "Položaj senčila na začetku jutranje faze (0 = zaprto, 100 = odprto).",
+          "weekday_night_position": "Položaj senčila med nočno fazo ob delavnikih (0 = zaprto, 100 = odprto).",
+          "weekday_morning_position": "Položaj senčila na začetku jutranje faze ob delavnikih (0 = zaprto, 100 = odprto).",
+          "weekend_night_position": "Položaj senčila med nočno fazo ob vikendih (0 = zaprto, 100 = odprto).",
+          "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "presence": {
+        "title": "Nastavitve prisotnosti",
+        "description": "Neobvezno. Če ni izbran nihče, SmartShading vedno predpostavlja prisotnost in nikoli ne sproži zapiranja zaradi odsotnosti.",
+        "data": {
+          "presence_entity_ids": "Entitete prisotnosti",
+          "absence_delay_min": "Zakasnitev odsotnosti",
+          "absence_position": "Položaj ob odsotnosti"
+        },
+        "data_description": {
+          "absence_position": "Položaj senčila, ko je območje nezasedeno, razen če velja močnejša zaščitna odločitev (0 = popolnoma zaprto, 100 = popolnoma odprto). Velja za vsa okna v tem območju."
+        }
+      },
+      "window": {
+        "title": "Dodaj okno",
+        "description": "Konfigurirajte eno okno. SmartShading deluje z natančnim azimutom: smer kompasa je le priročna bližnjica.",
+        "data": {
+          "window_name": "Ime okna",
+          "floor_level": "Nadstropje (0 = pritličje)",
+          "compass_direction": "Usmerjenost",
+          "custom_azimuth": "Azimut po meri (0-359°, uporablja se samo, če je Usmerjenost nastavljena na Po meri)",
+          "absence_position": "Položaj ob odsotnosti (preglasi privzeto vrednost območja)",
+          "window_behavior_mode": "Samodejni način senčenja"
+        },
+        "data_description": {
+          "absence_position": "Pustite prazno za prevzem privzetega položaja odsotnosti območja. Vnesite vrednost, da ga preglasite samo za to določeno okno.",
+          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne."
+        }
+      },
+      "cover_group": {
+        "title": "Senčila za to okno",
+        "description": "Izberite entiteto ali entitete senčila, ki senčijo okno »{window_name}«. Dodajte samo senčila, ki pokrivajo natančno to površino okna. Za ločena okna dodajte ločena okna.",
+        "data": {
+          "cover_entities": "Senčila za to okno",
+          "cover_hardware_type": "Vrsta strojne opreme senčila"
+        }
+      },
+      "add_another_window": {
+        "title": "Dodati še eno okno?",
+        "description": "Doslej konfiguriranih {window_count} okno/oken.",
+        "data": {
+          "add_another_window": "Dodaj še eno okno"
+        }
+      },
+      "comfort": {
+        "title": "Nastavitve udobja",
+        "description": "Konfigurirajte zaščitne funkcije prek senčenja. Senzorji notranje temperature so neobvezni.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Senzorji notranje temperature (neobvezno)",
+          "heat_protection_enabled": "Omogoči zaščito pred vročino",
+          "glare_protection_enabled": "Omogoči zaščito pred bleščanjem",
+          "solar_gain_enabled": "Omogoči sončni dobitek (zimsko sonce)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "En ali več notranjih senzorjev. Ko je konfiguriranih več senzorjev, se uporabi povprečje vseh veljavnih meritev.",
+          "heat_protection_enabled": "Preprečuje pregrevanje s proaktivnim senčenjem glede na položaj sonca, vreme in temperature.",
+          "glare_protection_enabled": "Zmanjšuje neposredno sončno svetlobo, ko sonce zadene okno.",
+          "solar_gain_enabled": "V hladnem vremenu ohranja senčenje bolj odprto za podporo pasivnemu ogrevanju. Zaščita pred vročino ima prednost."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Vnesite azimut po meri med 0 in 359 stopinjami ali izberite smer kompasa.",
+      "no_covers_selected": "Izberite vsaj eno entiteto senčila za to okno.",
+      "empty_zone_name": "Ime območja je obvezno.",
+      "obstruction_elevation_range_invalid": "»Blokirano od višine« ne sme biti večje od »Blokirano do višine«."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading je že konfiguriran.",
+      "system_already_exists": "Sistemski vnos SmartShading že obstaja."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Sever (0°)",
+        "northeast": "Severovzhod (45°)",
+        "east": "Vzhod (90°)",
+        "southeast": "Jugovzhod (135°)",
+        "south": "Jug (180°)",
+        "southwest": "Jugozahod (225°)",
+        "west": "Zahod (270°)",
+        "northwest": "Severozahod (315°)",
+        "custom": "Azimut po meri"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Ob sončnem zahodu (0°)",
+        "dusk": "V mraku — civilni mrak (-6°)",
+        "dark": "Ko je temno — navtični mrak (-12°)",
+        "custom": "Po meri"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "Ob sončnem vzhodu (0°)",
+        "dawn": "Ob zori — civilni svit (-6°)",
+        "bright": "Ko se zdani — navtični svit (-12°)",
+        "custom": "Po meri"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Fiksni čas",
+        "sun_elevation": "Višina sonca",
+        "both": "Oboje",
+        "disabled": "Onemogočeno"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Enako vsak dan",
+        "weekday_weekend": "Delavnik / Vikend"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Popolnoma samodejno",
+        "absence_only": "Samo odsotnost",
+        "disabled_automatic": "Avtomatizacija onemogočena"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Rolo",
+        "venetian_blind": "Žaluzija",
+        "exterior_screen": "Screen",
+        "awning": "Tenda",
+        "generic": "Drugo senčilo"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Ustvari izvoz podpore"
+      },
+      "export_research_data": {
+        "name": "Ustvari raziskovalni izvoz"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Način opazovanja",
+        "state": {
+          "on": "Opazuje",
+          "off": "Začasno ustavljeno"
+        }
+      },
+      "active_control": {
+        "name": "Aktivni nadzor",
+        "state": {
+          "on": "Aktivno",
+          "off": "Neaktivno"
+        }
+      },
+      "debug_logging": {
+        "name": "Dnevnik razhroščevanja"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Stanje senčenja",
+        "state": {
+          "storm_safe": "Zaščita pred nevihto",
+          "wind_safe": "Zaščita pred vetrom",
+          "manual_override": "Ročna preglasitev",
+          "night_closed": "Noč – zaprto",
+          "absence_closed": "Odsotnost – zaprto",
+          "strong_shade": "Močno senčenje",
+          "normal_shade": "Normalno senčenje",
+          "light_shade": "Rahlo senčenje",
+          "open": "Odprto"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Stanje senčenja",
+        "state": {
+          "storm_safe": "Zaščita pred nevihto",
+          "wind_safe": "Zaščita pred vetrom",
+          "manual_override": "Ročna preglasitev",
+          "night_closed": "Noč – zaprto",
+          "absence_closed": "Odsotnost – zaprto",
+          "strong_shade": "Močno senčenje",
+          "normal_shade": "Normalno senčenje",
+          "light_shade": "Rahlo senčenje",
+          "open": "Odprto"
+        }
+      },
+      "exposure": {
+        "name": "Izpostavljenost"
+      },
+      "exposure_indexed": {
+        "name": "{index} Izpostavljenost"
+      },
+      "cover_position": {
+        "name": "Položaj senčila"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Položaj senčila"
+      },
+      "recommendation": {
+        "name": "Priporočilo"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Priporočilo"
+      },
+      "zone_summary": {
+        "name": "Povzetek območja",
+        "state": {
+          "safety": "Varnostni način",
+          "override": "Ročna preglasitev",
+          "automatic": "Samodejno",
+          "recommendation_only": "Samo priporočilo",
+          "disabled": "Onemogočeno"
+        }
+      },
+      "learning_progress": {
+        "name": "Napredek učenja"
+      },
+      "shading_result": {
+        "name": "Rezultat senčenja",
+        "state": {
+          "excellent": "Odlično",
+          "good": "Dobro",
+          "acceptable": "Sprejemljivo",
+          "poor": "Slabo",
+          "unknown": "Neznano"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Sončni sektor",
+        "state": {
+          "on": "V sončnem sektorju",
+          "off": "Zunaj sončnega sektorja"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Sončni sektor",
+        "state": {
+          "on": "V sončnem sektorju",
+          "off": "Zunaj sončnega sektorja"
+        }
+      },
+      "override_active": {
+        "name": "Preglasitev aktivna",
+        "state": {
+          "on": "Preglasitev aktivna",
+          "off": "Normalni nadzor"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Preglasitev aktivna",
+        "state": {
+          "on": "Preglasitev aktivna",
+          "off": "Normalni nadzor"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "SmartShading beállítások szerkesztése",
+        "description": "Itt szerkesztheti a zóna időjárás-, komfort-, ütemezés-, jelenlét- és árnyékolási beállításait, valamint ablakokat adhat hozzá, szerkeszthet vagy távolíthat el.",
+        "menu_options": {
+          "weather": "Időjárási és napsugárzási bemenetek",
+          "lifecycle": "Ütemezési beállítások",
+          "presence": "Jelenléti beállítások",
+          "comfort": "Komfortbeállítások",
+          "behavior": "Árnyékolási viselkedés",
+          "add_window": "Ablak hozzáadása",
+          "edit_window": "Ablak szerkesztése",
+          "remove_window": "Ablak eltávolítása"
+        }
+      },
+      "weather": {
+        "title": "Időjárási és napsugárzási bemenetek",
+        "description": "Minden opcionális. Egy időjárás-entitás (pl. DWD, yr.no) automatikusan biztosítja az állapotot, a felhőzetet és a szelet. A dedikált érzékelők felülírják az időjárás-entitást a pontosabb helyi értékekért. A napsugárzásnak dedikált érzékelőből kell érkeznie: az időjárás-entitásokból nem olvasható ki.",
+        "data": {
+          "weather_entity_id": "Időjárás-entitás",
+          "solar_radiation_sensor_id": "Napsugárzás-érzékelő (W/m²)",
+          "outdoor_temperature_sensor_id": "Kültéri hőmérséklet-érzékelő",
+          "cloud_cover_sensor_id": "Felhőzet-érzékelő (0–100 %)",
+          "wind_speed_sensor_id": "Szélsebesség-érzékelő (m/s) — napellenzőkhöz/screenekhez használjon széllökést, ha elérhető"
+        }
+      },
+      "lifecycle": {
+        "title": "Ütemezési beállítások",
+        "description": "Válassza ki, hogyan érzékeli a SmartShading az éjszakát és a reggelt. A „Mindkettő” az elsőként teljesülő feltételre indul: idő vagy napmagasság.",
+        "data": {
+          "night_trigger": "Éjszakai kioldó",
+          "morning_trigger": "Reggeli kioldó",
+          "schedule_mode": "Ütemezési mód"
+        },
+        "data_description": {
+          "schedule_mode": "A „Minden nap ugyanaz” egyetlen ütemezést használ az egész hétre. A „Hétköznap / Hétvége” lehetővé teszi különböző időpontok és pozíciók beállítását hét–pén és szo–vas esetén."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Ütemezés részletei",
+        "description": "Adja meg az időt vagy a napmagasságot minden kioldóhoz. Csak a kiválasztott kioldóhoz tartozó mezők jelennek meg.",
+        "data": {
+          "night_fixed_time": "Éjszakai időpont",
+          "night_elevation_preset": "Éjszaka: napállás",
+          "night_sun_elevation": "Egyéni éjszakai magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
+          "morning_fixed_time": "Reggeli időpont",
+          "morning_elevation_preset": "Reggel: napállás",
+          "morning_sun_elevation": "Egyéni reggeli magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
+          "night_position": "Éjszakai pozíció",
+          "morning_position": "Reggeli pozíció",
+          "weekday_night_fixed_time": "Éjszakai időpont hétköznap (hét–pén)",
+          "weekday_night_position": "Éjszakai pozíció hétköznap (hét–pén)",
+          "weekday_morning_fixed_time": "Reggeli időpont hétköznap (hét–pén)",
+          "weekday_morning_position": "Reggeli pozíció hétköznap (hét–pén)",
+          "weekend_night_fixed_time": "Éjszakai időpont hétvégén (szo–vas)",
+          "weekend_night_position": "Éjszakai pozíció hétvégén (szo–vas)",
+          "weekend_morning_fixed_time": "Reggeli időpont hétvégén (szo–vas)",
+          "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)"
+        },
+        "data_description": {
+          "night_position": "Az árnyékoló pozíciója az éjszakai fázisban (0 = zárva, 100 = nyitva).",
+          "morning_position": "Az árnyékoló pozíciója a reggeli fázis elején (0 = zárva, 100 = nyitva).",
+          "weekday_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétköznap (0 = zárva, 100 = nyitva).",
+          "weekday_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétköznap (0 = zárva, 100 = nyitva).",
+          "weekend_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétvégén (0 = zárva, 100 = nyitva).",
+          "weekend_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétvégén (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "presence": {
+        "title": "Jelenléti beállítások",
+        "description": "Opcionális. Ha senki sincs kiválasztva, a SmartShading mindig azt feltételezi, hogy valaki jelen van, és soha nem indít távollét miatti zárást.",
+        "data": {
+          "presence_entity_ids": "Jelenlét-entitások",
+          "absence_delay_min": "Távollét késleltetése",
+          "absence_position": "Távolléti pozíció"
+        },
+        "data_description": {
+          "absence_position": "Az árnyékoló pozíciója, amíg a zóna üres, hacsak nem érvényes erősebb védelmi döntés (0 = teljesen zárva, 100 = teljesen nyitva). A zóna összes ablakára vonatkozik."
+        }
+      },
+      "comfort": {
+        "title": "Komfortbeállítások",
+        "description": "Állítsa be a védelmi funkciókat árnyékolással. A beltéri hőmérséklet-érzékelők opcionálisak.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Beltéri hőmérséklet-érzékelők (opcionális)",
+          "heat_protection_enabled": "Hővédelem engedélyezése",
+          "glare_protection_enabled": "Vakításvédelem engedélyezése",
+          "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Egy vagy több beltéri érzékelő. Több érzékelő konfigurálása esetén az összes érvényes mérés átlaga használatos.",
+          "heat_protection_enabled": "Megakadályozza a túlmelegedést azzal, hogy a napállás, az időjárás és a hőmérsékletek alapján proaktívan árnyékol.",
+          "glare_protection_enabled": "Csökkenti a közvetlen napfényt, amikor a nap az ablakra süt.",
+          "solar_gain_enabled": "Hűvös időben jobban nyitva tartja az árnyékolást a passzív felmelegedés támogatására. A hővédelem elsőbbséget élvez."
+        }
+      },
+      "behavior": {
+        "title": "Alapvető árnyékolási viselkedés",
+        "description": "Alapvető cél árnyékolópozíciók árnyékolási intenzitás szerint. A SmartShading ezeket az értékeket kiindulópontként használja, és ablakonként alakíthatja, ha elegendő tanulási adat áll rendelkezésre.",
+        "data": {
+          "light_shade_position": "Enyhe árnyékolás pozíciója",
+          "normal_shade_position": "Normál árnyékolás pozíciója",
+          "strong_shade_position": "Erős árnyékolás pozíciója"
+        }
+      },
+      "add_window": {
+        "title": "Ablak hozzáadása",
+        "description": "Adjon hozzá egy másik ablakot ehhez a zónához. A SmartShading pontos azimuttal dolgozik: az iránytű iránya csak kényelmes gyorsindítás.",
+        "data": {
+          "window_name": "Ablak neve",
+          "floor_level": "Szint (0 = földszint)",
+          "compass_direction": "Tájolás",
+          "custom_azimuth": "Egyéni azimut (0-359°, csak akkor használatos, ha a Tájolás Egyéni értékre van állítva)",
+          "absence_position": "Távolléti pozíció (felülírja a zóna alapértelmezését)",
+          "window_behavior_mode": "Automatikus árnyékolási mód"
+        },
+        "data_description": {
+          "absence_position": "Hagyja üresen a zóna alapértelmezett távolléti pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél a konkrét ablaknál.",
+          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Árnyékolók ehhez az ablakhoz",
+        "description": "Válassza ki a(z) „{window_name}” ablakot árnyékoló árnyékoló entitást vagy entitásokat. Csak olyan árnyékolókat adjon hozzá, amelyek pontosan ezt az ablakfelületet fedik. Külön ablakokhoz adjon hozzá külön ablakokat.",
+        "data": {
+          "cover_entities": "Árnyékolók ehhez az ablakhoz",
+          "cover_hardware_type": "Az árnyékoló hardvertípusa"
+        }
+      },
+      "add_window_loop": {
+        "title": "Hozzáad egy másik ablakot?",
+        "description": "{window_count} új ablak hozzáadva ehhez a zónához. Szeretne hozzáadni egy másik ablakot?",
+        "data": {
+          "add_another_window": "Másik ablak hozzáadása"
+        }
+      },
+      "edit_window": {
+        "title": "Ablak szerkesztése",
+        "description": "Válassza ki a szerkesztendő ablakot.",
+        "data": {
+          "window_id": "Ablak"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Ablak szerkesztése: {window_name}",
+        "description": "Frissítse a(z) „{window_name}” ablak beállításait. Az árnyékolók módosításai mentés után lépnek életbe.",
+        "data": {
+          "window_name": "Ablak neve",
+          "floor_level": "Szint (0 = földszint)",
+          "compass_direction": "Tájolás",
+          "custom_azimuth": "Egyéni azimut (0-359°, csak akkor használatos, ha a Tájolás Egyéni értékre van állítva)",
+          "cover_entities": "Árnyékolók ehhez az ablakhoz",
+          "cover_hardware_type": "Az árnyékoló hardvertípusa",
+          "absence_position": "Távolléti pozíció (felülírja a zóna alapértelmezését)",
+          "window_behavior_mode": "Automatikus árnyékolási mód",
+          "light_shade_position": "Enyhe árnyékolás pozíciója (felülírja a zóna alapértelmezését)",
+          "normal_shade_position": "Normál árnyékolás pozíciója (felülírja a zóna alapértelmezését)",
+          "strong_shade_position": "Erős árnyékolás pozíciója (felülírja a zóna alapértelmezését)",
+          "manual_sun_sector_enabled": "Napszektor kézi felülírásának engedélyezése",
+          "manual_sun_sector_start_deg": "Napszektor kezdő azimutja (°)",
+          "manual_sun_sector_end_deg": "Napszektor záró azimutja (°)",
+          "obstruction_1_enabled": "1. akadályzóna aktív",
+          "obstruction_1_azimuth_start_deg": "1. zóna kezdő azimutja (°)",
+          "obstruction_1_azimuth_end_deg": "1. zóna záró azimutja (°)",
+          "obstruction_1_block_from_elevation_deg": "1. zóna blokkolva ettől a magasságtól (°)",
+          "obstruction_1_block_until_elevation_deg": "1. zóna blokkolva eddig a magasságig (°)",
+          "obstruction_2_enabled": "2. akadályzóna aktív",
+          "obstruction_2_azimuth_start_deg": "2. zóna kezdő azimutja (°)",
+          "obstruction_2_azimuth_end_deg": "2. zóna záró azimutja (°)",
+          "obstruction_2_block_from_elevation_deg": "2. zóna blokkolva ettől a magasságtól (°)",
+          "obstruction_2_block_until_elevation_deg": "2. zóna blokkolva eddig a magasságig (°)",
+          "obstruction_3_enabled": "3. akadályzóna aktív",
+          "obstruction_3_azimuth_start_deg": "3. zóna kezdő azimutja (°)",
+          "obstruction_3_azimuth_end_deg": "3. zóna záró azimutja (°)",
+          "obstruction_3_block_from_elevation_deg": "3. zóna blokkolva ettől a magasságtól (°)",
+          "obstruction_3_block_until_elevation_deg": "3. zóna blokkolva eddig a magasságig (°)"
+        },
+        "data_description": {
+          "absence_position": "Hagyja üresen a zóna alapértelmezett távolléti pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél az ablaknál.",
+          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak.",
+          "light_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket az enyhe árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
+          "normal_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket a normál árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
+          "strong_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket az erős árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
+          "manual_sun_sector_enabled": "Engedélyezze az automatikus, azimut-alapú napszektor manuális tartománnyal való helyettesítéséhez. A kezdő és záró azimut határozza meg, mikor tekinthető úgy, hogy a nap erre az ablakra süt. Támogatja az északon való átmenetet (pl. 330°-tól 30°-ig).",
+          "obstruction_1_enabled": "Engedélyezze egy olyan azimuttartomány megjelöléséhez, ahol fizikai akadály (fa, épület, tetőkiugrás) blokkolja a közvetlen napot. Hagyja üresen a magasság mezőket, hogy az azimuttartományban minden napmagasságnál blokkoljon.",
+          "obstruction_1_block_from_elevation_deg": "Opcionális. Az akadály csak akkor blokkol, ha a napmagasság egyenlő ezzel az értékkel vagy magasabb. Példa: 45° blokkol egy tetőkiugrást, amely csak meredek napszögeknél árnyékol. Hagyja üresen, ha nincs alsó határ.",
+          "obstruction_1_block_until_elevation_deg": "Opcionális. Az akadály csak akkor blokkol, ha a napmagasság egyenlő ezzel az értékkel vagy alacsonyabb. Példa: 18° blokkol egy hegyet vagy szomszédos épületet, amely csak alacsony napnál hat. Hagyja üresen, ha nincs felső határ.",
+          "obstruction_2_enabled": "Második opcionális akadályzóna ehhez az ablakhoz.",
+          "obstruction_2_block_from_elevation_deg": "Opcionális alsó magassági határ a 2. zónához (lásd az 1. zóna leírását).",
+          "obstruction_2_block_until_elevation_deg": "Opcionális felső magassági határ a 2. zónához (lásd az 1. zóna leírását).",
+          "obstruction_3_enabled": "Harmadik opcionális akadályzóna ehhez az ablakhoz.",
+          "obstruction_3_block_from_elevation_deg": "Opcionális alsó magassági határ a 3. zónához (lásd az 1. zóna leírását).",
+          "obstruction_3_block_until_elevation_deg": "Opcionális felső magassági határ a 3. zónához (lásd az 1. zóna leírását)."
+        }
+      },
+      "remove_window": {
+        "title": "Ablak eltávolítása",
+        "description": "Válassza ki az eltávolítandó ablakot. Ez véglegesen eltávolítja az ablakot és annak árnyékoló-hozzárendeléseit ebből a zónából. Maguk az árnyékoló entitások nem törlődnek.",
+        "data": {
+          "window_id": "Eltávolítandó ablak"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Eltávolítás megerősítése",
+        "description": "Eltávolítja a(z) „{window_name}” ablakot? Ez nem vonható vissza.",
+        "data": {
+          "remove_confirmed": "Igen, távolítsa el ezt az ablakot"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Az utolsó ablak nem távolítható el. Egy zónának legalább egy ablakkal kell rendelkeznie.",
+      "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”."
+    },
+    "abort": {
+      "no_options_for_system_entry": "A SmartShading rendszerbejegyzésnek nincsenek konfigurálható beállításai."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Állítsa be a SmartShadinget. Ablakokat a következő képernyőkön adhat hozzá.",
+        "data": {
+          "zone_name": "Zóna neve"
+        }
+      },
+      "weather": {
+        "title": "Időjárási és napsugárzási bemenetek (opcionális)",
+        "description": "Minden opcionális. Egy időjárás-entitás (pl. DWD, yr.no) automatikusan biztosítja az állapotot, a felhőzetet és a szelet. A dedikált érzékelők felülírják a pontosabb helyi értékekért. A napsugárzás dedikált érzékelőt igényel. Ezt a lépést kihagyhatja, és a bemeneteket később adhatja hozzá.",
+        "data": {
+          "weather_entity_id": "Időjárás-entitás",
+          "solar_radiation_sensor_id": "Napsugárzás-érzékelő (W/m²)",
+          "outdoor_temperature_sensor_id": "Kültéri hőmérséklet-érzékelő",
+          "cloud_cover_sensor_id": "Felhőzet-érzékelő (0–100 %)",
+          "wind_speed_sensor_id": "Szélsebesség-érzékelő (m/s) — napellenzőkhöz/screenekhez használjon széllökést, ha elérhető"
+        }
+      },
+      "lifecycle": {
+        "title": "Ütemezési beállítások",
+        "description": "Válassza ki, hogyan érzékeli a SmartShading az éjszakát és a reggelt. A „Mindkettő” az elsőként teljesülő feltételre indul: idő vagy napmagasság.",
+        "data": {
+          "night_trigger": "Éjszakai kioldó",
+          "morning_trigger": "Reggeli kioldó",
+          "schedule_mode": "Ütemezési mód"
+        },
+        "data_description": {
+          "schedule_mode": "A „Minden nap ugyanaz” egyetlen ütemezést használ az egész hétre. A „Hétköznap / Hétvége” lehetővé teszi különböző időpontok és pozíciók beállítását hét–pén és szo–vas esetén."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Ütemezés részletei",
+        "description": "Adja meg az időt vagy a napmagasságot minden kioldóhoz. Csak a kiválasztott kioldóhoz tartozó mezők jelennek meg.",
+        "data": {
+          "night_fixed_time": "Éjszakai időpont",
+          "night_elevation_preset": "Éjszaka: napállás",
+          "night_sun_elevation": "Egyéni éjszakai magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
+          "morning_fixed_time": "Reggeli időpont",
+          "morning_elevation_preset": "Reggel: napállás",
+          "morning_sun_elevation": "Egyéni reggeli magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
+          "night_position": "Éjszakai pozíció",
+          "morning_position": "Reggeli pozíció",
+          "weekday_night_fixed_time": "Éjszakai időpont hétköznap (hét–pén)",
+          "weekday_night_position": "Éjszakai pozíció hétköznap (hét–pén)",
+          "weekday_morning_fixed_time": "Reggeli időpont hétköznap (hét–pén)",
+          "weekday_morning_position": "Reggeli pozíció hétköznap (hét–pén)",
+          "weekend_night_fixed_time": "Éjszakai időpont hétvégén (szo–vas)",
+          "weekend_night_position": "Éjszakai pozíció hétvégén (szo–vas)",
+          "weekend_morning_fixed_time": "Reggeli időpont hétvégén (szo–vas)",
+          "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)"
+        },
+        "data_description": {
+          "night_position": "Az árnyékoló pozíciója az éjszakai fázisban (0 = zárva, 100 = nyitva).",
+          "morning_position": "Az árnyékoló pozíciója a reggeli fázis elején (0 = zárva, 100 = nyitva).",
+          "weekday_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétköznap (0 = zárva, 100 = nyitva).",
+          "weekday_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétköznap (0 = zárva, 100 = nyitva).",
+          "weekend_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétvégén (0 = zárva, 100 = nyitva).",
+          "weekend_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétvégén (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "presence": {
+        "title": "Jelenléti beállítások",
+        "description": "Opcionális. Ha senki sincs kiválasztva, a SmartShading mindig azt feltételezi, hogy valaki jelen van, és soha nem indít távollét miatti zárást.",
+        "data": {
+          "presence_entity_ids": "Jelenlét-entitások",
+          "absence_delay_min": "Távollét késleltetése",
+          "absence_position": "Távolléti pozíció"
+        },
+        "data_description": {
+          "absence_position": "Az árnyékoló pozíciója, amíg a zóna üres, hacsak nem érvényes erősebb védelmi döntés (0 = teljesen zárva, 100 = teljesen nyitva). A zóna összes ablakára vonatkozik."
+        }
+      },
+      "window": {
+        "title": "Ablak hozzáadása",
+        "description": "Állítson be egy ablakot. A SmartShading pontos azimuttal dolgozik: az iránytű iránya csak kényelmes gyorsindítás.",
+        "data": {
+          "window_name": "Ablak neve",
+          "floor_level": "Szint (0 = földszint)",
+          "compass_direction": "Tájolás",
+          "custom_azimuth": "Egyéni azimut (0-359°, csak akkor használatos, ha a Tájolás Egyéni értékre van állítva)",
+          "absence_position": "Távolléti pozíció (felülírja a zóna alapértelmezését)",
+          "window_behavior_mode": "Automatikus árnyékolási mód"
+        },
+        "data_description": {
+          "absence_position": "Hagyja üresen a zóna alapértelmezett távolléti pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél a konkrét ablaknál.",
+          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak."
+        }
+      },
+      "cover_group": {
+        "title": "Árnyékolók ehhez az ablakhoz",
+        "description": "Válassza ki a(z) „{window_name}” ablakot árnyékoló árnyékoló entitást vagy entitásokat. Csak olyan árnyékolókat adjon hozzá, amelyek pontosan ezt az ablakfelületet fedik. Külön ablakokhoz adjon hozzá külön ablakokat.",
+        "data": {
+          "cover_entities": "Árnyékolók ehhez az ablakhoz",
+          "cover_hardware_type": "Az árnyékoló hardvertípusa"
+        }
+      },
+      "add_another_window": {
+        "title": "Hozzáad egy másik ablakot?",
+        "description": "Eddig {window_count} ablak konfigurálva.",
+        "data": {
+          "add_another_window": "Másik ablak hozzáadása"
+        }
+      },
+      "comfort": {
+        "title": "Komfortbeállítások",
+        "description": "Állítsa be a védelmi funkciókat árnyékolással. A beltéri hőmérséklet-érzékelők opcionálisak.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Beltéri hőmérséklet-érzékelők (opcionális)",
+          "heat_protection_enabled": "Hővédelem engedélyezése",
+          "glare_protection_enabled": "Vakításvédelem engedélyezése",
+          "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Egy vagy több beltéri érzékelő. Több érzékelő konfigurálása esetén az összes érvényes mérés átlaga használatos.",
+          "heat_protection_enabled": "Megakadályozza a túlmelegedést azzal, hogy a napállás, az időjárás és a hőmérsékletek alapján proaktívan árnyékol.",
+          "glare_protection_enabled": "Csökkenti a közvetlen napfényt, amikor a nap az ablakra süt.",
+          "solar_gain_enabled": "Hűvös időben jobban nyitva tartja az árnyékolást a passzív felmelegedés támogatására. A hővédelem elsőbbséget élvez."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Adjon meg egy egyéni azimutot 0 és 359 fok között, vagy válasszon iránytű-irányt.",
+      "no_covers_selected": "Válasszon legalább egy árnyékoló entitást ehhez az ablakhoz.",
+      "empty_zone_name": "A zóna neve kötelező.",
+      "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”."
+    },
+    "abort": {
+      "single_instance_allowed": "A SmartShading már konfigurálva van.",
+      "system_already_exists": "A SmartShading rendszerbejegyzés már létezik."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Észak (0°)",
+        "northeast": "Északkelet (45°)",
+        "east": "Kelet (90°)",
+        "southeast": "Délkelet (135°)",
+        "south": "Dél (180°)",
+        "southwest": "Délnyugat (225°)",
+        "west": "Nyugat (270°)",
+        "northwest": "Északnyugat (315°)",
+        "custom": "Egyéni azimut"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Napnyugtakor (0°)",
+        "dusk": "Szürkületkor — polgári szürkület (-6°)",
+        "dark": "Amikor sötét van — tengerészeti szürkület (-12°)",
+        "custom": "Egyéni"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "Napkeltekor (0°)",
+        "dawn": "Hajnalban — polgári szürkület (-6°)",
+        "bright": "Amikor világosodik — tengerészeti szürkület (-12°)",
+        "custom": "Egyéni"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Rögzített idő",
+        "sun_elevation": "Napmagasság",
+        "both": "Mindkettő",
+        "disabled": "Letiltva"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Minden nap ugyanaz",
+        "weekday_weekend": "Hétköznap / Hétvége"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Teljesen automatikus",
+        "absence_only": "Csak távollét",
+        "disabled_automatic": "Automatizálás letiltva"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Redőny",
+        "venetian_blind": "Reluxa",
+        "exterior_screen": "Screen",
+        "awning": "Napellenző",
+        "generic": "Egyéb árnyékoló"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Támogatási exportálás létrehozása"
+      },
+      "export_research_data": {
+        "name": "Kutatási exportálás létrehozása"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Megfigyelési mód",
+        "state": {
+          "on": "Megfigyel",
+          "off": "Szüneteltetve"
+        }
+      },
+      "active_control": {
+        "name": "Aktív vezérlés",
+        "state": {
+          "on": "Aktív",
+          "off": "Inaktív"
+        }
+      },
+      "debug_logging": {
+        "name": "Hibakeresési napló"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Árnyékolási állapot",
+        "state": {
+          "storm_safe": "Viharbiztos",
+          "wind_safe": "Szélbiztos",
+          "manual_override": "Kézi felülírás",
+          "night_closed": "Éjszaka – zárva",
+          "absence_closed": "Távollét – zárva",
+          "strong_shade": "Erős árnyékolás",
+          "normal_shade": "Normál árnyékolás",
+          "light_shade": "Enyhe árnyékolás",
+          "open": "Nyitva"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Árnyékolási állapot",
+        "state": {
+          "storm_safe": "Viharbiztos",
+          "wind_safe": "Szélbiztos",
+          "manual_override": "Kézi felülírás",
+          "night_closed": "Éjszaka – zárva",
+          "absence_closed": "Távollét – zárva",
+          "strong_shade": "Erős árnyékolás",
+          "normal_shade": "Normál árnyékolás",
+          "light_shade": "Enyhe árnyékolás",
+          "open": "Nyitva"
+        }
+      },
+      "exposure": {
+        "name": "Kitettség"
+      },
+      "exposure_indexed": {
+        "name": "{index} Kitettség"
+      },
+      "cover_position": {
+        "name": "Árnyékoló pozíciója"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Árnyékoló pozíciója"
+      },
+      "recommendation": {
+        "name": "Ajánlás"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Ajánlás"
+      },
+      "zone_summary": {
+        "name": "Zóna összegzése",
+        "state": {
+          "safety": "Biztonsági mód",
+          "override": "Kézi felülírás",
+          "automatic": "Automatikus",
+          "recommendation_only": "Csak ajánlás",
+          "disabled": "Letiltva"
+        }
+      },
+      "learning_progress": {
+        "name": "Tanulási folyamat"
+      },
+      "shading_result": {
+        "name": "Árnyékolási eredmény",
+        "state": {
+          "excellent": "Kiváló",
+          "good": "Jó",
+          "acceptable": "Elfogadható",
+          "poor": "Gyenge",
+          "unknown": "Ismeretlen"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Napszektor",
+        "state": {
+          "on": "Napszektorban",
+          "off": "Nem napszektorban"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Napszektor",
+        "state": {
+          "on": "Napszektorban",
+          "off": "Nem napszektorban"
+        }
+      },
+      "override_active": {
+        "name": "Felülírás aktív",
+        "state": {
+          "on": "Felülírás aktív",
+          "off": "Normál vezérlés"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Felülírás aktív",
+        "state": {
+          "on": "Felülírás aktív",
+          "off": "Normál vezérlés"
+        }
+      }
+    }
+  }
+}

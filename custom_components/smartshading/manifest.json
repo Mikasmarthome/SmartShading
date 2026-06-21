@@ -1,0 +1,11 @@
+{
+  "domain": "smartshading",
+  "name": "SmartShading",
+  "codeowners": ["@Mikasmarthome"],
+  "config_flow": true,
+  "documentation": "https://github.com/Mikasmarthome/SmartShading",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/Mikasmarthome/SmartShading/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}

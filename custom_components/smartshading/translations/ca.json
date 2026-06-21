@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edita la configuració de SmartShading",
+        "description": "Aquí pots editar la configuració de meteorologia, confort, horari, presència i ombreig d'aquesta zona, i afegir, editar o eliminar finestres.",
+        "menu_options": {
+          "weather": "Entrades meteorològiques i solars",
+          "lifecycle": "Configuració d'horari",
+          "presence": "Configuració de presència",
+          "comfort": "Configuració de confort",
+          "behavior": "Comportament d'ombreig",
+          "add_window": "Afegeix una finestra",
+          "edit_window": "Edita la finestra",
+          "remove_window": "Elimina la finestra"
+        }
+      },
+      "weather": {
+        "title": "Entrades meteorològiques i solars",
+        "description": "Tot opcional. Una entitat meteorològica (p. ex. DWD, yr.no) proporciona automàticament condició, nuvolositat i vent. Els sensors dedicats substitueixen l'entitat meteorològica per a lectures locals més precises. La radiació solar ha de provenir d'un sensor dedicat: no es llegeix de les entitats meteorològiques.",
+        "data": {
+          "weather_entity_id": "Entitat meteorològica",
+          "solar_radiation_sensor_id": "Sensor de radiació solar (W/m²)",
+          "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
+          "cloud_cover_sensor_id": "Sensor de nuvolositat (0–100 %)",
+          "wind_speed_sensor_id": "Sensor de velocitat del vent (m/s) — fes servir la ratxa de vent per a tendals/screens si està disponible"
+        }
+      },
+      "lifecycle": {
+        "title": "Configuració d'horari",
+        "description": "Tria com SmartShading detecta la nit i el matí. «Ambdós» s'activa amb la primera condició que es compleixi: hora o elevació solar.",
+        "data": {
+          "night_trigger": "Activador de nit",
+          "morning_trigger": "Activador de matí",
+          "schedule_mode": "Mode d'horari"
+        },
+        "data_description": {
+          "schedule_mode": "«Igual cada dia» fa servir un únic horari per a tota la setmana. «Entre setmana / Cap de setmana» permet definir hores i posicions diferents per a dl–dv i ds–dg."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Detalls de l'horari",
+        "description": "Introdueix l'hora o l'elevació solar de cada activador. Només es mostren els camps rellevants per a l'activador seleccionat.",
+        "data": {
+          "night_fixed_time": "Hora de nit",
+          "night_elevation_preset": "Nit: posició del sol",
+          "night_sun_elevation": "Elevació nocturna personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
+          "morning_fixed_time": "Hora de matí",
+          "morning_elevation_preset": "Matí: posició del sol",
+          "morning_sun_elevation": "Elevació matinal personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
+          "night_position": "Posició de nit",
+          "morning_position": "Posició de matí",
+          "weekday_night_fixed_time": "Hora de nit entre setmana (dl–dv)",
+          "weekday_night_position": "Posició de nit entre setmana (dl–dv)",
+          "weekday_morning_fixed_time": "Hora de matí entre setmana (dl–dv)",
+          "weekday_morning_position": "Posició de matí entre setmana (dl–dv)",
+          "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
+          "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)",
+          "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
+          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)"
+        },
+        "data_description": {
+          "night_position": "Posició de la persiana durant la fase nocturna (0 = tancada, 100 = oberta).",
+          "morning_position": "Posició de la persiana a l'inici de la fase matinal (0 = tancada, 100 = oberta).",
+          "weekday_night_position": "Posició de la persiana durant la fase nocturna entre setmana (0 = tancada, 100 = oberta).",
+          "weekday_morning_position": "Posició de la persiana a l'inici de la fase matinal entre setmana (0 = tancada, 100 = oberta).",
+          "weekend_night_position": "Posició de la persiana durant la fase nocturna el cap de setmana (0 = tancada, 100 = oberta).",
+          "weekend_morning_position": "Posició de la persiana a l'inici de la fase matinal el cap de setmana (0 = tancada, 100 = oberta)."
+        }
+      },
+      "presence": {
+        "title": "Configuració de presència",
+        "description": "Opcional. Si no se selecciona ningú, SmartShading sempre assumeix que hi ha algú present i mai no activa el tancament per absència.",
+        "data": {
+          "presence_entity_ids": "Entitats de presència",
+          "absence_delay_min": "Retard d'absència",
+          "absence_position": "Posició d'absència"
+        },
+        "data_description": {
+          "absence_position": "Posició de la persiana mentre la zona està desocupada, llevat que s'apliqui una decisió de protecció més forta (0 = totalment tancada, 100 = totalment oberta). S'aplica a totes les finestres d'aquesta zona."
+        }
+      },
+      "comfort": {
+        "title": "Configuració de confort",
+        "description": "Configura les funcions de protecció per ombreig. Els sensors de temperatura interior són opcionals.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Sensors de temperatura interior (opcional)",
+          "heat_protection_enabled": "Activa la protecció contra la calor",
+          "glare_protection_enabled": "Activa la protecció contra l'enlluernament",
+          "solar_gain_enabled": "Activa el guany solar (sol d'hivern)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Un o més sensors interiors. Quan es configuren diversos sensors, s'utilitza la mitjana de totes les lectures vàlides.",
+          "heat_protection_enabled": "Evita el sobreescalfament ombrejant de manera proactiva segons la posició del sol, la meteorologia i les temperatures.",
+          "glare_protection_enabled": "Redueix la llum solar directa quan el sol incideix a la finestra.",
+          "solar_gain_enabled": "Manté l'ombreig més obert amb clima fresc per afavorir l'escalfament passiu. La protecció contra la calor té prioritat."
+        }
+      },
+      "behavior": {
+        "title": "Comportament bàsic d'ombreig",
+        "description": "Posicions objectiu base de la persiana per intensitat d'ombreig. SmartShading fa servir aquests valors com a punt de partida i pot adaptar-los per finestra quan hi ha prou dades d'aprenentatge.",
+        "data": {
+          "light_shade_position": "Posició d'ombra lleugera",
+          "normal_shade_position": "Posició d'ombra normal",
+          "strong_shade_position": "Posició d'ombra forta"
+        }
+      },
+      "add_window": {
+        "title": "Afegeix una finestra",
+        "description": "Afegeix una altra finestra a aquesta zona. SmartShading treballa amb un azimut precís: la direcció de la brúixola només és una drecera còmoda.",
+        "data": {
+          "window_name": "Nom de la finestra",
+          "floor_level": "Planta (0 = planta baixa)",
+          "compass_direction": "Orientació",
+          "custom_azimuth": "Azimut personalitzat (0-359°, només s'utilitza si l'Orientació és Personalitzada)",
+          "absence_position": "Posició d'absència (substitueix el valor per defecte de la zona)",
+          "window_behavior_mode": "Mode d'ombreig automàtic"
+        },
+        "data_description": {
+          "absence_position": "Deixa-ho buit per heretar la posició d'absència per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra concreta.",
+          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Persianes d'aquesta finestra",
+        "description": "Selecciona l'entitat o entitats de persiana que ombregen la finestra «{window_name}». Afegeix només persianes que cobreixen exactament aquesta superfície de finestra. Per a finestres separades, afegeix finestres separades.",
+        "data": {
+          "cover_entities": "Persianes d'aquesta finestra",
+          "cover_hardware_type": "Tipus de maquinari de la persiana"
+        }
+      },
+      "add_window_loop": {
+        "title": "Voleu afegir una altra finestra?",
+        "description": "{window_count} finestra/es nova/es afegida/es a aquesta zona. Voleu afegir una altra finestra?",
+        "data": {
+          "add_another_window": "Afegeix una altra finestra"
+        }
+      },
+      "edit_window": {
+        "title": "Edita la finestra",
+        "description": "Selecciona la finestra que vols editar.",
+        "data": {
+          "window_id": "Finestra"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Edita la finestra: {window_name}",
+        "description": "Actualitza la configuració de la finestra «{window_name}». Els canvis de persiana tenen efecte després de desar.",
+        "data": {
+          "window_name": "Nom de la finestra",
+          "floor_level": "Planta (0 = planta baixa)",
+          "compass_direction": "Orientació",
+          "custom_azimuth": "Azimut personalitzat (0-359°, només s'utilitza si l'Orientació és Personalitzada)",
+          "cover_entities": "Persianes d'aquesta finestra",
+          "cover_hardware_type": "Tipus de maquinari de la persiana",
+          "absence_position": "Posició d'absència (substitueix el valor per defecte de la zona)",
+          "window_behavior_mode": "Mode d'ombreig automàtic",
+          "light_shade_position": "Posició d'ombra lleugera (substitueix el valor per defecte de la zona)",
+          "normal_shade_position": "Posició d'ombra normal (substitueix el valor per defecte de la zona)",
+          "strong_shade_position": "Posició d'ombra forta (substitueix el valor per defecte de la zona)",
+          "manual_sun_sector_enabled": "Activa la substitució manual del sector solar",
+          "manual_sun_sector_start_deg": "Azimut d'inici del sector solar (°)",
+          "manual_sun_sector_end_deg": "Azimut de fi del sector solar (°)",
+          "obstruction_1_enabled": "Zona d'obstrucció 1 activa",
+          "obstruction_1_azimuth_start_deg": "Azimut d'inici de la zona 1 (°)",
+          "obstruction_1_azimuth_end_deg": "Azimut de fi de la zona 1 (°)",
+          "obstruction_1_block_from_elevation_deg": "Zona 1 bloquejada des de l'elevació (°)",
+          "obstruction_1_block_until_elevation_deg": "Zona 1 bloquejada fins a l'elevació (°)",
+          "obstruction_2_enabled": "Zona d'obstrucció 2 activa",
+          "obstruction_2_azimuth_start_deg": "Azimut d'inici de la zona 2 (°)",
+          "obstruction_2_azimuth_end_deg": "Azimut de fi de la zona 2 (°)",
+          "obstruction_2_block_from_elevation_deg": "Zona 2 bloquejada des de l'elevació (°)",
+          "obstruction_2_block_until_elevation_deg": "Zona 2 bloquejada fins a l'elevació (°)",
+          "obstruction_3_enabled": "Zona d'obstrucció 3 activa",
+          "obstruction_3_azimuth_start_deg": "Azimut d'inici de la zona 3 (°)",
+          "obstruction_3_azimuth_end_deg": "Azimut de fi de la zona 3 (°)",
+          "obstruction_3_block_from_elevation_deg": "Zona 3 bloquejada des de l'elevació (°)",
+          "obstruction_3_block_until_elevation_deg": "Zona 3 bloquejada fins a l'elevació (°)"
+        },
+        "data_description": {
+          "absence_position": "Deixa-ho buit per heretar la posició d'absència per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra.",
+          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives.",
+          "light_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra lleugera només en aquesta finestra.",
+          "normal_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra normal només en aquesta finestra.",
+          "strong_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra forta només en aquesta finestra.",
+          "manual_sun_sector_enabled": "Activa-ho per substituir el sector solar automàtic basat en l'azimut per un interval manual. Els azimuts d'inici i de fi defineixen quan es considera que el sol incideix en aquesta finestra. Admet el pas pel nord (p. ex. de 330° a 30°).",
+          "obstruction_1_enabled": "Activa-ho per marcar un interval d'azimut on una obstrucció física (arbre, edifici, voladís de teulada) bloqueja el sol directe. Deixa els camps d'elevació buits per bloquejar a qualsevol elevació solar dins de l'interval d'azimut.",
+          "obstruction_1_block_from_elevation_deg": "Opcional. L'obstrucció bloqueja només quan l'elevació solar és igual o superior a aquest valor. Exemple: 45° bloqueja un voladís que només fa ombra amb angles solars alts. Deixa-ho buit per no posar límit inferior.",
+          "obstruction_1_block_until_elevation_deg": "Opcional. L'obstrucció bloqueja només quan l'elevació solar és igual o inferior a aquest valor. Exemple: 18° bloqueja una muntanya o un edifici veí que només afecta amb el sol baix. Deixa-ho buit per no posar límit superior.",
+          "obstruction_2_enabled": "Segona zona d'obstrucció opcional per a aquesta finestra.",
+          "obstruction_2_block_from_elevation_deg": "Límit d'elevació inferior opcional per a la zona 2 (vegeu la descripció de la zona 1).",
+          "obstruction_2_block_until_elevation_deg": "Límit d'elevació superior opcional per a la zona 2 (vegeu la descripció de la zona 1).",
+          "obstruction_3_enabled": "Tercera zona d'obstrucció opcional per a aquesta finestra.",
+          "obstruction_3_block_from_elevation_deg": "Límit d'elevació inferior opcional per a la zona 3 (vegeu la descripció de la zona 1).",
+          "obstruction_3_block_until_elevation_deg": "Límit d'elevació superior opcional per a la zona 3 (vegeu la descripció de la zona 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Elimina la finestra",
+        "description": "Selecciona la finestra que vols eliminar. Això eliminarà permanentment la finestra i les seves assignacions de persianes d'aquesta zona. Les entitats de persiana mateixes no s'eliminen.",
+        "data": {
+          "window_id": "Finestra a eliminar"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Confirma l'eliminació",
+        "description": "Eliminar la finestra «{window_name}»? Això no es pot desfer.",
+        "data": {
+          "remove_confirmed": "Sí, elimina aquesta finestra"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "No es pot eliminar l'última finestra. Una zona ha de tenir almenys una finestra.",
+      "obstruction_elevation_range_invalid": "«Bloquejada des de l'elevació» no pot ser més gran que «Bloquejada fins a l'elevació»."
+    },
+    "abort": {
+      "no_options_for_system_entry": "L'entrada de Sistema de SmartShading no té opcions configurables."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Configura SmartShading. Pots afegir finestres a les pantalles següents.",
+        "data": {
+          "zone_name": "Nom de la zona"
+        }
+      },
+      "weather": {
+        "title": "Entrades meteorològiques i solars (opcional)",
+        "description": "Tot opcional. Una entitat meteorològica (p. ex. DWD, yr.no) proporciona automàticament condició, nuvolositat i vent. Els sensors dedicats la substitueixen per a lectures locals més precises. La radiació solar requereix un sensor dedicat. Pots ometre aquest pas i afegir entrades més tard.",
+        "data": {
+          "weather_entity_id": "Entitat meteorològica",
+          "solar_radiation_sensor_id": "Sensor de radiació solar (W/m²)",
+          "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
+          "cloud_cover_sensor_id": "Sensor de nuvolositat (0–100 %)",
+          "wind_speed_sensor_id": "Sensor de velocitat del vent (m/s) — fes servir la ratxa de vent per a tendals/screens si està disponible"
+        }
+      },
+      "lifecycle": {
+        "title": "Configuració d'horari",
+        "description": "Tria com SmartShading detecta la nit i el matí. «Ambdós» s'activa amb la primera condició que es compleixi: hora o elevació solar.",
+        "data": {
+          "night_trigger": "Activador de nit",
+          "morning_trigger": "Activador de matí",
+          "schedule_mode": "Mode d'horari"
+        },
+        "data_description": {
+          "schedule_mode": "«Igual cada dia» fa servir un únic horari per a tota la setmana. «Entre setmana / Cap de setmana» permet definir hores i posicions diferents per a dl–dv i ds–dg."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Detalls de l'horari",
+        "description": "Introdueix l'hora o l'elevació solar de cada activador. Només es mostren els camps rellevants per a l'activador seleccionat.",
+        "data": {
+          "night_fixed_time": "Hora de nit",
+          "night_elevation_preset": "Nit: posició del sol",
+          "night_sun_elevation": "Elevació nocturna personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
+          "morning_fixed_time": "Hora de matí",
+          "morning_elevation_preset": "Matí: posició del sol",
+          "morning_sun_elevation": "Elevació matinal personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
+          "night_position": "Posició de nit",
+          "morning_position": "Posició de matí",
+          "weekday_night_fixed_time": "Hora de nit entre setmana (dl–dv)",
+          "weekday_night_position": "Posició de nit entre setmana (dl–dv)",
+          "weekday_morning_fixed_time": "Hora de matí entre setmana (dl–dv)",
+          "weekday_morning_position": "Posició de matí entre setmana (dl–dv)",
+          "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
+          "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)",
+          "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
+          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)"
+        },
+        "data_description": {
+          "night_position": "Posició de la persiana durant la fase nocturna (0 = tancada, 100 = oberta).",
+          "morning_position": "Posició de la persiana a l'inici de la fase matinal (0 = tancada, 100 = oberta).",
+          "weekday_night_position": "Posició de la persiana durant la fase nocturna entre setmana (0 = tancada, 100 = oberta).",
+          "weekday_morning_position": "Posició de la persiana a l'inici de la fase matinal entre setmana (0 = tancada, 100 = oberta).",
+          "weekend_night_position": "Posició de la persiana durant la fase nocturna el cap de setmana (0 = tancada, 100 = oberta).",
+          "weekend_morning_position": "Posició de la persiana a l'inici de la fase matinal el cap de setmana (0 = tancada, 100 = oberta)."
+        }
+      },
+      "presence": {
+        "title": "Configuració de presència",
+        "description": "Opcional. Si no se selecciona ningú, SmartShading sempre assumeix que hi ha algú present i mai no activa el tancament per absència.",
+        "data": {
+          "presence_entity_ids": "Entitats de presència",
+          "absence_delay_min": "Retard d'absència",
+          "absence_position": "Posició d'absència"
+        },
+        "data_description": {
+          "absence_position": "Posició de la persiana mentre la zona està desocupada, llevat que s'apliqui una decisió de protecció més forta (0 = totalment tancada, 100 = totalment oberta). S'aplica a totes les finestres d'aquesta zona."
+        }
+      },
+      "window": {
+        "title": "Afegeix una finestra",
+        "description": "Configura una finestra. SmartShading treballa amb un azimut precís: la direcció de la brúixola només és una drecera còmoda.",
+        "data": {
+          "window_name": "Nom de la finestra",
+          "floor_level": "Planta (0 = planta baixa)",
+          "compass_direction": "Orientació",
+          "custom_azimuth": "Azimut personalitzat (0-359°, només s'utilitza si l'Orientació és Personalitzada)",
+          "absence_position": "Posició d'absència (substitueix el valor per defecte de la zona)",
+          "window_behavior_mode": "Mode d'ombreig automàtic"
+        },
+        "data_description": {
+          "absence_position": "Deixa-ho buit per heretar la posició d'absència per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra concreta.",
+          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives."
+        }
+      },
+      "cover_group": {
+        "title": "Persianes d'aquesta finestra",
+        "description": "Selecciona l'entitat o entitats de persiana que ombregen la finestra «{window_name}». Afegeix només persianes que cobreixen exactament aquesta superfície de finestra. Per a finestres separades, afegeix finestres separades.",
+        "data": {
+          "cover_entities": "Persianes d'aquesta finestra",
+          "cover_hardware_type": "Tipus de maquinari de la persiana"
+        }
+      },
+      "add_another_window": {
+        "title": "Voleu afegir una altra finestra?",
+        "description": "{window_count} finestra/es configurada/es fins ara.",
+        "data": {
+          "add_another_window": "Afegeix una altra finestra"
+        }
+      },
+      "comfort": {
+        "title": "Configuració de confort",
+        "description": "Configura les funcions de protecció per ombreig. Els sensors de temperatura interior són opcionals.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Sensors de temperatura interior (opcional)",
+          "heat_protection_enabled": "Activa la protecció contra la calor",
+          "glare_protection_enabled": "Activa la protecció contra l'enlluernament",
+          "solar_gain_enabled": "Activa el guany solar (sol d'hivern)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Un o més sensors interiors. Quan es configuren diversos sensors, s'utilitza la mitjana de totes les lectures vàlides.",
+          "heat_protection_enabled": "Evita el sobreescalfament ombrejant de manera proactiva segons la posició del sol, la meteorologia i les temperatures.",
+          "glare_protection_enabled": "Redueix la llum solar directa quan el sol incideix a la finestra.",
+          "solar_gain_enabled": "Manté l'ombreig més obert amb clima fresc per afavorir l'escalfament passiu. La protecció contra la calor té prioritat."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Introdueix un azimut personalitzat entre 0 i 359 graus, o tria una direcció de la brúixola.",
+      "no_covers_selected": "Selecciona almenys una entitat de persiana per a aquesta finestra.",
+      "empty_zone_name": "El nom de la zona és obligatori.",
+      "obstruction_elevation_range_invalid": "«Bloquejada des de l'elevació» no pot ser més gran que «Bloquejada fins a l'elevació»."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading ja està configurat.",
+      "system_already_exists": "L'entrada de Sistema de SmartShading ja existeix."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Nord (0°)",
+        "northeast": "Nord-est (45°)",
+        "east": "Est (90°)",
+        "southeast": "Sud-est (135°)",
+        "south": "Sud (180°)",
+        "southwest": "Sud-oest (225°)",
+        "west": "Oest (270°)",
+        "northwest": "Nord-oest (315°)",
+        "custom": "Azimut personalitzat"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "A la posta de sol (0°)",
+        "dusk": "Al capvespre — crepuscle civil (-6°)",
+        "dark": "Quan és fosc — crepuscle nàutic (-12°)",
+        "custom": "Personalitzada"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "A la sortida del sol (0°)",
+        "dawn": "A l'alba — crepuscle civil (-6°)",
+        "bright": "Quan es fa clar — crepuscle nàutic (-12°)",
+        "custom": "Personalitzada"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Hora fixa",
+        "sun_elevation": "Elevació solar",
+        "both": "Ambdós",
+        "disabled": "Desactivat"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Igual cada dia",
+        "weekday_weekend": "Entre setmana / Cap de setmana"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Totalment automàtic",
+        "absence_only": "Només absència",
+        "disabled_automatic": "Automatització desactivada"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Persiana enrotllable",
+        "venetian_blind": "Persiana veneciana",
+        "exterior_screen": "Screen",
+        "awning": "Tendal",
+        "generic": "Una altra persiana"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Crea exportació de suport"
+      },
+      "export_research_data": {
+        "name": "Crea exportació de recerca"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Mode d'observació",
+        "state": {
+          "on": "Observant",
+          "off": "En pausa"
+        }
+      },
+      "active_control": {
+        "name": "Control actiu",
+        "state": {
+          "on": "Actiu",
+          "off": "Inactiu"
+        }
+      },
+      "debug_logging": {
+        "name": "Registre de depuració"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Estat d'ombreig",
+        "state": {
+          "storm_safe": "Protecció de tempesta",
+          "wind_safe": "Protecció de vent",
+          "manual_override": "Substitució manual",
+          "night_closed": "Nit – tancada",
+          "absence_closed": "Absència – tancada",
+          "strong_shade": "Ombreig fort",
+          "normal_shade": "Ombreig normal",
+          "light_shade": "Ombreig lleuger",
+          "open": "Oberta"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Estat d'ombreig",
+        "state": {
+          "storm_safe": "Protecció de tempesta",
+          "wind_safe": "Protecció de vent",
+          "manual_override": "Substitució manual",
+          "night_closed": "Nit – tancada",
+          "absence_closed": "Absència – tancada",
+          "strong_shade": "Ombreig fort",
+          "normal_shade": "Ombreig normal",
+          "light_shade": "Ombreig lleuger",
+          "open": "Oberta"
+        }
+      },
+      "exposure": {
+        "name": "Exposició"
+      },
+      "exposure_indexed": {
+        "name": "{index} Exposició"
+      },
+      "cover_position": {
+        "name": "Posició de la persiana"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Posició de la persiana"
+      },
+      "recommendation": {
+        "name": "Recomanació"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Recomanació"
+      },
+      "zone_summary": {
+        "name": "Resum de la zona",
+        "state": {
+          "safety": "Mode de seguretat",
+          "override": "Substitució manual",
+          "automatic": "Automàtic",
+          "recommendation_only": "Només recomanació",
+          "disabled": "Desactivat"
+        }
+      },
+      "learning_progress": {
+        "name": "Progrés d'aprenentatge"
+      },
+      "shading_result": {
+        "name": "Resultat d'ombreig",
+        "state": {
+          "excellent": "Excel·lent",
+          "good": "Bo",
+          "acceptable": "Acceptable",
+          "poor": "Pobre",
+          "unknown": "Desconegut"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Sector solar",
+        "state": {
+          "on": "Dins del sector solar",
+          "off": "Fora del sector solar"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Sector solar",
+        "state": {
+          "on": "Dins del sector solar",
+          "off": "Fora del sector solar"
+        }
+      },
+      "override_active": {
+        "name": "Substitució activa",
+        "state": {
+          "on": "Substitució activa",
+          "off": "Control normal"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Substitució activa",
+        "state": {
+          "on": "Substitució activa",
+          "off": "Control normal"
+        }
+      }
+    }
+  }
+}

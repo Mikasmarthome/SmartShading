@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "SmartShading-instellingen bewerken",
+        "description": "Hier kun je de weer-, comfort-, schema-, aanwezigheids- en zonweringsinstellingen van deze zone bewerken en vensters toevoegen, bewerken of verwijderen.",
+        "menu_options": {
+          "weather": "Weer- en zonne-invoer",
+          "lifecycle": "Schema-instellingen",
+          "presence": "Aanwezigheidsinstellingen",
+          "comfort": "Comfortinstellingen",
+          "behavior": "Zonweringsgedrag",
+          "add_window": "Venster toevoegen",
+          "edit_window": "Venster bewerken",
+          "remove_window": "Venster verwijderen"
+        }
+      },
+      "weather": {
+        "title": "Weer- en zonne-invoer",
+        "description": "Allemaal optioneel. Een weerentiteit (bijv. DWD, yr.no) levert automatisch toestand, bewolking en wind. Speciale sensoren vervangen de weerentiteit voor nauwkeurigere lokale metingen. Zonnestraling moet van een speciale sensor komen: deze wordt niet uit weerentiteiten gelezen.",
+        "data": {
+          "weather_entity_id": "Weerentiteit",
+          "solar_radiation_sensor_id": "Zonnestralingssensor (W/m²)",
+          "outdoor_temperature_sensor_id": "Buitentemperatuursensor",
+          "cloud_cover_sensor_id": "Bewolkingssensor (0–100 %)",
+          "wind_speed_sensor_id": "Windsnelheidssensor (m/s) — gebruik windstoten voor zonneschermen/screens indien beschikbaar"
+        }
+      },
+      "lifecycle": {
+        "title": "Schema-instellingen",
+        "description": "Kies hoe SmartShading nacht en ochtend detecteert. \"Beide\" wordt geactiveerd door de eerste voorwaarde die wordt voldaan: tijd of zonshoogte.",
+        "data": {
+          "night_trigger": "Nachttrigger",
+          "morning_trigger": "Ochtendtrigger",
+          "schedule_mode": "Schemamodus"
+        },
+        "data_description": {
+          "schedule_mode": "\"Elke dag hetzelfde\" gebruikt één schema voor de hele week. \"Doordeweeks / Weekend\" laat je verschillende tijden en posities instellen voor ma–vr en za–zo."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Schemadetails",
+        "description": "Voer de tijd of zonshoogte voor elke trigger in. Alleen de velden die relevant zijn voor de gekozen trigger worden getoond.",
+        "data": {
+          "night_fixed_time": "Nachttijd",
+          "night_elevation_preset": "Nacht: zonpositie",
+          "night_sun_elevation": "Aangepaste nachthoogte (°) — alleen gebruikt wanneer Aangepast is geselecteerd",
+          "morning_fixed_time": "Ochtendtijd",
+          "morning_elevation_preset": "Ochtend: zonpositie",
+          "morning_sun_elevation": "Aangepaste ochtendhoogte (°) — alleen gebruikt wanneer Aangepast is geselecteerd",
+          "night_position": "Nachtpositie",
+          "morning_position": "Ochtendpositie",
+          "weekday_night_fixed_time": "Nachttijd doordeweeks (ma–vr)",
+          "weekday_night_position": "Nachtpositie doordeweeks (ma–vr)",
+          "weekday_morning_fixed_time": "Ochtendtijd doordeweeks (ma–vr)",
+          "weekday_morning_position": "Ochtendpositie doordeweeks (ma–vr)",
+          "weekend_night_fixed_time": "Nachttijd in het weekend (za–zo)",
+          "weekend_night_position": "Nachtpositie in het weekend (za–zo)",
+          "weekend_morning_fixed_time": "Ochtendtijd in het weekend (za–zo)",
+          "weekend_morning_position": "Ochtendpositie in het weekend (za–zo)"
+        },
+        "data_description": {
+          "night_position": "Positie van de zonwering tijdens de nachtfase (0 = dicht, 100 = open).",
+          "morning_position": "Positie van de zonwering aan het begin van de ochtendfase (0 = dicht, 100 = open).",
+          "weekday_night_position": "Positie van de zonwering tijdens de nachtfase doordeweeks (0 = dicht, 100 = open).",
+          "weekday_morning_position": "Positie van de zonwering aan het begin van de ochtendfase doordeweeks (0 = dicht, 100 = open).",
+          "weekend_night_position": "Positie van de zonwering tijdens de nachtfase in het weekend (0 = dicht, 100 = open).",
+          "weekend_morning_position": "Positie van de zonwering aan het begin van de ochtendfase in het weekend (0 = dicht, 100 = open)."
+        }
+      },
+      "presence": {
+        "title": "Aanwezigheidsinstellingen",
+        "description": "Optioneel. Als er niemand is geselecteerd, gaat SmartShading er altijd van uit dat er iemand aanwezig is en activeert het nooit sluiten op basis van afwezigheid.",
+        "data": {
+          "presence_entity_ids": "Aanwezigheidsentiteiten",
+          "absence_delay_min": "Afwezigheidsvertraging",
+          "absence_position": "Afwezigheidspositie"
+        },
+        "data_description": {
+          "absence_position": "Positie van de zonwering terwijl de zone onbezet is, tenzij een sterkere beschermingsbeslissing geldt (0 = volledig dicht, 100 = volledig open). Geldt voor alle vensters in deze zone."
+        }
+      },
+      "comfort": {
+        "title": "Comfortinstellingen",
+        "description": "Configureer de beschermingsfuncties via zonwering. Binnentemperatuursensoren zijn optioneel.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Binnentemperatuursensoren (optioneel)",
+          "heat_protection_enabled": "Hittebescherming inschakelen",
+          "glare_protection_enabled": "Verblindingsbescherming inschakelen",
+          "solar_gain_enabled": "Zonnewinst inschakelen (winterzon)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Een of meer binnensensoren. Als er meerdere sensoren zijn geconfigureerd, wordt het gemiddelde van alle geldige metingen gebruikt.",
+          "heat_protection_enabled": "Voorkomt oververhitting door proactief te schermen op basis van zonpositie, weer en temperaturen.",
+          "glare_protection_enabled": "Vermindert direct zonlicht wanneer de zon op het venster valt.",
+          "solar_gain_enabled": "Houdt de zonwering bij koel weer meer open om passieve opwarming te ondersteunen. Hittebescherming heeft voorrang."
+        }
+      },
+      "behavior": {
+        "title": "Basisgedrag zonwering",
+        "description": "Basisdoelposities van de zonwering per zonweringsintensiteit. SmartShading gebruikt deze waarden als uitgangspunt en kan ze per venster aanpassen wanneer er voldoende leergegevens beschikbaar zijn.",
+        "data": {
+          "light_shade_position": "Positie lichte schaduw",
+          "normal_shade_position": "Positie normale schaduw",
+          "strong_shade_position": "Positie sterke schaduw"
+        }
+      },
+      "add_window": {
+        "title": "Een venster toevoegen",
+        "description": "Voeg nog een venster toe aan deze zone. SmartShading werkt met een precieze azimut: de kompasrichting is slechts een handige snelkoppeling.",
+        "data": {
+          "window_name": "Vensternaam",
+          "floor_level": "Verdieping (0 = begane grond)",
+          "compass_direction": "Oriëntatie",
+          "custom_azimuth": "Aangepaste azimut (0-359°, alleen gebruikt als Oriëntatie op Aangepast staat)",
+          "absence_position": "Afwezigheidspositie (overschrijft de zonestandaard)",
+          "window_behavior_mode": "Automatische zonweringsmodus"
+        },
+        "data_description": {
+          "absence_position": "Laat leeg om de standaard afwezigheidspositie van de zone te erven. Stel een waarde in om deze alleen voor dit specifieke venster te overschrijven.",
+          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Zonweringen voor dit venster",
+        "description": "Selecteer de zonweringsentiteit(en) die het venster \"{window_name}\" beschaduwen. Voeg alleen zonweringen toe die precies dit venstervlak beschaduwen. Voor afzonderlijke vensters voeg je afzonderlijke vensters toe.",
+        "data": {
+          "cover_entities": "Zonweringen voor dit venster",
+          "cover_hardware_type": "Hardwaretype van de zonwering"
+        }
+      },
+      "add_window_loop": {
+        "title": "Nog een venster toevoegen?",
+        "description": "{window_count} nieuw(e) venster(s) toegevoegd aan deze zone. Wil je nog een venster toevoegen?",
+        "data": {
+          "add_another_window": "Nog een venster toevoegen"
+        }
+      },
+      "edit_window": {
+        "title": "Venster bewerken",
+        "description": "Selecteer het te bewerken venster.",
+        "data": {
+          "window_id": "Venster"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Venster bewerken: {window_name}",
+        "description": "Werk de instellingen van venster \"{window_name}\" bij. Wijzigingen aan zonweringen worden na opslaan van kracht.",
+        "data": {
+          "window_name": "Vensternaam",
+          "floor_level": "Verdieping (0 = begane grond)",
+          "compass_direction": "Oriëntatie",
+          "custom_azimuth": "Aangepaste azimut (0-359°, alleen gebruikt als Oriëntatie op Aangepast staat)",
+          "cover_entities": "Zonweringen voor dit venster",
+          "cover_hardware_type": "Hardwaretype van de zonwering",
+          "absence_position": "Afwezigheidspositie (overschrijft de zonestandaard)",
+          "window_behavior_mode": "Automatische zonweringsmodus",
+          "light_shade_position": "Positie lichte schaduw (overschrijft de zonestandaard)",
+          "normal_shade_position": "Positie normale schaduw (overschrijft de zonestandaard)",
+          "strong_shade_position": "Positie sterke schaduw (overschrijft de zonestandaard)",
+          "manual_sun_sector_enabled": "Handmatige overschrijving van de zonsector inschakelen",
+          "manual_sun_sector_start_deg": "Startazimut zonsector (°)",
+          "manual_sun_sector_end_deg": "Eindazimut zonsector (°)",
+          "obstruction_1_enabled": "Obstructiezone 1 actief",
+          "obstruction_1_azimuth_start_deg": "Startazimut zone 1 (°)",
+          "obstruction_1_azimuth_end_deg": "Eindazimut zone 1 (°)",
+          "obstruction_1_block_from_elevation_deg": "Zone 1 geblokkeerd vanaf hoogte (°)",
+          "obstruction_1_block_until_elevation_deg": "Zone 1 geblokkeerd tot hoogte (°)",
+          "obstruction_2_enabled": "Obstructiezone 2 actief",
+          "obstruction_2_azimuth_start_deg": "Startazimut zone 2 (°)",
+          "obstruction_2_azimuth_end_deg": "Eindazimut zone 2 (°)",
+          "obstruction_2_block_from_elevation_deg": "Zone 2 geblokkeerd vanaf hoogte (°)",
+          "obstruction_2_block_until_elevation_deg": "Zone 2 geblokkeerd tot hoogte (°)",
+          "obstruction_3_enabled": "Obstructiezone 3 actief",
+          "obstruction_3_azimuth_start_deg": "Startazimut zone 3 (°)",
+          "obstruction_3_azimuth_end_deg": "Eindazimut zone 3 (°)",
+          "obstruction_3_block_from_elevation_deg": "Zone 3 geblokkeerd vanaf hoogte (°)",
+          "obstruction_3_block_until_elevation_deg": "Zone 3 geblokkeerd tot hoogte (°)"
+        },
+        "data_description": {
+          "absence_position": "Laat leeg om de standaard afwezigheidspositie van de zone te erven. Stel een waarde in om deze alleen voor dit venster te overschrijven.",
+          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief.",
+          "light_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor lichte schaduw alleen voor dit venster te overschrijven.",
+          "normal_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor normale schaduw alleen voor dit venster te overschrijven.",
+          "strong_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor sterke schaduw alleen voor dit venster te overschrijven.",
+          "manual_sun_sector_enabled": "Schakel in om de automatische, op azimut gebaseerde zonsector te vervangen door een handmatig bereik. De start- en eindazimut bepalen wanneer de zon geacht wordt op dit venster te vallen. Ondersteunt overgang langs het noorden (bijv. van 330° naar 30°).",
+          "obstruction_1_enabled": "Schakel in om een azimutbereik te markeren waar een fysieke obstructie (boom, gebouw, dakoverstek) direct zonlicht blokkeert. Laat de hoogtevelden leeg om bij elke zonshoogte binnen het azimutbereik te blokkeren.",
+          "obstruction_1_block_from_elevation_deg": "Optioneel. De obstructie blokkeert alleen wanneer de zonshoogte gelijk aan of hoger dan deze waarde is. Voorbeeld: 45° blokkeert een dakoverstek dat alleen bij hoge zonnestanden schaduw geeft. Laat leeg voor geen ondergrens.",
+          "obstruction_1_block_until_elevation_deg": "Optioneel. De obstructie blokkeert alleen wanneer de zonshoogte gelijk aan of lager dan deze waarde is. Voorbeeld: 18° blokkeert een berg of naburig gebouw dat alleen bij lage zon invloed heeft. Laat leeg voor geen bovengrens.",
+          "obstruction_2_enabled": "Tweede optionele obstructiezone voor dit venster.",
+          "obstruction_2_block_from_elevation_deg": "Optionele ondergrens voor de hoogte voor zone 2 (zie beschrijving van zone 1).",
+          "obstruction_2_block_until_elevation_deg": "Optionele bovengrens voor de hoogte voor zone 2 (zie beschrijving van zone 1).",
+          "obstruction_3_enabled": "Derde optionele obstructiezone voor dit venster.",
+          "obstruction_3_block_from_elevation_deg": "Optionele ondergrens voor de hoogte voor zone 3 (zie beschrijving van zone 1).",
+          "obstruction_3_block_until_elevation_deg": "Optionele bovengrens voor de hoogte voor zone 3 (zie beschrijving van zone 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Venster verwijderen",
+        "description": "Selecteer het te verwijderen venster. Hiermee worden het venster en de bijbehorende zonweringstoewijzingen permanent uit deze zone verwijderd. De zonweringsentiteiten zelf worden niet verwijderd.",
+        "data": {
+          "window_id": "Te verwijderen venster"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Verwijdering bevestigen",
+        "description": "Venster \"{window_name}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
+        "data": {
+          "remove_confirmed": "Ja, verwijder dit venster"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Kan het laatste venster niet verwijderen. Een zone moet minstens één venster hebben.",
+      "obstruction_elevation_range_invalid": "\"Geblokkeerd vanaf hoogte\" mag niet groter zijn dan \"Geblokkeerd tot hoogte\"."
+    },
+    "abort": {
+      "no_options_for_system_entry": "De SmartShading-systeeminvoer heeft geen configureerbare opties."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Stel SmartShading in. Je kunt vensters toevoegen op de volgende schermen.",
+        "data": {
+          "zone_name": "Zonenaam"
+        }
+      },
+      "weather": {
+        "title": "Weer- en zonne-invoer (optioneel)",
+        "description": "Allemaal optioneel. Een weerentiteit (bijv. DWD, yr.no) levert automatisch toestand, bewolking en wind. Speciale sensoren vervangen deze voor nauwkeurigere lokale metingen. Zonnestraling vereist een speciale sensor. Je kunt deze stap overslaan en invoer later toevoegen.",
+        "data": {
+          "weather_entity_id": "Weerentiteit",
+          "solar_radiation_sensor_id": "Zonnestralingssensor (W/m²)",
+          "outdoor_temperature_sensor_id": "Buitentemperatuursensor",
+          "cloud_cover_sensor_id": "Bewolkingssensor (0–100 %)",
+          "wind_speed_sensor_id": "Windsnelheidssensor (m/s) — gebruik windstoten voor zonneschermen/screens indien beschikbaar"
+        }
+      },
+      "lifecycle": {
+        "title": "Schema-instellingen",
+        "description": "Kies hoe SmartShading nacht en ochtend detecteert. \"Beide\" wordt geactiveerd door de eerste voorwaarde die wordt voldaan: tijd of zonshoogte.",
+        "data": {
+          "night_trigger": "Nachttrigger",
+          "morning_trigger": "Ochtendtrigger",
+          "schedule_mode": "Schemamodus"
+        },
+        "data_description": {
+          "schedule_mode": "\"Elke dag hetzelfde\" gebruikt één schema voor de hele week. \"Doordeweeks / Weekend\" laat je verschillende tijden en posities instellen voor ma–vr en za–zo."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Schemadetails",
+        "description": "Voer de tijd of zonshoogte voor elke trigger in. Alleen de velden die relevant zijn voor de gekozen trigger worden getoond.",
+        "data": {
+          "night_fixed_time": "Nachttijd",
+          "night_elevation_preset": "Nacht: zonpositie",
+          "night_sun_elevation": "Aangepaste nachthoogte (°) — alleen gebruikt wanneer Aangepast is geselecteerd",
+          "morning_fixed_time": "Ochtendtijd",
+          "morning_elevation_preset": "Ochtend: zonpositie",
+          "morning_sun_elevation": "Aangepaste ochtendhoogte (°) — alleen gebruikt wanneer Aangepast is geselecteerd",
+          "night_position": "Nachtpositie",
+          "morning_position": "Ochtendpositie",
+          "weekday_night_fixed_time": "Nachttijd doordeweeks (ma–vr)",
+          "weekday_night_position": "Nachtpositie doordeweeks (ma–vr)",
+          "weekday_morning_fixed_time": "Ochtendtijd doordeweeks (ma–vr)",
+          "weekday_morning_position": "Ochtendpositie doordeweeks (ma–vr)",
+          "weekend_night_fixed_time": "Nachttijd in het weekend (za–zo)",
+          "weekend_night_position": "Nachtpositie in het weekend (za–zo)",
+          "weekend_morning_fixed_time": "Ochtendtijd in het weekend (za–zo)",
+          "weekend_morning_position": "Ochtendpositie in het weekend (za–zo)"
+        },
+        "data_description": {
+          "night_position": "Positie van de zonwering tijdens de nachtfase (0 = dicht, 100 = open).",
+          "morning_position": "Positie van de zonwering aan het begin van de ochtendfase (0 = dicht, 100 = open).",
+          "weekday_night_position": "Positie van de zonwering tijdens de nachtfase doordeweeks (0 = dicht, 100 = open).",
+          "weekday_morning_position": "Positie van de zonwering aan het begin van de ochtendfase doordeweeks (0 = dicht, 100 = open).",
+          "weekend_night_position": "Positie van de zonwering tijdens de nachtfase in het weekend (0 = dicht, 100 = open).",
+          "weekend_morning_position": "Positie van de zonwering aan het begin van de ochtendfase in het weekend (0 = dicht, 100 = open)."
+        }
+      },
+      "presence": {
+        "title": "Aanwezigheidsinstellingen",
+        "description": "Optioneel. Als er niemand is geselecteerd, gaat SmartShading er altijd van uit dat er iemand aanwezig is en activeert het nooit sluiten op basis van afwezigheid.",
+        "data": {
+          "presence_entity_ids": "Aanwezigheidsentiteiten",
+          "absence_delay_min": "Afwezigheidsvertraging",
+          "absence_position": "Afwezigheidspositie"
+        },
+        "data_description": {
+          "absence_position": "Positie van de zonwering terwijl de zone onbezet is, tenzij een sterkere beschermingsbeslissing geldt (0 = volledig dicht, 100 = volledig open). Geldt voor alle vensters in deze zone."
+        }
+      },
+      "window": {
+        "title": "Een venster toevoegen",
+        "description": "Configureer één venster. SmartShading werkt met een precieze azimut: de kompasrichting is slechts een handige snelkoppeling.",
+        "data": {
+          "window_name": "Vensternaam",
+          "floor_level": "Verdieping (0 = begane grond)",
+          "compass_direction": "Oriëntatie",
+          "custom_azimuth": "Aangepaste azimut (0-359°, alleen gebruikt als Oriëntatie op Aangepast staat)",
+          "absence_position": "Afwezigheidspositie (overschrijft de zonestandaard)",
+          "window_behavior_mode": "Automatische zonweringsmodus"
+        },
+        "data_description": {
+          "absence_position": "Laat leeg om de standaard afwezigheidspositie van de zone te erven. Stel een waarde in om deze alleen voor dit specifieke venster te overschrijven.",
+          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief."
+        }
+      },
+      "cover_group": {
+        "title": "Zonweringen voor dit venster",
+        "description": "Selecteer de zonweringsentiteit(en) die het venster \"{window_name}\" beschaduwen. Voeg alleen zonweringen toe die precies dit venstervlak beschaduwen. Voor afzonderlijke vensters voeg je afzonderlijke vensters toe.",
+        "data": {
+          "cover_entities": "Zonweringen voor dit venster",
+          "cover_hardware_type": "Hardwaretype van de zonwering"
+        }
+      },
+      "add_another_window": {
+        "title": "Nog een venster toevoegen?",
+        "description": "{window_count} venster(s) tot nu toe geconfigureerd.",
+        "data": {
+          "add_another_window": "Nog een venster toevoegen"
+        }
+      },
+      "comfort": {
+        "title": "Comfortinstellingen",
+        "description": "Configureer de beschermingsfuncties via zonwering. Binnentemperatuursensoren zijn optioneel.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Binnentemperatuursensoren (optioneel)",
+          "heat_protection_enabled": "Hittebescherming inschakelen",
+          "glare_protection_enabled": "Verblindingsbescherming inschakelen",
+          "solar_gain_enabled": "Zonnewinst inschakelen (winterzon)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Een of meer binnensensoren. Als er meerdere sensoren zijn geconfigureerd, wordt het gemiddelde van alle geldige metingen gebruikt.",
+          "heat_protection_enabled": "Voorkomt oververhitting door proactief te schermen op basis van zonpositie, weer en temperaturen.",
+          "glare_protection_enabled": "Vermindert direct zonlicht wanneer de zon op het venster valt.",
+          "solar_gain_enabled": "Houdt de zonwering bij koel weer meer open om passieve opwarming te ondersteunen. Hittebescherming heeft voorrang."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Voer een aangepaste azimut tussen 0 en 359 graden in, of kies een kompasrichting.",
+      "no_covers_selected": "Selecteer ten minste één zonweringsentiteit voor dit venster.",
+      "empty_zone_name": "Zonenaam is vereist.",
+      "obstruction_elevation_range_invalid": "\"Geblokkeerd vanaf hoogte\" mag niet groter zijn dan \"Geblokkeerd tot hoogte\"."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading is al geconfigureerd.",
+      "system_already_exists": "SmartShading-systeeminvoer bestaat al."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Noord (0°)",
+        "northeast": "Noordoost (45°)",
+        "east": "Oost (90°)",
+        "southeast": "Zuidoost (135°)",
+        "south": "Zuid (180°)",
+        "southwest": "Zuidwest (225°)",
+        "west": "West (270°)",
+        "northwest": "Noordwest (315°)",
+        "custom": "Aangepaste azimut"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Bij zonsondergang (0°)",
+        "dusk": "In de schemering — burgerlijke schemering (-6°)",
+        "dark": "Wanneer het donker is — nautische schemering (-12°)",
+        "custom": "Aangepast"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "Bij zonsopkomst (0°)",
+        "dawn": "Bij dageraad — burgerlijke schemering (-6°)",
+        "bright": "Wanneer het licht wordt — nautische schemering (-12°)",
+        "custom": "Aangepast"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Vaste tijd",
+        "sun_elevation": "Zonshoogte",
+        "both": "Beide",
+        "disabled": "Uitgeschakeld"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Elke dag hetzelfde",
+        "weekday_weekend": "Doordeweeks / Weekend"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Volledig automatisch",
+        "absence_only": "Alleen afwezigheid",
+        "disabled_automatic": "Automatisering uitgeschakeld"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Rolluik",
+        "venetian_blind": "Jaloezie",
+        "exterior_screen": "Screen",
+        "awning": "Zonnescherm",
+        "generic": "Andere zonwering"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Support-export maken"
+      },
+      "export_research_data": {
+        "name": "Onderzoeksexport maken"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Observatiemodus",
+        "state": {
+          "on": "Observeren",
+          "off": "Gepauzeerd"
+        }
+      },
+      "active_control": {
+        "name": "Actieve besturing",
+        "state": {
+          "on": "Actief",
+          "off": "Inactief"
+        }
+      },
+      "debug_logging": {
+        "name": "Foutopsporingslogboek"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Zonweringsstatus",
+        "state": {
+          "storm_safe": "Stormveilig",
+          "wind_safe": "Windveilig",
+          "manual_override": "Handmatige overschrijving",
+          "night_closed": "Nacht – dicht",
+          "absence_closed": "Afwezig – dicht",
+          "strong_shade": "Sterke zonwering",
+          "normal_shade": "Normale zonwering",
+          "light_shade": "Lichte zonwering",
+          "open": "Open"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Zonweringsstatus",
+        "state": {
+          "storm_safe": "Stormveilig",
+          "wind_safe": "Windveilig",
+          "manual_override": "Handmatige overschrijving",
+          "night_closed": "Nacht – dicht",
+          "absence_closed": "Afwezig – dicht",
+          "strong_shade": "Sterke zonwering",
+          "normal_shade": "Normale zonwering",
+          "light_shade": "Lichte zonwering",
+          "open": "Open"
+        }
+      },
+      "exposure": {
+        "name": "Blootstelling"
+      },
+      "exposure_indexed": {
+        "name": "{index} Blootstelling"
+      },
+      "cover_position": {
+        "name": "Zonweringspositie"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Zonweringspositie"
+      },
+      "recommendation": {
+        "name": "Aanbeveling"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Aanbeveling"
+      },
+      "zone_summary": {
+        "name": "Zoneoverzicht",
+        "state": {
+          "safety": "Veiligheidsmodus",
+          "override": "Handmatige overschrijving",
+          "automatic": "Automatisch",
+          "recommendation_only": "Alleen aanbeveling",
+          "disabled": "Uitgeschakeld"
+        }
+      },
+      "learning_progress": {
+        "name": "Leervoortgang"
+      },
+      "shading_result": {
+        "name": "Zonweringsresultaat",
+        "state": {
+          "excellent": "Uitstekend",
+          "good": "Goed",
+          "acceptable": "Acceptabel",
+          "poor": "Slecht",
+          "unknown": "Onbekend"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Zonsector",
+        "state": {
+          "on": "In zonsector",
+          "off": "Niet in zonsector"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Zonsector",
+        "state": {
+          "on": "In zonsector",
+          "off": "Niet in zonsector"
+        }
+      },
+      "override_active": {
+        "name": "Overschrijving actief",
+        "state": {
+          "on": "Overschrijving actief",
+          "off": "Normale besturing"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Overschrijving actief",
+        "state": {
+          "on": "Overschrijving actief",
+          "off": "Normale besturing"
+        }
+      }
+    }
+  }
+}

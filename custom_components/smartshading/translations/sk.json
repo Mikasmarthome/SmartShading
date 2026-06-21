@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Upraviť nastavenia SmartShading",
+        "description": "Tu môžete upraviť nastavenia počasia, komfortu, plánu, prítomnosti a tienenia pre túto zónu a pridávať, upravovať alebo odoberať okná.",
+        "menu_options": {
+          "weather": "Vstupy počasia a slnka",
+          "lifecycle": "Nastavenia plánu",
+          "presence": "Nastavenia prítomnosti",
+          "comfort": "Nastavenia komfortu",
+          "behavior": "Správanie tienenia",
+          "add_window": "Pridať okno",
+          "edit_window": "Upraviť okno",
+          "remove_window": "Odobrať okno"
+        }
+      },
+      "weather": {
+        "title": "Vstupy počasia a slnka",
+        "description": "Všetko voliteľné. Entita počasia (napr. DWD, yr.no) automaticky poskytuje podmienky, oblačnosť a vietor. Vyhradené senzory nahrádzajú entitu počasia pre presnejšie miestne hodnoty. Slnečné žiarenie musí pochádzať z vyhradeného senzora: z entít počasia sa nečíta.",
+        "data": {
+          "weather_entity_id": "Entita počasia",
+          "solar_radiation_sensor_id": "Senzor slnečného žiarenia (W/m²)",
+          "outdoor_temperature_sensor_id": "Senzor vonkajšej teploty",
+          "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
+          "wind_speed_sensor_id": "Senzor rýchlosti vetra (m/s) — pre markízy/screeny použite nárazy vetra, ak sú k dispozícii"
+        }
+      },
+      "lifecycle": {
+        "title": "Nastavenia plánu",
+        "description": "Vyberte, ako SmartShading rozpoznáva noc a ráno. „Oboje“ sa spustí pri prvej splnenej podmienke: čas alebo výška slnka.",
+        "data": {
+          "night_trigger": "Spúšťač noci",
+          "morning_trigger": "Spúšťač rána",
+          "schedule_mode": "Režim plánu"
+        },
+        "data_description": {
+          "schedule_mode": "„Rovnako každý deň“ používa jeden plán pre celý týždeň. „Pracovný deň / Víkend“ umožňuje nastaviť rôzne časy a polohy pre po–pi a so–ne."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Podrobnosti plánu",
+        "description": "Zadajte čas alebo výšku slnka pre každý spúšťač. Zobrazujú sa iba polia relevantné pre vybraný spúšťač.",
+        "data": {
+          "night_fixed_time": "Čas noci",
+          "night_elevation_preset": "Noc: poloha slnka",
+          "night_sun_elevation": "Vlastná nočná výška (°) — použije sa iba pri výbere Vlastná",
+          "morning_fixed_time": "Čas rána",
+          "morning_elevation_preset": "Ráno: poloha slnka",
+          "morning_sun_elevation": "Vlastná ranná výška (°) — použije sa iba pri výbere Vlastná",
+          "night_position": "Nočná poloha",
+          "morning_position": "Ranná poloha",
+          "weekday_night_fixed_time": "Čas noci v pracovné dni (po–pi)",
+          "weekday_night_position": "Nočná poloha v pracovné dni (po–pi)",
+          "weekday_morning_fixed_time": "Čas rána v pracovné dni (po–pi)",
+          "weekday_morning_position": "Ranná poloha v pracovné dni (po–pi)",
+          "weekend_night_fixed_time": "Čas noci cez víkend (so–ne)",
+          "weekend_night_position": "Nočná poloha cez víkend (so–ne)",
+          "weekend_morning_fixed_time": "Čas rána cez víkend (so–ne)",
+          "weekend_morning_position": "Ranná poloha cez víkend (so–ne)"
+        },
+        "data_description": {
+          "night_position": "Poloha tienenia počas nočnej fázy (0 = zatvorené, 100 = otvorené).",
+          "morning_position": "Poloha tienenia na začiatku rannej fázy (0 = zatvorené, 100 = otvorené).",
+          "weekday_night_position": "Poloha tienenia počas nočnej fázy v pracovné dni (0 = zatvorené, 100 = otvorené).",
+          "weekday_morning_position": "Poloha tienenia na začiatku rannej fázy v pracovné dni (0 = zatvorené, 100 = otvorené).",
+          "weekend_night_position": "Poloha tienenia počas nočnej fázy cez víkend (0 = zatvorené, 100 = otvorené).",
+          "weekend_morning_position": "Poloha tienenia na začiatku rannej fázy cez víkend (0 = zatvorené, 100 = otvorené)."
+        }
+      },
+      "presence": {
+        "title": "Nastavenia prítomnosti",
+        "description": "Voliteľné. Ak nie je nikto vybraný, SmartShading vždy predpokladá prítomnosť a nikdy nespustí zatváranie kvôli neprítomnosti.",
+        "data": {
+          "presence_entity_ids": "Entity prítomnosti",
+          "absence_delay_min": "Oneskorenie neprítomnosti",
+          "absence_position": "Poloha pri neprítomnosti"
+        },
+        "data_description": {
+          "absence_position": "Poloha tienenia, keď je zóna neobsadená, pokiaľ neplatí silnejšie ochranné rozhodnutie (0 = úplne zatvorené, 100 = úplne otvorené). Platí pre všetky okná v tejto zóne."
+        }
+      },
+      "comfort": {
+        "title": "Nastavenia komfortu",
+        "description": "Nakonfigurujte ochranné funkcie pomocou tienenia. Senzory vnútornej teploty sú voliteľné.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Senzory vnútornej teploty (voliteľné)",
+          "heat_protection_enabled": "Povoliť ochranu pred teplom",
+          "glare_protection_enabled": "Povoliť ochranu pred oslnením",
+          "solar_gain_enabled": "Povoliť solárny zisk (zimné slnko)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Jeden alebo viac vnútorných senzorov. Pri konfigurácii viacerých senzorov sa použije priemer všetkých platných hodnôt.",
+          "heat_protection_enabled": "Zabraňuje prehrievaniu proaktívnym tienením na základe polohy slnka, počasia a teplôt.",
+          "glare_protection_enabled": "Znižuje priame slnečné svetlo, keď slnko dopadá na okno.",
+          "solar_gain_enabled": "Udržiava tienenie viac otvorené v chladnom počasí na podporu pasívneho ohrevu. Ochrana pred teplom má prioritu."
+        }
+      },
+      "behavior": {
+        "title": "Základné správanie tienenia",
+        "description": "Základné cieľové polohy tienenia podľa intenzity tienenia. SmartShading používa tieto hodnoty ako východiskový bod a môže ich prispôsobovať pre jednotlivé okná, keď je k dispozícii dostatok údajov učenia.",
+        "data": {
+          "light_shade_position": "Poloha ľahkého tienenia",
+          "normal_shade_position": "Poloha normálneho tienenia",
+          "strong_shade_position": "Poloha silného tienenia"
+        }
+      },
+      "add_window": {
+        "title": "Pridať okno",
+        "description": "Pridajte do tejto zóny ďalšie okno. SmartShading pracuje s presným azimutom: smer kompasu je len pohodlná skratka.",
+        "data": {
+          "window_name": "Názov okna",
+          "floor_level": "Poschodie (0 = prízemie)",
+          "compass_direction": "Orientácia",
+          "custom_azimuth": "Vlastný azimut (0-359°, použije sa iba ak je Orientácia nastavená na Vlastná)",
+          "absence_position": "Poloha pri neprítomnosti (prepíše predvolenú hodnotu zóny)",
+          "window_behavior_mode": "Automatický režim tienenia"
+        },
+        "data_description": {
+          "absence_position": "Ponechajte prázdne na zdedenie predvolenej polohy neprítomnosti zóny. Zadajte hodnotu na jej prepísanie iba pre toto konkrétne okno.",
+          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Tienenie pre toto okno",
+        "description": "Vyberte entitu alebo entity tienenia, ktoré tienia okno „{window_name}“. Pridávajte iba tienenia, ktoré pokrývajú presne túto plochu okna. Pre samostatné okná pridávajte samostatné okná.",
+        "data": {
+          "cover_entities": "Tienenie pre toto okno",
+          "cover_hardware_type": "Typ hardvéru tienenia"
+        }
+      },
+      "add_window_loop": {
+        "title": "Pridať ďalšie okno?",
+        "description": "Do tejto zóny bolo pridané {window_count} nové okno/okná. Chcete pridať ďalšie okno?",
+        "data": {
+          "add_another_window": "Pridať ďalšie okno"
+        }
+      },
+      "edit_window": {
+        "title": "Upraviť okno",
+        "description": "Vyberte okno na úpravu.",
+        "data": {
+          "window_id": "Okno"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Upraviť okno: {window_name}",
+        "description": "Aktualizujte nastavenia okna „{window_name}“. Zmeny tienenia sa prejavia po uložení.",
+        "data": {
+          "window_name": "Názov okna",
+          "floor_level": "Poschodie (0 = prízemie)",
+          "compass_direction": "Orientácia",
+          "custom_azimuth": "Vlastný azimut (0-359°, použije sa iba ak je Orientácia nastavená na Vlastná)",
+          "cover_entities": "Tienenie pre toto okno",
+          "cover_hardware_type": "Typ hardvéru tienenia",
+          "absence_position": "Poloha pri neprítomnosti (prepíše predvolenú hodnotu zóny)",
+          "window_behavior_mode": "Automatický režim tienenia",
+          "light_shade_position": "Poloha ľahkého tienenia (prepíše predvolenú hodnotu zóny)",
+          "normal_shade_position": "Poloha normálneho tienenia (prepíše predvolenú hodnotu zóny)",
+          "strong_shade_position": "Poloha silného tienenia (prepíše predvolenú hodnotu zóny)",
+          "manual_sun_sector_enabled": "Povoliť ručné prepísanie slnečného sektora",
+          "manual_sun_sector_start_deg": "Počiatočný azimut slnečného sektora (°)",
+          "manual_sun_sector_end_deg": "Koncový azimut slnečného sektora (°)",
+          "obstruction_1_enabled": "Zóna prekážky 1 aktívna",
+          "obstruction_1_azimuth_start_deg": "Počiatočný azimut zóny 1 (°)",
+          "obstruction_1_azimuth_end_deg": "Koncový azimut zóny 1 (°)",
+          "obstruction_1_block_from_elevation_deg": "Zóna 1 blokovaná od výšky (°)",
+          "obstruction_1_block_until_elevation_deg": "Zóna 1 blokovaná do výšky (°)",
+          "obstruction_2_enabled": "Zóna prekážky 2 aktívna",
+          "obstruction_2_azimuth_start_deg": "Počiatočný azimut zóny 2 (°)",
+          "obstruction_2_azimuth_end_deg": "Koncový azimut zóny 2 (°)",
+          "obstruction_2_block_from_elevation_deg": "Zóna 2 blokovaná od výšky (°)",
+          "obstruction_2_block_until_elevation_deg": "Zóna 2 blokovaná do výšky (°)",
+          "obstruction_3_enabled": "Zóna prekážky 3 aktívna",
+          "obstruction_3_azimuth_start_deg": "Počiatočný azimut zóny 3 (°)",
+          "obstruction_3_azimuth_end_deg": "Koncový azimut zóny 3 (°)",
+          "obstruction_3_block_from_elevation_deg": "Zóna 3 blokovaná od výšky (°)",
+          "obstruction_3_block_until_elevation_deg": "Zóna 3 blokovaná do výšky (°)"
+        },
+        "data_description": {
+          "absence_position": "Ponechajte prázdne na zdedenie predvolenej polohy neprítomnosti zóny. Zadajte hodnotu na jej prepísanie iba pre toto okno.",
+          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne.",
+          "light_shade_position": "Ponechajte prázdne na použitie predvolenej hodnoty zóny. Zadajte hodnotu na prepísanie cieľovej polohy ľahkého tienenia iba pre toto okno.",
+          "normal_shade_position": "Ponechajte prázdne na použitie predvolenej hodnoty zóny. Zadajte hodnotu na prepísanie cieľovej polohy normálneho tienenia iba pre toto okno.",
+          "strong_shade_position": "Ponechajte prázdne na použitie predvolenej hodnoty zóny. Zadajte hodnotu na prepísanie cieľovej polohy silného tienenia iba pre toto okno.",
+          "manual_sun_sector_enabled": "Povoľte na nahradenie automatického slnečného sektora založeného na azimute ručným rozsahom. Počiatočný a koncový azimut určujú, kedy sa slnko považuje za dopadajúce na toto okno. Podporuje prechod cez sever (napr. z 330° na 30°).",
+          "obstruction_1_enabled": "Povoľte na označenie rozsahu azimutu, kde fyzická prekážka (strom, budova, presah strechy) blokuje priame slnko. Ponechajte polia výšky prázdne na blokovanie pri každej výške slnka v rozsahu azimutu.",
+          "obstruction_1_block_from_elevation_deg": "Voliteľné. Prekážka blokuje iba vtedy, keď je výška slnka rovná tejto hodnote alebo vyššia. Príklad: 45° blokuje presah strechy, ktorý tieni iba pri strmých uhloch slnka. Ponechajte prázdne pre žiadny dolný limit.",
+          "obstruction_1_block_until_elevation_deg": "Voliteľné. Prekážka blokuje iba vtedy, keď je výška slnka rovná tejto hodnote alebo nižšia. Príklad: 18° blokuje horu alebo susednú budovu, ktorá ovplyvňuje iba nízke slnko. Ponechajte prázdne pre žiadny horný limit.",
+          "obstruction_2_enabled": "Druhá voliteľná zóna prekážky pre toto okno.",
+          "obstruction_2_block_from_elevation_deg": "Voliteľná dolná hranica výšky pre zónu 2 (pozri popis zóny 1).",
+          "obstruction_2_block_until_elevation_deg": "Voliteľná horná hranica výšky pre zónu 2 (pozri popis zóny 1).",
+          "obstruction_3_enabled": "Tretia voliteľná zóna prekážky pre toto okno.",
+          "obstruction_3_block_from_elevation_deg": "Voliteľná dolná hranica výšky pre zónu 3 (pozri popis zóny 1).",
+          "obstruction_3_block_until_elevation_deg": "Voliteľná horná hranica výšky pre zónu 3 (pozri popis zóny 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Odobrať okno",
+        "description": "Vyberte okno na odobratie. Týmto sa natrvalo odoberie okno a jeho priradenia tienenia z tejto zóny. Samotné entity tienenia sa neodstránia.",
+        "data": {
+          "window_id": "Okno na odobratie"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Potvrdiť odobratie",
+        "description": "Odobrať okno „{window_name}“? Túto akciu nie je možné vrátiť späť.",
+        "data": {
+          "remove_confirmed": "Áno, odobrať toto okno"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Posledné okno nie je možné odobrať. Zóna musí mať aspoň jedno okno.",
+      "obstruction_elevation_range_invalid": "„Blokovaná od výšky“ nesmie byť väčšia ako „Blokovaná do výšky“."
+    },
+    "abort": {
+      "no_options_for_system_entry": "Systémová položka SmartShading nemá žiadne konfigurovateľné možnosti."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Nakonfigurujte SmartShading. Okná môžete pridať na ďalších obrazovkách.",
+        "data": {
+          "zone_name": "Názov zóny"
+        }
+      },
+      "weather": {
+        "title": "Vstupy počasia a slnka (voliteľné)",
+        "description": "Všetko voliteľné. Entita počasia (napr. DWD, yr.no) automaticky poskytuje podmienky, oblačnosť a vietor. Vyhradené senzory ju nahrádzajú pre presnejšie miestne hodnoty. Slnečné žiarenie vyžaduje vyhradený senzor. Tento krok môžete preskočiť a vstupy pridať neskôr.",
+        "data": {
+          "weather_entity_id": "Entita počasia",
+          "solar_radiation_sensor_id": "Senzor slnečného žiarenia (W/m²)",
+          "outdoor_temperature_sensor_id": "Senzor vonkajšej teploty",
+          "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
+          "wind_speed_sensor_id": "Senzor rýchlosti vetra (m/s) — pre markízy/screeny použite nárazy vetra, ak sú k dispozícii"
+        }
+      },
+      "lifecycle": {
+        "title": "Nastavenia plánu",
+        "description": "Vyberte, ako SmartShading rozpoznáva noc a ráno. „Oboje“ sa spustí pri prvej splnenej podmienke: čas alebo výška slnka.",
+        "data": {
+          "night_trigger": "Spúšťač noci",
+          "morning_trigger": "Spúšťač rána",
+          "schedule_mode": "Režim plánu"
+        },
+        "data_description": {
+          "schedule_mode": "„Rovnako každý deň“ používa jeden plán pre celý týždeň. „Pracovný deň / Víkend“ umožňuje nastaviť rôzne časy a polohy pre po–pi a so–ne."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Podrobnosti plánu",
+        "description": "Zadajte čas alebo výšku slnka pre každý spúšťač. Zobrazujú sa iba polia relevantné pre vybraný spúšťač.",
+        "data": {
+          "night_fixed_time": "Čas noci",
+          "night_elevation_preset": "Noc: poloha slnka",
+          "night_sun_elevation": "Vlastná nočná výška (°) — použije sa iba pri výbere Vlastná",
+          "morning_fixed_time": "Čas rána",
+          "morning_elevation_preset": "Ráno: poloha slnka",
+          "morning_sun_elevation": "Vlastná ranná výška (°) — použije sa iba pri výbere Vlastná",
+          "night_position": "Nočná poloha",
+          "morning_position": "Ranná poloha",
+          "weekday_night_fixed_time": "Čas noci v pracovné dni (po–pi)",
+          "weekday_night_position": "Nočná poloha v pracovné dni (po–pi)",
+          "weekday_morning_fixed_time": "Čas rána v pracovné dni (po–pi)",
+          "weekday_morning_position": "Ranná poloha v pracovné dni (po–pi)",
+          "weekend_night_fixed_time": "Čas noci cez víkend (so–ne)",
+          "weekend_night_position": "Nočná poloha cez víkend (so–ne)",
+          "weekend_morning_fixed_time": "Čas rána cez víkend (so–ne)",
+          "weekend_morning_position": "Ranná poloha cez víkend (so–ne)"
+        },
+        "data_description": {
+          "night_position": "Poloha tienenia počas nočnej fázy (0 = zatvorené, 100 = otvorené).",
+          "morning_position": "Poloha tienenia na začiatku rannej fázy (0 = zatvorené, 100 = otvorené).",
+          "weekday_night_position": "Poloha tienenia počas nočnej fázy v pracovné dni (0 = zatvorené, 100 = otvorené).",
+          "weekday_morning_position": "Poloha tienenia na začiatku rannej fázy v pracovné dni (0 = zatvorené, 100 = otvorené).",
+          "weekend_night_position": "Poloha tienenia počas nočnej fázy cez víkend (0 = zatvorené, 100 = otvorené).",
+          "weekend_morning_position": "Poloha tienenia na začiatku rannej fázy cez víkend (0 = zatvorené, 100 = otvorené)."
+        }
+      },
+      "presence": {
+        "title": "Nastavenia prítomnosti",
+        "description": "Voliteľné. Ak nie je nikto vybraný, SmartShading vždy predpokladá prítomnosť a nikdy nespustí zatváranie kvôli neprítomnosti.",
+        "data": {
+          "presence_entity_ids": "Entity prítomnosti",
+          "absence_delay_min": "Oneskorenie neprítomnosti",
+          "absence_position": "Poloha pri neprítomnosti"
+        },
+        "data_description": {
+          "absence_position": "Poloha tienenia, keď je zóna neobsadená, pokiaľ neplatí silnejšie ochranné rozhodnutie (0 = úplne zatvorené, 100 = úplne otvorené). Platí pre všetky okná v tejto zóne."
+        }
+      },
+      "window": {
+        "title": "Pridať okno",
+        "description": "Nakonfigurujte jedno okno. SmartShading pracuje s presným azimutom: smer kompasu je len pohodlná skratka.",
+        "data": {
+          "window_name": "Názov okna",
+          "floor_level": "Poschodie (0 = prízemie)",
+          "compass_direction": "Orientácia",
+          "custom_azimuth": "Vlastný azimut (0-359°, použije sa iba ak je Orientácia nastavená na Vlastná)",
+          "absence_position": "Poloha pri neprítomnosti (prepíše predvolenú hodnotu zóny)",
+          "window_behavior_mode": "Automatický režim tienenia"
+        },
+        "data_description": {
+          "absence_position": "Ponechajte prázdne na zdedenie predvolenej polohy neprítomnosti zóny. Zadajte hodnotu na jej prepísanie iba pre toto konkrétne okno.",
+          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne."
+        }
+      },
+      "cover_group": {
+        "title": "Tienenie pre toto okno",
+        "description": "Vyberte entitu alebo entity tienenia, ktoré tienia okno „{window_name}“. Pridávajte iba tienenia, ktoré pokrývajú presne túto plochu okna. Pre samostatné okná pridávajte samostatné okná.",
+        "data": {
+          "cover_entities": "Tienenie pre toto okno",
+          "cover_hardware_type": "Typ hardvéru tienenia"
+        }
+      },
+      "add_another_window": {
+        "title": "Pridať ďalšie okno?",
+        "description": "Doteraz nakonfigurované {window_count} okno/okná.",
+        "data": {
+          "add_another_window": "Pridať ďalšie okno"
+        }
+      },
+      "comfort": {
+        "title": "Nastavenia komfortu",
+        "description": "Nakonfigurujte ochranné funkcie pomocou tienenia. Senzory vnútornej teploty sú voliteľné.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Senzory vnútornej teploty (voliteľné)",
+          "heat_protection_enabled": "Povoliť ochranu pred teplom",
+          "glare_protection_enabled": "Povoliť ochranu pred oslnením",
+          "solar_gain_enabled": "Povoliť solárny zisk (zimné slnko)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "Jeden alebo viac vnútorných senzorov. Pri konfigurácii viacerých senzorov sa použije priemer všetkých platných hodnôt.",
+          "heat_protection_enabled": "Zabraňuje prehrievaniu proaktívnym tienením na základe polohy slnka, počasia a teplôt.",
+          "glare_protection_enabled": "Znižuje priame slnečné svetlo, keď slnko dopadá na okno.",
+          "solar_gain_enabled": "Udržiava tienenie viac otvorené v chladnom počasí na podporu pasívneho ohrevu. Ochrana pred teplom má prioritu."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Zadajte vlastný azimut medzi 0 a 359 stupňami, alebo vyberte smer kompasu.",
+      "no_covers_selected": "Vyberte aspoň jednu entitu tienenia pre toto okno.",
+      "empty_zone_name": "Názov zóny je povinný.",
+      "obstruction_elevation_range_invalid": "„Blokovaná od výšky“ nesmie byť väčšia ako „Blokovaná do výšky“."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading je už nakonfigurovaný.",
+      "system_already_exists": "Systémová položka SmartShading už existuje."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Sever (0°)",
+        "northeast": "Severovýchod (45°)",
+        "east": "Východ (90°)",
+        "southeast": "Juhovýchod (135°)",
+        "south": "Juh (180°)",
+        "southwest": "Juhozápad (225°)",
+        "west": "Západ (270°)",
+        "northwest": "Severozápad (315°)",
+        "custom": "Vlastný azimut"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Pri západe slnka (0°)",
+        "dusk": "Za súmraku — občiansky súmrak (-6°)",
+        "dark": "Keď je tma — nautický súmrak (-12°)",
+        "custom": "Vlastná"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "Pri východe slnka (0°)",
+        "dawn": "Za svitania — občiansky úsvit (-6°)",
+        "bright": "Keď sa rozvidnieva — nautický úsvit (-12°)",
+        "custom": "Vlastná"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Pevný čas",
+        "sun_elevation": "Výška slnka",
+        "both": "Oboje",
+        "disabled": "Vypnuté"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Rovnako každý deň",
+        "weekday_weekend": "Pracovný deň / Víkend"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Plne automatický",
+        "absence_only": "Iba neprítomnosť",
+        "disabled_automatic": "Automatizácia vypnutá"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Roleta",
+        "venetian_blind": "Žalúzia",
+        "exterior_screen": "Screen",
+        "awning": "Markíza",
+        "generic": "Iné tienenie"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Vytvoriť export podpory"
+      },
+      "export_research_data": {
+        "name": "Vytvoriť výskumný export"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Režim pozorovania",
+        "state": {
+          "on": "Pozoruje",
+          "off": "Pozastavené"
+        }
+      },
+      "active_control": {
+        "name": "Aktívne riadenie",
+        "state": {
+          "on": "Aktívne",
+          "off": "Neaktívne"
+        }
+      },
+      "debug_logging": {
+        "name": "Denník ladenia"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Stav tienenia",
+        "state": {
+          "storm_safe": "Ochrana pred búrkou",
+          "wind_safe": "Ochrana pred vetrom",
+          "manual_override": "Ručné prepísanie",
+          "night_closed": "Noc – zatvorené",
+          "absence_closed": "Neprítomnosť – zatvorené",
+          "strong_shade": "Silné tienenie",
+          "normal_shade": "Normálne tienenie",
+          "light_shade": "Ľahké tienenie",
+          "open": "Otvorené"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Stav tienenia",
+        "state": {
+          "storm_safe": "Ochrana pred búrkou",
+          "wind_safe": "Ochrana pred vetrom",
+          "manual_override": "Ručné prepísanie",
+          "night_closed": "Noc – zatvorené",
+          "absence_closed": "Neprítomnosť – zatvorené",
+          "strong_shade": "Silné tienenie",
+          "normal_shade": "Normálne tienenie",
+          "light_shade": "Ľahké tienenie",
+          "open": "Otvorené"
+        }
+      },
+      "exposure": {
+        "name": "Expozícia"
+      },
+      "exposure_indexed": {
+        "name": "{index} Expozícia"
+      },
+      "cover_position": {
+        "name": "Poloha tienenia"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Poloha tienenia"
+      },
+      "recommendation": {
+        "name": "Odporúčanie"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Odporúčanie"
+      },
+      "zone_summary": {
+        "name": "Súhrn zóny",
+        "state": {
+          "safety": "Bezpečnostný režim",
+          "override": "Ručné prepísanie",
+          "automatic": "Automatický",
+          "recommendation_only": "Iba odporúčanie",
+          "disabled": "Vypnuté"
+        }
+      },
+      "learning_progress": {
+        "name": "Priebeh učenia"
+      },
+      "shading_result": {
+        "name": "Výsledok tienenia",
+        "state": {
+          "excellent": "Vynikajúci",
+          "good": "Dobrý",
+          "acceptable": "Prijateľný",
+          "poor": "Slabý",
+          "unknown": "Neznámy"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Slnečný sektor",
+        "state": {
+          "on": "V slnečnom sektore",
+          "off": "Mimo slnečného sektora"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Slnečný sektor",
+        "state": {
+          "on": "V slnečnom sektore",
+          "off": "Mimo slnečného sektora"
+        }
+      },
+      "override_active": {
+        "name": "Prepísanie aktívne",
+        "state": {
+          "on": "Prepísanie aktívne",
+          "off": "Normálne riadenie"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Prepísanie aktívne",
+        "state": {
+          "on": "Prepísanie aktívne",
+          "off": "Normálne riadenie"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edit SmartShading settings",
+        "description": "Here you can edit the weather, comfort, schedule, presence, and shading settings for this zone, and add, edit, or remove windows.",
+        "menu_options": {
+          "weather": "Weather and solar inputs",
+          "lifecycle": "Schedule settings",
+          "presence": "Presence settings",
+          "comfort": "Comfort settings",
+          "behavior": "Shading behavior",
+          "add_window": "Add window",
+          "edit_window": "Edit window",
+          "remove_window": "Remove window"
+        }
+      },
+      "weather": {
+        "title": "Weather and solar inputs",
+        "description": "All optional. A weather entity (e.g. DWD, yr.no) provides condition, cloud cover, and wind data automatically. Dedicated sensors override the weather entity for more precise local readings. Solar radiation must come from a dedicated sensor — it is not read from weather entities.",
+        "data": {
+          "weather_entity_id": "Weather entity",
+          "solar_radiation_sensor_id": "Solar radiation sensor (W/m²)",
+          "outdoor_temperature_sensor_id": "Outdoor temperature sensor",
+          "cloud_cover_sensor_id": "Cloud cover sensor (0–100 %)",
+          "wind_speed_sensor_id": "Wind speed sensor (m/s) — use wind gust for awnings/screens if available"
+        }
+      },
+      "lifecycle": {
+        "title": "Schedule settings",
+        "description": "Select how SmartShading detects night and morning. \"Both\" triggers on whichever condition — time or sun elevation — is met first.",
+        "data": {
+          "night_trigger": "Night trigger",
+          "morning_trigger": "Morning trigger",
+          "schedule_mode": "Schedule mode"
+        },
+        "data_description": {
+          "schedule_mode": "\"Same every day\" uses one schedule for the whole week. \"Weekday / Weekend\" lets you set different times and positions for Mon–Fri versus Sat–Sun."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Schedule details",
+        "description": "Enter the time or sun elevation for each trigger. Only the fields relevant to your selected trigger are shown.",
+        "data": {
+          "night_fixed_time": "Night time",
+          "night_elevation_preset": "Night: sun position",
+          "night_sun_elevation": "Custom night elevation (°) — only used when Custom is selected",
+          "morning_fixed_time": "Morning time",
+          "morning_elevation_preset": "Morning: sun position",
+          "morning_sun_elevation": "Custom morning elevation (°) — only used when Custom is selected",
+          "night_position": "Night position",
+          "morning_position": "Morning position",
+          "weekday_night_fixed_time": "Weekday night time (Mon–Fri)",
+          "weekday_night_position": "Weekday night position (Mon–Fri)",
+          "weekday_morning_fixed_time": "Weekday morning time (Mon–Fri)",
+          "weekday_morning_position": "Weekday morning position (Mon–Fri)",
+          "weekend_night_fixed_time": "Weekend night time (Sat–Sun)",
+          "weekend_night_position": "Weekend night position (Sat–Sun)",
+          "weekend_morning_fixed_time": "Weekend morning time (Sat–Sun)",
+          "weekend_morning_position": "Weekend morning position (Sat–Sun)"
+        },
+        "data_description": {
+          "night_position": "Cover position during the night phase (0 = closed, 100 = open).",
+          "morning_position": "Cover position at the start of the morning phase (0 = closed, 100 = open).",
+          "weekday_night_position": "Cover position during the night phase on weekdays (0 = closed, 100 = open).",
+          "weekday_morning_position": "Cover position at the start of the morning phase on weekdays (0 = closed, 100 = open).",
+          "weekend_night_position": "Cover position during the night phase on weekends (0 = closed, 100 = open).",
+          "weekend_morning_position": "Cover position at the start of the morning phase on weekends (0 = closed, 100 = open)."
+        }
+      },
+      "presence": {
+        "title": "Presence settings",
+        "description": "Optional. If no one is selected, SmartShading always assumes someone is present and never triggers absence-based closing.",
+        "data": {
+          "presence_entity_ids": "Presence entities",
+          "absence_delay_min": "Absence delay",
+          "absence_position": "Absence position"
+        },
+        "data_description": {
+          "absence_position": "Cover position while the zone is unoccupied, unless a stronger protection decision applies (0 = fully closed, 100 = fully open). Applies to all windows in this zone."
+        }
+      },
+      "comfort": {
+        "title": "Comfort settings",
+        "description": "Configure shading protection features. Indoor temperature sensors are optional.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Indoor temperature sensors (optional)",
+          "heat_protection_enabled": "Enable heat protection",
+          "glare_protection_enabled": "Enable glare protection",
+          "solar_gain_enabled": "Enable solar gain (winter sun)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "One or more indoor sensors. When multiple sensors are configured, the average of all valid readings is used.",
+          "heat_protection_enabled": "Prevents overheating by shading proactively based on sun position, weather, and temperatures.",
+          "glare_protection_enabled": "Reduces direct sunlight when the sun hits the window.",
+          "solar_gain_enabled": "Keeps shading more open in cool weather to support passive warming. Heat protection has priority."
+        }
+      },
+      "behavior": {
+        "title": "Basic shading behavior",
+        "description": "Base target cover positions per shading intensity. SmartShading uses these values as starting points and may adapt them per window when enough learning data is available.",
+        "data": {
+          "light_shade_position": "Light shade position",
+          "normal_shade_position": "Normal shade position",
+          "strong_shade_position": "Strong shade position"
+        }
+      },
+      "add_window": {
+        "title": "Add a window",
+        "description": "Add another window to this zone. SmartShading works with a precise azimuth — the compass direction is just a convenience shortcut.",
+        "data": {
+          "window_name": "Window name",
+          "floor_level": "Floor level (0 = ground floor)",
+          "compass_direction": "Orientation",
+          "custom_azimuth": "Custom azimuth (0-359°, only used if Orientation is set to Custom)",
+          "absence_position": "Absence position (overrides zone default)",
+          "window_behavior_mode": "Automatic shading mode"
+        },
+        "data_description": {
+          "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this specific window only.",
+          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Covers for this window",
+        "description": "Select the cover entity or entities that shade the window \"{window_name}\". Only add covers that shade exactly this window surface. For separate windows, add separate windows.",
+        "data": {
+          "cover_entities": "Covers for this window",
+          "cover_hardware_type": "Cover hardware type"
+        }
+      },
+      "add_window_loop": {
+        "title": "Add another window?",
+        "description": "{window_count} new window(s) added to this zone. Would you like to add another window?",
+        "data": {
+          "add_another_window": "Add another window"
+        }
+      },
+      "edit_window": {
+        "title": "Edit window",
+        "description": "Select the window to edit.",
+        "data": {
+          "window_id": "Window"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Edit window: {window_name}",
+        "description": "Update the settings for window \"{window_name}\". Cover changes take effect after saving.",
+        "data": {
+          "window_name": "Window name",
+          "floor_level": "Floor level (0 = ground floor)",
+          "compass_direction": "Orientation",
+          "custom_azimuth": "Custom azimuth (0-359°, only used if Orientation is set to Custom)",
+          "cover_entities": "Covers for this window",
+          "cover_hardware_type": "Cover hardware type",
+          "absence_position": "Absence position (overrides zone default)",
+          "window_behavior_mode": "Automatic shading mode",
+          "light_shade_position": "Light shade position (overrides zone default)",
+          "normal_shade_position": "Normal shade position (overrides zone default)",
+          "strong_shade_position": "Strong shade position (overrides zone default)",
+          "manual_sun_sector_enabled": "Enable manual sun sector override",
+          "manual_sun_sector_start_deg": "Sun sector start azimuth (°)",
+          "manual_sun_sector_end_deg": "Sun sector end azimuth (°)",
+          "obstruction_1_enabled": "Obstruction zone 1 active",
+          "obstruction_1_azimuth_start_deg": "Zone 1 azimuth start (°)",
+          "obstruction_1_azimuth_end_deg": "Zone 1 azimuth end (°)",
+          "obstruction_1_block_from_elevation_deg": "Zone 1 blocked from elevation (°)",
+          "obstruction_1_block_until_elevation_deg": "Zone 1 blocked until elevation (°)",
+          "obstruction_2_enabled": "Obstruction zone 2 active",
+          "obstruction_2_azimuth_start_deg": "Zone 2 azimuth start (°)",
+          "obstruction_2_azimuth_end_deg": "Zone 2 azimuth end (°)",
+          "obstruction_2_block_from_elevation_deg": "Zone 2 blocked from elevation (°)",
+          "obstruction_2_block_until_elevation_deg": "Zone 2 blocked until elevation (°)",
+          "obstruction_3_enabled": "Obstruction zone 3 active",
+          "obstruction_3_azimuth_start_deg": "Zone 3 azimuth start (°)",
+          "obstruction_3_azimuth_end_deg": "Zone 3 azimuth end (°)",
+          "obstruction_3_block_from_elevation_deg": "Zone 3 blocked from elevation (°)",
+          "obstruction_3_block_until_elevation_deg": "Zone 3 blocked until elevation (°)"
+        },
+        "data_description": {
+          "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this window only.",
+          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active.",
+          "light_shade_position": "Leave empty to use the zone default. Set a value to override the light shade target position for this window only.",
+          "normal_shade_position": "Leave empty to use the zone default. Set a value to override the normal shade target position for this window only.",
+          "strong_shade_position": "Leave empty to use the zone default. Set a value to override the strong shade target position for this window only.",
+          "manual_sun_sector_enabled": "Enable to replace the automatic azimuth-based sun sector with a manual range. Start and end azimuths define when the sun is considered to hit this window. Supports wrap-around (e.g. 330° to 30° crosses north).",
+          "obstruction_1_enabled": "Enable to mark an azimuth range where a physical obstruction (tree, building, roof overhang) blocks direct sun. Leave elevation fields empty to block at every sun elevation in the azimuth range.",
+          "obstruction_1_block_from_elevation_deg": "Optional. Obstruction blocks only when sun elevation is at or above this value. Example: 45° blocks a roof overhang that only shades at steep sun angles. Leave empty for no lower limit.",
+          "obstruction_1_block_until_elevation_deg": "Optional. Obstruction blocks only when sun elevation is at or below this value. Example: 18° blocks a mountain or neighbouring building that only affects low sun. Leave empty for no upper limit.",
+          "obstruction_2_enabled": "Second optional obstruction zone for this window.",
+          "obstruction_2_block_from_elevation_deg": "Optional lower elevation bound for zone 2 (see zone 1 description).",
+          "obstruction_2_block_until_elevation_deg": "Optional upper elevation bound for zone 2 (see zone 1 description).",
+          "obstruction_3_enabled": "Third optional obstruction zone for this window.",
+          "obstruction_3_block_from_elevation_deg": "Optional lower elevation bound for zone 3 (see zone 1 description).",
+          "obstruction_3_block_until_elevation_deg": "Optional upper elevation bound for zone 3 (see zone 1 description)."
+        }
+      },
+      "remove_window": {
+        "title": "Remove window",
+        "description": "Select the window to remove. This will permanently remove the window and its cover assignments from this zone. Cover entities themselves are not deleted.",
+        "data": {
+          "window_id": "Window to remove"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Confirm removal",
+        "description": "Remove window \"{window_name}\"? This cannot be undone.",
+        "data": {
+          "remove_confirmed": "Yes, remove this window"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Cannot remove the last window. A zone must have at least one window.",
+      "obstruction_elevation_range_invalid": "\"Blocked from elevation\" must not be greater than \"Blocked until elevation\"."
+    },
+    "abort": {
+      "no_options_for_system_entry": "The SmartShading System entry has no configurable options."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Set up SmartShading. You can add windows on the next screens.",
+        "data": {
+          "zone_name": "Zone name"
+        }
+      },
+      "weather": {
+        "title": "Weather and solar inputs (optional)",
+        "description": "All optional. A weather entity (e.g. DWD, yr.no) provides condition, cloud cover, and wind data automatically. Dedicated sensors override it for more precise local readings. Solar radiation requires a dedicated sensor. You can skip this step and add inputs later.",
+        "data": {
+          "weather_entity_id": "Weather entity",
+          "solar_radiation_sensor_id": "Solar radiation sensor (W/m²)",
+          "outdoor_temperature_sensor_id": "Outdoor temperature sensor",
+          "cloud_cover_sensor_id": "Cloud cover sensor (0–100 %)",
+          "wind_speed_sensor_id": "Wind speed sensor (m/s) — use wind gust for awnings/screens if available"
+        }
+      },
+      "lifecycle": {
+        "title": "Schedule settings",
+        "description": "Select how SmartShading detects night and morning. \"Both\" triggers on whichever condition — time or sun elevation — is met first.",
+        "data": {
+          "night_trigger": "Night trigger",
+          "morning_trigger": "Morning trigger",
+          "schedule_mode": "Schedule mode"
+        },
+        "data_description": {
+          "schedule_mode": "\"Same every day\" uses one schedule for the whole week. \"Weekday / Weekend\" lets you set different times and positions for Mon–Fri versus Sat–Sun."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Schedule details",
+        "description": "Enter the time or sun elevation for each trigger. Only the fields relevant to your selected trigger are shown.",
+        "data": {
+          "night_fixed_time": "Night time",
+          "night_elevation_preset": "Night: sun position",
+          "night_sun_elevation": "Custom night elevation (°) — only used when Custom is selected",
+          "morning_fixed_time": "Morning time",
+          "morning_elevation_preset": "Morning: sun position",
+          "morning_sun_elevation": "Custom morning elevation (°) — only used when Custom is selected",
+          "night_position": "Night position",
+          "morning_position": "Morning position",
+          "weekday_night_fixed_time": "Weekday night time (Mon–Fri)",
+          "weekday_night_position": "Weekday night position (Mon–Fri)",
+          "weekday_morning_fixed_time": "Weekday morning time (Mon–Fri)",
+          "weekday_morning_position": "Weekday morning position (Mon–Fri)",
+          "weekend_night_fixed_time": "Weekend night time (Sat–Sun)",
+          "weekend_night_position": "Weekend night position (Sat–Sun)",
+          "weekend_morning_fixed_time": "Weekend morning time (Sat–Sun)",
+          "weekend_morning_position": "Weekend morning position (Sat–Sun)"
+        },
+        "data_description": {
+          "night_position": "Cover position during the night phase (0 = closed, 100 = open).",
+          "morning_position": "Cover position at the start of the morning phase (0 = closed, 100 = open).",
+          "weekday_night_position": "Cover position during the night phase on weekdays (0 = closed, 100 = open).",
+          "weekday_morning_position": "Cover position at the start of the morning phase on weekdays (0 = closed, 100 = open).",
+          "weekend_night_position": "Cover position during the night phase on weekends (0 = closed, 100 = open).",
+          "weekend_morning_position": "Cover position at the start of the morning phase on weekends (0 = closed, 100 = open)."
+        }
+      },
+      "presence": {
+        "title": "Presence settings",
+        "description": "Optional. If no one is selected, SmartShading always assumes someone is present and never triggers absence-based closing.",
+        "data": {
+          "presence_entity_ids": "Presence entities",
+          "absence_delay_min": "Absence delay",
+          "absence_position": "Absence position"
+        },
+        "data_description": {
+          "absence_position": "Cover position while the zone is unoccupied, unless a stronger protection decision applies (0 = fully closed, 100 = fully open). Applies to all windows in this zone."
+        }
+      },
+      "window": {
+        "title": "Add a window",
+        "description": "Configure one window. SmartShading works with a precise azimuth — the compass direction is just a convenience shortcut.",
+        "data": {
+          "window_name": "Window name",
+          "floor_level": "Floor level (0 = ground floor)",
+          "compass_direction": "Orientation",
+          "custom_azimuth": "Custom azimuth (0-359°, only used if Orientation is set to Custom)",
+          "absence_position": "Absence position (overrides zone default)",
+          "window_behavior_mode": "Automatic shading mode"
+        },
+        "data_description": {
+          "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this specific window only.",
+          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active."
+        }
+      },
+      "cover_group": {
+        "title": "Covers for this window",
+        "description": "Select the cover entity or entities that shade the window \"{window_name}\". Only add covers that shade exactly this window surface. For separate windows, add separate windows.",
+        "data": {
+          "cover_entities": "Covers for this window",
+          "cover_hardware_type": "Cover hardware type"
+        }
+      },
+      "add_another_window": {
+        "title": "Add another window?",
+        "description": "{window_count} window(s) configured so far.",
+        "data": {
+          "add_another_window": "Add another window"
+        }
+      },
+      "comfort": {
+        "title": "Comfort settings",
+        "description": "Configure shading protection features. Indoor temperature sensors are optional.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Indoor temperature sensors (optional)",
+          "heat_protection_enabled": "Enable heat protection",
+          "glare_protection_enabled": "Enable glare protection",
+          "solar_gain_enabled": "Enable solar gain (winter sun)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "One or more indoor sensors. When multiple sensors are configured, the average of all valid readings is used.",
+          "heat_protection_enabled": "Prevents overheating by shading proactively based on sun position, weather, and temperatures.",
+          "glare_protection_enabled": "Reduces direct sunlight when the sun hits the window.",
+          "solar_gain_enabled": "Keeps shading more open in cool weather to support passive warming. Heat protection has priority."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Enter a custom azimuth between 0 and 359 degrees, or pick a compass direction.",
+      "no_covers_selected": "Select at least one cover entity for this window.",
+      "empty_zone_name": "Zone name is required.",
+      "obstruction_elevation_range_invalid": "\"Blocked from elevation\" must not be greater than \"Blocked until elevation\"."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading is already configured.",
+      "system_already_exists": "SmartShading System entry already exists."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "North (0°)",
+        "northeast": "Northeast (45°)",
+        "east": "East (90°)",
+        "southeast": "Southeast (135°)",
+        "south": "South (180°)",
+        "southwest": "Southwest (225°)",
+        "west": "West (270°)",
+        "northwest": "Northwest (315°)",
+        "custom": "Custom azimuth"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "At sunset (0°)",
+        "dusk": "At dusk — civil twilight (-6°)",
+        "dark": "When it's dark — nautical twilight (-12°)",
+        "custom": "Custom"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "At sunrise (0°)",
+        "dawn": "At dawn — civil twilight (-6°)",
+        "bright": "When it gets bright — nautical twilight (-12°)",
+        "custom": "Custom"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Fixed time",
+        "sun_elevation": "Sun elevation",
+        "both": "Both",
+        "disabled": "Disabled"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Same every day",
+        "weekday_weekend": "Weekday / Weekend"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Fully automatic",
+        "absence_only": "Absence only",
+        "disabled_automatic": "Automation disabled"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Roller shutter",
+        "venetian_blind": "Venetian blind",
+        "exterior_screen": "Screen",
+        "awning": "Awning",
+        "generic": "Other cover"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Create Support Export"
+      },
+      "export_research_data": {
+        "name": "Create Research Export"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Observation Mode",
+        "state": {
+          "on": "Observing",
+          "off": "Paused"
+        }
+      },
+      "active_control": {
+        "name": "Active Control",
+        "state": {
+          "on": "Active",
+          "off": "Inactive"
+        }
+      },
+      "debug_logging": {
+        "name": "Debug logging"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Shading state",
+        "state": {
+          "storm_safe": "Storm safe",
+          "wind_safe": "Wind safe",
+          "manual_override": "Manual override",
+          "night_closed": "Night – closed",
+          "absence_closed": "Away – closed",
+          "strong_shade": "Strong shading",
+          "normal_shade": "Normal shading",
+          "light_shade": "Light shading",
+          "open": "Open"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Shading state",
+        "state": {
+          "storm_safe": "Storm safe",
+          "wind_safe": "Wind safe",
+          "manual_override": "Manual override",
+          "night_closed": "Night – closed",
+          "absence_closed": "Away – closed",
+          "strong_shade": "Strong shading",
+          "normal_shade": "Normal shading",
+          "light_shade": "Light shading",
+          "open": "Open"
+        }
+      },
+      "exposure": {
+        "name": "Exposure"
+      },
+      "exposure_indexed": {
+        "name": "{index} Exposure"
+      },
+      "cover_position": {
+        "name": "Cover position"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Cover position"
+      },
+      "recommendation": {
+        "name": "Recommendation"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Recommendation"
+      },
+      "zone_summary": {
+        "name": "Zone Summary",
+        "state": {
+          "safety": "Safety mode",
+          "override": "Manual override",
+          "automatic": "Automatic",
+          "recommendation_only": "Recommendation only",
+          "disabled": "Disabled"
+        }
+      },
+      "learning_progress": {
+        "name": "Learning Progress"
+      },
+      "shading_result": {
+        "name": "Shading Result",
+        "state": {
+          "excellent": "Excellent",
+          "good": "Good",
+          "acceptable": "Acceptable",
+          "poor": "Poor",
+          "unknown": "Unknown"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Solar sector",
+        "state": {
+          "on": "In solar sector",
+          "off": "Not in solar sector"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Solar sector",
+        "state": {
+          "on": "In solar sector",
+          "off": "Not in solar sector"
+        }
+      },
+      "override_active": {
+        "name": "Override active",
+        "state": {
+          "on": "Override active",
+          "off": "Normal control"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Override active",
+        "state": {
+          "on": "Override active",
+          "off": "Normal control"
+        }
+      }
+    }
+  }
+}

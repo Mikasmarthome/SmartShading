@@ -1,0 +1,545 @@
+{
+  "options": {
+    "step": {
+      "init": {
+        "title": "Rediger SmartShading-innstillinger",
+        "description": "Her kan du redigere vær-, komfort-, tidsplan-, tilstedeværelses- og solskjermingsinnstillinger for denne sonen og legge til, redigere eller fjerne vinduer.",
+        "menu_options": {
+          "weather": "Vær- og solinndata",
+          "lifecycle": "Tidsplaninnstillinger",
+          "presence": "Tilstedeværelsesinnstillinger",
+          "comfort": "Komfortinnstillinger",
+          "behavior": "Solskjermingsatferd",
+          "add_window": "Legg til vindu",
+          "edit_window": "Rediger vindu",
+          "remove_window": "Fjern vindu"
+        }
+      },
+      "weather": {
+        "title": "Vær- og solinndata",
+        "description": "Alt er valgfritt. En værentitet (f.eks. DWD, yr.no) gir automatisk forhold, skydekke og vind. Dedikerte sensorer overstyrer værentiteten for mer presise lokale avlesninger. Solstråling må komme fra en dedikert sensor: den leses ikke fra værentiteter.",
+        "data": {
+          "weather_entity_id": "Værentitet",
+          "solar_radiation_sensor_id": "Solstrålingssensor (W/m²)",
+          "outdoor_temperature_sensor_id": "Utetemperatursensor",
+          "cloud_cover_sensor_id": "Skydekkesensor (0–100 %)",
+          "wind_speed_sensor_id": "Vindhastighetssensor (m/s) — bruk vindkast for markiser/screens hvis tilgjengelig"
+        }
+      },
+      "lifecycle": {
+        "title": "Tidsplaninnstillinger",
+        "description": "Velg hvordan SmartShading oppdager natt og morgen. \"Begge\" utløses av det første vilkåret som oppfylles: tid eller solhøyde.",
+        "data": {
+          "night_trigger": "Nattutløser",
+          "morning_trigger": "Morgenutløser",
+          "schedule_mode": "Tidsplanmodus"
+        },
+        "data_description": {
+          "schedule_mode": "\"Likt hver dag\" bruker én tidsplan for hele uken. \"Hverdag / Helg\" lar deg angi ulike tider og posisjoner for man–fre og lør–søn."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Tidsplandetaljer",
+        "description": "Angi tiden eller solhøyden for hver utløser. Bare feltene som er relevante for den valgte utløseren, vises.",
+        "data": {
+          "night_fixed_time": "Nattid",
+          "night_elevation_preset": "Natt: solposisjon",
+          "night_sun_elevation": "Tilpasset natthøyde (°) — brukes bare når Tilpasset er valgt",
+          "morning_fixed_time": "Morgentid",
+          "morning_elevation_preset": "Morgen: solposisjon",
+          "morning_sun_elevation": "Tilpasset morgenhøyde (°) — brukes bare når Tilpasset er valgt",
+          "night_position": "Nattposisjon",
+          "morning_position": "Morgenposisjon",
+          "weekday_night_fixed_time": "Nattid på hverdager (man–fre)",
+          "weekday_night_position": "Nattposisjon på hverdager (man–fre)",
+          "weekday_morning_fixed_time": "Morgentid på hverdager (man–fre)",
+          "weekday_morning_position": "Morgenposisjon på hverdager (man–fre)",
+          "weekend_night_fixed_time": "Nattid i helgen (lør–søn)",
+          "weekend_night_position": "Nattposisjon i helgen (lør–søn)",
+          "weekend_morning_fixed_time": "Morgentid i helgen (lør–søn)",
+          "weekend_morning_position": "Morgenposisjon i helgen (lør–søn)"
+        },
+        "data_description": {
+          "night_position": "Solskjermingens posisjon i nattfasen (0 = lukket, 100 = åpen).",
+          "morning_position": "Solskjermingens posisjon ved starten av morgenfasen (0 = lukket, 100 = åpen).",
+          "weekday_night_position": "Solskjermingens posisjon i nattfasen på hverdager (0 = lukket, 100 = åpen).",
+          "weekday_morning_position": "Solskjermingens posisjon ved starten av morgenfasen på hverdager (0 = lukket, 100 = åpen).",
+          "weekend_night_position": "Solskjermingens posisjon i nattfasen i helgen (0 = lukket, 100 = åpen).",
+          "weekend_morning_position": "Solskjermingens posisjon ved starten av morgenfasen i helgen (0 = lukket, 100 = åpen)."
+        }
+      },
+      "presence": {
+        "title": "Tilstedeværelsesinnstillinger",
+        "description": "Valgfritt. Hvis ingen er valgt, antar SmartShading alltid at noen er til stede, og utløser aldri lukking på grunn av fravær.",
+        "data": {
+          "presence_entity_ids": "Tilstedeværelsesentiteter",
+          "absence_delay_min": "Fraværsforsinkelse",
+          "absence_position": "Fraværsposisjon"
+        },
+        "data_description": {
+          "absence_position": "Solskjermingens posisjon mens sonen er ubebodd, med mindre en sterkere beskyttelsesbeslutning gjelder (0 = helt lukket, 100 = helt åpen). Gjelder alle vinduer i denne sonen."
+        }
+      },
+      "comfort": {
+        "title": "Komfortinnstillinger",
+        "description": "Konfigurer beskyttelsesfunksjonene via solskjerming. Innetemperatursensorer er valgfrie.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Innetemperatursensorer (valgfritt)",
+          "heat_protection_enabled": "Aktiver varmebeskyttelse",
+          "glare_protection_enabled": "Aktiver blendingsbeskyttelse",
+          "solar_gain_enabled": "Aktiver solinnstråling (vintersol)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "En eller flere innesensorer. Når flere sensorer er konfigurert, brukes gjennomsnittet av alle gyldige avlesninger.",
+          "heat_protection_enabled": "Forhindrer overoppheting ved å skjerme proaktivt basert på solposisjon, vær og temperaturer.",
+          "glare_protection_enabled": "Reduserer direkte sollys når solen treffer vinduet.",
+          "solar_gain_enabled": "Holder solskjermingen mer åpen i kjølig vær for å støtte passiv oppvarming. Varmebeskyttelse har prioritet."
+        }
+      },
+      "behavior": {
+        "title": "Grunnleggende solskjermingsatferd",
+        "description": "Grunnleggende målposisjoner for solskjermingen per solskjermingsintensitet. SmartShading bruker disse verdiene som utgangspunkt og kan tilpasse dem per vindu når det finnes nok læringsdata.",
+        "data": {
+          "light_shade_position": "Posisjon for lett skjerming",
+          "normal_shade_position": "Posisjon for normal skjerming",
+          "strong_shade_position": "Posisjon for kraftig skjerming"
+        }
+      },
+      "add_window": {
+        "title": "Legg til et vindu",
+        "description": "Legg til enda et vindu i denne sonen. SmartShading arbeider med en presis asimut: kompassretningen er bare en praktisk snarvei.",
+        "data": {
+          "window_name": "Vindunavn",
+          "floor_level": "Etasje (0 = første etasje)",
+          "compass_direction": "Orientering",
+          "custom_azimuth": "Tilpasset asimut (0-359°, brukes bare hvis Orientering er satt til Tilpasset)",
+          "absence_position": "Fraværsposisjon (overstyrer sonens standard)",
+          "window_behavior_mode": "Automatisk solskjermingsmodus"
+        },
+        "data_description": {
+          "absence_position": "La stå tom for å arve sonens standard fraværsposisjon. Angi en verdi for å overstyre den bare for dette spesifikke vinduet.",
+          "window_behavior_mode": "Helautomatisk: sol, komfort, fravær og tidsplan aktive. Bare fravær: bare fraværsstyring. Automatisering deaktivert: ingen automatisk solskjerming. Sikkerhetsbeskyttelser (storm/vind) forblir alltid aktive."
+        }
+      },
+      "add_window_cover_group": {
+        "title": "Solskjerminger for dette vinduet",
+        "description": "Velg solskjermingsentiteten(e) som skjermer vinduet \"{window_name}\". Legg bare til solskjerminger som dekker nøyaktig denne vindusflaten. For separate vinduer legger du til separate vinduer.",
+        "data": {
+          "cover_entities": "Solskjerminger for dette vinduet",
+          "cover_hardware_type": "Solskjermingens maskinvaretype"
+        }
+      },
+      "add_window_loop": {
+        "title": "Legge til enda et vindu?",
+        "description": "{window_count} nytt/nye vindu(er) lagt til i denne sonen. Vil du legge til enda et vindu?",
+        "data": {
+          "add_another_window": "Legg til enda et vindu"
+        }
+      },
+      "edit_window": {
+        "title": "Rediger vindu",
+        "description": "Velg vinduet som skal redigeres.",
+        "data": {
+          "window_id": "Vindu"
+        }
+      },
+      "edit_window_detail": {
+        "title": "Rediger vindu: {window_name}",
+        "description": "Oppdater innstillingene for vinduet \"{window_name}\". Endringer i solskjerminger trer i kraft etter lagring.",
+        "data": {
+          "window_name": "Vindunavn",
+          "floor_level": "Etasje (0 = første etasje)",
+          "compass_direction": "Orientering",
+          "custom_azimuth": "Tilpasset asimut (0-359°, brukes bare hvis Orientering er satt til Tilpasset)",
+          "cover_entities": "Solskjerminger for dette vinduet",
+          "cover_hardware_type": "Solskjermingens maskinvaretype",
+          "absence_position": "Fraværsposisjon (overstyrer sonens standard)",
+          "window_behavior_mode": "Automatisk solskjermingsmodus",
+          "light_shade_position": "Posisjon for lett skjerming (overstyrer sonens standard)",
+          "normal_shade_position": "Posisjon for normal skjerming (overstyrer sonens standard)",
+          "strong_shade_position": "Posisjon for kraftig skjerming (overstyrer sonens standard)",
+          "manual_sun_sector_enabled": "Aktiver manuell overstyring av solsektoren",
+          "manual_sun_sector_start_deg": "Solsektorens startasimut (°)",
+          "manual_sun_sector_end_deg": "Solsektorens sluttasimut (°)",
+          "obstruction_1_enabled": "Hindringssone 1 aktiv",
+          "obstruction_1_azimuth_start_deg": "Sone 1 startasimut (°)",
+          "obstruction_1_azimuth_end_deg": "Sone 1 sluttasimut (°)",
+          "obstruction_1_block_from_elevation_deg": "Sone 1 blokkert fra høyde (°)",
+          "obstruction_1_block_until_elevation_deg": "Sone 1 blokkert til høyde (°)",
+          "obstruction_2_enabled": "Hindringssone 2 aktiv",
+          "obstruction_2_azimuth_start_deg": "Sone 2 startasimut (°)",
+          "obstruction_2_azimuth_end_deg": "Sone 2 sluttasimut (°)",
+          "obstruction_2_block_from_elevation_deg": "Sone 2 blokkert fra høyde (°)",
+          "obstruction_2_block_until_elevation_deg": "Sone 2 blokkert til høyde (°)",
+          "obstruction_3_enabled": "Hindringssone 3 aktiv",
+          "obstruction_3_azimuth_start_deg": "Sone 3 startasimut (°)",
+          "obstruction_3_azimuth_end_deg": "Sone 3 sluttasimut (°)",
+          "obstruction_3_block_from_elevation_deg": "Sone 3 blokkert fra høyde (°)",
+          "obstruction_3_block_until_elevation_deg": "Sone 3 blokkert til høyde (°)"
+        },
+        "data_description": {
+          "absence_position": "La stå tom for å arve sonens standard fraværsposisjon. Angi en verdi for å overstyre den bare for dette vinduet.",
+          "window_behavior_mode": "Helautomatisk: sol, komfort, fravær og tidsplan aktive. Bare fravær: bare fraværsstyring. Automatisering deaktivert: ingen automatisk solskjerming. Sikkerhetsbeskyttelser (storm/vind) forblir alltid aktive.",
+          "light_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for lett skjerming bare for dette vinduet.",
+          "normal_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for normal skjerming bare for dette vinduet.",
+          "strong_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for kraftig skjerming bare for dette vinduet.",
+          "manual_sun_sector_enabled": "Aktiver for å erstatte den automatiske, asimutbaserte solsektoren med et manuelt intervall. Start- og sluttasimut definerer når solen anses å treffe dette vinduet. Støtter overgang forbi nord (f.eks. fra 330° til 30°).",
+          "obstruction_1_enabled": "Aktiver for å markere et asimutintervall der en fysisk hindring (tre, bygning, takutstikk) blokkerer direkte sol. La høydefeltene stå tomme for å blokkere ved enhver solhøyde innenfor asimutintervallet.",
+          "obstruction_1_block_from_elevation_deg": "Valgfritt. Hindringen blokkerer bare når solhøyden er lik eller over denne verdien. Eksempel: 45° blokkerer et takutstikk som bare gir skygge ved bratte solvinkler. La stå tom for ingen nedre grense.",
+          "obstruction_1_block_until_elevation_deg": "Valgfritt. Hindringen blokkerer bare når solhøyden er lik eller under denne verdien. Eksempel: 18° blokkerer et fjell eller en nabobygning som bare påvirker ved lav sol. La stå tom for ingen øvre grense.",
+          "obstruction_2_enabled": "Andre valgfrie hindringssone for dette vinduet.",
+          "obstruction_2_block_from_elevation_deg": "Valgfri nedre høydegrense for sone 2 (se beskrivelsen av sone 1).",
+          "obstruction_2_block_until_elevation_deg": "Valgfri øvre høydegrense for sone 2 (se beskrivelsen av sone 1).",
+          "obstruction_3_enabled": "Tredje valgfrie hindringssone for dette vinduet.",
+          "obstruction_3_block_from_elevation_deg": "Valgfri nedre høydegrense for sone 3 (se beskrivelsen av sone 1).",
+          "obstruction_3_block_until_elevation_deg": "Valgfri øvre høydegrense for sone 3 (se beskrivelsen av sone 1)."
+        }
+      },
+      "remove_window": {
+        "title": "Fjern vindu",
+        "description": "Velg vinduet som skal fjernes. Dette fjerner permanent vinduet og dets solskjermingstilordninger fra denne sonen. Selve solskjermingsentitetene slettes ikke.",
+        "data": {
+          "window_id": "Vindu som skal fjernes"
+        }
+      },
+      "remove_window_confirm": {
+        "title": "Bekreft fjerning",
+        "description": "Fjerne vinduet \"{window_name}\"? Dette kan ikke angres.",
+        "data": {
+          "remove_confirmed": "Ja, fjern dette vinduet"
+        }
+      }
+    },
+    "error": {
+      "cannot_remove_last_window": "Kan ikke fjerne det siste vinduet. En sone må ha minst ett vindu.",
+      "obstruction_elevation_range_invalid": "\"Blokkert fra høyde\" må ikke være større enn \"Blokkert til høyde\"."
+    },
+    "abort": {
+      "no_options_for_system_entry": "SmartShading-systemoppføringen har ingen konfigurerbare alternativer."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartShading",
+        "description": "Konfigurer SmartShading. Du kan legge til vinduer på de neste skjermene.",
+        "data": {
+          "zone_name": "Sonenavn"
+        }
+      },
+      "weather": {
+        "title": "Vær- og solinndata (valgfritt)",
+        "description": "Alt er valgfritt. En værentitet (f.eks. DWD, yr.no) gir automatisk forhold, skydekke og vind. Dedikerte sensorer overstyrer den for mer presise lokale avlesninger. Solstråling krever en dedikert sensor. Du kan hoppe over dette trinnet og legge til inndata senere.",
+        "data": {
+          "weather_entity_id": "Værentitet",
+          "solar_radiation_sensor_id": "Solstrålingssensor (W/m²)",
+          "outdoor_temperature_sensor_id": "Utetemperatursensor",
+          "cloud_cover_sensor_id": "Skydekkesensor (0–100 %)",
+          "wind_speed_sensor_id": "Vindhastighetssensor (m/s) — bruk vindkast for markiser/screens hvis tilgjengelig"
+        }
+      },
+      "lifecycle": {
+        "title": "Tidsplaninnstillinger",
+        "description": "Velg hvordan SmartShading oppdager natt og morgen. \"Begge\" utløses av det første vilkåret som oppfylles: tid eller solhøyde.",
+        "data": {
+          "night_trigger": "Nattutløser",
+          "morning_trigger": "Morgenutløser",
+          "schedule_mode": "Tidsplanmodus"
+        },
+        "data_description": {
+          "schedule_mode": "\"Likt hver dag\" bruker én tidsplan for hele uken. \"Hverdag / Helg\" lar deg angi ulike tider og posisjoner for man–fre og lør–søn."
+        }
+      },
+      "lifecycle_detail": {
+        "title": "Tidsplandetaljer",
+        "description": "Angi tiden eller solhøyden for hver utløser. Bare feltene som er relevante for den valgte utløseren, vises.",
+        "data": {
+          "night_fixed_time": "Nattid",
+          "night_elevation_preset": "Natt: solposisjon",
+          "night_sun_elevation": "Tilpasset natthøyde (°) — brukes bare når Tilpasset er valgt",
+          "morning_fixed_time": "Morgentid",
+          "morning_elevation_preset": "Morgen: solposisjon",
+          "morning_sun_elevation": "Tilpasset morgenhøyde (°) — brukes bare når Tilpasset er valgt",
+          "night_position": "Nattposisjon",
+          "morning_position": "Morgenposisjon",
+          "weekday_night_fixed_time": "Nattid på hverdager (man–fre)",
+          "weekday_night_position": "Nattposisjon på hverdager (man–fre)",
+          "weekday_morning_fixed_time": "Morgentid på hverdager (man–fre)",
+          "weekday_morning_position": "Morgenposisjon på hverdager (man–fre)",
+          "weekend_night_fixed_time": "Nattid i helgen (lør–søn)",
+          "weekend_night_position": "Nattposisjon i helgen (lør–søn)",
+          "weekend_morning_fixed_time": "Morgentid i helgen (lør–søn)",
+          "weekend_morning_position": "Morgenposisjon i helgen (lør–søn)"
+        },
+        "data_description": {
+          "night_position": "Solskjermingens posisjon i nattfasen (0 = lukket, 100 = åpen).",
+          "morning_position": "Solskjermingens posisjon ved starten av morgenfasen (0 = lukket, 100 = åpen).",
+          "weekday_night_position": "Solskjermingens posisjon i nattfasen på hverdager (0 = lukket, 100 = åpen).",
+          "weekday_morning_position": "Solskjermingens posisjon ved starten av morgenfasen på hverdager (0 = lukket, 100 = åpen).",
+          "weekend_night_position": "Solskjermingens posisjon i nattfasen i helgen (0 = lukket, 100 = åpen).",
+          "weekend_morning_position": "Solskjermingens posisjon ved starten av morgenfasen i helgen (0 = lukket, 100 = åpen)."
+        }
+      },
+      "presence": {
+        "title": "Tilstedeværelsesinnstillinger",
+        "description": "Valgfritt. Hvis ingen er valgt, antar SmartShading alltid at noen er til stede, og utløser aldri lukking på grunn av fravær.",
+        "data": {
+          "presence_entity_ids": "Tilstedeværelsesentiteter",
+          "absence_delay_min": "Fraværsforsinkelse",
+          "absence_position": "Fraværsposisjon"
+        },
+        "data_description": {
+          "absence_position": "Solskjermingens posisjon mens sonen er ubebodd, med mindre en sterkere beskyttelsesbeslutning gjelder (0 = helt lukket, 100 = helt åpen). Gjelder alle vinduer i denne sonen."
+        }
+      },
+      "window": {
+        "title": "Legg til et vindu",
+        "description": "Konfigurer ett vindu. SmartShading arbeider med en presis asimut: kompassretningen er bare en praktisk snarvei.",
+        "data": {
+          "window_name": "Vindunavn",
+          "floor_level": "Etasje (0 = første etasje)",
+          "compass_direction": "Orientering",
+          "custom_azimuth": "Tilpasset asimut (0-359°, brukes bare hvis Orientering er satt til Tilpasset)",
+          "absence_position": "Fraværsposisjon (overstyrer sonens standard)",
+          "window_behavior_mode": "Automatisk solskjermingsmodus"
+        },
+        "data_description": {
+          "absence_position": "La stå tom for å arve sonens standard fraværsposisjon. Angi en verdi for å overstyre den bare for dette spesifikke vinduet.",
+          "window_behavior_mode": "Helautomatisk: sol, komfort, fravær og tidsplan aktive. Bare fravær: bare fraværsstyring. Automatisering deaktivert: ingen automatisk solskjerming. Sikkerhetsbeskyttelser (storm/vind) forblir alltid aktive."
+        }
+      },
+      "cover_group": {
+        "title": "Solskjerminger for dette vinduet",
+        "description": "Velg solskjermingsentiteten(e) som skjermer vinduet \"{window_name}\". Legg bare til solskjerminger som dekker nøyaktig denne vindusflaten. For separate vinduer legger du til separate vinduer.",
+        "data": {
+          "cover_entities": "Solskjerminger for dette vinduet",
+          "cover_hardware_type": "Solskjermingens maskinvaretype"
+        }
+      },
+      "add_another_window": {
+        "title": "Legge til enda et vindu?",
+        "description": "{window_count} vindu(er) konfigurert så langt.",
+        "data": {
+          "add_another_window": "Legg til enda et vindu"
+        }
+      },
+      "comfort": {
+        "title": "Komfortinnstillinger",
+        "description": "Konfigurer beskyttelsesfunksjonene via solskjerming. Innetemperatursensorer er valgfrie.",
+        "data": {
+          "indoor_temperature_sensor_ids": "Innetemperatursensorer (valgfritt)",
+          "heat_protection_enabled": "Aktiver varmebeskyttelse",
+          "glare_protection_enabled": "Aktiver blendingsbeskyttelse",
+          "solar_gain_enabled": "Aktiver solinnstråling (vintersol)"
+        },
+        "data_description": {
+          "indoor_temperature_sensor_ids": "En eller flere innesensorer. Når flere sensorer er konfigurert, brukes gjennomsnittet av alle gyldige avlesninger.",
+          "heat_protection_enabled": "Forhindrer overoppheting ved å skjerme proaktivt basert på solposisjon, vær og temperaturer.",
+          "glare_protection_enabled": "Reduserer direkte sollys når solen treffer vinduet.",
+          "solar_gain_enabled": "Holder solskjermingen mer åpen i kjølig vær for å støtte passiv oppvarming. Varmebeskyttelse har prioritet."
+        }
+      }
+    },
+    "error": {
+      "invalid_custom_azimuth": "Angi en tilpasset asimut mellom 0 og 359 grader, eller velg en kompassretning.",
+      "no_covers_selected": "Velg minst én solskjermingsentitet for dette vinduet.",
+      "empty_zone_name": "Sonenavn er påkrevd.",
+      "obstruction_elevation_range_invalid": "\"Blokkert fra høyde\" må ikke være større enn \"Blokkert til høyde\"."
+    },
+    "abort": {
+      "single_instance_allowed": "SmartShading er allerede konfigurert.",
+      "system_already_exists": "SmartShading-systemoppføringen finnes allerede."
+    }
+  },
+  "selector": {
+    "compass_direction": {
+      "options": {
+        "north": "Nord (0°)",
+        "northeast": "Nordøst (45°)",
+        "east": "Øst (90°)",
+        "southeast": "Sørøst (135°)",
+        "south": "Sør (180°)",
+        "southwest": "Sørvest (225°)",
+        "west": "Vest (270°)",
+        "northwest": "Nordvest (315°)",
+        "custom": "Tilpasset asimut"
+      }
+    },
+    "night_elevation_preset": {
+      "options": {
+        "sunset": "Ved solnedgang (0°)",
+        "dusk": "I skumringen — borgerlig skumring (-6°)",
+        "dark": "Når det er mørkt — nautisk skumring (-12°)",
+        "custom": "Tilpasset"
+      }
+    },
+    "morning_elevation_preset": {
+      "options": {
+        "sunrise": "Ved soloppgang (0°)",
+        "dawn": "Ved daggry — borgerlig skumring (-6°)",
+        "bright": "Når det lysner — nautisk skumring (-12°)",
+        "custom": "Tilpasset"
+      }
+    },
+    "lifecycle_trigger": {
+      "options": {
+        "fixed_time": "Fast tid",
+        "sun_elevation": "Solhøyde",
+        "both": "Begge",
+        "disabled": "Deaktivert"
+      }
+    },
+    "lifecycle_schedule_mode": {
+      "options": {
+        "same_every_day": "Likt hver dag",
+        "weekday_weekend": "Hverdag / Helg"
+      }
+    },
+    "window_behavior_mode": {
+      "options": {
+        "fully_automatic": "Helautomatisk",
+        "absence_only": "Bare fravær",
+        "disabled_automatic": "Automatisering deaktivert"
+      }
+    },
+    "cover_hardware_type": {
+      "options": {
+        "roller_shutter": "Rullegardin",
+        "venetian_blind": "Persienne",
+        "exterior_screen": "Screen",
+        "awning": "Markise",
+        "generic": "Annen solskjerming"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "export_support_data": {
+        "name": "Opprett støtteeksport"
+      },
+      "export_research_data": {
+        "name": "Opprett forskningseksport"
+      }
+    },
+    "switch": {
+      "observation_mode": {
+        "name": "Observasjonsmodus",
+        "state": {
+          "on": "Observerer",
+          "off": "Satt på pause"
+        }
+      },
+      "active_control": {
+        "name": "Aktiv styring",
+        "state": {
+          "on": "Aktiv",
+          "off": "Inaktiv"
+        }
+      },
+      "debug_logging": {
+        "name": "Feilsøkingslogg"
+      }
+    },
+    "sensor": {
+      "state": {
+        "name": "Solskjermingsstatus",
+        "state": {
+          "storm_safe": "Stormsikker",
+          "wind_safe": "Vindsikker",
+          "manual_override": "Manuell overstyring",
+          "night_closed": "Natt – lukket",
+          "absence_closed": "Fravær – lukket",
+          "strong_shade": "Kraftig skjerming",
+          "normal_shade": "Normal skjerming",
+          "light_shade": "Lett skjerming",
+          "open": "Åpen"
+        }
+      },
+      "state_indexed": {
+        "name": "{index} Solskjermingsstatus",
+        "state": {
+          "storm_safe": "Stormsikker",
+          "wind_safe": "Vindsikker",
+          "manual_override": "Manuell overstyring",
+          "night_closed": "Natt – lukket",
+          "absence_closed": "Fravær – lukket",
+          "strong_shade": "Kraftig skjerming",
+          "normal_shade": "Normal skjerming",
+          "light_shade": "Lett skjerming",
+          "open": "Åpen"
+        }
+      },
+      "exposure": {
+        "name": "Eksponering"
+      },
+      "exposure_indexed": {
+        "name": "{index} Eksponering"
+      },
+      "cover_position": {
+        "name": "Solskjermingsposisjon"
+      },
+      "cover_position_indexed": {
+        "name": "{index} Solskjermingsposisjon"
+      },
+      "recommendation": {
+        "name": "Anbefaling"
+      },
+      "recommendation_indexed": {
+        "name": "{index} Anbefaling"
+      },
+      "zone_summary": {
+        "name": "Soneoversikt",
+        "state": {
+          "safety": "Sikkerhetsmodus",
+          "override": "Manuell overstyring",
+          "automatic": "Automatisk",
+          "recommendation_only": "Bare anbefaling",
+          "disabled": "Deaktivert"
+        }
+      },
+      "learning_progress": {
+        "name": "Læringsfremdrift"
+      },
+      "shading_result": {
+        "name": "Solskjermingsresultat",
+        "state": {
+          "excellent": "Utmerket",
+          "good": "God",
+          "acceptable": "Akseptabel",
+          "poor": "Dårlig",
+          "unknown": "Ukjent"
+        }
+      }
+    },
+    "binary_sensor": {
+      "window_in_solar_sector": {
+        "name": "Solsektor",
+        "state": {
+          "on": "I solsektor",
+          "off": "Ikke i solsektor"
+        }
+      },
+      "window_in_solar_sector_indexed": {
+        "name": "{index} Solsektor",
+        "state": {
+          "on": "I solsektor",
+          "off": "Ikke i solsektor"
+        }
+      },
+      "override_active": {
+        "name": "Overstyring aktiv",
+        "state": {
+          "on": "Overstyring aktiv",
+          "off": "Normal styring"
+        }
+      },
+      "override_active_indexed": {
+        "name": "{index} Overstyring aktiv",
+        "state": {
+          "on": "Overstyring aktiv",
+          "off": "Normal styring"
+        }
+      }
+    }
+  }
+}

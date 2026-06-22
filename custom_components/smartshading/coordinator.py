@@ -253,7 +253,7 @@ class _WindowComputeState:
     exec_target_internal: int | None
     exec_filter_result: CommandFilterResult | None
     tier_decided_by: str | None
-    # pre-tick override state — matches what CommandFilter saw this cycle.
+    # post-tick override state — matches what CommandFilter uses this cycle.
     is_override_active: bool
     cover_available: bool | None
     # Daytime Minimum Open Position (Step 9G10f-b): clamp tracking.
@@ -1699,16 +1699,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     if cover_position.assumed_position is not None
                     else None
                 )
-                # For the own-command guard, prefer the last position SmartShading
+                # For the own-command guard, use the last position SmartShading
                 # actually commanded (never overwritten by passive observation).
-                # Fall back to assumed_internal (observe-based) when SmartShading
-                # has never dispatched to this cover — prevents a false override on
-                # the very first shade decision before any command is sent.
+                # Pass None when SmartShading has never dispatched to this cover so
+                # tick()'s own-command guard is skipped — there is no known commanded
+                # position to guard against, and suppressing detection here would
+                # prevent the cover from ever being recognised as manually overridden
+                # (bug: cover already at night_pos before first SS command).
                 _cover_group = self.cover_groups.get(window.cover_group_id)
                 _cov_id = _cover_group.cover_ids[0] if _cover_group and _cover_group.cover_ids else None
                 _assumed_st = self.assumed_state_manager.get_state(_cov_id, now) if _cov_id else None
                 _last_commanded = _assumed_st.last_commanded_position if _assumed_st is not None else None
-                _override_assumed = _last_commanded if _last_commanded is not None else assumed_internal
+                _override_assumed = _last_commanded  # None → guard disabled in tick()
                 self._override_detector.tick(
                     window_id=window_id,
                     observed_position=observed_internal,
@@ -2060,7 +2062,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     current_position_internal=_exec_snapshot.assumed_position_internal,
                     execution_mode=_exec_mode,
                     is_safety=_is_safety,
-                    is_manual_override=active_override is not None,
+                    is_manual_override=current_override is not None,
                     is_cover_available=_exec_snapshot.available,
                     state_guard_allowed=_guard_action_allowed,
                     execution_capability=ExecutionCapability(),
@@ -2201,7 +2203,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 )
 
             # Store per-window state for harmonization + dispatch pass.
-            # is_override_active uses active_override (pre-tick), matching CommandFilter.
+            # is_override_active uses current_override (post-tick), consistent with
+            # CommandFilter which also uses the post-tick state so that a freshly
+            # detected override is honoured in the same cycle it was found.
             _window_states[window_id] = _WindowComputeState(
                 window=window,
                 zone=zone,
@@ -2216,7 +2220,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 exec_target_internal=_exec_target_internal,
                 exec_filter_result=_exec_filter_result,
                 tier_decided_by=tier_decision.decided_by,
-                is_override_active=active_override is not None,
+                is_override_active=current_override is not None,
                 cover_available=(
                     _exec_snapshot.available if _exec_snapshot is not None else None
                 ),

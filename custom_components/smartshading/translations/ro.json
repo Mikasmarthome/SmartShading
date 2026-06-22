@@ -110,7 +110,7 @@
         "description": "Adăugați încă o fereastră în această zonă. SmartShading funcționează cu un azimut precis: direcția busolei este doar o scurtătură comodă.",
         "data": {
           "window_name": "Numele ferestrei",
-          "floor_level": "Etaj (0 = parter)",
+          "floor_level": "Etaj (-1 = subsol, 0 = parter, 1 = etaj 1, …)",
           "compass_direction": "Orientare",
           "custom_azimuth": "Azimut personalizat (0-359°, folosit doar dacă Orientarea este setată pe Personalizat)",
           "absence_position": "Poziție de absență (suprascrie valoarea implicită a zonei)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră specifică.",
-          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Absență și program: control prin absență, program de noapte și dimineață active; fără umbrire solară, termică sau anti-strălucire. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active."
+          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Absență și program: control prin absență, program de noapte și dimineață active; fără umbrire solară, termică sau anti-strălucire. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active.",
+          "floor_level": "Folosit pentru a determina elevația solară minimă pentru expunere directă. −1 (subsol) → 20°, 0 (parter) → 15°, 1 (etaj 1) → 10°, 2 (etaj 2) → 5°, 3 și mai sus → 0°. Pentru ferestre în puțuri de lumină sau cu obstacole mari, utilizați zonele de obstrucție."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Actualizați setările ferestrei „{window_name}”. Modificările umbrarelor intră în vigoare după salvare.",
         "data": {
           "window_name": "Numele ferestrei",
-          "floor_level": "Etaj (0 = parter)",
+          "floor_level": "Etaj (-1 = subsol, 0 = parter, 1 = etaj 1, …)",
           "compass_direction": "Orientare",
           "custom_azimuth": "Azimut personalizat (0-359°, folosit doar dacă Orientarea este setată pe Personalizat)",
           "cover_entities": "Umbrare pentru această fereastră",
@@ -183,7 +184,7 @@
           "light_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire ușoară doar pentru această fereastră.",
           "normal_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire normală doar pentru această fereastră.",
           "strong_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire puternică doar pentru această fereastră.",
-          "manual_sun_sector_enabled": "Activați pentru a înlocui sectorul solar automat bazat pe azimut cu un interval manual. Azimutul de start și de final definesc când se consideră că soarele lovește această fereastră. Acceptă trecerea peste nord (de ex. de la 330° la 30°).",
+          "manual_sun_sector_enabled": "Activați pentru a înlocui sectorul solar automat cu un interval manual. Când este activat fără valori setate, azimuturile de start și sfârșit sunt pre-completate din orientarea și toleranța ferestrei. Acceptă înfășurare (ex.: 330° la 30° trece prin nord).",
           "obstruction_1_enabled": "Activați pentru a marca un interval de azimut în care o obstrucție fizică (copac, clădire, streașină) blochează soarele direct. Lăsați câmpurile de înălțime goale pentru a bloca la orice înălțime a soarelui în intervalul de azimut.",
           "obstruction_1_block_from_elevation_deg": "Opțional. Obstrucția blochează doar când înălțimea soarelui este egală sau mai mare decât această valoare. Exemplu: 45° blochează o streașină care umbrește doar la unghiuri abrupte ale soarelui. Lăsați gol pentru nicio limită inferioară.",
           "obstruction_1_block_until_elevation_deg": "Opțional. Obstrucția blochează doar când înălțimea soarelui este egală sau mai mică decât această valoare. Exemplu: 18° blochează un munte sau o clădire vecină care afectează doar soarele jos. Lăsați gol pentru nicio limită superioară.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Limită superioară de înălțime opțională pentru zona 2 (vezi descrierea zonei 1).",
           "obstruction_3_enabled": "A treia zonă de obstrucție opțională pentru această fereastră.",
           "obstruction_3_block_from_elevation_deg": "Limită inferioară de înălțime opțională pentru zona 3 (vezi descrierea zonei 1).",
-          "obstruction_3_block_until_elevation_deg": "Limită superioară de înălțime opțională pentru zona 3 (vezi descrierea zonei 1)."
+          "obstruction_3_block_until_elevation_deg": "Limită superioară de înălțime opțională pentru zona 3 (vezi descrierea zonei 1).",
+          "floor_level": "Folosit pentru a determina elevația solară minimă pentru expunere directă. −1 (subsol) → 20°, 0 (parter) → 15°, 1 (etaj 1) → 10°, 2 (etaj 2) → 5°, 3 și mai sus → 0°. Pentru ferestre în puțuri de lumină sau cu obstacole mari, utilizați zonele de obstrucție."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Configurați o fereastră. SmartShading funcționează cu un azimut precis: direcția busolei este doar o scurtătură comodă.",
         "data": {
           "window_name": "Numele ferestrei",
-          "floor_level": "Etaj (0 = parter)",
+          "floor_level": "Etaj (-1 = subsol, 0 = parter, 1 = etaj 1, …)",
           "compass_direction": "Orientare",
           "custom_azimuth": "Azimut personalizat (0-359°, folosit doar dacă Orientarea este setată pe Personalizat)",
           "absence_position": "Poziție de absență (suprascrie valoarea implicită a zonei)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră specifică.",
-          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Absență și program: control prin absență, program de noapte și dimineață active; fără umbrire solară, termică sau anti-strălucire. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active."
+          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Absență și program: control prin absență, program de noapte și dimineață active; fără umbrire solară, termică sau anti-strălucire. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active.",
+          "floor_level": "Folosit pentru a determina elevația solară minimă pentru expunere directă. −1 (subsol) → 20°, 0 (parter) → 15°, 1 (etaj 1) → 10°, 2 (etaj 2) → 5°, 3 și mai sus → 0°. Pentru ferestre în puțuri de lumină sau cu obstacole mari, utilizați zonele de obstrucție."
         }
       },
       "cover_group": {

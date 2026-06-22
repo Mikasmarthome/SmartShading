@@ -110,7 +110,7 @@
         "description": "Lisää toinen ikkuna tähän vyöhykkeeseen. SmartShading toimii tarkalla atsimuutilla: kompassisuunta on vain kätevä pikavalinta.",
         "data": {
           "window_name": "Ikkunan nimi",
-          "floor_level": "Kerros (0 = pohjakerros)",
+          "floor_level": "Kerros (-1 = kellarikerros, 0 = maantasokerros, 1 = 1. kerros, …)",
           "compass_direction": "Suuntaus",
           "custom_azimuth": "Mukautettu atsimuutti (0-359°, käytetään vain, jos Suuntaus on asetettu Mukautettu-tilaan)",
           "absence_position": "Poissaolosijainti (ohittaa vyöhykkeen oletuksen)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle tietylle ikkunalle.",
-          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Poissaolo ja aikataulu: poissaolo-ohjaus, yö- ja aamuaikataulu aktiivisia; ei aurinko-, lämpö- tai häikäisysuojavarjostusta. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina."
+          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Poissaolo ja aikataulu: poissaolo-ohjaus, yö- ja aamuaikataulu aktiivisia; ei aurinko-, lämpö- tai häikäisysuojavarjostusta. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina.",
+          "floor_level": "Käytetään johtamaan minimaalinen auringon korkeus suoraa altistusta varten. −1 (kellari) → 20°, 0 (maantasokerros) → 15°, 1 (1. kerros) → 10°, 2 (2. kerros) → 5°, 3 ja enemmän → 0°. Valokaivossa sijaitseville ikkunoille tai voimakkaiden esteiden kanssa käytä estevyöhykkeitä."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Päivitä ikkunan ”{window_name}” asetukset. Varjostinten muutokset tulevat voimaan tallennuksen jälkeen.",
         "data": {
           "window_name": "Ikkunan nimi",
-          "floor_level": "Kerros (0 = pohjakerros)",
+          "floor_level": "Kerros (-1 = kellarikerros, 0 = maantasokerros, 1 = 1. kerros, …)",
           "compass_direction": "Suuntaus",
           "custom_azimuth": "Mukautettu atsimuutti (0-359°, käytetään vain, jos Suuntaus on asetettu Mukautettu-tilaan)",
           "cover_entities": "Tämän ikkunan varjostimet",
@@ -183,7 +184,7 @@
           "light_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi kevyen varjostuksen tavoitesijainnin vain tälle ikkunalle.",
           "normal_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi normaalin varjostuksen tavoitesijainnin vain tälle ikkunalle.",
           "strong_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi voimakkaan varjostuksen tavoitesijainnin vain tälle ikkunalle.",
-          "manual_sun_sector_enabled": "Ota käyttöön korvataksesi automaattisen, atsimuuttiin perustuvan aurinkosektorin manuaalisella alueella. Aloitus- ja lopetusatsimuutit määrittävät, milloin auringon katsotaan osuvan tähän ikkunaan. Tukee pohjoisen ylitystä (esim. 330°:sta 30°:een).",
+          "manual_sun_sector_enabled": "Ota käyttöön automaattisen atsimuuttisektorin korvaaminen manuaalisella alueella. Kun aktivoidaan ilman arvoja, alku- ja loppuatsimuutti esitäytetään ikkunan suunnan ja toleranssin mukaan. Tukee pyöristystä (esim. 330° – 30° ylittää pohjoisen).",
           "obstruction_1_enabled": "Ota käyttöön merkitäksesi atsimuuttialueen, jossa fyysinen este (puu, rakennus, katon räystäs) estää suoran auringon. Jätä korkeuskentät tyhjiksi estääksesi jokaisella auringon korkeudella atsimuuttialueella.",
           "obstruction_1_block_from_elevation_deg": "Valinnainen. Este estää vain, kun auringon korkeus on yhtä suuri kuin tämä arvo tai suurempi. Esimerkki: 45° estää katon räystään, joka varjostaa vain jyrkillä aurinkokulmilla. Jätä tyhjäksi, jos ei alarajaa.",
           "obstruction_1_block_until_elevation_deg": "Valinnainen. Este estää vain, kun auringon korkeus on yhtä suuri kuin tämä arvo tai pienempi. Esimerkki: 18° estää vuoren tai naapurirakennuksen, joka vaikuttaa vain matalalla auringolla. Jätä tyhjäksi, jos ei ylärajaa.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Valinnainen ylempi korkeusraja vyöhykkeelle 2 (katso vyöhykkeen 1 kuvaus).",
           "obstruction_3_enabled": "Kolmas valinnainen estevyöhyke tälle ikkunalle.",
           "obstruction_3_block_from_elevation_deg": "Valinnainen alempi korkeusraja vyöhykkeelle 3 (katso vyöhykkeen 1 kuvaus).",
-          "obstruction_3_block_until_elevation_deg": "Valinnainen ylempi korkeusraja vyöhykkeelle 3 (katso vyöhykkeen 1 kuvaus)."
+          "obstruction_3_block_until_elevation_deg": "Valinnainen ylempi korkeusraja vyöhykkeelle 3 (katso vyöhykkeen 1 kuvaus).",
+          "floor_level": "Käytetään johtamaan minimaalinen auringon korkeus suoraa altistusta varten. −1 (kellari) → 20°, 0 (maantasokerros) → 15°, 1 (1. kerros) → 10°, 2 (2. kerros) → 5°, 3 ja enemmän → 0°. Valokaivossa sijaitseville ikkunoille tai voimakkaiden esteiden kanssa käytä estevyöhykkeitä."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Määritä yksi ikkuna. SmartShading toimii tarkalla atsimuutilla: kompassisuunta on vain kätevä pikavalinta.",
         "data": {
           "window_name": "Ikkunan nimi",
-          "floor_level": "Kerros (0 = pohjakerros)",
+          "floor_level": "Kerros (-1 = kellarikerros, 0 = maantasokerros, 1 = 1. kerros, …)",
           "compass_direction": "Suuntaus",
           "custom_azimuth": "Mukautettu atsimuutti (0-359°, käytetään vain, jos Suuntaus on asetettu Mukautettu-tilaan)",
           "absence_position": "Poissaolosijainti (ohittaa vyöhykkeen oletuksen)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle tietylle ikkunalle.",
-          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Poissaolo ja aikataulu: poissaolo-ohjaus, yö- ja aamuaikataulu aktiivisia; ei aurinko-, lämpö- tai häikäisysuojavarjostusta. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina."
+          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Poissaolo ja aikataulu: poissaolo-ohjaus, yö- ja aamuaikataulu aktiivisia; ei aurinko-, lämpö- tai häikäisysuojavarjostusta. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina.",
+          "floor_level": "Käytetään johtamaan minimaalinen auringon korkeus suoraa altistusta varten. −1 (kellari) → 20°, 0 (maantasokerros) → 15°, 1 (1. kerros) → 10°, 2 (2. kerros) → 5°, 3 ja enemmän → 0°. Valokaivossa sijaitseville ikkunoille tai voimakkaiden esteiden kanssa käytä estevyöhykkeitä."
         }
       },
       "cover_group": {

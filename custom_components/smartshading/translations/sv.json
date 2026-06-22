@@ -110,7 +110,7 @@
         "description": "Lägg till ytterligare ett fönster i den här zonen. SmartShading arbetar med en exakt azimut: kompassriktningen är bara en praktisk genväg.",
         "data": {
           "window_name": "Fönsternamn",
-          "floor_level": "Våning (0 = bottenvåning)",
+          "floor_level": "Våning (-1 = källare, 0 = bottenvåning, 1 = 1 tr, …)",
           "compass_direction": "Orientering",
           "custom_azimuth": "Anpassad azimut (0-359°, används endast om Orientering är inställd på Anpassad)",
           "absence_position": "Frånvaroposition (åsidosätter zonens standard)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Lämna tomt för att ärva zonens standardfrånvaroposition. Ange ett värde för att åsidosätta den endast för det här specifika fönstret.",
-          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Frånvaro och schema: frånvarostyrning, natt- och morgonschema aktiva; ingen sol-, värme- eller bländningsskuggning. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva."
+          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Frånvaro och schema: frånvarostyrning, natt- och morgonschema aktiva; ingen sol-, värme- eller bländningsskuggning. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva.",
+          "floor_level": "Används för att härleda lägsta solelevation för direkt solljus. −1 (källare) → 20°, 0 (bottenvåning) → 15°, 1 (1 tr) → 10°, 2 (2 tr) → 5°, 3 och högre → 0°. För fönster i ljusschakt eller med kraftiga hinder, använd hindringszoner."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Uppdatera inställningarna för fönstret \"{window_name}\". Ändringar av solskydd träder i kraft efter att du sparat.",
         "data": {
           "window_name": "Fönsternamn",
-          "floor_level": "Våning (0 = bottenvåning)",
+          "floor_level": "Våning (-1 = källare, 0 = bottenvåning, 1 = 1 tr, …)",
           "compass_direction": "Orientering",
           "custom_azimuth": "Anpassad azimut (0-359°, används endast om Orientering är inställd på Anpassad)",
           "cover_entities": "Solskydd för det här fönstret",
@@ -183,7 +184,7 @@
           "light_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för lätt skugga endast för det här fönstret.",
           "normal_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för normal skugga endast för det här fönstret.",
           "strong_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för kraftig skugga endast för det här fönstret.",
-          "manual_sun_sector_enabled": "Aktivera för att ersätta den automatiska, azimutbaserade solsektorn med ett manuellt intervall. Start- och slutazimut definierar när solen anses träffa det här fönstret. Stöder övergång förbi norr (t.ex. från 330° till 30°).",
+          "manual_sun_sector_enabled": "Aktivera för att ersätta den automatiska azimut-sektorn med ett manuellt intervall. När det aktiveras utan angivna värden fylls start- och slut-azimut i automatiskt från fönstrets orientering och tolerans. Stöder wrap-around (t.ex. 330° till 30° passerar norr).",
           "obstruction_1_enabled": "Aktivera för att markera ett azimutintervall där ett fysiskt hinder (träd, byggnad, takutsprång) blockerar direkt sol. Lämna höjdfälten tomma för att blockera vid varje solhöjd inom azimutintervallet.",
           "obstruction_1_block_from_elevation_deg": "Valfritt. Hindret blockerar endast när solhöjden är lika med eller över detta värde. Exempel: 45° blockerar ett takutsprång som bara skuggar vid branta solvinklar. Lämna tomt för ingen nedre gräns.",
           "obstruction_1_block_until_elevation_deg": "Valfritt. Hindret blockerar endast när solhöjden är lika med eller under detta värde. Exempel: 18° blockerar ett berg eller en grannbyggnad som bara påverkar vid låg sol. Lämna tomt för ingen övre gräns.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Valfri övre höjdgräns för zon 2 (se beskrivningen av zon 1).",
           "obstruction_3_enabled": "Tredje valfria hinderzonen för det här fönstret.",
           "obstruction_3_block_from_elevation_deg": "Valfri nedre höjdgräns för zon 3 (se beskrivningen av zon 1).",
-          "obstruction_3_block_until_elevation_deg": "Valfri övre höjdgräns för zon 3 (se beskrivningen av zon 1)."
+          "obstruction_3_block_until_elevation_deg": "Valfri övre höjdgräns för zon 3 (se beskrivningen av zon 1).",
+          "floor_level": "Används för att härleda lägsta solelevation för direkt solljus. −1 (källare) → 20°, 0 (bottenvåning) → 15°, 1 (1 tr) → 10°, 2 (2 tr) → 5°, 3 och högre → 0°. För fönster i ljusschakt eller med kraftiga hinder, använd hindringszoner."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Konfigurera ett fönster. SmartShading arbetar med en exakt azimut: kompassriktningen är bara en praktisk genväg.",
         "data": {
           "window_name": "Fönsternamn",
-          "floor_level": "Våning (0 = bottenvåning)",
+          "floor_level": "Våning (-1 = källare, 0 = bottenvåning, 1 = 1 tr, …)",
           "compass_direction": "Orientering",
           "custom_azimuth": "Anpassad azimut (0-359°, används endast om Orientering är inställd på Anpassad)",
           "absence_position": "Frånvaroposition (åsidosätter zonens standard)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Lämna tomt för att ärva zonens standardfrånvaroposition. Ange ett värde för att åsidosätta den endast för det här specifika fönstret.",
-          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Frånvaro och schema: frånvarostyrning, natt- och morgonschema aktiva; ingen sol-, värme- eller bländningsskuggning. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva."
+          "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Frånvaro och schema: frånvarostyrning, natt- och morgonschema aktiva; ingen sol-, värme- eller bländningsskuggning. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva.",
+          "floor_level": "Används för att härleda lägsta solelevation för direkt solljus. −1 (källare) → 20°, 0 (bottenvåning) → 15°, 1 (1 tr) → 10°, 2 (2 tr) → 5°, 3 och högre → 0°. För fönster i ljusschakt eller med kraftiga hinder, använd hindringszoner."
         }
       },
       "cover_group": {

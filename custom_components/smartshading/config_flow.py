@@ -51,7 +51,7 @@ from homeassistant.helpers.selector import (
 
 from .config_entry_data import SmartShadingConfigEntryData, from_storage_dict, to_storage_dict
 from .models.comfort import ComfortConfig
-from .models.config import ShadePositionDefaults
+from .models.config import GlobalDefaults, ShadePositionDefaults
 from .models.cover_group import CoverGroup, CoverHardwareType, CoverSyncMode, cover_hardware_type_from_str
 from .models.lifecycle import LifecycleScheduleMode, MorningTrigger, NightDayLifecycleConfig, NightTrigger
 from .models.window import WindowBehaviorMode, WindowConfig
@@ -650,7 +650,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(CONF_WINDOW_NAME): str,
                 vol.Required(CONF_FLOOR_LEVEL, default=0): NumberSelector(
-                    NumberSelectorConfig(min=0, max=20, step=1, mode=NumberSelectorMode.BOX)
+                    NumberSelectorConfig(min=-1, max=20, step=1, mode=NumberSelectorMode.BOX)
                 ),
                 vol.Required(CONF_COMPASS_DIRECTION, default="south"): SelectSelector(
                     SelectSelectorConfig(
@@ -872,6 +872,12 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         self._add_cover_groups: list[CoverGroup] = []
         # Edit/Remove Window flow state
         self._edit_window_id: str | None = None
+        # Sector prefill state: set when first-activation re-render is triggered.
+        # Three separate fields (not a tuple) so window_id can be checked to prevent
+        # stale prefill from leaking to a different window edit in the same flow session.
+        self._sector_prefill_start: float | None = None
+        self._sector_prefill_end: float | None = None
+        self._sector_prefill_window_id: str | None = None
 
     # -- Init: section menu (zone entries only) --
 
@@ -1382,7 +1388,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             {
                 vol.Required(CONF_WINDOW_NAME): str,
                 vol.Required(CONF_FLOOR_LEVEL, default=0): NumberSelector(
-                    NumberSelectorConfig(min=0, max=20, step=1, mode=NumberSelectorMode.BOX)
+                    NumberSelectorConfig(min=-1, max=20, step=1, mode=NumberSelectorMode.BOX)
                 ),
                 vol.Required(CONF_COMPASS_DIRECTION, default="south"): SelectSelector(
                     SelectSelectorConfig(
@@ -1547,6 +1553,58 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     _sector_start = float(raw_sector_start) if (_sector_enabled and raw_sector_start is not None) else None
                     _sector_end = float(raw_sector_end) if (_sector_enabled and raw_sector_end is not None) else None
 
+                    # Auto-prefill: resolve effective tolerances via the same
+                    # Window → Zone → GlobalDefaults chain used by the coordinator.
+                    # In practice tolerances are not yet configurable through the UI,
+                    # so this always resolves to GlobalDefaults (60°); the zone check
+                    # is included so the logic stays correct if that changes.
+                    def _effective_tol(field: str) -> float:
+                        v = window.get(field)
+                        if v is not None:
+                            return float(v)
+                        zone_dicts = self._config_entry.data.get("zones", [])
+                        window_zone_id = window.get("zone_id")
+                        if window_zone_id:
+                            zone_dict = next(
+                                (z for z in zone_dicts if z["id"] == window_zone_id), None
+                            )
+                            if zone_dict:
+                                v = zone_dict.get(field)
+                                if v is not None:
+                                    return float(v)
+                        return float(getattr(GlobalDefaults(), field))
+
+                    # Clear stale prefill if the user switched to a different window
+                    if (
+                        self._sector_prefill_start is not None
+                        and self._sector_prefill_window_id != window_id
+                    ):
+                        self._sector_prefill_start = None
+                        self._sector_prefill_end = None
+                        self._sector_prefill_window_id = None
+
+                    _sector_both_absent = (
+                        _sector_enabled and raw_sector_start is None and raw_sector_end is None
+                    )
+                    # First activation: sector just enabled, no cached prefill yet
+                    _sector_first_activation = (
+                        _sector_both_absent and self._sector_prefill_start is None
+                    )
+                    # Second submit without values: HA frontend didn't re-send defaults
+                    # → use cached prefill so the flow saves instead of re-rendering
+                    _use_cached_prefill = (
+                        _sector_both_absent
+                        and self._sector_prefill_start is not None
+                        and self._sector_prefill_window_id == window_id
+                    )
+                    if _use_cached_prefill:
+                        _sector_start = self._sector_prefill_start
+                        _sector_end = self._sector_prefill_end
+                    if _sector_enabled and _sector_start is None:
+                        _sector_start = (new_azimuth - _effective_tol("tolerance_start")) % 360.0
+                    if _sector_enabled and _sector_end is None:
+                        _sector_end = (new_azimuth + _effective_tol("tolerance_end")) % 360.0
+
                     # Obstruction zones — build list from up-to-3 zone form fields.
                     # block_from_elevation_deg and block_until_elevation_deg are
                     # independently optional; both None = blocks at every elevation.
@@ -1587,29 +1645,41 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                             break
 
                     if not errors:
-                        for i, w in enumerate(windows):
-                            if w["id"] == window_id:
-                                windows[i] = {
-                                    **w,
-                                    "name": user_input[CONF_WINDOW_NAME],
-                                    "floor_level": int(user_input[CONF_FLOOR_LEVEL]),
-                                    "azimuth": new_azimuth,
-                                    "absence_position": int(raw_abs) if raw_abs is not None else None,
-                                    "behavior_mode": new_behavior_mode,
-                                    "light_shade_position": int(raw_light) if raw_light is not None else None,
-                                    "normal_shade_position": int(raw_normal) if raw_normal is not None else None,
-                                    "strong_shade_position": int(raw_strong) if raw_strong is not None else None,
-                                    "manual_sun_sector_start_deg": _sector_start,
-                                    "manual_sun_sector_end_deg": _sector_end,
-                                    "obstruction_zones": _new_oz_list,
-                                }
-                                break
-                        hw_type = cover_hardware_type_from_str(user_input.get(CONF_COVER_HARDWARE_TYPE))
-                        for j, cg in enumerate(cover_groups):
-                            if cg.get("window_id") == window_id:
-                                cover_groups[j] = {**cg, "cover_ids": new_cover_ids, "hardware_type": hw_type.value}
-                                break
-                        return self._save_and_reload({"windows": windows, "cover_groups": cover_groups})
+                        if _sector_first_activation:
+                            # Re-render the form with the prefilled values shown as
+                            # defaults so the user can review them before saving.
+                            # Cache the prefill with its window_id so we can fall back
+                            # to it on the next submit if HA doesn't re-send the values.
+                            self._sector_prefill_start = _sector_start
+                            self._sector_prefill_end = _sector_end
+                            self._sector_prefill_window_id = window_id
+                        else:
+                            self._sector_prefill_start = None
+                            self._sector_prefill_end = None
+                            self._sector_prefill_window_id = None
+                            for i, w in enumerate(windows):
+                                if w["id"] == window_id:
+                                    windows[i] = {
+                                        **w,
+                                        "name": user_input[CONF_WINDOW_NAME],
+                                        "floor_level": int(user_input[CONF_FLOOR_LEVEL]),
+                                        "azimuth": new_azimuth,
+                                        "absence_position": int(raw_abs) if raw_abs is not None else None,
+                                        "behavior_mode": new_behavior_mode,
+                                        "light_shade_position": int(raw_light) if raw_light is not None else None,
+                                        "normal_shade_position": int(raw_normal) if raw_normal is not None else None,
+                                        "strong_shade_position": int(raw_strong) if raw_strong is not None else None,
+                                        "manual_sun_sector_start_deg": _sector_start,
+                                        "manual_sun_sector_end_deg": _sector_end,
+                                        "obstruction_zones": _new_oz_list,
+                                    }
+                                    break
+                            hw_type = cover_hardware_type_from_str(user_input.get(CONF_COVER_HARDWARE_TYPE))
+                            for j, cg in enumerate(cover_groups):
+                                if cg.get("window_id") == window_id:
+                                    cover_groups[j] = {**cg, "cover_ids": new_cover_ids, "hardware_type": hw_type.value}
+                                    break
+                            return self._save_and_reload({"windows": windows, "cover_groups": cover_groups})
 
         compass, custom_az = _compass_from_azimuth(window.get("azimuth", 180.0))
         _hw_options = [t.value for t in CoverHardwareType]
@@ -1618,10 +1688,21 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         _stored_light = window.get("light_shade_position")
         _stored_normal = window.get("normal_shade_position")
         _stored_strong = window.get("strong_shade_position")
-        # Manual sun sector stored values
-        _stored_sector_start = window.get("manual_sun_sector_start_deg")
-        _stored_sector_end = window.get("manual_sun_sector_end_deg")
-        _stored_sector_enabled = _stored_sector_start is not None and _stored_sector_end is not None
+        # Manual sun sector stored values.
+        # When prefill is cached for this exact window, use those values with
+        # default= so they are submitted even if the user doesn't interact.
+        _prefill_active = (
+            self._sector_prefill_start is not None
+            and self._sector_prefill_window_id == window_id
+        )
+        if _prefill_active:
+            _stored_sector_start = self._sector_prefill_start
+            _stored_sector_end = self._sector_prefill_end
+            _stored_sector_enabled = True
+        else:
+            _stored_sector_start = window.get("manual_sun_sector_start_deg")
+            _stored_sector_end = window.get("manual_sun_sector_end_deg")
+            _stored_sector_enabled = _stored_sector_start is not None and _stored_sector_end is not None
         # Obstruction zone stored values (flat per-zone dicts → up to 3).
         # Migration: old min_elevation_deg read → block_until_elevation_deg when
         # new fields are absent, so existing users see their data correctly.
@@ -1645,7 +1726,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         schema = vol.Schema({
             vol.Required(CONF_WINDOW_NAME, default=window["name"]): str,
             vol.Required(CONF_FLOOR_LEVEL, default=window.get("floor_level", 0)): NumberSelector(
-                NumberSelectorConfig(min=0, max=20, step=1, mode=NumberSelectorMode.BOX)
+                NumberSelectorConfig(min=-1, max=20, step=1, mode=NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_COMPASS_DIRECTION, default=compass): SelectSelector(
                 SelectSelectorConfig(options=_COMPASS_OPTIONS, mode=SelectSelectorMode.DROPDOWN, translation_key="compass_direction")
@@ -1686,14 +1767,26 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             ): _pos_selector,
             # --- Manual sun sector override ---
             vol.Required(CONF_MANUAL_SUN_SECTOR_ENABLED, default=_stored_sector_enabled): BooleanSelector(),
-            vol.Optional(
-                CONF_MANUAL_SUN_SECTOR_START_DEG,
-                description={"suggested_value": _stored_sector_start},
-            ): _az_selector,
-            vol.Optional(
-                CONF_MANUAL_SUN_SECTOR_END_DEG,
-                description={"suggested_value": _stored_sector_end},
-            ): _az_selector,
+            # When first-activation prefill is active, use default= so the computed
+            # values are submitted on the next save even without user interaction.
+            # Otherwise use suggested_value= (a hint that is not auto-submitted).
+            **(
+                {
+                    vol.Optional(CONF_MANUAL_SUN_SECTOR_START_DEG, default=_stored_sector_start): _az_selector,
+                    vol.Optional(CONF_MANUAL_SUN_SECTOR_END_DEG, default=_stored_sector_end): _az_selector,
+                }
+                if _prefill_active
+                else {
+                    vol.Optional(
+                        CONF_MANUAL_SUN_SECTOR_START_DEG,
+                        description={"suggested_value": _stored_sector_start},
+                    ): _az_selector,
+                    vol.Optional(
+                        CONF_MANUAL_SUN_SECTOR_END_DEG,
+                        description={"suggested_value": _stored_sector_end},
+                    ): _az_selector,
+                }
+            ),
             # --- Obstruction zone 1 ---
             vol.Required(CONF_OBSTRUCTION_1_ENABLED, default=_oz_stored(0, "enabled", False)): BooleanSelector(),
             vol.Optional(CONF_OBSTRUCTION_1_AZIMUTH_START, description={"suggested_value": _oz_stored(0, "azimuth_start_deg")}): _az_selector,

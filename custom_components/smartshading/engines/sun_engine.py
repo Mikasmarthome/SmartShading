@@ -7,13 +7,18 @@ import math
 from dataclasses import dataclass
 
 # Elevation threshold (deg) below which the sun is assumed blocked by
-# neighbouring buildings/terrain for a given floor level - ground floor
-# needs a higher elevation than upper floors to receive direct sun.
-# NOTE (implementation concern): these are placeholder defaults: §5.1 does
-# not specify concrete values. Needs validation/tuning against real
-# installations before relying on it for anything beyond this version's validated scope.
-FLOOR_ELEVATION_THRESHOLD_DEG: dict[int, float] = {0: 15.0, 1: 10.0, 2: 5.0}
-DEFAULT_ELEVATION_THRESHOLD_DEG = 0.0
+# neighbouring buildings/terrain for a given floor level.  Each floor
+# down raises the threshold by 5° following the pattern: a basement window
+# in a light well needs a higher sun to receive direct exposure than a
+# ground-floor window, which in turn needs more elevation than upper floors.
+# Floors ≥ 3 default to 0° (no elevation restriction).
+FLOOR_ELEVATION_THRESHOLD_DEG: dict[int, float] = {
+    -1: 20.0,  # basement / lower ground
+    0: 15.0,   # ground floor
+    1: 10.0,   # 1st floor
+    2: 5.0,    # 2nd floor
+}
+DEFAULT_ELEVATION_THRESHOLD_DEG = 0.0  # 3rd floor and above
 
 
 @dataclass(frozen=True)

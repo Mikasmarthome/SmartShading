@@ -110,7 +110,7 @@
         "description": "Pridajte do tejto zóny ďalšie okno. SmartShading pracuje s presným azimutom: smer kompasu je len pohodlná skratka.",
         "data": {
           "window_name": "Názov okna",
-          "floor_level": "Poschodie (0 = prízemie)",
+          "floor_level": "Podlažie (-1 = suterén, 0 = prízemie, 1 = 1. poschodie, …)",
           "compass_direction": "Orientácia",
           "custom_azimuth": "Vlastný azimut (0-359°, použije sa iba ak je Orientácia nastavená na Vlastná)",
           "absence_position": "Poloha pri neprítomnosti (prepíše predvolenú hodnotu zóny)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Ponechajte prázdne na zdedenie predvolenej polohy neprítomnosti zóny. Zadajte hodnotu na jej prepísanie iba pre toto konkrétne okno.",
-          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Neprítomnosť a plán: riadenie podľa neprítomnosti, nočný a ranný plán aktívne; bez slnečného, tepelného alebo antioslnivého tienenia. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne."
+          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Neprítomnosť a plán: riadenie podľa neprítomnosti, nočný a ranný plán aktívne; bez slnečného, tepelného alebo antioslnivého tienenia. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne.",
+          "floor_level": "Používa sa na odvodenie minimálnej výšky slnka pre priame osvetlenie. −1 (suterén) → 20°, 0 (prízemie) → 15°, 1 (1. poschodie) → 10°, 2 (2. poschodie) → 5°, 3 a vyššie → 0°. Pre okná vo svetlíkoch alebo s výraznými prekážkami použite zóny prekážok."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Aktualizujte nastavenia okna „{window_name}“. Zmeny tienenia sa prejavia po uložení.",
         "data": {
           "window_name": "Názov okna",
-          "floor_level": "Poschodie (0 = prízemie)",
+          "floor_level": "Podlažie (-1 = suterén, 0 = prízemie, 1 = 1. poschodie, …)",
           "compass_direction": "Orientácia",
           "custom_azimuth": "Vlastný azimut (0-359°, použije sa iba ak je Orientácia nastavená na Vlastná)",
           "cover_entities": "Tienenie pre toto okno",
@@ -183,7 +184,7 @@
           "light_shade_position": "Ponechajte prázdne na použitie predvolenej hodnoty zóny. Zadajte hodnotu na prepísanie cieľovej polohy ľahkého tienenia iba pre toto okno.",
           "normal_shade_position": "Ponechajte prázdne na použitie predvolenej hodnoty zóny. Zadajte hodnotu na prepísanie cieľovej polohy normálneho tienenia iba pre toto okno.",
           "strong_shade_position": "Ponechajte prázdne na použitie predvolenej hodnoty zóny. Zadajte hodnotu na prepísanie cieľovej polohy silného tienenia iba pre toto okno.",
-          "manual_sun_sector_enabled": "Povoľte na nahradenie automatického slnečného sektora založeného na azimute ručným rozsahom. Počiatočný a koncový azimut určujú, kedy sa slnko považuje za dopadajúce na toto okno. Podporuje prechod cez sever (napr. z 330° na 30°).",
+          "manual_sun_sector_enabled": "Aktivujte na nahradenie automatického azimutového sektora manuálnym rozsahom. Pri aktivácii bez zadaných hodnôt sa počiatočný a koncový azimut predvyplnia z orientácie a tolerancie okna. Podporuje prechod cez sever (napr. 330° do 30°).",
           "obstruction_1_enabled": "Povoľte na označenie rozsahu azimutu, kde fyzická prekážka (strom, budova, presah strechy) blokuje priame slnko. Ponechajte polia výšky prázdne na blokovanie pri každej výške slnka v rozsahu azimutu.",
           "obstruction_1_block_from_elevation_deg": "Voliteľné. Prekážka blokuje iba vtedy, keď je výška slnka rovná tejto hodnote alebo vyššia. Príklad: 45° blokuje presah strechy, ktorý tieni iba pri strmých uhloch slnka. Ponechajte prázdne pre žiadny dolný limit.",
           "obstruction_1_block_until_elevation_deg": "Voliteľné. Prekážka blokuje iba vtedy, keď je výška slnka rovná tejto hodnote alebo nižšia. Príklad: 18° blokuje horu alebo susednú budovu, ktorá ovplyvňuje iba nízke slnko. Ponechajte prázdne pre žiadny horný limit.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Voliteľná horná hranica výšky pre zónu 2 (pozri popis zóny 1).",
           "obstruction_3_enabled": "Tretia voliteľná zóna prekážky pre toto okno.",
           "obstruction_3_block_from_elevation_deg": "Voliteľná dolná hranica výšky pre zónu 3 (pozri popis zóny 1).",
-          "obstruction_3_block_until_elevation_deg": "Voliteľná horná hranica výšky pre zónu 3 (pozri popis zóny 1)."
+          "obstruction_3_block_until_elevation_deg": "Voliteľná horná hranica výšky pre zónu 3 (pozri popis zóny 1).",
+          "floor_level": "Používa sa na odvodenie minimálnej výšky slnka pre priame osvetlenie. −1 (suterén) → 20°, 0 (prízemie) → 15°, 1 (1. poschodie) → 10°, 2 (2. poschodie) → 5°, 3 a vyššie → 0°. Pre okná vo svetlíkoch alebo s výraznými prekážkami použite zóny prekážok."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Nakonfigurujte jedno okno. SmartShading pracuje s presným azimutom: smer kompasu je len pohodlná skratka.",
         "data": {
           "window_name": "Názov okna",
-          "floor_level": "Poschodie (0 = prízemie)",
+          "floor_level": "Podlažie (-1 = suterén, 0 = prízemie, 1 = 1. poschodie, …)",
           "compass_direction": "Orientácia",
           "custom_azimuth": "Vlastný azimut (0-359°, použije sa iba ak je Orientácia nastavená na Vlastná)",
           "absence_position": "Poloha pri neprítomnosti (prepíše predvolenú hodnotu zóny)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Ponechajte prázdne na zdedenie predvolenej polohy neprítomnosti zóny. Zadajte hodnotu na jej prepísanie iba pre toto konkrétne okno.",
-          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Neprítomnosť a plán: riadenie podľa neprítomnosti, nočný a ranný plán aktívne; bez slnečného, tepelného alebo antioslnivého tienenia. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne."
+          "window_behavior_mode": "Plne automatický: slnko, komfort, neprítomnosť a plán aktívne. Neprítomnosť a plán: riadenie podľa neprítomnosti, nočný a ranný plán aktívne; bez slnečného, tepelného alebo antioslnivého tienenia. Iba neprítomnosť: iba riadenie podľa neprítomnosti. Automatizácia vypnutá: žiadne automatické tienenie. Bezpečnostné ochrany (búrka/vietor) zostávajú vždy aktívne.",
+          "floor_level": "Používa sa na odvodenie minimálnej výšky slnka pre priame osvetlenie. −1 (suterén) → 20°, 0 (prízemie) → 15°, 1 (1. poschodie) → 10°, 2 (2. poschodie) → 5°, 3 a vyššie → 0°. Pre okná vo svetlíkoch alebo s výraznými prekážkami použite zóny prekážok."
         }
       },
       "cover_group": {

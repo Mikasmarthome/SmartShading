@@ -110,7 +110,7 @@
         "description": "Adicione outra janela a esta zona. O SmartShading trabalha com um azimute preciso: a direção da bússola é apenas um atalho prático.",
         "data": {
           "window_name": "Nome da janela",
-          "floor_level": "Piso (0 = rés do chão)",
+          "floor_level": "Andar (-1 = cave, 0 = rés do chão, 1 = 1.º andar, …)",
           "compass_direction": "Orientação",
           "custom_azimuth": "Azimute personalizado (0-359°, usado apenas se a Orientação for Personalizada)",
           "absence_position": "Posição de ausência (substitui o valor predefinido da zona)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Deixe vazio para herdar a posição de ausência predefinida da zona. Defina um valor para a substituir apenas nesta janela específica.",
-          "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Ausência e horário: controlo por ausência, horário noturno e matinal ativos; sem sombreamento solar, térmico ou antissolamento. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas."
+          "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Ausência e horário: controlo por ausência, horário noturno e matinal ativos; sem sombreamento solar, térmico ou antissolamento. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas.",
+          "floor_level": "Usado para derivar a elevação solar mínima para exposição direta. −1 (cave) → 20°, 0 (rés do chão) → 15°, 1 (1.º andar) → 10°, 2 (2.º andar) → 5°, 3 e acima → 0°. Para janelas em poços de luz ou com obstruções graves, use zonas de obstrução."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Atualize as definições da janela «{window_name}». As alterações de estore têm efeito após guardar.",
         "data": {
           "window_name": "Nome da janela",
-          "floor_level": "Piso (0 = rés do chão)",
+          "floor_level": "Andar (-1 = cave, 0 = rés do chão, 1 = 1.º andar, …)",
           "compass_direction": "Orientação",
           "custom_azimuth": "Azimute personalizado (0-359°, usado apenas se a Orientação for Personalizada)",
           "cover_entities": "Estores desta janela",
@@ -183,7 +184,7 @@
           "light_shade_position": "Deixe vazio para usar o valor predefinido da zona. Defina um valor para substituir a posição-alvo de sombra ligeira apenas nesta janela.",
           "normal_shade_position": "Deixe vazio para usar o valor predefinido da zona. Defina um valor para substituir a posição-alvo de sombra normal apenas nesta janela.",
           "strong_shade_position": "Deixe vazio para usar o valor predefinido da zona. Defina um valor para substituir a posição-alvo de sombra forte apenas nesta janela.",
-          "manual_sun_sector_enabled": "Ative para substituir o setor solar automático baseado no azimute por um intervalo manual. Os azimutes inicial e final definem quando se considera que o sol incide nesta janela. Suporta passagem pelo norte (p. ex. de 330° a 30°).",
+          "manual_sun_sector_enabled": "Ative para substituir o setor solar automático por um intervalo manual. Quando ativado sem valores definidos, o azimute inicial e final são pré-preenchidos pela orientação e tolerância da janela. Suporta wrap-around (ex.: 330° a 30° cruza o norte).",
           "obstruction_1_enabled": "Ative para marcar um intervalo de azimute onde uma obstrução física (árvore, edifício, beirado do telhado) bloqueia o sol direto. Deixe os campos de elevação vazios para bloquear em toda a elevação solar dentro do intervalo de azimute.",
           "obstruction_1_block_from_elevation_deg": "Opcional. A obstrução bloqueia apenas quando a elevação solar é igual ou superior a este valor. Exemplo: 45° bloqueia um beirado que só sombreia com ângulos solares elevados. Deixe vazio para nenhum limite inferior.",
           "obstruction_1_block_until_elevation_deg": "Opcional. A obstrução bloqueia apenas quando a elevação solar é igual ou inferior a este valor. Exemplo: 18° bloqueia uma montanha ou edifício vizinho que só afeta com o sol baixo. Deixe vazio para nenhum limite superior.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Limite de elevação superior opcional para a zona 2 (ver descrição da zona 1).",
           "obstruction_3_enabled": "Terceira zona de obstrução opcional para esta janela.",
           "obstruction_3_block_from_elevation_deg": "Limite de elevação inferior opcional para a zona 3 (ver descrição da zona 1).",
-          "obstruction_3_block_until_elevation_deg": "Limite de elevação superior opcional para a zona 3 (ver descrição da zona 1)."
+          "obstruction_3_block_until_elevation_deg": "Limite de elevação superior opcional para a zona 3 (ver descrição da zona 1).",
+          "floor_level": "Usado para derivar a elevação solar mínima para exposição direta. −1 (cave) → 20°, 0 (rés do chão) → 15°, 1 (1.º andar) → 10°, 2 (2.º andar) → 5°, 3 e acima → 0°. Para janelas em poços de luz ou com obstruções graves, use zonas de obstrução."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Configure uma janela. O SmartShading trabalha com um azimute preciso: a direção da bússola é apenas um atalho prático.",
         "data": {
           "window_name": "Nome da janela",
-          "floor_level": "Piso (0 = rés do chão)",
+          "floor_level": "Andar (-1 = cave, 0 = rés do chão, 1 = 1.º andar, …)",
           "compass_direction": "Orientação",
           "custom_azimuth": "Azimute personalizado (0-359°, usado apenas se a Orientação for Personalizada)",
           "absence_position": "Posição de ausência (substitui o valor predefinido da zona)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Deixe vazio para herdar a posição de ausência predefinida da zona. Defina um valor para a substituir apenas nesta janela específica.",
-          "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Ausência e horário: controlo por ausência, horário noturno e matinal ativos; sem sombreamento solar, térmico ou antissolamento. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas."
+          "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Ausência e horário: controlo por ausência, horário noturno e matinal ativos; sem sombreamento solar, térmico ou antissolamento. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas.",
+          "floor_level": "Usado para derivar a elevação solar mínima para exposição direta. −1 (cave) → 20°, 0 (rés do chão) → 15°, 1 (1.º andar) → 10°, 2 (2.º andar) → 5°, 3 e acima → 0°. Para janelas em poços de luz ou com obstruções graves, use zonas de obstrução."
         }
       },
       "cover_group": {

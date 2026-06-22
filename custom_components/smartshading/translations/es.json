@@ -110,7 +110,7 @@
         "description": "Añade otra ventana a esta zona. SmartShading trabaja con un acimut preciso: la dirección de la brújula es solo un atajo cómodo.",
         "data": {
           "window_name": "Nombre de la ventana",
-          "floor_level": "Planta (0 = planta baja)",
+          "floor_level": "Planta (-1 = sótano, 0 = planta baja, 1 = 1.ª planta, …)",
           "compass_direction": "Orientación",
           "custom_azimuth": "Acimut personalizado (0-359°, solo se usa si la Orientación es Personalizada)",
           "absence_position": "Posición de ausencia (anula el valor por defecto de la zona)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Déjalo vacío para heredar la posición de ausencia por defecto de la zona. Indica un valor para anularla solo en esta ventana concreta.",
-          "window_behavior_mode": "Totalmente automático: sol, confort, ausencia y horario activos. Ausencia y horario: control por ausencia, horario nocturno y matutino activos; sin sombreado solar, térmico o antirreflejo. Solo ausencia: solo control por ausencia. Automatización desactivada: sin sombreado automático. Las protecciones de seguridad (tormenta/viento) permanecen siempre activas."
+          "window_behavior_mode": "Totalmente automático: sol, confort, ausencia y horario activos. Ausencia y horario: control por ausencia, horario nocturno y matutino activos; sin sombreado solar, térmico o antirreflejo. Solo ausencia: solo control por ausencia. Automatización desactivada: sin sombreado automático. Las protecciones de seguridad (tormenta/viento) permanecen siempre activas.",
+          "floor_level": "Se usa para derivar la elevación solar mínima para exposición directa. −1 (sótano) → 20°, 0 (planta baja) → 15°, 1 (1.ª planta) → 10°, 2 (2.ª planta) → 5°, 3 y superior → 0°. Para ventanas en patios de luz o con obstrucciones grandes, use zonas de obstrucción."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Actualiza los ajustes de la ventana «{window_name}». Los cambios de persiana se aplican al guardar.",
         "data": {
           "window_name": "Nombre de la ventana",
-          "floor_level": "Planta (0 = planta baja)",
+          "floor_level": "Planta (-1 = sótano, 0 = planta baja, 1 = 1.ª planta, …)",
           "compass_direction": "Orientación",
           "custom_azimuth": "Acimut personalizado (0-359°, solo se usa si la Orientación es Personalizada)",
           "cover_entities": "Persianas de esta ventana",
@@ -183,7 +184,7 @@
           "light_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra ligera solo en esta ventana.",
           "normal_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra normal solo en esta ventana.",
           "strong_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra fuerte solo en esta ventana.",
-          "manual_sun_sector_enabled": "Actívalo para sustituir el sector solar automático basado en acimut por un rango manual. Los acimuts de inicio y fin definen cuándo se considera que el sol incide en esta ventana. Admite cruce por el norte (p. ej. de 330° a 30°).",
+          "manual_sun_sector_enabled": "Active para reemplazar el sector solar automático con un rango manual. Al activarse sin valores definidos, el azimut de inicio y fin se precarga desde la orientación y tolerancia de la ventana. Compatible con desbordamiento (p. ej. 330° a 30° cruza el norte).",
           "obstruction_1_enabled": "Actívalo para marcar un rango de acimut donde una obstrucción física (árbol, edificio, alero del tejado) bloquea el sol directo. Deja vacíos los campos de elevación para bloquear en toda elevación solar dentro del rango de acimut.",
           "obstruction_1_block_from_elevation_deg": "Opcional. La obstrucción bloquea solo cuando la elevación solar es igual o superior a este valor. Ejemplo: 45° bloquea un alero que solo da sombra con ángulos solares altos. Déjalo vacío si no hay límite inferior.",
           "obstruction_1_block_until_elevation_deg": "Opcional. La obstrucción bloquea solo cuando la elevación solar es igual o inferior a este valor. Ejemplo: 18° bloquea una montaña o un edificio vecino que solo afecta con el sol bajo. Déjalo vacío si no hay límite superior.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Límite superior de elevación opcional para la zona 2 (ver la descripción de la zona 1).",
           "obstruction_3_enabled": "Tercera zona de obstrucción opcional para esta ventana.",
           "obstruction_3_block_from_elevation_deg": "Límite inferior de elevación opcional para la zona 3 (ver la descripción de la zona 1).",
-          "obstruction_3_block_until_elevation_deg": "Límite superior de elevación opcional para la zona 3 (ver la descripción de la zona 1)."
+          "obstruction_3_block_until_elevation_deg": "Límite superior de elevación opcional para la zona 3 (ver la descripción de la zona 1).",
+          "floor_level": "Se usa para derivar la elevación solar mínima para exposición directa. −1 (sótano) → 20°, 0 (planta baja) → 15°, 1 (1.ª planta) → 10°, 2 (2.ª planta) → 5°, 3 y superior → 0°. Para ventanas en patios de luz o con obstrucciones grandes, use zonas de obstrucción."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Configura una ventana. SmartShading trabaja con un acimut preciso: la dirección de la brújula es solo un atajo cómodo.",
         "data": {
           "window_name": "Nombre de la ventana",
-          "floor_level": "Planta (0 = planta baja)",
+          "floor_level": "Planta (-1 = sótano, 0 = planta baja, 1 = 1.ª planta, …)",
           "compass_direction": "Orientación",
           "custom_azimuth": "Acimut personalizado (0-359°, solo se usa si la Orientación es Personalizada)",
           "absence_position": "Posición de ausencia (anula el valor por defecto de la zona)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Déjalo vacío para heredar la posición de ausencia por defecto de la zona. Indica un valor para anularla solo en esta ventana concreta.",
-          "window_behavior_mode": "Totalmente automático: sol, confort, ausencia y horario activos. Ausencia y horario: control por ausencia, horario nocturno y matutino activos; sin sombreado solar, térmico o antirreflejo. Solo ausencia: solo control por ausencia. Automatización desactivada: sin sombreado automático. Las protecciones de seguridad (tormenta/viento) permanecen siempre activas."
+          "window_behavior_mode": "Totalmente automático: sol, confort, ausencia y horario activos. Ausencia y horario: control por ausencia, horario nocturno y matutino activos; sin sombreado solar, térmico o antirreflejo. Solo ausencia: solo control por ausencia. Automatización desactivada: sin sombreado automático. Las protecciones de seguridad (tormenta/viento) permanecen siempre activas.",
+          "floor_level": "Se usa para derivar la elevación solar mínima para exposición directa. −1 (sótano) → 20°, 0 (planta baja) → 15°, 1 (1.ª planta) → 10°, 2 (2.ª planta) → 5°, 3 y superior → 0°. Para ventanas en patios de luz o con obstrucciones grandes, use zonas de obstrucción."
         }
       },
       "cover_group": {

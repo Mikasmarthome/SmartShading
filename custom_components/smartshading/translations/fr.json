@@ -110,7 +110,7 @@
         "description": "Ajoutez une autre fenêtre à cette zone. SmartShading fonctionne avec un azimut précis : la direction de la boussole n'est qu'un raccourci pratique.",
         "data": {
           "window_name": "Nom de la fenêtre",
-          "floor_level": "Étage (0 = rez-de-chaussée)",
+          "floor_level": "Étage (-1 = sous-sol, 0 = rez-de-chaussée, 1 = 1er étage, …)",
           "compass_direction": "Orientation",
           "custom_azimuth": "Azimut personnalisé (0-359°, utilisé uniquement si l'Orientation est Personnalisée)",
           "absence_position": "Position d'absence (remplace la valeur par défaut de la zone)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Laissez vide pour hériter de la position d'absence par défaut de la zone. Indiquez une valeur pour la remplacer uniquement pour cette fenêtre.",
-          "window_behavior_mode": "Entièrement automatique : soleil, confort, absence et horaire actifs. Absence et horaire : contrôle par absence, horaire de nuit et de matin actifs ; pas d'ombrage solaire, thermique ou antiéblouissement. Absence uniquement : seul le contrôle par absence. Automatisation désactivée : aucun ombrage automatique. Les protections de sécurité (tempête/vent) restent toujours actives."
+          "window_behavior_mode": "Entièrement automatique : soleil, confort, absence et horaire actifs. Absence et horaire : contrôle par absence, horaire de nuit et de matin actifs ; pas d'ombrage solaire, thermique ou antiéblouissement. Absence uniquement : seul le contrôle par absence. Automatisation désactivée : aucun ombrage automatique. Les protections de sécurité (tempête/vent) restent toujours actives.",
+          "floor_level": "Sert à dériver l'élévation solaire minimale pour une exposition directe. −1 (sous-sol) → 20°, 0 (rez-de-chaussée) → 15°, 1 (1er étage) → 10°, 2 (2e étage) → 5°, 3 et plus → 0°. Pour les fenêtres en puits de lumière ou avec de fortes obstructions, utilisez les zones d'obstruction."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Mettez à jour les réglages de la fenêtre « {window_name} ». Les modifications de volet prennent effet après l'enregistrement.",
         "data": {
           "window_name": "Nom de la fenêtre",
-          "floor_level": "Étage (0 = rez-de-chaussée)",
+          "floor_level": "Étage (-1 = sous-sol, 0 = rez-de-chaussée, 1 = 1er étage, …)",
           "compass_direction": "Orientation",
           "custom_azimuth": "Azimut personnalisé (0-359°, utilisé uniquement si l'Orientation est Personnalisée)",
           "cover_entities": "Volets de cette fenêtre",
@@ -183,7 +184,7 @@
           "light_shade_position": "Laissez vide pour utiliser la valeur par défaut de la zone. Indiquez une valeur pour remplacer la position cible d'ombrage léger uniquement pour cette fenêtre.",
           "normal_shade_position": "Laissez vide pour utiliser la valeur par défaut de la zone. Indiquez une valeur pour remplacer la position cible d'ombrage normal uniquement pour cette fenêtre.",
           "strong_shade_position": "Laissez vide pour utiliser la valeur par défaut de la zone. Indiquez une valeur pour remplacer la position cible d'ombrage fort uniquement pour cette fenêtre.",
-          "manual_sun_sector_enabled": "Activez pour remplacer le secteur solaire automatique basé sur l'azimut par une plage manuelle. Les azimuts de début et de fin définissent quand le soleil est considéré comme frappant cette fenêtre. Prend en charge le passage par le nord (p. ex. de 330° à 30°).",
+          "manual_sun_sector_enabled": "Activer pour remplacer le secteur solaire automatique par une plage manuelle. Lorsqu'il est activé sans valeurs définies, les azimuts de début et de fin sont préremplis depuis l'orientation et la tolérance de la fenêtre. Compatible avec le débordement (par ex. 330° à 30° traverse le nord).",
           "obstruction_1_enabled": "Activez pour marquer une plage d'azimut où une obstruction physique (arbre, bâtiment, débord de toit) bloque le soleil direct. Laissez les champs d'élévation vides pour bloquer à toute élévation solaire dans la plage d'azimut.",
           "obstruction_1_block_from_elevation_deg": "Optionnel. L'obstruction ne bloque que lorsque l'élévation solaire est supérieure ou égale à cette valeur. Exemple : 45° bloque un débord de toit qui n'ombrage qu'avec un soleil haut. Laissez vide pour aucune limite inférieure.",
           "obstruction_1_block_until_elevation_deg": "Optionnel. L'obstruction ne bloque que lorsque l'élévation solaire est inférieure ou égale à cette valeur. Exemple : 18° bloque une montagne ou un bâtiment voisin qui n'affecte que le soleil bas. Laissez vide pour aucune limite supérieure.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Limite d'élévation supérieure optionnelle pour la zone 2 (voir la description de la zone 1).",
           "obstruction_3_enabled": "Troisième zone d'obstruction optionnelle pour cette fenêtre.",
           "obstruction_3_block_from_elevation_deg": "Limite d'élévation inférieure optionnelle pour la zone 3 (voir la description de la zone 1).",
-          "obstruction_3_block_until_elevation_deg": "Limite d'élévation supérieure optionnelle pour la zone 3 (voir la description de la zone 1)."
+          "obstruction_3_block_until_elevation_deg": "Limite d'élévation supérieure optionnelle pour la zone 3 (voir la description de la zone 1).",
+          "floor_level": "Sert à dériver l'élévation solaire minimale pour une exposition directe. −1 (sous-sol) → 20°, 0 (rez-de-chaussée) → 15°, 1 (1er étage) → 10°, 2 (2e étage) → 5°, 3 et plus → 0°. Pour les fenêtres en puits de lumière ou avec de fortes obstructions, utilisez les zones d'obstruction."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Configurez une fenêtre. SmartShading fonctionne avec un azimut précis : la direction de la boussole n'est qu'un raccourci pratique.",
         "data": {
           "window_name": "Nom de la fenêtre",
-          "floor_level": "Étage (0 = rez-de-chaussée)",
+          "floor_level": "Étage (-1 = sous-sol, 0 = rez-de-chaussée, 1 = 1er étage, …)",
           "compass_direction": "Orientation",
           "custom_azimuth": "Azimut personnalisé (0-359°, utilisé uniquement si l'Orientation est Personnalisée)",
           "absence_position": "Position d'absence (remplace la valeur par défaut de la zone)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Laissez vide pour hériter de la position d'absence par défaut de la zone. Indiquez une valeur pour la remplacer uniquement pour cette fenêtre.",
-          "window_behavior_mode": "Entièrement automatique : soleil, confort, absence et horaire actifs. Absence et horaire : contrôle par absence, horaire de nuit et de matin actifs ; pas d'ombrage solaire, thermique ou antiéblouissement. Absence uniquement : seul le contrôle par absence. Automatisation désactivée : aucun ombrage automatique. Les protections de sécurité (tempête/vent) restent toujours actives."
+          "window_behavior_mode": "Entièrement automatique : soleil, confort, absence et horaire actifs. Absence et horaire : contrôle par absence, horaire de nuit et de matin actifs ; pas d'ombrage solaire, thermique ou antiéblouissement. Absence uniquement : seul le contrôle par absence. Automatisation désactivée : aucun ombrage automatique. Les protections de sécurité (tempête/vent) restent toujours actives.",
+          "floor_level": "Sert à dériver l'élévation solaire minimale pour une exposition directe. −1 (sous-sol) → 20°, 0 (rez-de-chaussée) → 15°, 1 (1er étage) → 10°, 2 (2e étage) → 5°, 3 et plus → 0°. Pour les fenêtres en puits de lumière ou avec de fortes obstructions, utilisez les zones d'obstruction."
         }
       },
       "cover_group": {

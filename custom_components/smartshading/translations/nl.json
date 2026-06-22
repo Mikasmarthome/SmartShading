@@ -110,7 +110,7 @@
         "description": "Voeg nog een venster toe aan deze zone. SmartShading werkt met een precieze azimut: de kompasrichting is slechts een handige snelkoppeling.",
         "data": {
           "window_name": "Vensternaam",
-          "floor_level": "Verdieping (0 = begane grond)",
+          "floor_level": "Verdieping (-1 = kelder, 0 = begane grond, 1 = 1e verdieping, …)",
           "compass_direction": "Oriëntatie",
           "custom_azimuth": "Aangepaste azimut (0-359°, alleen gebruikt als Oriëntatie op Aangepast staat)",
           "absence_position": "Afwezigheidspositie (overschrijft de zonestandaard)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Laat leeg om de standaard afwezigheidspositie van de zone te erven. Stel een waarde in om deze alleen voor dit specifieke venster te overschrijven.",
-          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Afwezigheid en schema: afwezigheidsregeling, nacht- en ochtendschema actief; geen zonne-, warmte- of verblindingsbescherming. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief."
+          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Afwezigheid en schema: afwezigheidsregeling, nacht- en ochtendschema actief; geen zonne-, warmte- of verblindingsbescherming. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief.",
+          "floor_level": "Gebruikt om de minimale zonhoogte voor directe zonnestraling te bepalen. −1 (kelder) → 20°, 0 (begane grond) → 15°, 1 (1e verd.) → 10°, 2 (2e verd.) → 5°, 3 en hoger → 0°. Voor ramen in lichtkokers of met zware obstructies, gebruik obstructiezones."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Werk de instellingen van venster \"{window_name}\" bij. Wijzigingen aan zonweringen worden na opslaan van kracht.",
         "data": {
           "window_name": "Vensternaam",
-          "floor_level": "Verdieping (0 = begane grond)",
+          "floor_level": "Verdieping (-1 = kelder, 0 = begane grond, 1 = 1e verdieping, …)",
           "compass_direction": "Oriëntatie",
           "custom_azimuth": "Aangepaste azimut (0-359°, alleen gebruikt als Oriëntatie op Aangepast staat)",
           "cover_entities": "Zonweringen voor dit venster",
@@ -183,7 +184,7 @@
           "light_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor lichte schaduw alleen voor dit venster te overschrijven.",
           "normal_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor normale schaduw alleen voor dit venster te overschrijven.",
           "strong_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor sterke schaduw alleen voor dit venster te overschrijven.",
-          "manual_sun_sector_enabled": "Schakel in om de automatische, op azimut gebaseerde zonsector te vervangen door een handmatig bereik. De start- en eindazimut bepalen wanneer de zon geacht wordt op dit venster te vallen. Ondersteunt overgang langs het noorden (bijv. van 330° naar 30°).",
+          "manual_sun_sector_enabled": "Activeer om de automatische azimuthoeksector te vervangen door een handmatig bereik. Bij activering zonder ingestelde waarden worden begin- en eindazimut vooraf ingevuld vanuit de oriëntatie en tolerantie van het raam. Ondersteunt wrap-around (bijv. 330° tot 30° kruist het noorden).",
           "obstruction_1_enabled": "Schakel in om een azimutbereik te markeren waar een fysieke obstructie (boom, gebouw, dakoverstek) direct zonlicht blokkeert. Laat de hoogtevelden leeg om bij elke zonshoogte binnen het azimutbereik te blokkeren.",
           "obstruction_1_block_from_elevation_deg": "Optioneel. De obstructie blokkeert alleen wanneer de zonshoogte gelijk aan of hoger dan deze waarde is. Voorbeeld: 45° blokkeert een dakoverstek dat alleen bij hoge zonnestanden schaduw geeft. Laat leeg voor geen ondergrens.",
           "obstruction_1_block_until_elevation_deg": "Optioneel. De obstructie blokkeert alleen wanneer de zonshoogte gelijk aan of lager dan deze waarde is. Voorbeeld: 18° blokkeert een berg of naburig gebouw dat alleen bij lage zon invloed heeft. Laat leeg voor geen bovengrens.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Optionele bovengrens voor de hoogte voor zone 2 (zie beschrijving van zone 1).",
           "obstruction_3_enabled": "Derde optionele obstructiezone voor dit venster.",
           "obstruction_3_block_from_elevation_deg": "Optionele ondergrens voor de hoogte voor zone 3 (zie beschrijving van zone 1).",
-          "obstruction_3_block_until_elevation_deg": "Optionele bovengrens voor de hoogte voor zone 3 (zie beschrijving van zone 1)."
+          "obstruction_3_block_until_elevation_deg": "Optionele bovengrens voor de hoogte voor zone 3 (zie beschrijving van zone 1).",
+          "floor_level": "Gebruikt om de minimale zonhoogte voor directe zonnestraling te bepalen. −1 (kelder) → 20°, 0 (begane grond) → 15°, 1 (1e verd.) → 10°, 2 (2e verd.) → 5°, 3 en hoger → 0°. Voor ramen in lichtkokers of met zware obstructies, gebruik obstructiezones."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Configureer één venster. SmartShading werkt met een precieze azimut: de kompasrichting is slechts een handige snelkoppeling.",
         "data": {
           "window_name": "Vensternaam",
-          "floor_level": "Verdieping (0 = begane grond)",
+          "floor_level": "Verdieping (-1 = kelder, 0 = begane grond, 1 = 1e verdieping, …)",
           "compass_direction": "Oriëntatie",
           "custom_azimuth": "Aangepaste azimut (0-359°, alleen gebruikt als Oriëntatie op Aangepast staat)",
           "absence_position": "Afwezigheidspositie (overschrijft de zonestandaard)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Laat leeg om de standaard afwezigheidspositie van de zone te erven. Stel een waarde in om deze alleen voor dit specifieke venster te overschrijven.",
-          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Afwezigheid en schema: afwezigheidsregeling, nacht- en ochtendschema actief; geen zonne-, warmte- of verblindingsbescherming. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief."
+          "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Afwezigheid en schema: afwezigheidsregeling, nacht- en ochtendschema actief; geen zonne-, warmte- of verblindingsbescherming. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief.",
+          "floor_level": "Gebruikt om de minimale zonhoogte voor directe zonnestraling te bepalen. −1 (kelder) → 20°, 0 (begane grond) → 15°, 1 (1e verd.) → 10°, 2 (2e verd.) → 5°, 3 en hoger → 0°. Voor ramen in lichtkokers of met zware obstructies, gebruik obstructiezones."
         }
       },
       "cover_group": {

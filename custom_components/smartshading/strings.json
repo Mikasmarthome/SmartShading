@@ -110,13 +110,14 @@
         "description": "Add another window to this zone. SmartShading works with a precise azimuth — the compass direction is just a convenience shortcut.",
         "data": {
           "window_name": "Window name",
-          "floor_level": "Floor level (0 = ground floor)",
+          "floor_level": "Floor level (-1 = basement, 0 = ground floor, 1 = 1st floor, …)",
           "compass_direction": "Orientation",
           "custom_azimuth": "Custom azimuth (0-359°, only used if Orientation is set to Custom)",
           "absence_position": "Absence position (overrides zone default)",
           "window_behavior_mode": "Automatic shading mode"
         },
         "data_description": {
+          "floor_level": "Used to derive the minimum sun elevation for direct exposure. −1 (basement) → 20°, 0 (ground floor) → 15°, 1 (1st floor) → 10°, 2 (2nd floor) → 5°, 3 and above → 0°. For windows in light wells or with heavy obstructions, use obstruction zones for more precise control.",
           "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this specific window only.",
           "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence and schedule: absence control, night, and morning schedule active; no solar, heat, or glare shading. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active."
         }
@@ -148,7 +149,7 @@
         "description": "Update the settings for window \"{window_name}\". Cover changes take effect after saving.",
         "data": {
           "window_name": "Window name",
-          "floor_level": "Floor level (0 = ground floor)",
+          "floor_level": "Floor level (-1 = basement, 0 = ground floor, 1 = 1st floor, …)",
           "compass_direction": "Orientation",
           "custom_azimuth": "Custom azimuth (0-359°, only used if Orientation is set to Custom)",
           "cover_entities": "Covers for this window",
@@ -183,7 +184,8 @@
           "light_shade_position": "Leave empty to use the zone default. Set a value to override the light shade target position for this window only.",
           "normal_shade_position": "Leave empty to use the zone default. Set a value to override the normal shade target position for this window only.",
           "strong_shade_position": "Leave empty to use the zone default. Set a value to override the strong shade target position for this window only.",
-          "manual_sun_sector_enabled": "Enable to replace the automatic azimuth-based sun sector with a manual range. Start and end azimuths define when the sun is considered to hit this window. Supports wrap-around (e.g. 330° to 30° crosses north).",
+          "floor_level": "Used to derive the minimum sun elevation for direct exposure. −1 (basement) → 20°, 0 (ground floor) → 15°, 1 (1st floor) → 10°, 2 (2nd floor) → 5°, 3 and above → 0°. For windows in light wells or with heavy obstructions, use obstruction zones for more precise control.",
+          "manual_sun_sector_enabled": "Enable to replace the automatic azimuth-based sun sector with a manual range. When activated with no values set, start and end azimuth are pre-filled from the window's orientation and tolerance. Start and end azimuths define when the sun is considered to hit this window. Supports wrap-around (e.g. 330° to 30° crosses north).",
           "obstruction_1_enabled": "Enable to mark an azimuth range where a physical obstruction (tree, building, roof overhang) blocks direct sun. Leave elevation fields empty to block at every sun elevation in the azimuth range.",
           "obstruction_1_block_from_elevation_deg": "Optional. Obstruction blocks only when sun elevation is at or above this value. Example: 45° blocks a roof overhang that only shades at steep sun angles. Leave empty for no lower limit.",
           "obstruction_1_block_until_elevation_deg": "Optional. Obstruction blocks only when sun elevation is at or below this value. Example: 18° blocks a mountain or neighbouring building that only affects low sun. Leave empty for no upper limit.",
@@ -297,13 +299,14 @@
         "description": "Configure one window. SmartShading works with a precise azimuth — the compass direction is just a convenience shortcut.",
         "data": {
           "window_name": "Window name",
-          "floor_level": "Floor level (0 = ground floor)",
+          "floor_level": "Floor level (-1 = basement, 0 = ground floor, 1 = 1st floor, …)",
           "compass_direction": "Orientation",
           "custom_azimuth": "Custom azimuth (0-359°, only used if Orientation is set to Custom)",
           "absence_position": "Absence position (overrides zone default)",
           "window_behavior_mode": "Automatic shading mode"
         },
         "data_description": {
+          "floor_level": "Used to derive the minimum sun elevation for direct exposure. −1 (basement) → 20°, 0 (ground floor) → 15°, 1 (1st floor) → 10°, 2 (2nd floor) → 5°, 3 and above → 0°. For windows in light wells or with heavy obstructions, use obstruction zones for more precise control.",
           "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this specific window only.",
           "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence and schedule: absence control, night, and morning schedule active; no solar, heat, or glare shading. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active."
         }

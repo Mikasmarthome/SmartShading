@@ -110,7 +110,7 @@
         "description": "Bu bölgeye başka bir pencere ekleyin. SmartShading hassas bir azimutla çalışır: pusula yönü yalnızca kullanışlı bir kısayoldur.",
         "data": {
           "window_name": "Pencere adı",
-          "floor_level": "Kat (0 = zemin kat)",
+          "floor_level": "Kat (-1 = bodrum, 0 = zemin kat, 1 = 1. kat, …)",
           "compass_direction": "Yönelim",
           "custom_azimuth": "Özel azimut (0-359°, yalnızca Yönelim Özel olarak ayarlanmışsa kullanılır)",
           "absence_position": "Yokluk konumu (bölge varsayılanını geçersiz kılar)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Bölgenin varsayılan yokluk konumunu devralmak için boş bırakın. Yalnızca bu belirli pencere için geçersiz kılmak üzere bir değer girin.",
-          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yokluk ve program: yokluk denetimi, gece ve sabah programı etkin; güneş, ısı veya parıltı koruması yok. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır."
+          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yokluk ve program: yokluk denetimi, gece ve sabah programı etkin; güneş, ısı veya parıltı koruması yok. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır.",
+          "floor_level": "Doğrudan güneş ışığı için minimum güneş yüksekliğini belirlemek için kullanılır. −1 (bodrum) → 20°, 0 (zemin kat) → 15°, 1 (1. kat) → 10°, 2 (2. kat) → 5°, 3 ve üzeri → 0°. Işıklık veya ağır engellerle çevrili pencereler için engel bölgelerini kullanın."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "„{window_name}“ penceresinin ayarlarını güncelleyin. Gölgelik değişiklikleri kaydetmeden sonra geçerli olur.",
         "data": {
           "window_name": "Pencere adı",
-          "floor_level": "Kat (0 = zemin kat)",
+          "floor_level": "Kat (-1 = bodrum, 0 = zemin kat, 1 = 1. kat, …)",
           "compass_direction": "Yönelim",
           "custom_azimuth": "Özel azimut (0-359°, yalnızca Yönelim Özel olarak ayarlanmışsa kullanılır)",
           "cover_entities": "Bu pencere için gölgelikler",
@@ -183,7 +184,7 @@
           "light_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için hafif gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",
           "normal_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için normal gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",
           "strong_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için güçlü gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",
-          "manual_sun_sector_enabled": "Azimut tabanlı otomatik güneş sektörünü manuel bir aralıkla değiştirmek için etkinleştirin. Başlangıç ve bitiş azimutları, güneşin bu pencereye vurduğunun kabul edildiği zamanı tanımlar. Kuzeyden geçişi destekler (ör. 330°'den 30°'ye).",
+          "manual_sun_sector_enabled": "Otomatik azimut tabanlı güneş sektörünü manuel aralıkla değiştirmek için etkinleştirin. Değer girilmeden etkinleştirildiğinde, başlangıç ve bitiş azimutları pencerenin yönü ve toleransından otomatik doldurulur. Kuzey geçişi desteklenir (örn. 330° – 30°).",
           "obstruction_1_enabled": "Fiziksel bir engelin (ağaç, bina, çatı saçağı) doğrudan güneşi engellediği bir azimut aralığını işaretlemek için etkinleştirin. Azimut aralığındaki her güneş yüksekliğinde engellemek için yükseklik alanlarını boş bırakın.",
           "obstruction_1_block_from_elevation_deg": "İsteğe bağlı. Engel yalnızca güneş yüksekliği bu değere eşit veya daha yüksek olduğunda engeller. Örnek: 45°, yalnızca dik güneş açılarında gölge yapan bir çatı saçağını engeller. Alt sınır olmaması için boş bırakın.",
           "obstruction_1_block_until_elevation_deg": "İsteğe bağlı. Engel yalnızca güneş yüksekliği bu değere eşit veya daha düşük olduğunda engeller. Örnek: 18°, yalnızca alçak güneşte etkili olan bir dağı veya komşu binayı engeller. Üst sınır olmaması için boş bırakın.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Bölge 2 için isteğe bağlı üst yükseklik sınırı (bölge 1 açıklamasına bakın).",
           "obstruction_3_enabled": "Bu pencere için üçüncü isteğe bağlı engel bölgesi.",
           "obstruction_3_block_from_elevation_deg": "Bölge 3 için isteğe bağlı alt yükseklik sınırı (bölge 1 açıklamasına bakın).",
-          "obstruction_3_block_until_elevation_deg": "Bölge 3 için isteğe bağlı üst yükseklik sınırı (bölge 1 açıklamasına bakın)."
+          "obstruction_3_block_until_elevation_deg": "Bölge 3 için isteğe bağlı üst yükseklik sınırı (bölge 1 açıklamasına bakın).",
+          "floor_level": "Doğrudan güneş ışığı için minimum güneş yüksekliğini belirlemek için kullanılır. −1 (bodrum) → 20°, 0 (zemin kat) → 15°, 1 (1. kat) → 10°, 2 (2. kat) → 5°, 3 ve üzeri → 0°. Işıklık veya ağır engellerle çevrili pencereler için engel bölgelerini kullanın."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Bir pencere yapılandırın. SmartShading hassas bir azimutla çalışır: pusula yönü yalnızca kullanışlı bir kısayoldur.",
         "data": {
           "window_name": "Pencere adı",
-          "floor_level": "Kat (0 = zemin kat)",
+          "floor_level": "Kat (-1 = bodrum, 0 = zemin kat, 1 = 1. kat, …)",
           "compass_direction": "Yönelim",
           "custom_azimuth": "Özel azimut (0-359°, yalnızca Yönelim Özel olarak ayarlanmışsa kullanılır)",
           "absence_position": "Yokluk konumu (bölge varsayılanını geçersiz kılar)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Bölgenin varsayılan yokluk konumunu devralmak için boş bırakın. Yalnızca bu belirli pencere için geçersiz kılmak üzere bir değer girin.",
-          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yokluk ve program: yokluk denetimi, gece ve sabah programı etkin; güneş, ısı veya parıltı koruması yok. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır."
+          "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yokluk ve program: yokluk denetimi, gece ve sabah programı etkin; güneş, ısı veya parıltı koruması yok. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır.",
+          "floor_level": "Doğrudan güneş ışığı için minimum güneş yüksekliğini belirlemek için kullanılır. −1 (bodrum) → 20°, 0 (zemin kat) → 15°, 1 (1. kat) → 10°, 2 (2. kat) → 5°, 3 ve üzeri → 0°. Işıklık veya ağır engellerle çevrili pencereler için engel bölgelerini kullanın."
         }
       },
       "cover_group": {

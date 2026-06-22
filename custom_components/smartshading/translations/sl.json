@@ -110,7 +110,7 @@
         "description": "Dodajte še eno okno v to območje. SmartShading deluje z natančnim azimutom: smer kompasa je le priročna bližnjica.",
         "data": {
           "window_name": "Ime okna",
-          "floor_level": "Nadstropje (0 = pritličje)",
+          "floor_level": "Nadstropje (-1 = klet, 0 = pritličje, 1 = 1. nadstropje, …)",
           "compass_direction": "Usmerjenost",
           "custom_azimuth": "Azimut po meri (0-359°, uporablja se samo, če je Usmerjenost nastavljena na Po meri)",
           "absence_position": "Položaj ob odsotnosti (preglasi privzeto vrednost območja)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Pustite prazno za prevzem privzetega položaja odsotnosti območja. Vnesite vrednost, da ga preglasite samo za to določeno okno.",
-          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Odsotnost in urnik: nadzor odsotnosti, nočni in jutranji urnik aktivni; brez sončnega, toplotnega ali protisijajnega senčenja. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne."
+          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Odsotnost in urnik: nadzor odsotnosti, nočni in jutranji urnik aktivni; brez sončnega, toplotnega ali protisijajnega senčenja. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne.",
+          "floor_level": "Uporablja se za izpeljavo minimalnega sončnega kota za neposredno izpostavljenost. −1 (klet) → 20°, 0 (pritličje) → 15°, 1 (1. nadstropje) → 10°, 2 (2. nadstropje) → 5°, 3 in več → 0°. Za okna v svetlobnih jaških ali z močnimi ovirami uporabite cone ovir."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Posodobite nastavitve okna »{window_name}«. Spremembe senčil začnejo veljati po shranjevanju.",
         "data": {
           "window_name": "Ime okna",
-          "floor_level": "Nadstropje (0 = pritličje)",
+          "floor_level": "Nadstropje (-1 = klet, 0 = pritličje, 1 = 1. nadstropje, …)",
           "compass_direction": "Usmerjenost",
           "custom_azimuth": "Azimut po meri (0-359°, uporablja se samo, če je Usmerjenost nastavljena na Po meri)",
           "cover_entities": "Senčila za to okno",
@@ -183,7 +184,7 @@
           "light_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja rahlega senčenja samo za to okno.",
           "normal_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja normalnega senčenja samo za to okno.",
           "strong_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja močnega senčenja samo za to okno.",
-          "manual_sun_sector_enabled": "Omogočite za zamenjavo samodejnega sončnega sektorja, ki temelji na azimutu, z ročnim obsegom. Začetni in končni azimut določata, kdaj se šteje, da sonce zadene to okno. Podpira prehod čez sever (npr. od 330° do 30°).",
+          "manual_sun_sector_enabled": "Aktivirajte za zamenjavo samodejnega azimutnega sektorja z ročnim obsegom. Ob aktivaciji brez nastavljenih vrednosti se začetni in končni azimut samodejno izpolnita iz usmeritve in tolerance okna. Podpira prehod čez 0°/360° (npr. 330° do 30°).",
           "obstruction_1_enabled": "Omogočite za označitev obsega azimuta, kjer fizična ovira (drevo, stavba, napušč strehe) blokira neposredno sonce. Pustite polja višine prazna za blokiranje pri vsaki višini sonca v obsegu azimuta.",
           "obstruction_1_block_from_elevation_deg": "Neobvezno. Ovira blokira samo, ko je višina sonca enaka tej vrednosti ali višja. Primer: 45° blokira napušč strehe, ki senči samo pri strmih kotih sonca. Pustite prazno za brez spodnje meje.",
           "obstruction_1_block_until_elevation_deg": "Neobvezno. Ovira blokira samo, ko je višina sonca enaka tej vrednosti ali nižja. Primer: 18° blokira goro ali sosednjo stavbo, ki vpliva samo pri nizkem soncu. Pustite prazno za brez zgornje meje.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Neobvezna zgornja meja višine za območje 2 (glejte opis območja 1).",
           "obstruction_3_enabled": "Tretje neobvezno območje ovire za to okno.",
           "obstruction_3_block_from_elevation_deg": "Neobvezna spodnja meja višine za območje 3 (glejte opis območja 1).",
-          "obstruction_3_block_until_elevation_deg": "Neobvezna zgornja meja višine za območje 3 (glejte opis območja 1)."
+          "obstruction_3_block_until_elevation_deg": "Neobvezna zgornja meja višine za območje 3 (glejte opis območja 1).",
+          "floor_level": "Uporablja se za izpeljavo minimalnega sončnega kota za neposredno izpostavljenost. −1 (klet) → 20°, 0 (pritličje) → 15°, 1 (1. nadstropje) → 10°, 2 (2. nadstropje) → 5°, 3 in več → 0°. Za okna v svetlobnih jaških ali z močnimi ovirami uporabite cone ovir."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Konfigurirajte eno okno. SmartShading deluje z natančnim azimutom: smer kompasa je le priročna bližnjica.",
         "data": {
           "window_name": "Ime okna",
-          "floor_level": "Nadstropje (0 = pritličje)",
+          "floor_level": "Nadstropje (-1 = klet, 0 = pritličje, 1 = 1. nadstropje, …)",
           "compass_direction": "Usmerjenost",
           "custom_azimuth": "Azimut po meri (0-359°, uporablja se samo, če je Usmerjenost nastavljena na Po meri)",
           "absence_position": "Položaj ob odsotnosti (preglasi privzeto vrednost območja)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Pustite prazno za prevzem privzetega položaja odsotnosti območja. Vnesite vrednost, da ga preglasite samo za to določeno okno.",
-          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Odsotnost in urnik: nadzor odsotnosti, nočni in jutranji urnik aktivni; brez sončnega, toplotnega ali protisijajnega senčenja. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne."
+          "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Odsotnost in urnik: nadzor odsotnosti, nočni in jutranji urnik aktivni; brez sončnega, toplotnega ali protisijajnega senčenja. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne.",
+          "floor_level": "Uporablja se za izpeljavo minimalnega sončnega kota za neposredno izpostavljenost. −1 (klet) → 20°, 0 (pritličje) → 15°, 1 (1. nadstropje) → 10°, 2 (2. nadstropje) → 5°, 3 in več → 0°. Za okna v svetlobnih jaških ali z močnimi ovirami uporabite cone ovir."
         }
       },
       "cover_group": {

@@ -110,7 +110,7 @@
         "description": "Afegeix una altra finestra a aquesta zona. SmartShading treballa amb un azimut precís: la direcció de la brúixola només és una drecera còmoda.",
         "data": {
           "window_name": "Nom de la finestra",
-          "floor_level": "Planta (0 = planta baixa)",
+          "floor_level": "Planta (-1 = soterrani, 0 = planta baixa, 1 = 1a planta, …)",
           "compass_direction": "Orientació",
           "custom_azimuth": "Azimut personalitzat (0-359°, només s'utilitza si l'Orientació és Personalitzada)",
           "absence_position": "Posició d'absència (substitueix el valor per defecte de la zona)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Deixa-ho buit per heretar la posició d'absència per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra concreta.",
-          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Absència i horari: control per absència, horari de nit i matí actius; sense ombra solar, tèrmica o antireflex. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives."
+          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Absència i horari: control per absència, horari de nit i matí actius; sense ombra solar, tèrmica o antireflex. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives.",
+          "floor_level": "S'utilitza per derivar l'elevació solar mínima per a exposició directa. −1 (soterrani) → 20°, 0 (baixos) → 15°, 1 (1a planta) → 10°, 2 (2a planta) → 5°, 3 i superior → 0°. Per a finestres en patis de llum o amb obstruccions greus, useu zones d'obstrucció."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Actualitza la configuració de la finestra «{window_name}». Els canvis de persiana tenen efecte després de desar.",
         "data": {
           "window_name": "Nom de la finestra",
-          "floor_level": "Planta (0 = planta baixa)",
+          "floor_level": "Planta (-1 = soterrani, 0 = planta baixa, 1 = 1a planta, …)",
           "compass_direction": "Orientació",
           "custom_azimuth": "Azimut personalitzat (0-359°, només s'utilitza si l'Orientació és Personalitzada)",
           "cover_entities": "Persianes d'aquesta finestra",
@@ -183,7 +184,7 @@
           "light_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra lleugera només en aquesta finestra.",
           "normal_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra normal només en aquesta finestra.",
           "strong_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra forta només en aquesta finestra.",
-          "manual_sun_sector_enabled": "Activa-ho per substituir el sector solar automàtic basat en l'azimut per un interval manual. Els azimuts d'inici i de fi defineixen quan es considera que el sol incideix en aquesta finestra. Admet el pas pel nord (p. ex. de 330° a 30°).",
+          "manual_sun_sector_enabled": "Activeu-ho per substituir el sector solar automàtic per un rang manual. Quan s'activa sense valors definits, l'azimut d'inici i fi es preomple des de l'orientació i la tolerància de la finestra. Admet valors que travessen el nord (p. ex. 330° a 30°).",
           "obstruction_1_enabled": "Activa-ho per marcar un interval d'azimut on una obstrucció física (arbre, edifici, voladís de teulada) bloqueja el sol directe. Deixa els camps d'elevació buits per bloquejar a qualsevol elevació solar dins de l'interval d'azimut.",
           "obstruction_1_block_from_elevation_deg": "Opcional. L'obstrucció bloqueja només quan l'elevació solar és igual o superior a aquest valor. Exemple: 45° bloqueja un voladís que només fa ombra amb angles solars alts. Deixa-ho buit per no posar límit inferior.",
           "obstruction_1_block_until_elevation_deg": "Opcional. L'obstrucció bloqueja només quan l'elevació solar és igual o inferior a aquest valor. Exemple: 18° bloqueja una muntanya o un edifici veí que només afecta amb el sol baix. Deixa-ho buit per no posar límit superior.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Límit d'elevació superior opcional per a la zona 2 (vegeu la descripció de la zona 1).",
           "obstruction_3_enabled": "Tercera zona d'obstrucció opcional per a aquesta finestra.",
           "obstruction_3_block_from_elevation_deg": "Límit d'elevació inferior opcional per a la zona 3 (vegeu la descripció de la zona 1).",
-          "obstruction_3_block_until_elevation_deg": "Límit d'elevació superior opcional per a la zona 3 (vegeu la descripció de la zona 1)."
+          "obstruction_3_block_until_elevation_deg": "Límit d'elevació superior opcional per a la zona 3 (vegeu la descripció de la zona 1).",
+          "floor_level": "S'utilitza per derivar l'elevació solar mínima per a exposició directa. −1 (soterrani) → 20°, 0 (baixos) → 15°, 1 (1a planta) → 10°, 2 (2a planta) → 5°, 3 i superior → 0°. Per a finestres en patis de llum o amb obstruccions greus, useu zones d'obstrucció."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Configura una finestra. SmartShading treballa amb un azimut precís: la direcció de la brúixola només és una drecera còmoda.",
         "data": {
           "window_name": "Nom de la finestra",
-          "floor_level": "Planta (0 = planta baixa)",
+          "floor_level": "Planta (-1 = soterrani, 0 = planta baixa, 1 = 1a planta, …)",
           "compass_direction": "Orientació",
           "custom_azimuth": "Azimut personalitzat (0-359°, només s'utilitza si l'Orientació és Personalitzada)",
           "absence_position": "Posició d'absència (substitueix el valor per defecte de la zona)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Deixa-ho buit per heretar la posició d'absència per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra concreta.",
-          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Absència i horari: control per absència, horari de nit i matí actius; sense ombra solar, tèrmica o antireflex. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives."
+          "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Absència i horari: control per absència, horari de nit i matí actius; sense ombra solar, tèrmica o antireflex. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives.",
+          "floor_level": "S'utilitza per derivar l'elevació solar mínima per a exposició directa. −1 (soterrani) → 20°, 0 (baixos) → 15°, 1 (1a planta) → 10°, 2 (2a planta) → 5°, 3 i superior → 0°. Per a finestres en patis de llum o amb obstruccions greus, useu zones d'obstrucció."
         }
       },
       "cover_group": {

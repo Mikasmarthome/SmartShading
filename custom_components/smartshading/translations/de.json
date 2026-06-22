@@ -110,7 +110,7 @@
         "description": "Weiteres Fenster zu dieser Zone hinzufügen. SmartShading arbeitet mit einem präzisen Azimut — die Himmelsrichtung ist nur eine Eingabehilfe.",
         "data": {
           "window_name": "Fenstername",
-          "floor_level": "Stockwerk (0 = Erdgeschoss)",
+          "floor_level": "Stockwerk (-1 = Keller/UG, 0 = Erdgeschoss, 1 = 1. OG, …)",
           "compass_direction": "Ausrichtung",
           "custom_azimuth": "Benutzerdefinierter Azimut (0-359°, nur wenn Ausrichtung auf Benutzerdefiniert gesetzt)",
           "absence_position": "Abwesenheitsposition (überschreibt Zonen-Standard)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Leer lassen, um die Zonen-Standardposition zu übernehmen. Wert setzen, um sie nur für dieses Fenster zu überschreiben.",
-          "window_behavior_mode": "Vollautomatisch: Sonne, Komfort, Abwesenheit und Zeitplan aktiv. Abwesenheit und Zeitplan: Abwesenheitssteuerung, Nacht- und Morgenzeitplan aktiv; keine Sonnen-, Wärme- oder Blendbeschattung. Nur Abwesenheit: nur Abwesenheitssteuerung aktiv. Automatik deaktiviert: keine automatische Beschattung. Sicherheitsschutz (Sturm/Wind) bleibt immer aktiv."
+          "window_behavior_mode": "Vollautomatisch: Sonne, Komfort, Abwesenheit und Zeitplan aktiv. Abwesenheit und Zeitplan: Abwesenheitssteuerung, Nacht- und Morgenzeitplan aktiv; keine Sonnen-, Wärme- oder Blendbeschattung. Nur Abwesenheit: nur Abwesenheitssteuerung aktiv. Automatik deaktiviert: keine automatische Beschattung. Sicherheitsschutz (Sturm/Wind) bleibt immer aktiv.",
+          "floor_level": "Wird genutzt, um die minimale Sonnenhöhe für direkte Einstrahlung abzuleiten. −1 (Keller/UG) → 20°, 0 (EG) → 15°, 1 (1. OG) → 10°, 2 (2. OG) → 5°, 3 und höher → 0°. Für Fenster in Lichtschächten oder mit starken Hindernissen Schattenzonen verwenden."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Einstellungen für Fenster \"{window_name}\" aktualisieren. Änderungen an den Rolladen-Entitäten werden nach dem Speichern wirksam.",
         "data": {
           "window_name": "Fenstername",
-          "floor_level": "Stockwerk (0 = Erdgeschoss)",
+          "floor_level": "Stockwerk (-1 = Keller/UG, 0 = Erdgeschoss, 1 = 1. OG, …)",
           "compass_direction": "Ausrichtung",
           "custom_azimuth": "Benutzerdefinierter Azimut (0–359°, nur wenn Ausrichtung auf 'Benutzerdefiniert' gesetzt)",
           "cover_entities": "Rolladen dieses Fensters",
@@ -183,7 +184,7 @@
           "light_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei leichter Beschattung nur für dieses Fenster zu überschreiben.",
           "normal_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei normaler Beschattung nur für dieses Fenster zu überschreiben.",
           "strong_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei starker Beschattung nur für dieses Fenster zu überschreiben.",
-          "manual_sun_sector_enabled": "Aktivieren, um den automatischen Azimutbereich durch einen manuell definierten Bereich zu ersetzen. Start- und Endazimut definieren, wann die Sonne als direkt auf dieses Fenster treffend gilt. Unterstützt Überläufe (z. B. 330° bis 30° über Nord).",
+          "manual_sun_sector_enabled": "Aktivieren, um den automatischen Azimutbereich durch einen manuellen Bereich zu ersetzen. Wird ohne gesetzte Werte aktiviert, werden Start- und Endazimut automatisch aus Ausrichtung und Toleranz des Fensters vorbelegt. Unterstützt Überlauf über 0°/360° (z. B. 330° bis 30°).",
           "obstruction_1_enabled": "Aktivieren, um einen Azimutbereich zu markieren, in dem ein physisches Hindernis (Baum, Gebäude, Dachüberstand) die direkte Sonne blockiert. Lege optional fest, bei welchen Sonnenhöhen das Hindernis wirkt. Ohne Angabe gilt die Schattenzone bei jeder Sonnenhöhe.",
           "obstruction_1_block_from_elevation_deg": "Optional. Das Hindernis blockiert nur, wenn die Sonnenhöhe größer oder gleich diesem Wert ist. Beispiel: 45° für einen Dachüberstand, der nur bei steiler Sonne wirkt. Leer lassen für keine Untergrenze.",
           "obstruction_1_block_until_elevation_deg": "Optional. Das Hindernis blockiert nur, wenn die Sonnenhöhe kleiner oder gleich diesem Wert ist. Beispiel: 18° für einen Berg oder ein Nachbargebäude, das nur bei tiefer Sonne wirkt. Leer lassen für keine Obergrenze.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Optionale obere Sonnenhöhengrenze für Zone 2 (siehe Zone-1-Beschreibung).",
           "obstruction_3_enabled": "Dritte optionale Schattenzone für dieses Fenster.",
           "obstruction_3_block_from_elevation_deg": "Optionale untere Sonnenhöhengrenze für Zone 3 (siehe Zone-1-Beschreibung).",
-          "obstruction_3_block_until_elevation_deg": "Optionale obere Sonnenhöhengrenze für Zone 3 (siehe Zone-1-Beschreibung)."
+          "obstruction_3_block_until_elevation_deg": "Optionale obere Sonnenhöhengrenze für Zone 3 (siehe Zone-1-Beschreibung).",
+          "floor_level": "Wird genutzt, um die minimale Sonnenhöhe für direkte Einstrahlung abzuleiten. −1 (Keller/UG) → 20°, 0 (EG) → 15°, 1 (1. OG) → 10°, 2 (2. OG) → 5°, 3 und höher → 0°. Für Fenster in Lichtschächten oder mit starken Hindernissen Schattenzonen verwenden."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Konfiguriere ein Fenster. SmartShading arbeitet mit einem präzisen Azimut-Wert – die Himmelsrichtung ist nur eine Eingabehilfe.",
         "data": {
           "window_name": "Fenstername",
-          "floor_level": "Stockwerk (0 = Erdgeschoss)",
+          "floor_level": "Stockwerk (-1 = Keller/UG, 0 = Erdgeschoss, 1 = 1. OG, …)",
           "compass_direction": "Ausrichtung",
           "custom_azimuth": "Benutzerdefinierter Azimut (0–359°, nur bei Ausrichtung 'Benutzerdefiniert' verwendet)",
           "absence_position": "Abwesenheitsposition (überschreibt Zonen-Standard)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Leer lassen, um die Zonen-Standardposition zu übernehmen. Wert setzen, um sie nur für dieses Fenster zu überschreiben.",
-          "window_behavior_mode": "Vollautomatisch: Sonne, Komfort, Abwesenheit und Zeitplan aktiv. Abwesenheit und Zeitplan: Abwesenheitssteuerung, Nacht- und Morgenzeitplan aktiv; keine Sonnen-, Wärme- oder Blendbeschattung. Nur Abwesenheit: nur Abwesenheitssteuerung aktiv. Automatik deaktiviert: keine automatische Beschattung. Sicherheitsschutz (Sturm/Wind) bleibt immer aktiv."
+          "window_behavior_mode": "Vollautomatisch: Sonne, Komfort, Abwesenheit und Zeitplan aktiv. Abwesenheit und Zeitplan: Abwesenheitssteuerung, Nacht- und Morgenzeitplan aktiv; keine Sonnen-, Wärme- oder Blendbeschattung. Nur Abwesenheit: nur Abwesenheitssteuerung aktiv. Automatik deaktiviert: keine automatische Beschattung. Sicherheitsschutz (Sturm/Wind) bleibt immer aktiv.",
+          "floor_level": "Wird genutzt, um die minimale Sonnenhöhe für direkte Einstrahlung abzuleiten. −1 (Keller/UG) → 20°, 0 (EG) → 15°, 1 (1. OG) → 10°, 2 (2. OG) → 5°, 3 und höher → 0°. Für Fenster in Lichtschächten oder mit starken Hindernissen Schattenzonen verwenden."
         }
       },
       "cover_group": {

@@ -110,7 +110,7 @@
         "description": "Tilføj endnu et vindue til denne zone. SmartShading arbejder med en præcis azimut: kompasretningen er blot en praktisk genvej.",
         "data": {
           "window_name": "Vinduesnavn",
-          "floor_level": "Etage (0 = stueetage)",
+          "floor_level": "Etage (-1 = kælder, 0 = stueplan, 1 = 1. sal, …)",
           "compass_direction": "Orientering",
           "custom_azimuth": "Tilpasset azimut (0-359°, bruges kun, hvis Orientering er sat til Tilpasset)",
           "absence_position": "Fraværsposition (tilsidesætter zonens standard)",
@@ -118,7 +118,8 @@
         },
         "data_description": {
           "absence_position": "Lad stå tom for at arve zonens standardfraværsposition. Angiv en værdi for at tilsidesætte den kun for dette specifikke vindue.",
-          "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, nat- og morgentidsplan aktive; ingen sol-, varme- eller blændingsbeskyttelse. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive."
+          "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, nat- og morgentidsplan aktive; ingen sol-, varme- eller blændingsbeskyttelse. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive.",
+          "floor_level": "Bruges til at beregne den minimale solhøjde for direkte sollys. −1 (kælder) → 20°, 0 (stueplan) → 15°, 1 (1. sal) → 10°, 2 (2. sal) → 5°, 3 og derover → 0°. For vinduer i lysskakte eller med store forhindringer brug hindringszoner."
         }
       },
       "add_window_cover_group": {
@@ -148,7 +149,7 @@
         "description": "Opdater indstillingerne for vinduet \"{window_name}\". Ændringer af afskærmninger træder i kraft efter lagring.",
         "data": {
           "window_name": "Vinduesnavn",
-          "floor_level": "Etage (0 = stueetage)",
+          "floor_level": "Etage (-1 = kælder, 0 = stueplan, 1 = 1. sal, …)",
           "compass_direction": "Orientering",
           "custom_azimuth": "Tilpasset azimut (0-359°, bruges kun, hvis Orientering er sat til Tilpasset)",
           "cover_entities": "Afskærmninger for dette vindue",
@@ -183,7 +184,7 @@
           "light_shade_position": "Lad stå tom for at bruge zonens standard. Angiv en værdi for at tilsidesætte målpositionen for let afskærmning kun for dette vindue.",
           "normal_shade_position": "Lad stå tom for at bruge zonens standard. Angiv en værdi for at tilsidesætte målpositionen for normal afskærmning kun for dette vindue.",
           "strong_shade_position": "Lad stå tom for at bruge zonens standard. Angiv en værdi for at tilsidesætte målpositionen for kraftig afskærmning kun for dette vindue.",
-          "manual_sun_sector_enabled": "Aktivér for at erstatte den automatiske, azimutbaserede solsektor med et manuelt interval. Start- og slutazimut definerer, hvornår solen anses for at ramme dette vindue. Understøtter overgang forbi nord (f.eks. fra 330° til 30°).",
+          "manual_sun_sector_enabled": "Aktivér for at erstatte den automatiske azimutsektor med et manuelt område. Når det aktiveres uden angivne værdier, udfyldes start- og slut-azimut automatisk fra vinduets orientering og tolerance. Understøtter overløb over nord (f.eks. 330° til 30°).",
           "obstruction_1_enabled": "Aktivér for at markere et azimutinterval, hvor en fysisk forhindring (træ, bygning, tagudhæng) blokerer direkte sol. Lad højdefelterne stå tomme for at blokere ved enhver solhøjde inden for azimutintervallet.",
           "obstruction_1_block_from_elevation_deg": "Valgfrit. Forhindringen blokerer kun, når solhøjden er lig med eller over denne værdi. Eksempel: 45° blokerer et tagudhæng, der kun giver skygge ved stejle solvinkler. Lad stå tom for ingen nedre grænse.",
           "obstruction_1_block_until_elevation_deg": "Valgfrit. Forhindringen blokerer kun, når solhøjden er lig med eller under denne værdi. Eksempel: 18° blokerer et bjerg eller en nabobygning, der kun påvirker ved lav sol. Lad stå tom for ingen øvre grænse.",
@@ -192,7 +193,8 @@
           "obstruction_2_block_until_elevation_deg": "Valgfri øvre højdegrænse for zone 2 (se beskrivelsen af zone 1).",
           "obstruction_3_enabled": "Tredje valgfri forhindringszone for dette vindue.",
           "obstruction_3_block_from_elevation_deg": "Valgfri nedre højdegrænse for zone 3 (se beskrivelsen af zone 1).",
-          "obstruction_3_block_until_elevation_deg": "Valgfri øvre højdegrænse for zone 3 (se beskrivelsen af zone 1)."
+          "obstruction_3_block_until_elevation_deg": "Valgfri øvre højdegrænse for zone 3 (se beskrivelsen af zone 1).",
+          "floor_level": "Bruges til at beregne den minimale solhøjde for direkte sollys. −1 (kælder) → 20°, 0 (stueplan) → 15°, 1 (1. sal) → 10°, 2 (2. sal) → 5°, 3 og derover → 0°. For vinduer i lysskakte eller med store forhindringer brug hindringszoner."
         }
       },
       "remove_window": {
@@ -297,7 +299,7 @@
         "description": "Konfigurer ét vindue. SmartShading arbejder med en præcis azimut: kompasretningen er blot en praktisk genvej.",
         "data": {
           "window_name": "Vinduesnavn",
-          "floor_level": "Etage (0 = stueetage)",
+          "floor_level": "Etage (-1 = kælder, 0 = stueplan, 1 = 1. sal, …)",
           "compass_direction": "Orientering",
           "custom_azimuth": "Tilpasset azimut (0-359°, bruges kun, hvis Orientering er sat til Tilpasset)",
           "absence_position": "Fraværsposition (tilsidesætter zonens standard)",
@@ -305,7 +307,8 @@
         },
         "data_description": {
           "absence_position": "Lad stå tom for at arve zonens standardfraværsposition. Angiv en værdi for at tilsidesætte den kun for dette specifikke vindue.",
-          "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, nat- og morgentidsplan aktive; ingen sol-, varme- eller blændingsbeskyttelse. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive."
+          "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, nat- og morgentidsplan aktive; ingen sol-, varme- eller blændingsbeskyttelse. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive.",
+          "floor_level": "Bruges til at beregne den minimale solhøjde for direkte sollys. −1 (kælder) → 20°, 0 (stueplan) → 15°, 1 (1. sal) → 10°, 2 (2. sal) → 5°, 3 og derover → 0°. For vinduer i lysskakte eller med store forhindringer brug hindringszoner."
         }
       },
       "cover_group": {

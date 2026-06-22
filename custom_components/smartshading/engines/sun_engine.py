@@ -71,7 +71,18 @@ class SunEngine:
         azimuth_delta = normalize_angle_diff(sun_position.azimuth - window_azimuth)
         is_above_horizon = sun_position.elevation > 0.0
         in_tolerance = -tolerance_start <= azimuth_delta <= tolerance_end
-        is_in_window = is_above_horizon and in_tolerance
+
+        # Floor elevation threshold: sun must be at or above the per-floor minimum
+        # elevation to reach the glazing.  elevation_clipped=True means the sun is
+        # physically below the sight line of this window's floor level and cannot
+        # contribute direct radiation, so is_in_window and direct_radiation_factor
+        # are both zeroed out.  Computed before is_in_window so it gates the result.
+        elevation_threshold = FLOOR_ELEVATION_THRESHOLD_DEG.get(
+            floor_level, DEFAULT_ELEVATION_THRESHOLD_DEG
+        )
+        elevation_clipped = sun_position.elevation < elevation_threshold
+
+        is_in_window = is_above_horizon and in_tolerance and not elevation_clipped
 
         direct_radiation_factor = 0.0
         if is_in_window:
@@ -80,10 +91,6 @@ class SunEngine:
                 math.cos(math.radians(azimuth_delta)) * math.sin(math.radians(sun_position.elevation)),
             )
 
-        elevation_threshold = FLOOR_ELEVATION_THRESHOLD_DEG.get(
-            floor_level, DEFAULT_ELEVATION_THRESHOLD_DEG
-        )
-        elevation_clipped = sun_position.elevation < elevation_threshold
         # NOTE (implementation concern): the overhang correction described
         # in §5.1 ("blocked_elevation = atan(overhang_depth_m / window_height_m)")
         # needs a window height, which WindowConfig (§3.1) does not model.

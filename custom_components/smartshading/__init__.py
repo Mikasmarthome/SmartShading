@@ -84,6 +84,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
         cancel[1]()
     coordinator = getattr(getattr(entry, "runtime_data", None), "coordinator", None)
     if coordinator is not None:
+        # Explicit teardown as a safety net; also called via entry.async_on_unload
+        # registered in async_setup_presence_listeners.  Idempotent.
+        coordinator.async_teardown_presence_listeners()
         await coordinator.async_flush_learning()
     return await hass.config_entries.async_unload_platforms(entry, ZONE_PLATFORMS)
 
@@ -255,6 +258,11 @@ async def _async_setup_zone_entry(
     coordinator.set_forecast_store(_fl_store)
 
     await coordinator.async_config_entry_first_refresh()
+
+    # Register immediate state-change listeners for presence entities so that
+    # an away→home transition triggers all affected zones at once rather than
+    # waiting up to 5 minutes for the next polling cycle.
+    coordinator.async_setup_presence_listeners(entry)
 
     entry.runtime_data = SmartShadingRuntimeData(
         coordinator=coordinator,

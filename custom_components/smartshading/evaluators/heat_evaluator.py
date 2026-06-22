@@ -71,13 +71,14 @@ class HeatEvaluator:
         if not heat_needed:
             return None
 
-        # Exposure gate: only shade for heat when the sun currently has a path
-        # to this window's glazing. Without solar exposure the window is not
-        # contributing to heat gain via radiation, so closing it for heat
-        # protection would block airflow with no thermal benefit.
-        if not wdi.is_in_solar_sector and (
-            wdi.exposure is None or wdi.exposure.effective_exposure <= 0
-        ):
+        # Sector gate: only shade for heat when the sun is confirmed in this
+        # window's effective solar sector. is_in_solar_sector already incorporates
+        # the manual sector override and obstruction zones. Using the automatic
+        # tolerance sector (via exposure.effective_exposure) would incorrectly
+        # trigger when a manual sector blocks the sun but the auto-tolerance
+        # sector still matches — the exposure engine is driven by the automatic
+        # geometry, not by the manual sector override.
+        if not wdi.is_in_solar_sector:
             return None
 
         return WindowDecision(

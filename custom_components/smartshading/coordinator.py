@@ -26,7 +26,8 @@ if TYPE_CHECKING:
     from .models.forecast_store import ForecastLearningStore
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
@@ -421,6 +422,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._presence_entity_ids: list[str] = presence_entity_ids or []
         self._absence_delay_min: int = absence_delay_min
         self._presence_debouncer = PresenceDebouncer()
+        # Unsubscribe callbacks for presence state change listeners.
+        # Populated by async_setup_presence_listeners(); cleared by teardown.
+        self._unsub_presence_listeners: list[Callable[[], None]] = []
+        # Presence dispatch generation (v1.0.4 stale-intent guard).
+        # Incremented by each _on_presence_change callback; checked inside the
+        # dispatch lock to cancel non-safety intents computed before a newer
+        # presence event invalidated the batch.
+        self._dispatch_generation: int = 0
         # Learning Loop Closure (9F15): per-window AdaptiveProfile cache.
         # Updated each sun-path cycle; carries the last computed profile for
         # windows that hit the no-sun path.
@@ -528,6 +537,66 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             target_adapter=self._target_position_adapter,
         )
         self._learning_dirty = False
+
+    # ------------------------------------------------------------------
+    # Presence listener fan-out
+    # ------------------------------------------------------------------
+
+    def async_setup_presence_listeners(self, entry: ConfigEntry) -> None:
+        """Register immediate-refresh listeners for all configured presence entities.
+
+        When any presence entity changes state, an immediate coordinator refresh
+        is requested rather than waiting for the next 5-minute polling cycle.
+        This ensures that a global away→home transition causes all affected zone
+        coordinators to recalculate within the same event-handling window.
+
+        Per-zone isolation: each coordinator subscribes only to its own presence
+        entities, so zones with different presence sensors react independently.
+
+        unknown/unavailable are handled safely by _read_presence() which treats
+        all-unavailable as "present" (safe default, never triggers absence).
+
+        Idempotency: teardown cancels all listeners and clears the list, so
+        reload/unload can never leave stale subscriptions.
+        """
+        if not self._presence_entity_ids:
+            return
+
+        @callback
+        def _on_presence_change(event: Event) -> None:
+            new_state = event.data.get("new_state")
+            old_state = event.data.get("old_state")
+            # Entity removed or added with no prior state — not a meaningful change.
+            if new_state is None or old_state is None:
+                return
+            # Deduplicate: skip if state value is identical (e.g. duplicate events).
+            if new_state.state == old_state.state:
+                return
+            # Increment before scheduling so any intents currently waiting
+            # for the dispatch lock see the updated generation and self-cancel.
+            self._dispatch_generation += 1
+            self.hass.async_create_task(self.async_request_refresh())
+
+        for entity_id in self._presence_entity_ids:
+            unsub = async_track_state_change_event(
+                self.hass, entity_id, _on_presence_change
+            )
+            self._unsub_presence_listeners.append(unsub)
+
+        # Register teardown so listeners are always cleaned up on entry unload,
+        # even if async_unload_entry is not called in the normal sequence.
+        entry.async_on_unload(self.async_teardown_presence_listeners)
+
+    def async_teardown_presence_listeners(self) -> None:
+        """Cancel all presence state change listeners.
+
+        Called by entry.async_on_unload() registered in async_setup_presence_listeners()
+        and explicitly in async_unload_entry() as a safety net.  Idempotent:
+        safe to call multiple times.
+        """
+        for unsub in self._unsub_presence_listeners:
+            unsub()
+        self._unsub_presence_listeners.clear()
 
     # ------------------------------------------------------------------
     # Zone execution config API (Step 9G11)
@@ -1175,6 +1244,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 _manual_sun_sector_active = True
                 _effective_in_solar_sector = (
                     sun_geometry.is_above_horizon
+                    and not sun_geometry.elevation_clipped
                     and azimuth_in_sector(
                         sun_position.azimuth,
                         window.manual_sun_sector_start_deg,
@@ -1693,7 +1763,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             decided_by=tier_decision.decided_by,
                             lifecycle_state=self._lifecycle_state.value,
                             absence_active=absence_active,
-                            is_in_solar_sector=sun_geometry.is_in_tolerance_window,
+                            is_in_solar_sector=_effective_in_solar_sector,
                             outdoor_temp_c=weather_inputs.outdoor_temperature,
                             indoor_temp_c=indoor_temperature,
                             solar_radiation_wm2=weather_inputs.solar_radiation,
@@ -2087,7 +2157,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         new_state is ShadingState.ABSENCE_CLOSED
                         and not _allow_during_absence
                     )
-                    and sun_geometry.is_in_tolerance_window
+                    and _effective_in_solar_sector
                     and exposure.effective_exposure >= ANTI_HEAT_BUILDUP_MIN_EXPOSURE_WM2
                 )
                 else 0
@@ -2237,6 +2307,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 _LOGGER.debug("SmartShading: harmonization applied: %s", _harm_summary)
 
         # --- Execution Pipeline — Pass 2 (async): dispatch + build diagnostics ---
+        # Capture presence generation snapshot before any awaits in this pass.
+        # If _on_presence_change fires during dispatch (between awaits), it
+        # increments _dispatch_generation and stale intents self-cancel.
+        _this_dispatch_gen = self._dispatch_generation
         # For harmonized windows, the filter result is replaced with a new one
         # carrying the group's harmonized target_position_ha before plan building.
         for window_id, s in _window_states.items():
@@ -2300,7 +2374,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         #
                         # While holding the lock:
                         #   - Non-safety: sleep until the throttle allows the next
-                        #     dispatch (≥1 s since the previous SENT command).
+                        #     dispatch (≥1.5 s since the previous SENT command).
                         #   - Safety: skip the sleep — prioritised, but still serial.
                         #
                         # POSITION INVARIANT: dispatch_cover_intent uses
@@ -2323,6 +2397,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                             _intent.target_position_ha,
                                         )
                                     await asyncio.sleep(_wait.total_seconds())
+                                # Stale-intent guard: a presence event that fired
+                                # while we waited for the lock or slept through the
+                                # throttle already incremented _dispatch_generation.
+                                # Cancel this non-safety intent; the refresh queued
+                                # by that event will dispatch the correct state.
+                                # Safety is exempt — always dispatches.
+                                if self._dispatch_generation != _this_dispatch_gen:
+                                    _exec_results.append(build_not_attempted_result(
+                                        _intent,
+                                        reason="stale_presence_superseded",
+                                    ))
+                                    continue
                             _intent_result = await dispatch_cover_intent(
                                 self.hass, _intent, now_utc=dt_util.utcnow()
                             )

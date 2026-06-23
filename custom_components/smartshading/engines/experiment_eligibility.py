@@ -3,8 +3,8 @@
 A FRESH eligibility evaluation that must be run both at planning time and again
 immediately before activation.  A persisted P6 'supported' flag is never enough.
 
-Three mandatory user levels (all required, plus every other gate):
-    observation_enabled AND active_control_enabled AND experiments_enabled
+Two mandatory user levels (both required, plus every other gate):
+    learning_enabled AND active_control_enabled
 
 No Home Assistant import.  No runtime mutation.
 """
@@ -25,10 +25,9 @@ ATTR_WINDOW_CANDIDATE: str = "window_candidate"
 @dataclass(frozen=True)
 class ExperimentEligibilityInput:
     intensity_level: str
-    # Three user levels (verbatim names from ZoneExecutionConfig).
-    observation_enabled: bool
+    # Two user levels (verbatim names from ZoneExecutionConfig).
+    learning_enabled: bool
     active_control_enabled: bool
-    experiments_enabled: bool
     # Shadow / references.
     shadow_status: str
     proposal_present: bool
@@ -71,10 +70,9 @@ def evaluate_experiment_eligibility(
     def gate(ok: bool, code: str) -> None:
         (passed if ok else blocked).append(code)
 
-    # --- three mandatory user levels (ordered for stable primary reason) ---
-    gate(inp.observation_enabled, "observation_mode_required")
+    # --- two mandatory user levels (ordered for stable primary reason) ---
+    gate(inp.learning_enabled, "learning_mode_required")
     gate(inp.active_control_enabled, "active_control_required")
-    gate(inp.experiments_enabled, "experiments_not_enabled")
     gate(inp.reliable_position_feedback, "no_reliable_feedback")
 
     # --- shadow + references ---

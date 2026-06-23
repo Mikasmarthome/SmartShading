@@ -1,31 +1,30 @@
-"""Zone execution configuration — per-zone control mode flags.
+"""Zone execution configuration — the two central per-zone control flags.
 
-Introduced in Step 9G5a. Controls whether a zone participates in
-observation/learning (observation_enabled) and whether active cover
-control is enabled (active_control_enabled).
+SmartShading exposes exactly two zone controls: Learning Mode
+(learning_enabled) and Active Control (active_control_enabled).
 
 These two flags are intentionally independent so that all four
 combinations are supported — see the table below.
 
 DEFAULT DESIGN INTENT
 ---------------------
-  observation_enabled  = True   (safe: SmartShading observes and learns)
+  learning_enabled       = True   (safe: SmartShading observes and learns)
   active_control_enabled = False  (safe: no covers move until opt-in)
 
 After first install, SmartShading immediately starts building its
-understanding of the house (observation) and generating recommendations,
+understanding of the house (learning) and generating recommendations,
 but never moves a cover automatically until the user explicitly enables
 active control. This keeps a low barrier to
 install and a high barrier to actuation.
 
 COMBINATION TABLE
 -----------------
-  observation_enabled | active_control_enabled | Behaviour
-  -------------------- | ---------------------- | ---------
-  False                | False                  | Zone inactive — no learning, no commands
-  True                 | False   [DEFAULT]       | Observe + learn + recommend; no cover movement
-  True                 | True                   | Full: observe + learn + recommend + move covers
-  False                | True                   | Rule-based control only, no learning/adaptation
+  learning_enabled | active_control_enabled | Behaviour
+  ---------------- | ---------------------- | ---------
+  False            | False                  | Zone inactive — no learning, no commands
+  True             | False   [DEFAULT]       | Learn + recommend + shadow; no cover movement
+  True             | True                   | Full: learn + recommend + move covers + bounded experiments
+  False            | True                   | Rule-based deterministic control only, no learning/adaptation
 
 The (False, True) combination is explicitly valid: SmartShading
 controls covers using only the configured/default values, without the
@@ -39,28 +38,38 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class ZoneExecutionConfig:
-    """Per-zone execution mode flags (Step 9G5a).
+    """Per-zone execution mode flags — the two central zone controls.
 
     Both fields default to the safe post-install experience:
-    observation on, active control off.
+    learning on, active control off.
     """
 
-    observation_enabled: bool = True
-    """When True, SmartShading collects learning/observation data, runs the
-    Learning Engine (LE v1.0), applies the Adaptive Profile to BehaviorConfig,
-    and generates diagnostic data.
+    learning_enabled: bool = True
+    """Learning Mode (LE 2.0 master authority; UI label "Lernmodus").
+
+    When True, SmartShading evaluates decisions and outcomes, learns thermal
+    responses and user preferences, generates shadow proposals, prepares
+    possible improvements, and — only together with active_control_enabled and
+    all safety/eligibility gates — may run strictly-bounded learning experiments
+    (P7) and, later, validated adoption (P8).
 
     When False:
       - No Learning Store writes (transitions, overrides, outcomes, snapshots)
       - No PendingOutcome creation or resolution
-      - No Learning Pipeline execution
-      - No Adaptation Application (BehaviorConfig is used as resolved from config)
+      - No Learning Pipeline / model updates
+      - No new shadow proposals
+      - No new learning experiments; a running experiment is logically aborted
+      - No LE 2.0 thermal adaptive authority and no experiment-adopted targets
       - _NEUTRAL_ADAPTIVE_PROFILE is always used
-      - Rule-based evaluation (TierOrchestrator, StateGuard) still runs normally
+      - Stored learned data / shadow / experiment history are preserved
+      - Rule-based deterministic evaluation (TierOrchestrator, StateGuard) still
+        runs normally and may control covers when active_control_enabled
     """
 
     active_control_enabled: bool = False
-    """When True, SmartShading may issue cover.set_cover_position service calls,
+    """Active Control (UI label "Aktive Steuerung").
+
+    When True, SmartShading may issue cover.set_cover_position service calls,
     subject to CommandFilter, StateGuard, Safety, and ExecutionMode checks.
 
     When False:
@@ -72,22 +81,8 @@ class ZoneExecutionConfig:
     active_control_enabled=True does NOT guarantee a cover command is sent.
     CommandFilter, StateGuard, manual override, and cover availability checks
     all apply. It only means that allowed commands are dispatched.
-    """
 
-    experiments_enabled: bool = False
-    """When True (LE 2.0 / P7 — UI label "Lernexperimente"), SmartShading may
-    occasionally run a single strictly-bounded real thermal close-more
-    experiment (-5 pp parameter step) per zone, to causally validate a
-    P6-supported shadow candidate.
-
-    Requires observation_enabled AND active_control_enabled to ALSO be True;
-    all Safety/Lifecycle/Manual/Preference/Feedback/Context/Reliability gates
-    still apply.  Default False for existing and new zones — real experiments
-    are explicit opt-in and never silently widen the meaning of Active Control.
-
-    When False:
-      - No experiment is planned or activated
-      - A running experiment is logically aborted (authority removed at once;
-        no proactive inverse command).  Shadow proposals and all learned models
-        and experiment history are preserved.
+    A real bounded learning experiment requires BOTH learning_enabled and
+    active_control_enabled to be True (plus reliable feedback and every P7
+    eligibility gate).  There is no separate experiments flag.
     """

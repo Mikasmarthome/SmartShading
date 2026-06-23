@@ -426,8 +426,8 @@
       }
     },
     "switch": {
-      "observation_mode": {
-        "name": "Megfigyelési mód",
+      "learning_mode": {
+        "name": "Tanulási mód",
         "state": {
           "on": "Megfigyel",
           "off": "Szüneteltetve"
@@ -438,13 +438,6 @@
         "state": {
           "on": "Aktív",
           "off": "Inaktív"
-        }
-      },
-      "learning_experiments": {
-        "name": "Tanulási kísérletek",
-        "state": {
-          "on": "Bekapcsolva",
-          "off": "Kikapcsolva"
         }
       },
       "debug_logging": {

@@ -426,8 +426,8 @@
       }
     },
     "switch": {
-      "observation_mode": {
-        "name": "Mod de observare",
+      "learning_mode": {
+        "name": "Mod de învățare",
         "state": {
           "on": "Observă",
           "off": "În pauză"
@@ -438,13 +438,6 @@
         "state": {
           "on": "Activ",
           "off": "Inactiv"
-        }
-      },
-      "learning_experiments": {
-        "name": "Experimente de învățare",
-        "state": {
-          "on": "Activat",
-          "off": "Dezactivat"
         }
       },
       "debug_logging": {

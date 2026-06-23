@@ -426,8 +426,8 @@
       }
     },
     "switch": {
-      "observation_mode": {
-        "name": "Režim pozorovania",
+      "learning_mode": {
+        "name": "Režim učenia",
         "state": {
           "on": "Pozoruje",
           "off": "Pozastavené"
@@ -438,13 +438,6 @@
         "state": {
           "on": "Aktívne",
           "off": "Neaktívne"
-        }
-      },
-      "learning_experiments": {
-        "name": "Učebné experimenty",
-        "state": {
-          "on": "Zapnuté",
-          "off": "Vypnuté"
         }
       },
       "debug_logging": {

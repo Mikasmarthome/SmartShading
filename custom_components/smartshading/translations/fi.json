@@ -426,8 +426,8 @@
       }
     },
     "switch": {
-      "observation_mode": {
-        "name": "Tarkkailutila",
+      "learning_mode": {
+        "name": "Oppimistila",
         "state": {
           "on": "Tarkkailee",
           "off": "Keskeytetty"
@@ -438,13 +438,6 @@
         "state": {
           "on": "Aktiivinen",
           "off": "Ei-aktiivinen"
-        }
-      },
-      "learning_experiments": {
-        "name": "Oppimiskokeet",
-        "state": {
-          "on": "Käytössä",
-          "off": "Pois käytöstä"
         }
       },
       "debug_logging": {

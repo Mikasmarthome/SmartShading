@@ -426,8 +426,8 @@
       }
     },
     "switch": {
-      "observation_mode": {
-        "name": "Način opazovanja",
+      "learning_mode": {
+        "name": "Način učenja",
         "state": {
           "on": "Opazuje",
           "off": "Začasno ustavljeno"
@@ -438,13 +438,6 @@
         "state": {
           "on": "Aktivno",
           "off": "Neaktivno"
-        }
-      },
-      "learning_experiments": {
-        "name": "Učni poskusi",
-        "state": {
-          "on": "Omogočeno",
-          "off": "Onemogočeno"
         }
       },
       "debug_logging": {

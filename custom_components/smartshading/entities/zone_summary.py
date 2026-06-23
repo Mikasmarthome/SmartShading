@@ -9,7 +9,7 @@ Zone Summary Sensor (Step 9G10g):
     1. "safety"              — any window is in a Tier-1 safety state
     2. "override"            — any window has an active manual override
     3. "automatic"           — zone has active_control_enabled=True
-    4. "recommendation_only" — zone has observation_enabled=True, active_control off
+    4. "recommendation_only" — zone has learning_enabled=True, active_control off
     5. "disabled"            — both observation and active_control are off
 
 Learning Progress Sensor:
@@ -113,7 +113,7 @@ _SAFETY_STATES: frozenset[ShadingState] = frozenset({
 def compute_zone_summary_attributes(
     zone_id: str,
     *,
-    observation_enabled: bool,
+    learning_enabled: bool,
     active_control_enabled: bool,
     window_ids: list[str],
     coordinator_data: Any,  # SmartShadingData | None
@@ -130,7 +130,7 @@ def compute_zone_summary_attributes(
 
     if coordinator_data is None or totals == 0:
         return {
-            "observation_enabled": observation_enabled,
+            "learning_enabled": learning_enabled,
             "active_control_enabled": active_control_enabled,
             "windows_total": totals,
             "windows_with_recommendation": 0,
@@ -213,7 +213,7 @@ def compute_zone_summary_attributes(
         highest_confidence = None
 
     return {
-        "observation_enabled": observation_enabled,
+        "learning_enabled": learning_enabled,
         "active_control_enabled": active_control_enabled,
         "windows_total": totals,
         "windows_with_recommendation": n_recommendation,
@@ -230,7 +230,7 @@ def compute_zone_summary_attributes(
 
 def compute_zone_summary_state(
     *,
-    observation_enabled: bool,
+    learning_enabled: bool,
     active_control_enabled: bool,
     window_ids: list[str],
     coordinator_data: Any,  # SmartShadingData | None
@@ -241,7 +241,7 @@ def compute_zone_summary_state(
       1. safety            — any window in Tier-1 safety state
       2. override          — any window has active manual override
       3. automatic         — active_control_enabled=True (observation on/off)
-      4. recommendation_only — observation_enabled=True, active_control off
+      4. recommendation_only — learning_enabled=True, active_control off
       5. disabled           — both flags False
     """
     if coordinator_data is not None:
@@ -266,7 +266,7 @@ def compute_zone_summary_state(
     if active_control_enabled:
         return ZONE_STATE_AUTOMATIC
 
-    if observation_enabled:
+    if learning_enabled:
         return ZONE_STATE_RECOMMENDATION_ONLY
 
     return ZONE_STATE_DISABLED
@@ -314,7 +314,7 @@ class SmartShadingZoneSummarySensor(CoordinatorEntity[SmartShadingCoordinator], 
     def native_value(self) -> str:
         exec_cfg = self.coordinator.effective_zone_execution(self._zone_id)
         return compute_zone_summary_state(
-            observation_enabled=exec_cfg.observation_enabled,
+            learning_enabled=exec_cfg.learning_enabled,
             active_control_enabled=exec_cfg.active_control_enabled,
             window_ids=self._window_ids,
             coordinator_data=self.coordinator.data,
@@ -325,7 +325,7 @@ class SmartShadingZoneSummarySensor(CoordinatorEntity[SmartShadingCoordinator], 
         exec_cfg = self.coordinator.effective_zone_execution(self._zone_id)
         return compute_zone_summary_attributes(
             self._zone_id,
-            observation_enabled=exec_cfg.observation_enabled,
+            learning_enabled=exec_cfg.learning_enabled,
             active_control_enabled=exec_cfg.active_control_enabled,
             window_ids=self._window_ids,
             coordinator_data=self.coordinator.data,

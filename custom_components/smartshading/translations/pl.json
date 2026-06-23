@@ -426,8 +426,8 @@
       }
     },
     "switch": {
-      "observation_mode": {
-        "name": "Tryb obserwacji",
+      "learning_mode": {
+        "name": "Tryb uczenia",
         "state": {
           "on": "Obserwuje",
           "off": "Wstrzymano"
@@ -438,13 +438,6 @@
         "state": {
           "on": "Aktywne",
           "off": "Nieaktywne"
-        }
-      },
-      "learning_experiments": {
-        "name": "Eksperymenty uczenia",
-        "state": {
-          "on": "Włączone",
-          "off": "Wyłączone"
         }
       },
       "debug_logging": {

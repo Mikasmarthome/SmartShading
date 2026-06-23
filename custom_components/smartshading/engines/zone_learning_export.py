@@ -167,7 +167,7 @@ def _build_window_runtime_section(
         return {
             "available": True,
             "active_control": getattr(window_diag, "active_control_enabled", None),
-            "observation_mode": getattr(window_diag, "observation_enabled", None),
+            "learning_mode": getattr(window_diag, "learning_enabled", None),
             "behavior_mode": getattr(window_diag, "execution_mode", None),
             "cover_available": getattr(window_diag, "cover_available", None),
             "current_position_ha": getattr(window_diag, "actual_position_ha", None),

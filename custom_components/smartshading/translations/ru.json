@@ -426,8 +426,8 @@
       }
     },
     "switch": {
-      "observation_mode": {
-        "name": "Режим наблюдения",
+      "learning_mode": {
+        "name": "Режим обучения",
         "state": {
           "on": "Наблюдение",
           "off": "Приостановлено"
@@ -438,13 +438,6 @@
         "state": {
           "on": "Активно",
           "off": "Неактивно"
-        }
-      },
-      "learning_experiments": {
-        "name": "Обучающие эксперименты",
-        "state": {
-          "on": "Включено",
-          "off": "Выключено"
         }
       },
       "debug_logging": {

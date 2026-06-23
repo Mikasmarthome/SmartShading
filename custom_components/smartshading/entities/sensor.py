@@ -178,7 +178,7 @@ def _recommendation_attributes(
     }
     attrs.update({
         "execution_mode": diag.execution_mode,
-        "observation_enabled": diag.observation_enabled,
+        "learning_enabled": diag.learning_enabled,
         "active_control_enabled": diag.active_control_enabled,
         "tier_decided_by": diag.tier_decided_by,
         "command_allowed": diag.command_allowed,

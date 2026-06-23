@@ -426,8 +426,8 @@
       }
     },
     "switch": {
-      "observation_mode": {
-        "name": "Λειτουργία παρατήρησης",
+      "learning_mode": {
+        "name": "Λειτουργία μάθησης",
         "state": {
           "on": "Παρατηρεί",
           "off": "Σε παύση"
@@ -435,13 +435,6 @@
       },
       "active_control": {
         "name": "Ενεργός έλεγχος",
-        "state": {
-          "on": "Ενεργό",
-          "off": "Ανενεργό"
-        }
-      },
-      "learning_experiments": {
-        "name": "Πειράματα μάθησης",
         "state": {
           "on": "Ενεργό",
           "off": "Ανενεργό"

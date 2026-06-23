@@ -40,7 +40,7 @@ LEARNING_EXPORT_STORAGE_KEY = "smartshading_learning_export"
 LEARNING_EXPORT_STORAGE_VERSION = 1
 
 # Zone control persistence key in config_entry.options (Step 9G11).
-# Stores per-zone observation_enabled / active_control_enabled so switch
+# Stores per-zone learning_enabled / active_control_enabled so switch
 # state survives HA restart without modifying config_entry.data.
 CONF_ZONE_CONTROLS = "zone_controls"
 

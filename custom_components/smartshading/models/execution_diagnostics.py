@@ -28,8 +28,8 @@ class WindowExecutionDiagnostics:
 
     # --- Zone configuration (source of truth for this cycle) ---------------
 
-    observation_enabled: bool
-    """True when the zone's observation/learning pipeline is active."""
+    learning_enabled: bool
+    """True when the zone's Learning Mode (learning pipeline) is active."""
 
     active_control_enabled: bool
     """True when the zone allows cover commands to be dispatched."""

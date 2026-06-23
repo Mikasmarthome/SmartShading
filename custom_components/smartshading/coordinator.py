@@ -698,9 +698,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if not isinstance(_ctrl, dict):
                     continue
                 self._zone_execution_overrides[_zone_id] = ZoneExecutionConfig(
-                    observation_enabled=_ctrl.get("observation_enabled", True),
+                    # Two-control UX: learning_enabled is the merged learning
+                    # master.  Tolerate a legacy observation_enabled key.
+                    learning_enabled=_ctrl.get(
+                        "learning_enabled", _ctrl.get("observation_enabled", True)),
                     active_control_enabled=_ctrl.get("active_control_enabled", False),
-                    experiments_enabled=_ctrl.get("experiments_enabled", False),
                 )
 
     @property
@@ -835,16 +837,26 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             return zone.execution
         return ZoneExecutionConfig()
 
-    async def async_set_zone_observation_enabled(
+    async def async_set_zone_learning_enabled(
         self, zone_id: str, enabled: bool
     ) -> None:
-        """Toggle observation_enabled for a zone; persist and refresh."""
+        """Toggle Learning Mode (learning_enabled) for a zone; persist + refresh.
+
+        When turned OFF, any active experiment for the zone is logically aborted
+        (authority removed immediately; no proactive inverse command).  Stored
+        learned models, shadow proposals and experiment history are preserved.
+        Deterministic control may continue if active control stays enabled.
+        """
         current = self.effective_zone_execution(zone_id)
         self._zone_execution_overrides[zone_id] = ZoneExecutionConfig(
-            observation_enabled=enabled,
+            learning_enabled=enabled,
             active_control_enabled=current.active_control_enabled,
-            experiments_enabled=current.experiments_enabled,
         )
+        if not enabled:
+            try:
+                self._abort_zone_experiment(zone_id, "learning_mode_disabled", dt_util.utcnow())
+            except Exception:
+                _LOGGER.warning("Learning: experiment abort on learning-disable failed for %s", zone_id)
         self._persist_zone_controls()
         await self.async_request_refresh()
 
@@ -854,9 +866,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         """Toggle active_control_enabled for a zone; persist and refresh."""
         current = self.effective_zone_execution(zone_id)
         self._zone_execution_overrides[zone_id] = ZoneExecutionConfig(
-            observation_enabled=current.observation_enabled,
+            learning_enabled=current.learning_enabled,
             active_control_enabled=enabled,
-            experiments_enabled=current.experiments_enabled,
         )
         if enabled:
             # When Active Control is turned ON, clear any existing manual
@@ -884,37 +895,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._persist_zone_controls()
         await self.async_request_refresh()
 
-    async def async_set_zone_experiments_enabled(
-        self, zone_id: str, enabled: bool
-    ) -> None:
-        """Toggle experiments_enabled ("Lernexperimente") for a zone.
-
-        When turned OFF, any active experiment for the zone is logically aborted
-        (authority removed immediately; no proactive inverse command).  Shadow
-        proposals, learned models and experiment history are preserved.  The
-        switch state persists regardless of observation/active-control state.
-        """
-        current = self.effective_zone_execution(zone_id)
-        self._zone_execution_overrides[zone_id] = ZoneExecutionConfig(
-            observation_enabled=current.observation_enabled,
-            active_control_enabled=current.active_control_enabled,
-            experiments_enabled=enabled,
-        )
-        if not enabled:
-            try:
-                self._abort_zone_experiment(zone_id, "experiments_disabled", dt_util.utcnow())
-            except Exception:
-                _LOGGER.warning("Learning: experiment abort on disable failed for %s", zone_id)
-        self._persist_zone_controls()
-        await self.async_request_refresh()
-
     def _persist_zone_controls(self) -> None:
         """Write current zone execution overrides into config_entry.options."""
         zone_controls = {
             zone_id: {
-                "observation_enabled": cfg.observation_enabled,
+                "learning_enabled": cfg.learning_enabled,
                 "active_control_enabled": cfg.active_control_enabled,
-                "experiments_enabled": cfg.experiments_enabled,
             }
             for zone_id, cfg in self._zone_execution_overrides.items()
         }
@@ -1286,7 +1272,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # effective_zone_execution() applies any runtime switch override (Step 9G11).
             zone = self.zones.get(window.zone_id, ZoneConfig(id=window.zone_id, name=window.zone_id))
             _exec = self.effective_zone_execution(window.zone_id)
-            obs_enabled = _exec.observation_enabled
+            obs_enabled = _exec.learning_enabled
 
             # Capability/Position observation (2026-06-16) is independent
             # of sun data - a cover's position is worth reading even when
@@ -1470,7 +1456,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     else ExecutionMode.RECOMMENDATION_ONLY.value
                 )
                 execution_diagnostics[window_id] = WindowExecutionDiagnostics(
-                    observation_enabled=obs_enabled,
+                    learning_enabled=obs_enabled,
                     active_control_enabled=_exec.active_control_enabled,
                     execution_mode=_no_sun_exec_mode,
                     cover_entity_id=None,
@@ -2949,7 +2935,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 else None  # safety / no-sun path: field stays None
             )
             execution_diagnostics[window_id] = WindowExecutionDiagnostics(
-                observation_enabled=s.obs_enabled,
+                learning_enabled=s.obs_enabled,
                 active_control_enabled=s.active_control_enabled,
                 execution_mode=s.exec_mode.value,
                 cover_entity_id=s.exec_entity_id,
@@ -3444,9 +3430,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._cycle_experiment.pop(window_id, None)
         zone_id = window.zone_id
         exec_cfg = self.effective_zone_execution(zone_id)
-        # Three mandatory user levels.
-        if not (exec_cfg.observation_enabled and exec_cfg.active_control_enabled
-                and exec_cfg.experiments_enabled):
+        # Two mandatory user levels: Learning Mode + Active Control.
+        if not (exec_cfg.learning_enabled and exec_cfg.active_control_enabled):
             return wdi
 
         exp = self._experiments_active.get(zone_id)
@@ -3494,9 +3479,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         elig = evaluate_experiment_eligibility(ExperimentEligibilityInput(
             intensity_level=intensity,
-            observation_enabled=exec_cfg.observation_enabled,
+            learning_enabled=exec_cfg.learning_enabled,
             active_control_enabled=exec_cfg.active_control_enabled,
-            experiments_enabled=exec_cfg.experiments_enabled,
             shadow_status=proposal.status, proposal_present=True,
             p5_reference_valid=window_id in self._contribution_models,
             contribution_current=contrib_exp_elig,
@@ -3737,12 +3721,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         zone_id = window.zone_id if window is not None else ""
         exec_cfg = self.effective_zone_execution(zone_id) if zone_id else ZoneExecutionConfig()
         gate = None
-        if not exec_cfg.observation_enabled:
-            gate = "observation_mode_required"
+        if not exec_cfg.learning_enabled:
+            gate = "learning_mode_required"
         elif not exec_cfg.active_control_enabled:
             gate = "active_control_required"
-        elif not exec_cfg.experiments_enabled:
-            gate = "experiments_not_enabled"
         exp = self._experiments_active.get(zone_id)
         if exp is None or exp.window_id != window_id:
             latest = next(

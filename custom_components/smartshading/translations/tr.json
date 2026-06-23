@@ -426,8 +426,8 @@
       }
     },
     "switch": {
-      "observation_mode": {
-        "name": "Gözlem modu",
+      "learning_mode": {
+        "name": "Öğrenme modu",
         "state": {
           "on": "Gözlemliyor",
           "off": "Duraklatıldı"
@@ -438,13 +438,6 @@
         "state": {
           "on": "Etkin",
           "off": "Etkin değil"
-        }
-      },
-      "learning_experiments": {
-        "name": "Öğrenme denemeleri",
-        "state": {
-          "on": "Etkin",
-          "off": "Devre dışı"
         }
       },
       "debug_logging": {

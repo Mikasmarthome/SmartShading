@@ -1,13 +1,13 @@
-"""Zone control switch entities for SmartShading (Step 9G11).
+"""Zone control switch entities for SmartShading.
 
-One SmartShadingObservationModeSwitch and one SmartShadingActiveControlSwitch
-are created per configured zone.  Both write their state to the coordinator's
+Exactly two switches per configured zone: SmartShadingLearningModeSwitch and
+SmartShadingActiveControlSwitch.  Both write their state to the coordinator's
 runtime zone-execution overrides and persist via config_entry.options so
 values survive HA restarts.
 
 Defaults (matching ZoneExecutionConfig):
-  Observation Mode  — on  by default (safe to observe/learn from first boot)
-  Active Control    — off by default (no cover movement until user opts in)
+  Learning Mode   — on  by default (safe to learn from first boot)
+  Active Control  — off by default (no cover movement until user opts in)
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ async def async_setup_entry(
 
     for zone_id, zone in coordinator.zones.items():
         entities.append(
-            SmartShadingObservationModeSwitch(
+            SmartShadingLearningModeSwitch(
                 coordinator=coordinator,
                 zone_id=zone_id,
                 zone_name=zone.name,
@@ -38,13 +38,6 @@ async def async_setup_entry(
         )
         entities.append(
             SmartShadingActiveControlSwitch(
-                coordinator=coordinator,
-                zone_id=zone_id,
-                zone_name=zone.name,
-            )
-        )
-        entities.append(
-            SmartShadingLearningExperimentsSwitch(
                 coordinator=coordinator,
                 zone_id=zone_id,
                 zone_name=zone.name,
@@ -81,14 +74,18 @@ class _ZoneControlSwitch(CoordinatorEntity[SmartShadingCoordinator], SwitchEntit
         )
 
 
-class SmartShadingObservationModeSwitch(_ZoneControlSwitch):
-    """Observation Mode switch — controls observation_enabled for a zone.
+class SmartShadingLearningModeSwitch(_ZoneControlSwitch):
+    """Learning Mode switch — controls learning_enabled for a zone.
 
-    When on:  SmartShading collects observations, runs the Learning Engine,
-              and applies the Adaptive Profile to recommendations.
-    When off: Observation, learning, and adaptive application are paused.
-              No learning data is deleted.  Adaptive profiles are retained and
-              will be used again when the switch is turned back on.
+    When on:  SmartShading evaluates decisions and outcomes, learns thermal
+              responses and user preferences, generates shadow proposals,
+              prepares improvements and — only with Active Control and all
+              safety/eligibility gates — runs strictly-bounded learning
+              experiments.
+    When off: Learning, model updates, shadow proposals and experiments are
+              paused; a running experiment is logically aborted.  No stored
+              learning data is deleted.  Deterministic rule-based control may
+              continue when Active Control is on.
 
     Default: on.
     """
@@ -105,19 +102,19 @@ class SmartShadingObservationModeSwitch(_ZoneControlSwitch):
             coordinator,
             zone_id=zone_id,
             zone_name=zone_name,
-            translation_key="observation_mode",
-            unique_id_suffix="observation_mode",
+            translation_key="learning_mode",
+            unique_id_suffix="learning_mode",
         )
 
     @property
     def is_on(self) -> bool:
-        return self.coordinator.effective_zone_execution(self._zone_id).observation_enabled
+        return self.coordinator.effective_zone_execution(self._zone_id).learning_enabled
 
     async def async_turn_on(self, **kwargs) -> None:
-        await self.coordinator.async_set_zone_observation_enabled(self._zone_id, True)
+        await self.coordinator.async_set_zone_learning_enabled(self._zone_id, True)
 
     async def async_turn_off(self, **kwargs) -> None:
-        await self.coordinator.async_set_zone_observation_enabled(self._zone_id, False)
+        await self.coordinator.async_set_zone_learning_enabled(self._zone_id, False)
 
 
 class SmartShadingActiveControlSwitch(_ZoneControlSwitch):
@@ -156,48 +153,3 @@ class SmartShadingActiveControlSwitch(_ZoneControlSwitch):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_set_zone_active_control_enabled(self._zone_id, False)
-
-
-class SmartShadingLearningExperimentsSwitch(_ZoneControlSwitch):
-    """Learning Experiments switch (LE 2.0 / P7) — controls experiments_enabled.
-
-    When on:  SmartShading may occasionally run a single strictly-bounded real
-              thermal close-more experiment (-5 pp) per zone to causally
-              validate a supported shadow candidate.  Requires Observation Mode
-              AND Active Control; all safety/lifecycle/manual/preference gates
-              still apply and remain authoritative.
-    When off: No experiment is planned or activated.  A running experiment is
-              logically aborted (authority removed immediately; no proactive
-              counter-movement).  Shadow proposals, learned models and the
-              experiment history are preserved.
-
-    Default: off (explicit opt-in).  The stored state survives restarts and
-    remains enabled even while runtime is gated by Observation Mode or Active
-    Control being temporarily off.
-    """
-
-    _attr_icon = "mdi:flask-outline"
-
-    def __init__(
-        self,
-        coordinator: SmartShadingCoordinator,
-        zone_id: str,
-        zone_name: str,
-    ) -> None:
-        super().__init__(
-            coordinator,
-            zone_id=zone_id,
-            zone_name=zone_name,
-            translation_key="learning_experiments",
-            unique_id_suffix="learning_experiments",
-        )
-
-    @property
-    def is_on(self) -> bool:
-        return self.coordinator.effective_zone_execution(self._zone_id).experiments_enabled
-
-    async def async_turn_on(self, **kwargs) -> None:
-        await self.coordinator.async_set_zone_experiments_enabled(self._zone_id, True)
-
-    async def async_turn_off(self, **kwargs) -> None:
-        await self.coordinator.async_set_zone_experiments_enabled(self._zone_id, False)

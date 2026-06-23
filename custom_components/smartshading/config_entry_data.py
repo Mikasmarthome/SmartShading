@@ -283,17 +283,20 @@ def _zone_from_storage(raw: dict[str, Any]) -> ZoneConfig:
 
     dataclasses.asdict() flattens ZoneConfig.execution to a plain dict, so a
     naive ZoneConfig(**raw) would leave `execution` as a dict and every
-    `zone.execution.observation_enabled` access would raise AttributeError
+    `zone.execution.learning_enabled` access would raise AttributeError
     after a reload/restart.  Pop it out and rebuild the dataclass, mirroring
     how cover_groups rebuild their enums above.  Missing/None/malformed
-    `execution` falls back to ZoneExecutionConfig defaults (observation on,
+    `execution` falls back to ZoneExecutionConfig defaults (learning on,
     active control off) — never raises.
     """
     fields = dict(raw)
     raw_execution = fields.pop("execution", None)
     if isinstance(raw_execution, dict):
         execution = ZoneExecutionConfig(
-            observation_enabled=raw_execution.get("observation_enabled", True),
+            # Two-control UX: learning_enabled is the merged learning master.
+            # Tolerate a legacy observation_enabled key (pre-unification data).
+            learning_enabled=raw_execution.get(
+                "learning_enabled", raw_execution.get("observation_enabled", True)),
             active_control_enabled=raw_execution.get("active_control_enabled", False),
         )
     else:

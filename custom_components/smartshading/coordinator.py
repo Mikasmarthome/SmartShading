@@ -2027,12 +2027,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             # from the per-zone thermal model (cold-start/low-conf/
                             # no-temp → 30 min = unchanged behavior).
                             _zone_reading = self._read_zone_temperature()
-                            _obs_window_min = self._thermal_select_window(
-                                window.zone_id,
-                                outdoor=weather_inputs.outdoor_temperature,
-                                exposure=exposure.effective_exposure,
-                                temperature_available=_zone_reading.available,
-                                now=now,
+                            _obs_window_min, _thermal_authority, _thermal_conf = (
+                                self._thermal_select_window(
+                                    window.zone_id,
+                                    outdoor=weather_inputs.outdoor_temperature,
+                                    exposure=exposure.effective_exposure,
+                                    temperature_available=_zone_reading.available,
+                                    now=now,
+                                )
                             )
                             _new_pending = PendingOutcome(
                                 window_id=window_id,
@@ -2050,6 +2052,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 decision_id=_decision_id,
                                 config_fingerprint=_prov_fingerprint or None,
                                 created_at_utc=now,
+                                # P4: observation-window authority provenance.
+                                thermal_authority_applied=_thermal_authority,
+                                thermal_confidence_at_decision=_thermal_conf,
                             )
                             _old_pending = self._pending_outcomes.replace(_new_pending)
                             if _old_pending is not None:
@@ -2274,6 +2279,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         observation_interrupted=(window_id, _to_pending.decision_timestamp)
                                         in self._interrupted_decision_keys,
                                         movement_observation=self._movement_take(window_id, MOVE_CAUSE_NONE),
+                                        thermal_maturity=self._thermal_maturity_for(
+                                            window.zone_id, _to_pending, now
+                                        ),
                                     ),
                                 )
                                 self._store_outcome(_outcome)
@@ -3207,20 +3215,67 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         gen, _changed = self._config_generation_tracker.observe(f"thermal::{zone_id}", fp)
         return gen
 
+    _THERMAL_FALLBACK_REASONS = frozenset(
+        {"cold_start_fallback", "low_confidence_diagnostic", "no_temperature_fallback"}
+    )
+
     def _thermal_select_window(
         self, zone_id: str, *, outdoor: float | None, exposure: float | None,
         temperature_available: bool, now: datetime,
-    ) -> int:
+    ) -> tuple[int, bool, float | None]:
         """P4 active authority: choose the outcome observation window (minutes).
 
-        Cold-start / low-confidence / no-temperature → fixed 30-min fallback.
+        Returns (window_minutes, authority_applied, model_confidence).
+        Cold-start / low-confidence / no-temperature → fixed 30-min fallback
+        with authority_applied=False (unchanged behavior).
         """
         model = self._thermal_models.get(zone_id)
         ctx = thermal_context_key(now, outdoor, exposure)
-        window, _reason = select_observation_window(
+        window, reason = select_observation_window(
             model, ctx, temperature_available=temperature_available
         )
-        return window
+        authority = reason not in self._THERMAL_FALLBACK_REASONS
+        confidence = model.confidence if model is not None else None
+        return window, authority, confidence
+
+    def _thermal_maturity_for(self, zone_id: str, pending, now: datetime):
+        """Build the P4 ThermalMaturityInput for a TIMEOUT resolution."""
+        from .engines.outcome_resolution import (
+            ThermalMaturityInput, MATURITY_MATURE, MATURITY_MAXIMUM_REACHED,
+            MATURITY_IMMATURE,
+        )
+        from .engines.thermal_response_engine import (
+            detect_response_onset, MAX_OBSERVATION_MIN,
+        )
+
+        authority = getattr(pending, "thermal_authority_applied", False)
+        window = getattr(pending, "indoor_temp_outcome_delay_min", _OUTCOME_OBSERVATION_DELAY_MIN)
+        conf = getattr(pending, "thermal_confidence_at_decision", None)
+        duration = (now - pending.decision_timestamp).total_seconds() / 60.0
+
+        acc = self._thermal_open.get(zone_id)
+        samples = tuple(acc["samples"]) if acc else ()
+        onset = detect_response_onset(samples, solar_exposure=pending.solar_exposure_at_decision)
+        stable = onset is not None
+
+        if window >= MAX_OBSERVATION_MIN:
+            maturity, reason = MATURITY_MAXIMUM_REACHED, "maximum_window"
+        elif not authority:
+            maturity, reason = MATURITY_MATURE, "fallback_window"   # legacy 30-min
+        elif window < _OUTCOME_OBSERVATION_DELAY_MIN:
+            if stable:
+                maturity, reason = MATURITY_MATURE, "learned_window_stable_early"
+            else:
+                maturity, reason = MATURITY_IMMATURE, "learned_window_unstable_early"
+        else:
+            maturity, reason = MATURITY_MATURE, "learned_window"
+
+        return ThermalMaturityInput(
+            authority_applied=authority, selected_window_minutes=window,
+            model_confidence_at_decision=conf, response_onset_detected=stable,
+            response_onset_minutes=onset, stable_trend_detected=stable,
+            resolution_reason=reason, maturity=maturity,
+        )
 
     def _thermal_start_or_extend(
         self, zone_id: str, decision_id: str | None, *, now: datetime,
@@ -3306,6 +3361,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         if usable and not already:
             now = outcome.evaluation_timestamp or acc["started_at"]
+            # Circularity guard: an early (<30 min) learned-window observation
+            # trains the model with reduced weight vs a full-length observation.
+            _obs_reliability = acc["reliability_factor"]
+            _dur = mo.thermal.actual_observation_duration_minutes
+            if (mo.thermal.thermal_model_authority_applied and _dur is not None
+                    and _dur < _OUTCOME_OBSERVATION_DELAY_MIN):
+                _obs_reliability *= 0.6
             obs = ThermalResponseObservation(
                 zone_id=zone_id,
                 decision_ids=tuple(sorted(acc["decision_ids"])),
@@ -3324,7 +3386,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 valid_sensor_count=acc["valid_sensor_count"],
                 configured_sensor_count=acc["configured_sensor_count"],
                 aggregation_method=acc["aggregation_method"],
-                reliability=acc["reliability_factor"],
+                reliability=_obs_reliability,
                 context_key=acc["context_key"], confounded=False,
                 config_generation=gen,
             )

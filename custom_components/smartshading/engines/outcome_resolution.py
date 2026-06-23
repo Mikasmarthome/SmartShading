@@ -96,6 +96,40 @@ class OutcomeResolutionTrigger(Enum):
 
 
 # ---------------------------------------------------------------------------
+# P4 thermal maturity (passed transiently from the coordinator at resolution)
+# ---------------------------------------------------------------------------
+
+# Maturity classes
+MATURITY_IMMATURE: str = "immature"
+MATURITY_MATURE: str = "mature"
+MATURITY_MAXIMUM_REACHED: str = "maximum_reached"
+MATURITY_INVALIDATED: str = "invalidated"
+
+# Minimum observation duration for the P4 path (a confident, learned window may
+# resolve before 30 min — but only when explicitly matured and trend-stable).
+_P4_MIN_OBSERVATION_MIN: float = 15.0
+
+
+@dataclass(frozen=True)
+class ThermalMaturityInput:
+    """P4 thermal maturity provenance for one resolution.
+
+    authority_applied=False ⇒ legacy/fallback path (30-min gate unchanged).
+    authority_applied=True  ⇒ P4 path (learned window; early availability only
+    when matured + trend-stable, or maximum_reached).
+    """
+
+    authority_applied: bool = False
+    selected_window_minutes: int | None = None
+    model_confidence_at_decision: float | None = None
+    response_onset_detected: bool = False
+    response_onset_minutes: float | None = None
+    stable_trend_detected: bool = False
+    resolution_reason: str = "fallback_window"
+    maturity: str = MATURITY_MATURE
+
+
+# ---------------------------------------------------------------------------
 # Resolution input
 # ---------------------------------------------------------------------------
 
@@ -137,6 +171,8 @@ class OutcomeResolutionInput:
     behavior_mode_changed: bool = False
     legacy_data: bool = False
     movement_observation: "MovementObservation | None" = None
+    # P4 thermal maturity (None ⇒ legacy 30-min path).
+    thermal_maturity: "ThermalMaturityInput | None" = None
 
 
 # ---------------------------------------------------------------------------
@@ -193,10 +229,31 @@ _OPEN_OVERHEAT_MAX_PENALTY: float = 0.10   # cap
 def _resolution_status(
     trigger: OutcomeResolutionTrigger,
     indoor_temp_outcome_c: float | None,
+    maturity: "ThermalMaturityInput | None" = None,
+    interrupted: bool = False,
 ) -> str:
-    if trigger == OutcomeResolutionTrigger.TIMEOUT:
-        return "complete" if indoor_temp_outcome_c is not None else "partial_no_temp"
-    return "partial_early_exit"
+    """Resolution status, P4-maturity aware.
+
+    A TIMEOUT with temperature is 'complete' only when thermally mature:
+      - legacy/fallback path (no P4 authority): duration is 30 min by
+        construction → complete.
+      - P4 path: 'complete' only when matured (mature/maximum_reached); an
+        early window that did not mature stays 'partial_early_exit' so it
+        never enters the active legacy chain (e.g. SolarImpact) as complete.
+    """
+    if trigger != OutcomeResolutionTrigger.TIMEOUT:
+        return "partial_early_exit"
+    if indoor_temp_outcome_c is None:
+        return "partial_no_temp"
+    if interrupted:
+        # A restart-interrupted observation is never a complete thermal sample
+        # and must not enter the active legacy chain (e.g. SolarImpact).
+        return "interrupted_partial"
+    if maturity is not None and maturity.authority_applied:
+        if maturity.maturity in (MATURITY_MATURE, MATURITY_MAXIMUM_REACHED):
+            return "complete"
+        return "partial_early_exit"   # early but not matured / invalidated
+    return "complete"   # legacy/fallback 30-min path
 
 
 def _temp_component(
@@ -419,17 +476,48 @@ def compute_thermal_outcome(
     thermal_confounded: bool,
     temperature_start: float | None = None,
     temperature_end: float | None = None,
+    maturity: "ThermalMaturityInput | None" = None,
 ) -> ThermalOutcome:
     """Exact, deterministic thermal observation.  Describes ONLY the thermal
-    association — not proven window causation, not a global score."""
+    association — not proven window causation, not a global score.
+
+    Two availability paths (P4 integration):
+      - Legacy/fallback (no P4 authority): minimum duration stays 30 min.
+      - P4 path (authority applied): a confident, learned window may be valid
+        from MIN_OBSERVATION (15 min) — but only when matured/maximum_reached
+        (enforced jointly here and via resolution_status, which downgrades an
+        early non-matured TIMEOUT to partial_early_exit).
+    """
     duration = observation_duration_min or 0.0
+    legacy_path = maturity is None or not maturity.authority_applied
+    min_required = _THERMAL_MIN_DURATION_MIN if legacy_path else _P4_MIN_OBSERVATION_MIN
+
+    # P4 maturity provenance carried onto every ThermalOutcome (available or not).
+    _mat_kwargs = dict(
+        thermal_resolution_reason=(maturity.resolution_reason if maturity else None),
+        thermal_maturity=(maturity.maturity if maturity else None),
+        selected_observation_window_minutes=(maturity.selected_window_minutes if maturity else None),
+        actual_observation_duration_minutes=round(duration, 1),
+        response_onset_detected=(maturity.response_onset_detected if maturity else False),
+        response_onset_minutes=(maturity.response_onset_minutes if maturity else None),
+        stable_trend_detected=(maturity.stable_trend_detected if maturity else False),
+        thermal_model_confidence_at_decision=(maturity.model_confidence_at_decision if maturity else None),
+        thermal_model_authority_applied=(maturity.authority_applied if maturity else False),
+    )
+
+    invalidated = maturity is not None and maturity.maturity == MATURITY_INVALIDATED
     available = (
-        resolution_status == _RESOLUTION_COMPLETE
+        not invalidated
+        and resolution_status == _RESOLUTION_COMPLETE
         and indoor_delta_c is not None
-        and duration >= _THERMAL_MIN_DURATION_MIN
+        and duration >= min_required
         and state in (_THERMAL_STATES | {ShadingState.OPEN})
         and not thermal_confounded
     )
+    # Early (<30 min) P4 outcomes are only available when explicitly matured.
+    if available and not legacy_path and duration < _THERMAL_MIN_DURATION_MIN:
+        if maturity is None or maturity.maturity not in (MATURITY_MATURE, MATURITY_MAXIMUM_REACHED):
+            available = False
     if not available:
         return ThermalOutcome(
             available=False, score=None,
@@ -440,6 +528,7 @@ def compute_thermal_outcome(
             solar_exposure_at_decision=solar_exposure,
             reason="not_available" if not thermal_confounded else "thermal_confounded",
             reconstruction_quality=RECON_UNAVAILABLE,
+            **_mat_kwargs,
         )
 
     delta = float(indoor_delta_c)  # not None here
@@ -492,6 +581,7 @@ def compute_thermal_outcome(
         insufficient_response=insufficient,
         outdoor_temp_at_decision=outdoor_temperature_c, solar_exposure_at_decision=solar_exposure,
         reason=reason, reconstruction_quality=RECON_UNAVAILABLE,
+        **_mat_kwargs,
     )
 
 
@@ -612,6 +702,7 @@ def _finalize_reliability(
     interrupted: bool,
     legacy_data: bool,
     attribution_quality: str,
+    thermal_early: bool = False,
 ) -> OutcomeReliability:
     """Per-dimension reliability gates + a CONSERVATIVE overall summary.
 
@@ -647,6 +738,10 @@ def _finalize_reliability(
         reasons.append("thermal_confounded")
     else:
         thermal_rel = observation_continuity * (0.5 if partial else 1.0)
+        # Conservative: an early (<30 min) learned-window outcome is trusted less
+        # than a full-length observation — prevents circular window shortening.
+        if thermal_early:
+            thermal_rel *= 0.6
 
     # Movement reliability — degraded by interruption (lost observation).
     if not movement.available:
@@ -746,6 +841,7 @@ def _build_multi_objective(
         thermal_confounded=thermal_confounded,
         temperature_start=pending.indoor_temp_at_decision,
         temperature_end=inp.indoor_temp_outcome_c,
+        maturity=inp.thermal_maturity,
     )
     preference = compute_preference_outcome(
         trigger=inp.trigger, override_delay_min=inp.override_delay_min,
@@ -763,11 +859,15 @@ def _build_multi_objective(
     else:
         attribution = ATTRIBUTION_ZONE_SHARED  # conservative default in P3
 
+    _thermal_early = (
+        thermal.available and thermal.thermal_model_authority_applied
+        and (thermal.actual_observation_duration_minutes or 999.0) < _THERMAL_MIN_DURATION_MIN
+    )
     reliability = _finalize_reliability(
         thermal=thermal, movement=movement, preference=preference,
         confounders=confounders, resolution_status=resolution_status,
         interrupted=inp.observation_interrupted, legacy_data=inp.legacy_data,
-        attribution_quality=attribution,
+        attribution_quality=attribution, thermal_early=_thermal_early,
     )
 
     return MultiObjectiveOutcome(
@@ -877,7 +977,10 @@ def resolve_outcome(
     if pending.indoor_temp_at_decision is not None and inp.indoor_temp_outcome_c is not None:
         indoor_temp_delta_c = inp.indoor_temp_outcome_c - pending.indoor_temp_at_decision
 
-    resolution_status = _resolution_status(inp.trigger, inp.indoor_temp_outcome_c)
+    resolution_status = _resolution_status(
+        inp.trigger, inp.indoor_temp_outcome_c, inp.thermal_maturity,
+        interrupted=inp.observation_interrupted,
+    )
 
     outcome_score = _compute_score(
         trigger=inp.trigger,

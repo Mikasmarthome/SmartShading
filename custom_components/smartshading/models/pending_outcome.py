@@ -53,6 +53,9 @@ class PendingOutcome:
     # P2.6 — restart/interruption tracking carried across persistence.
     created_at_utc: datetime | None = None
     restart_count: int = 0
+    # P4 — thermal observation-window authority applied at decision time.
+    thermal_authority_applied: bool = False
+    thermal_confidence_at_decision: float | None = None
 
     def to_dict(self) -> dict:
         """Serialize to a JSON-safe dict (P2 — restart-safe persistence)."""
@@ -72,6 +75,8 @@ class PendingOutcome:
             "config_fingerprint": self.config_fingerprint,
             "created_at_utc": self.created_at_utc.isoformat() if self.created_at_utc else None,
             "restart_count": self.restart_count,
+            "thermal_authority_applied": self.thermal_authority_applied,
+            "thermal_confidence_at_decision": self.thermal_confidence_at_decision,
         }
 
     @classmethod
@@ -102,4 +107,6 @@ class PendingOutcome:
             config_fingerprint=d.get("config_fingerprint"),
             created_at_utc=_p(d.get("created_at_utc")),
             restart_count=int(d.get("restart_count", 0)),
+            thermal_authority_applied=bool(d.get("thermal_authority_applied", False)),
+            thermal_confidence_at_decision=d.get("thermal_confidence_at_decision"),
         )

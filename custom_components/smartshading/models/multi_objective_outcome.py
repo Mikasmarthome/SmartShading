@@ -115,6 +115,17 @@ class ThermalOutcome:
     reason: str = ""
     reconstructed: bool = False
     reconstruction_quality: str = RECON_UNAVAILABLE
+    # P4 maturity provenance — explains how/when thermal maturity was reached so
+    # availability is no longer tied to a single fixed 30-minute constant.
+    thermal_resolution_reason: str | None = None      # fallback_window|learned_window|...
+    thermal_maturity: str | None = None               # immature|mature|maximum_reached|invalidated
+    selected_observation_window_minutes: int | None = None
+    actual_observation_duration_minutes: float | None = None
+    response_onset_detected: bool = False
+    response_onset_minutes: float | None = None
+    stable_trend_detected: bool = False
+    thermal_model_confidence_at_decision: float | None = None
+    thermal_model_authority_applied: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "score", _clamp_score(self.score))
@@ -135,6 +146,15 @@ class ThermalOutcome:
             "reason": self.reason,
             "reconstructed": self.reconstructed,
             "reconstruction_quality": self.reconstruction_quality,
+            "thermal_resolution_reason": self.thermal_resolution_reason,
+            "thermal_maturity": self.thermal_maturity,
+            "selected_observation_window_minutes": self.selected_observation_window_minutes,
+            "actual_observation_duration_minutes": self.actual_observation_duration_minutes,
+            "response_onset_detected": self.response_onset_detected,
+            "response_onset_minutes": self.response_onset_minutes,
+            "stable_trend_detected": self.stable_trend_detected,
+            "thermal_model_confidence_at_decision": self.thermal_model_confidence_at_decision,
+            "thermal_model_authority_applied": self.thermal_model_authority_applied,
         }
 
     @classmethod
@@ -156,6 +176,15 @@ class ThermalOutcome:
             reason=d.get("reason", ""),
             reconstructed=bool(d.get("reconstructed", False)),
             reconstruction_quality=d.get("reconstruction_quality", RECON_UNAVAILABLE),
+            thermal_resolution_reason=d.get("thermal_resolution_reason"),
+            thermal_maturity=d.get("thermal_maturity"),
+            selected_observation_window_minutes=d.get("selected_observation_window_minutes"),
+            actual_observation_duration_minutes=d.get("actual_observation_duration_minutes"),
+            response_onset_detected=bool(d.get("response_onset_detected", False)),
+            response_onset_minutes=d.get("response_onset_minutes"),
+            stable_trend_detected=bool(d.get("stable_trend_detected", False)),
+            thermal_model_confidence_at_decision=d.get("thermal_model_confidence_at_decision"),
+            thermal_model_authority_applied=bool(d.get("thermal_model_authority_applied", False)),
         )
 
 

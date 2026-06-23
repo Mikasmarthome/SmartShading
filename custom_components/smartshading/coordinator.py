@@ -92,6 +92,13 @@ import uuid
 from .engines.adaptation_application import AdaptationTrace, apply_adaptive_profile
 from .engines.config_fingerprint import ConfigGenerationTracker, compute_config_fingerprint
 from .engines.decision_materiality import is_material_learning_decision
+from .engines.zone_temperature import aggregate_zone_temperature, source_reliability_factor
+from .engines.thermal_response_engine import (
+    context_key as thermal_context_key,
+    recompute_model,
+    select_observation_window,
+)
+from .models.thermal_response import ThermalResponseModel, ThermalResponseObservation
 from .models.decision_provenance import (
     AdaptationDecision,
     AdaptationStep,
@@ -174,7 +181,14 @@ _NO_OUTCOME_STATES: frozenset[ShadingState] = frozenset({
 
 # Minutes after a state decision before the outcome observation window closes.
 # No config parameter exists yet — constant mirrors DecisionOutcome default.
+# P4: this remains the cold-start / low-confidence / no-temperature fallback;
+# a confident per-zone ThermalResponseModel may select a different window
+# (bounded by hard caps) at pending creation.
 _OUTCOME_OBSERVATION_DELAY_MIN: int = 30
+
+# P4 — per-zone thermal observation/store caps.
+_THERMAL_OBS_CAP_PER_ZONE: int = 300
+_THERMAL_SAMPLE_CAP: int = 6
 
 # Returned by _run_learning_pipeline when the store has no data or an error occurs.
 # All factors are 1.0 (neutral — no adjustment), learning is inactive.
@@ -516,6 +530,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # rolling comfort-target history (HA) for oscillation detection.
         self._movement_acc: dict[str, dict] = {}
         self._recent_comfort_targets: dict[str, list[int]] = {}
+        # P4 — per-zone thermal response model + bounded observations + open
+        # observation accumulator + sparse sample buffer.  Keyed by zone_id
+        # (== this entry's single zone).  Nothing is shared between config entries.
+        self._thermal_models: dict[str, ThermalResponseModel] = {}
+        self._thermal_observations: dict[str, list[ThermalResponseObservation]] = {}
+        self._thermal_open: dict[str, dict] = {}          # zone_id → open observation context
+        self._thermal_prev_zone_temp: dict[str, float] = {}
+        self._thermal_sampled_cycle: dict[str, int] = {}  # sample once per zone per cycle
+        self._thermal_last_obs_cycle: dict[str, int] = {} # multi-window dedupe per cycle
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -1037,6 +1060,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         _extras.config_generations
                     )
                     self._restore_pending_outcomes(_extras.pending_outcomes, _restore_now)
+                    # P4: restore per-zone thermal models + observations.
+                    self._thermal_models = dict(_extras.thermal_models)
+                    self._thermal_observations = {
+                        z: list(lst) for z, lst in _extras.thermal_observations.items()
+                    }
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
@@ -1051,6 +1079,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     target_adapter=self._target_position_adapter,
                     pending_outcomes=self._pending_outcomes.all_pending(),
                     config_generations=self._config_generation_tracker.to_storage_dict(),
+                    thermal_models=self._thermal_models_storage(),
+                    thermal_observations=self._thermal_observations_storage(),
                 )
                 self._persistence_last_save_at = _restore_now
                 self._learning_persistence.clear_migration_dirty()
@@ -1993,6 +2023,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             else:
                                 self._movement_note_excluded_transition(window_id)
 
+                            # P4 active authority: choose the observation window
+                            # from the per-zone thermal model (cold-start/low-conf/
+                            # no-temp → 30 min = unchanged behavior).
+                            _zone_reading = self._read_zone_temperature()
+                            _obs_window_min = self._thermal_select_window(
+                                window.zone_id,
+                                outdoor=weather_inputs.outdoor_temperature,
+                                exposure=exposure.effective_exposure,
+                                temperature_available=_zone_reading.available,
+                                now=now,
+                            )
                             _new_pending = PendingOutcome(
                                 window_id=window_id,
                                 decision_timestamp=now,
@@ -2004,7 +2045,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 indoor_temp_at_decision=indoor_temperature,
                                 outdoor_temp_at_decision=weather_inputs.outdoor_temperature,
                                 solar_exposure_at_decision=exposure.effective_exposure,
-                                indoor_temp_outcome_delay_min=_OUTCOME_OBSERVATION_DELAY_MIN,
+                                indoor_temp_outcome_delay_min=_obs_window_min,
                                 # P2: authoritative link shared with the decision record.
                                 decision_id=_decision_id,
                                 config_fingerprint=_prov_fingerprint or None,
@@ -2027,6 +2068,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 self._store_outcome(_outcome)
                             # Start a fresh movement window for the new pending.
                             self._movement_reset(window_id, _new_target_ha)
+                            # P4: open/extend the per-zone thermal observation.
+                            self._thermal_start_or_extend(
+                                window.zone_id, _decision_id, now=now,
+                                indoor=indoor_temperature,
+                                outdoor=weather_inputs.outdoor_temperature,
+                                exposure=exposure.effective_exposure,
+                                target_ha=(
+                                    to_ha_position(tier_decision.target_position)
+                                    if tier_decision.target_position is not None else None
+                                ),
+                                shading_state=new_state.value,
+                            )
                         except Exception:
                             _LOGGER.warning(
                                 "Learning: pending outcome create/resolve (state_change) failed for %s",
@@ -2228,6 +2281,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     _LOGGER.warning(
                         "Learning: outcome resolution (timeout) failed for %s", window_id
                     )
+
+            # P4: sample the zone temperature into any open thermal observation
+            # (once per zone per cycle, bounded).
+            if obs_enabled:
+                try:
+                    self._thermal_sample(window.zone_id, now)
+                except Exception:
+                    pass
 
             # Learning Loop Closure (9F15) — run the full Learning Pipeline
             # for this window.  Purely observational: no evaluator is touched,
@@ -2912,6 +2973,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 target_adapter=self._target_position_adapter,
                 pending_outcomes=self._pending_outcomes.all_pending(),
                 config_generations=self._config_generation_tracker.to_storage_dict(),
+                thermal_models=self._thermal_models_storage(),
+                thermal_observations=self._thermal_observations_storage(),
             )
             self._persistence_last_save_at = now
             self._learning_dirty = False
@@ -3076,6 +3139,208 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             movement_cause=resolving_cause,
         )
 
+    # ------------------------------------------------------------------
+    # P4 Thermal Response (per-zone == per-entry)
+    # ------------------------------------------------------------------
+
+    def _read_zone_temperature(self):
+        """Robustly aggregate this zone's configured indoor temperature sensors.
+
+        Returns a ZoneTemperatureReading.  Uses the existing (already
+        zone-specific) indoor_temperature_sensor_ids — never a second source —
+        and does NOT replace the Heat-Evaluator temperature path.
+        """
+        values: list[float | None] = []
+        for sensor_id in self._indoor_temperature_sensor_ids:
+            state = self.hass.states.get(sensor_id)
+            if state is None or state.state in ("unknown", "unavailable"):
+                values.append(None)
+                continue
+            values.append(WeatherEngine.parse_numeric_state(state.state))
+        # previous value keyed by the (single) zone; first window's zone is fine
+        prev = next(iter(self._thermal_prev_zone_temp.values()), None)
+        reading = aggregate_zone_temperature(values, previous_value=prev)
+        return reading
+
+    def thermal_diagnostics(self, zone_id: str) -> dict:
+        """Privacy-safe per-zone thermal diagnostics for the Support Export.
+
+        No raw entity IDs.  Reflects current source classification, model state
+        and the gate reason for the selected observation window.
+        """
+        reading = self._read_zone_temperature()
+        model = self._thermal_models.get(zone_id)
+        ctx = thermal_context_key(dt_util.utcnow(), None, None)
+        window, reason = select_observation_window(
+            model, ctx, temperature_available=reading.available
+        )
+        return {
+            "configured_temperature_sensor_count": reading.configured_count,
+            "valid_temperature_sensor_count": reading.valid_count,
+            "temperature_source_available": reading.available,
+            "temperature_source_kind": reading.source_kind,
+            "aggregation_method": reading.aggregation_method,
+            "temperature_value": reading.value,
+            "thermal_model_active": bool(model and model.effective_observation_minutes is not None),
+            "thermal_model_confidence": round(model.confidence, 3) if model else 0.0,
+            "thermal_model_sample_count": model.sample_count if model else 0,
+            "thermal_model_distinct_days": model.distinct_days if model else 0,
+            "thermal_model_gate_reason": reason,
+            "selected_observation_window_min": window,
+        }
+
+    def _thermal_models_storage(self) -> dict:
+        return {z: m.to_dict() for z, m in self._thermal_models.items()}
+
+    def _thermal_observations_storage(self) -> dict:
+        return {
+            z: [o.to_dict() for o in lst]
+            for z, lst in self._thermal_observations.items()
+        }
+
+    def _thermal_config_generation(self, zone_id: str) -> int:
+        """Monotonic generation that changes when the zone's temperature SENSOR
+        configuration changes (not on unrelated per-window config)."""
+        fp = compute_config_fingerprint(
+            {"thermal_sensors": sorted(self._indoor_temperature_sensor_ids)}
+        )
+        gen, _changed = self._config_generation_tracker.observe(f"thermal::{zone_id}", fp)
+        return gen
+
+    def _thermal_select_window(
+        self, zone_id: str, *, outdoor: float | None, exposure: float | None,
+        temperature_available: bool, now: datetime,
+    ) -> int:
+        """P4 active authority: choose the outcome observation window (minutes).
+
+        Cold-start / low-confidence / no-temperature → fixed 30-min fallback.
+        """
+        model = self._thermal_models.get(zone_id)
+        ctx = thermal_context_key(now, outdoor, exposure)
+        window, _reason = select_observation_window(
+            model, ctx, temperature_available=temperature_available
+        )
+        return window
+
+    def _thermal_start_or_extend(
+        self, zone_id: str, decision_id: str | None, *, now: datetime,
+        indoor: float | None, outdoor: float | None, exposure: float | None,
+        target_ha: int | None, shading_state: str,
+    ) -> None:
+        """Open a per-zone thermal observation, or attach a concurrent window's
+        decision_id to the open one (zone-shared event, single observation)."""
+        if decision_id is None:
+            return
+        reading = self._read_zone_temperature()
+        gen = self._thermal_config_generation(zone_id)
+        acc = self._thermal_open.get(zone_id)
+        if acc is not None and acc.get("config_generation") == gen:
+            acc["decision_ids"].add(decision_id)   # zone-shared — no new observation
+            return
+        # Start a fresh observation window for the zone.
+        if reading.value is not None:
+            self._thermal_prev_zone_temp[zone_id] = reading.value
+        self._thermal_open[zone_id] = {
+            "started_at": now,
+            "indoor_start": indoor,
+            "outdoor_start": outdoor,
+            "solar_start": exposure,
+            "target_before": target_ha,
+            "shading_state": shading_state,
+            "decision_ids": {decision_id},
+            "samples": [(0, indoor)] if indoor is not None else [],
+            "source_kind": reading.source_kind,
+            "valid_sensor_count": reading.valid_count,
+            "configured_sensor_count": reading.configured_count,
+            "aggregation_method": reading.aggregation_method,
+            "reliability_factor": source_reliability_factor(reading),
+            "config_generation": gen,
+            "context_key": thermal_context_key(now, outdoor, exposure),
+        }
+
+    def _thermal_sample(self, zone_id: str, now: datetime) -> None:
+        """Append one sparse zone-temperature sample to the open observation
+        (once per zone per cycle, bounded, decimated)."""
+        if self._thermal_sampled_cycle.get(zone_id) == self._cycle_counter:
+            return
+        self._thermal_sampled_cycle[zone_id] = self._cycle_counter
+        acc = self._thermal_open.get(zone_id)
+        if acc is None:
+            return
+        # Invalidate on sensor-config change.
+        if self._thermal_config_generation(zone_id) != acc.get("config_generation"):
+            self._thermal_open.pop(zone_id, None)
+            return
+        reading = self._read_zone_temperature()
+        if reading.value is None:
+            return
+        self._thermal_prev_zone_temp[zone_id] = reading.value
+        offset = int(round((now - acc["started_at"]).total_seconds() / 60.0))
+        samples: list = acc["samples"]
+        samples.append((offset, reading.value))
+        if len(samples) > _THERMAL_SAMPLE_CAP:
+            # Keep first, last, and a decimated middle.
+            acc["samples"] = [samples[0]] + samples[-(_THERMAL_SAMPLE_CAP - 1):]
+
+    def _thermal_finalize(self, outcome: DecisionOutcome) -> None:
+        """On a resolved outcome, build a thermal observation when usable and
+        recompute the zone model; otherwise drop the (confounded) zone window."""
+        window = self.windows.get(outcome.window_id)
+        if window is None:
+            return
+        zone_id = window.zone_id
+        acc = self._thermal_open.get(zone_id)
+        if acc is None or outcome.decision_id not in acc["decision_ids"]:
+            return
+
+        mo = outcome.multi_objective
+        gen = self._thermal_config_generation(zone_id)
+        interrupted = (outcome.window_id, outcome.decision_timestamp) in self._interrupted_decision_keys
+        usable = (
+            mo is not None and mo.thermal.available
+            and acc.get("config_generation") == gen
+            and not interrupted
+        )
+        # Dedupe: at most one observation per zone per cycle (multi-window event).
+        already = self._thermal_last_obs_cycle.get(zone_id) == self._cycle_counter
+
+        if usable and not already:
+            now = outcome.evaluation_timestamp or acc["started_at"]
+            obs = ThermalResponseObservation(
+                zone_id=zone_id,
+                decision_ids=tuple(sorted(acc["decision_ids"])),
+                started_at=acc["started_at"], ended_at=now,
+                observation_duration_min=(now - acc["started_at"]).total_seconds() / 60.0,
+                indoor_start=acc["indoor_start"], indoor_end=outcome.indoor_temp_outcome_c,
+                indoor_samples=tuple(acc["samples"]),
+                outdoor_start=acc["outdoor_start"], outdoor_end=outcome.outdoor_temp_at_decision,
+                solar_start=acc["solar_start"], solar_end=acc["solar_start"],
+                shading_state=acc["shading_state"],
+                target_before_ha=acc["target_before"], target_after_ha=acc["target_before"],
+                thermal_available=True, thermal_score=mo.thermal.score,
+                thermal_direction=mo.thermal.observed_direction,
+                attribution_quality=mo.attribution_quality,
+                source_kind=acc["source_kind"],
+                valid_sensor_count=acc["valid_sensor_count"],
+                configured_sensor_count=acc["configured_sensor_count"],
+                aggregation_method=acc["aggregation_method"],
+                reliability=acc["reliability_factor"],
+                context_key=acc["context_key"], confounded=False,
+                config_generation=gen,
+            )
+            lst = self._thermal_observations.setdefault(zone_id, [])
+            lst.append(obs)
+            if len(lst) > _THERMAL_OBS_CAP_PER_ZONE:
+                del lst[0]
+            self._thermal_models[zone_id] = recompute_model(
+                zone_id, lst, now, config_generation=gen,
+                previous=self._thermal_models.get(zone_id),
+            )
+            self._thermal_last_obs_cycle[zone_id] = self._cycle_counter
+            self._learning_dirty = True
+        # Whether usable or not, the zone window is now closed.
+        self._thermal_open.pop(zone_id, None)
+
     def _config_fingerprint_for_window(
         self, window: WindowConfig, zone: ZoneConfig
     ) -> tuple[str, int]:
@@ -3131,6 +3396,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._learning_store.attach_outcome_by_timestamp_legacy(outcome, status)
         except Exception:
             pass  # provenance link is best-effort; never blocks learning
+        # P4: feed the resolved outcome into the per-zone thermal response model.
+        try:
+            self._thermal_finalize(outcome)
+        except Exception:
+            pass  # thermal learning is best-effort; never blocks the cycle
 
     def _restore_pending_outcomes(
         self, pendings: list, now: datetime

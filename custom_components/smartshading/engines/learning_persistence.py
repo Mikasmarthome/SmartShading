@@ -50,6 +50,7 @@ from ..models.learning import (
     WindowCycleSnapshot,
 )
 from ..models.pending_outcome import PendingOutcome
+from ..models.thermal_response import ThermalResponseModel, ThermalResponseObservation
 from ..state_machine.states import ShadingState
 
 _LOGGER = logging.getLogger(__name__)
@@ -426,6 +427,8 @@ def serialize_learning_store(
     target_adapter: "object | None" = None,
     pending_outcomes: "list[PendingOutcome] | None" = None,
     config_generations: dict | None = None,
+    thermal_models: dict | None = None,
+    thermal_observations: dict | None = None,
 ) -> dict:
     """Serialize the LearningStore to a JSON-safe dict.
 
@@ -504,6 +507,9 @@ def serialize_learning_store(
         "windows": windows,
         "pending_outcomes": pending_list,
         "config_generations": config_generations or {"fingerprint_version": 1, "windows": {}},
+        # P4 — per-zone thermal response models + bounded observations (additive).
+        "thermal_response": thermal_models or {},
+        "thermal_observations": thermal_observations or {},
     }
 
     if target_adapter is not None:
@@ -660,6 +666,8 @@ class RestoreExtras:
 
     pending_outcomes: list[PendingOutcome]
     config_generations: dict
+    thermal_models: dict  # zone_id → ThermalResponseModel
+    thermal_observations: dict  # zone_id → list[ThermalResponseObservation]
 
 
 def deserialize_into_learning_store(
@@ -791,9 +799,29 @@ def deserialize_into_learning_store(
 
     config_generations = data.get("config_generations") or {"fingerprint_version": 1, "windows": {}}
 
+    # --- P4 thermal response models + observations (additive, optional) ---
+    thermal_models: dict = {}
+    for zid, raw_model in (data.get("thermal_response") or {}).items():
+        try:
+            thermal_models[zid] = ThermalResponseModel.from_dict(raw_model)
+        except Exception:
+            _LOGGER.warning("Learning: skipping malformed thermal model for %s", zid)
+    thermal_observations: dict = {}
+    for zid, raw_list in (data.get("thermal_observations") or {}).items():
+        obs_list: list[ThermalResponseObservation] = []
+        for i, raw in enumerate(raw_list or []):
+            try:
+                obs_list.append(ThermalResponseObservation.from_dict(raw))
+            except Exception:
+                _LOGGER.warning("Learning: skipping malformed thermal obs #%d for %s", i, zid)
+        if obs_list:
+            thermal_observations[zid] = obs_list
+
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
         config_generations=config_generations,
+        thermal_models=thermal_models,
+        thermal_observations=thermal_observations,
     )
 
 
@@ -916,6 +944,8 @@ class LearningPersistenceAdapter:
         target_adapter: "object | None" = None,
         pending_outcomes: "list[PendingOutcome] | None" = None,
         config_generations: dict | None = None,
+        thermal_models: dict | None = None,
+        thermal_observations: dict | None = None,
     ) -> None:
         """Prune and persist the current in-memory learning data.
 
@@ -929,6 +959,8 @@ class LearningPersistenceAdapter:
                 target_adapter=target_adapter,
                 pending_outcomes=pending_outcomes,
                 config_generations=config_generations,
+                thermal_models=thermal_models,
+                thermal_observations=thermal_observations,
             )
             await self._store.async_save(data)
         except Exception:

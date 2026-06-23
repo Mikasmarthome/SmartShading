@@ -264,6 +264,61 @@ def _build_multi_objective_summary(outcomes: list[Any]) -> dict:
     }
 
 
+def build_thermal_research_summary(
+    models: dict | None, observations: dict | None
+) -> dict:
+    """Aggregate per-zone thermal-response stats for the Research Export.
+
+    Privacy-safe: zone keys are replaced by anonymized indices; no entity IDs,
+    no raw timestamps, no raw temperature series.  Never raises.
+    """
+    models = models or {}
+    observations = observations or {}
+    try:
+        onsets: list[float] = []
+        windows: list[float] = []
+        magnitudes: list[float] = []
+        confidences: list[float] = []
+        source_counts: dict[str, int] = {}
+        total_obs = 0
+        confounded_obs = 0
+        zone_shared_obs = 0
+        for zid, model in models.items():
+            if model.response_onset_minutes is not None:
+                onsets.append(model.response_onset_minutes)
+            if model.effective_observation_minutes is not None:
+                windows.append(model.effective_observation_minutes)
+            if model.typical_temperature_response_c is not None:
+                magnitudes.append(model.typical_temperature_response_c)
+            confidences.append(model.confidence)
+            source_counts[model.source_kind] = source_counts.get(model.source_kind, 0) + 1
+        for zid, lst in observations.items():
+            for o in lst:
+                total_obs += 1
+                if o.confounded:
+                    confounded_obs += 1
+                if len(o.decision_ids) > 1:
+                    zone_shared_obs += 1
+
+        def _mean(v: list[float]) -> float | None:
+            return round(sum(v) / len(v), 2) if v else None
+
+        return {
+            "zone_model_count": len(models),
+            "response_onset_mean_min": _mean(onsets),
+            "observation_window_mean_min": _mean(windows),
+            "response_magnitude_mean_c": _mean(magnitudes),
+            "model_confidence_mean": _mean(confidences),
+            "source_kind_distribution": source_counts,
+            "observation_count": total_obs,
+            "confounded_observation_count": confounded_obs,
+            "zone_shared_observation_count": zone_shared_obs,
+        }
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: thermal summary failed")
+        return {"zone_model_count": 0}
+
+
 def _build_window_section(
     window_ref: str,
     window_id: str,

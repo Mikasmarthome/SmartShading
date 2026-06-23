@@ -371,6 +371,45 @@ def build_window_contribution_research_summary(
         return {"window_model_count": 0}
 
 
+def build_shadow_research_summary(proposals: list | None) -> dict:
+    """Aggregate shadow-proposal stats for the Research Export.  Privacy-safe:
+    no entity IDs, no raw window/zone keys, no timestamps.  Never raises."""
+    proposals = proposals or []
+    try:
+        status_counts: dict[str, int] = {}
+        reason_counts: dict[str, int] = {}
+        deltas: list[int] = []
+        veto = 0
+        for p in proposals:
+            status_counts[p.status] = status_counts.get(p.status, 0) + 1
+            if p.proposal_reason:
+                reason_counts[p.proposal_reason] = reason_counts.get(p.proposal_reason, 0) + 1
+            if p.net_shadow_delta_vs_real_ha is not None:
+                deltas.append(p.net_shadow_delta_vs_real_ha)
+            if p.evaluation.preference_veto:
+                veto += 1
+        n = len(proposals)
+
+        def _rate(s: str) -> float | None:
+            return round(status_counts.get(s, 0) / n, 3) if n else None
+
+        return {
+            "proposal_count": n,
+            "supported_rate": _rate("supported"),
+            "observing_rate": _rate("observing"),
+            "inconclusive_rate": _rate("inconclusive"),
+            "rejected_rate": _rate("rejected"),
+            "expired_rate": _rate("expired"),
+            "invalidated_rate": _rate("invalidated"),
+            "candidate_delta_distribution": {str(d): deltas.count(d) for d in set(deltas)},
+            "reason_distribution": reason_counts,
+            "preference_veto_rate": round(veto / n, 3) if n else None,
+        }
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: shadow summary failed")
+        return {"proposal_count": 0}
+
+
 def _build_window_section(
     window_ref: str,
     window_id: str,

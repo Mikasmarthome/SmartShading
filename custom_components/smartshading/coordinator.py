@@ -112,6 +112,14 @@ from .models.window_contribution import (
     WindowContributionModel,
     event_weight_for,
 )
+from .engines.shadow_eligibility import ShadowEligibilityInput, evaluate_shadow_eligibility
+from .engines.shadow_engine import (
+    CandidateReasonInput,
+    compute_candidate_reason,
+    compute_shadow_candidate,
+    evaluate_supported_status,
+)
+from .models.shadow_proposal import ShadowEvaluation, ShadowProposal
 from .models.decision_provenance import (
     AdaptationDecision,
     AdaptationStep,
@@ -556,6 +564,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # window).  Keyed by window_id; each config entry (= zone) is independent.
         self._contribution_models: dict[str, WindowContributionModel] = {}
         self._contribution_evidence: dict[str, list[WindowContributionEvidence]] = {}
+        # P6 — shadow proposals (analysis only; never applied).  Active proposals
+        # keyed by (window_id, intensity, context_family); bounded terminal history.
+        self._shadow_active: dict[tuple, object] = {}
+        self._shadow_history: list[object] = []
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -1087,6 +1099,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     self._contribution_evidence = {
                         w: list(lst) for w, lst in _extras.window_contribution_evidence.items()
                     }
+                    # P6: restore shadow proposals (active by key vs terminal history).
+                    _terminal = {"rejected", "expired", "invalidated"}
+                    self._shadow_active = {}
+                    self._shadow_history = []
+                    for _p in _extras.shadow_proposals:
+                        if _p.status in _terminal:
+                            self._shadow_history.append(_p)
+                        else:
+                            self._shadow_active[_p.proposal_key] = _p
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
@@ -1105,6 +1126,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     thermal_observations=self._thermal_observations_storage(),
                     window_contribution_models=self._contribution_models_storage(),
                     window_contribution_evidence=self._contribution_evidence_storage(),
+                    shadow_proposals=self._shadow_proposals_storage(),
                 )
                 self._persistence_last_save_at = _restore_now
                 self._learning_persistence.clear_migration_dirty()
@@ -3029,6 +3051,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 thermal_observations=self._thermal_observations_storage(),
                 window_contribution_models=self._contribution_models_storage(),
                 window_contribution_evidence=self._contribution_evidence_storage(),
+                shadow_proposals=self._shadow_proposals_storage(),
             )
             self._persistence_last_save_at = now
             self._learning_dirty = False
@@ -3268,6 +3291,40 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "shadow_contribution_eligible": shadow_elig,
             "experiment_contribution_eligible": exp_elig,
         }
+
+    def shadow_diagnostics(self, window_id: str) -> dict:
+        """Privacy-safe per-window shadow diagnostics (latest active proposal).
+
+        experiment_candidate_ready is a diagnostic SNAPSHOT only — P7 must
+        re-derive eligibility from current data.
+        """
+        latest = None
+        for key, p in self._shadow_active.items():
+            if key[0] == window_id:
+                if latest is None or p.updated_at > latest.updated_at:
+                    latest = p
+        if latest is None:
+            return {"shadow_status": "none"}
+        ev = latest.evaluation
+        return {
+            "shadow_status": latest.status,
+            "shadow_candidate_target_ha": latest.shadow_final_candidate_target_ha,
+            "shadow_candidate_delta_ha": latest.net_shadow_delta_vs_real_ha,
+            "shadow_reason": latest.proposal_reason,
+            "shadow_confidence": round(ev.confidence, 3),
+            "shadow_context": latest.context_family,
+            "comparable_outcome_count": ev.comparable_baseline_outcomes,
+            "distinct_days": ev.distinct_days,
+            "preference_veto": ev.preference_veto,
+            "attribution_quality": latest.attribution_quality,
+            "experiment_candidate_ready": latest.experiment_candidate_ready,
+            "latest_block_reason": latest.block_reason,
+        }
+
+    def _shadow_proposals_storage(self) -> list:
+        out = [p.to_dict() for p in self._shadow_active.values()]
+        out.extend(p.to_dict() for p in self._shadow_history[-200:])
+        return out
 
     def _contribution_models_storage(self) -> dict:
         return {w: m.to_dict() for w, m in self._contribution_models.items()}
@@ -3538,9 +3595,167 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._update_contribution(zone_id, acc, _attr, mo, now, gen)
             except Exception:
                 _LOGGER.warning("Learning: contribution update failed for %s (non-fatal)", zone_id)
+            # P6: shadow proposal (analysis only; never applied).
+            try:
+                self._maybe_shadow(zone_id, acc, mo, _attr, now, gen)
+            except Exception:
+                _LOGGER.warning("Learning: shadow update failed for %s (non-fatal)", zone_id)
             self._learning_dirty = True
         # Whether usable or not, the zone window is now closed.
         self._thermal_open.pop(zone_id, None)
+
+    _SHADE_INTENSITY = {
+        ShadingState.LIGHT_SHADE: "light",
+        ShadingState.NORMAL_SHADE: "normal",
+        ShadingState.STRONG_SHADE: "strong",
+    }
+
+    def _maybe_shadow(self, zone_id: str, acc: dict, mo, attr, now: datetime, gen: int) -> None:
+        """P6: compute/observe a close-more shadow candidate (analysis only).
+
+        Read-only: never writes back to WDI/TierDecision/harmonization/dispatch.
+        """
+        if attr.attribution_quality not in (ATTR_WINDOW_ISOLATED, "window_candidate"):
+            return
+        wid = attr.candidate_window_id
+        if wid is None or wid not in self.windows:
+            return
+        try:
+            state = ShadingState(acc["shading_state"])
+        except ValueError:
+            return
+        intensity = self._SHADE_INTENSITY.get(state)
+        if intensity is None:
+            return
+        real_applied = acc.get("target_before")
+        if real_applied is None:
+            return
+        window = self.windows[wid]
+        parts = acc["context_key"].split("|")
+        context_family = f"{parts[0]}|{parts[-1]}"
+        key = (wid, intensity, context_family)
+
+        # Manual preference detection (conservative: an active learned preference
+        # blocks an extra shadow step → no double application).
+        _conf_level = (
+            self._adaptive_profiles.get(wid).confidence_level
+            if self._adaptive_profiles.get(wid) is not None else "very_low"
+        )
+        try:
+            _mp_diag = self._target_position_adapter.get_adaptation_diagnostics(wid, _conf_level)
+            mp_active = bool(_mp_diag.get("target_adaptation_active", False))
+        except Exception:
+            mp_active = False
+
+        shadow_eligible = derive_eligibility(self._contribution_models.get(wid), gen)[0]
+        elig = evaluate_shadow_eligibility(ShadowEligibilityInput(
+            intensity_level=intensity, observation_mode=True,
+            fully_automatic=getattr(window.behavior_mode, "name", "") == "FULLY_AUTOMATIC",
+            safety_active=mo.confounders.safety_event,
+            manual_override_active=mo.confounders.manual_override,
+            lifecycle_active=state in (ShadingState.NIGHT_CLOSED,),
+            presence_absence_transition=mo.confounders.presence_absence_transition,
+            thermal_available=mo.thermal.available,
+            thermal_mature=mo.thermal.thermal_maturity in ("mature", "maximum_reached"),
+            thermal_reliability=mo.reliability.thermal,
+            attribution_quality=attr.attribution_quality,
+            contribution_shadow_eligible=shadow_eligible,
+            config_generation_matches=True,
+            p5_reference_valid=wid in self._contribution_models,
+            manual_preference_active=mp_active,
+            manual_preference_open_more=False,
+            confounded=mo.confounders.thermal_confounded,
+        ))
+        if not elig.eligible:
+            # Pause an existing proposal; do not invalidate on transient gates.
+            existing = self._shadow_active.get(key)
+            if existing is not None:
+                self._shadow_active[key] = replace(
+                    existing, block_reason=elig.block_reason, updated_at=now)
+            return
+
+        # Candidate reason (defensible signals only).
+        reason = compute_candidate_reason(CandidateReasonInput(
+            thermal_available=mo.thermal.available,
+            thermal_mature=mo.thermal.thermal_maturity in ("mature", "maximum_reached"),
+            shade_state_active=True,
+            insufficient_response=mo.thermal.insufficient_response,
+            thermal_score=mo.thermal.score,
+            sufficient_solar_load=(acc.get("solar_start") or 0.0) >= 150.0,
+            shade_was_timely_active=True,
+            contribution_present=True,
+            close_more_preference=False,
+        ))
+        if reason is None:
+            return
+
+        # Pure dry-run through the REAL clamp functions.
+        cg = self.cover_groups.get(window.cover_group_id)
+        hw = default_hardware_settings(cg.hardware_type) if cg is not None else {}
+        cand = compute_shadow_candidate(
+            current_authoritative_target_ha=real_applied,
+            real_applied_target_ha=real_applied,
+            configured_base_target_ha=real_applied,
+            new_state=state,
+            daytime_min_ha=hw.get("daytime_min_open_position_ha"),
+            ahb_position_ha=hw.get("anti_heat_buildup_position_ha"),
+            ahb_enabled=False,
+            hardware_type=(cg.hardware_type if cg is not None else CoverHardwareType.GENERIC),
+            in_solar_sector=True,
+            effective_exposure_wm2=acc.get("solar_start"),
+        )
+        if not cand.valid:
+            return
+
+        # Dedup: update existing proposal for the key, else create.
+        existing = self._shadow_active.get(key)
+        negative = mo.thermal.score is not None and mo.thermal.score < 0
+        prev_eval = existing.evaluation if existing is not None else ShadowEvaluation()
+        neg_count = prev_eval.negative_baseline_outcomes + (1 if negative else 0)
+        comparable = prev_eval.comparable_baseline_outcomes + 1
+        # distinct-day tracking (RAM side index; count persists on the proposal).
+        day_key = (key, now.date())
+        days = prev_eval.distinct_days
+        if not hasattr(self, "_shadow_day_seen"):
+            self._shadow_day_seen = set()
+        if day_key not in self._shadow_day_seen:
+            self._shadow_day_seen.add(day_key)
+            days += 1
+        confidence = min(1.0, neg_count / 8.0) * min(1.0, days / 3.0)
+        evaluation = ShadowEvaluation(
+            comparable_baseline_outcomes=comparable,
+            negative_baseline_outcomes=neg_count,
+            neutral_baseline_outcomes=prev_eval.neutral_baseline_outcomes + (0 if negative else 1),
+            contradictory_outcomes=prev_eval.contradictory_outcomes,
+            distinct_days=days, context_consistency=1.0,
+            candidate_direction_consistency=1.0, preference_support=False,
+            preference_veto=False, confidence=confidence,
+        )
+        status = evaluate_supported_status(
+            evaluation, attribution_quality=attr.attribution_quality, preference_veto=False)
+        evaluation = replace(evaluation, status=status)
+
+        contrib = self._contribution_models.get(wid)
+        proposal = ShadowProposal(
+            shadow_id=(existing.shadow_id if existing is not None else uuid.uuid4().hex),
+            window_id=wid, zone_id=zone_id, intensity_level=intensity,
+            context_family=context_family,
+            created_at=(existing.created_at if existing is not None else now), updated_at=now,
+            configured_intensity_target_ha=real_applied,
+            current_authoritative_intensity_target_ha=real_applied,
+            shadow_parameter_target_ha=cand.shadow_parameter_target_ha,
+            real_applied_target_ha=real_applied,
+            shadow_final_candidate_target_ha=cand.shadow_final_candidate_target_ha,
+            net_shadow_delta_vs_real_ha=cand.net_delta_vs_real_ha,
+            proposal_reason=reason,
+            evidence_sources=("thermal", "contribution"),
+            source_decision_ids=tuple(sorted(acc["decision_ids"]))[:10],
+            attribution_quality=attr.attribution_quality,
+            contribution_index=(contrib.normalized_relative_contribution_index if contrib else None),
+            contribution_confidence=(contrib.confidence if contrib else None),
+            config_generation=gen, status=status, evaluation=evaluation,
+        )
+        self._shadow_active[key] = proposal
 
     def _classify_zone_attribution(
         self, zone_id: str, acc: dict, *, thermal_available: bool,

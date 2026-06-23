@@ -78,7 +78,27 @@ from .models.window_decision_input import build_window_decision_input
 from .state_machine.guards import StateGuard, StateGuardConfig
 from .state_machine.states import ShadingState
 from .state_machine.transitions import bypasses_guard
+import uuid
+
 from .engines.adaptation_application import AdaptationTrace, apply_adaptive_profile
+from .engines.config_fingerprint import ConfigGenerationTracker, compute_config_fingerprint
+from .engines.decision_materiality import is_material_learning_decision
+from .models.decision_provenance import (
+    AdaptationDecision,
+    AdaptationStep,
+    BaselineDecision,
+    DecisionCandidate,
+    DecisionContext,
+    DecisionProvenance,
+    DispatchProvenance,
+    LearningDecisionRecord,
+    ModelEligibility,
+    ResolvedDecision,
+    SOURCE_ADAPTIVE_HEAT,
+    SOURCE_ADAPTIVE_SOLAR,
+    SOURCE_FORECAST_MODIFIER,
+    SOURCE_MANUAL_PREFERENCE,
+)
 from .engines.forecast_strategy_modifier import (
     ForecastStrategyModifier,
     apply_forecast_modifier,
@@ -287,6 +307,78 @@ class _WindowComputeState:
     # cover position was stored in _prev_observed_internal for the next cycle.
     current_observation_available: bool = False
 
+    # --- P2 Decision Provenance inputs (captured in pass 1) ---
+    # Deterministic baseline decision (no learning), in internal convention.
+    baseline_state: ShadingState | None = None
+    baseline_target_internal: int | None = None
+    baseline_decided_by: str | None = None
+    # Applied adaptation provenance inputs.
+    adapt_trace: object | None = None
+    forecast_modifier: object | None = None
+    any_pos_adapted: bool = False
+    normal_cfg_ha_for_prov: int | None = None
+    normal_eff_ha_for_prov: int | None = None
+    adapt_confidence_level: str | None = None
+    adapt_strength: float = 0.0
+    # Decision context inputs.
+    config_fingerprint: str = ""
+    config_generation: int = 0
+    lifecycle_state_value: str = "day"
+    absence_active_at_decision: bool = False
+    manual_override_active_at_decision: bool = False
+    # P2 — decision_id shared with the cycle's PendingOutcome (authoritative link).
+    decision_id: str | None = None
+
+
+def _apply_window_behavior_mode(
+    wdi: WindowDecisionInput,
+    behavior_mode: WindowBehaviorMode,
+) -> WindowDecisionInput:
+    """Apply per-window behavior-mode masking to a WindowDecisionInput.
+
+    Pure function (P2 extraction).  Safety (Tier 1) is never suppressed here —
+    masking only disables heat/solar/glare/absence/lifecycle per the mode.
+    The deterministic baseline pass and the adapted pass both route through
+    this helper so the baseline reflects the same mode restrictions.
+    """
+    if behavior_mode is WindowBehaviorMode.ABSENCE_ONLY:
+        return replace(
+            wdi,
+            lifecycle_state=LifecycleState.DAY,
+            effective_behavior=replace(
+                wdi.effective_behavior,
+                heat_outdoor_threshold_c=None,
+                heat_indoor_threshold_c=None,
+                solar_gain_suppresses_shading=True,
+                glare_protection_enabled=False,
+            ),
+        )
+    if behavior_mode is WindowBehaviorMode.ABSENCE_AND_SCHEDULE:
+        return replace(
+            wdi,
+            effective_behavior=replace(
+                wdi.effective_behavior,
+                heat_outdoor_threshold_c=None,
+                heat_indoor_threshold_c=None,
+                solar_gain_suppresses_shading=True,
+                glare_protection_enabled=False,
+            ),
+        )
+    if behavior_mode is WindowBehaviorMode.DISABLED_AUTOMATIC:
+        return replace(
+            wdi,
+            lifecycle_state=LifecycleState.DAY,
+            effective_behavior=replace(
+                wdi.effective_behavior,
+                heat_outdoor_threshold_c=None,
+                heat_indoor_threshold_c=None,
+                solar_gain_suppresses_shading=True,
+                glare_protection_enabled=False,
+                absence_position=None,
+            ),
+        )
+    return wdi
+
 
 class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
     """ARCHITECTURE.md §9, observability-only phase - see module docstring."""
@@ -398,8 +490,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._learning_dirty: bool = False
         # Step 6: per-window, per-intensity learned target position adapter.
         self._target_position_adapter = TargetPositionAdapter()
-        # Phase 9F4b-3: RAM-only pending outcome queue (no persistence, no restore).
+        # Phase 9F4b-3: pending outcome queue.  P2: now persisted (restart-safe)
+        # with an interruption gate applied on restore.
         self._pending_outcomes = PendingOutcomeQueue()
+        # P2 Decision Provenance — per-window last persisted decision summary
+        # (materiality dedup), config-fingerprint generation tracker, and a
+        # monotonic per-cycle counter for grouping windows decided together.
+        self._last_decision_summaries: dict[str, object] = {}
+        self._config_generation_tracker = ConfigGenerationTracker()
+        self._cycle_counter: int = 0
+        # P2.6 — (window_id, decision_timestamp) keys of pending observations that
+        # survived a restart with an interruption; their resolved outcome is
+        # downgraded to interrupted_partial (never complete).
+        self._interrupted_decision_keys: set[tuple[str, datetime]] = set()
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -912,17 +1015,35 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._learning_store, _restore_now
             )
             self._learning_restored = True
+            # P2: reconcile restore extras — config generations + restart-safe
+            # pending outcomes (with the interruption gate applied).
+            try:
+                _extras = self._learning_persistence.last_restore_extras
+                if _extras is not None:
+                    self._config_generation_tracker = ConfigGenerationTracker.from_storage_dict(
+                        _extras.config_generations
+                    )
+                    self._restore_pending_outcomes(_extras.pending_outcomes, _restore_now)
+            except Exception:
+                _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
             # /config/.storage/smartshading_learning_<id> is visible right away,
-            # even before any learning data has been collected.
-            if self._learning_persistence.fresh_start:
+            # even before any learning data has been collected.  Also performs the
+            # one-shot controlled save after a v1→v2 migration (coordinator owns it).
+            if self._learning_persistence.fresh_start or self._learning_persistence.migration_dirty:
                 await self._learning_persistence.async_save(
                     self._learning_store,
                     set(self.windows.keys()),
                     _restore_now,
                     target_adapter=self._target_position_adapter,
+                    pending_outcomes=self._pending_outcomes.all_pending(),
+                    config_generations=self._config_generation_tracker.to_storage_dict(),
                 )
                 self._persistence_last_save_at = _restore_now
+                self._learning_persistence.clear_migration_dirty()
+
+        # P2: monotonic per-cycle id for grouping all windows decided this tick.
+        self._cycle_counter += 1
 
         sun_state = self.hass.states.get("sun.sun")
         sun_position: SunPosition | None = None
@@ -1150,7 +1271,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 indoor_temp_outcome_c=indoor_temperature,
                             ),
                         )
-                        self._learning_store.record_outcome(_outcome)
+                        self._store_outcome(_outcome)
                     except Exception:
                         _LOGGER.warning(
                             "Learning: outcome resolution (lifecycle) failed for %s", window_id
@@ -1344,12 +1465,24 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 override_detection_tolerance=self._override_detection_tolerance,
                 override_break_on_lifecycle=self._override_break_on_lifecycle,
             )
+            # P2 provenance: snapshot the pre-adaptation (config) WDI so the
+            # deterministic baseline can be evaluated from the same input.
+            _wdi_preadapt = wdi
+            _adapt_trace = None
+            _any_pos_adapted = False
+            _normal_cfg_ha = None
+            _normal_eff_ha = None
+            _adapt_conf_level = "very_low"
+            _adapt_strength = 0.0
+
             # Adaptation Application (9F17): apply the last-cycle AdaptiveProfile
             # to the resolved BehaviorConfig.  Only when obs_enabled=True — when
             # observation is disabled, _NEUTRAL_ADAPTIVE_PROFILE is always used
             # and the WDI remains as resolved from config (no learning-based change).
             if obs_enabled:
                 _adapt_profile = self._adaptive_profiles.get(window_id, _NEUTRAL_ADAPTIVE_PROFILE)
+                _adapt_conf_level = _adapt_profile.confidence_level
+                _adapt_strength = _adapt_profile.adaptation_strength
                 _adapted_bc, _adapt_trace = apply_adaptive_profile(
                     wdi.effective_behavior,
                     _adapt_profile,
@@ -1396,47 +1529,31 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
             # Per-window behavior mode (v1.0): restrict which tiers are active.
             # Safety (Tier 1: Storm/Wind) is never suppressed regardless of mode.
-            _window_behavior = window.behavior_mode
-            if _window_behavior is WindowBehaviorMode.ABSENCE_ONLY:
-                wdi = replace(
-                    wdi,
-                    lifecycle_state=LifecycleState.DAY,
-                    effective_behavior=replace(
-                        wdi.effective_behavior,
-                        heat_outdoor_threshold_c=None,
-                        heat_indoor_threshold_c=None,
-                        solar_gain_suppresses_shading=True,
-                        glare_protection_enabled=False,
-                    ),
-                )
-            elif _window_behavior is WindowBehaviorMode.ABSENCE_AND_SCHEDULE:
-                # Night/morning lifecycle remains active (no lifecycle_state override).
-                # Absence shading is active.  Only solar/heat/glare are suppressed.
-                wdi = replace(
-                    wdi,
-                    effective_behavior=replace(
-                        wdi.effective_behavior,
-                        heat_outdoor_threshold_c=None,
-                        heat_indoor_threshold_c=None,
-                        solar_gain_suppresses_shading=True,
-                        glare_protection_enabled=False,
-                    ),
-                )
-            elif _window_behavior is WindowBehaviorMode.DISABLED_AUTOMATIC:
-                wdi = replace(
-                    wdi,
-                    lifecycle_state=LifecycleState.DAY,
-                    effective_behavior=replace(
-                        wdi.effective_behavior,
-                        heat_outdoor_threshold_c=None,
-                        heat_indoor_threshold_c=None,
-                        solar_gain_suppresses_shading=True,
-                        glare_protection_enabled=False,
-                        absence_position=None,
-                    ),
-                )
+            # Extracted to a pure helper (P2) so the deterministic baseline pass
+            # applies the identical masking before its own tier evaluation.
+            wdi = _apply_window_behavior_mode(wdi, window.behavior_mode)
 
             tier_decision = self._tier_orchestrator.evaluate_window(wdi)
+
+            # P2 Decision Provenance: evaluate the deterministic baseline from the
+            # un-adapted config WDI.  The orchestrator is pure (stateless), so this
+            # extra evaluation has no side effects: it never touches StateGuard,
+            # transitions, override detection, AssumedState, or dispatch.  Used for
+            # provenance only and only when observation is enabled.
+            _baseline_decision = None
+            _prov_fingerprint = ""
+            _prov_generation = 0
+            # P2: one decision_id per window per observation cycle.  Shared by the
+            # PendingOutcome (if a transition creates one) and the decision record,
+            # so the outcome is later attached by decision_id (authoritative v2 path).
+            _decision_id = uuid.uuid4().hex if obs_enabled else None
+            if obs_enabled:
+                try:
+                    _wdi_baseline = _apply_window_behavior_mode(_wdi_preadapt, window.behavior_mode)
+                    _baseline_decision = self._tier_orchestrator.evaluate_window(_wdi_baseline)
+                    _prov_fingerprint, _prov_generation = self._config_fingerprint_for_window(window, zone)
+                except Exception:
+                    _baseline_decision = None
 
             # Hardware type — needed for safety position correction and Night Hard Hold.
             # Resolved from CoverGroup early so both guards can use it before the
@@ -1703,7 +1820,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     indoor_temp_outcome_c=indoor_temperature,
                                 ),
                             )
-                            self._learning_store.record_outcome(_outcome)
+                            self._store_outcome(_outcome)
                         except Exception:
                             _LOGGER.warning(
                                 "Learning: outcome resolution (safety) failed for %s", window_id
@@ -1852,6 +1969,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 indoor_temp_at_decision=indoor_temperature,
                                 outdoor_temp_at_decision=weather_inputs.outdoor_temperature,
                                 indoor_temp_outcome_delay_min=_OUTCOME_OBSERVATION_DELAY_MIN,
+                                # P2: authoritative link shared with the decision record.
+                                decision_id=_decision_id,
+                                config_fingerprint=_prov_fingerprint or None,
+                                created_at_utc=now,
                             )
                             _old_pending = self._pending_outcomes.replace(_new_pending)
                             if _old_pending is not None:
@@ -1863,7 +1984,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         indoor_temp_outcome_c=indoor_temperature,
                                     ),
                                 )
-                                self._learning_store.record_outcome(_outcome)
+                                self._store_outcome(_outcome)
                         except Exception:
                             _LOGGER.warning(
                                 "Learning: pending outcome create/resolve (state_change) failed for %s",
@@ -1924,7 +2045,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     override_event_type="started",
                                 ),
                             )
-                            self._learning_store.record_outcome(_outcome)
+                            self._store_outcome(_outcome)
                         except Exception:
                             _LOGGER.warning(
                                 "Learning: outcome resolution (override started) failed for %s",
@@ -1974,7 +2095,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     override_event_type="renewed",
                                 ),
                             )
-                            self._learning_store.record_outcome(_outcome)
+                            self._store_outcome(_outcome)
                         except Exception:
                             _LOGGER.warning(
                                 "Learning: outcome resolution (override renewed) failed for %s",
@@ -2036,7 +2157,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         indoor_temp_outcome_c=indoor_temperature,
                                     ),
                                 )
-                                self._learning_store.record_outcome(_outcome)
+                                self._store_outcome(_outcome)
                 except Exception:
                     _LOGGER.warning(
                         "Learning: outcome resolution (timeout) failed for %s", window_id
@@ -2276,6 +2397,23 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 prev_observation_was_available=_prev_obs_was_available,
                 last_commanded_was_available=_last_commanded_was_available,
                 current_observation_available=_observed_internal_stored,
+                # --- P2 Decision Provenance inputs ---
+                baseline_state=(_baseline_decision.shading_state if _baseline_decision is not None else None),
+                baseline_target_internal=(_baseline_decision.target_position if _baseline_decision is not None else None),
+                baseline_decided_by=(_baseline_decision.decided_by if _baseline_decision is not None else None),
+                adapt_trace=_adapt_trace,
+                forecast_modifier=_forecast_modifier,
+                any_pos_adapted=_any_pos_adapted,
+                normal_cfg_ha_for_prov=_normal_cfg_ha,
+                normal_eff_ha_for_prov=_normal_eff_ha,
+                adapt_confidence_level=_adapt_conf_level,
+                adapt_strength=_adapt_strength,
+                config_fingerprint=_prov_fingerprint,
+                config_generation=_prov_generation,
+                lifecycle_state_value=self._lifecycle_state.value,
+                absence_active_at_decision=absence_active,
+                manual_override_active_at_decision=(current_override is not None),
+                decision_id=_decision_id,
             )
 
             # Build window_results now — WindowObservation has no dependency on
@@ -2619,6 +2757,54 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 override_reference_source=s.override_ref_source,
             )
 
+            # --- P2 Decision Provenance: build dispatch provenance + record ---
+            # Fully additive and guarded — never affects the cycle on failure.
+            try:
+                _dp_attempted = _exec_plan_result is not None and (
+                    _exec_plan_result.any_sent or _exec_plan_result.any_failed
+                )
+                _dp_status = (
+                    _last_exec_result.status.value if _last_exec_result is not None else None
+                )
+                _dispatch_prov = DispatchProvenance(
+                    dispatch_allowed=(
+                        _exec_filter_for_dispatch.allowed
+                        if _exec_filter_for_dispatch is not None else None
+                    ),
+                    dispatch_filter_reason=(
+                        _exec_filter_for_dispatch.blocked_reason
+                        if _exec_filter_for_dispatch is not None else None
+                    ) or _dispatch_suppressed_reason,
+                    dispatch_attempted=bool(_dp_attempted),
+                    dispatch_succeeded=(
+                        bool(_exec_plan_result.any_sent and not _exec_plan_result.any_failed)
+                        if _exec_plan_result is not None else None
+                    ),
+                    dispatch_status=_dp_status,
+                    dispatch_error_category=(
+                        _last_exec_result.error if _last_exec_result is not None else None
+                    ),
+                    requested_target_ha=(
+                        _exec_filter_for_dispatch.target_position_ha
+                        if _exec_filter_for_dispatch is not None else None
+                    ),
+                    transport_inversion_applied=(
+                        s.exec_cap.invert_position if s.exec_cap is not None else False
+                    ),
+                )
+                self._maybe_record_provenance(
+                    window_id,
+                    s,
+                    harmonized_target_ha=harm.final_target_position_ha,
+                    harmonized=harm.harmonized,
+                    dispatch=_dispatch_prov,
+                    now=now,
+                )
+            except Exception:
+                _LOGGER.warning(
+                    "SmartShading: provenance recording failed for %s (non-fatal)", window_id
+                )
+
         # Startup Grace Period (9G5): decrement at the end of the cycle so that
         # STARTUP_GRACE_CYCLES cycles are fully suppressed before dispatch is
         # allowed.  Decrementing here (after dispatch) rather than at the top of
@@ -2647,6 +2833,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 set(self.windows.keys()),
                 now,
                 target_adapter=self._target_position_adapter,
+                pending_outcomes=self._pending_outcomes.all_pending(),
+                config_generations=self._config_generation_tracker.to_storage_dict(),
             )
             self._persistence_last_save_at = now
             self._learning_dirty = False
@@ -2734,3 +2922,315 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 "SmartShading: Learning Pipeline failed for %s — neutral profile used", window_id
             )
             return _NEUTRAL_ADAPTIVE_PROFILE
+
+    # ------------------------------------------------------------------
+    # P2 Decision Provenance helpers
+    # ------------------------------------------------------------------
+
+    def _config_fingerprint_for_window(
+        self, window: WindowConfig, zone: ZoneConfig
+    ) -> tuple[str, int]:
+        """Compute (fingerprint, generation) for a window's learning-relevant config."""
+        eb = self._comfort_config
+        fields = {
+            "behavior_mode": getattr(window.behavior_mode, "value", str(window.behavior_mode)),
+            "azimuth": getattr(window, "azimuth", None),
+            "cover_group_id": getattr(window, "cover_group_id", None),
+            "zone_id": getattr(window, "zone_id", None),
+            "shading_group_id": getattr(window, "shading_group_id", None),
+            "indoor_sensor_ids": sorted(self._indoor_temperature_sensor_ids),
+            "heat_outdoor_c": getattr(eb, "heat_outdoor_threshold_c", None),
+            "heat_indoor_c": getattr(eb, "heat_indoor_threshold_c", None),
+        }
+        fp = compute_config_fingerprint(fields)
+        gen, _changed = self._config_generation_tracker.observe(window.id, fp)
+        return fp, gen
+
+    def _store_outcome(self, outcome: DecisionOutcome) -> None:
+        """Persist a resolved outcome (legacy ring) AND link it to its decision
+        record (P2).
+
+        v2 outcomes are linked EXCLUSIVELY by decision_id (authoritative).  An
+        unknown v2 decision_id leaves the outcome unlinked — it NEVER silently
+        falls back to timestamp matching, which could hit the wrong record.
+        Timestamp matching is reserved for legacy v1 outcomes (decision_id is
+        None) via an explicitly isolated path.  The merged get_outcomes() view
+        deduplicates so the legacy stream is never duplicated.
+        """
+        self._learning_store.record_outcome(outcome)
+        try:
+            status = outcome.resolution_status
+            key = (outcome.window_id, outcome.decision_timestamp)
+            if key in self._interrupted_decision_keys:
+                # Observation was interrupted by a restart — never claim complete.
+                status = "interrupted_partial"
+                self._interrupted_decision_keys.discard(key)
+
+            if outcome.decision_id is not None:
+                # Authoritative v2 path — by decision_id only.
+                linked = self._learning_store.attach_outcome_by_decision_id(
+                    outcome.window_id, outcome.decision_id, outcome, status
+                )
+                if not linked:
+                    _LOGGER.warning(
+                        "Learning: outcome with unknown v2 decision_id %s for %s — "
+                        "left unlinked (no timestamp fallback)",
+                        outcome.decision_id, outcome.window_id,
+                    )
+            else:
+                # Legacy v1 outcome (no decision_id) — isolated timestamp fallback.
+                self._learning_store.attach_outcome_by_timestamp_legacy(outcome, status)
+        except Exception:
+            pass  # provenance link is best-effort; never blocks learning
+
+    def _restore_pending_outcomes(
+        self, pendings: list, now: datetime
+    ) -> None:
+        """Apply the P2.6 restart interruption gate to restored pending outcomes.
+
+        A pending is INVALIDATED (dropped, no synthetic outcome) when the total
+        elapsed time exceeds the observation window + grace, the config
+        fingerprint changed, or it has already survived more than one restart.
+        Surviving pendings are restored and flagged interrupted so their later
+        outcome can never be scored as 'complete'.
+        """
+        grace = timedelta(minutes=5)
+        delay = timedelta(minutes=_OUTCOME_OBSERVATION_DELAY_MIN)
+        for po in pendings:
+            if po.window_id not in self.windows:
+                continue
+            window = self.windows[po.window_id]
+            zone = self.zones.get(window.zone_id, ZoneConfig(id=window.zone_id, name=window.zone_id))
+            try:
+                current_fp, _gen = self._config_fingerprint_for_window(window, zone)
+            except Exception:
+                current_fp = None
+            elapsed = now - po.decision_timestamp
+            restart_count = po.restart_count + 1
+            fingerprint_changed = (
+                po.config_fingerprint is not None
+                and current_fp is not None
+                and po.config_fingerprint != current_fp
+            )
+            if elapsed > (delay + grace) or fingerprint_changed or restart_count > 1:
+                # Invalidate the associated record (if any); never fabricate an outcome.
+                try:
+                    rec = self._learning_store.get_decision_by_timestamp(
+                        po.window_id, po.decision_timestamp
+                    )
+                    if rec is not None:
+                        self._learning_store.mark_decision_invalidated(
+                            po.window_id, rec.decision_id, "observation_interrupted_too_long"
+                        )
+                except Exception:
+                    pass
+                continue
+            # Survive as an interrupted observation.
+            from dataclasses import replace as _replace
+            restored = _replace(
+                po,
+                restart_count=restart_count,
+                created_at_utc=po.created_at_utc or po.decision_timestamp,
+            )
+            self._pending_outcomes.restore(restored)
+            self._interrupted_decision_keys.add((po.window_id, po.decision_timestamp))
+
+    def _maybe_record_provenance(
+        self,
+        window_id: str,
+        s: "_WindowComputeState",
+        harmonized_target_ha: int | None,
+        harmonized: bool,
+        dispatch: DispatchProvenance,
+        now: datetime,
+    ) -> None:
+        """Build and (if material) persist a LearningDecisionRecord.
+
+        Purely additive: never influences the decision, dispatch, or timing.
+        All positions are logical HA convention (0=closed, 100=open).
+        """
+        if not s.obs_enabled or s.baseline_state is None:
+            return
+
+        def _ha(internal: int | None) -> int | None:
+            return to_ha_position(internal) if internal is not None else None
+
+        baseline_ha = _ha(s.baseline_target_internal)
+        final_internal = s.exec_target_internal
+        learning_ha = _ha(final_internal)
+        cf_ha = s.exec_filter_result.target_position_ha if s.exec_filter_result is not None else None
+        final_requested = harmonized_target_ha if harmonized else cf_ha
+
+        # --- Adaptation steps (ordered) ---
+        steps: list[AdaptationStep] = []
+        sources: list[str] = []
+        tr = s.adapt_trace
+        if tr is not None and getattr(tr, "heat_outdoor_factor", None) is not None:
+            steps.append(AdaptationStep(
+                source=SOURCE_ADAPTIVE_HEAT, applied=True,
+                input_thresholds={"outdoor": tr.heat_outdoor_original, "indoor": tr.heat_indoor_original},
+                output_thresholds={"outdoor": tr.heat_outdoor_adapted, "indoor": tr.heat_indoor_adapted},
+                strength=s.adapt_strength,
+            ))
+            sources.append(SOURCE_ADAPTIVE_HEAT)
+        if tr is not None and getattr(tr, "solar_escalation_factor_applied", None) is not None:
+            steps.append(AdaptationStep(
+                source=SOURCE_ADAPTIVE_SOLAR, applied=True,
+                input_thresholds={"light": tr.light_shade_threshold_original,
+                                  "normal": tr.normal_shade_threshold_original,
+                                  "strong": tr.strong_shade_threshold_original},
+                output_thresholds={"light": tr.light_shade_threshold_adapted,
+                                   "normal": tr.normal_shade_threshold_adapted,
+                                   "strong": tr.strong_shade_threshold_adapted},
+                strength=s.adapt_strength,
+            ))
+            sources.append(SOURCE_ADAPTIVE_SOLAR)
+        fm = s.forecast_modifier
+        fm_delta = None
+        fm_trust = None
+        if fm is not None and getattr(fm, "applied", False):
+            fm_delta = getattr(fm, "threshold_delta_wm2", None)
+            fm_trust = getattr(fm, "trust_score", None)
+            steps.append(AdaptationStep(
+                source=SOURCE_FORECAST_MODIFIER, applied=True,
+                input_thresholds={"delta_wm2": fm_delta}, confidence=fm_trust,
+            ))
+            sources.append(SOURCE_FORECAST_MODIFIER)
+        mp_applied = bool(s.any_pos_adapted)
+        mp_target_ha = s.normal_eff_ha_for_prov if mp_applied else None
+        mp_delta_ha = (
+            (s.normal_eff_ha_for_prov - s.normal_cfg_ha_for_prov)
+            if (mp_applied and s.normal_eff_ha_for_prov is not None and s.normal_cfg_ha_for_prov is not None)
+            else None
+        )
+        if mp_applied:
+            steps.append(AdaptationStep(
+                source=SOURCE_MANUAL_PREFERENCE, applied=True,
+                input_target_ha=s.normal_cfg_ha_for_prov, output_target_ha=s.normal_eff_ha_for_prov,
+                confidence=s.adapt_confidence_level,  # type: ignore[arg-type]
+            ))
+            sources.append(SOURCE_MANUAL_PREFERENCE)
+
+        net_delta = (
+            (final_requested - baseline_ha)
+            if (final_requested is not None and baseline_ha is not None) else None
+        )
+
+        # --- Materiality dedup ---
+        candidate = DecisionCandidate(
+            shading_state=s.new_state.value,
+            baseline_target_ha=baseline_ha,
+            final_target_ha=final_requested,
+            adaptation_sources=frozenset(sources),
+            dispatch_attempted=dispatch.dispatch_attempted,
+            dispatch_status=dispatch.dispatch_status,
+            filter_reason=dispatch.dispatch_filter_reason,
+            suppression_reason=None,
+        )
+        prev_summary = self._last_decision_summaries.get(window_id)
+        if not is_material_learning_decision(prev_summary, candidate):  # type: ignore[arg-type]
+            return
+
+        # --- Build provenance ---
+        # Reuse the cycle's decision_id (shared with any PendingOutcome) so the
+        # outcome is later attached by decision_id, not by timestamp.
+        decision_id = s.decision_id or uuid.uuid4().hex
+        safety_active = s.new_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
+        is_night = s.new_state is ShadingState.NIGHT_CLOSED
+        is_absence = s.new_state is ShadingState.ABSENCE_CLOSED
+        shade_states = (ShadingState.LIGHT_SHADE, ShadingState.NORMAL_SHADE, ShadingState.STRONG_SHADE)
+        shading_eligible = (
+            window_id in self.windows
+            and getattr(self.windows[window_id].behavior_mode, "name", "") == "FULLY_AUTOMATIC"
+            and s.obs_enabled
+        )
+        indoor_available = bool(self._indoor_temperature_sensor_ids)
+        thermal_ok = (
+            shading_eligible and indoor_available and s.new_state in shade_states
+            and not (safety_active or s.manual_override_active_at_decision or is_night or s.absence_active_at_decision)
+        )
+        eligibility = ModelEligibility(
+            thermal=thermal_ok,
+            preference=s.new_state in shade_states,
+            movement=True,
+            forecast=s.forecast_modifier is not None and getattr(s.forecast_modifier, "applied", False),
+            shadow=thermal_ok,
+            experiment=False,
+        )
+        clamps: list[str] = []
+        if s.daytime_min_open_applied:
+            clamps.append("daytime_min_open")
+        if s.anti_heat_buildup_applied:
+            clamps.append("anti_heat_buildup")
+        if harmonized:
+            clamps.append("harmonization")
+
+        provenance = DecisionProvenance(
+            decision_id=decision_id,
+            context=DecisionContext(
+                window_id=window_id,
+                zone_id=s.window.zone_id,
+                decision_timestamp=now,
+                cycle_id=self._cycle_counter,
+                config_fingerprint=s.config_fingerprint,
+                config_generation=s.config_generation,
+                behavior_mode_at_decision=getattr(s.window.behavior_mode, "value", str(s.window.behavior_mode)),
+                observation_mode=s.obs_enabled,
+                active_control=s.active_control_enabled,
+                shading_learning_eligible=shading_eligible,
+                model_eligibility=eligibility,
+                lifecycle_state=s.lifecycle_state_value,
+                presence_absence="absent" if s.absence_active_at_decision else "present",
+                manual_override_active=s.manual_override_active_at_decision,
+                safety_active=safety_active,
+            ),
+            baseline=BaselineDecision(
+                baseline_state=s.baseline_state.value,
+                baseline_requested_target_ha=baseline_ha,
+                baseline_decided_by=s.baseline_decided_by or "unknown",
+            ),
+            adaptation=AdaptationDecision(
+                steps=tuple(steps),
+                adaptation_sources=tuple(sources),
+                net_target_delta_ha=net_delta,
+                adaptation_strength=s.adapt_strength,
+                confidence_level_at_decision=s.adapt_confidence_level,
+                manual_preference_available=mp_applied,
+                manual_preference_applied=mp_applied,
+                manual_preference_target_ha=mp_target_ha,
+                manual_preference_delta_ha=mp_delta_ha,
+                manual_preference_profile_key="normal" if mp_applied else None,
+                manual_preference_confidence=s.adapt_confidence_level if mp_applied else None,
+                forecast_modifier_delta_wm2=fm_delta,
+                forecast_trust_score=fm_trust,
+            ),
+            resolved=ResolvedDecision(
+                final_state=s.new_state.value,
+                decided_by=s.tier_decided_by or "unknown",
+                target_after_learning_ha=learning_ha,
+                target_after_tier_resolution_ha=learning_ha,
+                target_after_command_filter_ha=cf_ha,
+                target_after_daytime_min_ha=cf_ha if s.daytime_min_open_applied else None,
+                target_after_anti_heat_buildup_ha=cf_ha if s.anti_heat_buildup_applied else None,
+                target_after_harmonization_ha=harmonized_target_ha if harmonized else None,
+                final_requested_target_ha=final_requested,
+                applied_clamps=tuple(clamps),
+                suppression_reason=None,
+            ),
+            dispatch=dispatch,
+        )
+        record = LearningDecisionRecord(
+            decision_id=decision_id,
+            decision_timestamp=now,
+            cycle_id=self._cycle_counter,
+            window_id=window_id,
+            provenance=provenance,
+            outcome=None,
+            outcome_status="none",
+            provenance_available=True,
+            legacy_record=False,
+        )
+        self._learning_store.record_decision(record)
+        self._learning_store.set_pending_decision(window_id, decision_id)
+        self._last_decision_summaries[window_id] = candidate.to_summary()
+        self._learning_dirty = True

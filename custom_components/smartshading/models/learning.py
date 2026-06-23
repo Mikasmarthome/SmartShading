@@ -190,11 +190,81 @@ class DecisionOutcome:
     outcome_score: float | None = None           # -1.0 … +1.0, set on resolution
     resolution_status: str = "pending"           # pending/complete/partial_no_temp/…
     evaluation_timestamp: datetime | None = None # when outcome was resolved
+    # LE 2.0 / P2 — authoritative link to the LearningDecisionRecord (v2).
+    # None for legacy v1 outcomes, which use the isolated timestamp fallback.
+    decision_id: str | None = None
 
     @property
     def timestamp(self) -> datetime:
         """Alias for decision_timestamp — required by prune_by_age_and_count."""
         return self.decision_timestamp
+
+    def to_dict(self) -> dict:
+        """Serialize to a JSON-safe dict (LE 2.0 / P2 — embeddable in a record).
+
+        Self-contained: includes window_id so the outcome can be deserialized
+        without external context.  Mirrors the v1 stream shape used by
+        learning_persistence._serialize_outcome with window_id added.
+        """
+        return {
+            "decision_timestamp": self.decision_timestamp.isoformat(),
+            "window_id": self.window_id,
+            "decided_state": self.decided_state.value,
+            "decided_by": self.decided_by,
+            "indoor_temp_outcome_delay_min": self.indoor_temp_outcome_delay_min,
+            "lifecycle_state": self.lifecycle_state,
+            "from_state": self.from_state.value if self.from_state is not None else None,
+            "override_occurred": self.override_occurred,
+            "override_delay_min": self.override_delay_min,
+            "override_event_type": self.override_event_type,
+            "indoor_temp_at_decision": self.indoor_temp_at_decision,
+            "indoor_temp_outcome_c": self.indoor_temp_outcome_c,
+            "indoor_temp_delta_c": self.indoor_temp_delta_c,
+            "state_duration_min": self.state_duration_min,
+            "escalation_occurred": self.escalation_occurred,
+            "outcome_score": self.outcome_score,
+            "resolution_status": self.resolution_status,
+            "evaluation_timestamp": (
+                self.evaluation_timestamp.isoformat()
+                if self.evaluation_timestamp is not None else None
+            ),
+            "decision_id": self.decision_id,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "DecisionOutcome":
+        """Deserialize from to_dict() output.  Raises on missing required keys."""
+        def _parse(ts: str | None) -> datetime | None:
+            if ts is None:
+                return None
+            dt = datetime.fromisoformat(ts)
+            if dt.tzinfo is None:
+                from datetime import timezone
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+
+        raw_from = d.get("from_state")
+        return cls(
+            decision_timestamp=_parse(d["decision_timestamp"]),  # type: ignore[arg-type]
+            window_id=d["window_id"],
+            decided_state=ShadingState(d["decided_state"]),
+            decided_by=d["decided_by"],
+            indoor_temp_outcome_delay_min=int(d.get("indoor_temp_outcome_delay_min", 30)),
+            lifecycle_state=d.get("lifecycle_state", "day"),
+            from_state=ShadingState(raw_from) if raw_from is not None else None,
+            override_occurred=bool(d.get("override_occurred", False)),
+            override_delay_min=d.get("override_delay_min"),
+            override_event_type=d.get("override_event_type"),
+            indoor_temp_at_decision=d.get("indoor_temp_at_decision"),
+            indoor_temp_outcome_c=d.get("indoor_temp_outcome_c"),
+            indoor_temp_delta_c=d.get("indoor_temp_delta_c"),
+            state_duration_min=d.get("state_duration_min"),
+            escalation_occurred=bool(d.get("escalation_occurred", False)),
+            outcome_score=d.get("outcome_score"),
+            resolution_status=d.get("resolution_status", "pending"),
+            evaluation_timestamp=_parse(d.get("evaluation_timestamp")),
+            decision_id=d.get("decision_id"),
+        )
 
 
 @dataclass

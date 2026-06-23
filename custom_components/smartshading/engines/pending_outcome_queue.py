@@ -80,3 +80,11 @@ class PendingOutcomeQueue:
     def count(self) -> int:
         """Return the number of active PendingOutcomes across all windows."""
         return len(self._pending)
+
+    def all_pending(self) -> list[PendingOutcome]:
+        """Return all active PendingOutcomes (P2 — for restart-safe persistence)."""
+        return list(self._pending.values())
+
+    def restore(self, outcome: PendingOutcome) -> None:
+        """Restore a persisted PendingOutcome (P2).  Last-write-wins; never raises."""
+        self._pending[outcome.window_id] = outcome

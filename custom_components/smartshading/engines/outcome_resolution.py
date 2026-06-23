@@ -337,4 +337,7 @@ def resolve_outcome(
         outcome_score=outcome_score,
         resolution_status=resolution_status,
         evaluation_timestamp=inp.resolution_timestamp,
+        # P2: carry the authoritative decision link so the coordinator attaches
+        # the outcome by decision_id (v2), never by timestamp.
+        decision_id=pending.decision_id,
     )

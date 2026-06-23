@@ -440,6 +440,13 @@
           "off": "未启用"
         }
       },
+      "learning_experiments": {
+        "name": "学习实验",
+        "state": {
+          "on": "启用",
+          "off": "禁用"
+        }
+      },
       "debug_logging": {
         "name": "调试日志"
       }

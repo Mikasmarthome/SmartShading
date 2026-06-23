@@ -440,6 +440,13 @@
           "off": "Inaktiv"
         }
       },
+      "learning_experiments": {
+        "name": "Læringseksperimenter",
+        "state": {
+          "on": "Aktiveret",
+          "off": "Deaktiveret"
+        }
+      },
       "debug_logging": {
         "name": "Fejlfindingslog"
       }

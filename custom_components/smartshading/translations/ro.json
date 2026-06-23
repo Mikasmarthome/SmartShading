@@ -440,6 +440,13 @@
           "off": "Inactiv"
         }
       },
+      "learning_experiments": {
+        "name": "Experimente de învățare",
+        "state": {
+          "on": "Activat",
+          "off": "Dezactivat"
+        }
+      },
       "debug_logging": {
         "name": "Jurnal de depanare"
       }

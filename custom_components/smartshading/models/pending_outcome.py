@@ -56,6 +56,9 @@ class PendingOutcome:
     # P4 — thermal observation-window authority applied at decision time.
     thermal_authority_applied: bool = False
     thermal_confidence_at_decision: float | None = None
+    # P7 — bounded-experiment linkage (None for normal decisions).  The outcome
+    # is attached to the experiment by decision_id/experiment_id, never by time.
+    experiment_id: str | None = None
 
     def to_dict(self) -> dict:
         """Serialize to a JSON-safe dict (P2 — restart-safe persistence)."""
@@ -77,6 +80,7 @@ class PendingOutcome:
             "restart_count": self.restart_count,
             "thermal_authority_applied": self.thermal_authority_applied,
             "thermal_confidence_at_decision": self.thermal_confidence_at_decision,
+            "experiment_id": self.experiment_id,
         }
 
     @classmethod
@@ -109,4 +113,5 @@ class PendingOutcome:
             restart_count=int(d.get("restart_count", 0)),
             thermal_authority_applied=bool(d.get("thermal_authority_applied", False)),
             thermal_confidence_at_decision=d.get("thermal_confidence_at_decision"),
+            experiment_id=d.get("experiment_id"),
         )

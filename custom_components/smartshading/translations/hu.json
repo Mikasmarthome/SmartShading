@@ -440,6 +440,13 @@
           "off": "Inaktív"
         }
       },
+      "learning_experiments": {
+        "name": "Tanulási kísérletek",
+        "state": {
+          "on": "Bekapcsolva",
+          "off": "Kikapcsolva"
+        }
+      },
       "debug_logging": {
         "name": "Hibakeresési napló"
       }

@@ -440,6 +440,13 @@
           "off": "Neaktivno"
         }
       },
+      "learning_experiments": {
+        "name": "Učni poskusi",
+        "state": {
+          "on": "Omogočeno",
+          "off": "Onemogočeno"
+        }
+      },
       "debug_logging": {
         "name": "Dnevnik razhroščevanja"
       }

@@ -43,6 +43,13 @@ async def async_setup_entry(
                 zone_name=zone.name,
             )
         )
+        entities.append(
+            SmartShadingLearningExperimentsSwitch(
+                coordinator=coordinator,
+                zone_id=zone_id,
+                zone_name=zone.name,
+            )
+        )
 
     async_add_entities(entities)
 
@@ -149,3 +156,48 @@ class SmartShadingActiveControlSwitch(_ZoneControlSwitch):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_set_zone_active_control_enabled(self._zone_id, False)
+
+
+class SmartShadingLearningExperimentsSwitch(_ZoneControlSwitch):
+    """Learning Experiments switch (LE 2.0 / P7) — controls experiments_enabled.
+
+    When on:  SmartShading may occasionally run a single strictly-bounded real
+              thermal close-more experiment (-5 pp) per zone to causally
+              validate a supported shadow candidate.  Requires Observation Mode
+              AND Active Control; all safety/lifecycle/manual/preference gates
+              still apply and remain authoritative.
+    When off: No experiment is planned or activated.  A running experiment is
+              logically aborted (authority removed immediately; no proactive
+              counter-movement).  Shadow proposals, learned models and the
+              experiment history are preserved.
+
+    Default: off (explicit opt-in).  The stored state survives restarts and
+    remains enabled even while runtime is gated by Observation Mode or Active
+    Control being temporarily off.
+    """
+
+    _attr_icon = "mdi:flask-outline"
+
+    def __init__(
+        self,
+        coordinator: SmartShadingCoordinator,
+        zone_id: str,
+        zone_name: str,
+    ) -> None:
+        super().__init__(
+            coordinator,
+            zone_id=zone_id,
+            zone_name=zone_name,
+            translation_key="learning_experiments",
+            unique_id_suffix="learning_experiments",
+        )
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.effective_zone_execution(self._zone_id).experiments_enabled
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_zone_experiments_enabled(self._zone_id, True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_zone_experiments_enabled(self._zone_id, False)

@@ -440,6 +440,13 @@
           "off": "Inativo"
         }
       },
+      "learning_experiments": {
+        "name": "Experiências de aprendizagem",
+        "state": {
+          "on": "Ativado",
+          "off": "Desativado"
+        }
+      },
       "debug_logging": {
         "name": "Registo de depuração"
       }

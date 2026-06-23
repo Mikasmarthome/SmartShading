@@ -440,6 +440,13 @@
           "off": "Ei-aktiivinen"
         }
       },
+      "learning_experiments": {
+        "name": "Oppimiskokeet",
+        "state": {
+          "on": "Käytössä",
+          "off": "Pois käytöstä"
+        }
+      },
       "debug_logging": {
         "name": "Virheenkorjausloki"
       }

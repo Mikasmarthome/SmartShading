@@ -440,6 +440,13 @@
           "off": "Neaktivní"
         }
       },
+      "learning_experiments": {
+        "name": "Učební experimenty",
+        "state": {
+          "on": "Zapnuto",
+          "off": "Vypnuto"
+        }
+      },
       "debug_logging": {
         "name": "Protokol ladění"
       }

@@ -440,6 +440,13 @@
           "off": "Etkin değil"
         }
       },
+      "learning_experiments": {
+        "name": "Öğrenme denemeleri",
+        "state": {
+          "on": "Etkin",
+          "off": "Devre dışı"
+        }
+      },
       "debug_logging": {
         "name": "Hata ayıklama günlüğü"
       }

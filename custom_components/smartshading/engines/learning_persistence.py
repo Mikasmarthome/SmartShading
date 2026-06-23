@@ -51,6 +51,7 @@ from ..models.learning import (
 )
 from ..models.pending_outcome import PendingOutcome
 from ..models.thermal_response import ThermalResponseModel, ThermalResponseObservation
+from ..models.bounded_experiment import BoundedExperiment
 from ..models.shadow_proposal import ShadowProposal
 from ..models.window_contribution import (
     WindowContributionEvidence,
@@ -437,6 +438,7 @@ def serialize_learning_store(
     window_contribution_models: dict | None = None,
     window_contribution_evidence: dict | None = None,
     shadow_proposals: list | None = None,
+    bounded_experiments: list | None = None,
 ) -> dict:
     """Serialize the LearningStore to a JSON-safe dict.
 
@@ -523,6 +525,8 @@ def serialize_learning_store(
         "window_contribution_evidence": window_contribution_evidence or {},
         # P6 — shadow proposals (analysis only; additive).
         "shadow_proposals": shadow_proposals or [],
+        # P7 — bounded experiments (active + terminal history; additive).
+        "bounded_experiments": bounded_experiments or [],
     }
 
     if target_adapter is not None:
@@ -684,6 +688,7 @@ class RestoreExtras:
     window_contribution_models: dict  # window_id → WindowContributionModel
     window_contribution_evidence: dict  # window_id → list[WindowContributionEvidence]
     shadow_proposals: list  # list[ShadowProposal]
+    bounded_experiments: list  # list[BoundedExperiment]
 
 
 def deserialize_into_learning_store(
@@ -859,6 +864,14 @@ def deserialize_into_learning_store(
         except Exception:
             _LOGGER.warning("Learning: skipping malformed shadow proposal #%d", i)
 
+    # --- P7 bounded experiments (additive, optional) ---
+    bounded_experiments: list = []
+    for i, raw in enumerate(data.get("bounded_experiments", []) or []):
+        try:
+            bounded_experiments.append(BoundedExperiment.from_dict(raw))
+        except Exception:
+            _LOGGER.warning("Learning: skipping malformed bounded experiment #%d", i)
+
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
         config_generations=config_generations,
@@ -867,6 +880,7 @@ def deserialize_into_learning_store(
         window_contribution_models=contribution_models,
         window_contribution_evidence=contribution_evidence,
         shadow_proposals=shadow_proposals,
+        bounded_experiments=bounded_experiments,
     )
 
 
@@ -994,6 +1008,7 @@ class LearningPersistenceAdapter:
         window_contribution_models: dict | None = None,
         window_contribution_evidence: dict | None = None,
         shadow_proposals: list | None = None,
+        bounded_experiments: list | None = None,
     ) -> None:
         """Prune and persist the current in-memory learning data.
 
@@ -1012,6 +1027,7 @@ class LearningPersistenceAdapter:
                 window_contribution_models=window_contribution_models,
                 window_contribution_evidence=window_contribution_evidence,
                 shadow_proposals=shadow_proposals,
+                bounded_experiments=bounded_experiments,
             )
             await self._store.async_save(data)
         except Exception:

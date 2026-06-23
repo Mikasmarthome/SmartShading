@@ -440,6 +440,13 @@
           "off": "Inactiu"
         }
       },
+      "learning_experiments": {
+        "name": "Experiments d'aprenentatge",
+        "state": {
+          "on": "Activat",
+          "off": "Desactivat"
+        }
+      },
       "debug_logging": {
         "name": "Registre de depuració"
       }

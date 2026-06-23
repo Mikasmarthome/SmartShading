@@ -440,6 +440,13 @@
           "off": "Neaktívne"
         }
       },
+      "learning_experiments": {
+        "name": "Učebné experimenty",
+        "state": {
+          "on": "Zapnuté",
+          "off": "Vypnuté"
+        }
+      },
       "debug_logging": {
         "name": "Denník ladenia"
       }

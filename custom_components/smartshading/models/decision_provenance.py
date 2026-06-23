@@ -331,10 +331,22 @@ class AdaptationDecision:
     forecast_modifier_delta_wm2: float | None = None
     forecast_trust_score: float | None = None
 
+    # Bounded experiment (P7) — populated only when a real experiment is injected.
+    experiment_applied: bool = False
+    experiment_id: str | None = None
+    target_before_experiment_ha: int | None = None
+    experiment_parameter_target_ha: int | None = None
+    target_after_experiment_ha: int | None = None
+    experiment_delta_requested_ha: int | None = None
+    experiment_delta_effective_ha: int | None = None
+
     def __post_init__(self) -> None:
         _validate_ha_position(self.manual_preference_target_ha, "manual_preference_target_ha")
         _validate_ha_position(self.passive_adaptation_target_ha, "passive_adaptation_target_ha")
         _validate_ha_position(self.shadow_candidate_target_ha, "shadow_candidate_target_ha")
+        _validate_ha_position(self.target_before_experiment_ha, "target_before_experiment_ha")
+        _validate_ha_position(self.experiment_parameter_target_ha, "experiment_parameter_target_ha")
+        _validate_ha_position(self.target_after_experiment_ha, "target_after_experiment_ha")
 
     def to_dict(self) -> dict:
         return {
@@ -360,6 +372,13 @@ class AdaptationDecision:
             "shadow_candidate_reason": self.shadow_candidate_reason,
             "forecast_modifier_delta_wm2": self.forecast_modifier_delta_wm2,
             "forecast_trust_score": self.forecast_trust_score,
+            "experiment_applied": self.experiment_applied,
+            "experiment_id": self.experiment_id,
+            "target_before_experiment_ha": self.target_before_experiment_ha,
+            "experiment_parameter_target_ha": self.experiment_parameter_target_ha,
+            "target_after_experiment_ha": self.target_after_experiment_ha,
+            "experiment_delta_requested_ha": self.experiment_delta_requested_ha,
+            "experiment_delta_effective_ha": self.experiment_delta_effective_ha,
         }
 
     @classmethod
@@ -387,6 +406,13 @@ class AdaptationDecision:
             shadow_candidate_reason=d.get("shadow_candidate_reason"),
             forecast_modifier_delta_wm2=d.get("forecast_modifier_delta_wm2"),
             forecast_trust_score=d.get("forecast_trust_score"),
+            experiment_applied=bool(d.get("experiment_applied", False)),
+            experiment_id=d.get("experiment_id"),
+            target_before_experiment_ha=d.get("target_before_experiment_ha"),
+            experiment_parameter_target_ha=d.get("experiment_parameter_target_ha"),
+            target_after_experiment_ha=d.get("target_after_experiment_ha"),
+            experiment_delta_requested_ha=d.get("experiment_delta_requested_ha"),
+            experiment_delta_effective_ha=d.get("experiment_delta_effective_ha"),
         )
 
 

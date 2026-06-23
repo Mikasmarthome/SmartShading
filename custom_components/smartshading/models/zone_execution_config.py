@@ -73,3 +73,21 @@ class ZoneExecutionConfig:
     CommandFilter, StateGuard, manual override, and cover availability checks
     all apply. It only means that allowed commands are dispatched.
     """
+
+    experiments_enabled: bool = False
+    """When True (LE 2.0 / P7 — UI label "Lernexperimente"), SmartShading may
+    occasionally run a single strictly-bounded real thermal close-more
+    experiment (-5 pp parameter step) per zone, to causally validate a
+    P6-supported shadow candidate.
+
+    Requires observation_enabled AND active_control_enabled to ALSO be True;
+    all Safety/Lifecycle/Manual/Preference/Feedback/Context/Reliability gates
+    still apply.  Default False for existing and new zones — real experiments
+    are explicit opt-in and never silently widen the meaning of Active Control.
+
+    When False:
+      - No experiment is planned or activated
+      - A running experiment is logically aborted (authority removed at once;
+        no proactive inverse command).  Shadow proposals and all learned models
+        and experiment history are preserved.
+    """

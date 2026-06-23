@@ -119,7 +119,37 @@ from .engines.shadow_engine import (
     compute_shadow_candidate,
     evaluate_supported_status,
 )
-from .models.shadow_proposal import ShadowEvaluation, ShadowProposal
+from .models.shadow_proposal import ShadowEvaluation, ShadowProposal, STATUS_SUPPORTED
+from .engines.experiment_eligibility import (
+    ExperimentEligibilityInput,
+    evaluate_experiment_eligibility,
+)
+from .engines.experiment_engine import (
+    ExperimentEvaluationInput,
+    P8AdoptionInput,
+    derive_p8_adoption_eligible,
+    evaluate_experiment,
+    is_cooldown_active,
+    reconcile_restored_experiments,
+    revalidate_experiment_candidate,
+)
+from .models.bounded_experiment import (
+    ACTIVE_STATUSES as _EXP_ACTIVE_STATUSES,
+    EVAL_DEGRADED,
+    EVAL_IMPROVED,
+    EVAL_NO_DEGRADATION,
+    EVAL_PREFERENCE_REJECTED,
+    EXPERIMENT_HISTORY_PER_WINDOW,
+    STATUS_ABORTED,
+    STATUS_ACCEPTED_FOR_P8,
+    STATUS_ACTIVATED,
+    STATUS_ARMED,
+    STATUS_COMPLETED,
+    STATUS_INTERRUPTED_PARTIAL,
+    STATUS_OBSERVING,
+    STATUS_REJECTED,
+    BoundedExperiment,
+)
 from .models.decision_provenance import (
     AdaptationDecision,
     AdaptationStep,
@@ -568,6 +598,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # keyed by (window_id, intensity, context_family); bounded terminal history.
         self._shadow_active: dict[tuple, object] = {}
         self._shadow_history: list[object] = []
+        # P7 — bounded experiments.  At most ONE active experiment per zone.
+        self._experiments_active: dict[str, BoundedExperiment] = {}   # zone_id → experiment
+        self._experiment_history: list[BoundedExperiment] = []
+        self._experiment_zone_last_activation: dict[str, datetime] = {}
+        # Per-cycle injection context (window_id → dict), reset each cycle.
+        self._cycle_experiment: dict[str, dict] = {}
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -664,6 +700,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._zone_execution_overrides[_zone_id] = ZoneExecutionConfig(
                     observation_enabled=_ctrl.get("observation_enabled", True),
                     active_control_enabled=_ctrl.get("active_control_enabled", False),
+                    experiments_enabled=_ctrl.get("experiments_enabled", False),
                 )
 
     @property
@@ -806,6 +843,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._zone_execution_overrides[zone_id] = ZoneExecutionConfig(
             observation_enabled=enabled,
             active_control_enabled=current.active_control_enabled,
+            experiments_enabled=current.experiments_enabled,
         )
         self._persist_zone_controls()
         await self.async_request_refresh()
@@ -818,6 +856,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._zone_execution_overrides[zone_id] = ZoneExecutionConfig(
             observation_enabled=current.observation_enabled,
             active_control_enabled=enabled,
+            experiments_enabled=current.experiments_enabled,
         )
         if enabled:
             # When Active Control is turned ON, clear any existing manual
@@ -845,12 +884,37 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._persist_zone_controls()
         await self.async_request_refresh()
 
+    async def async_set_zone_experiments_enabled(
+        self, zone_id: str, enabled: bool
+    ) -> None:
+        """Toggle experiments_enabled ("Lernexperimente") for a zone.
+
+        When turned OFF, any active experiment for the zone is logically aborted
+        (authority removed immediately; no proactive inverse command).  Shadow
+        proposals, learned models and experiment history are preserved.  The
+        switch state persists regardless of observation/active-control state.
+        """
+        current = self.effective_zone_execution(zone_id)
+        self._zone_execution_overrides[zone_id] = ZoneExecutionConfig(
+            observation_enabled=current.observation_enabled,
+            active_control_enabled=current.active_control_enabled,
+            experiments_enabled=enabled,
+        )
+        if not enabled:
+            try:
+                self._abort_zone_experiment(zone_id, "experiments_disabled", dt_util.utcnow())
+            except Exception:
+                _LOGGER.warning("Learning: experiment abort on disable failed for %s", zone_id)
+        self._persist_zone_controls()
+        await self.async_request_refresh()
+
     def _persist_zone_controls(self) -> None:
         """Write current zone execution overrides into config_entry.options."""
         zone_controls = {
             zone_id: {
                 "observation_enabled": cfg.observation_enabled,
                 "active_control_enabled": cfg.active_control_enabled,
+                "experiments_enabled": cfg.experiments_enabled,
             }
             for zone_id, cfg in self._zone_execution_overrides.items()
         }
@@ -1108,6 +1172,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             self._shadow_history.append(_p)
                         else:
                             self._shadow_active[_p.proposal_key] = _p
+                    # P7: restore bounded experiments with the restart safety rule
+                    # (activated/observing can NEVER resume as complete; no target
+                    # is re-injected by restore alone).
+                    self._experiments_active, self._experiment_history = (
+                        reconcile_restored_experiments(
+                            _extras.bounded_experiments, _restore_now)
+                    )
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
@@ -1127,6 +1198,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     window_contribution_models=self._contribution_models_storage(),
                     window_contribution_evidence=self._contribution_evidence_storage(),
                     shadow_proposals=self._shadow_proposals_storage(),
+                    bounded_experiments=self._experiments_storage(),
                 )
                 self._persistence_last_save_at = _restore_now
                 self._learning_persistence.clear_migration_dirty()
@@ -1619,6 +1691,30 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         strong_shade_position=to_internal_position(_strong_eff_ha),
                     )
                     wdi = replace(wdi, effective_behavior=_adapted_eb)
+
+                # P7 — bounded experiment injection (single Tier-5 parameter).
+                # Strictly gated; never bypasses any higher authority because it
+                # only overrides one intensity position BEFORE the tier evaluation,
+                # so every downstream resolver/clamp/harmonization/command-filter
+                # still applies.  Returns the (possibly) modified wdi.
+                try:
+                    wdi = self._experiment_try_inject(
+                        zone=zone, window=window, window_id=window_id, wdi=wdi,
+                        eff_ha={"light": _light_eff_ha, "normal": _normal_eff_ha,
+                                "strong": _strong_eff_ha},
+                        cfg_ha={"light": _light_cfg_ha, "normal": _normal_cfg_ha,
+                                "strong": _strong_cfg_ha},
+                        exposure_wm2=exposure.effective_exposure,
+                        outdoor_temp=weather_inputs.outdoor_temperature,
+                        in_solar_sector=_effective_in_solar_sector,
+                        manual_pref_active=_any_pos_adapted,
+                        current_state=current_state,
+                        now=now,
+                    )
+                except Exception:
+                    _LOGGER.warning(
+                        "Learning: experiment injection failed for %s (non-fatal)", window_id
+                    )
             # else: wdi stays as resolved from config; neutral profile is implied.
 
             # Per-window behavior mode (v1.0): restrict which tiers are active.
@@ -2101,6 +2197,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 # P4: observation-window authority provenance.
                                 thermal_authority_applied=_thermal_authority,
                                 thermal_confidence_at_decision=_thermal_conf,
+                                # P7: link the pending to an active experiment, only
+                                # when this decision actually used the experiment's
+                                # injected intensity (exact decision_id/experiment_id
+                                # linkage — never a timestamp fallback).
+                                experiment_id=self._experiment_pending_link(
+                                    window_id, new_state, _decision_id, now,
+                                ),
                             )
                             _old_pending = self._pending_outcomes.replace(_new_pending)
                             if _old_pending is not None:
@@ -2994,6 +3097,28 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     dispatch=_dispatch_prov,
                     now=now,
                 )
+                # P7: confirm or abort experiment activation from the real
+                # dispatch result this cycle (command blocked/failed → not
+                # activated).  Reliable feedback gates the confirmation class.
+                try:
+                    self._experiment_confirm_dispatch(
+                        window_id,
+                        dispatch_succeeded=bool(
+                            _exec_plan_result is not None
+                            and _exec_plan_result.any_sent
+                            and not _exec_plan_result.any_failed
+                        ),
+                        has_reliable_feedback=(
+                            s.exec_cap.has_reliable_position_feedback
+                            if s.exec_cap is not None else False
+                        ),
+                        now=now,
+                    )
+                except Exception:
+                    _LOGGER.warning(
+                        "SmartShading: experiment dispatch-confirm failed for %s (non-fatal)",
+                        window_id,
+                    )
                 # P5: record per-window event facts for the open zone observation.
                 if s.obs_enabled and s.window.zone_id in self._thermal_open:
                     _obs_pos = (
@@ -3052,6 +3177,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 window_contribution_models=self._contribution_models_storage(),
                 window_contribution_evidence=self._contribution_evidence_storage(),
                 shadow_proposals=self._shadow_proposals_storage(),
+                bounded_experiments=self._experiments_storage(),
             )
             self._persistence_last_save_at = now
             self._learning_dirty = False
@@ -3265,6 +3391,392 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "thermal_model_gate_reason": reason,
             "selected_observation_window_min": window,
         }
+
+    # ------------------------------------------------------------------
+    # P7 — Bounded experiment lifecycle (real cover movement, gated)
+    # ------------------------------------------------------------------
+
+    _EXP_STATE_FOR_INTENSITY = {
+        "light": ShadingState.LIGHT_SHADE,
+        "normal": ShadingState.NORMAL_SHADE,
+        "strong": ShadingState.STRONG_SHADE,
+    }
+
+    def _experiment_context_family(self, now, outdoor, exposure) -> str:
+        parts = thermal_context_key(now, outdoor, exposure).split("|")
+        return f"{parts[0]}|{parts[-1]}"
+
+    def _experiment_find_supported_proposal(self, window_id: str, ctx_family: str):
+        """A supported shadow proposal for this window in the current context."""
+        for (wid, _intensity, cfam), prop in self._shadow_active.items():
+            if wid == window_id and cfam == ctx_family and prop.status == STATUS_SUPPORTED:
+                return prop
+        return None
+
+    def _experiment_cooldown(self, zone_id: str, key: tuple, now: datetime):
+        last_zone = self._experiment_zone_last_activation.get(zone_id)
+        last_ctx = None
+        last_rej = None
+        win_count = 0
+        cutoff = now - timedelta(days=30)
+        for e in self._experiment_history:
+            if e.experiment_key == key:
+                if e.completed_at is not None:
+                    if last_ctx is None or e.completed_at > last_ctx:
+                        last_ctx = e.completed_at
+                    if e.completed_at >= cutoff:
+                        win_count += 1
+                    if e.evaluation.decision in (EVAL_DEGRADED, EVAL_PREFERENCE_REJECTED):
+                        if last_rej is None or e.completed_at > last_rej:
+                            last_rej = e.completed_at
+        return is_cooldown_active(
+            now=now, last_zone_activation_at=last_zone, last_context_completion_at=last_ctx,
+            last_rejection_at=last_rej, window_activations_last_30d=win_count,
+        )
+
+    def _experiment_try_inject(
+        self, *, zone, window, window_id, wdi, eff_ha, cfg_ha, exposure_wm2,
+        outdoor_temp, in_solar_sector, manual_pref_active, current_state, now,
+    ):
+        """Plan/arm + (single) inject a bounded experiment parameter.  Returns wdi
+        (possibly with one intensity position overridden).  Fully gated; never
+        bypasses a higher authority."""
+        self._cycle_experiment.pop(window_id, None)
+        zone_id = window.zone_id
+        exec_cfg = self.effective_zone_execution(zone_id)
+        # Three mandatory user levels.
+        if not (exec_cfg.observation_enabled and exec_cfg.active_control_enabled
+                and exec_cfg.experiments_enabled):
+            return wdi
+
+        exp = self._experiments_active.get(zone_id)
+        if exp is not None and exp.window_id != window_id:
+            return wdi  # zone's single slot is held by another window
+
+        ctx_family = self._experiment_context_family(now, outdoor_temp, exposure_wm2)
+        proposal = self._experiment_find_supported_proposal(window_id, ctx_family)
+        if exp is not None and (proposal is None or proposal.intensity_level != exp.intensity_level):
+            return wdi
+        if proposal is None:
+            return wdi
+        intensity = proposal.intensity_level
+        state = self._EXP_STATE_FOR_INTENSITY.get(intensity)
+        if state is None or intensity not in eff_ha:
+            return wdi
+
+        gen = self._thermal_config_generation(zone_id)
+        tmodel = self._thermal_models.get(zone_id)
+        contrib = self._contribution_models.get(window_id)
+        _shadow_elig, contrib_exp_elig = derive_eligibility(contrib, gen)
+        cg = self.cover_groups.get(window.cover_group_id)
+        cap = (
+            self._get_or_detect_capability(cg.cover_ids[0])
+            if cg is not None and cg.cover_ids else None
+        )
+        reliable_fb = bool(cap.has_reliable_position_feedback) if cap is not None else False
+        reading = self._read_zone_temperature()
+
+        cur_auth_ha = eff_ha[intensity]
+        cfg_base_ha = cfg_ha[intensity]
+        hw = default_hardware_settings(cg.hardware_type) if cg is not None else {}
+        reval = revalidate_experiment_candidate(
+            current_authoritative_target_ha=cur_auth_ha,
+            real_regular_target_ha=cur_auth_ha,
+            configured_base_target_ha=cfg_base_ha,
+            new_state=state,
+            daytime_min_ha=hw.get("daytime_min_open_position_ha"),
+            ahb_position_ha=hw.get("anti_heat_buildup_position_ha"),
+            ahb_enabled=False,
+            hardware_type=(cg.hardware_type if cg is not None else CoverHardwareType.GENERIC),
+            in_solar_sector=in_solar_sector,
+            effective_exposure_wm2=exposure_wm2,
+        )
+
+        elig = evaluate_experiment_eligibility(ExperimentEligibilityInput(
+            intensity_level=intensity,
+            observation_enabled=exec_cfg.observation_enabled,
+            active_control_enabled=exec_cfg.active_control_enabled,
+            experiments_enabled=exec_cfg.experiments_enabled,
+            shadow_status=proposal.status, proposal_present=True,
+            p5_reference_valid=window_id in self._contribution_models,
+            contribution_current=contrib_exp_elig,
+            attribution_quality=proposal.attribution_quality,
+            config_generation_matches=(proposal.config_generation == gen),
+            thermal_available=tmodel is not None,
+            thermal_mature=bool(tmodel and tmodel.active),
+            thermal_reliability=(tmodel.confidence if tmodel else 0.0),
+            temperature_source_available=reading.available,
+            preference_veto=proposal.evaluation.preference_veto,
+            manual_preference_active=manual_pref_active,
+            fully_automatic=getattr(window.behavior_mode, "name", "") == "FULLY_AUTOMATIC",
+            manual_override_active=self._override_detector.get(window_id, now) is not None,
+            safety_active=current_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE),
+            lifecycle_active=self._lifecycle_state.value != "day",
+            presence_absence_transition=False,
+            solar_context_ok=((exposure_wm2 or 0.0) >= 150.0
+                              and ctx_family == proposal.context_family),
+            reliable_position_feedback=reliable_fb,
+            confounded=False,
+            candidate_valid=reval.valid,
+            other_active_zone_experiment=False,
+            cooldown_active=self._experiment_cooldown(zone_id, proposal.proposal_key, now)[0],
+        ))
+        if not elig.eligible:
+            # Lost eligibility while an experiment was armed for this window →
+            # invalidate/abort logically (no command).
+            if exp is not None:
+                self._abort_zone_experiment(
+                    zone_id, f"ineligible:{elig.block_reason}", now)
+            return wdi
+
+        # Arm a new experiment if none exists for the zone.
+        if exp is None:
+            exp = BoundedExperiment(
+                experiment_id=uuid.uuid4().hex, source_shadow_id=proposal.shadow_id,
+                window_id=window_id, zone_id=zone_id, intensity_level=intensity,
+                context_family=ctx_family, created_at=now, updated_at=now,
+                config_generation=gen,
+                source_decision_ids=proposal.source_decision_ids[:10],
+                status=STATUS_ARMED, planned_start_at=now,
+            )
+        exp = replace(
+            exp, updated_at=now, status=STATUS_ARMED,
+            baseline_parameter_target_ha=cur_auth_ha,
+            experiment_parameter_target_ha=reval.experiment_parameter_target_ha,
+            expected_final_candidate_target_ha=reval.expected_final_candidate_target_ha,
+            cumulative_delta_from_config_ha=reval.cumulative_delta_from_config_ha,
+            eligibility_snapshot=elig.to_dict(),
+        )
+        self._experiments_active[zone_id] = exp
+
+        # Inject: override exactly this intensity position (Tier-5 parameter).
+        param_internal = to_internal_position(reval.experiment_parameter_target_ha)
+        eb = wdi.effective_behavior
+        if intensity == "light":
+            eb = replace(eb, light_shade_position=param_internal)
+        elif intensity == "normal":
+            eb = replace(eb, normal_shade_position=param_internal)
+        else:
+            eb = replace(eb, strong_shade_position=param_internal)
+        wdi = replace(wdi, effective_behavior=eb)
+        self._cycle_experiment[window_id] = {
+            "experiment_id": exp.experiment_id, "zone_id": zone_id,
+            "intensity": intensity, "state": state,
+            "baseline_ha": cur_auth_ha,
+            "param_ha": reval.experiment_parameter_target_ha,
+            "expected_final_ha": reval.expected_final_candidate_target_ha,
+            "configured_base_ha": cfg_base_ha,
+        }
+        return wdi
+
+    def _experiment_pending_link(self, window_id, new_state, decision_id, now):
+        """Mark the experiment activated when the committed decision actually used
+        the injected intensity, and return its experiment_id for the pending."""
+        ctx = self._cycle_experiment.get(window_id)
+        if ctx is None:
+            return None
+        if self._SHADE_INTENSITY.get(new_state) != ctx["intensity"]:
+            return None  # a higher authority chose a different state → not activated
+        zone_id = ctx["zone_id"]
+        exp = self._experiments_active.get(zone_id)
+        if exp is None or exp.experiment_id != ctx["experiment_id"]:
+            return None
+        self._experiments_active[zone_id] = replace(
+            exp, status=STATUS_ACTIVATED, activated_at=now, updated_at=now,
+            experiment_decision_id=decision_id,
+            outcome_reference=decision_id,
+            confirmation="command_attempted",
+        )
+        self._experiment_zone_last_activation[zone_id] = now
+        self._learning_dirty = True
+        return ctx["experiment_id"]
+
+    def _experiment_confirm_dispatch(
+        self, window_id, *, dispatch_succeeded, has_reliable_feedback, now,
+    ):
+        """Confirm or abort activation based on the real dispatch result this
+        cycle.  A command that was blocked/failed means NOT activated."""
+        ctx = self._cycle_experiment.get(window_id)
+        if ctx is None:
+            return
+        zone_id = ctx["zone_id"]
+        exp = self._experiments_active.get(zone_id)
+        if exp is None or exp.experiment_id != ctx["experiment_id"]:
+            return
+        if exp.status != STATUS_ACTIVATED:
+            return  # decision did not land on the experiment intensity this cycle
+        if not dispatch_succeeded:
+            self._abort_zone_experiment(zone_id, "command_blocked", now)
+            return
+        # Activated + dispatched → move to observing (pending outcome open).
+        delta = (
+            (exp.expected_final_candidate_target_ha - exp.baseline_parameter_target_ha)
+            if exp.expected_final_candidate_target_ha is not None
+            and exp.baseline_parameter_target_ha is not None else None
+        )
+        self._experiments_active[zone_id] = replace(
+            exp, status=STATUS_OBSERVING, updated_at=now, delta_ha=delta,
+            confirmation=("position_change_confirmed" if has_reliable_feedback
+                          else "command_sent"),
+        )
+        self._learning_dirty = True
+
+    def _experiment_finalize_from_outcome(self, outcome) -> None:
+        """Evaluate the experiment whose decision produced this outcome."""
+        did = outcome.decision_id
+        if did is None:
+            return
+        match = None
+        for zone_id, exp in self._experiments_active.items():
+            if exp.experiment_decision_id == did:
+                match = (zone_id, exp)
+                break
+        if match is None:
+            return
+        zone_id, exp = match
+
+        mo = outcome.multi_objective
+        exp_thermal = mo.thermal.score if (mo and mo.thermal.available) else None
+        exp_pref = mo.preference.score if mo else None
+        exp_move = mo.movement.score if mo else None
+        open_more = bool(mo and mo.preference.override_direction == "open_more")
+        reliability = (mo.reliability.thermal if mo else 0.0)
+
+        # Robust baseline: comparable non-experiment thermal scores for this window.
+        baseline_scores: list[float] = []
+        baseline_days: set = set()
+        for o in self._learning_store.get_outcomes():
+            if o.window_id != exp.window_id or o.decision_id == did:
+                continue
+            omo = o.multi_objective
+            if omo is None or not omo.thermal.available or omo.thermal.score is None:
+                continue
+            baseline_scores.append(omo.thermal.score)
+            baseline_days.add(o.decision_timestamp.date())
+
+        evaluation = evaluate_experiment(ExperimentEvaluationInput(
+            experiment_outcome_available=exp_thermal is not None,
+            experiment_thermal_score=exp_thermal,
+            experiment_preference_score=exp_pref,
+            experiment_movement_score=exp_move,
+            baseline_thermal_scores=tuple(baseline_scores[-30:]),
+            baseline_distinct_days=len(baseline_days),
+            user_open_more_rejection=open_more,
+            reliability=reliability,
+        ))
+
+        # P8 adoption snapshot from this window/context history (+ this result).
+        hist = [e for e in self._experiment_history
+                if e.experiment_key == exp.experiment_key]
+        valid_non_degraded = sum(
+            1 for e in hist
+            if e.evaluation.decision in (EVAL_IMPROVED, EVAL_NO_DEGRADATION)
+        ) + (1 if evaluation.decision in (EVAL_IMPROVED, EVAL_NO_DEGRADATION) else 0)
+        days = {e.completed_at.date() for e in hist if e.completed_at is not None}
+        if outcome.decision_timestamp is not None:
+            days.add(outcome.decision_timestamp.date())
+        any_rej = any(e.evaluation.decision == EVAL_PREFERENCE_REJECTED for e in hist) or open_more
+        any_deg = any(e.evaluation.decision == EVAL_DEGRADED for e in hist) \
+            or evaluation.decision == EVAL_DEGRADED
+        min_conf = min(
+            [e.evaluation.confidence for e in hist] + [evaluation.confidence]
+        ) if hist else evaluation.confidence
+        p8_ok = derive_p8_adoption_eligible(P8AdoptionInput(
+            valid_non_degraded_experiments=valid_non_degraded, distinct_days=len(days),
+            any_preference_rejection=any_rej, any_degraded=any_deg,
+            min_confidence_seen=min_conf,
+        ))
+        evaluation = replace(evaluation, p8_adoption_eligible=p8_ok)
+
+        if evaluation.decision in (EVAL_DEGRADED, EVAL_PREFERENCE_REJECTED):
+            final_status = STATUS_REJECTED
+        elif p8_ok:
+            final_status = STATUS_ACCEPTED_FOR_P8
+        else:
+            final_status = STATUS_COMPLETED
+        completed = replace(
+            exp, status=final_status, completed_at=outcome.decision_timestamp or exp.updated_at,
+            updated_at=outcome.decision_timestamp or exp.updated_at,
+            evaluation=evaluation,
+        )
+        self._experiments_active.pop(zone_id, None)
+        self._experiment_to_history(completed)
+        self._learning_dirty = True
+
+    def _abort_zone_experiment(self, zone_id: str, reason: str, now: datetime) -> None:
+        """Logical rollback: remove the experiment authority immediately (no
+        proactive counter-command).  The next regular decision uses the regular
+        target.  Shadow/learned data and history are preserved."""
+        exp = self._experiments_active.pop(zone_id, None)
+        if exp is None:
+            return
+        terminal = STATUS_INTERRUPTED_PARTIAL if reason.startswith("interrupted") else STATUS_ABORTED
+        self._experiment_to_history(replace(
+            exp, status=terminal, abort_reason=reason, updated_at=now,
+            completed_at=now, rollback_state="logical",
+        ))
+        self._learning_dirty = True
+
+    def _experiment_to_history(self, exp) -> None:
+        self._experiment_history.append(exp)
+        # Bounded terminal history per (window,intensity,context).
+        per_key: dict = {}
+        for e in self._experiment_history:
+            per_key.setdefault(e.experiment_key, []).append(e)
+        trimmed: list = []
+        for _key, items in per_key.items():
+            trimmed.extend(items[-EXPERIMENT_HISTORY_PER_WINDOW:])
+        # Preserve chronological order.
+        trimmed.sort(key=lambda e: e.updated_at)
+        self._experiment_history = trimmed
+
+    def experiment_diagnostics(self, window_id: str) -> dict:
+        """Privacy-safe per-window experiment diagnostics.  p8_adoption_eligible
+        is a snapshot only; P8 must re-derive from current data."""
+        window = self.windows.get(window_id)
+        zone_id = window.zone_id if window is not None else ""
+        exec_cfg = self.effective_zone_execution(zone_id) if zone_id else ZoneExecutionConfig()
+        gate = None
+        if not exec_cfg.observation_enabled:
+            gate = "observation_mode_required"
+        elif not exec_cfg.active_control_enabled:
+            gate = "active_control_required"
+        elif not exec_cfg.experiments_enabled:
+            gate = "experiments_not_enabled"
+        exp = self._experiments_active.get(zone_id)
+        if exp is None or exp.window_id != window_id:
+            latest = next(
+                (e for e in reversed(self._experiment_history) if e.window_id == window_id),
+                None,
+            )
+            return {
+                "experiment_status": (latest.status if latest else "none"),
+                "experiment_id": (latest.experiment_id if latest else None),
+                "source_shadow_id": (latest.source_shadow_id if latest else None),
+                "evaluation_class": (latest.evaluation.decision if latest else None),
+                "p8_adoption_eligible": (latest.evaluation.p8_adoption_eligible if latest else False),
+                "active_experiment_zone_lock": exp is not None,
+                "activation_gate": gate,
+                "latest_abort_reason": (latest.abort_reason if latest else None),
+                "rollback_status": (latest.rollback_state if latest else "none"),
+            }
+        return {
+            "experiment_status": exp.status, "experiment_id": exp.experiment_id,
+            "source_shadow_id": exp.source_shadow_id,
+            "experiment_target_ha": exp.expected_final_candidate_target_ha,
+            "effective_delta_ha": exp.delta_ha,
+            "active_experiment_zone_lock": True, "activation_gate": gate,
+            "latest_abort_reason": exp.abort_reason, "rollback_status": exp.rollback_state,
+            "outcome_status": exp.confirmation,
+            "evaluation_class": exp.evaluation.decision,
+            "p8_adoption_eligible": exp.evaluation.p8_adoption_eligible,
+            "cooldown_remaining": None,
+        }
+
+    def _experiments_storage(self) -> list:
+        out = [e.to_dict() for e in self._experiments_active.values()]
+        out.extend(e.to_dict() for e in self._experiment_history[-200:])
+        return out
 
     def window_contribution_diagnostics(self, window_id: str) -> dict:
         """Privacy-safe per-window contribution diagnostics.  Eligibility is
@@ -3883,6 +4395,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self._thermal_finalize(outcome)
         except Exception:
             pass  # thermal learning is best-effort; never blocks the cycle
+        # P7: if this outcome belongs to an active experiment (exact decision_id
+        # linkage), finalize and evaluate the experiment.
+        try:
+            self._experiment_finalize_from_outcome(outcome)
+        except Exception:
+            _LOGGER.warning("Learning: experiment finalize failed (non-fatal)")
 
     def _restore_pending_outcomes(
         self, pendings: list, now: datetime

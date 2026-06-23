@@ -440,6 +440,13 @@
           "off": "Inactive"
         }
       },
+      "learning_experiments": {
+        "name": "Learning experiments",
+        "state": {
+          "on": "Enabled",
+          "off": "Disabled"
+        }
+      },
       "debug_logging": {
         "name": "Debug logging"
       }

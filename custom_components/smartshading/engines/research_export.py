@@ -371,6 +371,61 @@ def build_window_contribution_research_summary(
         return {"window_model_count": 0}
 
 
+def build_experiment_research_summary(experiments: list | None) -> dict:
+    """Aggregate bounded-experiment stats for the Research Export.  Privacy-safe:
+    no entity IDs, no raw window/zone keys, no timestamps.  Never raises."""
+    experiments = experiments or []
+    try:
+        status_counts: dict[str, int] = {}
+        eval_counts: dict[str, int] = {}
+        gate_failures: dict[str, int] = {}
+        deltas: list[int] = []
+        rollbacks = 0
+        pref_rejections = 0
+        no_feedback = 0
+        for e in experiments:
+            status_counts[e.status] = status_counts.get(e.status, 0) + 1
+            ev = e.evaluation.decision
+            eval_counts[ev] = eval_counts.get(ev, 0) + 1
+            if e.evaluation.decision == "preference_rejected":
+                pref_rejections += 1
+            if e.rollback_state and e.rollback_state != "none":
+                rollbacks += 1
+            if e.delta_ha is not None:
+                deltas.append(e.delta_ha)
+            snap = e.eligibility_snapshot or {}
+            for code in (snap.get("blocked_by") or []):
+                gate_failures[code] = gate_failures.get(code, 0) + 1
+            if e.confirmation == "command_sent":  # sent but not confirmed by feedback
+                no_feedback += 1
+        n = len(experiments)
+
+        def _rate(s: str) -> float | None:
+            return round(status_counts.get(s, 0) / n, 3) if n else None
+
+        return {
+            "experiments_total": n,
+            "experiments_planned": status_counts.get("planned", 0) + status_counts.get("armed", 0),
+            "experiments_activated": status_counts.get("activated", 0) + status_counts.get("observing", 0),
+            "experiments_completed": (
+                status_counts.get("completed", 0) + status_counts.get("accepted_for_p8", 0)
+                + status_counts.get("rejected", 0)
+            ),
+            "aborted_rate": _rate("aborted"),
+            "invalidated_rate": _rate("invalidated"),
+            "interrupted_partial_rate": _rate("interrupted_partial"),
+            "outcome_class_distribution": eval_counts,
+            "activation_gate_failure_distribution": gate_failures,
+            "candidate_delta_distribution": {str(d): deltas.count(d) for d in set(deltas)},
+            "preference_rejection_rate": round(pref_rejections / n, 3) if n else None,
+            "rollback_rate": round(rollbacks / n, 3) if n else None,
+            "experiments_without_reliable_feedback": no_feedback,
+        }
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: experiment summary failed")
+        return {"experiments_total": 0}
+
+
 def build_shadow_research_summary(proposals: list | None) -> dict:
     """Aggregate shadow-proposal stats for the Research Export.  Privacy-safe:
     no entity IDs, no raw window/zone keys, no timestamps.  Never raises."""

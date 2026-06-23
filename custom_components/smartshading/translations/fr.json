@@ -440,6 +440,13 @@
           "off": "Inactif"
         }
       },
+      "learning_experiments": {
+        "name": "Expériences d'apprentissage",
+        "state": {
+          "on": "Activé",
+          "off": "Désactivé"
+        }
+      },
       "debug_logging": {
         "name": "Journalisation de débogage"
       }

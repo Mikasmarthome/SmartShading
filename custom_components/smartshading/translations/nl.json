@@ -440,6 +440,13 @@
           "off": "Inactief"
         }
       },
+      "learning_experiments": {
+        "name": "Leerexperimenten",
+        "state": {
+          "on": "Ingeschakeld",
+          "off": "Uitgeschakeld"
+        }
+      },
       "debug_logging": {
         "name": "Foutopsporingslogboek"
       }

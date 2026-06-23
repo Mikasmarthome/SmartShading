@@ -371,6 +371,51 @@ def build_window_contribution_research_summary(
         return {"window_model_count": 0}
 
 
+def build_adoption_research_summary(adoptions: list | None) -> dict:
+    """Aggregate persistent-adoption stats for the Research Export.  Privacy-safe:
+    no entity IDs, no raw keys, no timestamps.  Never raises."""
+    adoptions = adoptions or []
+    try:
+        status_counts: dict[str, int] = {}
+        deltas: list[int] = []
+        suspended = 0
+        pref_rollbacks = 0
+        thermal_rollbacks = 0
+        second_stage = 0
+        active = 0
+        for a in adoptions:
+            status_counts[a.status] = status_counts.get(a.status, 0) + 1
+            if a.adopted_delta_ha:
+                deltas.append(a.adopted_delta_ha)
+            if a.suspended:
+                suspended += 1
+            if a.stage == 2:
+                second_stage += 1
+            if a.status in ("adopted", "monitoring", "confirmed", "reduced", "eligible"):
+                active += 1
+            if a.rollback_reason == "preference_open_more_rejection":
+                pref_rollbacks += 1
+            elif a.rollback_reason == "repeated_thermal_degradation":
+                thermal_rollbacks += 1
+        n = len(adoptions)
+
+        def _rate(s: str) -> float | None:
+            return round(status_counts.get(s, 0) / n, 3) if n else None
+
+        return {
+            "adoption_total": n, "active_adoption_count": active,
+            "adoption_delta_distribution": {str(d): deltas.count(d) for d in set(deltas)},
+            "confirmed_rate": _rate("confirmed"), "reduced_rate": _rate("reduced"),
+            "rolled_back_rate": _rate("rolled_back"),
+            "preference_rollback_count": pref_rollbacks,
+            "thermal_rollback_count": thermal_rollbacks,
+            "suspended_count": suspended, "second_stage_count": second_stage,
+        }
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: adoption summary failed")
+        return {"adoption_total": 0}
+
+
 def build_experiment_research_summary(experiments: list | None) -> dict:
     """Aggregate bounded-experiment stats for the Research Export.  Privacy-safe:
     no entity IDs, no raw window/zone keys, no timestamps.  Never raises."""

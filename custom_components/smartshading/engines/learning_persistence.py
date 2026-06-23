@@ -52,6 +52,7 @@ from ..models.learning import (
 from ..models.pending_outcome import PendingOutcome
 from ..models.thermal_response import ThermalResponseModel, ThermalResponseObservation
 from ..models.bounded_experiment import BoundedExperiment
+from ..models.persistent_adoption import PersistentTargetAdoption
 from ..models.shadow_proposal import ShadowProposal
 from ..models.window_contribution import (
     WindowContributionEvidence,
@@ -439,6 +440,7 @@ def serialize_learning_store(
     window_contribution_evidence: dict | None = None,
     shadow_proposals: list | None = None,
     bounded_experiments: list | None = None,
+    persistent_adoptions: list | None = None,
 ) -> dict:
     """Serialize the LearningStore to a JSON-safe dict.
 
@@ -527,6 +529,8 @@ def serialize_learning_store(
         "shadow_proposals": shadow_proposals or [],
         # P7 — bounded experiments (active + terminal history; additive).
         "bounded_experiments": bounded_experiments or [],
+        # P8 — persistent target adoptions (active + terminal history; additive).
+        "persistent_adoptions": persistent_adoptions or [],
     }
 
     if target_adapter is not None:
@@ -689,6 +693,7 @@ class RestoreExtras:
     window_contribution_evidence: dict  # window_id → list[WindowContributionEvidence]
     shadow_proposals: list  # list[ShadowProposal]
     bounded_experiments: list  # list[BoundedExperiment]
+    persistent_adoptions: list  # list[PersistentTargetAdoption]
 
 
 def deserialize_into_learning_store(
@@ -872,6 +877,14 @@ def deserialize_into_learning_store(
         except Exception:
             _LOGGER.warning("Learning: skipping malformed bounded experiment #%d", i)
 
+    # --- P8 persistent adoptions (additive, optional) ---
+    persistent_adoptions: list = []
+    for i, raw in enumerate(data.get("persistent_adoptions", []) or []):
+        try:
+            persistent_adoptions.append(PersistentTargetAdoption.from_dict(raw))
+        except Exception:
+            _LOGGER.warning("Learning: skipping malformed persistent adoption #%d", i)
+
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
         config_generations=config_generations,
@@ -881,6 +894,7 @@ def deserialize_into_learning_store(
         window_contribution_evidence=contribution_evidence,
         shadow_proposals=shadow_proposals,
         bounded_experiments=bounded_experiments,
+        persistent_adoptions=persistent_adoptions,
     )
 
 
@@ -1009,6 +1023,7 @@ class LearningPersistenceAdapter:
         window_contribution_evidence: dict | None = None,
         shadow_proposals: list | None = None,
         bounded_experiments: list | None = None,
+        persistent_adoptions: list | None = None,
     ) -> None:
         """Prune and persist the current in-memory learning data.
 
@@ -1028,6 +1043,7 @@ class LearningPersistenceAdapter:
                 window_contribution_evidence=window_contribution_evidence,
                 shadow_proposals=shadow_proposals,
                 bounded_experiments=bounded_experiments,
+                persistent_adoptions=persistent_adoptions,
             )
             await self._store.async_save(data)
         except Exception:

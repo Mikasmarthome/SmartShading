@@ -150,6 +150,42 @@ from .models.bounded_experiment import (
     STATUS_REJECTED,
     BoundedExperiment,
 )
+from .engines.adoption_eligibility import (
+    AdoptionEligibilityInput,
+    evaluate_adoption_eligibility,
+)
+from .engines.adoption_engine import (
+    ExperimentEvidence,
+    ExperimentNeedInput,
+    MonitoringActionInput,
+    classify_monitoring_outcome,
+    evaluate_adoption_evidence,
+    evaluate_confirmation,
+    evaluate_experiment_need,
+    evaluate_monitoring_action,
+    is_cooldown_active as _adoption_cooldown_active,
+    reconcile_restored_adoptions,
+    rollback_cooldown_until,
+    update_monitoring,
+)
+from .models.persistent_adoption import (
+    ACTION_FULL_ROLLBACK,
+    ACTION_INVALIDATE,
+    ACTION_REDUCE_ONE_STEP,
+    ACTION_TEMPORARY_SUSPEND,
+    ADOPTION_HISTORY_PER_WINDOW,
+    ADOPTION_MATERIALITY_HA,
+    ADOPTION_STEP_HA,
+    S2_STABILITY_DAYS,
+    STATUS_ADOPTED as ADOPT_STATUS_ADOPTED,
+    STATUS_CONFIRMED as ADOPT_STATUS_CONFIRMED,
+    STATUS_INVALIDATED as ADOPT_STATUS_INVALIDATED,
+    STATUS_MONITORING as ADOPT_STATUS_MONITORING,
+    STATUS_REDUCED as ADOPT_STATUS_REDUCED,
+    STATUS_ROLLED_BACK as ADOPT_STATUS_ROLLED_BACK,
+    AdoptionMonitoringState,
+    PersistentTargetAdoption,
+)
 from .models.decision_provenance import (
     AdaptationDecision,
     AdaptationStep,
@@ -202,7 +238,11 @@ from .cover_control.execution_result import (
 )
 from .cover_control.global_dispatch_throttle import GlobalDispatchThrottle, GlobalSerialDispatch
 from .cover_control.ha_service_adapter import dispatch_cover_intent
-from .cover_control.position_semantics import to_ha_position, to_internal_position
+from .cover_control.position_semantics import (
+    clamp_position,
+    to_ha_position,
+    to_internal_position,
+)
 from .cover_control.daytime_min_open import (
     DAYTIME_CLAMP_EXEMPT_STATES,
     apply_daytime_min_open,
@@ -604,6 +644,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._experiment_zone_last_activation: dict[str, datetime] = {}
         # Per-cycle injection context (window_id → dict), reset each cycle.
         self._cycle_experiment: dict[str, dict] = {}
+        # P8 — persistent target adoptions.  At most ONE active adoption per
+        # (window_id, intensity_level); bounded terminal history.
+        self._adoptions_active: dict[tuple, PersistentTargetAdoption] = {}
+        self._adoption_history: list[PersistentTargetAdoption] = []
+        # Per-cycle record of which adoptions were applied (window → {intensity:
+        # (adoption_id, control_applied)}), used by monitoring + provenance.
+        self._cycle_adoption_applied: dict[str, dict] = {}
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -853,10 +900,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             active_control_enabled=current.active_control_enabled,
         )
         if not enabled:
+            _disable_now = dt_util.utcnow()
             try:
-                self._abort_zone_experiment(zone_id, "learning_mode_disabled", dt_util.utcnow())
+                self._abort_zone_experiment(zone_id, "learning_mode_disabled", _disable_now)
             except Exception:
                 _LOGGER.warning("Learning: experiment abort on learning-disable failed for %s", zone_id)
+            try:
+                # Adoptions are preserved but suspended (authority removed at
+                # runtime; no proactive inverse command).
+                self._suspend_zone_adoptions(zone_id, "learning_mode_off", _disable_now)
+            except Exception:
+                _LOGGER.warning("Learning: adoption suspend on learning-disable failed for %s", zone_id)
         self._persist_zone_controls()
         await self.async_request_refresh()
 
@@ -1165,6 +1219,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         reconcile_restored_experiments(
                             _extras.bounded_experiments, _restore_now)
                     )
+                    # P8: restore adoptions suspended pending fresh revalidation;
+                    # no target is re-applied by restore alone.
+                    self._adoptions_active, self._adoption_history = (
+                        reconcile_restored_adoptions(
+                            _extras.persistent_adoptions, _restore_now)
+                    )
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
@@ -1185,6 +1245,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     window_contribution_evidence=self._contribution_evidence_storage(),
                     shadow_proposals=self._shadow_proposals_storage(),
                     bounded_experiments=self._experiments_storage(),
+                    persistent_adoptions=self._adoptions_storage(),
                 )
                 self._persistence_last_save_at = _restore_now
                 self._learning_persistence.clear_migration_dirty()
@@ -1678,6 +1739,27 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     )
                     wdi = replace(wdi, effective_behavior=_adapted_eb)
 
+                _eff_ha = {"light": _light_eff_ha, "normal": _normal_eff_ha,
+                           "strong": _strong_eff_ha}
+                _cfg_ha = {"light": _light_cfg_ha, "normal": _normal_cfg_ha,
+                           "strong": _strong_cfg_ha}
+
+                # P8 — persistent adoption injection (single Tier-5 parameter,
+                # BELOW manual preference, ABOVE the P7 experiment).  Runs before
+                # the experiment so a P7 experiment tests -5 pp against the adopted
+                # base; the shared cumulative cap keeps total ≤ -10 pp vs config.
+                try:
+                    wdi = self._adoption_apply(
+                        zone=zone, window=window, window_id=window_id, wdi=wdi,
+                        eff_ha=_eff_ha, cfg_ha=_cfg_ha,
+                        exposure_wm2=exposure.effective_exposure,
+                        outdoor_temp=weather_inputs.outdoor_temperature, now=now,
+                    )
+                except Exception:
+                    _LOGGER.warning(
+                        "Learning: adoption injection failed for %s (non-fatal)", window_id
+                    )
+
                 # P7 — bounded experiment injection (single Tier-5 parameter).
                 # Strictly gated; never bypasses any higher authority because it
                 # only overrides one intensity position BEFORE the tier evaluation,
@@ -1686,10 +1768,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 try:
                     wdi = self._experiment_try_inject(
                         zone=zone, window=window, window_id=window_id, wdi=wdi,
-                        eff_ha={"light": _light_eff_ha, "normal": _normal_eff_ha,
-                                "strong": _strong_eff_ha},
-                        cfg_ha={"light": _light_cfg_ha, "normal": _normal_cfg_ha,
-                                "strong": _strong_cfg_ha},
+                        eff_ha=_eff_ha, cfg_ha=_cfg_ha,
                         exposure_wm2=exposure.effective_exposure,
                         outdoor_temp=weather_inputs.outdoor_temperature,
                         in_solar_sector=_effective_in_solar_sector,
@@ -3164,6 +3243,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 window_contribution_evidence=self._contribution_evidence_storage(),
                 shadow_proposals=self._shadow_proposals_storage(),
                 bounded_experiments=self._experiments_storage(),
+                persistent_adoptions=self._adoptions_storage(),
             )
             self._persistence_last_save_at = now
             self._learning_dirty = False
@@ -3449,6 +3529,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if state is None or intensity not in eff_ha:
             return wdi
 
+        # P8 experiment-need gate: a stable adoption suppresses needless repeat
+        # experiments; a maxed (-10) adoption blocks all further close_more tests.
+        if not self._experiment_need_allows(window_id, intensity, proposal, now):
+            return wdi
+
         gen = self._thermal_config_generation(zone_id)
         tmodel = self._thermal_models.get(zone_id)
         contrib = self._contribution_models.get(window_id)
@@ -3686,6 +3771,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._experiments_active.pop(zone_id, None)
         self._experiment_to_history(completed)
         self._learning_dirty = True
+        # P8: a freshly completed experiment is new evidence — re-evaluate whether
+        # a persistent adoption can be created or upgraded for this (window,intensity).
+        try:
+            self._maybe_adopt(
+                completed.window_id, completed.intensity_level, completed.zone_id,
+                outcome.decision_timestamp or completed.updated_at)
+        except Exception:
+            _LOGGER.warning("Learning: adoption evaluation failed (non-fatal)")
 
     def _abort_zone_experiment(self, zone_id: str, reason: str, now: datetime) -> None:
         """Logical rollback: remove the experiment authority immediately (no
@@ -3758,6 +3851,372 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
     def _experiments_storage(self) -> list:
         out = [e.to_dict() for e in self._experiments_active.values()]
         out.extend(e.to_dict() for e in self._experiment_history[-200:])
+        return out
+
+    # ------------------------------------------------------------------
+    # P8 — Persistent adoption lifecycle (real, bounded, monitored)
+    # ------------------------------------------------------------------
+
+    def _adoption_consumed_ids(self, key: tuple) -> set:
+        """Permanent consumed-experiment ledger for one (window,intensity) — never
+        released, including after rollback/reduction or history pruning."""
+        ids: set = set()
+        a = self._adoptions_active.get(key)
+        if a is not None:
+            ids.update(a.consumed_experiment_ids)
+        for h in self._adoption_history:
+            if h.adoption_key == key:
+                ids.update(h.consumed_experiment_ids)
+        return ids
+
+    def _adoption_experiment_evidence(self, window_id: str, intensity: str) -> list:
+        """Fresh ExperimentEvidence list from terminal valid P7 experiments."""
+        out: list = []
+        for e in self._experiment_history:
+            if e.window_id != window_id or e.intensity_level != intensity:
+                continue
+            if not e.evaluation.experiment_outcome_available or e.completed_at is None:
+                continue
+            out.append(ExperimentEvidence(
+                experiment_id=e.experiment_id, decision_class=e.evaluation.decision,
+                day=e.completed_at.date(), reliability=e.evaluation.reliability,
+                confidence=e.evaluation.confidence, context_family=e.context_family,
+                config_generation=e.config_generation,
+                decision_id=e.experiment_decision_id, shadow_id=e.source_shadow_id,
+            ))
+        return out
+
+    @staticmethod
+    def _intensity_manual_pref(eff_ha: dict, cfg_ha: dict, intensity: str) -> bool:
+        """Per-intensity manual preference = TargetPositionAdapter changed exactly
+        this intensity's position (eff differs from the post-config base)."""
+        return eff_ha.get(intensity) != cfg_ha.get(intensity)
+
+    def _adoption_context_compatible(self, adoption, ctx_family: str) -> bool:
+        fams = set(adoption.validated_context_families) | {adoption.context_family}
+        return ctx_family in fams
+
+    def _adoption_cooldown_for(self, key: tuple):
+        latest = None
+        for h in self._adoption_history:
+            if h.adoption_key == key and h.cooldown_until is not None:
+                if latest is None or h.cooldown_until > latest:
+                    latest = h.cooldown_until
+        return latest
+
+    def _adoption_apply(self, *, zone, window, window_id, wdi, eff_ha, cfg_ha,
+                        exposure_wm2, outdoor_temp, now):
+        """Inject persistent adoptions (per intensity) as a Tier-5 parameter below
+        manual preference and above the P7 experiment.  Mutates eff_ha in place so
+        the experiment tests against the adopted base.  Applied only when context
+        is compatible and no per-intensity manual preference is present."""
+        self._cycle_adoption_applied.pop(window_id, None)
+        zone_id = window.zone_id
+        exec_cfg = self.effective_zone_execution(zone_id)
+        ctx_family = self._experiment_context_family(now, outdoor_temp, exposure_wm2)
+        gen = self._thermal_config_generation(zone_id)
+        applied: dict = {}
+        for intensity in ("light", "normal", "strong"):
+            key = (window_id, intensity)
+            a = self._adoptions_active.get(key)
+            if a is None or a.adopted_delta_ha == 0:
+                continue
+            # Per-intensity manual preference always wins → do not apply.
+            if self._intensity_manual_pref(eff_ha, cfg_ha, intensity):
+                self._adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason="manual_preference_active",
+                    updated_at=now)
+                continue
+            # Applicability: current context compatible + current config generation.
+            if a.config_generation != gen:
+                self._adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason="config_generation_changed",
+                    updated_at=now)
+                continue
+            if not self._adoption_context_compatible(a, ctx_family):
+                self._adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason="context_incompatible",
+                    updated_at=now)
+                continue
+            base = a.configured_target_ha
+            if base is None:
+                continue
+            effective = clamp_position(base - abs(a.adopted_delta_ha))
+            # Inject into exactly this intensity position.
+            eb = wdi.effective_behavior
+            internal = to_internal_position(effective)
+            if intensity == "light":
+                eb = replace(eb, light_shade_position=internal)
+            elif intensity == "normal":
+                eb = replace(eb, normal_shade_position=internal)
+            else:
+                eb = replace(eb, strong_shade_position=internal)
+            wdi = replace(wdi, effective_behavior=eb)
+            eff_ha[intensity] = effective  # experiment will test -5 from here
+            control_applied = exec_cfg.active_control_enabled
+            applied[intensity] = (a.adoption_id, control_applied, base, effective)
+            self._adoptions_active[key] = replace(
+                a, suspended=False, current_gate_reason=None,
+                effective_target_ha=effective, last_validated_at=now,
+                status=(ADOPT_STATUS_MONITORING if a.status == ADOPT_STATUS_ADOPTED else a.status),
+                updated_at=now)
+        if applied:
+            self._cycle_adoption_applied[window_id] = applied
+        return wdi
+
+    def _experiment_need_allows(self, window_id, intensity, proposal, now) -> bool:
+        """P8 experiment-need gate for P7 planning/activation."""
+        key = (window_id, intensity)
+        a = self._adoptions_active.get(key)
+        if a is None:
+            allowed, _ = evaluate_experiment_need(ExperimentNeedInput(
+                has_adoption=False, stage=0, status="none", confirmed_stable=False,
+                activated_at=None, repeated_underprotection=False,
+                new_independent_supported_evidence=True, revalidation_required=False, now=now))
+            return allowed
+        confirmed_stable = a.status == ADOPT_STATUS_CONFIRMED
+        repeated_under = a.monitoring.degraded_count >= 1
+        # "New independent evidence" = a supported proposal exists AND at least one
+        # terminal experiment for this (window,intensity) is not yet consumed.
+        consumed = self._adoption_consumed_ids(key)
+        ev = self._adoption_experiment_evidence(window_id, intensity)
+        has_unconsumed = any(e.experiment_id not in consumed for e in ev)
+        new_evidence = proposal is not None and has_unconsumed
+        allowed, _ = evaluate_experiment_need(ExperimentNeedInput(
+            has_adoption=True, stage=a.stage, status=a.status,
+            confirmed_stable=confirmed_stable, activated_at=a.activated_at,
+            repeated_underprotection=repeated_under,
+            new_independent_supported_evidence=new_evidence,
+            revalidation_required=False, now=now))
+        return allowed
+
+    def _maybe_adopt(self, window_id: str, intensity: str, zone_id: str, now: datetime) -> None:
+        """Create a first -5 pp adoption, or upgrade a confirmed/stable one to
+        -10 pp, strictly from multiple fresh, exact, non-consumed P7 experiments."""
+        key = (window_id, intensity)
+        existing = self._adoptions_active.get(key)
+        # Cooldown after a prior rollback/rejection for this identity.
+        cd = self._adoption_cooldown_for(key)
+        if existing is None and cd is not None and _adoption_cooldown_active(cd, now):
+            return
+
+        if existing is None:
+            stage = 1
+        elif (existing.stage == 1 and existing.status == ADOPT_STATUS_CONFIRMED
+              and existing.activated_at is not None
+              and (now - existing.activated_at) >= timedelta(days=S2_STABILITY_DAYS)):
+            stage = 2
+        else:
+            return  # stage-1 not yet confirmed/stable, or already stage-2
+
+        gen = self._thermal_config_generation(zone_id)
+        consumed = self._adoption_consumed_ids(key)
+        evidence = self._adoption_experiment_evidence(window_id, intensity)
+        res = evaluate_adoption_evidence(
+            evidence, stage=stage, consumed_ids=frozenset(consumed), config_generation=gen)
+        if not res.sufficient:
+            return
+
+        # Configured base: for stage 1 use the latest experiment baseline (= config
+        # when no adoption existed); for stage 2 keep the existing configured base.
+        if existing is not None:
+            configured = existing.configured_target_ha
+        else:
+            base_exp = None
+            for e in self._experiment_history:
+                if (e.window_id == window_id and e.intensity_level == intensity
+                        and e.baseline_parameter_target_ha is not None):
+                    if base_exp is None or (e.completed_at or e.updated_at) > (base_exp.completed_at or base_exp.updated_at):
+                        base_exp = e
+            configured = base_exp.baseline_parameter_target_ha if base_exp is not None else None
+        if configured is None:
+            return
+        delta = -(ADOPTION_STEP_HA if stage == 1 else 2 * ADOPTION_STEP_HA)
+        effective = clamp_position(configured + delta)
+        if configured - effective < ADOPTION_MATERIALITY_HA:
+            return
+
+        window = self.windows.get(window_id)
+        cg = self.cover_groups.get(window.cover_group_id) if window is not None else None
+        cap = (self._get_or_detect_capability(cg.cover_ids[0])
+               if cg is not None and cg.cover_ids else None)
+        reliable_fb = bool(cap.has_reliable_position_feedback) if cap is not None else False
+        tmodel = self._thermal_models.get(zone_id)
+        contrib = self._contribution_models.get(window_id)
+        _se, contrib_exp_elig = derive_eligibility(contrib, gen)
+        exec_cfg = self.effective_zone_execution(zone_id)
+        # Conservative window-level manual-preference check at creation (precise
+        # per-intensity gating happens at apply time).
+        try:
+            _mp = self._target_position_adapter.get_adaptation_diagnostics(
+                window_id, (self._adaptive_profiles.get(window_id).confidence_level
+                            if self._adaptive_profiles.get(window_id) else "very_low"))
+            mp_active = bool(_mp.get("target_adaptation_active", False))
+        except Exception:
+            mp_active = False
+
+        elig = evaluate_adoption_eligibility(AdoptionEligibilityInput(
+            intensity_level=intensity, learning_enabled=exec_cfg.learning_enabled,
+            active_control_required_now=False,
+            active_control_enabled=exec_cfg.active_control_enabled,
+            fully_automatic=getattr(window.behavior_mode, "name", "") == "FULLY_AUTOMATIC"
+            if window is not None else False,
+            manual_preference_active=mp_active, manual_override_active=False,
+            safety_active=False, lifecycle_active=False, presence_absence_transition=False,
+            config_generation_matches=True, contribution_current=contrib_exp_elig,
+            attribution_quality=(ATTR_WINDOW_ISOLATED if contrib is not None else "unknown"),
+            thermal_available=tmodel is not None,
+            thermal_reliability=(tmodel.confidence if tmodel else 0.0),
+            p6_p7_reference_present=True, reliable_position_feedback=reliable_fb,
+            context_compatible=True, confounded=False,
+            candidate_material_and_safe=True, evidence_sufficient=True, cooldown_active=False,
+        ))
+        if not elig.eligible:
+            return
+
+        new_consumed = tuple(sorted(set(consumed) | set(res.selected_experiment_ids)))
+        fams = tuple(sorted(set(res.validated_context_families)
+                            | (set(existing.validated_context_families) if existing else set())))
+        primary_ctx = (existing.context_family if existing is not None
+                       else (res.validated_context_families[0] if res.validated_context_families else "global"))
+        src_exp = tuple(sorted(set(res.selected_experiment_ids)
+                               | (set(existing.source_experiment_ids) if existing else set())))
+        adoption = PersistentTargetAdoption(
+            adoption_id=(existing.adoption_id if existing is not None else uuid.uuid4().hex),
+            window_id=window_id, zone_id=zone_id, intensity_level=intensity,
+            context_family=primary_ctx, validated_context_families=fams,
+            configured_target_ha=configured, adopted_delta_ha=delta,
+            effective_target_ha=effective, source_experiment_ids=src_exp,
+            consumed_experiment_ids=new_consumed,
+            created_at=(existing.created_at if existing is not None else now), updated_at=now,
+            activated_at=(existing.activated_at if existing is not None else now),
+            stage2_activated_at=(now if stage == 2 else None),
+            last_validated_at=now, config_generation=gen, status=ADOPT_STATUS_ADOPTED,
+            confidence=res.confidence, reliability=res.reliability,
+            distinct_experiment_days=res.distinct_days,
+            successful_experiment_count=res.improved_count + res.no_degradation_count,
+            no_degradation_count=res.no_degradation_count,
+            # Fresh monitoring phase begins for each newly activated stage.
+            monitoring=AdoptionMonitoringState(monitoring_started_at=now),
+        )
+        self._adoptions_active[key] = adoption
+        self._learning_dirty = True
+
+    def _monitor_adoption(self, outcome) -> None:
+        """Update monitoring for an active adoption from a production outcome and
+        apply confirm/suspend/reduce/rollback/invalidate (robust evidence only)."""
+        intensity = self._SHADE_INTENSITY.get(outcome.decided_state)
+        if intensity is None:
+            return
+        key = (outcome.window_id, intensity)
+        a = self._adoptions_active.get(key)
+        if a is None or a.adopted_delta_ha == 0:
+            return
+        now = outcome.decision_timestamp or dt_util.utcnow()
+        mo = outcome.multi_objective
+        thermal_available = bool(mo and mo.thermal.available)
+        thermal_score = mo.thermal.score if mo else None
+        open_more = bool(mo and mo.preference.override_direction == "open_more")
+        confounded = bool(mo and getattr(mo.reliability, "thermal_confounded", False))
+        cls = classify_monitoring_outcome(
+            thermal_available=thermal_available, thermal_score=thermal_score,
+            confounded=confounded, open_more_rejection=open_more)
+        new_mon = update_monitoring(
+            a.monitoring, outcome_class=cls, open_more_rejection=open_more,
+            day=now.date(), now=now)
+        a = replace(a, monitoring=new_mon, updated_at=now,
+                    degraded_count=new_mon.degraded_count,
+                    preference_rejection_count=new_mon.preference_rejection_count)
+        self._adoptions_active[key] = a
+
+        exec_cfg = self.effective_zone_execution(a.zone_id)
+        gen = self._thermal_config_generation(a.zone_id)
+        action, reason = evaluate_monitoring_action(MonitoringActionInput(
+            stage=a.stage, learning_enabled=exec_cfg.learning_enabled,
+            config_generation_matches=(a.config_generation == gen), reference_valid=True,
+            context_compatible=True, sensor_available=thermal_available,
+            open_more_rejection_now=open_more, monitoring=new_mon))
+
+        if action == ACTION_FULL_ROLLBACK:
+            self._adoptions_active.pop(key, None)
+            self._adoption_to_history(replace(
+                a, status=ADOPT_STATUS_ROLLED_BACK, rollback_reason=reason,
+                suspended=False, cooldown_until=rollback_cooldown_until(now), updated_at=now))
+        elif action == ACTION_INVALIDATE:
+            self._adoptions_active.pop(key, None)
+            self._adoption_to_history(replace(
+                a, status=ADOPT_STATUS_INVALIDATED, rollback_reason=reason, updated_at=now))
+        elif action == ACTION_REDUCE_ONE_STEP and a.stage == 2:
+            self._adoptions_active[key] = replace(
+                a, adopted_delta_ha=-ADOPTION_STEP_HA,
+                effective_target_ha=clamp_position(a.configured_target_ha - ADOPTION_STEP_HA),
+                status=ADOPT_STATUS_REDUCED, rollback_reason=reason,
+                monitoring=AdoptionMonitoringState(monitoring_started_at=now), updated_at=now)
+        elif action == ACTION_TEMPORARY_SUSPEND:
+            self._adoptions_active[key] = replace(
+                a, suspended=True, current_gate_reason=reason, updated_at=now)
+        else:  # retain → maybe confirm
+            activated = a.stage2_activated_at if a.stage == 2 else a.activated_at
+            if evaluate_confirmation(stage=a.stage, activated_at=activated,
+                                     monitoring=new_mon, now=now):
+                self._adoptions_active[key] = replace(a, status=ADOPT_STATUS_CONFIRMED, updated_at=now)
+        self._learning_dirty = True
+
+    def _suspend_zone_adoptions(self, zone_id: str, reason: str, now: datetime) -> None:
+        for key, a in list(self._adoptions_active.items()):
+            if a.zone_id == zone_id and not a.suspended:
+                self._adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason=reason, updated_at=now)
+
+    def _adoption_to_history(self, adoption) -> None:
+        self._adoption_history.append(adoption)
+        per_key: dict = {}
+        for h in self._adoption_history:
+            per_key.setdefault(h.adoption_key, []).append(h)
+        trimmed: list = []
+        for _k, items in per_key.items():
+            trimmed.extend(items[-ADOPTION_HISTORY_PER_WINDOW:])
+        trimmed.sort(key=lambda h: (h.updated_at or h.created_at))
+        self._adoption_history = trimmed
+
+    def adoption_diagnostics(self, window_id: str) -> dict:
+        """Privacy-safe per-window adoption diagnostics (one entry per intensity
+        with an active adoption; plus the latest terminal otherwise)."""
+        window = self.windows.get(window_id)
+        zone_id = window.zone_id if window is not None else ""
+        exec_cfg = self.effective_zone_execution(zone_id) if zone_id else ZoneExecutionConfig()
+        gate = None
+        if not exec_cfg.learning_enabled:
+            gate = "learning_mode_required"
+        out: dict = {"learning_mode_gate": gate, "intensities": {}}
+        for intensity in ("light", "normal", "strong"):
+            a = self._adoptions_active.get((window_id, intensity))
+            if a is None:
+                continue
+            out["intensities"][intensity] = {
+                "adoption_status": a.status, "adoption_id": a.adoption_id,
+                "adopted_delta_ha": a.adopted_delta_ha,
+                "effective_adopted_target_ha": a.effective_target_ha,
+                "source_experiment_count": len(a.source_experiment_ids),
+                "source_experiment_days": a.distinct_experiment_days,
+                "adoption_confidence": round(a.confidence, 3),
+                "adoption_reliability": round(a.reliability, 3),
+                "monitoring_outcome_count": a.monitoring.outcome_count,
+                "monitoring_degraded_count": a.monitoring.degraded_count,
+                "preference_rejection_count": a.preference_rejection_count,
+                "current_gate_reason": a.current_gate_reason, "suspended": a.suspended,
+                "rollback_reason": a.rollback_reason,
+                "cooldown_remaining_days": (
+                    round((a.cooldown_until - dt_util.utcnow()).total_seconds() / 86400.0, 1)
+                    if a.cooldown_until is not None else None),
+            }
+        if not out["intensities"]:
+            out["adoption_status"] = "none"
+        return out
+
+    def _adoptions_storage(self) -> list:
+        out = [a.to_dict() for a in self._adoptions_active.values()]
+        out.extend(a.to_dict() for a in self._adoption_history[-200:])
         return out
 
     def window_contribution_diagnostics(self, window_id: str) -> dict:
@@ -4383,6 +4842,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self._experiment_finalize_from_outcome(outcome)
         except Exception:
             _LOGGER.warning("Learning: experiment finalize failed (non-fatal)")
+        # P8: feed the production outcome into continuous adoption monitoring.
+        try:
+            self._monitor_adoption(outcome)
+        except Exception:
+            _LOGGER.warning("Learning: adoption monitoring failed (non-fatal)")
 
     def _restore_pending_outcomes(
         self, pendings: list, now: datetime

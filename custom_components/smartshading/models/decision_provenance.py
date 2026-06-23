@@ -340,6 +340,14 @@ class AdaptationDecision:
     experiment_delta_requested_ha: int | None = None
     experiment_delta_effective_ha: int | None = None
 
+    # Persistent adoption (P8) — populated only when an adoption is applied.
+    adoption_applied: bool = False
+    adoption_id: str | None = None
+    target_before_adoption_ha: int | None = None
+    adopted_delta_requested_ha: int | None = None
+    target_after_adoption_ha: int | None = None
+    current_total_adaptive_delta_ha: int | None = None
+
     def __post_init__(self) -> None:
         _validate_ha_position(self.manual_preference_target_ha, "manual_preference_target_ha")
         _validate_ha_position(self.passive_adaptation_target_ha, "passive_adaptation_target_ha")
@@ -347,6 +355,8 @@ class AdaptationDecision:
         _validate_ha_position(self.target_before_experiment_ha, "target_before_experiment_ha")
         _validate_ha_position(self.experiment_parameter_target_ha, "experiment_parameter_target_ha")
         _validate_ha_position(self.target_after_experiment_ha, "target_after_experiment_ha")
+        _validate_ha_position(self.target_before_adoption_ha, "target_before_adoption_ha")
+        _validate_ha_position(self.target_after_adoption_ha, "target_after_adoption_ha")
 
     def to_dict(self) -> dict:
         return {
@@ -379,6 +389,12 @@ class AdaptationDecision:
             "target_after_experiment_ha": self.target_after_experiment_ha,
             "experiment_delta_requested_ha": self.experiment_delta_requested_ha,
             "experiment_delta_effective_ha": self.experiment_delta_effective_ha,
+            "adoption_applied": self.adoption_applied,
+            "adoption_id": self.adoption_id,
+            "target_before_adoption_ha": self.target_before_adoption_ha,
+            "adopted_delta_requested_ha": self.adopted_delta_requested_ha,
+            "target_after_adoption_ha": self.target_after_adoption_ha,
+            "current_total_adaptive_delta_ha": self.current_total_adaptive_delta_ha,
         }
 
     @classmethod
@@ -413,6 +429,12 @@ class AdaptationDecision:
             target_after_experiment_ha=d.get("target_after_experiment_ha"),
             experiment_delta_requested_ha=d.get("experiment_delta_requested_ha"),
             experiment_delta_effective_ha=d.get("experiment_delta_effective_ha"),
+            adoption_applied=bool(d.get("adoption_applied", False)),
+            adoption_id=d.get("adoption_id"),
+            target_before_adoption_ha=d.get("target_before_adoption_ha"),
+            adopted_delta_requested_ha=d.get("adopted_delta_requested_ha"),
+            target_after_adoption_ha=d.get("target_after_adoption_ha"),
+            current_total_adaptive_delta_ha=d.get("current_total_adaptive_delta_ha"),
         )
 
 

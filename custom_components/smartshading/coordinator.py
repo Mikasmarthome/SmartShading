@@ -44,7 +44,16 @@ from .engines.learning_persistence import (
     PERSISTENCE_INTERVAL_MINUTES,
 )
 from .engines.learning_store import LearningStore, SNAPSHOT_CYCLE_INTERVAL
+from .models.multi_objective_outcome import (
+    MOVE_CAUSE_ABSENCE,
+    MOVE_CAUSE_COMFORT,
+    MOVE_CAUSE_LIFECYCLE,
+    MOVE_CAUSE_MANUAL,
+    MOVE_CAUSE_NONE,
+    MOVE_CAUSE_SAFETY,
+)
 from .engines.outcome_resolution import (
+    MovementObservation,
     OutcomeResolutionInput,
     OutcomeResolutionTrigger,
     resolve_outcome,
@@ -503,6 +512,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # survived a restart with an interruption; their resolved outcome is
         # downgraded to interrupted_partial (never complete).
         self._interrupted_decision_keys: set[tuple[str, datetime]] = set()
+        # P3 — deterministic movement counters per active observation window and a
+        # rolling comfort-target history (HA) for oscillation detection.
+        self._movement_acc: dict[str, dict] = {}
+        self._recent_comfort_targets: dict[str, list[int]] = {}
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -1269,6 +1282,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 trigger=OutcomeResolutionTrigger.LIFECYCLE,
                                 resolution_timestamp=now,
                                 indoor_temp_outcome_c=indoor_temperature,
+                                solar_exposure_at_decision=_lc_pending.solar_exposure_at_decision,
+                                cleared_by_lifecycle=True,
+                                observation_interrupted=(window_id, _lc_pending.decision_timestamp)
+                                in self._interrupted_decision_keys,
+                                movement_observation=self._movement_take(window_id, MOVE_CAUSE_LIFECYCLE),
                             ),
                         )
                         self._store_outcome(_outcome)
@@ -1818,6 +1836,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     trigger=OutcomeResolutionTrigger.SAFETY,
                                     resolution_timestamp=now,
                                     indoor_temp_outcome_c=indoor_temperature,
+                                    solar_exposure_at_decision=_safety_pending.solar_exposure_at_decision,
+                                    cleared_by_safety=True,
+                                    observation_interrupted=(window_id, _safety_pending.decision_timestamp)
+                                    in self._interrupted_decision_keys,
+                                    movement_observation=self._movement_take(window_id, MOVE_CAUSE_SAFETY),
                                 ),
                             )
                             self._store_outcome(_outcome)
@@ -1958,6 +1981,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     # observation window starts.
                     if new_state not in _NO_OUTCOME_STATES and tier_decision.decided_by != "BehaviorMode:hold":
                         try:
+                            # P3 movement: record this transition into the OLD window
+                            # before it resolves, classifying comfort vs excluded.
+                            _new_target_ha = (
+                                to_ha_position(tier_decision.target_position)
+                                if tier_decision.target_position is not None else None
+                            )
+                            _mv_cause = self._classify_movement_cause(new_state)
+                            if _mv_cause == MOVE_CAUSE_COMFORT:
+                                self._movement_note_comfort_transition(window_id, _new_target_ha)
+                            else:
+                                self._movement_note_excluded_transition(window_id)
+
                             _new_pending = PendingOutcome(
                                 window_id=window_id,
                                 decision_timestamp=now,
@@ -1968,6 +2003,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 lifecycle_state=self._lifecycle_state.value,
                                 indoor_temp_at_decision=indoor_temperature,
                                 outdoor_temp_at_decision=weather_inputs.outdoor_temperature,
+                                solar_exposure_at_decision=exposure.effective_exposure,
                                 indoor_temp_outcome_delay_min=_OUTCOME_OBSERVATION_DELAY_MIN,
                                 # P2: authoritative link shared with the decision record.
                                 decision_id=_decision_id,
@@ -1982,9 +2018,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         trigger=OutcomeResolutionTrigger.STATE_CHANGE,
                                         resolution_timestamp=now,
                                         indoor_temp_outcome_c=indoor_temperature,
+                                        solar_exposure_at_decision=_old_pending.solar_exposure_at_decision,
+                                        observation_interrupted=(window_id, _old_pending.decision_timestamp)
+                                        in self._interrupted_decision_keys,
+                                        movement_observation=self._movement_take(window_id, _mv_cause),
                                     ),
                                 )
                                 self._store_outcome(_outcome)
+                            # Start a fresh movement window for the new pending.
+                            self._movement_reset(window_id, _new_target_ha)
                         except Exception:
                             _LOGGER.warning(
                                 "Learning: pending outcome create/resolve (state_change) failed for %s",
@@ -2043,6 +2085,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     indoor_temp_outcome_c=indoor_temperature,
                                     override_delay_min=_delay_min,
                                     override_event_type="started",
+                                    # P3: convert to logical HA (0=closed,100=open) BEFORE
+                                    # resolve — no internal position enters the outcome.
+                                    override_target_ha=to_ha_position(current_override.override_position),
+                                    final_requested_target_ha=(
+                                        to_ha_position(_ov_pending.target_position)
+                                        if _ov_pending.target_position is not None else None
+                                    ),
+                                    solar_exposure_at_decision=_ov_pending.solar_exposure_at_decision,
+                                    observation_interrupted=(window_id, _ov_pending.decision_timestamp)
+                                    in self._interrupted_decision_keys,
+                                    movement_observation=self._movement_take(window_id, MOVE_CAUSE_MANUAL),
                                 ),
                             )
                             self._store_outcome(_outcome)
@@ -2093,6 +2146,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     indoor_temp_outcome_c=indoor_temperature,
                                     override_delay_min=_delay_min,
                                     override_event_type="renewed",
+                                    override_target_ha=to_ha_position(current_override.override_position),
+                                    final_requested_target_ha=(
+                                        to_ha_position(_ren_pending.target_position)
+                                        if _ren_pending.target_position is not None else None
+                                    ),
+                                    solar_exposure_at_decision=_ren_pending.solar_exposure_at_decision,
+                                    observation_interrupted=(window_id, _ren_pending.decision_timestamp)
+                                    in self._interrupted_decision_keys,
+                                    movement_observation=self._movement_take(window_id, MOVE_CAUSE_MANUAL),
                                 ),
                             )
                             self._store_outcome(_outcome)
@@ -2155,6 +2217,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         trigger=OutcomeResolutionTrigger.TIMEOUT,
                                         resolution_timestamp=now,
                                         indoor_temp_outcome_c=indoor_temperature,
+                                        solar_exposure_at_decision=_to_pending.solar_exposure_at_decision,
+                                        observation_interrupted=(window_id, _to_pending.decision_timestamp)
+                                        in self._interrupted_decision_keys,
+                                        movement_observation=self._movement_take(window_id, MOVE_CAUSE_NONE),
                                     ),
                                 )
                                 self._store_outcome(_outcome)
@@ -2766,6 +2832,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 _dp_status = (
                     _last_exec_result.status.value if _last_exec_result is not None else None
                 )
+                # P3 movement: a CommandFilter block / not-attempted is NOT a command;
+                # a successful service call counts as a successful command.
+                self._movement_record_dispatch(
+                    window_id,
+                    attempted=bool(_dp_attempted),
+                    success=bool(
+                        _exec_plan_result is not None
+                        and _exec_plan_result.any_sent
+                        and not _exec_plan_result.any_failed
+                    ),
+                )
                 _dispatch_prov = DispatchProvenance(
                     dispatch_allowed=(
                         _exec_filter_for_dispatch.allowed
@@ -2926,6 +3003,78 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
     # ------------------------------------------------------------------
     # P2 Decision Provenance helpers
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # P3 Movement counters (deterministic; no estimates)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _classify_movement_cause(state: ShadingState) -> str:
+        if state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
+            return MOVE_CAUSE_SAFETY
+        if state is ShadingState.NIGHT_CLOSED:
+            return MOVE_CAUSE_LIFECYCLE
+        if state is ShadingState.ABSENCE_CLOSED:
+            return MOVE_CAUSE_ABSENCE
+        if state is ShadingState.MANUAL_OVERRIDE:
+            return MOVE_CAUSE_MANUAL
+        return MOVE_CAUSE_COMFORT
+
+    def _movement_reset(self, window_id: str, target_ha: int | None) -> None:
+        """Start a fresh movement accumulator for a new observation window."""
+        self._movement_acc[window_id] = {
+            "decision_target_ha": target_ha,
+            "command_attempt_count": 0,
+            "successful_command_count": 0,
+            "comfort_state_transition_count": 0,
+            "excluded_transition_count": 0,
+            "material_target_change_count": 0,
+        }
+
+    def _movement_record_dispatch(self, window_id: str, attempted: bool, success: bool) -> None:
+        acc = self._movement_acc.get(window_id)
+        if acc is None:
+            return
+        if attempted:
+            acc["command_attempt_count"] += 1
+        if success:
+            acc["successful_command_count"] += 1
+
+    def _movement_note_comfort_transition(self, window_id: str, target_ha: int | None) -> None:
+        """Record a comfort-driven transition into the active accumulator and the
+        rolling oscillation history."""
+        acc = self._movement_acc.get(window_id)
+        hist = self._recent_comfort_targets.setdefault(window_id, [])
+        if acc is not None:
+            acc["comfort_state_transition_count"] += 1
+            prev = hist[-1] if hist else acc.get("decision_target_ha")
+            if target_ha is not None and prev is not None and abs(target_ha - prev) >= 3:
+                acc["material_target_change_count"] += 1
+        if target_ha is not None:
+            hist.append(target_ha)
+            del hist[:-6]  # keep last 6
+
+    def _movement_note_excluded_transition(self, window_id: str) -> None:
+        acc = self._movement_acc.get(window_id)
+        if acc is not None:
+            acc["excluded_transition_count"] += 1
+
+    def _movement_take(self, window_id: str, resolving_cause: str) -> MovementObservation:
+        """Snapshot the accumulator for a resolving observation window."""
+        acc = self._movement_acc.pop(window_id, None)
+        hist = tuple(self._recent_comfort_targets.get(window_id, []))
+        if acc is None:
+            return MovementObservation(movement_cause=resolving_cause, target_history=hist)
+        return MovementObservation(
+            decision_target_ha=acc["decision_target_ha"],
+            command_attempt_count=acc["command_attempt_count"],
+            successful_command_count=acc["successful_command_count"],
+            comfort_state_transition_count=acc["comfort_state_transition_count"],
+            excluded_transition_count=acc["excluded_transition_count"],
+            material_target_change_count=acc["material_target_change_count"],
+            target_history=hist,
+            movement_cause=resolving_cause,
+        )
 
     def _config_fingerprint_for_window(
         self, window: WindowConfig, zone: ZoneConfig

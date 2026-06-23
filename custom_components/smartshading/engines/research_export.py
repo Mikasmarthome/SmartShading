@@ -205,10 +205,63 @@ def _build_outcome_summary(outcomes: list[Any]) -> dict:
             "pending_count": pending_count,
             "mean_outcome_score": mean_score,
             "override_rate": override_rate,
+            # P3: multi-objective dimension aggregates (privacy-safe counts/means).
+            **_build_multi_objective_summary(outcomes),
         }
     except Exception:
         _LOGGER.warning("SmartShading: research_export: outcome summary failed")
         return {"total_count": len(outcomes)}
+
+
+def _build_multi_objective_summary(outcomes: list[Any]) -> dict:
+    """Aggregate P3 multi-objective dimension stats.  Privacy-safe (counts/means
+    only).  Never raises."""
+    legacy = 0
+    multi = 0
+    thermal_avail = 0
+    movement_avail = 0
+    preference_avail = 0
+    thermal_scores: list[float] = []
+    preference_scores: list[float] = []
+    confounder_counts: dict[str, int] = {}
+    try:
+        for o in outcomes:
+            mo = getattr(o, "multi_objective", None)
+            if mo is None:
+                if getattr(o, "outcome_score", None) is not None:
+                    legacy += 1
+                continue
+            multi += 1
+            if mo.thermal.available:
+                thermal_avail += 1
+                if mo.thermal.score is not None:
+                    thermal_scores.append(mo.thermal.score)
+            if mo.movement.available:
+                movement_avail += 1
+            if mo.preference.available:
+                preference_avail += 1
+                if mo.preference.score is not None:
+                    preference_scores.append(mo.preference.score)
+            for name in mo.confounders.detected:
+                confounder_counts[name] = confounder_counts.get(name, 0) + 1
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: multi-objective summary failed")
+    return {
+        "multi_objective_count": multi,
+        "legacy_only_count": legacy,
+        "dimension_availability": {
+            "thermal": thermal_avail,
+            "movement": movement_avail,
+            "preference": preference_avail,
+        },
+        "thermal_score_mean": (
+            round(sum(thermal_scores) / len(thermal_scores), 3) if thermal_scores else None
+        ),
+        "preference_score_mean": (
+            round(sum(preference_scores) / len(preference_scores), 3) if preference_scores else None
+        ),
+        "confounder_distribution": confounder_counts,
+    }
 
 
 def _build_window_section(

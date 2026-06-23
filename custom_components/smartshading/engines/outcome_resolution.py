@@ -55,6 +55,28 @@ from datetime import datetime
 from enum import Enum
 
 from ..models.learning import DecisionOutcome
+from ..models.multi_objective_outcome import (
+    ATTRIBUTION_UNKNOWN,
+    ATTRIBUTION_ZONE_SHARED,
+    DIRECTION_CLOSE_MORE,
+    DIRECTION_OPEN_MORE,
+    DIRECTION_UNCHANGED,
+    DIRECTION_UNKNOWN,
+    MOVE_CAUSE_NONE,
+    MULTI_OBJECTIVE_SCHEMA_VERSION,
+    RECON_UNAVAILABLE,
+    THERMAL_DIR_AMBIGUOUS,
+    THERMAL_DIR_COOLING,
+    THERMAL_DIR_COOLING_OR_HOLD,
+    THERMAL_DIR_STABLE,
+    THERMAL_DIR_WARMING,
+    MovementOutcome,
+    MultiObjectiveOutcome,
+    OutcomeConfounders,
+    OutcomeReliability,
+    PreferenceOutcome,
+    ThermalOutcome,
+)
 from ..models.pending_outcome import PendingOutcome
 from ..state_machine.states import ShadingState
 
@@ -100,6 +122,21 @@ class OutcomeResolutionInput:
     indoor_temp_outcome_c: float | None = None
     override_delay_min: float | None = None     # minutes between decision and override
     override_event_type: str | None = None      # "started" or "renewed"
+    # --- P3 Multi-Objective inputs (all transient; HA convention only) ---
+    # override_target_ha / final_requested_target_ha are LOGICAL HA positions
+    # (0=closed, 100=open).  The coordinator converts any internal value BEFORE
+    # constructing this input — no internal position ever enters here.
+    override_target_ha: int | None = None
+    final_requested_target_ha: int | None = None
+    override_hold_duration_seconds: float | None = None
+    cleared_by_lifecycle: bool = False
+    cleared_by_safety: bool = False
+    solar_exposure_at_decision: float | None = None
+    observation_interrupted: bool = False
+    config_changed: bool = False
+    behavior_mode_changed: bool = False
+    legacy_data: bool = False
+    movement_observation: "MovementObservation | None" = None
 
 
 # ---------------------------------------------------------------------------
@@ -283,6 +320,538 @@ def _compute_score(
     return max(-1.0, min(1.0, score))
 
 
+# ===========================================================================
+# P3 — Multi-Objective resolvers (pure, deterministic, fully testable)
+# ===========================================================================
+
+# Resolution-status string for a fully observed (TIMEOUT + temp) outcome.
+_RESOLUTION_COMPLETE: str = "complete"
+
+# Thermal constants (derived from / consistent with the v1 score constants).
+_THERMAL_COOL_SCALE_C: float = 3.0            # ±3 °C maps to ±1.0 thermal score
+_THERMAL_HOLD_DELTA_C: float = _THERMAL_HOLD_MAX_DELTA_C   # 0.5 — "held"
+_THERMAL_HOLD_SCORE: float = 0.30             # modest positive for protection under load
+# Below this solar load, "temperature stable" is NOT credited as a shading effect.
+_THERMAL_LOAD_MIN_WM2: float = 150.0          # == default light-shade entry threshold
+_THERMAL_MIN_DURATION_MIN: float = 30.0       # fixed window in P3 (P4 replaces it)
+_OPEN_OVERHEAT_DELTA_C: float = _OPEN_OVERHEAT_THRESHOLD_C  # 3.0
+
+_THERMAL_STATES: frozenset[ShadingState] = frozenset({
+    ShadingState.LIGHT_SHADE, ShadingState.NORMAL_SHADE, ShadingState.STRONG_SHADE,
+})
+
+# Preference signal strength by override delay (minutes) — mirrors
+# override_learning.compute_override_signal_strength so the two stay consistent.
+def _preference_strength_from_delay(delay_min: float | None) -> float:
+    if delay_min is None:
+        return 0.50
+    if delay_min < 5:
+        return 1.00
+    if delay_min < 30:
+        return 0.75
+    if delay_min < 120:
+        return 0.40
+    return 0.10
+
+
+@dataclass(frozen=True)
+class MovementObservation:
+    """Coordinator-supplied movement counters for one observation window.
+
+    All counts are deterministic (no estimates).  target_history holds the
+    sequence of comfort-driven target positions (HA convention) observed during
+    the window, used for oscillation detection.  decision_target_ha is the
+    target of the decision being resolved.
+    """
+
+    decision_target_ha: int | None = None
+    command_attempt_count: int = 0
+    successful_command_count: int = 0
+    comfort_state_transition_count: int = 0
+    excluded_transition_count: int = 0
+    material_target_change_count: int = 0
+    target_history: tuple[int, ...] = ()
+    minimum_action_interval_respected: bool | None = None
+    movement_cause: str = MOVE_CAUSE_NONE
+
+
+# Oscillation deadband — same materiality threshold as P2 decision records.
+_OSCILLATION_DEADBAND_HA: int = 3
+
+
+def _detect_oscillation(history: tuple[int, ...]) -> tuple[bool, str | None]:
+    """Deterministic oscillation detection over comfort target history (HA).
+
+    Triggers when, within the window:
+      - two opposite material target changes occur, OR
+      - the target returns within the deadband of an earlier target after a
+        material move away, OR
+      - the sequence toggles A→B→A between two distinct targets.
+    """
+    if len(history) < 3:
+        return False, None
+    # A→B→A toggle (within deadband on the return)
+    for i in range(len(history) - 2):
+        a, b, c = history[i], history[i + 1], history[i + 2]
+        if abs(b - a) >= _OSCILLATION_DEADBAND_HA and abs(c - a) < _OSCILLATION_DEADBAND_HA \
+                and abs(b - c) >= _OSCILLATION_DEADBAND_HA:
+            return True, "toggle_return_to_previous"
+    # Two opposite material changes
+    directions: list[int] = []
+    for i in range(1, len(history)):
+        delta = history[i] - history[i - 1]
+        if abs(delta) >= _OSCILLATION_DEADBAND_HA:
+            directions.append(1 if delta > 0 else -1)
+    for i in range(1, len(directions)):
+        if directions[i] != directions[i - 1]:
+            return True, "opposite_material_changes"
+    return False, None
+
+
+def compute_thermal_outcome(
+    *,
+    state: ShadingState,
+    indoor_delta_c: float | None,
+    outdoor_temperature_c: float | None,
+    solar_exposure: float | None,
+    observation_duration_min: float | None,
+    resolution_status: str,
+    thermal_confounded: bool,
+    temperature_start: float | None = None,
+    temperature_end: float | None = None,
+) -> ThermalOutcome:
+    """Exact, deterministic thermal observation.  Describes ONLY the thermal
+    association — not proven window causation, not a global score."""
+    duration = observation_duration_min or 0.0
+    available = (
+        resolution_status == _RESOLUTION_COMPLETE
+        and indoor_delta_c is not None
+        and duration >= _THERMAL_MIN_DURATION_MIN
+        and state in (_THERMAL_STATES | {ShadingState.OPEN})
+        and not thermal_confounded
+    )
+    if not available:
+        return ThermalOutcome(
+            available=False, score=None,
+            temperature_start=temperature_start, temperature_end=temperature_end,
+            temperature_delta=indoor_delta_c,  # informative only
+            observation_duration_min=observation_duration_min,
+            outdoor_temp_at_decision=outdoor_temperature_c,
+            solar_exposure_at_decision=solar_exposure,
+            reason="not_available" if not thermal_confounded else "thermal_confounded",
+            reconstruction_quality=RECON_UNAVAILABLE,
+        )
+
+    delta = float(indoor_delta_c)  # not None here
+    observed = (
+        THERMAL_DIR_COOLING if delta < -_THERMAL_HOLD_DELTA_C
+        else THERMAL_DIR_STABLE if abs(delta) <= _THERMAL_HOLD_DELTA_C
+        else THERMAL_DIR_WARMING
+    )
+    has_load = solar_exposure is not None and solar_exposure >= _THERMAL_LOAD_MIN_WM2
+    protection = False
+    overheat = False
+    insufficient = False
+
+    if state in _THERMAL_STATES:
+        expected = THERMAL_DIR_COOLING_OR_HOLD
+        if observed == THERMAL_DIR_COOLING:
+            score = max(0.0, min(1.0, -delta / _THERMAL_COOL_SCALE_C))
+            protection = True
+            reason = "cooling_under_shade"
+        elif observed == THERMAL_DIR_STABLE:
+            # "stable" is only credited as protection when there was real solar load.
+            score = _THERMAL_HOLD_SCORE if has_load else 0.0
+            protection = has_load
+            reason = "held_under_load" if has_load else "stable_low_load_uncredited"
+        else:  # warming despite shade
+            raw = -delta / _THERMAL_COOL_SCALE_C
+            if outdoor_temperature_c is not None and outdoor_temperature_c > _OUTDOOR_HEAT_PENALTY_START_C:
+                rng = _OUTDOOR_HEAT_PENALTY_ZERO_C - _OUTDOOR_HEAT_PENALTY_START_C
+                mit = min(1.0, (outdoor_temperature_c - _OUTDOOR_HEAT_PENALTY_START_C) / rng)
+                raw = raw * (1.0 - mit)
+            score = max(-1.0, min(0.0, raw))
+            insufficient = True
+            reason = "insufficient_response"
+    else:  # OPEN — ambiguous thermal expectation
+        expected = THERMAL_DIR_AMBIGUOUS
+        if delta > _OPEN_OVERHEAT_DELTA_C:
+            overheat = True
+            score = max(-0.3, min(0.0, -(delta - _OPEN_OVERHEAT_DELTA_C) / 5.0))
+            reason = "open_overheat"
+        else:
+            score = None  # ambiguous, not automatically negative
+            reason = "open_ambiguous"
+
+    return ThermalOutcome(
+        available=True, score=score,
+        temperature_start=temperature_start, temperature_end=temperature_end,
+        temperature_delta=delta, observation_duration_min=observation_duration_min,
+        expected_direction=expected, observed_direction=observed,
+        protection_effect_detected=protection, overheat_detected=overheat,
+        insufficient_response=insufficient,
+        outdoor_temp_at_decision=outdoor_temperature_c, solar_exposure_at_decision=solar_exposure,
+        reason=reason, reconstruction_quality=RECON_UNAVAILABLE,
+    )
+
+
+def compute_preference_outcome(
+    *,
+    trigger: OutcomeResolutionTrigger,
+    override_delay_min: float | None,
+    override_target_ha: int | None,
+    final_requested_target_ha: int | None,
+    override_hold_duration_seconds: float | None,
+    cleared_by_lifecycle: bool,
+    cleared_by_safety: bool,
+    preference_confounded: bool,
+) -> PreferenceOutcome:
+    """Exact preference signal.  An override is a REJECTION (negative score).
+    Direction is separate from the score sign.  Lifecycle/safety clears and the
+    absence of an override never produce a positive score."""
+    is_override = trigger == OutcomeResolutionTrigger.OVERRIDE
+
+    # Direction (independent of score)
+    direction = DIRECTION_UNKNOWN
+    delta_ha: int | None = None
+    if override_target_ha is not None and final_requested_target_ha is not None:
+        delta_ha = override_target_ha - final_requested_target_ha
+        if delta_ha > 0:
+            direction = DIRECTION_OPEN_MORE     # higher HA = more open
+        elif delta_ha < 0:
+            direction = DIRECTION_CLOSE_MORE
+        else:
+            direction = DIRECTION_UNCHANGED
+
+    if not is_override:
+        # No override on this resolution → no preference signal (never positive).
+        return PreferenceOutcome(
+            available=False, manual_override_occurred=False,
+            override_direction=DIRECTION_UNKNOWN, cleared_by_lifecycle=cleared_by_lifecycle,
+            preference_signal_strength=0.0 if (cleared_by_lifecycle or cleared_by_safety) else None,
+            score=None,
+            reason="lifecycle_clear_not_reversal" if cleared_by_lifecycle
+            else "safety_clear_not_reversal" if cleared_by_safety else "no_override",
+            reconstruction_quality=RECON_UNAVAILABLE,
+        )
+
+    delay_sec = override_delay_min * 60.0 if override_delay_min is not None else None
+    strength = _preference_strength_from_delay(override_delay_min)
+    # A long hold strengthens the rejection signal (up to +0.5, capped at 1.0).
+    if override_hold_duration_seconds is not None:
+        if override_hold_duration_seconds >= 7200:      # >= 2 h
+            strength = min(1.0, strength + 0.5)
+        elif override_hold_duration_seconds >= 1800:    # >= 30 min
+            strength = min(1.0, strength + 0.25)
+    score = -strength  # rejection → negative; direction lives in override_direction
+
+    return PreferenceOutcome(
+        available=True, manual_override_occurred=True,
+        override_direction=direction, override_target_ha=override_target_ha,
+        override_delta_ha=delta_ha, override_delay_seconds=delay_sec,
+        override_hold_duration_seconds=override_hold_duration_seconds,
+        cleared_by_lifecycle=False, preference_signal_strength=strength, score=score,
+        reason="override_rejection", reconstruction_quality=RECON_UNAVAILABLE,
+    )
+
+
+def compute_movement_outcome(
+    obs: "MovementObservation | None",
+) -> MovementOutcome:
+    """Exact movement economy from deterministic counters.  Positive movement is
+    a LIMITED stability signal; safety/lifecycle/absence/manual are excluded from
+    instability scoring; a CommandFilter block is not a successful command."""
+    if obs is None:
+        return MovementOutcome(available=False, reason="no_observation")
+
+    excluded_cause = obs.movement_cause in ("safety", "lifecycle", "absence", "manual")
+    oscillation, osc_reason = _detect_oscillation(obs.target_history)
+    comfort_moves = obs.comfort_state_transition_count
+
+    unnecessary = oscillation or comfort_moves >= 2
+    stable = comfort_moves == 0 and obs.material_target_change_count == 0 and not excluded_cause
+
+    if excluded_cause:
+        score: float | None = None     # never penalize excluded movement
+        reason = f"excluded_{obs.movement_cause}"
+    elif oscillation:
+        score = max(-1.0, -0.2 * max(1, comfort_moves))
+        reason = "oscillation"
+    elif comfort_moves >= 2:
+        score = max(-1.0, -0.2 * (comfort_moves - 1))
+        reason = "repeated_comfort_movement"
+    elif stable:
+        score = 0.2                     # LIMITED positive — never compensates
+        reason = "stable_no_additional_action"
+    else:
+        score = 0.0
+        reason = "single_followup_movement"
+
+    return MovementOutcome(
+        available=True, score=score,
+        stable_without_additional_action=stable,
+        command_attempt_count=obs.command_attempt_count,
+        successful_command_count=obs.successful_command_count,
+        material_target_change_count=obs.material_target_change_count,
+        comfort_state_transition_count=comfort_moves,
+        excluded_transition_count=obs.excluded_transition_count,
+        oscillation_detected=oscillation, oscillation_reason=osc_reason,
+        minimum_action_interval_respected=obs.minimum_action_interval_respected,
+        unnecessary_movement_signal=unnecessary, movement_cause=obs.movement_cause,
+        reason=reason, reconstruction_quality=RECON_UNAVAILABLE,
+    )
+
+
+def _finalize_reliability(
+    *,
+    thermal: ThermalOutcome,
+    movement: MovementOutcome,
+    preference: PreferenceOutcome,
+    confounders: OutcomeConfounders,
+    resolution_status: str,
+    interrupted: bool,
+    legacy_data: bool,
+    attribution_quality: str,
+) -> OutcomeReliability:
+    """Per-dimension reliability gates + a CONSERVATIVE overall summary.
+
+    overall = min of the AVAILABLE relevant dimension reliabilities (diagnostic
+    only — no active authority).  invalidated → everything 0.
+    """
+    invalidated = resolution_status == "invalidated"
+    partial = resolution_status in ("partial_no_temp", "partial_early_exit", "interrupted_partial")
+    reasons: list[str] = []
+
+    if invalidated:
+        return OutcomeReliability(
+            overall=0.0, thermal=0.0, movement=0.0, preference=0.0,
+            sensor_completeness=0.0, observation_continuity=0.0, context_stability=0.0,
+            attribution_quality=attribution_quality, provenance_completeness=0.0,
+            legacy_data=legacy_data, interrupted=interrupted, partial=partial,
+            confounded=any((confounders.thermal_confounded, confounders.movement_confounded,
+                            confounders.preference_confounded)),
+            reasons=("invalidated",),
+        )
+
+    sensor_completeness = 1.0 if thermal.available or thermal.temperature_delta is not None else 0.0
+    observation_continuity = 0.3 if interrupted else (0.6 if partial else 1.0)
+    context_stability = 0.0 if any((
+        confounders.thermal_confounded, confounders.movement_confounded,
+        confounders.preference_confounded)) else 1.0
+
+    # Thermal reliability
+    if not thermal.available:
+        thermal_rel = 0.0
+    elif confounders.thermal_confounded:
+        thermal_rel = 0.0
+        reasons.append("thermal_confounded")
+    else:
+        thermal_rel = observation_continuity * (0.5 if partial else 1.0)
+
+    # Movement reliability — degraded by interruption (lost observation).
+    if not movement.available:
+        movement_rel = 0.0
+    elif confounders.movement_confounded:
+        movement_rel = 0.0
+    else:
+        movement_rel = 0.4 if interrupted else 1.0
+
+    # Preference reliability — a clear override is reliable even without temperature.
+    if not preference.available:
+        preference_rel = 0.0
+    elif confounders.preference_confounded:
+        preference_rel = 0.0
+        reasons.append("preference_confounded")
+    else:
+        preference_rel = 1.0
+
+    available_rels = [
+        r for avail, r in (
+            (thermal.available, thermal_rel),
+            (movement.available, movement_rel),
+            (preference.available, preference_rel),
+        ) if avail
+    ]
+    overall = min(available_rels) if available_rels else 0.0
+
+    if legacy_data:
+        reasons.append("legacy_data")
+    if interrupted:
+        reasons.append("interrupted")
+
+    return OutcomeReliability(
+        overall=overall, thermal=thermal_rel, movement=movement_rel, preference=preference_rel,
+        sensor_completeness=sensor_completeness, observation_continuity=observation_continuity,
+        context_stability=context_stability, attribution_quality=attribution_quality,
+        provenance_completeness=0.5 if confounders.incomplete_provenance else 1.0,
+        legacy_data=legacy_data, interrupted=interrupted, partial=partial,
+        confounded=any((confounders.thermal_confounded, confounders.movement_confounded,
+                        confounders.preference_confounded)),
+        reasons=tuple(reasons),
+    )
+
+
+def _build_multi_objective(
+    pending: PendingOutcome,
+    inp: "OutcomeResolutionInput",
+    indoor_temp_delta_c: float | None,
+    legacy_score: float | None,
+    resolution_status: str,
+) -> MultiObjectiveOutcome:
+    """Assemble the full MultiObjectiveOutcome (pure)."""
+    state = pending.to_state
+    is_override = inp.trigger == OutcomeResolutionTrigger.OVERRIDE
+    is_safety = inp.trigger == OutcomeResolutionTrigger.SAFETY
+
+    # --- Confounders (dimension-specific) ---
+    sensor_unavailable = inp.indoor_temp_outcome_c is None
+    thermal_confounded = (
+        is_override or is_safety or inp.observation_interrupted
+        or inp.config_changed or inp.behavior_mode_changed
+    )
+    # Movement is confounded only by config/mode change (safety/lifecycle/manual
+    # are EXCLUDED, not confounded — handled by movement_cause).
+    movement_confounded = inp.config_changed or inp.behavior_mode_changed
+    preference_confounded = inp.config_changed or inp.behavior_mode_changed
+    detected: list[str] = []
+    for name, flag in (
+        ("sensor_unavailable", sensor_unavailable),
+        ("ha_restart_interruption", inp.observation_interrupted),
+        ("config_changed", inp.config_changed),
+        ("behavior_mode_changed", inp.behavior_mode_changed),
+        ("safety_event", is_safety),
+        ("manual_override", is_override),
+    ):
+        if flag:
+            detected.append(name)
+    confounders = OutcomeConfounders(
+        thermal_confounded=thermal_confounded,
+        movement_confounded=movement_confounded,
+        preference_confounded=preference_confounded,
+        sensor_unavailable=sensor_unavailable,
+        ha_restart_interruption=inp.observation_interrupted,
+        config_changed=inp.config_changed,
+        behavior_mode_changed=inp.behavior_mode_changed,
+        safety_event=is_safety, manual_override=is_override,
+        incomplete_provenance=False, detected=tuple(detected),
+    )
+
+    duration_min = (inp.resolution_timestamp - pending.decision_timestamp).total_seconds() / 60.0
+
+    thermal = compute_thermal_outcome(
+        state=state, indoor_delta_c=indoor_temp_delta_c,
+        outdoor_temperature_c=pending.outdoor_temp_at_decision,
+        solar_exposure=inp.solar_exposure_at_decision,
+        observation_duration_min=duration_min, resolution_status=resolution_status,
+        thermal_confounded=thermal_confounded,
+        temperature_start=pending.indoor_temp_at_decision,
+        temperature_end=inp.indoor_temp_outcome_c,
+    )
+    preference = compute_preference_outcome(
+        trigger=inp.trigger, override_delay_min=inp.override_delay_min,
+        override_target_ha=inp.override_target_ha,
+        final_requested_target_ha=inp.final_requested_target_ha,
+        override_hold_duration_seconds=inp.override_hold_duration_seconds,
+        cleared_by_lifecycle=inp.cleared_by_lifecycle, cleared_by_safety=inp.cleared_by_safety,
+        preference_confounded=preference_confounded,
+    )
+    movement = compute_movement_outcome(inp.movement_observation)
+
+    # --- Attribution (P3: never window_isolated) ---
+    if not thermal.available:
+        attribution = ATTRIBUTION_UNKNOWN
+    else:
+        attribution = ATTRIBUTION_ZONE_SHARED  # conservative default in P3
+
+    reliability = _finalize_reliability(
+        thermal=thermal, movement=movement, preference=preference,
+        confounders=confounders, resolution_status=resolution_status,
+        interrupted=inp.observation_interrupted, legacy_data=inp.legacy_data,
+        attribution_quality=attribution,
+    )
+
+    return MultiObjectiveOutcome(
+        thermal=thermal, movement=movement, preference=preference,
+        reliability=reliability, confounders=confounders,
+        attribution_quality=attribution, resolution_status=resolution_status,
+        legacy_score=legacy_score, schema_version=MULTI_OBJECTIVE_SCHEMA_VERSION,
+    )
+
+
+def reconstruct_multi_objective_from_legacy(o: DecisionOutcome) -> MultiObjectiveOutcome:
+    """Build a MultiObjectiveOutcome from a legacy v1 DecisionOutcome.
+
+    Strict rules (P3 sharpening 9): no partial score derived from the legacy
+    overall score is ever marked ``exact``; missing raw data stays
+    ``unavailable``; an override direction that cannot be recovered stays
+    ``unknown``.  Reconstructed legacy dimensions must NEVER alone unlock
+    shadow/experiment eligibility (the record also carries legacy_record=True).
+    """
+    from ..models.multi_objective_outcome import (
+        RECON_PARTIAL, RECON_UNAVAILABLE, DIRECTION_UNKNOWN,
+    )
+
+    delta = o.indoor_temp_delta_c
+    status = o.resolution_status
+
+    # Thermal: exposure unknown in v1 → cannot credit a score; informative only.
+    if delta is not None and status == _RESOLUTION_COMPLETE:
+        observed = (
+            THERMAL_DIR_COOLING if delta < -_THERMAL_HOLD_DELTA_C
+            else THERMAL_DIR_STABLE if abs(delta) <= _THERMAL_HOLD_DELTA_C
+            else THERMAL_DIR_WARMING
+        )
+        thermal = ThermalOutcome(
+            available=False, score=None, temperature_delta=delta,
+            observed_direction=observed, reason="legacy_partial_no_exposure",
+            reconstructed=True, reconstruction_quality=RECON_PARTIAL,
+        )
+    else:
+        thermal = ThermalOutcome(
+            available=False, score=None, temperature_delta=delta,
+            reason="legacy_unavailable",
+            reconstructed=True, reconstruction_quality=RECON_UNAVAILABLE,
+        )
+
+    # Preference: override occurrence + delay are raw fields; direction/target
+    # were not stored in v1 → direction unknown, quality partial.
+    if o.override_occurred:
+        strength = _preference_strength_from_delay(o.override_delay_min)
+        preference = PreferenceOutcome(
+            available=True, manual_override_occurred=True,
+            override_direction=DIRECTION_UNKNOWN,
+            override_delay_seconds=(o.override_delay_min * 60.0
+                                    if o.override_delay_min is not None else None),
+            preference_signal_strength=strength, score=-strength,
+            reason="legacy_override_direction_unknown",
+            reconstructed=True, reconstruction_quality=RECON_PARTIAL,
+        )
+    else:
+        preference = PreferenceOutcome(
+            available=False, manual_override_occurred=False, score=None,
+            reason="legacy_no_override",
+            reconstructed=True, reconstruction_quality=RECON_UNAVAILABLE,
+        )
+
+    # Movement: not reconstructable from v1 data.
+    movement = MovementOutcome(
+        available=False, score=None, reason="legacy_unavailable",
+        reconstructed=True, reconstruction_quality=RECON_UNAVAILABLE,
+    )
+    confounders = OutcomeConfounders(incomplete_provenance=True, detected=("legacy_record",))
+    reliability = _finalize_reliability(
+        thermal=thermal, movement=movement, preference=preference,
+        confounders=confounders, resolution_status=status,
+        interrupted=False, legacy_data=True, attribution_quality=ATTRIBUTION_UNKNOWN,
+    )
+    return MultiObjectiveOutcome(
+        thermal=thermal, movement=movement, preference=preference,
+        reliability=reliability, confounders=confounders,
+        attribution_quality=ATTRIBUTION_UNKNOWN, resolution_status=status,
+        legacy_score=o.outcome_score,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Public resolution function
 # ---------------------------------------------------------------------------
@@ -318,6 +887,12 @@ def resolve_outcome(
         outdoor_temp_c=pending.outdoor_temp_at_decision,
     )
 
+    # P3: assemble the multi-objective decomposition (additive; legacy score
+    # above is bit-identical and remains the active authority in P3).
+    multi_objective = _build_multi_objective(
+        pending, inp, indoor_temp_delta_c, outcome_score, resolution_status
+    )
+
     return DecisionOutcome(
         decision_timestamp=pending.decision_timestamp,
         window_id=pending.window_id,
@@ -340,4 +915,6 @@ def resolve_outcome(
         # P2: carry the authoritative decision link so the coordinator attaches
         # the outcome by decision_id (v2), never by timestamp.
         decision_id=pending.decision_id,
+        # P3: additive multi-objective decomposition (no active authority yet).
+        multi_objective=multi_objective,
     )

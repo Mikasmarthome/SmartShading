@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
+from ..models.multi_objective_outcome import MultiObjectiveOutcome
 from ..state_machine.states import ShadingState
 
 # Valid values for OverrideRecord.event_type.
@@ -193,6 +194,10 @@ class DecisionOutcome:
     # LE 2.0 / P2 — authoritative link to the LearningDecisionRecord (v2).
     # None for legacy v1 outcomes, which use the isolated timestamp fallback.
     decision_id: str | None = None
+    # LE 2.0 / P3 — additive multi-objective decomposition.  None for legacy v1
+    # outcomes and for P2 records written before P3.  Has NO active learning
+    # authority in P3 (the legacy outcome_score remains authoritative).
+    multi_objective: MultiObjectiveOutcome | None = None
 
     @property
     def timestamp(self) -> datetime:
@@ -229,6 +234,9 @@ class DecisionOutcome:
                 if self.evaluation_timestamp is not None else None
             ),
             "decision_id": self.decision_id,
+            "multi_objective": (
+                self.multi_objective.to_dict() if self.multi_objective is not None else None
+            ),
         }
 
     @classmethod
@@ -264,6 +272,7 @@ class DecisionOutcome:
             resolution_status=d.get("resolution_status", "pending"),
             evaluation_timestamp=_parse(d.get("evaluation_timestamp")),
             decision_id=d.get("decision_id"),
+            multi_objective=MultiObjectiveOutcome.from_dict(d.get("multi_objective")),
         )
 
 

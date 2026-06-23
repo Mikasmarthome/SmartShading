@@ -511,7 +511,8 @@
           "good": "Dobro",
           "acceptable": "Sprejemljivo",
           "poor": "Slabo",
-          "unknown": "Neznano"
+          "unknown": "Neznano",
+          "not_applicable": "Ni primerno"
         }
       }
     },

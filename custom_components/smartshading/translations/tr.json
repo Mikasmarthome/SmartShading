@@ -511,7 +511,8 @@
           "good": "İyi",
           "acceptable": "Kabul edilebilir",
           "poor": "Zayıf",
-          "unknown": "Bilinmiyor"
+          "unknown": "Bilinmiyor",
+          "not_applicable": "Geçerli değil"
         }
       }
     },

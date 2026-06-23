@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 from ..models.manual_override import ManualOverride
 from ..state_machine.states import ShadingState
 
-_WARMUP_CYCLES_REQUIRED = 3
+_WARMUP_CYCLES_REQUIRED = 1
 
 
 class OverrideDetector:

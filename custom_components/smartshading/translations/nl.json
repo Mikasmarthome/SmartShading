@@ -511,7 +511,8 @@
           "good": "Goed",
           "acceptable": "Acceptabel",
           "poor": "Slecht",
-          "unknown": "Onbekend"
+          "unknown": "Onbekend",
+          "not_applicable": "Niet van toepassing"
         }
       }
     },

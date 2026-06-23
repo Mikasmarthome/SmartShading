@@ -176,12 +176,36 @@ async def _collect_zone_entries(hass: HomeAssistant) -> list[dict]:
             target_adapter = getattr(rd, "target_position_adapter", None)
             coordinator = getattr(rd, "coordinator", None)
             window_ids = list(coordinator.windows.keys()) if coordinator else []
+            # Runtime execution diagnostics for dispatch-path debugging.
+            exec_diag: dict = {}
+            zone_runtime: dict = {}
+            if coordinator is not None:
+                try:
+                    data = coordinator.data
+                    exec_diag = dict(data.execution_diagnostics) if data is not None else {}
+                    # Collect zone-level runtime state.
+                    zone_runtime = {
+                        "startup_grace_remaining": coordinator._startup_cycles_remaining,
+                        "dispatch_generation": coordinator._dispatch_generation,
+                        "last_update_success": coordinator.last_update_success,
+                        "last_global_dispatch_at": (
+                            coordinator._serial_dispatch.last_dispatch_at.isoformat()
+                            if getattr(coordinator._serial_dispatch, "last_dispatch_at", None) is not None
+                            else None
+                        ),
+                    }
+                except Exception:
+                    pass
             result.append({
                 "entry_id": entry.entry_id,
                 "window_ids": window_ids,
+                "window_configs": coordinator.windows if coordinator is not None else {},
+                "coordinator_data": coordinator.data if coordinator is not None else None,
                 "learning_store": learning_store,
                 "forecast_store": forecast_store,
                 "target_position_adapter": target_adapter,
+                "execution_diagnostics": exec_diag,
+                "zone_runtime": zone_runtime,
             })
         except Exception:
             _LOGGER.warning(

@@ -60,7 +60,23 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from ..const import DOMAIN
 from ..coordinator import SmartShadingCoordinator
 from ..engines.learning_store import LearningStore
+from ..models.window import WindowBehaviorMode
 from ..state_machine.states import ShadingState
+
+# ---------------------------------------------------------------------------
+# Eligibility
+# ---------------------------------------------------------------------------
+
+def is_shading_learning_eligible(behavior_mode: WindowBehaviorMode) -> bool:
+    """True only for windows that participate in adaptive solar/heat/glare shading.
+
+    Only FULLY_AUTOMATIC windows produce Solar-, Heat-, and Glare-evaluator
+    decisions that make sense as adaptive-shading quality metrics.
+    ABSENCE_AND_SCHEDULE, ABSENCE_ONLY, and DISABLED_AUTOMATIC windows must
+    never contribute to Shading Outcome or Learning Progress aggregation.
+    """
+    return behavior_mode == WindowBehaviorMode.FULLY_AUTOMATIC
+
 
 # ---------------------------------------------------------------------------
 # State string constants
@@ -343,23 +359,52 @@ _CONFIDENCE_LEVEL_CAPS: dict[str, float] = {
 def compute_learning_progress(
     window_ids: list[str],
     coordinator_data: Any,  # SmartShadingData | None
-) -> tuple[int, dict[str, Any]]:
+    window_configs: dict[str, Any] | None = None,  # dict[str, WindowConfig] | None
+) -> tuple[int | None, dict[str, Any]]:
     """Derive zone-level learning progress from per-window AdaptiveProfiles.
 
     Returns (progress_percent, attributes) where:
-      progress_percent  int  0-100  average adaptation_strength across windows
-      attributes        dict        status, windows_tracked, windows_learning_active,
-                                    adaptation_active
+      progress_percent  int|None  0-100 or None when no eligible windows
+      attributes        dict      status, eligible_windows, excluded_windows, …
 
-    Uses only privacy-safe aggregate values — no raw positions, history, or
-    personal data.  Safe when called with coordinator_data=None (startup).
+    Only FULLY_AUTOMATIC windows enter the average.  Non-eligible windows
+    contribute neither to the numerator nor to the denominator.
+    Returns (None, attrs) when no eligible windows exist — the sensor entity
+    should then report unavailable.
+
+    Uses only privacy-safe aggregate values.  Safe with coordinator_data=None.
     """
-    n_windows = len(window_ids)
+    n_total = len(window_ids)
 
-    if coordinator_data is None or n_windows == 0:
+    # Determine eligible window subset.
+    if window_configs is not None:
+        eligible_ids = [
+            wid for wid in window_ids
+            if is_shading_learning_eligible(
+                getattr(window_configs.get(wid), "behavior_mode", WindowBehaviorMode.FULLY_AUTOMATIC)
+            )
+        ]
+    else:
+        eligible_ids = list(window_ids)
+
+    n_eligible = len(eligible_ids)
+    n_excluded = n_total - n_eligible
+
+    if n_eligible == 0:
+        return None, {
+            "status": _LEARNING_STATUS_COLLECTING,
+            "eligible_windows": 0,
+            "excluded_windows": n_excluded,
+            "windows_learning_active": 0,
+            "adaptation_active": False,
+            "reason": "no_fully_automatic_windows",
+        }
+
+    if coordinator_data is None:
         return 0, {
             "status": _LEARNING_STATUS_COLLECTING,
-            "windows_tracked": n_windows,
+            "eligible_windows": n_eligible,
+            "excluded_windows": n_excluded,
             "windows_learning_active": 0,
             "adaptation_active": False,
         }
@@ -370,7 +415,7 @@ def compute_learning_progress(
     n_learning = 0
     n_adapting = 0
 
-    for wid in window_ids:
+    for wid in eligible_ids:
         profile = profiles.get(wid)
         if profile is not None:
             cap = _CONFIDENCE_LEVEL_CAPS.get(profile.confidence_level, 0.0)
@@ -381,7 +426,7 @@ def compute_learning_progress(
             if effective_strength > 0:
                 n_adapting += 1
 
-    avg_strength = total_strength / n_windows
+    avg_strength = total_strength / n_eligible
     progress_pct = round(avg_strength * 100)
 
     if progress_pct == 0:
@@ -395,7 +440,8 @@ def compute_learning_progress(
 
     return progress_pct, {
         "status": status,
-        "windows_tracked": n_windows,
+        "eligible_windows": n_eligible,
+        "excluded_windows": n_excluded,
         "windows_learning_active": n_learning,
         "adaptation_active": n_adapting > 0,
     }
@@ -447,13 +493,30 @@ class SmartShadingLearningProgressSensor(CoordinatorEntity[SmartShadingCoordinat
         )
 
     @property
-    def native_value(self) -> int:
-        pct, _ = compute_learning_progress(self._window_ids, self.coordinator.data)
+    def available(self) -> bool:
+        if not self.coordinator.last_update_success:
+            return False
+        # Unavailable (not just unknown) when no eligible windows exist in this zone.
+        return any(
+            is_shading_learning_eligible(
+                getattr(self.coordinator.windows.get(wid), "behavior_mode",
+                        WindowBehaviorMode.FULLY_AUTOMATIC)
+            )
+            for wid in self._window_ids
+        )
+
+    @property
+    def native_value(self) -> int | None:
+        pct, _ = compute_learning_progress(
+            self._window_ids, self.coordinator.data, self.coordinator.windows
+        )
         return pct
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        _, attrs = compute_learning_progress(self._window_ids, self.coordinator.data)
+        _, attrs = compute_learning_progress(
+            self._window_ids, self.coordinator.data, self.coordinator.windows
+        )
         return attrs
 
 
@@ -461,11 +524,12 @@ class SmartShadingLearningProgressSensor(CoordinatorEntity[SmartShadingCoordinat
 # Shading Result — pure aggregation helper
 # ---------------------------------------------------------------------------
 
-_SHADING_RESULT_EXCELLENT: str = "excellent"
-_SHADING_RESULT_GOOD:      str = "good"
-_SHADING_RESULT_ACCEPTABLE: str = "acceptable"
-_SHADING_RESULT_POOR:      str = "poor"
-_SHADING_RESULT_UNKNOWN:   str = "unknown"
+_SHADING_RESULT_EXCELLENT:       str = "excellent"
+_SHADING_RESULT_GOOD:            str = "good"
+_SHADING_RESULT_ACCEPTABLE:      str = "acceptable"
+_SHADING_RESULT_POOR:            str = "poor"
+_SHADING_RESULT_UNKNOWN:         str = "unknown"
+_SHADING_RESULT_NOT_APPLICABLE:  str = "not_applicable"
 
 # Minimum resolved outcomes across ALL windows in the zone required before
 # any state other than "unknown" is reported.  Protects against noisy early data.
@@ -488,28 +552,55 @@ _ACCEPTABLE_MAX_OVERRIDE_RATE: float = 0.50
 def compute_zone_shading_result(
     window_ids: list[str],
     learning_store: LearningStore,
+    window_configs: dict[str, Any] | None = None,  # dict[str, WindowConfig] | None
 ) -> tuple[str, dict[str, Any]]:
     """Derive zone-level shading result from resolved DecisionOutcome records.
 
     Returns (state_str, attributes) where state_str is one of the
     _SHADING_RESULT_* constants.
 
+    Only FULLY_AUTOMATIC windows are included in the aggregation.
+    Zones with no eligible windows return "not_applicable" (never "poor" etc.)
+    Zones with eligible windows but too few outcomes return "unknown".
+
     Privacy-safe: attributes expose only aggregate counts and rates.
     No raw positions, entity IDs, sensor readings, or outcome records.
     """
-    if not window_ids:
-        return _SHADING_RESULT_UNKNOWN, {"resolved_outcomes": 0}
+    n_total = len(window_ids)
+
+    # Determine eligible window subset.
+    if window_configs is not None:
+        eligible_ids = [
+            wid for wid in window_ids
+            if is_shading_learning_eligible(
+                getattr(window_configs.get(wid), "behavior_mode", WindowBehaviorMode.FULLY_AUTOMATIC)
+            )
+        ]
+    else:
+        eligible_ids = list(window_ids)
+
+    n_eligible = len(eligible_ids)
+    n_excluded = n_total - n_eligible
+
+    base_attrs: dict[str, Any] = {
+        "eligible_windows": n_eligible,
+        "excluded_windows": n_excluded,
+    }
+
+    if n_eligible == 0:
+        return _SHADING_RESULT_NOT_APPLICABLE, {
+            **base_attrs,
+            "resolved_outcomes": 0,
+            "reason": "no_fully_automatic_windows",
+        }
 
     all_scores: list[float] = []
     override_count = 0
     escalation_count = 0
 
-    for wid in window_ids:
+    for wid in eligible_ids:
         outcomes = learning_store.get_outcomes(wid)
-        resolved = [
-            o for o in outcomes
-            if o.outcome_score is not None
-        ]
+        resolved = [o for o in outcomes if o.outcome_score is not None]
         recent = resolved[-_RECENT_OUTCOMES_COUNT:]
         for o in recent:
             if o.outcome_score is not None:
@@ -521,7 +612,11 @@ def compute_zone_shading_result(
 
     total = len(all_scores)
     if total < _MIN_RESOLVED_OUTCOMES:
-        return _SHADING_RESULT_UNKNOWN, {"resolved_outcomes": total}
+        return _SHADING_RESULT_UNKNOWN, {
+            **base_attrs,
+            "resolved_outcomes": total,
+            "reason": "insufficient_outcomes",
+        }
 
     avg_score = sum(all_scores) / total
     override_rate = override_count / total
@@ -537,6 +632,7 @@ def compute_zone_shading_result(
         state = _SHADING_RESULT_POOR
 
     return state, {
+        **base_attrs,
         "resolved_outcomes": total,
         "avg_outcome_score": round(avg_score, 2),
         "override_rate": round(override_rate, 2),
@@ -589,13 +685,13 @@ class SmartShadingZoneShadingResultSensor(CoordinatorEntity[SmartShadingCoordina
     @property
     def native_value(self) -> str:
         state, _ = compute_zone_shading_result(
-            self._window_ids, self.coordinator.learning_store
+            self._window_ids, self.coordinator.learning_store, self.coordinator.windows
         )
         return state
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         _, attrs = compute_zone_shading_result(
-            self._window_ids, self.coordinator.learning_store
+            self._window_ids, self.coordinator.learning_store, self.coordinator.windows
         )
         return attrs

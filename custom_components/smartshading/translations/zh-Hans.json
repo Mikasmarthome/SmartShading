@@ -511,7 +511,8 @@
           "good": "良好",
           "acceptable": "可接受",
           "poor": "差",
-          "unknown": "未知"
+          "unknown": "未知",
+          "not_applicable": "不适用"
         }
       }
     },

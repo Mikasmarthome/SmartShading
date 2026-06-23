@@ -170,7 +170,7 @@ _DEFAULT_MINIMUM_STATE_DURATION = {
 # restart during which cover dispatch is suppressed.  Gives HA time to
 # hydrate all entity states before SmartShading can move a cover.
 # Safety exceptions (STORM_SAFE/WIND_SAFE) will bypass this in 9G5b/9G6.
-STARTUP_GRACE_CYCLES: int = 3
+STARTUP_GRACE_CYCLES: int = 1
 
 
 @dataclass(frozen=True)
@@ -277,6 +277,15 @@ class _WindowComputeState:
     # Set by calculate_simple_tilt_target(); gated by exec_cap.supports_tilt
     # and tilt_control_enabled; only VENETIAN_BLIND covers produce a value.
     target_tilt_ha: int | None = None
+    # Override-reference diagnostics (Step 9G5c-diag): captured in the
+    # non-safety path alongside override tick(). Defaults apply for the
+    # safety path (tick not called) and the no-sun fast-path.
+    override_ref_source: str | None = None
+    prev_observation_was_available: bool = False
+    last_commanded_was_available: bool = False
+    # True when observed_internal was non-None this cycle — meaning a valid
+    # cover position was stored in _prev_observed_internal for the next cycle.
+    current_observation_available: bool = False
 
 
 class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
@@ -442,6 +451,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # cover movement while entity states hydrate.  Safety exceptions will
         # be handled in Step 9G5b/9G6 when actual dispatch is enabled.
         self._startup_cycles_remaining: int = STARTUP_GRACE_CYCLES
+        # Per-window previous-cycle observed position (internal convention).
+        # Used by the override-tick own-command guard when _last_commanded=None:
+        # comparing observed against the PREVIOUS cycle's observed position
+        # detects real user movement (delta > 0) without falsely triggering
+        # on a cover that is legitimately at a non-target position at restart.
+        self._prev_observed_internal: dict[str, int | None] = {}
         # Serial dispatch (Step 10): shared asyncio.Lock + throttle across ALL
         # zone coordinators so cover commands from different zones are serialised.
         # When a GlobalSerialDispatch is provided (normal production path via
@@ -1637,6 +1652,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Override lifecycle: Safety beats override → clear it.
             # Otherwise, run override detection (position delta comparison).
             # Detection result is effective from the NEXT cycle (max 1-cycle delay).
+            # Override-reference diagnostics: defaults for the safety path (tick not
+            # called there). Overwritten in the else-branch below.
+            _override_ref_source: str | None = None
+            _last_commanded_was_available: bool = False
+            _prev_obs_was_available: bool = False
+            _observed_internal_stored: bool = False
             if tier_decision.shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
                 # Phase 9C: record safety clear before removing the override.
                 # Learning write is gated; functional clear always runs.
@@ -1699,18 +1720,35 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     if cover_position.assumed_position is not None
                     else None
                 )
-                # For the own-command guard, use the last position SmartShading
-                # actually commanded (never overwritten by passive observation).
-                # Pass None when SmartShading has never dispatched to this cover so
-                # tick()'s own-command guard is skipped — there is no known commanded
-                # position to guard against, and suppressing detection here would
-                # prevent the cover from ever being recognised as manually overridden
-                # (bug: cover already at night_pos before first SS command).
+                # Override-reference selection (Fix D + observed_internal fallback).
+                # Priority:
+                #   1. last_commanded: set only by dispatch — never by passive observation.
+                #      The correct reference when SmartShading has dispatched at least once.
+                #   2. prev_observed: previous cycle's observed position.
+                #      Cover stable → delta=0 → guard fires → no false override.
+                #      Cover moved  → delta>0 → guard skips → real override detected.
+                #   3. observed_internal: used when NEITHER is available (first cycle,
+                #      or cover was unavailable last cycle).  abs(observed-observed)=0
+                #      → guard always fires → no false positive on first observation.
                 _cover_group = self.cover_groups.get(window.cover_group_id)
                 _cov_id = _cover_group.cover_ids[0] if _cover_group and _cover_group.cover_ids else None
                 _assumed_st = self.assumed_state_manager.get_state(_cov_id, now) if _cov_id else None
                 _last_commanded = _assumed_st.last_commanded_position if _assumed_st is not None else None
-                _override_assumed = _last_commanded  # None → guard disabled in tick()
+                _prev_obs = self._prev_observed_internal.get(window_id)
+                _last_commanded_was_available = _last_commanded is not None
+                _prev_obs_was_available = _prev_obs is not None
+                if _last_commanded is not None:
+                    _override_assumed = _last_commanded
+                    _override_ref_source = "last_commanded"
+                elif _prev_obs is not None:
+                    _override_assumed = _prev_obs
+                    _override_ref_source = "previous_observation"
+                else:
+                    # First observation or cover was unavailable last cycle.
+                    # observed_internal may itself be None (cover still unavailable);
+                    # the OverrideDetector fail-safe handles that case (returns early).
+                    _override_assumed = observed_internal
+                    _override_ref_source = "unavailable"
                 self._override_detector.tick(
                     window_id=window_id,
                     observed_position=observed_internal,
@@ -1721,6 +1759,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     duration_min=self._override_duration_min,
                     now=now,
                 )
+                self._prev_observed_internal[window_id] = observed_internal
+                _observed_internal_stored = observed_internal is not None
 
             proposed_state = tier_decision.shading_state
             # BehaviorMode:hold: no command was sent, no state transition should be
@@ -2232,6 +2272,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 target_tilt_ha=_effective_tilt_ha,
                 in_solar_sector=_effective_in_solar_sector,
                 night_hard_hold_applied=_night_hard_hold_applied,
+                override_ref_source=_override_ref_source,
+                prev_observation_was_available=_prev_obs_was_available,
+                last_commanded_was_available=_last_commanded_was_available,
+                current_observation_available=_observed_internal_stored,
             )
 
             # Build window_results now — WindowObservation has no dependency on
@@ -2463,6 +2507,23 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 and _exec_plan_result.contains_safety_result
                 and _exec_plan_result.any_failed
             )
+            # Post-dispatch diagnostic values: reflect the state AFTER this cycle
+            # completes so the Support Export is not misleading for the first dispatch.
+            # last_commanded_available: True if assumed_state_manager already had it
+            # OR if a successful dispatch just set it this cycle.
+            _diag_last_commanded_avail: bool = s.last_commanded_was_available or (
+                _exec_plan_result is not None
+                and _exec_plan_result.any_sent
+                and not _exec_plan_result.any_failed
+            )
+            # previous_observation_available: True when a valid cover position was
+            # captured this cycle and stored in _prev_observed_internal (post-cycle).
+            # Reflects what will be available as the previous observation next cycle.
+            _diag_prev_obs_avail: bool | None = (
+                s.current_observation_available
+                if s.override_ref_source is not None  # non-safety path ran
+                else None  # safety / no-sun path: field stays None
+            )
             execution_diagnostics[window_id] = WindowExecutionDiagnostics(
                 observation_enabled=s.obs_enabled,
                 active_control_enabled=s.active_control_enabled,
@@ -2550,13 +2611,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 tilt_error=(
                     _last_exec_result.tilt_error if _last_exec_result is not None else None
                 ),
+                # Startup / override-reference diagnostics (Step 9G5c-diag).
+                startup_grace_configured_cycles=STARTUP_GRACE_CYCLES,
+                startup_initialization_complete=(self._startup_cycles_remaining == 0),
+                previous_observation_available=_diag_prev_obs_avail,
+                last_commanded_available=_diag_last_commanded_avail,
+                override_reference_source=s.override_ref_source,
             )
 
         # Startup Grace Period (9G5): decrement at the end of the cycle so that
         # STARTUP_GRACE_CYCLES cycles are fully suppressed before dispatch is
         # allowed.  Decrementing here (after dispatch) rather than at the top of
         # the function ensures the count matches the number of suppressed cycles:
-        # with STARTUP_GRACE_CYCLES=3, cycles 1-3 are suppressed and cycle 4 is
+        # with STARTUP_GRACE_CYCLES=1, cycle 1 is suppressed and cycle 2 is
         # the first that can dispatch.
         if self._startup_cycles_remaining > 0:
             self._startup_cycles_remaining -= 1

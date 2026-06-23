@@ -232,3 +232,44 @@ class WindowExecutionDiagnostics:
     tilt_error: str | None = None
     """Exception text when tilt_command_failed=True.
     None when tilt was not attempted, succeeded, or was not part of this command."""
+
+    # --- Startup / override-reference diagnostics (Step 9G5c-diag) -----------
+
+    startup_grace_configured_cycles: int | None = None
+    """The STARTUP_GRACE_CYCLES constant used for this coordinator instance.
+    Allows support exports to report the configured warmup length alongside
+    startup_grace_remaining so the user can see both values."""
+
+    startup_initialization_complete: bool | None = None
+    """True when the coordinator startup grace period has fully elapsed
+    (_startup_cycles_remaining == 0) at the time this diagnostic was produced.
+    False during the grace period (cycles 1..STARTUP_GRACE_CYCLES).
+    None in the no-sun path (minimal diagnostics)."""
+
+    previous_observation_available: bool | None = None
+    """True when a valid cover position (observed_internal ≠ None) was captured
+    this cycle and stored in _prev_observed_internal — i.e. it will be available
+    as the previous-observation reference for the NEXT cycle's override check.
+    False when the cover was unavailable this cycle (no position to store).
+    None in the safety or no-sun path (override branch did not run).
+
+    Note: this reflects the POST-cycle stored state, not the value that was used
+    as input to this cycle's override tick (which may have been None on first
+    dispatch if the cover was unavailable during the grace cycle)."""
+
+    last_commanded_available: bool | None = None
+    """True when, after this cycle, AssumedStateManager has a last_commanded_position
+    for this cover — either because SmartShading dispatched in a prior cycle, or
+    because a successful dispatch happened in this cycle.
+    False only when no dispatch has ever succeeded for this cover since HA restart.
+    None in the safety or no-sun path."""
+
+    override_reference_source: str | None = None
+    """Source used as the own-command guard reference this cycle.
+    One of:
+      "last_commanded"        — AssumedStateManager.last_commanded_position used.
+      "previous_observation"  — Previous cycle's observed position used.
+      "unavailable"           — Neither available; observed_internal used as
+                                 fallback so the guard fires (delta=0→no false
+                                 override on first observation).
+    None in the safety or no-sun path (tick not called)."""

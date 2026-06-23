@@ -57,11 +57,11 @@ RELEASE_NOTES*.md
 # scope. Tests and scripts remain in the working tree and still run locally; they
 # are simply not part of the published repository.
 #
-# Published brand assets live inside the integration at
-# custom_components/smartshading/brand/ (icon.png, logo.png) — Home Assistant
-# serves these locally for the integration's icon/logo. They are intentionally
-# NOT ignored. The root source file "logo smartshading.png" is the local source
-# only and must never be published under that name.
+# Published brand assets live in two locations (both intentionally NOT ignored):
+#   brand/                                — top-level, for HACS/GitHub display
+#   custom_components/smartshading/brand/ — internal, served by HA Core locally
+# The root source file "logo smartshading.png" is the local source only and must
+# never be published under that name.
 tests/
 scripts/
 logo smartshading.png

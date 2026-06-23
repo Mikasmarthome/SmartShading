@@ -511,7 +511,8 @@
           "good": "Hyvä",
           "acceptable": "Hyväksyttävä",
           "poor": "Heikko",
-          "unknown": "Tuntematon"
+          "unknown": "Tuntematon",
+          "not_applicable": "Ei sovellettavissa"
         }
       }
     },

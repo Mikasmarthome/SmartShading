@@ -511,7 +511,8 @@
           "good": "Bun",
           "acceptable": "Acceptabil",
           "poor": "Slab",
-          "unknown": "Necunoscut"
+          "unknown": "Necunoscut",
+          "not_applicable": "Nu se aplică"
         }
       }
     },

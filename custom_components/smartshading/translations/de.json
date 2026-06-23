@@ -511,7 +511,8 @@
           "good": "Gut",
           "acceptable": "Akzeptabel",
           "poor": "Schlecht",
-          "unknown": "Unbekannt"
+          "unknown": "Unbekannt",
+          "not_applicable": "Nicht anwendbar"
         }
       }
     },

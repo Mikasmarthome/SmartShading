@@ -511,7 +511,8 @@
           "good": "God",
           "acceptable": "Acceptabel",
           "poor": "Dårlig",
-          "unknown": "Ukendt"
+          "unknown": "Ukendt",
+          "not_applicable": "Ikke relevant"
         }
       }
     },

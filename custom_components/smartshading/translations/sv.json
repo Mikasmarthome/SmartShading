@@ -511,7 +511,8 @@
           "good": "Bra",
           "acceptable": "Acceptabelt",
           "poor": "Dåligt",
-          "unknown": "Okänt"
+          "unknown": "Okänt",
+          "not_applicable": "Ej tillämpligt"
         }
       }
     },

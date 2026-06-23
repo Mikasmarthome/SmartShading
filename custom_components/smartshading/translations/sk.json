@@ -511,7 +511,8 @@
           "good": "Dobrý",
           "acceptable": "Prijateľný",
           "poor": "Slabý",
-          "unknown": "Neznámy"
+          "unknown": "Neznámy",
+          "not_applicable": "Nevzťahuje sa"
         }
       }
     },

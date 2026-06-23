@@ -511,7 +511,8 @@
           "good": "Καλό",
           "acceptable": "Αποδεκτό",
           "poor": "Κακό",
-          "unknown": "Άγνωστο"
+          "unknown": "Άγνωστο",
+          "not_applicable": "Μη εφαρμόσιμο"
         }
       }
     },

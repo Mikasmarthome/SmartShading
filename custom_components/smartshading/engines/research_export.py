@@ -46,7 +46,7 @@ _LOGGER = logging.getLogger(__name__)
 
 RESEARCH_EXPORT_FORMAT_VERSION: int = 1
 RESEARCH_EXPORT_TYPE: str = "smartshading_research_export"
-RESEARCH_EXPORT_SCHEMA_VERSION: int = 1
+RESEARCH_EXPORT_SCHEMA_VERSION: int = 2
 RESEARCH_EXPORT_NOTICE_VERSION: int = 1
 
 _INTENSITY_LEVELS = ("light", "normal", "strong")
@@ -336,6 +336,8 @@ def build_research_export(
     *,
     zone_entries: list[dict],
     generated_at_utc: datetime,
+    startup_grace_cycles: int = 1,
+    override_warmup_cycles: int = 1,
 ) -> dict:
     """Build an anonymized research export covering all zones.
 
@@ -351,6 +353,16 @@ def build_research_export(
 
     generated_at_utc:
         UTC-aware datetime.  Raises ValueError for naive datetimes.
+
+    startup_grace_cycles:
+        Value of STARTUP_GRACE_CYCLES at export time (default: 1 since v1.0.6).
+        Allows offline tooling to reconstruct the dispatch-suppression semantics
+        active when the learning data in this export was collected.
+
+    override_warmup_cycles:
+        Value of _WARMUP_CYCLES_REQUIRED at export time (default: 1 since v1.0.6).
+        Allows offline tooling to know how many cycles of override-detection
+        warmup were in effect for the data in this export.
 
     Returns
     -------
@@ -386,6 +398,29 @@ def build_research_export(
         "zones_count": len(zones_out),
         "zones": zones_out,
         "learning_application_summary": application_summary,
+        "runtime_semantics": {
+            "startup_grace_cycles": startup_grace_cycles,
+            "override_warmup_cycles": override_warmup_cycles,
+            "override_reference_strategy": (
+                "last_commanded > previous_observation > observed_internal"
+            ),
+            "support_export_schema_version": 2,
+            "research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
+            "per_event_override_reference_source": "not_stored",
+            "per_event_startup_phase": "not_stored",
+            "per_event_dispatch_status": "not_stored",
+        },
+        "eligibility_semantics": {
+            "eligible_behavior_modes": ["fully_automatic"],
+            "excluded_behavior_modes": [
+                "absence_and_schedule",
+                "absence_only",
+                "disabled_automatic",
+            ],
+            "current_zone_metrics_use_current_behavior_mode": True,
+            "behavior_mode_at_decision": "not_stored",
+            "learning_eligible_at_decision": "not_stored",
+        },
         "le2_capability_notes": {
             "evaluator_attribution": "available — decided_by field on all transition records",
             "override_patterns": "available — OverrideRecord with event_type, duration",
@@ -395,5 +430,10 @@ def build_research_export(
             "per_event_baseline_vs_adapted": "not_available — not stored per transition",
             "per_event_forecast_modifier": "not_available — not stored per transition",
             "per_event_similarity_match": "not_available — not yet implemented",
+            "per_event_override_reference_source": "not_available — follow-up LE2.0 Phase 2",
+            "per_event_startup_phase": "not_available — follow-up LE2.0 Phase 2",
+            "per_event_dispatch_status": "not_available — follow-up LE2.0 Phase 2",
+            "behavior_mode_at_decision": "not_available — follow-up LE2.0 Phase 2",
+            "learning_eligible_at_decision": "not_available — follow-up LE2.0 Phase 2",
         },
     }

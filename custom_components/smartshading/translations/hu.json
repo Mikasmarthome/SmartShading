@@ -511,7 +511,8 @@
           "good": "Jó",
           "acceptable": "Elfogadható",
           "poor": "Gyenge",
-          "unknown": "Ismeretlen"
+          "unknown": "Ismeretlen",
+          "not_applicable": "Nem alkalmazható"
         }
       }
     },

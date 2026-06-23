@@ -99,6 +99,19 @@ from .engines.thermal_response_engine import (
     select_observation_window,
 )
 from .models.thermal_response import ThermalResponseModel, ThermalResponseObservation
+from .engines.window_attribution import WindowEventFacts, classify_window_attribution
+from .engines.window_contribution_engine import (
+    WindowPriorFacts,
+    compute_geometric_solar_prior,
+    derive_eligibility,
+    recompute_contribution_models,
+)
+from .models.window_contribution import (
+    ATTR_WINDOW_ISOLATED,
+    WindowContributionEvidence,
+    WindowContributionModel,
+    event_weight_for,
+)
 from .models.decision_provenance import (
     AdaptationDecision,
     AdaptationStep,
@@ -539,6 +552,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._thermal_prev_zone_temp: dict[str, float] = {}
         self._thermal_sampled_cycle: dict[str, int] = {}  # sample once per zone per cycle
         self._thermal_last_obs_cycle: dict[str, int] = {} # multi-window dedupe per cycle
+        # P5 — per-window relative contribution models + bounded evidence (per
+        # window).  Keyed by window_id; each config entry (= zone) is independent.
+        self._contribution_models: dict[str, WindowContributionModel] = {}
+        self._contribution_evidence: dict[str, list[WindowContributionEvidence]] = {}
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -1065,6 +1082,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     self._thermal_observations = {
                         z: list(lst) for z, lst in _extras.thermal_observations.items()
                     }
+                    # P5: restore per-window contribution models + evidence.
+                    self._contribution_models = dict(_extras.window_contribution_models)
+                    self._contribution_evidence = {
+                        w: list(lst) for w, lst in _extras.window_contribution_evidence.items()
+                    }
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
@@ -1081,6 +1103,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     config_generations=self._config_generation_tracker.to_storage_dict(),
                     thermal_models=self._thermal_models_storage(),
                     thermal_observations=self._thermal_observations_storage(),
+                    window_contribution_models=self._contribution_models_storage(),
+                    window_contribution_evidence=self._contribution_evidence_storage(),
                 )
                 self._persistence_last_save_at = _restore_now
                 self._learning_persistence.clear_migration_dirty()
@@ -2085,6 +2109,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 ),
                                 shading_state=new_state.value,
                             )
+                            # P5: this window materially changed in the zone event.
+                            self._thermal_mark_material_window(window.zone_id, window_id)
                         except Exception:
                             _LOGGER.warning(
                                 "Learning: pending outcome create/resolve (state_change) failed for %s",
@@ -2946,6 +2972,24 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     dispatch=_dispatch_prov,
                     now=now,
                 )
+                # P5: record per-window event facts for the open zone observation.
+                if s.obs_enabled and s.window.zone_id in self._thermal_open:
+                    _obs_pos = (
+                        s.exec_snapshot.assumed_position_internal
+                        if s.exec_snapshot is not None and s.exec_snapshot.assumed_position_internal is not None
+                        else (s.exec_snapshot.current_position_internal if s.exec_snapshot is not None else None)
+                    )
+                    self._thermal_record_window_facts(
+                        s.window.zone_id, window_id,
+                        command_status=(_dp_status.lower() if _dp_status else "none"),
+                        harmonized=harm.harmonized,
+                        has_reliable_feedback=(
+                            s.exec_cap.has_reliable_position_feedback if s.exec_cap is not None else False
+                        ),
+                        active_control=s.active_control_enabled,
+                        observed_position_internal=_obs_pos,
+                        target_internal=s.exec_target_internal,
+                    )
             except Exception:
                 _LOGGER.warning(
                     "SmartShading: provenance recording failed for %s (non-fatal)", window_id
@@ -2983,6 +3027,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 config_generations=self._config_generation_tracker.to_storage_dict(),
                 thermal_models=self._thermal_models_storage(),
                 thermal_observations=self._thermal_observations_storage(),
+                window_contribution_models=self._contribution_models_storage(),
+                window_contribution_evidence=self._contribution_evidence_storage(),
             )
             self._persistence_last_save_at = now
             self._learning_dirty = False
@@ -3197,6 +3243,38 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "selected_observation_window_min": window,
         }
 
+    def window_contribution_diagnostics(self, window_id: str) -> dict:
+        """Privacy-safe per-window contribution diagnostics.  Eligibility is
+        derived from the CURRENT model + config generation (not a stale bool)."""
+        window = self.windows.get(window_id)
+        model = self._contribution_models.get(window_id)
+        zone_id = window.zone_id if window is not None else ""
+        current_gen = self._thermal_config_generation(zone_id) if zone_id else 0
+        shadow_elig, exp_elig = derive_eligibility(model, current_gen)
+        ev = self._contribution_evidence.get(window_id, [])
+        latest_disq = None
+        return {
+            "attribution_quality": (ev[-1].attribution_quality if ev else "unknown"),
+            "contribution_index": (
+                model.normalized_relative_contribution_index if model else None
+            ),
+            "contribution_confidence": round(model.confidence, 3) if model else 0.0,
+            "isolated_sample_count": model.isolated_sample_count if model else 0,
+            "candidate_sample_count": model.candidate_sample_count if model else 0,
+            "shared_sample_count": model.shared_sample_count if model else 0,
+            "distinct_days": model.distinct_days if model else 0,
+            "prior_source": model.prior_source if model else "neutral",
+            "latest_disqualifier": latest_disq,
+            "shadow_contribution_eligible": shadow_elig,
+            "experiment_contribution_eligible": exp_elig,
+        }
+
+    def _contribution_models_storage(self) -> dict:
+        return {w: m.to_dict() for w, m in self._contribution_models.items()}
+
+    def _contribution_evidence_storage(self) -> dict:
+        return {w: [e.to_dict() for e in lst] for w, lst in self._contribution_evidence.items()}
+
     def _thermal_models_storage(self) -> dict:
         return {z: m.to_dict() for z, m in self._thermal_models.items()}
 
@@ -3311,6 +3389,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "reliability_factor": source_reliability_factor(reading),
             "config_generation": gen,
             "context_key": thermal_context_key(now, outdoor, exposure),
+            "window_facts": {},        # P5: per-window event facts (sticky)
+            "material_windows": set(),  # P5: windows with a material change this observation
         }
 
     def _thermal_sample(self, zone_id: str, now: datetime) -> None:
@@ -3336,6 +3416,52 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if len(samples) > _THERMAL_SAMPLE_CAP:
             # Keep first, last, and a decimated middle.
             acc["samples"] = [samples[0]] + samples[-(_THERMAL_SAMPLE_CAP - 1):]
+
+    def _thermal_mark_material_window(self, zone_id: str, window_id: str) -> None:
+        """Mark a window as having a material change during the open zone obs."""
+        acc = self._thermal_open.get(zone_id)
+        if acc is not None:
+            acc.setdefault("material_windows", set()).add(window_id)
+
+    def _thermal_record_window_facts(
+        self, zone_id: str, window_id: str, *, command_status: str,
+        harmonized: bool, has_reliable_feedback: bool, active_control: bool,
+        observed_position_internal: int | None, target_internal: int | None,
+    ) -> None:
+        """Capture/merge per-window event facts into the open zone observation
+        (sticky material/external flags; latest positions/status)."""
+        acc = self._thermal_open.get(zone_id)
+        if acc is None:
+            return
+        material = window_id in acc.get("material_windows", set())
+        wf: dict = acc.setdefault("window_facts", {})
+        f = wf.get(window_id)
+        if f is None:
+            f = {
+                "material": False, "command_status": "none", "harmonized": False,
+                "has_reliable_feedback": has_reliable_feedback, "active_control": active_control,
+                "start_position": observed_position_internal, "end_position": observed_position_internal,
+                "target": target_internal, "external_movement": False,
+            }
+            wf[window_id] = f
+        # Sticky material/harmonized; latest status/positions.
+        f["material"] = f["material"] or material
+        f["harmonized"] = f["harmonized"] or harmonized
+        if command_status == "sent":
+            f["command_status"] = "sent"
+        elif f["command_status"] != "sent":
+            f["command_status"] = command_status
+        f["has_reliable_feedback"] = has_reliable_feedback
+        f["active_control"] = active_control
+        if target_internal is not None:
+            f["target"] = target_internal
+        # External movement: position moved materially in a cycle with no command.
+        if observed_position_internal is not None and f["end_position"] is not None:
+            moved = abs(observed_position_internal - f["end_position"])
+            if not material and command_status != "sent" and moved >= 3:
+                f["external_movement"] = True
+        if observed_position_internal is not None:
+            f["end_position"] = observed_position_internal
 
     def _thermal_finalize(self, outcome: DecisionOutcome) -> None:
         """On a resolved outcome, build a thermal observation when usable and
@@ -3368,6 +3494,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if (mo.thermal.thermal_model_authority_applied and _dur is not None
                     and _dur < _OUTCOME_OBSERVATION_DELAY_MIN):
                 _obs_reliability *= 0.6
+            # P5: conservative window attribution (may upgrade zone_shared →
+            # window_candidate / window_isolated under the strict solo gate).
+            mature = mo.thermal.thermal_maturity in ("mature", "maximum_reached")
+            _attr = self._classify_zone_attribution(
+                zone_id, acc, thermal_available=True, thermal_mature=mature,
+                thermal_reliability=mo.reliability.thermal,
+                confounded=mo.confounders.thermal_confounded,
+            )
             obs = ThermalResponseObservation(
                 zone_id=zone_id,
                 decision_ids=tuple(sorted(acc["decision_ids"])),
@@ -3381,7 +3515,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 target_before_ha=acc["target_before"], target_after_ha=acc["target_before"],
                 thermal_available=True, thermal_score=mo.thermal.score,
                 thermal_direction=mo.thermal.observed_direction,
-                attribution_quality=mo.attribution_quality,
+                attribution_quality=_attr.attribution_quality,
                 source_kind=acc["source_kind"],
                 valid_sensor_count=acc["valid_sensor_count"],
                 configured_sensor_count=acc["configured_sensor_count"],
@@ -3399,9 +3533,80 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 previous=self._thermal_models.get(zone_id),
             )
             self._thermal_last_obs_cycle[zone_id] = self._cycle_counter
+            # P5: record contribution evidence + recompute contribution models.
+            try:
+                self._update_contribution(zone_id, acc, _attr, mo, now, gen)
+            except Exception:
+                _LOGGER.warning("Learning: contribution update failed for %s (non-fatal)", zone_id)
             self._learning_dirty = True
         # Whether usable or not, the zone window is now closed.
         self._thermal_open.pop(zone_id, None)
+
+    def _classify_zone_attribution(
+        self, zone_id: str, acc: dict, *, thermal_available: bool,
+        thermal_mature: bool, thermal_reliability: float, confounded: bool,
+    ):
+        """Build WindowEventFacts from the accumulator and run the solo gate."""
+        facts = []
+        for wid, f in acc.get("window_facts", {}).items():
+            facts.append(WindowEventFacts(
+                window_id=wid, material_change=f["material"],
+                command_status=f["command_status"],
+                has_reliable_feedback=f["has_reliable_feedback"],
+                active_control=f["active_control"],
+                start_position_internal=f["start_position"],
+                end_position_internal=f["end_position"],
+                target_internal=f["target"], harmonized=f["harmonized"],
+                external_movement_detected=f["external_movement"],
+            ))
+        return classify_window_attribution(
+            facts, thermal_available=thermal_available, thermal_mature=thermal_mature,
+            thermal_reliability=thermal_reliability, confounded=confounded,
+        )
+
+    def _update_contribution(self, zone_id, acc, attr, mo, now, gen) -> None:
+        """Append per-window evidence and recompute the zone's contribution models."""
+        signal = mo.thermal.score
+        # Evidence: one record per contributing window (shared keeps all).
+        for wid in attr.contributing_window_ids:
+            f = acc.get("window_facts", {}).get(wid, {})
+            ev = WindowContributionEvidence(
+                window_id=wid, zone_id=zone_id, decision_id=None,
+                observation_decision_ids=tuple(sorted(acc["decision_ids"])),
+                timestamp=now, attribution_quality=attr.attribution_quality,
+                event_weight=event_weight_for(attr.attribution_quality),
+                observation_reliability=mo.reliability.thermal,
+                observed_contribution_signal=signal,
+                effective_exposure=acc.get("solar_start"),
+                blocked_or_no_exposure=(acc.get("solar_start") or 0.0) <= 0.0,
+                context_key=acc["context_key"], config_generation=gen,
+            )
+            lst = self._contribution_evidence.setdefault(wid, [])
+            lst.append(ev)
+            if len(lst) > 200:
+                del lst[0]
+        # Recompute models over all eligible windows of the zone.
+        eligible = [
+            w.id for w in self.windows.values()
+            if w.zone_id == zone_id
+            and getattr(w.behavior_mode, "name", "") == "FULLY_AUTOMATIC"
+        ]
+        if not eligible:
+            return
+        priors = compute_geometric_solar_prior([
+            WindowPriorFacts(
+                window_id=w.id,
+                effective_exposure=(acc.get("solar_start") if w.id in acc.get("window_facts", {}) else None),
+                sector_factor=1.0,
+                area_m2=getattr(self.windows[w.id], "area_m2", None),
+                blocked=False,
+            )
+            for w in self.windows.values() if w.id in eligible
+        ])
+        self._contribution_models.update(recompute_contribution_models(
+            zone_id, eligible, self._contribution_evidence, priors, now,
+            config_generation=gen, previous=self._contribution_models,
+        ))
 
     def _config_fingerprint_for_window(
         self, window: WindowConfig, zone: ZoneConfig

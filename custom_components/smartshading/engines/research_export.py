@@ -319,6 +319,58 @@ def build_thermal_research_summary(
         return {"zone_model_count": 0}
 
 
+def build_window_contribution_research_summary(
+    models: dict | None, evidence: dict | None
+) -> dict:
+    """Aggregate per-window contribution stats for the Research Export.
+    Privacy-safe: no entity IDs, no raw zone/window keys, no timestamps."""
+    models = models or {}
+    evidence = evidence or {}
+    try:
+        iso = cand = shared = unknown = 0
+        indices: list[float] = []
+        confidences: list[float] = []
+        windows_without_isolated = 0
+        for wid, lst in evidence.items():
+            for e in lst:
+                q = e.attribution_quality
+                if q == "window_isolated":
+                    iso += 1
+                elif q == "window_candidate":
+                    cand += 1
+                elif q == "zone_shared":
+                    shared += 1
+                else:
+                    unknown += 1
+        for wid, m in models.items():
+            if m.normalized_relative_contribution_index is not None:
+                indices.append(m.normalized_relative_contribution_index)
+            confidences.append(m.confidence)
+            if m.isolated_sample_count == 0:
+                windows_without_isolated += 1
+        total = iso + cand + shared + unknown
+
+        def _rate(x: int) -> float | None:
+            return round(x / total, 3) if total else None
+
+        def _mean(v: list[float]) -> float | None:
+            return round(sum(v) / len(v), 3) if v else None
+
+        return {
+            "window_model_count": len(models),
+            "isolated_event_rate": _rate(iso),
+            "candidate_event_rate": _rate(cand),
+            "shared_event_rate": _rate(shared),
+            "unknown_event_rate": _rate(unknown),
+            "contribution_index_mean": _mean(indices),
+            "confidence_mean": _mean(confidences),
+            "windows_without_isolated_evidence": windows_without_isolated,
+        }
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: contribution summary failed")
+        return {"window_model_count": 0}
+
+
 def _build_window_section(
     window_ref: str,
     window_id: str,

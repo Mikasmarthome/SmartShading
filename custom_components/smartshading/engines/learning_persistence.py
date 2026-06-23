@@ -51,6 +51,10 @@ from ..models.learning import (
 )
 from ..models.pending_outcome import PendingOutcome
 from ..models.thermal_response import ThermalResponseModel, ThermalResponseObservation
+from ..models.window_contribution import (
+    WindowContributionEvidence,
+    WindowContributionModel,
+)
 from ..state_machine.states import ShadingState
 
 _LOGGER = logging.getLogger(__name__)
@@ -429,6 +433,8 @@ def serialize_learning_store(
     config_generations: dict | None = None,
     thermal_models: dict | None = None,
     thermal_observations: dict | None = None,
+    window_contribution_models: dict | None = None,
+    window_contribution_evidence: dict | None = None,
 ) -> dict:
     """Serialize the LearningStore to a JSON-safe dict.
 
@@ -510,6 +516,9 @@ def serialize_learning_store(
         # P4 — per-zone thermal response models + bounded observations (additive).
         "thermal_response": thermal_models or {},
         "thermal_observations": thermal_observations or {},
+        # P5 — per-window contribution models + bounded evidence (additive).
+        "window_contribution_models": window_contribution_models or {},
+        "window_contribution_evidence": window_contribution_evidence or {},
     }
 
     if target_adapter is not None:
@@ -668,6 +677,8 @@ class RestoreExtras:
     config_generations: dict
     thermal_models: dict  # zone_id → ThermalResponseModel
     thermal_observations: dict  # zone_id → list[ThermalResponseObservation]
+    window_contribution_models: dict  # window_id → WindowContributionModel
+    window_contribution_evidence: dict  # window_id → list[WindowContributionEvidence]
 
 
 def deserialize_into_learning_store(
@@ -817,11 +828,31 @@ def deserialize_into_learning_store(
         if obs_list:
             thermal_observations[zid] = obs_list
 
+    # --- P5 window contribution models + evidence (additive, optional) ---
+    contribution_models: dict = {}
+    for wid, raw_model in (data.get("window_contribution_models") or {}).items():
+        try:
+            contribution_models[wid] = WindowContributionModel.from_dict(raw_model)
+        except Exception:
+            _LOGGER.warning("Learning: skipping malformed contribution model for %s", wid)
+    contribution_evidence: dict = {}
+    for wid, raw_list in (data.get("window_contribution_evidence") or {}).items():
+        ev_list: list[WindowContributionEvidence] = []
+        for i, raw in enumerate(raw_list or []):
+            try:
+                ev_list.append(WindowContributionEvidence.from_dict(raw))
+            except Exception:
+                _LOGGER.warning("Learning: skipping malformed contribution evidence #%d for %s", i, wid)
+        if ev_list:
+            contribution_evidence[wid] = ev_list
+
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
         config_generations=config_generations,
         thermal_models=thermal_models,
         thermal_observations=thermal_observations,
+        window_contribution_models=contribution_models,
+        window_contribution_evidence=contribution_evidence,
     )
 
 
@@ -946,6 +977,8 @@ class LearningPersistenceAdapter:
         config_generations: dict | None = None,
         thermal_models: dict | None = None,
         thermal_observations: dict | None = None,
+        window_contribution_models: dict | None = None,
+        window_contribution_evidence: dict | None = None,
     ) -> None:
         """Prune and persist the current in-memory learning data.
 
@@ -961,6 +994,8 @@ class LearningPersistenceAdapter:
                 config_generations=config_generations,
                 thermal_models=thermal_models,
                 thermal_observations=thermal_observations,
+                window_contribution_models=window_contribution_models,
+                window_contribution_evidence=window_contribution_evidence,
             )
             await self._store.async_save(data)
         except Exception:

@@ -1,0 +1,281 @@
+"""Input/source provenance + learning-trace builder — LE 2.0 / Phase P11.3+P11.5.
+
+Read-only, HA-free (duck-typed coordinator).  Aggregates ALREADY-COMPUTED runtime
+values + existing per-window diagnostics getters into the consolidated contract
+sections: inputs / source_provenance / position_learning / strategy_learning /
+learning_authority.  Never re-runs an evaluator, never recomputes a decision,
+never mutates state.  Honest status model: missing data → not_recorded (never
+fabricated, never silently 0/false).
+"""
+from __future__ import annotations
+
+# common source-status model
+S_MEASURED = "measured"
+S_ESTIMATED = "estimated"
+S_FALLBACK = "fallback"
+S_DERIVED = "derived"
+S_MISSING = "missing"
+S_INVALID = "invalid"
+S_STALE = "stale"
+S_BLOCKED = "blocked"
+S_NOT_CONFIGURED = "not_configured"
+S_NOT_RECORDED = "not_recorded"
+
+POSITION_INTENSITIES = ("light", "normal", "strong")
+STRATEGY_FAMILIES = (
+    "entry_threshold", "exit_threshold", "entry_timing", "exit_timing",
+    "tier_choice", "minimum_hold", "hysteresis",
+)
+# Code-grounded family units (FAMILY_BOUNDS in models/strategy_learning.py).
+STRATEGY_FAMILY_UNITS = {
+    "entry_threshold": "w_m2", "exit_threshold": "w_m2",
+    "entry_timing": "minutes", "exit_timing": "minutes",
+    "minimum_hold": "minutes", "hysteresis": "w_m2",
+    "tier_choice": "semantic_tier",
+}
+
+
+def _call(coord, name, *args):
+    fn = getattr(coord, name, None)
+    if fn is None:
+        return None
+    try:
+        return fn(*args)
+    except Exception:
+        return None
+
+
+def _num(v):
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def _ledger_state(coord, namespace: str) -> dict:
+    integ = getattr(coord, "_ledger_integrity", None)
+    status = getattr(integ, namespace, "unknown") if integ is not None else "unknown"
+    safe = status in ("valid", "missing")
+    return {"namespace": namespace, "status": status, "safe_for_learning": safe,
+            "experiments_allowed": safe, "adoptions_allowed": safe}
+
+
+# ---------------------------------------------------------------------------
+# input / source provenance
+# ---------------------------------------------------------------------------
+
+def build_input_provenance(coord, window_id: str) -> dict:
+    """Current per-window input/source provenance from the real input path
+    (_read_weather_inputs + this-cycle snapshot + forecast adapter)."""
+    window = getattr(coord, "windows", {}).get(window_id)
+    zone_id = getattr(window, "zone_id", None)
+    out: dict = {
+        "window_id": window_id,
+        "config_generation": _call(coord, "_thermal_config_generation", zone_id) or 0,
+    }
+    wi = _call(coord, "_read_weather_inputs")
+    indoor = _call(coord, "_read_indoor_temperature_for_zone", zone_id) if zone_id else None
+    out["indoor_temperature"] = {
+        "value_c": _num(indoor),
+        "source_status": (S_MEASURED if indoor is not None
+                          else (S_NOT_CONFIGURED
+                                if not getattr(coord, "_indoor_temperature_sensor_ids", None)
+                                else S_MISSING)),
+        "is_estimated": False,
+    }
+    out["outdoor_temperature"] = {
+        "value_c": _num(getattr(wi, "outdoor_temperature", None)),
+        "source_status": (S_MEASURED if getattr(wi, "outdoor_temperature", None) is not None
+                          else S_MISSING),
+        "is_estimated": False,
+    }
+    out["weather"] = {
+        "configured": getattr(coord, "_weather_entity_id", None) is not None,
+        "available": getattr(wi, "weather_condition", None) is not None,
+        "cloud_cover": _num(getattr(wi, "cloud_cover", None)),
+        "cloud_cover_status": (S_MEASURED if getattr(wi, "cloud_cover", None) is not None
+                               else (S_NOT_CONFIGURED
+                                     if getattr(coord, "_cloud_cover_sensor_id", None) is None
+                                     else S_MISSING)),
+    }
+    out["solar"] = build_solar_provenance(coord, window_id, wi)
+    out["forecast"] = build_forecast_provenance(coord)
+    return out
+
+
+def build_solar_provenance(coord, window_id: str, wi=None) -> dict:
+    """Solar-source chain provenance.  Measured solar is authoritative when valid;
+    forecast solar NEVER masquerades as a current measurement.  Intermediate
+    transform values that the runtime path does not separately record are honestly
+    marked not_recorded (no backward factor estimation)."""
+    wi = wi if wi is not None else _call(coord, "_read_weather_inputs")
+    raw = _num(getattr(wi, "solar_radiation", None)) if wi is not None else None
+    configured = getattr(coord, "_solar_radiation_sensor_id", None) is not None
+    measured_valid = raw is not None
+    return {
+        "configured_solar_source_category": "sensor" if configured else "none",
+        "selected_solar_source_type": (S_MEASURED if measured_valid
+                                       else (S_FALLBACK if configured else S_NOT_CONFIGURED)),
+        "selected_solar_source_status": (S_MEASURED if measured_valid
+                                         else (S_MISSING if configured else S_NOT_CONFIGURED)),
+        "raw_measured_solar_w_m2": raw,
+        "raw_measured_solar_status": (S_MEASURED if measured_valid
+                                      else (S_MISSING if configured else S_NOT_CONFIGURED)),
+        "fallback_used": (configured and not measured_valid),
+        # forecast solar is planning-only and is never the current measurement.
+        "forecast_used_for_current_measurement": False,
+        # Intermediate transform values are not separately recorded in the runtime
+        # path — honest not_recorded rather than a reverse-engineered factor.
+        "cloud_adjustment_recording_status": S_NOT_RECORDED,
+        "incidence_recording_status": S_NOT_RECORDED,
+        "effective_exposure_recording_status": S_NOT_RECORDED,
+    }
+
+
+def build_forecast_provenance(coord) -> dict:
+    """Forecast provenance — availability is NOT usage; current control never uses
+    forecast as a measurement."""
+    adapter = getattr(coord, "forecast_adapter", None)
+    store_loaded = getattr(coord, "_forecast_learning_store", None) is not None
+    diag = getattr(adapter, "restore_diagnostics", {}) if adapter is not None else {}
+    return {
+        "forecast_configured": getattr(coord, "_weather_entity_id", None) is not None,
+        "forecast_store_loaded": store_loaded,
+        "forecast_provider_match": (diag or {}).get("provider_fingerprint_match"),
+        "forecast_used_for_current_measurement": False,
+        "forecast_used_for_current_control": False,
+        "forecast_used_for_planning": store_loaded,
+    }
+
+
+# ---------------------------------------------------------------------------
+# position learning trace
+# ---------------------------------------------------------------------------
+
+def _base_resolution(window, intensity: str):
+    attr = f"{intensity}_shade_position"
+    override = getattr(window, attr, None) if window is not None else None
+    if override is not None:
+        return override, "window_override"
+    return None, "zone_config_or_default"
+
+
+def build_position_learning_trace(coord, window_id: str) -> dict:
+    window = getattr(coord, "windows", {}).get(window_id)
+    adopt = _call(coord, "adoption_diagnostics", window_id) or {}
+    adopt_int = adopt.get("intensities", {})
+    cycle_applied = getattr(coord, "_cycle_adoption_applied", {}).get(window_id, {})
+    out: dict = {"intensities": {}, "ledger_integrity_state": _ledger_state(coord, "position")}
+    for intensity in POSITION_INTENSITIES:
+        base, base_src = _base_resolution(window, intensity)
+        a = adopt_int.get(intensity, {})
+        applied_entry = cycle_applied.get(intensity)
+        out["intensities"][intensity] = {
+            "intensity": intensity,
+            "resolved_base_position_ha": base,
+            "base_resolution_source": base_src,
+            "active_adoption": {
+                "present": bool(a),
+                "adoption_id_internal": a.get("adoption_id"),
+                "status": a.get("adoption_status"),
+                "adopted_delta_ha": a.get("adopted_delta_ha"),
+                "effective_delta_ha": a.get("adopted_delta_ha"),
+                "suspended": a.get("suspended"),
+                "gate_reason": a.get("current_gate_reason"),
+                "rollback_reason": a.get("rollback_reason"),
+                "monitoring_outcome_count": a.get("monitoring_outcome_count"),
+                "monitoring_degraded_count": a.get("monitoring_degraded_count"),
+                "cooldown_remaining_days": a.get("cooldown_remaining_days"),
+                "source_experiment_count": a.get("source_experiment_count"),
+                "confidence": a.get("adoption_confidence"),
+                "reliability": a.get("adoption_reliability"),
+            },
+            # experiment delta is kept DISTINCT from adopted delta; only one
+            # authority influences the effective position (never summed).
+            "experiment_delta_ha": _position_experiment_delta(coord, window_id, intensity),
+            "applied_this_cycle": applied_entry is not None,
+            "applied_source": ("adoption" if applied_entry is not None else None),
+            "blocked_reason": (a.get("current_gate_reason") if a.get("suspended") else None),
+        }
+    return out
+
+
+def _position_experiment_delta(coord, window_id: str, intensity: str):
+    exp_map = getattr(coord, "_experiments_active", {})
+    for _zid, exp in exp_map.items():
+        if (getattr(exp, "window_id", None) == window_id
+                and getattr(exp, "intensity_level", None) == intensity):
+            return _num(getattr(exp, "experiment_parameter_target_ha", None))
+    return None
+
+
+# ---------------------------------------------------------------------------
+# strategy learning trace
+# ---------------------------------------------------------------------------
+
+def build_strategy_learning_trace(coord, window_id: str) -> dict:
+    sad = _call(coord, "strategy_adoption_diagnostics", window_id) or {}
+    fam_map = sad.get("families", {})
+    cycle_applied = getattr(coord, "_cycle_strategy_applied", {}).get(window_id, {})
+    out: dict = {"families": {}, "ledger_integrity_state": _ledger_state(coord, "strategy")}
+    for family in STRATEGY_FAMILIES:
+        a = fam_map.get(family, {})
+        applied = family in cycle_applied
+        out["families"][family] = {
+            "family": family,
+            "unit": STRATEGY_FAMILY_UNITS[family],
+            "context_family": a.get("context_family"),
+            "adopted_delta": a.get("adopted_delta"),
+            "effective_learning_delta": a.get("adopted_delta"),
+            "effective_value": a.get("effective_value"),
+            "active_adoption": {
+                "present": bool(a),
+                "adoption_id_internal": a.get("adoption_id"),
+                "status": a.get("adoption_status"),
+                "suspended": a.get("suspended"),
+                "gate_reason": a.get("current_gate_reason"),
+                "rollback_reason": a.get("rollback_reason"),
+                "monitoring_count": a.get("monitoring_count"),
+                "degraded_count": a.get("degraded_count"),
+                "cooldown_remaining_days": a.get("cooldown_remaining_days"),
+                "confidence": a.get("confidence"),
+                "reliability": a.get("reliability"),
+            },
+            "applied_this_decision": applied,
+            "applied_source": ("adoption" if applied else None),
+            "blocked_reason": (a.get("current_gate_reason") if a.get("suspended") else None),
+        }
+    return out
+
+
+# ---------------------------------------------------------------------------
+# learning authority matrix
+# ---------------------------------------------------------------------------
+
+def build_learning_authority(coord, window_id: str) -> dict:
+    window = getattr(coord, "windows", {}).get(window_id)
+    zone_id = getattr(window, "zone_id", None)
+    eff = _call(coord, "effective_zone_execution", zone_id) if zone_id else None
+    learning = bool(getattr(eff, "learning_enabled", False))
+    active = bool(getattr(eff, "active_control_enabled", False))
+    pos_safe = _ledger_state(coord, "position")["safe_for_learning"]
+    strat_safe = _ledger_state(coord, "strategy")["safe_for_learning"]
+    pos_applied = window_id in getattr(coord, "_cycle_adoption_applied", {})
+    strat_applied = window_id in getattr(coord, "_cycle_strategy_applied", {})
+    blocking: list = []
+    if not learning:
+        blocking.append("learning_mode_off")
+    if not active:
+        blocking.append("active_control_off")
+    if not pos_safe:
+        blocking.append("position_ledger_unsafe")
+    if not strat_safe:
+        blocking.append("strategy_ledger_unsafe")
+    return {
+        "learning_enabled": learning,
+        "active_control_enabled": active,
+        "position_experiments_allowed": learning and active and pos_safe,
+        "position_adoptions_allowed": learning and pos_safe,
+        "strategy_experiments_allowed": learning and active and strat_safe,
+        "strategy_adoptions_allowed": learning and strat_safe,
+        "position_adoption_applied": pos_applied,
+        "strategy_adoption_applied": strat_applied,
+        "blocking_reasons": blocking,
+    }

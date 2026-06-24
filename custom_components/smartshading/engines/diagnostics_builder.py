@@ -144,6 +144,45 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
             "dispatch_healthy": True,
         }
 
+    def _inputs_summary():
+        # PUBLIC: per-source-status counts across windows (no ids/values).
+        from .learning_trace_builder import build_input_provenance
+        windows = list((getattr(c, "windows", {}) or {}).keys())
+        solar = {"measured": 0, "fallback": 0, "not_configured": 0, "missing": 0}
+        indoor_missing = 0
+        forecast_configured = 0
+        for wid in windows:
+            prov = build_input_provenance(c, wid)
+            st = prov.get("solar", {}).get("selected_solar_source_status")
+            if st in solar:
+                solar[st] += 1
+            if prov.get("indoor_temperature", {}).get("source_status") == "missing":
+                indoor_missing += 1
+            if prov.get("forecast", {}).get("forecast_configured"):
+                forecast_configured += 1
+        return {"windows": len(windows), "solar_source_status": solar,
+                "indoor_missing": indoor_missing, "forecast_configured": forecast_configured}
+
+    def _learning_authority_summary():
+        # PUBLIC: learning-authority counts + blocking-reason histogram (no ids).
+        from .learning_trace_builder import build_learning_authority
+        windows = list((getattr(c, "windows", {}) or {}).keys())
+        learning_on = active_on = pos_applied = strat_applied = 0
+        blocking: dict = {}
+        for wid in windows:
+            la = build_learning_authority(c, wid)
+            learning_on += int(la["learning_enabled"])
+            active_on += int(la["active_control_enabled"])
+            pos_applied += int(la["position_adoption_applied"])
+            strat_applied += int(la["strategy_adoption_applied"])
+            for r in la["blocking_reasons"]:
+                blocking[r] = blocking.get(r, 0) + 1
+        return {"windows": len(windows), "windows_learning_on": learning_on,
+                "windows_active_control_on": active_on,
+                "position_adoption_applied": pos_applied,
+                "strategy_adoption_applied": strat_applied,
+                "blocking_reason_counts": blocking}
+
     def _decisions():
         # PUBLIC: counts only — no ids, states or positions.
         snap = _call(c, "decision_trace_snapshot") or {}
@@ -163,6 +202,9 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         "generated_at_utc": _iso(now),
         "integration_version": integration_version,
         "system": _safe(_system, errors, "system"),
+        "inputs_summary": _safe(_inputs_summary, errors, "inputs"),
+        "learning_authority_summary": _safe(
+            _learning_authority_summary, errors, "learning_authority"),
         "decisions": _safe(_decisions, errors, "decisions"),
         "learning_active_control_matrix": _safe(_matrix, errors, "matrix"),
         "learning": _safe(_learning, errors, "learning"),

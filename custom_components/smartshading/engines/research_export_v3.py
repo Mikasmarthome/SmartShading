@@ -106,6 +106,10 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
         errors["learning_store"] = {"count": 1, "reason_codes": ["store_access_failed"]}
 
     # ---- project persisted decisions into research records (honest) ----
+    # Exclusion accounting: excluded records must never silently vanish (survivorship
+    # bias guard) — every examined decision is counted as eligible or excluded-by-reason.
+    accounting = {"examined": 0, "excluded": {}}
+
     def _records():
         recs: list = []
         if store is None:
@@ -120,9 +124,17 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
             except Exception:
                 continue
             for d in decs or []:
+                accounting["examined"] += 1
+                if getattr(d, "summary", None) is None:
+                    accounting["excluded"]["no_summary"] = (
+                        accounting["excluded"].get("no_summary", 0) + 1)
+                    continue
                 r = _project_decision(d, wid, pz)
-                if r is not None:
-                    recs.append(r)
+                if r is None:
+                    accounting["excluded"]["not_projectable"] = (
+                        accounting["excluded"].get("not_projectable", 0) + 1)
+                    continue
+                recs.append(r)
         # deterministic order: by timestamp then decision_ref.
         recs.sort(key=lambda r: (r.get("decision_timestamp_utc") or "", r.get("decision_ref") or ""))
         return recs
@@ -160,11 +172,25 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
         "survivorship": _safe(lambda: _survivorship(c), errors, "survivorship"),
         "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
                                       "per_window_summaries"),
+        "record_accounting": {
+            "total_decisions_examined": accounting["examined"],
+            "eligible_record_count": (len(research_records)
+                                      if isinstance(research_records, list) else 0),
+            "excluded_record_count": sum(accounting["excluded"].values()),
+            "excluded_by_reason": dict(sorted(accounting["excluded"].items())),
+            "capped_record_count": len(capped),
+            "serialized_record_count": None,  # filled after byte truncation below
+            "record_cap": MAX_RESEARCH_RECORDS_PER_ZONE,
+        },
         "data_availability": {
             "research_records": ("available" if research_records else "not_available"),
             "counterfactual": "not_available",
             "solar_buckets": "not_available",  # exposure not in the persisted summary
             "confidence_buckets": "available_from_adoption_history",
+            "reliability_buckets": "not_available",   # not in the persisted summary
+            "behavior_mode_buckets": "not_available",  # not in the persisted summary
+            "per_decision_confidence": "not_available",  # only adoption snapshots exist
+            "per_decision_reliability": "not_available",
         },
         "section_errors": errors,
     }
@@ -172,6 +198,11 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
     contract = enforce_depth(truncate_strings(contract, max_len=MAX_STRING_LENGTH),
                              max_depth=MAX_NESTED_DEPTH)
     contract = _byte_cap(contract, rec_trunc)
+    # serialized_record_count is only known AFTER byte truncation removed records.
+    if (isinstance(contract.get("record_accounting"), dict)
+            and isinstance(contract.get("research_records"), list)):
+        contract["record_accounting"]["serialized_record_count"] = len(
+            contract["research_records"])
     if not is_json_safe(contract):
         return {"research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
                 "generated_at_utc": _iso_s(now),
@@ -200,9 +231,20 @@ def _project_decision(d, wid, pz) -> dict | None:
             confounders.append("thermal_confounded")
         score = _num(getattr(outcome, "outcome_score", None))
         resolution = getattr(outcome, "resolution_status", None)
+    src_type = _learning_source_type(sources)
+    # Attribution requires exactly ONE primitive learning source.  "position_and_strategy"
+    # is multi-source and must never receive single-source credit (P11.9 contract).
+    single_source = src_type in ("position_learning", "strategy_learning", "forecast")
+    # baseline comparison kept honest: missing base/adapted is "unknown", never
+    # silently folded into "baseline unchanged".
+    if base is None or adapted is None:
+        baseline_comparison = "unknown"
+    elif is_adapted:
+        baseline_comparison = "adapted"
+    else:
+        baseline_comparison = "unchanged"
     attributable = bool(
-        is_adapted and len([s for s in (_learning_source_type(sources),) if s != "none"]) == 1
-        and not confounders and resolution == "complete")
+        is_adapted and single_source and not confounders and resolution == "complete")
     # improvement classification — ONLY for attributable, resolved, scored records.
     if attributable and score is not None:
         if score > _IMPROVEMENT_NEUTRAL_TOLERANCE:
@@ -213,6 +255,16 @@ def _project_decision(d, wid, pz) -> dict | None:
             objective = "neutral"
     else:
         objective = "inconclusive"
+    if confounders:
+        attribution_status = "confounded"
+    elif attributable:
+        attribution_status = "attributable"
+    elif is_adapted and src_type == "position_and_strategy":
+        # multiple learning sources contributed — kept in total/adapted counts but
+        # never credited to a single source.
+        attribution_status = "multi_source"
+    else:
+        attribution_status = "inconclusive"
     return {
         "decision_ref": pz.ref(NS_DECISION, getattr(d, "decision_id", None)),
         "window_ref": pz.ref(NS_WINDOW, wid),
@@ -221,15 +273,15 @@ def _project_decision(d, wid, pz) -> dict | None:
         "baseline_target_ha": base,
         "adapted_target_ha": adapted,
         "is_adapted": is_adapted,
+        "baseline_comparison": baseline_comparison,
         "delta_baseline_adapted_ha": (adapted - base) if (is_adapted) else 0,
         "executed_dispatch_status": getattr(summary, "dispatch_status", None),
-        "learning_source_type": _learning_source_type(sources),
+        "learning_source_type": src_type,
         "outcome_status": getattr(d, "outcome_status", None),
         "outcome_resolution_status": resolution,
         "outcome_score": score,
         "confounder_codes": confounders,
-        "attribution_status": ("attributable" if attributable
-                               else ("confounded" if confounders else "inconclusive")),
+        "attribution_status": attribution_status,
         "thermal_objective_classification": objective,
         "season_bucket": _SEASON_BY_MONTH.get(
             getattr(getattr(d, "decision_timestamp", None), "month", 0), "unknown"),
@@ -238,8 +290,15 @@ def _project_decision(d, wid, pz) -> dict | None:
 
 
 def _aggregations(records, coord) -> dict:
+    # records == ALL eligible projected records (computed BEFORE the per-record count
+    # cap and byte truncation), so aggregations use the full eligible dataset.  The
+    # serialized record list is a bounded sample — see record_accounting for the
+    # eligible/capped/serialized counts.
     total = len(records)
     adapted = [r for r in records if r.get("is_adapted")]
+    unchanged = [r for r in records if r.get("baseline_comparison") == "unchanged"]
+    unknown = [r for r in records if r.get("baseline_comparison") == "unknown"]
+    multi_source = [r for r in records if r.get("attribution_status") == "multi_source"]
     dispatched_adapted = [r for r in adapted
                           if r.get("executed_dispatch_status") in ("sent", "SENT")]
     with_outcome = [r for r in records if r.get("outcome_status") not in (None, "none", "pending")]
@@ -248,16 +307,24 @@ def _aggregations(records, coord) -> dict:
     neutral = [r for r in attributable if r.get("thermal_objective_classification") == "neutral"]
     degraded = [r for r in attributable if r.get("thermal_objective_classification") == "degraded"]
     inconclusive = [r for r in records if r.get("attribution_status") != "attributable"]
+    cb = _confidence_buckets(coord)
+    cb["scope"] = "adoption_history_snapshots"  # NOT per-decision confidence
     return {
         "total_eligible_decisions": total,
-        "baseline_unchanged_count": total - len(adapted),
+        "eligible_record_count": total,
+        "aggregation_record_count": total,
+        "aggregation_scope": "all_eligible_records",
+        "baseline_unchanged_count": len(unchanged),
+        "baseline_unknown_count": len(unknown),
         "adapted_count": len(adapted),
+        "multi_source_count": len(multi_source),
         "adaptation_rate": round(len(adapted) / total, 4) if total else 0.0,
         "dispatched_adapted_count": len(dispatched_adapted),
         "outcomes_observed": len(with_outcome),
         "outcomes_attributable": len(attributable),
         "outcomes_inconclusive": len(inconclusive),
-        # better/worse stated ONLY for attributable thermal objective; no global score.
+        # better/worse stated ONLY for attributable single-source thermal objective;
+        # no global score, multi-source never credited here.
         "thermal_objective": {
             "improved_count": len(improved),
             "neutral_count": len(neutral),
@@ -268,10 +335,9 @@ def _aggregations(records, coord) -> dict:
         },
         "by_learning_source": _bucket_counts(records, "learning_source_type"),
         "by_season": _bucket_counts(records, "season_bucket"),
+        "season_basis": "northern_hemisphere_calendar",
         "by_lifecycle": _bucket_counts(records, "lifecycle_bucket"),
-        "confidence_buckets": _confidence_buckets(coord),
-        "aggregation_scope": ("exported_records" if len(records) <= MAX_RESEARCH_RECORDS_PER_ZONE
-                              else "exported_records_truncated"),
+        "confidence_buckets": cb,
     }
 
 

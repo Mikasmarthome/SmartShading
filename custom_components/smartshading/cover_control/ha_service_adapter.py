@@ -85,6 +85,7 @@ importable in the pure-Python test environment without a real HA installation.
 """
 from __future__ import annotations
 
+import time
 from dataclasses import replace
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -131,38 +132,69 @@ def _require_utc(dt: datetime) -> None:
         )
 
 
+def _service_trace(
+    result, *, started: float | None, completed: float | None, exc_type: str | None,
+):
+    """P11: attach read-only monotonic service-boundary timing + safe exception class
+    to the ExecutionResult.  Additive; behaviour-neutral; never raises."""
+    try:
+        duration = None
+        if started is not None and completed is not None:
+            duration = max(0.0, (completed - started) * 1000.0)
+        return replace(
+            result,
+            service_started_monotonic=started,
+            service_completed_monotonic=completed,
+            service_duration_ms=duration,
+            failure_exception_type=exc_type,
+        )
+    except Exception:
+        return result
+
+
 async def _dispatch_position(
     hass: HomeAssistant,
     intent: CoverIntent,
     *,
     now_utc: datetime,
-) -> tuple[bool, str | None]:
-    """Send cover.set_cover_position.  Returns (sent_ok, error_str)."""
+) -> tuple[bool, str | None, float, float, str | None]:
+    """Send cover.set_cover_position.
+
+    Returns (sent_ok, error_str, started_monotonic, completed_monotonic,
+    exc_type).  Monotonic timestamps bracket the actual async_call for read-only
+    diagnostics; they never change behaviour."""
     service_data = {
         _FIELD_ENTITY_ID: intent.cover_entity_id,
         _FIELD_POSITION: intent.target_position_ha,
     }
+    started = time.monotonic()
     try:
         await hass.services.async_call(_COVER_DOMAIN, _SERVICE_SET_POSITION, service_data)
-        return True, None
+        return True, None, started, time.monotonic(), None
     except Exception as exc:
-        return False, f"cover.set_cover_position raised {type(exc).__name__}: {exc!s}"
+        return (False, f"cover.set_cover_position raised {type(exc).__name__}: {exc!s}",
+                started, time.monotonic(), type(exc).__name__)
 
 
 async def _dispatch_tilt(
     hass: HomeAssistant,
     intent: CoverIntent,
-) -> tuple[bool, str | None]:
-    """Send cover.set_cover_tilt_position.  Returns (sent_ok, error_str)."""
+) -> tuple[bool, str | None, float, float, str | None]:
+    """Send cover.set_cover_tilt_position.
+
+    Returns (sent_ok, error_str, started_monotonic, completed_monotonic,
+    exc_type)."""
     service_data = {
         _FIELD_ENTITY_ID: intent.cover_entity_id,
         _FIELD_TILT_POSITION: intent.target_tilt,
     }
+    started = time.monotonic()
     try:
         await hass.services.async_call(_COVER_DOMAIN, _SERVICE_SET_TILT, service_data)
-        return True, None
+        return True, None, started, time.monotonic(), None
     except Exception as exc:
-        return False, f"cover.set_cover_tilt_position raised {type(exc).__name__}: {exc!s}"
+        return (False, f"cover.set_cover_tilt_position raised {type(exc).__name__}: {exc!s}",
+                started, time.monotonic(), type(exc).__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -212,13 +244,13 @@ async def dispatch_cover_intent(
                 intent,
                 reason="target_position_ha is None — cannot dispatch cover.set_cover_position",
             )
-        sent_ok, err = await _dispatch_position(hass, intent, now_utc=now_utc)
+        sent_ok, err, _t0, _t1, _et = await _dispatch_position(hass, intent, now_utc=now_utc)
         if not sent_ok:
-            return build_failed_result(
+            return _service_trace(build_failed_result(
                 intent, error=err or "unknown", sent_at_utc=now_utc,
                 reason=f"{err} for {intent.cover_entity_id!r}",
-            )
-        return build_sent_result(
+            ), started=_t0, completed=_t1, exc_type=_et)
+        return _service_trace(build_sent_result(
             intent, sent_at_utc=now_utc,
             reason=(
                 f"cover.set_cover_position dispatched: "
@@ -226,7 +258,7 @@ async def dispatch_cover_intent(
                 f"ha_position={intent.target_position_ha} "
                 f"internal_position={intent.target_position_internal}"
             ),
-        )
+        ), started=_t0, completed=_t1, exc_type=None)
 
     if intent.command_type is CoverCommandType.MOVE_TO_TILT:
         if intent.target_tilt is None:
@@ -234,13 +266,13 @@ async def dispatch_cover_intent(
                 intent,
                 reason="target_tilt is None — cannot dispatch cover.set_cover_tilt_position",
             )
-        tilt_ok, tilt_err = await _dispatch_tilt(hass, intent)
+        tilt_ok, tilt_err, _t0, _t1, _et = await _dispatch_tilt(hass, intent)
         if not tilt_ok:
-            return build_failed_result(
+            return _service_trace(build_failed_result(
                 intent, error=tilt_err or "unknown", sent_at_utc=now_utc,
                 reason=f"{tilt_err} for {intent.cover_entity_id!r}",
-            )
-        return replace(
+            ), started=_t0, completed=_t1, exc_type=_et)
+        return _service_trace(replace(
             build_sent_result(
                 intent, sent_at_utc=now_utc,
                 reason=(
@@ -249,7 +281,7 @@ async def dispatch_cover_intent(
                 ),
             ),
             tilt_sent=True,
-        )
+        ), started=_t0, completed=_t1, exc_type=None)
 
     if intent.command_type is CoverCommandType.MOVE_TO_POSITION_AND_TILT:
         if intent.target_position_ha is None and intent.target_tilt is None:
@@ -257,28 +289,30 @@ async def dispatch_cover_intent(
                 intent, reason="both target_position_ha and target_tilt are None",
             )
         pos_sent_at = now_utc
+        _pt0 = _pt1 = None
         # Step 1: position dispatch (if a position target exists).
         if intent.target_position_ha is not None:
-            sent_ok, pos_err = await _dispatch_position(hass, intent, now_utc=now_utc)
+            sent_ok, pos_err, _pt0, _pt1, _pet = await _dispatch_position(
+                hass, intent, now_utc=now_utc)
             if not sent_ok:
-                return build_failed_result(
+                return _service_trace(build_failed_result(
                     intent, error=pos_err or "unknown", sent_at_utc=now_utc,
                     reason=f"position dispatch failed for {intent.cover_entity_id!r}: {pos_err}",
-                )
+                ), started=_pt0, completed=_pt1, exc_type=_pet)
         # Step 2: tilt dispatch.
         if intent.target_tilt is None:
-            return build_sent_result(
+            return _service_trace(build_sent_result(
                 intent, sent_at_utc=pos_sent_at,
                 reason=(
                     f"cover.set_cover_position dispatched (no tilt target): "
                     f"entity={intent.cover_entity_id!r} ha_position={intent.target_position_ha}"
                 ),
-            )
-        tilt_ok, tilt_err = await _dispatch_tilt(hass, intent)
+            ), started=_pt0, completed=_pt1, exc_type=None)
+        tilt_ok, tilt_err, _tt0, _tt1, _tet = await _dispatch_tilt(hass, intent)
         if not tilt_ok:
             # Position succeeded, tilt failed: partial failure.
             # sent_at_utc reflects when position was dispatched.
-            return replace(
+            return _service_trace(replace(
                 build_failed_result(
                     intent,
                     error=f"tilt dispatch failed: {tilt_err}",
@@ -289,8 +323,8 @@ async def dispatch_cover_intent(
                     ),
                 ),
                 tilt_error=tilt_err,
-            )
-        return replace(
+            ), started=(_pt0 or _tt0), completed=_tt1, exc_type=_tet)
+        return _service_trace(replace(
             build_sent_result(
                 intent, sent_at_utc=pos_sent_at,
                 reason=(
@@ -300,7 +334,7 @@ async def dispatch_cover_intent(
                 ),
             ),
             tilt_sent=True,
-        )
+        ), started=(_pt0 or _tt0), completed=_tt1, exc_type=None)
 
     # All other types (NO_OP, BLOCKED, STOP): no dispatch.
     return build_not_attempted_result(

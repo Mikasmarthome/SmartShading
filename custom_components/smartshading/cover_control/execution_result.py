@@ -198,6 +198,23 @@ class ExecutionResult:
     """Exception text when the tilt service call failed.
     None when tilt was not attempted, succeeded, or was not part of this command."""
 
+    # --- P11 Increment 2-rest: read-only service-boundary trace (additive) ---
+    service_started_monotonic: float | None = None
+    """time.monotonic() captured immediately BEFORE hass.services.async_call.
+    None when no service call was made (BLOCKED/NOT_ATTEMPTED).  Diagnostics only."""
+
+    service_completed_monotonic: float | None = None
+    """time.monotonic() captured immediately AFTER async_call returns/raises.
+    None when no service call was made.  Diagnostics only."""
+
+    service_duration_ms: float | None = None
+    """service_completed_monotonic − service_started_monotonic, in ms.  Never
+    negative; None when unavailable.  Diagnostics only."""
+
+    failure_exception_type: str | None = None
+    """The exception CLASS NAME only (privacy-safe, no message/payload) when the
+    service call raised.  None on success.  Diagnostics only."""
+
 
 # ---------------------------------------------------------------------------
 # ExecutionPlanResult

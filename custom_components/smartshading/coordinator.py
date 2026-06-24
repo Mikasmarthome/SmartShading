@@ -3683,12 +3683,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 # P11: read-only ephemeral decision + dispatch trace (never
                 # persisted, bounded).  Pure observation — control is unaffected.
                 try:
-                    self._record_decision_trace(window_id, s, harm, _dispatch_prov, now)
+                    self._record_decision_trace(
+                        window_id, s, harm, _dispatch_prov, _last_exec_result, now)
                 except Exception:
                     _LOGGER.debug("Diagnostics: decision-trace capture skipped (non-fatal)")
                 try:
                     self._record_dispatch_trace(
-                        window_id, s, harm, _dispatch_prov, now)
+                        window_id, s, harm, _dispatch_prov, _last_exec_result, now)
                 except Exception:
                     _LOGGER.debug("Diagnostics: dispatch-trace capture skipped (non-fatal)")
                 # P7: confirm or abort experiment activation from the real
@@ -3875,7 +3876,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "material_target_change_count": 0,
         }
 
-    def _record_decision_trace(self, window_id, s, harm, dispatch_prov, now) -> None:
+    def _record_decision_trace(self, window_id, s, harm, dispatch_prov, exec_result, now) -> None:
         """P11: bounded, ephemeral, read-only decision trace at the real decision
         path.  Captures the resolved decision, an HONEST candidate trace (winner +
         baseline recorded; everything else not_recorded — never reconstructed), the
@@ -3983,10 +3984,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 "resolved_target_position_ha": resolved_target,
                 "pre_command_filter_target_ha": resolved_target,
                 "post_harmonization_target_ha": getattr(harm, "final_target_position_ha", None),
-                "final_dispatched_target_ha": (
+                "intended_payload_position_ha": (
                     dispatch_prov.requested_target_ha if command_sent else None),
+                # ACTUAL payload from the real ExecutionResult (== the async_call
+                # value); None when nothing was actually sent.
                 "actual_payload_position_ha": (
-                    dispatch_prov.requested_target_ha if command_sent else None),
+                    getattr(exec_result, "target_position_ha", None) if command_sent else None),
+                "final_dispatched_target_ha": (
+                    getattr(exec_result, "target_position_ha", None) if command_sent else None),
                 "target_tilt_ha": getattr(s, "target_tilt_ha", None),
             },
             "no_dispatch": {
@@ -4006,29 +4011,45 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         return {zid: {"records": list(ring), "count": len(ring)}
                 for zid, ring in self._decision_trace.items()}
 
-    def _record_dispatch_trace(self, window_id, s, harm, dispatch_prov, now) -> None:
+    def _record_dispatch_trace(self, window_id, s, harm, dispatch_prov, exec_result, now) -> None:
         """P11: append a read-only, ephemeral, bounded dispatch trace record + update
-        per-cover retarget state.  Sources from already-computed values only — it
-        never re-runs an evaluator and never affects control/dispatch."""
+        per-cover retarget state.  The ACTUAL payload + service name + monotonic
+        service duration + safe failure type come from the real ExecutionResult
+        captured AT the service boundary (ha_service_adapter); the intended payload
+        is the coordinator/filter value, kept distinct.  Never affects control."""
         window = getattr(s, "window", None)
         zone_id = getattr(window, "zone_id", None) or "unknown"
         cover_id = getattr(s, "exec_entity_id", None)
         if not dispatch_prov.dispatch_attempted:
             return  # only real service-boundary attempts enter the trace
-        requested = dispatch_prov.requested_target_ha
+        intended = dispatch_prov.requested_target_ha
         filt = getattr(s, "exec_filter_result", None)
-        sent = dispatch_prov.dispatch_status in ("SENT", "sent") or bool(
-            dispatch_prov.dispatch_succeeded)
+        er = exec_result
+        status = getattr(getattr(er, "status", None), "value", None) or dispatch_prov.dispatch_status
+        actually_sent = bool(er is not None and status in ("SENT", "sent"))
+        # ExecutionResult.target_position_ha is exactly the value the adapter passed
+        # to hass.services.async_call (code-proven: no adapter conversion).
+        actual_pos = getattr(er, "target_position_ha", None) if actually_sent else None
+        actual_tilt = getattr(er, "target_tilt", None) if (
+            actually_sent and getattr(er, "tilt_sent", False)) else None
         rec = {
             "decision_id": getattr(s, "decision_id", None),
             "window_id": window_id,
             "cover_id": cover_id,
-            "requested_position_ha": requested,
-            # actual payload == the value sent to cover.set_cover_position (HA
-            # convention), captured from the provenance built at the service call.
-            "actual_payload_position_ha": requested if sent else None,
-            "actual_payload_has_position": bool(sent and requested is not None),
-            "dispatch_status": dispatch_prov.dispatch_status,
+            "actual_service_domain": "cover" if actually_sent else None,
+            "actual_service_name": ("set_cover_position" if actual_pos is not None
+                                    else ("set_cover_tilt_position" if actual_tilt is not None
+                                          else None)),
+            "intended_payload_position_ha": intended,
+            "actual_payload_position_ha": actual_pos,
+            "actual_payload_tilt_ha": actual_tilt,
+            "actual_payload_has_position": actual_pos is not None,
+            "actual_payload_has_tilt": actual_tilt is not None,
+            "service_duration_ms": getattr(er, "service_duration_ms", None),
+            "service_started_monotonic": getattr(er, "service_started_monotonic", None),
+            "service_completed_monotonic": getattr(er, "service_completed_monotonic", None),
+            "dispatch_status": status,
+            "failure_exception_type_safe": getattr(er, "failure_exception_type", None),
             "dispatch_filter_reason": dispatch_prov.dispatch_filter_reason,
             "recommendation_position_ha": getattr(s, "normal_cfg_ha_for_prov", None),
             "pre_command_filter_target_ha": (
@@ -4037,31 +4058,38 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "harmonized": bool(getattr(harm, "harmonized", False)),
             "at": now.isoformat() if now is not None else None,
         }
-        # retarget detection vs the same cover's previous dispatch (bounded window).
+        # Retarget detection on ACTUALLY sent commands only (suppressed / failed-
+        # before-start / intended-only do not count).  Per-cover state advances only
+        # on an actual send.
         cstate = self._cover_dispatch_state.setdefault(cover_id or "unknown", {
-            "last_requested_position_ha": None, "last_dispatch_at": None,
-            "recent_at": deque(maxlen=64), "same_cover_retarget_count": 0,
+            "last_actual_position_ha": None, "last_dispatch_at": None,
+            "last_dispatch_status": None, "recent_at": deque(maxlen=64),
+            "same_cover_retarget_count": 0,
         })
-        prev_req = cstate["last_requested_position_ha"]
-        prev_at = cstate["last_dispatch_at"]
-        is_retarget = (
-            prev_req is not None and requested is not None and prev_req != requested
-            and prev_at is not None
-            and (now - prev_at) <= timedelta(seconds=RETARGET_TRACE_WINDOW_SECONDS))
-        if is_retarget:
-            cstate["same_cover_retarget_count"] += 1
+        is_retarget = False
+        if actually_sent and actual_pos is not None:
+            prev = cstate["last_actual_position_ha"]
+            prev_at = cstate["last_dispatch_at"]
+            is_retarget = (
+                prev is not None and prev != actual_pos and prev_at is not None
+                and (now - prev_at) <= timedelta(seconds=RETARGET_TRACE_WINDOW_SECONDS))
+            rec["previous_actual_target_position_ha"] = prev
+            rec["previous_dispatch_status"] = cstate["last_dispatch_status"]
+            rec["previous_dispatch_age_ms"] = (
+                round((now - prev_at).total_seconds() * 1000.0, 1)
+                if prev_at is not None else None)
+            rec["target_delta_ha"] = (
+                (actual_pos - prev) if is_retarget and prev is not None else None)
+            if is_retarget:
+                cstate["same_cover_retarget_count"] += 1
+            cstate["last_actual_position_ha"] = actual_pos
+            cstate["last_dispatch_at"] = now
+            cstate["last_dispatch_status"] = status
+            cstate["recent_at"].append(now)
         rec["is_retarget"] = bool(is_retarget)
-        rec["previous_target_position_ha"] = prev_req
-        rec["target_delta_ha"] = (
-            (requested - prev_req) if (is_retarget and requested is not None
-                                       and prev_req is not None) else None)
-        # Source provenance is only exported if production proves it — otherwise
-        # not_recorded (no inference from target direction).
+        # Source provenance only when production proves it — else not_recorded.
         rec["retarget_source"] = None
         rec["source_recording_status"] = "not_recorded" if is_retarget else "n/a"
-        cstate["last_requested_position_ha"] = requested
-        cstate["last_dispatch_at"] = now
-        cstate["recent_at"].append(now)
         ring = self._dispatch_trace.setdefault(
             zone_id, deque(maxlen=DISPATCH_TRACE_MAX_RECORDS_PER_ZONE))
         ring.append(rec)
@@ -4076,7 +4104,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         }
         covers = {
             cid: {
-                "last_requested_position_ha": st.get("last_requested_position_ha"),
+                "last_actual_position_ha": st.get("last_actual_position_ha"),
                 "same_cover_retarget_count": st.get("same_cover_retarget_count", 0),
                 "commands_last_5m": sum(
                     1 for t in st.get("recent_at", ()) if (self._dispatch_now() - t)

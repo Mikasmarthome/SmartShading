@@ -257,6 +257,20 @@ from .models.consumed_ledger import (
     ConsumedExperimentLedger,
 )
 from .engines.reference_validator import validate_adoptions as _validate_adoptions
+from .models.shadow_tombstone import (
+    KIND_POSITION as _TOMB_POSITION,
+    KIND_STRATEGY as _TOMB_STRATEGY,
+    TOMBSTONE_AGE_CAP_DAYS as _TOMB_AGE_DAYS,
+    ShadowTombstone,
+)
+from .engines.config_invalidation import (
+    classify_config_change as _classify_config_change,
+    CHANGE_BEHAVIOR_MODE_AWAY as _CI_CHANGE_MODE_AWAY,
+    ACTION_SUSPEND as _CI_SUSPEND,
+    ACTION_INVALIDATE as _CI_INVALIDATE,
+    SCOPE_POSITION as _CI_SCOPE_POSITION,
+    SCOPE_STRATEGY as _CI_SCOPE_STRATEGY,
+)
 from .engines.strategy_runtime import (
     TimingState,
     apply_deescalation_hysteresis,
@@ -712,6 +726,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # keyed by (window_id, intensity, context_family); bounded terminal history.
         self._shadow_active: dict[tuple, object] = {}
         self._shadow_history: list[object] = []
+        # P10: compact, restart-safe shadow provenance tombstones (no full time
+        # series) keyed by (kind, shadow_id); bounded by age + count, referenced
+        # ones protected from pruning.  Restore never creates runtime authority.
+        self._shadow_tombstones: dict[tuple, ShadowTombstone] = {}
         # P7 — bounded experiments.  At most ONE active experiment per zone.
         self._experiments_active: dict[str, BoundedExperiment] = {}   # zone_id → experiment
         self._experiment_history: list[BoundedExperiment] = []
@@ -919,6 +937,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "strategy_experiments": self._strategy_experiments_storage(),
             "persistent_strategy_adoptions": self._strategy_adoptions_storage(),
             "consumed_experiment_ledger": self._consumed_ledger.to_dict(),
+            "shadow_tombstones": [t.to_dict() for t in self._shadow_tombstones.values()],
             "owner_zone_id": next(iter(self.zones.keys()), None),
         }
 
@@ -932,6 +951,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         async with self._save_lock:
             captured_gen = self._dirty_generation
             windows = set(self.windows.keys())
+            # P10: bound the tombstone collection (referenced ones protected) just
+            # before snapshotting so the serialized set is always within caps.
+            self._prune_shadow_tombstones(now)
             kwargs = self._build_save_kwargs()
             ok = await self._learning_persistence.async_save(
                 self._learning_store, windows, now, **kwargs)
@@ -1029,6 +1051,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "strategy_adoption_history": len(self._strategy_adoption_history),
             "consumed_ledger_position": len(self._consumed_ledger.consumed_ids(_LEDGER_POSITION)),
             "consumed_ledger_strategy": len(self._consumed_ledger.consumed_ids(_LEDGER_STRATEGY)),
+            "shadow_tombstones_position": sum(
+                1 for k in self._shadow_tombstones if k[0] == _TOMB_POSITION),
+            "shadow_tombstones_strategy": sum(
+                1 for k in self._shadow_tombstones if k[0] == _TOMB_STRATEGY),
         }
         return {
             "learning_store_schema_version": PAYLOAD_SCHEMA_V2,
@@ -1151,6 +1177,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._suspend_zone_strategy(zone_id, "learning_mode_off", _disable_now)
             except Exception:
                 _LOGGER.warning("Learning: strategy suspend on learning-disable failed for %s", zone_id)
+            try:
+                # P10: route through the differentiated invalidation matrix so the
+                # behaviour-mode-away semantics (suspend strategy + position
+                # authority, preserve history) are applied with stable reason codes.
+                self.apply_config_change_invalidation(
+                    zone_id, _CI_CHANGE_MODE_AWAY, _disable_now)
+            except Exception:
+                _LOGGER.warning("Learning: config-change invalidation failed for %s", zone_id)
         self._persist_zone_controls()
         await self.async_request_refresh()
 
@@ -1452,6 +1486,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             self._shadow_history.append(_p)
                         else:
                             self._shadow_active[_p.proposal_key] = _p
+                    # P10: restore compact shadow tombstones (provenance only —
+                    # never creates runtime authority); bounded on next save.
+                    self._shadow_tombstones = {
+                        t.tombstone_key: t
+                        for t in getattr(_extras, "shadow_tombstones", []) or []
+                    }
                     # P7: restore bounded experiments with the restart safety rule
                     # (activated/observing can NEVER resume as complete; no target
                     # is re-injected by restore alone).
@@ -1491,6 +1531,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         self._contribution_evidence = {}
                         self._shadow_active = {}
                         self._shadow_history = []
+                        self._shadow_tombstones = {}
                         self._experiments_active = {}
                         self._experiment_history = []
                         self._adoptions_active = {}
@@ -4904,6 +4945,32 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._strategy_adoptions_active[key] = replace(
                     a, suspended=True, current_gate_reason=reason, updated_at=now)
 
+    def apply_config_change_invalidation(
+        self, zone_id: str, change_type: str, now: datetime
+    ) -> tuple:
+        """P10: differentiated config-change invalidation with REAL runtime effect.
+
+        Uses the typed invalidation matrix (engines/config_invalidation) to decide
+        per scope whether learned position/strategy authority for *zone_id* is
+        suspended or invalidated.  The generic config_generation gate remains the
+        final safety net; this is the precise, reason-coded layer above it.  Marks
+        learning dirty and requests a near-immediate save.  Returns the applied
+        (scope, action, reason) directives for diagnostics/tests."""
+        plan = _classify_config_change(change_type)
+        applied: list = []
+        for d in plan.directives:
+            if d.scope == _CI_SCOPE_POSITION and d.action in (_CI_SUSPEND, _CI_INVALIDATE):
+                if d.action == _CI_INVALIDATE:
+                    self._abort_zone_experiment(zone_id, f"config:{d.reason}", now)
+                self._suspend_zone_adoptions(zone_id, d.reason, now)
+                applied.append((d.scope, d.action, d.reason))
+            elif d.scope == _CI_SCOPE_STRATEGY and d.action in (_CI_SUSPEND, _CI_INVALIDATE):
+                self._suspend_zone_strategy(zone_id, d.reason, now)
+                applied.append((d.scope, d.action, d.reason))
+        if applied:
+            self._request_important_save()
+        return tuple(applied)
+
     def strategy_adoption_diagnostics(self, window_id: str) -> dict:
         """Privacy-safe per-window strategy adoption snapshot."""
         window = self.windows.get(window_id)
@@ -5569,6 +5636,69 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             config_generation=gen, status=status, evaluation=evaluation,
         )
         self._shadow_active[key] = proposal
+        # P10: upsert a compact provenance tombstone for this shadow (durable even
+        # if the full proposal is later pruned).  Never creates runtime authority.
+        self._upsert_shadow_tombstone(
+            _TOMB_POSITION, shadow_id=proposal.shadow_id, window_id=wid,
+            parameter_family=intensity, context_family=context_family,
+            config_generation=gen,
+            confidence=getattr(evaluation, "confidence", 0.0) or 0.0,
+            reliability=attr.attribution_quality if isinstance(attr.attribution_quality, (int, float)) else 0.0,
+            terminal_status=status, now=now)
+
+    def _upsert_shadow_tombstone(
+        self, kind: str, *, shadow_id: str, window_id: str, parameter_family: str,
+        context_family: str, config_generation: int, confidence: float,
+        reliability: float, terminal_status: str, now: datetime,
+    ) -> None:
+        """Create/refresh a compact tombstone (separate position/strategy namespace
+        via *kind*).  No full shadow payload; bounded by _prune_shadow_tombstones."""
+        if not shadow_id:
+            return
+        tkey = (kind, shadow_id)
+        existing = self._shadow_tombstones.get(tkey)
+        created = existing.created_at if existing is not None else now
+        self._shadow_tombstones[tkey] = ShadowTombstone(
+            shadow_id=shadow_id, kind=kind, window_id=window_id,
+            parameter_family=parameter_family, context_family=context_family,
+            config_generation=config_generation, created_at=created,
+            expires_at=created + timedelta(days=_TOMB_AGE_DAYS),
+            confidence=float(confidence), reliability=float(reliability),
+            terminal_status=terminal_status)
+
+    def _referenced_shadow_ids(self) -> set:
+        """Shadow ids that an active experiment/adoption still references → their
+        tombstones must never be pruned (provenance must stay resolvable)."""
+        refs: set = set()
+        for a in self._adoptions_active.values():
+            refs.update(getattr(a, "source_shadow_ids", ()) or ())
+        for a in self._strategy_adoptions_active.values():
+            refs.update(getattr(a, "source_shadow_ids", ()) or ())
+        for p in self._shadow_active.values():
+            sid = getattr(p, "shadow_id", None)
+            if sid:
+                refs.add(sid)
+        return refs
+
+    def _prune_shadow_tombstones(self, now: datetime, max_count: int = 1000) -> None:
+        """Age + count bound the tombstone collection; referenced tombstones are
+        always retained even past the age/count limits."""
+        refs = self._referenced_shadow_ids()
+        kept: dict = {}
+        droppable: list = []
+        for tkey, t in self._shadow_tombstones.items():
+            if t.shadow_id in refs:
+                kept[tkey] = t  # referenced → protected
+            elif t.expires_at is not None and t.expires_at <= now:
+                continue        # unreferenced + expired → prune
+            else:
+                droppable.append((tkey, t))
+        # Count cap on the surviving unreferenced set (newest kept).
+        droppable.sort(key=lambda kt: kt[1].created_at or now)
+        budget = max(0, max_count - len(kept))
+        for tkey, t in droppable[-budget:] if budget else []:
+            kept[tkey] = t
+        self._shadow_tombstones = kept
 
     def _classify_zone_attribution(
         self, zone_id: str, acc: dict, *, thermal_available: bool,

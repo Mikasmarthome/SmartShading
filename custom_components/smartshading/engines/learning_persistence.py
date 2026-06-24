@@ -448,6 +448,7 @@ def serialize_learning_store(
     strategy_experiments: list | None = None,
     persistent_strategy_adoptions: list | None = None,
     consumed_experiment_ledger: dict | None = None,
+    shadow_tombstones: list | None = None,
     owner_entry_id: str | None = None,
     owner_zone_id: str | None = None,
 ) -> dict:
@@ -545,6 +546,8 @@ def serialize_learning_store(
         "persistent_strategy_adoptions": persistent_strategy_adoptions or [],
         # P10 — permanent consumed-experiment ledger + ownership (v3 additive).
         "consumed_experiment_ledger": consumed_experiment_ledger or {},
+        # P10 — compact shadow provenance tombstones (no full time series).
+        "shadow_tombstones": shadow_tombstones or [],
         "owner_entry_id": owner_entry_id,
         "owner_zone_id": owner_zone_id,
         "created_by_domain": "smartshading",
@@ -714,6 +717,7 @@ class RestoreExtras:
     strategy_experiments: list  # list[BoundedStrategyExperiment]
     persistent_strategy_adoptions: list  # list[PersistentStrategyAdoption]
     consumed_experiment_ledger: dict  # ConsumedExperimentLedger payload
+    shadow_tombstones: list  # list[ShadowTombstone]
     owner_entry_id: str | None
     owner_zone_id: str | None
 
@@ -921,6 +925,15 @@ def deserialize_into_learning_store(
         except Exception:
             _LOGGER.warning("Learning: skipping malformed strategy adoption #%d", i)
 
+    # --- P10 shadow provenance tombstones (additive, optional) ---
+    from ..models.shadow_tombstone import ShadowTombstone
+    shadow_tombstones: list = []
+    for i, raw in enumerate(data.get("shadow_tombstones", []) or []):
+        try:
+            shadow_tombstones.append(ShadowTombstone.from_dict(raw))
+        except Exception:
+            _LOGGER.warning("Learning: skipping malformed shadow tombstone #%d", i)
+
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
         config_generations=config_generations,
@@ -934,6 +947,7 @@ def deserialize_into_learning_store(
         strategy_experiments=strategy_experiments,
         persistent_strategy_adoptions=persistent_strategy_adoptions,
         consumed_experiment_ledger=(data.get("consumed_experiment_ledger") or {}),
+        shadow_tombstones=shadow_tombstones,
         owner_entry_id=data.get("owner_entry_id"),
         owner_zone_id=data.get("owner_zone_id"),
     )
@@ -1023,20 +1037,20 @@ class LearningPersistenceAdapter:
             _LOGGER.debug("Learning: no persisted data found, starting fresh")
             return target_adapter
         self._fresh_start = False
-        # P10: reject a payload from an UNKNOWN NEWER schema — load no adaptive
-        # authority, keep the integration on its deterministic baseline.
-        try:
-            from .learning_migration import (
-                CURRENT_PAYLOAD_SCHEMA,
-                detect_payload_schema_version,
-            )
-            if isinstance(data, dict) and detect_payload_schema_version(data) > CURRENT_PAYLOAD_SCHEMA:
-                _LOGGER.warning(
-                    "Learning: stored payload schema newer than supported — "
-                    "starting with empty store (no adaptive authority)")
-                return target_adapter
-        except Exception:
-            pass
+        # P10: THE single authoritative migration front-door.  migrate_payload is
+        # the one schema gate every restored payload passes through: it rejects an
+        # unknown-newer or malformed-root payload (→ baseline only, no adaptive
+        # authority) and additively normalises v1/v2 → current with owner.  The
+        # record-level legacy reconstruction (v1 outcome→decision rebuild) then
+        # runs inside deserialize on the ORIGINAL payload so it is never bypassed —
+        # one entry, two complementary layers, no second schema authority.
+        from .learning_migration import migrate_payload
+        mres = migrate_payload(data, owner_entry_id=getattr(self, "_entry_id", None))
+        if not mres.accept_authority:
+            _LOGGER.warning(
+                "Learning: payload not acceptable (%s) — starting with empty store "
+                "(no adaptive authority)", mres.reason)
+            return target_adapter
         try:
             needs_migration = detect_payload_version(data) == PAYLOAD_SCHEMA_V1
             extras = deserialize_into_learning_store(data, store, self._config, now)
@@ -1083,6 +1097,7 @@ class LearningPersistenceAdapter:
         strategy_experiments: list | None = None,
         persistent_strategy_adoptions: list | None = None,
         consumed_experiment_ledger: dict | None = None,
+        shadow_tombstones: list | None = None,
         owner_zone_id: str | None = None,
     ) -> bool:
         """Prune and persist the current in-memory learning data.
@@ -1107,6 +1122,7 @@ class LearningPersistenceAdapter:
                 strategy_experiments=strategy_experiments,
                 persistent_strategy_adoptions=persistent_strategy_adoptions,
                 consumed_experiment_ledger=consumed_experiment_ledger,
+                shadow_tombstones=shadow_tombstones,
                 owner_entry_id=getattr(self, "_entry_id", None),
                 owner_zone_id=owner_zone_id,
             )

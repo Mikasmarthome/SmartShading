@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
@@ -363,6 +363,10 @@ _DEFAULT_MINIMUM_STATE_DURATION = {
 # Safety exceptions (STORM_SAFE/WIND_SAFE) will bypass this in 9G5b/9G6.
 STARTUP_GRACE_CYCLES: int = 1
 
+# P10 completion: important learning events trigger a coalesced near-immediate
+# save after this delay (multiple events within the window collapse into one).
+IMPORTANT_SAVE_DELAY_SECONDS: int = 3
+
 
 @dataclass(frozen=True)
 class _WeatherInputs:
@@ -667,6 +671,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._save_failures: int = 0
         self._restore_failures: int = 0
         self._save_lock = asyncio.Lock()
+        # P10 completion: coalescing near-immediate save scheduler handle.
+        self._pending_save_unsub = None
         # Step 6: per-window, per-intensity learned target position adapter.
         self._target_position_adapter = TargetPositionAdapter()
         # Phase 9F4b-3: pending outcome queue.  P2: now persisted (restart-safe)
@@ -951,12 +957,44 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         ]
         return kept[-max_count:]
 
+    def _request_important_save(self) -> None:
+        """Mark dirty and schedule ONE coalesced near-immediate save.
+
+        Multiple important events within the delay window collapse into a single
+        save (a pending handle suppresses re-scheduling).  Safe no-op when the HA
+        event loop helper is unavailable (e.g. headless tests)."""
+        self._mark_learning_dirty()
+        if self._pending_save_unsub is not None:
+            return  # already scheduled within this window → coalesce
+        try:
+            self._pending_save_unsub = async_call_later(
+                self.hass, IMPORTANT_SAVE_DELAY_SECONDS, self._on_important_save_due)
+        except Exception:
+            self._pending_save_unsub = None
+
+    async def _on_important_save_due(self, _now=None) -> None:
+        self._pending_save_unsub = None
+        try:
+            await self._save_learning_snapshot(dt_util.utcnow())
+        except Exception:
+            _LOGGER.warning("Learning: scheduled important save failed (non-fatal)")
+
+    def _cancel_pending_save(self) -> None:
+        if self._pending_save_unsub is not None:
+            try:
+                self._pending_save_unsub()
+            except Exception:
+                pass
+            self._pending_save_unsub = None
+
     async def async_flush_learning(self) -> None:
         """Flush pending learning data immediately using the COMPLETE snapshot.
 
-        Called by async_unload_entry / shutdown.  Uses _save_learning_snapshot so
-        reload/unload/shutdown can never replace populated sections with empty
-        defaults.  Swallows all errors so unload is never blocked."""
+        Called by async_unload_entry / shutdown.  Cancels any pending coalesced
+        save first, then writes the complete snapshot, so reload/unload/shutdown
+        can never lose data or leave an orphan background save task.  Swallows all
+        errors so unload is never blocked."""
+        self._cancel_pending_save()
         try:
             await self._save_learning_snapshot(dt_util.utcnow())
         except Exception:
@@ -1431,14 +1469,27 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     # drop ALL adaptive authority to prevent cross-zone authority.
                     _owner = getattr(_extras, "owner_entry_id", None)
                     if _owner is not None and _owner != self.config_entry.entry_id:
+                        # P10: a foreign owner ⇒ reject the WHOLE learning payload of
+                        # this file (not just adaptive sections) — no cross-zone data.
                         _LOGGER.warning(
-                            "Learning: stored payload owner mismatch — dropping adaptive authority")
+                            "Learning: stored payload owner mismatch — rejecting whole payload")
+                        self._learning_store = LearningStore()
+                        self._thermal_models = {}
+                        self._thermal_observations = {}
+                        self._contribution_models = {}
+                        self._contribution_evidence = {}
                         self._shadow_active = {}
+                        self._shadow_history = []
                         self._experiments_active = {}
+                        self._experiment_history = []
                         self._adoptions_active = {}
+                        self._adoption_history = []
                         self._strategy_experiments_active = {}
+                        self._strategy_experiment_history = []
                         self._strategy_adoptions_active = {}
+                        self._strategy_adoption_history = []
                         self._consumed_ledger = ConsumedExperimentLedger()
+                        self._restore_failures += 1
                     else:
                         # P10: restore the permanent consumed-experiment ledger.
                         self._consumed_ledger = ConsumedExperimentLedger.from_dict(
@@ -5618,6 +5669,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self._monitor_strategy_adoption(outcome)
         except Exception:
             _LOGGER.warning("Learning: strategy adoption monitoring failed (non-fatal)")
+        # P10 completion: a resolved outcome (and its experiment/adoption/monitoring
+        # cascade) is an important event → schedule a coalesced near-immediate save.
+        self._request_important_save()
 
     def _restore_pending_outcomes(
         self, pendings: list, now: datetime

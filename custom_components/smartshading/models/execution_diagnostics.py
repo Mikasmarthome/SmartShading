@@ -273,3 +273,34 @@ class WindowExecutionDiagnostics:
                                  fallback so the guard fires (delta=0→no false
                                  override on first observation).
     None in the safety or no-sun path (tick not called)."""
+
+    # --- Clock / bootstrap / lifecycle diagnostics ---------------------------
+
+    cycle_timestamp_utc: datetime | None = None
+    """UTC timestamp of the coordinator cycle that produced this diagnostic
+    (the `now` captured at the start of _async_update_data). Allows log
+    correlation between diagnostics snapshots and coordinator log lines."""
+
+    restore_completed: bool | None = None
+    """True when the learning-store restore has finished (_learning_restored=True).
+    False on the very first cycle if restore is still pending (rare).
+    None when not populated (pre-upgrade snapshots)."""
+
+    required_inputs_ready: bool | None = None
+    """True when all inputs required for a full evaluation cycle are available
+    this cycle (sun_position is not None). False when operating degraded
+    (sun.sun entity unavailable). None when not populated."""
+
+    degraded_input_codes: tuple[str, ...] | None = None
+    """Codes for inputs that are missing or degraded this cycle.
+    Empty tuple when all inputs are present. None when not populated.
+    Current codes: "sun_unavailable"."""
+
+    lifecycle_state_at_cycle: str | None = None
+    """LifecycleState.value after lifecycle engine evaluation this cycle
+    ("day", "night", "morning"). None when not populated."""
+
+    lifecycle_trigger: str | None = None
+    """Reason code for any lifecycle state transition this cycle.
+    "no_change" when state is unchanged. "night_start", "morning_start",
+    "day_start" when state transitioned. None when not populated."""

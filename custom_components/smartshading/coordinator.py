@@ -1701,33 +1701,50 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             except Exception:
                 _forecast_modifier = None
 
-        # Lifecycle Engine (2026-06-16): only recomputed when sun_position
-        # is actually available this cycle - night_fixed_time-only configs
-        # could technically still be evaluated without it, but keeping the
-        # previous lifecycle_state unchanged on missing elevation is the
-        # safer, simpler choice (never guess from absent data).
+        # Lifecycle Engine: evaluated every cycle using 0.0 when sun.sun is
+        # unavailable. FIXED_TIME triggers fire on time alone and work correctly.
+        # SUN_ELEVATION triggers with the default threshold (-6.0) also return
+        # False at 0.0 deg (horizon), which is safe. check_night_interval_active
+        # applies the same 0.0 substitution consistently.
         _prev_lifecycle_state = self._lifecycle_state
-        if sun_position is not None:
-            self._lifecycle_state = self.lifecycle_engine.get_lifecycle_state(
-                local_now, sun_position.elevation, self._lifecycle_config, self._lifecycle_state
-            )
+        _sun_elevation = sun_position.elevation if sun_position is not None else 0.0
+        self._lifecycle_state = self.lifecycle_engine.get_lifecycle_state(
+            local_now, _sun_elevation, self._lifecycle_config, self._lifecycle_state
+        )
 
         # Night Hard Hold: pre-computed once per cycle for O(1) per-window check.
         # Dual condition: cached lifecycle state OR independent fresh evaluation.
-        # The independent check catches stale-state cases (first cycle after restart
-        # when cached state is still DAY) and windows using ABSENCE_ONLY behavior
-        # mode (their WDI has lifecycle_state forced to DAY, defeating NightEvaluator).
+        # The independent check catches windows using ABSENCE_ONLY behavior mode
+        # (their WDI has lifecycle_state forced to DAY, defeating NightEvaluator).
+        # check_night_interval_active accepts None elevation (substitutes 0.0).
         # Safety and Manual Override are exempt — they are checked per-window.
         _night_interval_active: bool = (
             self._lifecycle_state is LifecycleState.NIGHT
             or (
                 self._lifecycle_config.night_enabled
-                and sun_position is not None
                 and check_night_interval_active(
-                    local_now, sun_position.elevation, self._lifecycle_config
+                    local_now,
+                    sun_position.elevation if sun_position is not None else None,
+                    self._lifecycle_config,
                 )
             )
         )
+
+        # Diagnostics: lifecycle trigger reason and degraded-input codes.
+        _lc_trigger_map = {
+            LifecycleState.NIGHT: "night_start",
+            LifecycleState.MORNING: "morning_start",
+            LifecycleState.DAY: "day_start",
+        }
+        _lifecycle_trigger: str = (
+            _lc_trigger_map.get(self._lifecycle_state, "no_change")
+            if _prev_lifecycle_state != self._lifecycle_state
+            else "no_change"
+        )
+        _degraded_input_codes: tuple[str, ...] = (
+            ("sun_unavailable",) if sun_position is None else ()
+        )
+        _required_inputs_ready: bool = sun_position is not None
 
         # Presence/absence (2026-06-16) does not depend on sun data at all.
         presence_present = self._read_presence()
@@ -1960,6 +1977,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     dispatch_suppressed_reason=None,
                     dispatch_throttled=False,
                     throttle_wait_ms=None,
+                    cycle_timestamp_utc=now,
+                    restore_completed=self._learning_restored,
+                    required_inputs_ready=_required_inputs_ready,
+                    degraded_input_codes=_degraded_input_codes,
+                    lifecycle_state_at_cycle=self._lifecycle_state.value,
+                    lifecycle_trigger=_lifecycle_trigger,
                 )
                 continue
 
@@ -3502,8 +3525,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         reason="stale_presence_superseded",
                                     ))
                                     continue
+                            _dispatch_now = dt_util.utcnow()
                             _intent_result = await dispatch_cover_intent(
-                                self.hass, _intent, now_utc=dt_util.utcnow()
+                                self.hass, _intent, now_utc=_dispatch_now
                             )
                             # Update throttle clock whenever async_call was started.
                             # SENT:   confirmed dispatch — always update.
@@ -3513,7 +3537,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             if _intent_result.status in (
                                 ExecutionStatus.SENT, ExecutionStatus.FAILED
                             ):
-                                self._serial_dispatch.record_dispatch(dt_util.utcnow())
+                                self._serial_dispatch.record_dispatch(_dispatch_now)
                                 if self._debug_logging_enabled:
                                     _LOGGER.debug(
                                         "SmartShading: dispatched cover=%s "
@@ -3665,6 +3689,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 previous_observation_available=_diag_prev_obs_avail,
                 last_commanded_available=_diag_last_commanded_avail,
                 override_reference_source=s.override_ref_source,
+                # Clock / bootstrap / lifecycle diagnostics.
+                cycle_timestamp_utc=now,
+                restore_completed=self._learning_restored,
+                required_inputs_ready=_required_inputs_ready,
+                degraded_input_codes=_degraded_input_codes,
+                lifecycle_state_at_cycle=self._lifecycle_state.value,
+                lifecycle_trigger=_lifecycle_trigger,
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---

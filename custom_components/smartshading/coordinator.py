@@ -5112,6 +5112,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         final safety net.  Returns the applied ConfigChange list (for diagnostics)."""
         if not prev_snapshot:
             return []
+        # P10: never compute typed changes from a corrupt snapshot — that could
+        # fake an orientation/cover/sensor change.  The config_generation gate
+        # remains the safety net; record structured diagnostics.
+        from .engines.restore_validation import validate_config_snapshot
+        ok, reasons = validate_config_snapshot(prev_snapshot)
+        if not ok:
+            self._restore_diagnostics = dict(self._restore_diagnostics or {})
+            self._restore_diagnostics.setdefault("invalid_records_by_section", {})
+            self._restore_diagnostics["invalid_records_by_section"]["config_snapshot"] = (
+                sum(reasons.values()))
+            return []
         current = self._build_config_snapshot()
         changes = _diff_config_snapshots(prev_snapshot, current)
         for ch in changes:

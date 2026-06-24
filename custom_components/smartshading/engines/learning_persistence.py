@@ -759,10 +759,46 @@ def deserialize_into_learning_store(
     if payload_version == PAYLOAD_SCHEMA_V1:
         data = migrate_v1_to_v2(data)
 
+    # P10 central per-section restore validation — THE single section-validation
+    # authority.  Unsafe records are dropped BEFORE from_dict so they never become
+    # adaptive authority; reason counters feed structured restore diagnostics.
+    from .restore_validation import (
+        merge_section_diagnostics, validate_keyed_models, validate_records,
+        R_NAN_OR_INF, R_OUT_OF_RANGE, R_NEGATIVE_COUNT, R_INVALID_TIMESTAMP,
+    )
+    from .storage_validation import is_finite_number, parse_utc
+    _sv: dict = {}
+
     # Parse pending outcomes FIRST so their referenced decision_ids are protected
     # from pruning/demotion when the per-window decision lists are restored.
+    # Invariant: at most ONE active pending outcome per window — the uniquely newest
+    # fully-valid record wins; ambiguous ties leave NO active pending for that window.
+    _pending_res = validate_records(
+        data.get("pending_outcomes", []), now=now, id_key=None,
+        required_fields=("window_id",),
+        required_timestamp_fields=("decision_timestamp",),
+        timestamp_fields=("created_at_utc",))
+    _by_window: dict = {}
+    for _rec in _pending_res.valid_records:
+        _by_window.setdefault(_rec.get("window_id"), []).append(_rec)
+    _pending_unique: list = []
+    for _wid, _recs in _by_window.items():
+        if len(_recs) == 1:
+            _pending_unique.append(_recs[0])
+            continue
+        _ordered = sorted(
+            _recs, key=lambda r: parse_utc(r.get("decision_timestamp")), reverse=True)
+        _t0 = parse_utc(_ordered[0].get("decision_timestamp"))
+        _t1 = parse_utc(_ordered[1].get("decision_timestamp"))
+        if _t0 == _t1:
+            # ambiguous newest → no active pending outcome for this window
+            _pending_res.ambiguous_count += len(_recs)
+            _pending_res.ambiguous_records.extend(["pending"] * len(_recs))
+            continue
+        _pending_unique.append(_ordered[0])
+    _sv["pending_outcomes"] = _pending_res
     pending_outcomes: list[PendingOutcome] = []
-    for i, d in enumerate(data.get("pending_outcomes", []) or []):
+    for i, d in enumerate(_pending_unique):
         try:
             pending_outcomes.append(PendingOutcome.from_dict(d))
         except Exception:
@@ -823,10 +859,15 @@ def deserialize_into_learning_store(
         for r in snapshots:
             store.record_snapshot(r)
 
-        # --- Outcomes (Step 9F4a) — absent in pre-9F4a storage files ---
-        raw_outcomes = streams.get("outcomes", [])
+        # --- Resolved outcomes (Step 9F4a) — central validation before parse.
+        # window_id is implicit from the stream key (not stored on the record). ---
+        _out_res = validate_records(
+            streams.get("outcomes", []), now=now,
+            required_fields=("decided_state",),
+            required_timestamp_fields=("decision_timestamp",))
+        _sv.setdefault("resolved_outcomes", validate_records([], now=now)).merge(_out_res)
         outcomes: list[DecisionOutcome] = []
-        for i, d in enumerate(raw_outcomes):
+        for i, d in enumerate(_out_res.valid_records):
             try:
                 outcomes.append(_deserialize_outcome(window_id, d))
             except Exception:
@@ -839,10 +880,16 @@ def deserialize_into_learning_store(
         for r in outcomes:
             store.record_outcome(r)
 
-        # --- Decision records (LE 2.0 / P2) ---
-        raw_decisions = streams.get("decisions", [])
+        # --- Decision records (LE 2.0 / P2) — central validation before parse ---
+        _dec_res = validate_records(
+            streams.get("decisions", []), now=now, id_key="decision_id",
+            required_fields=("decision_id",),
+            required_timestamp_fields=("decision_timestamp",),
+            expected_window_id=window_id, conflict_check=True,
+            nonneg_count_fields=("config_generation",))
+        _sv.setdefault("decisions", validate_records([], now=now)).merge(_dec_res)
         decisions: list[LearningDecisionRecord] = []
-        for i, d in enumerate(raw_decisions):
+        for i, d in enumerate(_dec_res.valid_records):
             try:
                 decisions.append(_deserialize_decision(window_id, d))
             except Exception:
@@ -856,47 +903,83 @@ def deserialize_into_learning_store(
 
     config_generations = data.get("config_generations") or {"fingerprint_version": 1, "windows": {}}
 
-    # --- P4 thermal response models + observations (additive, optional) ---
+    # --- P4 thermal response models + observations (central validation) ---
+    def _bounds_validator(rec: dict):
+        """Pattern-based defensive bounds: reliability/confidence ∈ [0,1];
+        count/sample fields non-negative ints.  NaN/Inf already rejected upstream."""
+        for k, v in rec.items():
+            if isinstance(v, bool) or not isinstance(v, (int, float)):
+                continue
+            if ("reliability" in k or "confidence" in k) and not (0.0 <= float(v) <= 1.0):
+                return R_OUT_OF_RANGE
+            if ("count" in k or "sample" in k) and v < 0:
+                return R_NEGATIVE_COUNT
+        return None
+
+    _tm_res = validate_keyed_models(
+        data.get("thermal_response"), now=now, value_validator=_bounds_validator)
+    _sv["thermal_models"] = _tm_res
     thermal_models: dict = {}
-    for zid, raw_model in (data.get("thermal_response") or {}).items():
+    for zid, raw_model in _tm_res.valid_records:
         try:
             thermal_models[zid] = ThermalResponseModel.from_dict(raw_model)
         except Exception:
             _LOGGER.warning("Learning: skipping malformed thermal model for %s", zid)
     thermal_observations: dict = {}
+    _to_agg = validate_records([], now=now)
     for zid, raw_list in (data.get("thermal_observations") or {}).items():
+        _to_res = validate_records(
+            raw_list, now=now, timestamp_fields=("observed_at", "created_at", "timestamp"))
+        _to_agg.merge(_to_res)
         obs_list: list[ThermalResponseObservation] = []
-        for i, raw in enumerate(raw_list or []):
+        for i, raw in enumerate(_to_res.valid_records):
             try:
                 obs_list.append(ThermalResponseObservation.from_dict(raw))
             except Exception:
                 _LOGGER.warning("Learning: skipping malformed thermal obs #%d for %s", i, zid)
         if obs_list:
             thermal_observations[zid] = obs_list
+    _sv["thermal_observations"] = _to_agg
 
     # --- P5 window contribution models + evidence (additive, optional) ---
+    _cm_res = validate_keyed_models(
+        data.get("window_contribution_models"), now=now, value_validator=_bounds_validator)
+    _sv["window_contribution_models"] = _cm_res
     contribution_models: dict = {}
-    for wid, raw_model in (data.get("window_contribution_models") or {}).items():
+    for wid, raw_model in _cm_res.valid_records:
         try:
             contribution_models[wid] = WindowContributionModel.from_dict(raw_model)
         except Exception:
             _LOGGER.warning("Learning: skipping malformed contribution model for %s", wid)
     contribution_evidence: dict = {}
+    _ce_agg = validate_records([], now=now)
     for wid, raw_list in (data.get("window_contribution_evidence") or {}).items():
+        _ce_res = validate_records(
+            raw_list, now=now, expected_window_id=wid,
+            timestamp_fields=("created_at", "updated_at", "timestamp"))
+        _ce_agg.merge(_ce_res)
         ev_list: list[WindowContributionEvidence] = []
-        for i, raw in enumerate(raw_list or []):
+        for i, raw in enumerate(_ce_res.valid_records):
             try:
                 ev_list.append(WindowContributionEvidence.from_dict(raw))
             except Exception:
                 _LOGGER.warning("Learning: skipping malformed contribution evidence #%d for %s", i, wid)
         if ev_list:
             contribution_evidence[wid] = ev_list
+    _sv["window_contribution_evidence"] = _ce_agg
 
-    # --- P10 central per-section validation: unsafe records (NaN/Inf, bad enum,
-    # duplicate id, future timestamp, missing field) are dropped BEFORE from_dict
-    # so they never reach a model; reason counters feed restore diagnostics. ---
-    from .restore_validation import merge_section_diagnostics, validate_records
-    _sv: dict = {}
+    # P10: config_generations validation — generation must be a non-negative int
+    # (no bool), windows mapping well-formed; a corrupt entry must not make stale
+    # authority look current (the conservative config_generation gate still holds).
+    _cg_raw = data.get("config_generations") or {"fingerprint_version": 1, "windows": {}}
+    _cg_res = validate_records([], now=now)
+    _cg_windows = _cg_raw.get("windows") if isinstance(_cg_raw, dict) else None
+    if isinstance(_cg_windows, dict):
+        for _wid, _entry in _cg_windows.items():
+            gen = _entry.get("generation") if isinstance(_entry, dict) else _entry
+            if isinstance(gen, bool) or not isinstance(gen, int) or gen < 0:
+                _cg_res._bump(R_NEGATIVE_COUNT if isinstance(gen, int) else R_INVALID_TIMESTAMP)
+    _sv["config_generations"] = _cg_res
 
     # --- P6 shadow proposals (additive, optional) ---
     _sv["shadow_proposals"] = validate_records(

@@ -240,9 +240,24 @@ from .models.strategy_learning import (
     ADOPTION_HISTORY_PER_KEY as STRAT_ADOPTION_HISTORY_PER_KEY,
     FAMILY_BOUNDS as STRAT_FAMILY_BOUNDS,
     FAMILY_ENTRY_THRESHOLD,
+    FAMILY_EXIT_THRESHOLD,
+    FAMILY_ENTRY_TIMING,
+    FAMILY_EXIT_TIMING,
+    FAMILY_TIER_CHOICE,
+    FAMILY_MINIMUM_HOLD,
+    FAMILY_HYSTERESIS,
     StrategyMonitoringState,
     PersistentStrategyAdoption,
     BoundedStrategyExperiment,
+)
+from .engines.strategy_runtime import (
+    TimingState,
+    apply_deescalation_hysteresis,
+    apply_entry_timing,
+    apply_exit_timing,
+    apply_tier_choice,
+    effective_exit_threshold,
+    effective_min_hold_minutes,
 )
 from .engines.safety_hold import (
     HARDWARE_SAFE_POSITIONS as _HARDWARE_SAFE_POSITIONS,
@@ -702,6 +717,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._strategy_adoptions_active: dict[tuple, PersistentStrategyAdoption] = {}
         self._strategy_adoption_history: list[PersistentStrategyAdoption] = []
         self._strategy_shadows: dict[tuple, object] = {}
+        # P9B live authority: per-window timing trackers + per-cycle applied set +
+        # per-decision applied families (for honest monitoring credit).
+        self._strategy_timing_state: dict[str, TimingState] = {}
+        self._cycle_strategy_applied: dict[str, dict] = {}
+        self._strategy_applied_by_decision: dict[str, set] = {}
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -1927,6 +1947,23 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
             tier_decision = self._tier_orchestrator.evaluate_window(wdi)
 
+            # P9B Live Authority: apply bounded strategy families to a comfort-tier
+            # decision (exit/hysteresis, tier-choice, entry/exit timing).  No-op
+            # for safety/lifecycle/override states; all higher authorities below
+            # (night hold, behavior-mode suppression, StateGuard, CommandFilter)
+            # still apply and win.
+            self._cycle_strategy_applied.pop(window_id, None)
+            if obs_enabled:
+                try:
+                    tier_decision = self._strategy_runtime_apply(
+                        window=window, window_id=window_id, wdi=wdi,
+                        tier_decision=tier_decision, current_state=current_state,
+                        exposure=exposure.effective_exposure,
+                        outdoor=weather_inputs.outdoor_temperature, now=now)
+                except Exception:
+                    _LOGGER.warning(
+                        "Learning: strategy runtime apply failed for %s (non-fatal)", window_id)
+
             # P2 Decision Provenance: evaluate the deterministic baseline from the
             # un-adapted config WDI.  The orchestrator is pure (stateless), so this
             # extra evaluation has no side effects: it never touches StateGuard,
@@ -2294,9 +2331,25 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # bypasses_guard() covers: no-ops, escalations, lifecycle-direct
             # exits (NIGHT→OPEN, ABSENCE→OPEN), MANUAL_OVERRIDE exits,
             # STORM_SAFE/WIND_SAFE exits.
+            # P9B MINIMUM_HOLD: bounded extra hold (floored at a safe minimum);
+            # default 0 → identical to the deterministic StateGuard baseline.
+            _mh_extra = timedelta(0)
+            if obs_enabled:
+                try:
+                    _mh_td, _mh_applied = self._strategy_min_hold_extra(
+                        window_id, exposure.effective_exposure,
+                        weather_inputs.outdoor_temperature, now)
+                    if _mh_applied:
+                        _base = _DEFAULT_MINIMUM_STATE_DURATION.get(current_state, timedelta(0))
+                        _eff_min = effective_min_hold_minutes(
+                            _base.total_seconds() / 60.0,
+                            delta_min=_mh_td.total_seconds() / 60.0, safe_floor_minutes=2.0)
+                        _mh_extra = timedelta(minutes=_eff_min) - _base
+                except Exception:
+                    _mh_extra = timedelta(0)
             if bypasses_guard(current_state, proposed_state):
                 new_state, guard_blocked = proposed_state, False
-            elif self.guard.is_locked(window_id, current_state, now):
+            elif self.guard.is_locked(window_id, current_state, now, extra_hold=_mh_extra):
                 new_state, guard_blocked = current_state, True
                 if self._debug_logging_enabled:
                     _LOGGER.debug(
@@ -4581,9 +4634,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if mo is None:
             return
         now = outcome.decision_timestamp or dt_util.utcnow()
+        # Honest credit: only adoptions whose family actually influenced this
+        # decision (recorded at decision time) may receive a monitoring outcome.
+        applied_fams = self._strategy_applied_by_decision.pop(outcome.decision_id, set()) \
+            if outcome.decision_id is not None else set()
         for key, a in list(self._strategy_adoptions_active.items()):
             if key[0] != outcome.window_id or a.adopted_delta == 0:
                 continue
+            if a.parameter_family not in applied_fams:
+                continue  # adoption had no real effect this cycle → no credit
             open_more = bool(mo.preference.override_direction == "open_more")
             confounded = bool(getattr(mo.reliability, "thermal_confounded", False))
             cls = classify_strategy_outcome(
@@ -4664,6 +4723,141 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if not out["families"]:
             out["strategy_status"] = "none"
         return out
+
+    def _strategy_active_delta(self, window_id, family, exposure, outdoor, now) -> tuple[float, bool]:
+        """Effective bounded delta for one family from the active adoption (+ any
+        active strategy experiment for this window/family), with fresh runtime
+        gating (learning / generation / context / suspend).  Returns (delta, applied)."""
+        delta = 0.0
+        applied = False
+        window = self.windows.get(window_id)
+        if window is None:
+            return (0.0, False)
+        zone_id = window.zone_id
+        exec_cfg = self.effective_zone_execution(zone_id)
+        gen = self._thermal_config_generation(zone_id)
+        key = (window_id, family)
+        a = self._strategy_adoptions_active.get(key)
+        if a is not None and a.adopted_delta != 0:
+            ctx = self._experiment_context_family(now, outdoor, exposure)
+            if not exec_cfg.learning_enabled:
+                self._strategy_adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason="learning_mode_off", updated_at=now)
+            elif a.config_generation != gen:
+                self._strategy_adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason="config_generation_changed", updated_at=now)
+            elif not self._strategy_context_compatible(a, ctx):
+                self._strategy_adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason="context_incompatible", updated_at=now)
+            else:
+                if a.suspended:
+                    self._strategy_adoptions_active[key] = replace(
+                        a, suspended=False, current_gate_reason=None,
+                        status=STRAT_AD_MONITORING if a.status == "adopted" else a.status,
+                        last_validated_at=now, updated_at=now)
+                delta += float(a.adopted_delta)
+                applied = True
+        # Active strategy experiment for this window/family (single bounded step).
+        exp = self._strategy_experiments_active.get(zone_id)
+        if (exp is not None and exp.window_id == window_id and exp.parameter_family == family
+                and exec_cfg.learning_enabled and exp.config_generation == gen):
+            delta += float(exp.delta)
+            applied = True
+        return (delta, applied)
+
+    def _strategy_runtime_apply(self, *, window, window_id, wdi, tier_decision,
+                                current_state, exposure, outdoor, now):
+        """Apply bounded strategy families (exit/hysteresis → tier-choice →
+        entry-timing → exit-timing) to a COMFORT-tier decision.  No-op for
+        safety/lifecycle/override/absence states (higher authority).  Returns the
+        (possibly) modified tier_decision; records applied families for honest
+        monitoring credit + provenance."""
+        comfort = (ShadingState.OPEN, ShadingState.LIGHT_SHADE,
+                   ShadingState.NORMAL_SHADE, ShadingState.STRONG_SHADE)
+        if tier_decision.shading_state not in comfort:
+            return tier_decision
+        eb = wdi.effective_behavior
+        applied: dict = {}
+        state = tier_decision.shading_state
+        ts = self._strategy_timing_state.setdefault(window_id, TimingState())
+
+        # 1. EXIT_THRESHOLD + HYSTERESIS — value-based de-escalation hold.
+        exit_delta, exit_thr_applied = self._strategy_active_delta(
+            window_id, FAMILY_EXIT_THRESHOLD, exposure, outdoor, now)
+        hyst_delta, hyst_applied = self._strategy_active_delta(
+            window_id, FAMILY_HYSTERESIS, exposure, outdoor, now)
+        if (exit_thr_applied or hyst_applied) and current_state in (
+                ShadingState.LIGHT_SHADE, ShadingState.NORMAL_SHADE, ShadingState.STRONG_SHADE):
+            _entry_for_cur = {
+                ShadingState.LIGHT_SHADE: eb.light_shade_threshold_wm2,
+                ShadingState.NORMAL_SHADE: eb.normal_shade_threshold_wm2,
+                ShadingState.STRONG_SHADE: eb.strong_shade_threshold_wm2,
+            }[current_state]
+            cur_exit = effective_exit_threshold(
+                _entry_for_cur, hysteresis_steps=hyst_delta,
+                exit_threshold_delta_wm2=exit_delta)
+            new_state, held = apply_deescalation_hysteresis(
+                current_state=current_state, proposed_state=state,
+                exposure_wm2=exposure, current_tier_exit_threshold_wm2=cur_exit)
+            if held:
+                state = new_state
+                if exit_thr_applied:
+                    applied[FAMILY_EXIT_THRESHOLD] = True
+                if hyst_applied:
+                    applied[FAMILY_HYSTERESIS] = True
+
+        # 2. TIER_CHOICE — bounded ±1 tier shift among valid tiers.
+        tc_delta, tc_applied = self._strategy_active_delta(
+            window_id, FAMILY_TIER_CHOICE, exposure, outdoor, now)
+        if tc_applied and int(tc_delta) != 0:
+            shifted, changed = apply_tier_choice(state, tier_delta=int(tc_delta))
+            if changed:
+                state = shifted
+                applied[FAMILY_TIER_CHOICE] = True
+
+        # 3. ENTRY_TIMING — bounded transition-time gate.
+        et_delta, et_applied = self._strategy_active_delta(
+            window_id, FAMILY_ENTRY_TIMING, exposure, outdoor, now)
+        if et_applied and et_delta != 0:
+            shifted, changed = apply_entry_timing(
+                current_state=current_state, proposed_state=state, now=now, state=ts,
+                delta_min=et_delta, forecast_lead_minutes=None)
+            if changed:
+                state = shifted
+                applied[FAMILY_ENTRY_TIMING] = True
+
+        # 4. EXIT_TIMING — bounded release-time gate.
+        xt_delta, xt_applied = self._strategy_active_delta(
+            window_id, FAMILY_EXIT_TIMING, exposure, outdoor, now)
+        if xt_applied and xt_delta != 0:
+            shifted, changed = apply_exit_timing(
+                current_state=current_state, proposed_state=state, now=now, state=ts,
+                delta_min=xt_delta)
+            if changed:
+                state = shifted
+                applied[FAMILY_EXIT_TIMING] = True
+
+        if applied and state != tier_decision.shading_state:
+            _pos = {
+                ShadingState.LIGHT_SHADE: eb.light_shade_position,
+                ShadingState.NORMAL_SHADE: eb.normal_shade_position,
+                ShadingState.STRONG_SHADE: eb.strong_shade_position,
+                ShadingState.OPEN: 0,  # internal 0 = fully open
+            }.get(state, tier_decision.target_position)
+            tier_decision = replace(
+                tier_decision, shading_state=state, target_position=_pos,
+                decided_by="StrategyRuntime")
+        if applied:
+            self._cycle_strategy_applied[window_id] = applied
+        return tier_decision
+
+    def _strategy_min_hold_extra(self, window_id, exposure, outdoor, now):
+        """Bounded MINIMUM_HOLD delta as a timedelta for StateGuard (floored)."""
+        delta, applied = self._strategy_active_delta(
+            window_id, FAMILY_MINIMUM_HOLD, exposure, outdoor, now)
+        if not applied or delta == 0:
+            return timedelta(0), False
+        return timedelta(minutes=delta), True
 
     def _strategy_experiments_storage(self) -> list:
         out = [e.to_dict() for e in self._strategy_experiments_active.values()]
@@ -5583,5 +5777,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         )
         self._learning_store.record_decision(record)
         self._learning_store.set_pending_decision(window_id, decision_id)
+        # P9B: record which strategy families actually influenced THIS decision so
+        # monitoring only credits an adoption that really had an effect.
+        _applied_fams = set(self._cycle_strategy_applied.get(window_id, {}).keys())
+        _et = self._strategy_adoptions_active.get((window_id, FAMILY_ENTRY_THRESHOLD))
+        if _et is not None and not _et.suspended and _et.adopted_delta != 0:
+            _applied_fams.add(FAMILY_ENTRY_THRESHOLD)
+        if _applied_fams:
+            self._strategy_applied_by_decision[decision_id] = _applied_fams
+            if len(self._strategy_applied_by_decision) > 500:
+                # bounded: drop oldest insertion
+                _oldest = next(iter(self._strategy_applied_by_decision))
+                self._strategy_applied_by_decision.pop(_oldest, None)
         self._last_decision_summaries[window_id] = candidate.to_summary()
         self._learning_dirty = True

@@ -65,21 +65,31 @@ class StateGuard:
         """Call whenever a cover command is actually sent for this window."""
         self._last_action_at[window_id] = now
 
-    def is_locked(self, window_id: str, current_state: ShadingState, now: datetime) -> bool:
+    def is_locked(
+        self, window_id: str, current_state: ShadingState, now: datetime,
+        extra_hold: timedelta = timedelta(0),
+    ) -> bool:
         """True if `current_state` has not been held for
-        `minimum_state_duration[current_state]` yet.
+        `minimum_state_duration[current_state]` (+ optional bounded extra_hold) yet.
+
+        `extra_hold` carries the LE 2.0 / P9B MINIMUM_HOLD strategy delta (already
+        bounded and floored by the caller); default 0 preserves the deterministic
+        baseline exactly.
 
         Callers must only invoke this for transitions where
         state_machine.transitions.bypasses_guard() returned False - see
         ARCHITECTURE.md §5.7 step 9.
         """
         min_duration = self._config.minimum_state_duration.get(current_state)
-        if min_duration is None:
+        if min_duration is None and extra_hold == timedelta(0):
+            return False
+        effective = (min_duration or timedelta(0)) + extra_hold
+        if effective <= timedelta(0):
             return False
         entered_at = self._entered_at.get(window_id)
         if entered_at is None:
             return False
-        return (now - entered_at) < min_duration
+        return (now - entered_at) < effective
 
     def can_send_action(self, window_id: str, proposed_state: ShadingState, now: datetime) -> bool:
         """True if a cover command may be sent now.

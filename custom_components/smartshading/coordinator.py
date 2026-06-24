@@ -255,6 +255,7 @@ from .models.consumed_ledger import (
     TYPE_POSITION as _LEDGER_POSITION,
     TYPE_STRATEGY as _LEDGER_STRATEGY,
     ConsumedExperimentLedger,
+    LedgerIntegrity,
 )
 from .engines.reference_validator import validate_adoptions as _validate_adoptions
 from .models.shadow_tombstone import (
@@ -778,6 +779,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._strategy_applied_by_decision: dict[str, set] = {}
         # P10 — permanent bounded consumed-experiment ledger (position + strategy).
         self._consumed_ledger = ConsumedExperimentLedger()
+        # P10 acceptance fix: per-namespace ledger integrity (fail-closed).  An
+        # unsafe namespace blocks new + suspends restored adaptive authority for
+        # that namespace; consumed evidence is never released by corruption.
+        self._ledger_integrity = LedgerIntegrity()
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -1593,12 +1598,28 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         self._consumed_ledger = ConsumedExperimentLedger()
                         self._restore_failures += 1
                     else:
-                        # P10: restore the permanent consumed-experiment ledger.
-                        self._consumed_ledger = ConsumedExperimentLedger.from_dict(
-                            getattr(_extras, "consumed_experiment_ledger", None))
+                        # P10 acceptance fix: FAIL-CLOSED ledger restore.  Corruption
+                        # / unsupported / owner-mismatch marks a namespace unsafe so
+                        # we block new + suspend restored adaptive authority for it —
+                        # consumed evidence is never released by corruption.
+                        self._consumed_ledger, self._ledger_integrity = (
+                            ConsumedExperimentLedger.restore_with_integrity(
+                                getattr(_extras, "consumed_experiment_ledger", None),
+                                owner_entry_id=getattr(_extras, "owner_entry_id", None),
+                                current_entry_id=self.config_entry.entry_id,
+                                now=_restore_now))
+                        self._enforce_ledger_integrity(_restore_now)
                         # P10: structured per-section restore reason counters.
                         self._restore_diagnostics = (
                             getattr(_extras, "restore_diagnostics", {}) or {})
+                        self._restore_diagnostics = dict(self._restore_diagnostics)
+                        self._restore_diagnostics["consumed_ledger"] = {
+                            "status_by_namespace": {
+                                _LEDGER_POSITION: self._ledger_integrity.position,
+                                _LEDGER_STRATEGY: self._ledger_integrity.strategy,
+                            },
+                            "invalid_by_reason": dict(self._ledger_integrity.invalid_by_reason),
+                        }
                         # P10: reference-integrity — an adoption whose source/consumed
                         # experiment evidence is unresolvable is invalidated (hard
                         # reference), never blindly applied.
@@ -3978,6 +3999,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Two mandatory user levels: Learning Mode + Active Control.
         if not (exec_cfg.learning_enabled and exec_cfg.active_control_enabled):
             return wdi
+        # P10 acceptance fix: no new position experiment while the position
+        # consumed-ledger namespace is unsafe.
+        if not self._ledger_namespace_safe(_LEDGER_POSITION):
+            return wdi
 
         # Unified zone-experiment authority: a P9B strategy experiment also holds
         # the single per-zone slot — position and strategy never experiment together.
@@ -4467,6 +4492,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
     def _maybe_adopt(self, window_id: str, intensity: str, zone_id: str, now: datetime) -> None:
         """Create a first -5 pp adoption, or upgrade a confirmed/stable one to
         -10 pp, strictly from multiple fresh, exact, non-consumed P7 experiments."""
+        # P10 acceptance fix: never activate adaptive authority while the position
+        # consumed-ledger namespace is unsafe (consumed evidence integrity unknown).
+        if not self._ledger_namespace_safe(_LEDGER_POSITION):
+            return
         key = (window_id, intensity)
         existing = self._adoptions_active.get(key)
         # Cooldown after a prior rollback/rejection for this identity.
@@ -4875,6 +4904,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
     def _maybe_adopt_strategy(self, window_id: str, family: str, zone_id: str, now: datetime) -> None:
         """Create/upgrade a persistent strategy adoption from multiple fresh, exact,
         non-consumed terminal strategy experiments (mirror of P8, generalized)."""
+        # P10 acceptance fix: never activate adaptive authority while the strategy
+        # consumed-ledger namespace is unsafe (consumed evidence integrity unknown).
+        if not self._ledger_namespace_safe(_LEDGER_STRATEGY):
+            return
         key = (window_id, family)
         existing = self._strategy_adoptions_active.get(key)
         # cooldown after rollback for this identity
@@ -5032,6 +5065,41 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if applied:
             self._request_important_save()
         return tuple(applied)
+
+    def _ledger_namespace_safe(self, namespace: str) -> bool:
+        """P10 acceptance fix: adaptive authority for a namespace is permitted only
+        while its consumed-ledger integrity is safe (valid or legitimately missing).
+        Corruption/unsupported/owner-mismatch ⇒ unsafe ⇒ no evidence-consuming
+        adaptive authority (deterministic baseline control is unaffected)."""
+        return self._ledger_integrity.is_safe(namespace)
+
+    def _enforce_ledger_integrity(self, now: datetime) -> int:
+        """Suspend restored adaptive authority for any UNSAFE ledger namespace.
+
+        Position-namespace unsafe ⇒ suspend all position adoptions + abort active
+        position experiments.  Strategy-namespace unsafe ⇒ suspend all strategy
+        adoptions.  Consumed evidence is never released; baseline control stays."""
+        blocked = 0
+        if not self._ledger_namespace_safe(_LEDGER_POSITION):
+            for key, a in list(self._adoptions_active.items()):
+                if not getattr(a, "suspended", False):
+                    self._adoptions_active[key] = replace(
+                        a, suspended=True,
+                        current_gate_reason="ledger_integrity_unsafe", updated_at=now)
+                    blocked += 1
+            for zid, exp in list(self._experiments_active.items()):
+                self._abort_zone_experiment(zid, "ledger_integrity_unsafe", now)
+                blocked += 1
+        if not self._ledger_namespace_safe(_LEDGER_STRATEGY):
+            for key, a in list(self._strategy_adoptions_active.items()):
+                if not getattr(a, "suspended", False):
+                    self._strategy_adoptions_active[key] = replace(
+                        a, suspended=True,
+                        current_gate_reason="ledger_integrity_unsafe", updated_at=now)
+                    blocked += 1
+        if blocked:
+            self._mark_learning_dirty()
+        return blocked
 
     def _apply_config_diff_on_restore(self, prev_snapshot: dict, now: datetime) -> list:
         """P10: typed config-change invalidation across a restart/reload.

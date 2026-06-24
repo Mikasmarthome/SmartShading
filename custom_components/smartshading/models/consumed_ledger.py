@@ -20,7 +20,8 @@ No Home Assistant import.  Frozen-by-convention; mutated via methods.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 
 CONSUMED_LEDGER_SCHEMA_VERSION: int = 1
 
@@ -30,6 +31,46 @@ _TYPES: tuple[str, ...] = (TYPE_POSITION, TYPE_STRATEGY)
 
 # Bounded exact-id cap per type before compaction into the watermark.
 MAX_EXACT_IDS_PER_TYPE: int = 5000
+# A restored exact-id set larger than this is structurally implausible → corrupt.
+_MAX_RESTORE_IDS_PER_TYPE: int = MAX_EXACT_IDS_PER_TYPE * 2
+# Watermark/created timestamps beyond now + this are clock artefacts → corrupt.
+_FUTURE_TOLERANCE = timedelta(hours=6)
+
+# --- per-namespace integrity states (P10 acceptance fix: fail-closed) ---
+LEDGER_VALID: str = "valid"
+LEDGER_MISSING: str = "missing"
+LEDGER_CORRUPT: str = "corrupt"
+LEDGER_UNSUPPORTED: str = "unsupported"
+LEDGER_OWNER_MISMATCH: str = "owner_mismatch"
+
+# stable, privacy-safe reason codes
+LR_INVALID_ROOT = "invalid_root"
+LR_UNSUPPORTED_SCHEMA = "unsupported_schema"
+LR_INVALID_NAMESPACE = "invalid_namespace"
+LR_INVALID_ID = "invalid_id"
+LR_DUPLICATE_ID = "duplicate_id"
+LR_INVALID_TIMESTAMP = "invalid_timestamp"
+LR_FUTURE_TIMESTAMP = "future_timestamp"
+LR_INVALID_WATERMARK = "invalid_watermark"
+LR_OWNER_MISMATCH = "owner_mismatch"
+LR_COUNT_EXCEEDED = "count_exceeded"
+
+
+@dataclass
+class LedgerIntegrity:
+    """Per-namespace restore integrity.  A namespace is SAFE for adaptive
+    authority only when valid or (legitimately) missing.  Corruption can cost
+    adaptive availability but can never release consumed evidence."""
+    position: str = LEDGER_VALID
+    strategy: str = LEDGER_VALID
+    invalid_by_reason: dict = field(default_factory=dict)
+
+    def is_safe(self, namespace: str) -> bool:
+        status = self.position if namespace == TYPE_POSITION else self.strategy
+        return status in (LEDGER_VALID, LEDGER_MISSING)
+
+    def status(self, namespace: str) -> str:
+        return self.position if namespace == TYPE_POSITION else self.strategy
 
 
 def _iso(dt: datetime | None) -> str | None:
@@ -104,6 +145,11 @@ class ConsumedExperimentLedger:
 
     @classmethod
     def from_dict(cls, d: dict | None) -> "ConsumedExperimentLedger":
+        """Trusted deserialisation of in-memory-roundtripped data ONLY.
+
+        NOT the restore authority: restore_with_integrity is the fail-closed
+        production path.  This stays for serialization roundtrip of data we wrote
+        ourselves; it must never be used to load an untrusted store on restore."""
         led = cls()
         if not isinstance(d, dict):
             return led
@@ -117,3 +163,126 @@ class ConsumedExperimentLedger:
         for t in _TYPES:
             led._retired_before[t] = _parse(retired.get(t))
         return led
+
+    @classmethod
+    def restore_with_integrity(
+        cls, d: dict | None, *, owner_entry_id: str | None = None,
+        current_entry_id: str | None = None, now: datetime | None = None,
+    ) -> tuple["ConsumedExperimentLedger", LedgerIntegrity]:
+        """FAIL-CLOSED restore (P10 acceptance fix).
+
+        Returns (ledger, integrity).  Corruption / unsupported schema / owner
+        mismatch marks the affected namespace UNSAFE so the caller blocks new and
+        suspends restored adaptive authority — but consumed evidence is NEVER
+        released.  A legitimately missing ledger is empty + valid (no global lock)."""
+        now = now or datetime.now(timezone.utc)
+        led = cls()
+        integ = LedgerIntegrity()
+        reasons: dict = {}
+
+        def _bump(code: str) -> None:
+            reasons[code] = reasons.get(code, 0) + 1
+
+        # MISSING: no ledger at all (legacy/empty store) → empty + valid.
+        if d is None or d == {}:
+            integ.position = integ.strategy = LEDGER_MISSING
+            integ.invalid_by_reason = reasons
+            return led, integ
+        # Invalid root → both namespaces corrupt (fail-closed).
+        if not isinstance(d, dict):
+            _bump(LR_INVALID_ROOT)
+            integ.position = integ.strategy = LEDGER_CORRUPT
+            integ.invalid_by_reason = reasons
+            return led, integ
+        # Unsupported newer schema → both namespaces unsafe.
+        ver = d.get("schema_version", CONSUMED_LEDGER_SCHEMA_VERSION)
+        if not isinstance(ver, int) or ver > CONSUMED_LEDGER_SCHEMA_VERSION:
+            _bump(LR_UNSUPPORTED_SCHEMA)
+            integ.position = integ.strategy = LEDGER_UNSUPPORTED
+            integ.invalid_by_reason = reasons
+            return led, integ
+        # Owner mismatch → fail-closed both namespaces (no cross-zone evidence).
+        owner = d.get("owner_entry_id")
+        if (owner is not None and current_entry_id is not None
+                and owner != current_entry_id):
+            _bump(LR_OWNER_MISMATCH)
+            integ.position = integ.strategy = LEDGER_OWNER_MISMATCH
+            integ.invalid_by_reason = reasons
+            return led, integ
+
+        exact = d.get("exact_recent_ids_by_type")
+        retired = d.get("retired_before_by_type")
+        if not isinstance(exact, dict) or not isinstance(retired, dict):
+            _bump(LR_INVALID_ROOT)
+            integ.position = integ.strategy = LEDGER_CORRUPT
+            integ.invalid_by_reason = reasons
+            return led, integ
+
+        # Per-namespace validation: a corrupt namespace does not block the other.
+        status = {TYPE_POSITION: LEDGER_VALID, TYPE_STRATEGY: LEDGER_VALID}
+        for t in _TYPES:
+            ns_ids = exact.get(t, {})
+            if t not in exact:
+                status[t] = LEDGER_MISSING
+                continue
+            if not isinstance(ns_ids, dict):
+                _bump(LR_INVALID_NAMESPACE)
+                status[t] = LEDGER_CORRUPT
+                continue
+            if len(ns_ids) > _MAX_RESTORE_IDS_PER_TYPE:
+                _bump(LR_COUNT_EXCEEDED)
+                status[t] = LEDGER_CORRUPT
+                continue
+            wm = retired.get(t)
+            wm_dt = None
+            if wm is not None:
+                wm_dt = _parse(wm)
+                if wm_dt is None:
+                    _bump(LR_INVALID_WATERMARK)
+                    status[t] = LEDGER_CORRUPT
+                    continue
+                if wm_dt > now + _FUTURE_TOLERANCE:
+                    _bump(LR_FUTURE_TIMESTAMP)
+                    status[t] = LEDGER_CORRUPT
+                    continue
+            parsed_ids: dict = {}
+            corrupt = False
+            for eid, iso in ns_ids.items():
+                if not isinstance(eid, str) or not eid:
+                    _bump(LR_INVALID_ID)
+                    corrupt = True
+                    break
+                if eid in parsed_ids:
+                    _bump(LR_DUPLICATE_ID)
+                    corrupt = True
+                    break
+                dt = _parse(iso)
+                if dt is None:
+                    _bump(LR_INVALID_TIMESTAMP)
+                    corrupt = True
+                    break
+                if dt > now + _FUTURE_TOLERANCE:
+                    _bump(LR_FUTURE_TIMESTAMP)
+                    corrupt = True
+                    break
+                # Watermark must not regress behind retained evidence: a retained
+                # exact id created BEFORE the watermark is an inconsistent ledger.
+                if wm_dt is not None and dt < wm_dt:
+                    _bump(LR_INVALID_WATERMARK)
+                    corrupt = True
+                    break
+                parsed_ids[eid] = dt
+            if corrupt:
+                status[t] = LEDGER_CORRUPT
+                continue
+            # Namespace valid → load it.
+            led._exact[t] = parsed_ids
+            led._retired_before[t] = wm_dt
+
+        integ.position = status[TYPE_POSITION]
+        integ.strategy = status[TYPE_STRATEGY]
+        integ.invalid_by_reason = reasons
+        # A namespace that failed validation must hold NO loaded evidence (already
+        # the case: we 'continue' before loading), and is reported UNSAFE so the
+        # caller blocks adaptive authority for it.
+        return led, integ

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -3388,6 +3389,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _dispatch_suppressed_reason: str | None = None
             _dispatch_throttled: bool = False
             _throttle_wait_ms: int | None = None
+            # P11 accuracy closure: planned (pre-sleep) vs ACTUAL elapsed global wait.
+            _planned_global_wait_ms: int | None = None
+            _actual_global_wait_ms: float | None = None
+            _global_wait_started_mono: float | None = None
+            _global_slot_granted_mono: float | None = None
+            _global_timing_recording_status: str = "recorded"
 
             if (
                 s.exec_entity_id is not None
@@ -3438,7 +3445,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             _wait = self._serial_dispatch.time_until_next_allowed()
                             if _wait.total_seconds() > 0:
                                 _dispatch_throttled = True
+                                # PLANNED wait = value returned BEFORE the sleep.
                                 _throttle_wait_ms = round(_wait.total_seconds() * 1000)
+                                _planned_global_wait_ms = _throttle_wait_ms
                                 if self._debug_logging_enabled:
                                     _LOGGER.debug(
                                         "SmartShading: dispatch throttle: sleeping %.0f ms "
@@ -3447,7 +3456,23 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         _intent.cover_entity_id,
                                         _intent.target_position_ha,
                                     )
-                                await asyncio.sleep(_wait.total_seconds())
+                                # ACTUAL wait = monotonic elapsed across the real await.
+                                try:
+                                    _global_wait_started_mono = time.monotonic()
+                                    await asyncio.sleep(_wait.total_seconds())
+                                    _global_slot_granted_mono = time.monotonic()
+                                    _actual_global_wait_ms = max(
+                                        0.0,
+                                        (_global_slot_granted_mono - _global_wait_started_mono)
+                                        * 1000.0)
+                                except Exception:
+                                    # Diagnostics clock failure must not affect dispatch:
+                                    # the sleep already completed; mark timing not_recorded.
+                                    _global_timing_recording_status = "not_recorded"
+                                    _actual_global_wait_ms = None
+                            else:
+                                _planned_global_wait_ms = 0
+                                _actual_global_wait_ms = 0.0
                             # Stale-intent guard: a presence event that fired
                             # while we waited for the lock or slept through the
                             # throttle already incremented _dispatch_generation.
@@ -3682,7 +3707,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 )
                 # P11: read-only ephemeral decision + dispatch trace (never
                 # persisted, bounded).  Pure observation — control is unaffected.
-                _disp_ctx = self._dispatch_context(s, _dispatch_throttled, _throttle_wait_ms)
+                _disp_ctx = self._dispatch_context(
+                    s, throttled=_dispatch_throttled,
+                    planned_ms=_planned_global_wait_ms, actual_ms=_actual_global_wait_ms,
+                    started_mono=_global_wait_started_mono,
+                    slot_granted_mono=_global_slot_granted_mono,
+                    timing_status=_global_timing_recording_status)
                 try:
                     self._record_decision_trace(
                         window_id, s, harm, _dispatch_prov, _last_exec_result, now,
@@ -4016,23 +4046,38 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         return {zid: {"records": list(ring), "count": len(ring)}
                 for zid, ring in self._decision_trace.items()}
 
-    def _dispatch_context(self, s, throttled, throttle_wait_ms) -> dict:
+    def _dispatch_context(self, s, *, throttled=False, planned_ms=None, actual_ms=None,
+                          started_mono=None, slot_granted_mono=None,
+                          timing_status="recorded") -> dict:
         """P11: read-only global-interval + movement + position-before context from
         ALREADY-COMPUTED runtime data (this-cycle snapshot + throttle observation).
         No new polling/state read; honest not_recorded where data is absent.
 
         Architecture note: there is NO real dispatch queue — only a global asyncio
         lock + monotonic min-interval throttle.  Queue fields are therefore
-        not_recorded; the global-interval wait is the throttle's monotonic wait."""
+        not_recorded.  PLANNED wait is the pre-sleep value from
+        time_until_next_allowed(); ACTUAL wait is the monotonic elapsed across the
+        real await — they are kept distinct and never silently equated."""
+        # actual: honest null when the diagnostic clock failed (never fall back to
+        # planned).  overrun = actual − planned when both are present.
+        overrun = None
+        if (isinstance(actual_ms, (int, float)) and isinstance(planned_ms, (int, float))):
+            overrun = max(0.0, float(actual_ms) - float(planned_ms))
         ctx: dict = {
             # No real queue exists → honest not_recorded (never mislabel throttle).
             "queue_entered_at_monotonic": None,
             "queue_slot_granted_at_monotonic": None,
             "queue_wait_ms": None,
             "queue_recording_status": "not_recorded",
-            # Real global serial min-interval wait (monotonic via the throttle).
+            # Real global serial min-interval wait (planned vs measured).
             "global_wait_required": bool(throttled),
-            "global_interval_wait_ms": (throttle_wait_ms if throttled else 0),
+            "planned_global_interval_wait_ms": (planned_ms if throttled else 0),
+            "actual_global_interval_wait_ms": (
+                actual_ms if (timing_status == "recorded") else None),
+            "global_wait_started_at_monotonic": started_mono,
+            "global_slot_granted_at_monotonic": slot_granted_mono,
+            "global_wait_overrun_ms": overrun if timing_status == "recorded" else None,
+            "timing_recording_status": timing_status,
             "required_global_interval_ms": None,
         }
         try:
@@ -4042,14 +4087,20 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         except Exception:
             ctx["required_global_interval_ms"] = None
         # Movement + position-before from THIS cycle's snapshot (entity_state source).
+        # TravelTracker is NOT consulted: it is owned by CoverController and is not
+        # updated by the coordinator's live dispatch path, so it cannot reliably know
+        # the coordinator's active travel.  unknown ≠ false: movement is only
+        # recorded when the entity is available with a definite (non-unknown) state.
         snap = getattr(s, "exec_snapshot", None)
-        if snap is not None:
+        _unknown_states = (None, "unknown", "unavailable")
+        if snap is not None and getattr(snap, "available", False) and \
+                getattr(snap, "state", None) not in _unknown_states:
             moving = bool(getattr(snap, "is_opening", False) or getattr(snap, "is_closing", False))
             has_fb = bool(getattr(snap, "has_position_feedback", False))
             ctx.update({
                 "cover_was_moving": moving,
                 "moving_state_source": "entity_state",
-                "moving_state_confidence": "reported" if has_fb else "low",
+                "moving_state_confidence": "reported",
                 "movement_recording_status": "recorded",
                 "reported_position_before_ha": (
                     getattr(snap, "current_position_ha", None) if has_fb else None),
@@ -4058,6 +4109,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 "position_before_recording_status": "recorded" if has_fb else "not_recorded",
             })
         else:
+            # No reliable source → honest unknown (never false), no position claim.
             ctx.update({
                 "cover_was_moving": None, "moving_state_source": "not_recorded",
                 "moving_state_confidence": None, "movement_recording_status": "not_recorded",

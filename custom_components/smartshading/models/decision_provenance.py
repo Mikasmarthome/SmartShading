@@ -348,6 +348,11 @@ class AdaptationDecision:
     target_after_adoption_ha: int | None = None
     current_total_adaptive_delta_ha: int | None = None
 
+    # P9A — unified solar threshold resolution + tier-order projection.
+    solar_threshold_resolution: dict | None = None
+    tier_order_projected: bool = False
+    tier_order_notes: tuple[str, ...] = ()
+
     def __post_init__(self) -> None:
         _validate_ha_position(self.manual_preference_target_ha, "manual_preference_target_ha")
         _validate_ha_position(self.passive_adaptation_target_ha, "passive_adaptation_target_ha")
@@ -395,6 +400,9 @@ class AdaptationDecision:
             "adopted_delta_requested_ha": self.adopted_delta_requested_ha,
             "target_after_adoption_ha": self.target_after_adoption_ha,
             "current_total_adaptive_delta_ha": self.current_total_adaptive_delta_ha,
+            "solar_threshold_resolution": self.solar_threshold_resolution,
+            "tier_order_projected": self.tier_order_projected,
+            "tier_order_notes": list(self.tier_order_notes),
         }
 
     @classmethod
@@ -435,6 +443,9 @@ class AdaptationDecision:
             adopted_delta_requested_ha=d.get("adopted_delta_requested_ha"),
             target_after_adoption_ha=d.get("target_after_adoption_ha"),
             current_total_adaptive_delta_ha=d.get("current_total_adaptive_delta_ha"),
+            solar_threshold_resolution=d.get("solar_threshold_resolution"),
+            tier_order_projected=bool(d.get("tier_order_projected", False)),
+            tier_order_notes=tuple(d.get("tier_order_notes", []) or []),
         )
 
 

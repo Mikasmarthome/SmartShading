@@ -5220,6 +5220,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 manual_preference_confidence=s.adapt_confidence_level if mp_applied else None,
                 forecast_modifier_delta_wm2=fm_delta,
                 forecast_trust_score=fm_trust,
+                solar_threshold_resolution=(
+                    _sr.to_dict() if (_sr := self._cycle_solar_resolution.get(window_id)) is not None
+                    else None),
+                tier_order_projected=bool(
+                    (_to := self._cycle_tier_order.get(window_id)) is not None and _to.projected),
+                tier_order_notes=(
+                    tuple(_to.notes) if (_to := self._cycle_tier_order.get(window_id)) is not None
+                    else ()),
             ),
             resolved=ResolvedDecision(
                 final_state=s.new_state.value,

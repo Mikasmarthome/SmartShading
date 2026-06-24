@@ -241,21 +241,20 @@ class SmartShadingExportButton(ButtonEntity):
         )
 
     async def async_press(self) -> None:
-        """Trigger the global privacy-safe learning export."""
+        """Trigger the privacy-safe Support Export v3 (entry/zone-scoped)."""
         from homeassistant.components.persistent_notification import (
             async_create as pn_async_create,
         )
-        from ..engines.zone_learning_export import build_global_learning_export
+        from ..engines.support_export import build_support_export_v3
 
         now = datetime.now(timezone.utc)
         try:
-            zone_entries = await _collect_zone_entries(self._hass)
-            export_data = build_global_learning_export(
-                zone_entries=zone_entries,
-                generated_at_utc=now,
-            )
+            rd = getattr(self._entry, "runtime_data", None)
+            coordinator = getattr(rd, "coordinator", None)
+            # Build only on this explicit user request (never in a coordinator cycle).
+            export_data = build_support_export_v3(coordinator, now=now)
         except Exception:
-            _LOGGER.error("SmartShading: learning export: failed to build export data")
+            _LOGGER.error("SmartShading: support export: failed to build export data")
             return
 
         filename = _export_filename(now, self._entry.entry_id)

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
@@ -391,6 +392,10 @@ STARTUP_GRACE_CYCLES: int = 1
 # save after this delay (multiple events within the window collapse into one).
 IMPORTANT_SAVE_DELAY_SECONDS: int = 3
 
+# P11: bounded, EPHEMERAL (never persisted) dispatch-trace ring per zone, used only
+# for read-only diagnostics/support export.  Not part of any control authority.
+DISPATCH_TRACE_MAX_RECORDS_PER_ZONE: int = 500
+
 
 @dataclass(frozen=True)
 class _WeatherInputs:
@@ -701,6 +706,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._pending_save_unsub = None
         # P10: once unloading, no NEW important-save callbacks are scheduled.
         self._unloading: bool = False
+        # P11: ephemeral (RAM-only, never persisted) dispatch-trace ring per zone +
+        # small incremental per-cover state for retarget diagnostics.  Read-only.
+        self._dispatch_trace: dict[str, deque] = {}
+        self._cover_dispatch_state: dict[str, dict] = {}
         # Step 6: per-window, per-intensity learned target position adapter.
         self._target_position_adapter = TargetPositionAdapter()
         # Phase 9F4b-3: pending outcome queue.  P2: now persisted (restart-safe)
@@ -3666,6 +3675,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     dispatch=_dispatch_prov,
                     now=now,
                 )
+                # P11: read-only ephemeral dispatch trace (never persisted, bounded).
+                try:
+                    self._record_dispatch_trace(
+                        window_id, s, harm, _dispatch_prov, now)
+                except Exception:
+                    _LOGGER.debug("Diagnostics: dispatch-trace capture skipped (non-fatal)")
                 # P7: confirm or abort experiment activation from the real
                 # dispatch result this cycle (command blocked/failed → not
                 # activated).  Reliable feedback gates the confirmation class.
@@ -3849,6 +3864,77 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "excluded_transition_count": 0,
             "material_target_change_count": 0,
         }
+
+    def _record_dispatch_trace(self, window_id, s, harm, dispatch_prov, now) -> None:
+        """P11: append a read-only, ephemeral, bounded dispatch trace record + update
+        per-cover retarget state.  Sources from already-computed values only — it
+        never re-runs an evaluator and never affects control/dispatch."""
+        window = getattr(s, "window", None)
+        zone_id = getattr(window, "zone_id", None) or "unknown"
+        cover_id = getattr(s, "exec_entity_id", None)
+        if not dispatch_prov.dispatch_attempted:
+            return  # only real service-boundary attempts enter the trace
+        requested = dispatch_prov.requested_target_ha
+        filt = getattr(s, "exec_filter_result", None)
+        rec = {
+            "decision_id": getattr(s, "decision_id", None),
+            "window_id": window_id,
+            "cover_id": cover_id,
+            "requested_position_ha": requested,
+            "dispatch_status": dispatch_prov.dispatch_status,
+            "dispatch_filter_reason": dispatch_prov.dispatch_filter_reason,
+            "recommendation_position_ha": getattr(s, "normal_cfg_ha_for_prov", None),
+            "pre_command_filter_target_ha": (
+                filt.target_position_ha if filt is not None else None),
+            "post_harmonization_target_ha": getattr(harm, "final_target_position_ha", None),
+            "harmonized": bool(getattr(harm, "harmonized", False)),
+            "at": now.isoformat() if now is not None else None,
+        }
+        # retarget detection vs the same cover's previous dispatch (bounded window).
+        cstate = self._cover_dispatch_state.setdefault(cover_id or "unknown", {
+            "last_requested_position_ha": None, "last_dispatch_at": None,
+            "recent_at": deque(maxlen=64), "same_cover_retarget_count": 0,
+        })
+        prev_req = cstate["last_requested_position_ha"]
+        prev_at = cstate["last_dispatch_at"]
+        is_retarget = (
+            prev_req is not None and requested is not None and prev_req != requested
+            and prev_at is not None and (now - prev_at) <= timedelta(minutes=5))
+        if is_retarget:
+            cstate["same_cover_retarget_count"] += 1
+        rec["is_retarget"] = bool(is_retarget)
+        cstate["last_requested_position_ha"] = requested
+        cstate["last_dispatch_at"] = now
+        cstate["recent_at"].append(now)
+        ring = self._dispatch_trace.setdefault(
+            zone_id, deque(maxlen=DISPATCH_TRACE_MAX_RECORDS_PER_ZONE))
+        ring.append(rec)
+
+    def dispatch_trace_snapshot(self) -> dict:
+        """Read-only snapshot of the ephemeral dispatch trace (RAM only, bounded).
+        Raw ids are returned here; the export layer pseudonymizes them.  Counts are
+        per zone; per-cover retarget state is summarised."""
+        zones = {
+            zid: {"records": list(ring), "count": len(ring)}
+            for zid, ring in self._dispatch_trace.items()
+        }
+        covers = {
+            cid: {
+                "last_requested_position_ha": st.get("last_requested_position_ha"),
+                "same_cover_retarget_count": st.get("same_cover_retarget_count", 0),
+                "commands_last_5m": sum(
+                    1 for t in st.get("recent_at", ()) if (self._dispatch_now() - t)
+                    <= timedelta(minutes=5)),
+                "commands_last_30m": sum(
+                    1 for t in st.get("recent_at", ()) if (self._dispatch_now() - t)
+                    <= timedelta(minutes=30)),
+            }
+            for cid, st in self._cover_dispatch_state.items()
+        }
+        return {"zones": zones, "covers": covers}
+
+    def _dispatch_now(self) -> datetime:
+        return dt_util.utcnow()
 
     def _movement_record_dispatch(self, window_id: str, attempted: bool, success: bool) -> None:
         acc = self._movement_acc.get(window_id)

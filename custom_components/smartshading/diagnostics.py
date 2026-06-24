@@ -202,12 +202,30 @@ def build_forecast_diagnostics(runtime_data: Any) -> dict:
 # HA entry point
 # ---------------------------------------------------------------------------
 
+def _build_consolidated(runtime_data: Any) -> dict:
+    """P11 consolidated PUBLIC_SAFE diagnostics; never raises."""
+    try:
+        from .engines.diagnostics_builder import build_consolidated_diagnostics
+        coordinator = getattr(runtime_data, "coordinator", None) or runtime_data
+        if coordinator is None:
+            return {"section_errors": {"no_coordinator": 1}}
+        return build_consolidated_diagnostics(coordinator)
+    except Exception:
+        _LOGGER.warning("SmartShading: consolidated diagnostics failed — partial")
+        return {"section_errors": {"builder": 1}}
+
+
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant,
     entry: ConfigEntry,
 ) -> dict:
-    """Return SmartShading diagnostics for a config entry (HA standard hook)."""
+    """Return SmartShading diagnostics for a config entry (HA standard hook).
+
+    P11: consolidated PUBLIC_SAFE contract (system/learning/execution/storage/
+    validation/health) plus the existing forecast section.  Read-only; counts and
+    status only; no raw ids, no exact historical timestamps."""
     runtime_data = getattr(entry, "runtime_data", None)
     return {
+        **_build_consolidated(runtime_data),
         "forecast_learning": build_forecast_diagnostics(runtime_data),
     }

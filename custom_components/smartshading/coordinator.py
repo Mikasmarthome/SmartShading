@@ -61,7 +61,7 @@ from .engines.outcome_resolution import (
 from .engines.pending_outcome_queue import PendingOutcomeQueue
 from .models.pending_outcome import PendingOutcome
 from .engines.lifecycle_engine import LifecycleEngine, PresenceDebouncer, check_night_interval_active
-from .engines.lifecycle_guard import lifecycle_should_break_override
+from .engines.lifecycle_guard import lifecycle_should_break_override, should_allow_lifecycle_release
 from .models.learning import OverrideRecord, StateTransitionRecord, WindowCycleSnapshot
 from .engines.override_detector import OverrideDetector
 from .engines.observability_evaluator import (
@@ -204,9 +204,16 @@ from .models.decision_provenance import (
 )
 from .engines.forecast_strategy_modifier import (
     ForecastStrategyModifier,
-    apply_forecast_modifier,
     compute_forecast_strategy_modifier,
 )
+from .engines.solar_threshold_resolver import resolve_solar_thresholds
+from .engines.tier_order_resolver import project_tier_order
+from .engines.strategy_resolver import StrategyResolverInput, resolve_strategy
+from .engines.thermal_insufficiency import (
+    InsufficiencyInput,
+    classify_thermal_insufficiency,
+)
+from .models.shading_strategy import ForecastLoadFeatures
 from .engines.safety_hold import (
     HARDWARE_SAFE_POSITIONS as _HARDWARE_SAFE_POSITIONS,
     SafetyHold as _SafetyHold,
@@ -651,6 +658,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Per-cycle record of which adoptions were applied (window → {intensity:
         # (adoption_id, control_applied)}), used by monitoring + provenance.
         self._cycle_adoption_applied: dict[str, dict] = {}
+        # P9A — per-cycle solar-threshold resolution, tier-order projection and
+        # strategy candidate, for provenance + diagnostics (observe/recommend).
+        self._cycle_solar_resolution: dict[str, object] = {}
+        self._cycle_tier_order: dict[str, object] = {}
+        self._strategy_candidates: dict[str, object] = {}
+        # P9A — latest thermal-insufficiency cause per window (diagnostics only).
+        self._last_thermal_cause: dict[str, tuple] = {}
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -1459,6 +1473,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         pass  # never block the update cycle
 
                 self._override_detector.clear(window_id)
+                # Suppress the next tick so that tick() in this same cycle does
+                # not immediately re-create the override from the user's manual
+                # position before the new morning/day target has been dispatched.
+                # Without this suppress, abs(manual_pos - morning_target) > tolerance
+                # would fire on every transition cycle, permanently undoing the clear.
+                self._override_detector.suppress_next_override_tick(window_id)
                 active_override = None
 
             # Phase 9C: persist override state for the no-sun path; overwritten
@@ -1702,18 +1722,40 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     window_id=window_id,
                     now=now,
                 )
-                if _adapted_bc is not wdi.effective_behavior:
-                    wdi = replace(wdi, effective_behavior=_adapted_bc)
                 self._adaptation_traces[window_id] = _adapt_trace
 
-                # Forecast Strategy Modifier: applied after AdaptationApplication,
-                # before the TierOrchestrator.  Adjusts solar entry thresholds
-                # conservatively when forecast trust is high and a current forecast
-                # is available.  No-op otherwise (modifier.applied = False).
-                if _forecast_modifier is not None and _forecast_modifier.applied:
-                    _fc_bc = apply_forecast_modifier(wdi.effective_behavior, _forecast_modifier)
-                    if _fc_bc is not wdi.effective_behavior:
-                        wdi = replace(wdi, effective_behavior=_fc_bc)
+                # P9A Unified Solar Threshold Resolver — composes the learned solar
+                # delta (adapted − configured) and the forecast delta EXACTLY ONCE
+                # with a single final clamp.  Replaces the former sequential
+                # adaptive-then-forecast threshold mutation (which clamped twice).
+                # Measured solar irradiance stays authoritative; forecast only
+                # shifts the precautionary entry thresholds.
+                _cfg_bc = _wdi_preadapt.effective_behavior
+                _fc_applied = _forecast_modifier is not None and _forecast_modifier.applied
+                _solar_res = resolve_solar_thresholds(
+                    configured_light_wm2=_cfg_bc.light_shade_threshold_wm2,
+                    configured_normal_wm2=_cfg_bc.normal_shade_threshold_wm2,
+                    configured_strong_wm2=_cfg_bc.strong_shade_threshold_wm2,
+                    learned_delta_light=(_adapted_bc.light_shade_threshold_wm2
+                                         - _cfg_bc.light_shade_threshold_wm2),
+                    learned_delta_normal=(_adapted_bc.normal_shade_threshold_wm2
+                                          - _cfg_bc.normal_shade_threshold_wm2),
+                    learned_delta_strong=(_adapted_bc.strong_shade_threshold_wm2
+                                          - _cfg_bc.strong_shade_threshold_wm2),
+                    forecast_delta_wm2=(_forecast_modifier.threshold_delta_wm2
+                                        if _fc_applied else 0.0),
+                    forecast_available=_fc_applied,
+                    forecast_trust_score=(_forecast_modifier.trust_score
+                                          if _forecast_modifier is not None else None),
+                )
+                _adapted_bc = replace(
+                    _adapted_bc,
+                    light_shade_threshold_wm2=_solar_res.effective_light_wm2,
+                    normal_shade_threshold_wm2=_solar_res.effective_normal_wm2,
+                    strong_shade_threshold_wm2=_solar_res.effective_strong_wm2,
+                )
+                self._cycle_solar_resolution[window_id] = _solar_res
+                wdi = replace(wdi, effective_behavior=_adapted_bc)
 
                 # Step 6: per-window learned target position adaptation.
                 # Runs after heat threshold adaptation so position deltas are
@@ -1779,6 +1821,45 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 except Exception:
                     _LOGGER.warning(
                         "Learning: experiment injection failed for %s (non-fatal)", window_id
+                    )
+
+                # P9A Tier-Order Resolver — project the FINAL effective per-intensity
+                # set onto Strong ≤ Normal ≤ Light so no adaptive change (manual
+                # preference, adoption, experiment, learned position) can invert the
+                # semantic stages.  Pure projection of the effective set; never
+                # rewrites stored configuration.
+                try:
+                    _eb = wdi.effective_behavior
+                    _proj = project_tier_order(
+                        light_ha=to_ha_position(_eb.light_shade_position),
+                        normal_ha=to_ha_position(_eb.normal_shade_position),
+                        strong_ha=to_ha_position(_eb.strong_shade_position),
+                    )
+                    if _proj.projected:
+                        wdi = replace(wdi, effective_behavior=replace(
+                            _eb,
+                            light_shade_position=to_internal_position(_proj.light_ha),
+                            normal_shade_position=to_internal_position(_proj.normal_ha),
+                            strong_shade_position=to_internal_position(_proj.strong_ha),
+                        ))
+                    self._cycle_tier_order[window_id] = _proj
+                except Exception:
+                    _LOGGER.warning(
+                        "Learning: tier-order projection failed for %s (non-fatal)", window_id
+                    )
+
+                # P9A Strategy Resolver — observe/recommend only (no control
+                # authority).  Builds a ShadingStrategyCandidate for diagnostics.
+                try:
+                    self._strategy_observe(
+                        window=window, window_id=window_id, wdi=wdi,
+                        exposure_wm2=exposure.effective_exposure,
+                        in_solar_sector=_effective_in_solar_sector,
+                        current_state=current_state, outdoor_temp=weather_inputs.outdoor_temperature,
+                        solar_resolution=_solar_res, now=now)
+                except Exception:
+                    _LOGGER.warning(
+                        "Learning: strategy observe failed for %s (non-fatal)", window_id
                     )
             # else: wdi stays as resolved from config; neutral profile is implied.
 
@@ -1993,9 +2074,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 )
                 _is_lifecycle_release = (
                     _window_behavior is WindowBehaviorMode.ABSENCE_AND_SCHEDULE
-                    and current_state is ShadingState.NIGHT_CLOSED
-                    and tier_decision.shading_state is ShadingState.OPEN
-                    and active_override is None
+                    and should_allow_lifecycle_release(
+                        prev=_prev_lifecycle_state,
+                        new=self._lifecycle_state,
+                        current_shading_state=current_state,
+                        active_override=active_override,
+                        proposed_is_open=tier_decision.shading_state is ShadingState.OPEN,
+                    )
                 )
                 _mode_dispatch_allowed = (
                     tier_decision.shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
@@ -4219,6 +4304,68 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         out.extend(a.to_dict() for a in self._adoption_history[-200:])
         return out
 
+    # ------------------------------------------------------------------
+    # P9A — Strategy foundation (observe / recommend / diagnostics)
+    # ------------------------------------------------------------------
+
+    def _strategy_observe(self, *, window, window_id, wdi, exposure_wm2, in_solar_sector,
+                          current_state, outdoor_temp, solar_resolution, now) -> None:
+        """Compute a non-authoritative ShadingStrategyCandidate for diagnostics."""
+        eb = wdi.effective_behavior
+        ctx = self._experiment_context_family(now, outdoor_temp, exposure_wm2)
+        tmodel = self._thermal_models.get(window.zone_id)
+        trust_level = getattr(solar_resolution, "forecast_trust_level", "forecast_unavailable")
+        fc = ForecastLoadFeatures(
+            available=(trust_level != "forecast_unavailable"), trust_level=trust_level)
+        state_name = current_state.value if hasattr(current_state, "value") else str(current_state)
+        cand = resolve_strategy(StrategyResolverInput(
+            window_id=window_id, zone_id=window.zone_id, context_family=ctx,
+            current_state=state_name, in_solar_sector=in_solar_sector,
+            measured_exposure_wm2=exposure_wm2,
+            light_threshold_wm2=eb.light_shade_threshold_wm2,
+            normal_threshold_wm2=eb.normal_shade_threshold_wm2,
+            strong_threshold_wm2=eb.strong_shade_threshold_wm2,
+            forecast=fc,
+            confidence=(tmodel.confidence if tmodel else 0.0),
+            reliability=(tmodel.confidence if tmodel else 0.0)))
+        self._strategy_candidates[window_id] = cand
+
+    def _classify_outcome_insufficiency(self, outcome) -> None:
+        """Best-effort thermal-insufficiency cause for diagnostics (observe only)."""
+        mo = outcome.multi_objective
+        if mo is None or not mo.thermal.available or not mo.thermal.insufficient_response:
+            return
+        contrib = self._contribution_models.get(outcome.window_id)
+        attribution = (ATTR_WINDOW_ISOLATED if contrib is not None else "unknown")
+        cause, follow_up = classify_thermal_insufficiency(InsufficiencyInput(
+            thermal_available=True, confounded=bool(getattr(mo.reliability, "thermal_confounded", False)),
+            shade_was_active=True, insufficient_response=True, attribution_quality=attribution,
+            onset_reached=bool(mo.thermal.response_onset_detected),
+            shade_was_timely=True, at_max_intensity=(outcome.decided_state == ShadingState.STRONG_SHADE),
+            load_duration_long=False, outdoor_or_internal_dominant=False))
+        self._last_thermal_cause[outcome.window_id] = (cause, follow_up)
+
+    def strategy_diagnostics(self, window_id: str) -> dict:
+        """Privacy-safe per-window strategy candidate snapshot (observe/recommend)."""
+        cand = self._strategy_candidates.get(window_id)
+        if cand is None:
+            return {"strategy_available": False}
+        d = cand.to_dict()
+        d["strategy_available"] = True
+        cause = self._last_thermal_cause.get(window_id)
+        if cause is not None:
+            d["thermal_insufficiency_cause"] = cause[0]
+            d["thermal_insufficiency_follow_up"] = cause[1]
+        return d
+
+    def solar_threshold_diagnostics(self, window_id: str) -> dict:
+        res = self._cycle_solar_resolution.get(window_id)
+        return res.to_dict() if res is not None else {"available": False}
+
+    def tier_order_diagnostics(self, window_id: str) -> dict:
+        proj = self._cycle_tier_order.get(window_id)
+        return proj.to_dict() if proj is not None else {"projected": False}
+
     def window_contribution_diagnostics(self, window_id: str) -> dict:
         """Privacy-safe per-window contribution diagnostics.  Eligibility is
         derived from the CURRENT model + config generation (not a stale bool)."""
@@ -4847,6 +4994,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self._monitor_adoption(outcome)
         except Exception:
             _LOGGER.warning("Learning: adoption monitoring failed (non-fatal)")
+        # P9A: classify "still heating despite shading" cause (diagnostics only).
+        try:
+            self._classify_outcome_insufficiency(outcome)
+        except Exception:
+            _LOGGER.warning("Learning: thermal insufficiency classify failed (non-fatal)")
 
     def _restore_pending_outcomes(
         self, pendings: list, now: datetime

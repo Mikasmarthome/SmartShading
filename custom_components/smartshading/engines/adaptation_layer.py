@@ -16,12 +16,11 @@ Coordinator before parameters are forwarded to the Evaluators.
 Inputs
 ------
   AdaptationInput.aggregate_result — LearningAggregateResult from 9F9
-  AdaptationInput.override_result  — OverrideLearningResult from 9F7 (optional)
   AdaptationInput.solar_result     — SolarImpactResult from 9F8 (optional)
 
 Outputs
 -------
-  AdaptiveProfile — six fields describing learning-suggested parameter
+  AdaptiveProfile — five fields describing learning-suggested parameter
                     adjustments and the overall adaptation strength
 
 ---
@@ -50,14 +49,6 @@ Factor formulas
                      → 0.0 when solar_result is None or combined_solar_factor is None
 
     factor = 1.0 + (normalized_solar × adaptation_strength × _MAX_STEP_FACTOR)
-    factor = clamp(factor, _FACTOR_MIN, _FACTOR_MAX)
-
-  Override-driven factor (preferred_shade_position_factor):
-
-    override_score = override_result.learning_score
-                   → 0.0 when override_result is None or learning_score is None
-
-    factor = 1.0 + (override_score × adaptation_strength × _MAX_STEP_FACTOR)
     factor = clamp(factor, _FACTOR_MIN, _FACTOR_MAX)
 
   Bound: 0.90 ≤ factor ≤ 1.10  (maximum ±10 % from baseline)
@@ -95,7 +86,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .learning_signal_aggregator import LearningAggregateResult
-from .override_learning import OverrideLearningResult
 from .solar_impact_learning import SolarImpactResult
 
 
@@ -144,12 +134,10 @@ class AdaptationInput:
     """Input to compute_adaptive_profile().
 
     aggregate_result — LearningAggregateResult from 9F9 (required)
-    override_result  — OverrideLearningResult from 9F7; None → no override signal
     solar_result     — SolarImpactResult from 9F8; None → no solar signal
     """
 
     aggregate_result: LearningAggregateResult
-    override_result:  OverrideLearningResult | None
     solar_result:     SolarImpactResult | None
 
 
@@ -161,7 +149,6 @@ class AdaptiveProfile:
     confidence_level                — string label derived from confidence_score
     heat_sensitivity_factor         — solar-driven multiplier for heat threshold  [0.90, 1.10]
     exposure_sensitivity_factor     — solar-driven multiplier for exposure limit  [0.90, 1.10]
-    preferred_shade_position_factor — override-driven multiplier for position     [0.90, 1.10]
     solar_escalation_factor          — BIDIRECTIONAL W/m² threshold multiplier    [0.90, 1.10]
                                       factor < 1.0 → thresholds RISE (uncritical solar impact)
                                       factor > 1.0 → thresholds FALL (strong solar impact)
@@ -173,7 +160,6 @@ class AdaptiveProfile:
     confidence_level:                str
     heat_sensitivity_factor:         float
     exposure_sensitivity_factor:     float
-    preferred_shade_position_factor: float
     solar_escalation_factor:          float
     adaptation_strength:             float
 
@@ -220,16 +206,6 @@ def _normalise_solar_for_thresholds(solar_result: SolarImpactResult | None) -> f
     return max(-1.0, min(1.0, delta / _SOLAR_THRESHOLD_NORM_SCALE))
 
 
-def _extract_override_score(override_result: OverrideLearningResult | None) -> float:
-    """Extract learning_score from OverrideLearningResult.
-
-    Returns 0.0 when override_result is None or learning_score is None.
-    """
-    if override_result is None or override_result.learning_score is None:
-        return 0.0
-    return override_result.learning_score
-
-
 def _compute_factor(signal: float, adaptation_strength: float) -> float:
     """Compute a single sensitivity factor and clamp to [_FACTOR_MIN, _FACTOR_MAX].
 
@@ -263,7 +239,6 @@ def compute_adaptive_profile(inp: AdaptationInput) -> AdaptiveProfile:
             confidence_level=confidence_level,
             heat_sensitivity_factor=1.0,
             exposure_sensitivity_factor=1.0,
-            preferred_shade_position_factor=1.0,
             solar_escalation_factor=1.0,
             adaptation_strength=0.0,
         )
@@ -280,24 +255,21 @@ def compute_adaptive_profile(inp: AdaptationInput) -> AdaptiveProfile:
     # ------------------------------------------------------------------
     # Signal extraction
     # ------------------------------------------------------------------
-    normalized_solar          = _normalise_solar(inp.solar_result)
+    normalized_solar           = _normalise_solar(inp.solar_result)
     signed_solar_for_threshold = _normalise_solar_for_thresholds(inp.solar_result)
-    override_score             = _extract_override_score(inp.override_result)
 
     # ------------------------------------------------------------------
     # Factor computation
     # ------------------------------------------------------------------
-    heat_factor               = _compute_factor(normalized_solar,           adaptation_strength)
-    exposure_factor           = _compute_factor(normalized_solar,           adaptation_strength)
-    position_factor           = _compute_factor(override_score,             adaptation_strength)
-    solar_escalation_factor    = _compute_factor(signed_solar_for_threshold, adaptation_strength)
+    heat_factor              = _compute_factor(normalized_solar,           adaptation_strength)
+    exposure_factor          = _compute_factor(normalized_solar,           adaptation_strength)
+    solar_escalation_factor  = _compute_factor(signed_solar_for_threshold, adaptation_strength)
 
     return AdaptiveProfile(
         learning_active=True,
         confidence_level=confidence_level,
         heat_sensitivity_factor=heat_factor,
         exposure_sensitivity_factor=exposure_factor,
-        preferred_shade_position_factor=position_factor,
         solar_escalation_factor=solar_escalation_factor,
         adaptation_strength=adaptation_strength,
     )

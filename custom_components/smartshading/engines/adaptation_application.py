@@ -37,8 +37,6 @@ Confidence gating (from Architecture Audit 9F16; updated 9F17+)
   Position adaptation per shade intensity (light / normal / strong) is handled
   by TargetPositionAdapter (engines/target_position_adapter.py) which applies
   per-window learned deltas downstream in the coordinator.
-  preferred_shade_position_factor is retained in AdaptiveProfile for possible
-  future use but is no longer applied here.
 
   signal_count gate is enforced by the upstream ConfidenceEngine;
   apply_adaptive_profile() trusts the confidence_level it receives.

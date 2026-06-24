@@ -238,6 +238,7 @@ from .models.strategy_learning import (
     AD_REDUCED as STRAT_AD_REDUCED,
     AD_ROLLED_BACK as STRAT_AD_ROLLED_BACK,
     AD_INVALIDATED as STRAT_AD_INVALIDATED,
+    EXP_ABORTED as STRAT_EXP_ABORTED,
     ADOPTION_HISTORY_PER_KEY as STRAT_ADOPTION_HISTORY_PER_KEY,
     FAMILY_BOUNDS as STRAT_FAMILY_BOUNDS,
     FAMILY_ENTRY_THRESHOLD,
@@ -5098,7 +5099,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         Position-namespace unsafe ⇒ suspend all position adoptions + abort active
         position experiments.  Strategy-namespace unsafe ⇒ suspend all strategy
-        adoptions.  Consumed evidence is never released; baseline control stays."""
+        adoptions + abort active strategy experiments.  Consumed evidence is never
+        released; baseline control stays."""
         blocked = 0
         if not self._ledger_namespace_safe(_LEDGER_POSITION):
             for key, a in list(self._adoptions_active.items()):
@@ -5117,8 +5119,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         a, suspended=True,
                         current_gate_reason="ledger_integrity_unsafe", updated_at=now)
                     blocked += 1
+            # P10 acceptance recheck: a restored/active strategy experiment must be
+            # durably aborted (terminal in history) so it cannot apply a delta next
+            # cycle.  Consumed evidence stays consumed; no outcome credit.
+            for zid, exp in list(self._strategy_experiments_active.items()):
+                self._strategy_experiments_active.pop(zid, None)
+                self._strategy_experiment_history.append(replace(
+                    exp, status=STRAT_EXP_ABORTED, abort_reason="ledger_integrity_unsafe",
+                    rollback_state="logical", updated_at=now, completed_at=now))
+                blocked += 1
         if blocked:
             self._mark_learning_dirty()
+            self._request_important_save()
         return blocked
 
     def _apply_config_diff_on_restore(self, prev_snapshot: dict, now: datetime) -> list:
@@ -5237,16 +5249,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         gen = self._thermal_config_generation(zone_id)
         key = (window_id, family)
         a = self._strategy_adoptions_active.get(key)
-        if a is not None and a.adopted_delta != 0:
-            ctx = self._experiment_context_family(now, outdoor, exposure)
-            # P10 acceptance closure: while the strategy ledger namespace is unsafe,
-            # a restored adoption stays PERMANENTLY suspended — no threshold/timing/
-            # tier/hold/hysteresis delta is applied.  Rechecked every cycle.
-            if not self._ledger_namespace_safe(_LEDGER_STRATEGY):
+        # P10 acceptance recheck: the strategy-ledger gate guards the ENTIRE strategy
+        # delta authority — BEFORE both the adoption AND the experiment path.  While
+        # the strategy namespace is unsafe NO strategy delta is produced (adoption or
+        # experiment), the total delta is exactly 0 and applied stays False; any
+        # restored adoption is kept suspended.  Rechecked every cycle.
+        if not self._ledger_namespace_safe(_LEDGER_STRATEGY):
+            if a is not None and not a.suspended:
                 self._strategy_adoptions_active[key] = replace(
                     a, suspended=True, current_gate_reason="ledger_integrity_unsafe",
                     updated_at=now)
-                return (0.0, False)
+            return (0.0, False)
+        if a is not None and a.adopted_delta != 0:
+            ctx = self._experiment_context_family(now, outdoor, exposure)
             if not exec_cfg.learning_enabled:
                 self._strategy_adoptions_active[key] = replace(
                     a, suspended=True, current_gate_reason="learning_mode_off", updated_at=now)

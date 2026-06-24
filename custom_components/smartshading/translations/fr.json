@@ -429,7 +429,7 @@
       "learning_mode": {
         "name": "Mode d'apprentissage",
         "state": {
-          "on": "Observation",
+          "on": "Apprentissage",
           "off": "En pause"
         }
       },

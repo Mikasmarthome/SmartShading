@@ -4399,8 +4399,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._cycle_experiment.pop(window_id, None)
         zone_id = window.zone_id
         exec_cfg = self.effective_zone_execution(zone_id)
-        # Two mandatory user levels: Learning Mode + Active Control.
-        if not (exec_cfg.learning_enabled and exec_cfg.active_control_enabled):
+        # Central authority: real experiments require ADAPTIVE mode (Learning
+        # Mode + Active Control).  There is no separate experiments control.
+        if not exec_cfg.authority.experiments_allowed:
             return wdi
         # P10 acceptance fix: no new position experiment while the position
         # consumed-ledger namespace is unsafe.
@@ -4715,10 +4716,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         zone_id = window.zone_id if window is not None else ""
         exec_cfg = self.effective_zone_execution(zone_id) if zone_id else ZoneExecutionConfig()
         gate = None
-        if not exec_cfg.learning_enabled:
-            gate = "learning_mode_required"
-        elif not exec_cfg.active_control_enabled:
-            gate = "active_control_required"
+        if not exec_cfg.authority.experiments_allowed:
+            gate = (
+                "learning_mode_required"
+                if not exec_cfg.learning_enabled
+                else "active_control_required"
+            )
         exp = self._experiments_active.get(zone_id)
         if exp is None or exp.window_id != window_id:
             latest = next(

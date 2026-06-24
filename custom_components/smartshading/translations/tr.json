@@ -429,7 +429,7 @@
       "learning_mode": {
         "name": "Öğrenme modu",
         "state": {
-          "on": "Gözlemliyor",
+          "on": "Öğreniyor",
           "off": "Duraklatıldı"
         }
       },

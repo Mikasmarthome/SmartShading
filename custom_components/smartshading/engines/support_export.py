@@ -32,6 +32,7 @@ from .diagnostics_privacy import (
 )
 from . import learning_trace_builder as ltb
 from . import reason_codes as rc
+from ..models.runtime_mode import derive_authority
 
 SUPPORT_EXPORT_SCHEMA_VERSION: int = 3
 
@@ -115,11 +116,17 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         zone_id = next(iter(getattr(c, "zones", {}) or {}), None)
         la = ltb.build_learning_authority(c, next(iter(getattr(c, "windows", {}) or {}), "")) \
             if getattr(c, "windows", None) else {}
+        _auth = derive_authority(
+            bool(la.get("learning_enabled")), bool(la.get("active_control_enabled")))
         return {
             "zone_ref": pz.ref(NS_ZONE, zone_id),
             "window_count": len(windows),
+            "runtime_mode": _auth.mode.value,
             "learning_enabled": la.get("learning_enabled"),
             "active_control_enabled": la.get("active_control_enabled"),
+            "adaptive_reads_allowed": _auth.adaptive_reads_allowed,
+            "real_control_allowed": _auth.real_control_allowed,
+            "experiments_allowed": _auth.experiments_allowed,
             "indoor_temperature_configured": bool(
                 getattr(c, "_indoor_temperature_sensor_ids", None)),
             "solar_sensor_configured": getattr(c, "_solar_radiation_sensor_id", None) is not None,

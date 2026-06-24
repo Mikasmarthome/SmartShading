@@ -2,7 +2,7 @@
 
 Dispatches to the correct implementation based on entry type:
   - System entry → DebugLoggingSwitch (entities/system_switch.py)
-  - Zone entry   → Observation Mode + Active Control switches (entities/switch.py)
+  - Zone entry   → Learning Mode + Active Control switches (entities/switch.py)
 """
 from __future__ import annotations
 

@@ -33,6 +33,7 @@ from .diagnostics_privacy import (
     is_json_safe,
     truncate_strings,
 )
+from ..models.runtime_mode import derive_authority
 
 RESEARCH_EXPORT_SCHEMA_VERSION: int = 3
 
@@ -91,6 +92,20 @@ def _learning_source_type(sources) -> str:
     if any("forecast" in x for x in s):
         return "forecast"
     return "none"
+
+
+def _zone_runtime_mode(c) -> str:
+    """Derived runtime mode of the (first) zone — PUBLIC_SAFE label only."""
+    try:
+        zid = next(iter(getattr(c, "zones", {}) or {}), None)
+        eff = getattr(c, "effective_zone_execution", None)
+        cfg = eff(zid) if (eff and zid is not None) else None
+        return derive_authority(
+            bool(getattr(cfg, "learning_enabled", False)),
+            bool(getattr(cfg, "active_control_enabled", False)),
+        ).mode.value
+    except Exception:
+        return "unknown"
 
 
 def build_research_export_v3(coordinator, *, now=None, integration_version="unknown") -> dict:
@@ -166,7 +181,8 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
         "system": _safe(lambda: {
             "entry_ref": pz.ref(NS_ENTRY, entry_id),
             "zone_ref": pz.ref(NS_ZONE, next(iter(getattr(c, "zones", {}) or {}), None)),
-            "window_count": len(getattr(c, "windows", {}) or {})}, errors, "system"),
+            "window_count": len(getattr(c, "windows", {}) or {}),
+            "runtime_mode": _zone_runtime_mode(c)}, errors, "system"),
         "research_records": capped,
         "aggregations": _safe(lambda: _aggregations(research_records, c), errors, "aggregations"),
         "survivorship": _safe(lambda: _survivorship(c), errors, "survivorship"),

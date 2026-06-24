@@ -35,6 +35,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .runtime_mode import RuntimeMode, RuntimeModeAuthority, derive_authority
+
 
 @dataclass(frozen=True)
 class ZoneExecutionConfig:
@@ -86,3 +88,17 @@ class ZoneExecutionConfig:
     active_control_enabled to be True (plus reliable feedback and every P7
     eligibility gate).  There is no separate experiments flag.
     """
+
+    @property
+    def runtime_mode(self) -> RuntimeMode:
+        """The single derived runtime mode for this zone (central authority)."""
+        return self.authority.mode
+
+    @property
+    def authority(self) -> RuntimeModeAuthority:
+        """The full capability authority derived from the two controls.
+
+        Subsystems must read capability properties from here instead of
+        recombining the two flags independently.
+        """
+        return derive_authority(self.learning_enabled, self.active_control_enabled)

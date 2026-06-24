@@ -14,6 +14,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from .diagnostics_privacy import enforce_depth, is_json_safe, truncate_strings
+from ..models.runtime_mode import derive_authority
 
 DIAGNOSTICS_SCHEMA_VERSION: int = 1
 
@@ -68,15 +69,25 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
                 cfg = None
             learning = bool(getattr(cfg, "learning_enabled", False))
             active = bool(getattr(cfg, "active_control_enabled", False))
+            # Central authority: single derivation, no ad-hoc recombination.
+            auth = derive_authority(learning, active)
             out[_zone_hash(c, zid)] = {
+                "runtime_mode": auth.mode.value,
                 "learning_enabled": learning,
                 "active_control_enabled": active,
-                "observation_active": learning,
-                "shadow_evaluation_active": learning,
-                "experiments_allowed": learning and active,
-                "real_experiments_allowed": learning and active,
-                "adoptions_allowed": learning,
-                "cover_commands_allowed": active,
+                "learning_allowed": auth.learning_allowed,
+                "shadow_evaluation_allowed": auth.shadow_evaluation_allowed,
+                "adaptive_reads_allowed": auth.adaptive_reads_allowed,
+                "adaptive_writes_allowed": auth.adaptive_writes_allowed,
+                "real_control_allowed": auth.real_control_allowed,
+                "experiments_allowed": auth.experiments_allowed,
+                "outcomes_allowed": auth.outcomes_allowed,
+                # Legacy aliases (kept for existing diagnostics consumers).
+                "observation_active": auth.learning_allowed,
+                "shadow_evaluation_active": auth.shadow_evaluation_allowed,
+                "real_experiments_allowed": auth.experiments_allowed,
+                "adoptions_allowed": auth.learning_allowed,
+                "cover_commands_allowed": auth.real_control_allowed,
             }
         return out
 

@@ -429,7 +429,7 @@
       "learning_mode": {
         "name": "Læringsmodus",
         "state": {
-          "on": "Observerer",
+          "on": "Lærer",
           "off": "Satt på pause"
         }
       },

@@ -429,7 +429,7 @@
       "learning_mode": {
         "name": "Režim učení",
         "state": {
-          "on": "Pozoruje",
+          "on": "Učení",
           "off": "Pozastaveno"
         }
       },

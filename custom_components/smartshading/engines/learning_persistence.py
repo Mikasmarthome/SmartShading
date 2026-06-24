@@ -1006,7 +1006,7 @@ def deserialize_into_learning_store(
     # --- P8 persistent adoptions (additive, optional) ---
     _sv["position_adoptions"] = validate_records(
         data.get("persistent_adoptions", []), now=now, id_key="adoption_id",
-        timestamp_fields=("created_at", "updated_at"))
+        timestamp_fields=("created_at", "updated_at"), reject_negative_counts=True)
     persistent_adoptions: list = []
     for i, raw in enumerate(_sv["position_adoptions"].valid_records):
         try:
@@ -1026,7 +1026,7 @@ def deserialize_into_learning_store(
             _LOGGER.warning("Learning: skipping malformed strategy experiment #%d", i)
     _sv["strategy_adoptions"] = validate_records(
         data.get("persistent_strategy_adoptions", []), now=now, id_key="adoption_id",
-        timestamp_fields=("created_at", "updated_at"))
+        timestamp_fields=("created_at", "updated_at"), reject_negative_counts=True)
     persistent_strategy_adoptions: list = []
     for i, raw in enumerate(_sv["strategy_adoptions"].valid_records):
         try:

@@ -78,6 +78,22 @@ def _is_bool(v: object) -> bool:
     return isinstance(v, bool)
 
 
+def has_negative_count(obj: object) -> bool:
+    """Recursively detect any *_count field holding a negative int (e.g. an embedded
+    monitoring counter inside an adoption record).  bool is not a count."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if (isinstance(k, str) and k.endswith("_count")
+                    and isinstance(v, int) and not isinstance(v, bool) and v < 0):
+                return True
+            if has_negative_count(v):
+                return True
+        return False
+    if isinstance(obj, (list, tuple)):
+        return any(has_negative_count(v) for v in obj)
+    return False
+
+
 def validate_records(
     raw_list: object,
     *,
@@ -89,6 +105,7 @@ def validate_records(
     enum_fields: dict | None = None,            # field -> allowed set
     numeric_fields: tuple[str, ...] = (),       # must be finite real numbers (no bool)
     nonneg_count_fields: tuple[str, ...] = (),  # non-negative int counts
+    reject_negative_counts: bool = False,       # recursively reject any negative *_count
     nonneg_duration_fields: tuple[str, ...] = (),  # non-negative numeric durations/seconds
     range_fields: dict | None = None,           # field -> (lo, hi) inclusive bounds
     expected_window_id: str | None = None,
@@ -149,6 +166,9 @@ def validate_records(
                 bad = True
                 break
         if bad:
+            continue
+        if reject_negative_counts and has_negative_count(rec):
+            res._bump(R_NEGATIVE_COUNT)
             continue
         for df in nonneg_duration_fields:
             v = rec.get(df)

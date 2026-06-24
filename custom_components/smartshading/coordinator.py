@@ -4420,6 +4420,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             a = self._adoptions_active.get(key)
             if a is None or a.adopted_delta_ha == 0:
                 continue
+            # P10 acceptance closure: while the position ledger namespace is unsafe,
+            # a restored adoption stays PERMANENTLY suspended — never re-activated,
+            # no learned delta reaches effective behaviour.  Rechecked every cycle;
+            # consumed evidence + history are preserved.
+            if not self._ledger_namespace_safe(_LEDGER_POSITION):
+                self._adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason="ledger_integrity_unsafe",
+                    updated_at=now)
+                continue
             # Per-intensity manual preference always wins → do not apply.
             if self._intensity_manual_pref(eff_ha, cfg_ha, intensity):
                 self._adoptions_active[key] = replace(
@@ -4682,9 +4691,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         invalidated, never apply.  Provenance-only gaps (e.g. a missing shadow
         tombstone) are NOT a reason to invalidate.  Reason code from the validator."""
         entry_id = self.config_entry.entry_id
+        # Hard source-experiment resolution: EVERY required source_experiment_id must
+        # resolve to a restored experiment (active or terminal history).  The consumed
+        # ledger only proves prior consumption — it is NOT accepted as resolution.
+        pos_resolvable = {
+            e.experiment_id for e in self._experiment_history
+        } | {e.experiment_id for e in self._experiments_active.values()}
+        strat_resolvable = {
+            e.experiment_id for e in self._strategy_experiment_history
+        } | {e.experiment_id for e in self._strategy_experiments_active.values()}
         pos = _validate_adoptions(
             list(self._adoptions_active.values()),
-            owner_entry_id=entry_id, current_entry_id=entry_id)
+            owner_entry_id=entry_id, current_entry_id=entry_id,
+            resolvable_experiment_ids=pos_resolvable)
         for key, a in list(self._adoptions_active.items()):
             if a.adoption_id in pos.invalid_ids:
                 self._adoptions_active.pop(key, None)
@@ -4694,7 +4713,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     updated_at=now))
         strat = _validate_adoptions(
             list(self._strategy_adoptions_active.values()),
-            owner_entry_id=entry_id, current_entry_id=entry_id)
+            owner_entry_id=entry_id, current_entry_id=entry_id,
+            resolvable_experiment_ids=strat_resolvable)
         for key, a in list(self._strategy_adoptions_active.items()):
             if a.adoption_id in strat.invalid_ids:
                 self._strategy_adoptions_active.pop(key, None)
@@ -5219,6 +5239,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         a = self._strategy_adoptions_active.get(key)
         if a is not None and a.adopted_delta != 0:
             ctx = self._experiment_context_family(now, outdoor, exposure)
+            # P10 acceptance closure: while the strategy ledger namespace is unsafe,
+            # a restored adoption stays PERMANENTLY suspended — no threshold/timing/
+            # tier/hold/hysteresis delta is applied.  Rechecked every cycle.
+            if not self._ledger_namespace_safe(_LEDGER_STRATEGY):
+                self._strategy_adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason="ledger_integrity_unsafe",
+                    updated_at=now)
+                return (0.0, False)
             if not exec_cfg.learning_enabled:
                 self._strategy_adoptions_active[key] = replace(
                     a, suspended=True, current_gate_reason="learning_mode_off", updated_at=now)

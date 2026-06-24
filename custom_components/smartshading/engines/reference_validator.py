@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 # reason codes
 R_OWNER_MISMATCH = "owner_mismatch"
 R_MISSING_SOURCE_EXPERIMENTS = "missing_source_experiments"
+R_MISSING_SOURCE_EXPERIMENT = "missing_source_experiment"
 R_MISSING_DECISION_LINK = "missing_decision_link"
 R_DUPLICATE_ID = "duplicate_id"
 
@@ -33,13 +34,18 @@ class ReferenceValidationResult:
 
 def validate_adoptions(
     adoptions: list, *, owner_entry_id: str | None, current_entry_id: str,
+    resolvable_experiment_ids: set | None = None,
 ) -> ReferenceValidationResult:
     """Validate persistent adoptions (position or strategy).
 
-    Each adoption object must expose: an id attribute (adoption_id),
-    source_experiment_ids, consumed_experiment_ids.  An adoption with no
-    resolvable source/consumed experiment evidence is INVALID (hard reference).
-    A whole-payload owner mismatch rejects everything."""
+    Each adoption object must expose: adoption_id, source_experiment_ids,
+    consumed_experiment_ids.  HARD reference rule:
+      - source_experiment_ids must be non-empty, AND
+      - when *resolvable_experiment_ids* is provided, EVERY required
+        source_experiment_id must resolve to a restored experiment.  One missing
+        id makes the whole adoption unsafe (no silent partial acceptance).
+    Consumed-ledger membership and shadow-provenance are NOT accepted as hard
+    resolution.  A whole-payload owner mismatch rejects everything."""
     if owner_entry_id is not None and owner_entry_id != current_entry_id:
         ids = tuple(getattr(a, "adoption_id", None) for a in adoptions)
         return ReferenceValidationResult(
@@ -61,8 +67,20 @@ def validate_adoptions(
         if not src and not consumed:
             invalid.append(aid)
             reasons[aid] = R_MISSING_SOURCE_EXPERIMENTS
-        else:
-            valid.append(aid)
+            continue
+        if not src:
+            # consumed-ledger membership alone is NOT a resolvable source experiment
+            invalid.append(aid)
+            reasons[aid] = R_MISSING_SOURCE_EXPERIMENT
+            continue
+        if resolvable_experiment_ids is not None and any(
+            sid not in resolvable_experiment_ids for sid in src
+        ):
+            # one unresolved required id ⇒ whole adoption unsafe
+            invalid.append(aid)
+            reasons[aid] = R_MISSING_SOURCE_EXPERIMENT
+            continue
+        valid.append(aid)
     return ReferenceValidationResult(
         valid_ids=tuple(valid), invalid_ids=tuple(invalid), reason_codes=reasons, owner_ok=True)
 

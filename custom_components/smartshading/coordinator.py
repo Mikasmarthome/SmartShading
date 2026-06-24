@@ -41,6 +41,7 @@ from .engines.exposure_engine import ExposureEngine
 from .engines.learning_persistence import (
     LearningPersistenceAdapter,
     LearningPersistenceConfig,
+    PAYLOAD_SCHEMA_V2,
     PERSISTENCE_INTERVAL_MINUTES,
 )
 from .engines.learning_store import LearningStore, SNAPSHOT_CYCLE_INTERVAL
@@ -249,6 +250,11 @@ from .models.strategy_learning import (
     StrategyMonitoringState,
     PersistentStrategyAdoption,
     BoundedStrategyExperiment,
+)
+from .models.consumed_ledger import (
+    TYPE_POSITION as _LEDGER_POSITION,
+    TYPE_STRATEGY as _LEDGER_STRATEGY,
+    ConsumedExperimentLedger,
 )
 from .engines.strategy_runtime import (
     TimingState,
@@ -652,7 +658,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Set True on important learning events (override signals, outcome resolution)
         # so a save is triggered at the end of that cycle instead of waiting for
         # the next hourly interval.
-        self._learning_dirty: bool = False
+        # P10: dirty-generation counter (not a single bool) so a save can only
+        # clear exactly the generation it snapshotted — mutations during an active
+        # save remain dirty for the next save.  _learning_dirty is a read-only
+        # property derived from these.
+        self._dirty_generation: int = 0
+        self._saved_generation: int = 0
+        self._save_failures: int = 0
+        self._restore_failures: int = 0
+        self._save_lock = asyncio.Lock()
         # Step 6: per-window, per-intensity learned target position adapter.
         self._target_position_adapter = TargetPositionAdapter()
         # Phase 9F4b-3: pending outcome queue.  P2: now persisted (restart-safe)
@@ -722,6 +736,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._strategy_timing_state: dict[str, TimingState] = {}
         self._cycle_strategy_applied: dict[str, dict] = {}
         self._strategy_applied_by_decision: dict[str, set] = {}
+        # P10 — permanent bounded consumed-experiment ledger (position + strategy).
+        self._consumed_ledger = ConsumedExperimentLedger()
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -863,20 +879,120 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         """
         self._forecast_learning_store = store
 
-    async def async_flush_learning(self) -> None:
-        """Flush any pending learning data to persistent storage immediately.
+    @property
+    def _learning_dirty(self) -> bool:
+        """True when in-memory learning data has unsaved changes (P10 dirty-gen)."""
+        return self._dirty_generation != self._saved_generation
 
-        Called by async_unload_entry to avoid losing data accumulated since the
-        last periodic save.  Swallows all errors so unload is never blocked.
-        """
+    def _mark_learning_dirty(self) -> None:
+        """Record an unsaved learning change (P10: monotonic dirty generation)."""
+        self._dirty_generation += 1
+
+    def _build_save_kwargs(self) -> dict:
+        """THE single authoritative complete learning snapshot used by EVERY save
+        path (periodic, important-event, reload/unload/shutdown flush).  No save
+        path may omit a section — this prevents the P0 flush data-loss where empty
+        defaults overwrote populated P3–P9B sections.
+
+        Built synchronously (no await) so the snapshot is a consistent reference
+        graph; the actual I/O happens afterwards under the save lock."""
+        return {
+            "target_adapter": self._target_position_adapter,
+            "pending_outcomes": self._pending_outcomes.all_pending(),
+            "config_generations": self._config_generation_tracker.to_storage_dict(),
+            "thermal_models": self._thermal_models_storage(),
+            "thermal_observations": self._thermal_observations_storage(),
+            "window_contribution_models": self._contribution_models_storage(),
+            "window_contribution_evidence": self._contribution_evidence_storage(),
+            "shadow_proposals": self._shadow_proposals_storage(),
+            "bounded_experiments": self._experiments_storage(),
+            "persistent_adoptions": self._adoptions_storage(),
+            "strategy_experiments": self._strategy_experiments_storage(),
+            "persistent_strategy_adoptions": self._strategy_adoptions_storage(),
+            "consumed_experiment_ledger": self._consumed_ledger.to_dict(),
+            "owner_zone_id": next(iter(self.zones.keys()), None),
+        }
+
+    async def _save_learning_snapshot(self, now: datetime) -> bool:
+        """Serialize+persist the COMPLETE snapshot under the save lock.
+
+        Captures the dirty generation BEFORE building the snapshot; on success
+        advances saved_generation to exactly that captured value so any mutation
+        that happened during the save stays dirty.  A failed save never advances
+        saved_generation (dirty is preserved).  Returns True on success."""
+        async with self._save_lock:
+            captured_gen = self._dirty_generation
+            windows = set(self.windows.keys())
+            kwargs = self._build_save_kwargs()
+            ok = await self._learning_persistence.async_save(
+                self._learning_store, windows, now, **kwargs)
+            if not ok:
+                self._save_failures += 1
+                _LOGGER.warning("Learning: snapshot save failed (dirty preserved)")
+                return False
+            self._persistence_last_save_at = now
+            # Only the captured generation is confirmed saved; mutations during the
+            # save (higher dirty_generation) remain dirty for the next save.
+            if self._saved_generation < captured_gen:
+                self._saved_generation = captured_gen
+            return True
+
+    def _retain_terminal_history(self, history: list, *, max_count: int = 200,
+                                 age_days: int = 365) -> list:
+        """P10 retention for terminal history lists: drop records older than
+        age_days (by updated_at/created_at), keep the newest max_count.  Active
+        records are NOT stored here (they live in the *_active maps) so this never
+        prunes active authority."""
         now = dt_util.utcnow()
-        await self._learning_persistence.async_save(
-            self._learning_store,
-            set(self.windows.keys()),
-            now,
-            target_adapter=self._target_position_adapter,
-        )
-        self._learning_dirty = False
+        cutoff = now - timedelta(days=age_days)
+        kept = [
+            h for h in history
+            if (getattr(h, "updated_at", None) or getattr(h, "created_at", None) or now) >= cutoff
+        ]
+        return kept[-max_count:]
+
+    async def async_flush_learning(self) -> None:
+        """Flush pending learning data immediately using the COMPLETE snapshot.
+
+        Called by async_unload_entry / shutdown.  Uses _save_learning_snapshot so
+        reload/unload/shutdown can never replace populated sections with empty
+        defaults.  Swallows all errors so unload is never blocked."""
+        try:
+            await self._save_learning_snapshot(dt_util.utcnow())
+        except Exception:
+            _LOGGER.warning("Learning: flush failed (non-fatal)")
+
+    def storage_diagnostics(self) -> dict:
+        """Privacy-safe storage status from CACHED metadata only (no re-serialize,
+        no raw IDs/payloads)."""
+        counts = {
+            "thermal_models": len(self._thermal_models),
+            "contribution_models": len(self._contribution_models),
+            "shadow_active": len(self._shadow_active),
+            "shadow_history": len(self._shadow_history),
+            "position_experiments_active": len(self._experiments_active),
+            "position_experiment_history": len(self._experiment_history),
+            "position_adoptions_active": len(self._adoptions_active),
+            "position_adoption_history": len(self._adoption_history),
+            "strategy_experiments_active": len(self._strategy_experiments_active),
+            "strategy_experiment_history": len(self._strategy_experiment_history),
+            "strategy_adoptions_active": len(self._strategy_adoptions_active),
+            "strategy_adoption_history": len(self._strategy_adoption_history),
+            "consumed_ledger_position": len(self._consumed_ledger.consumed_ids(_LEDGER_POSITION)),
+            "consumed_ledger_strategy": len(self._consumed_ledger.consumed_ids(_LEDGER_STRATEGY)),
+        }
+        return {
+            "learning_store_schema_version": PAYLOAD_SCHEMA_V2,
+            "learning_store_record_counts": counts,
+            "learning_store_dirty": self._learning_dirty,
+            "learning_store_dirty_generation": self._dirty_generation,
+            "learning_store_saved_generation": self._saved_generation,
+            "learning_store_last_save_at": (
+                self._persistence_last_save_at.isoformat()
+                if self._persistence_last_save_at is not None else None),
+            "learning_store_save_failures": self._save_failures,
+            "learning_store_restore_failures": self._restore_failures,
+        }
 
     # ------------------------------------------------------------------
     # Presence listener fan-out
@@ -1310,31 +1426,32 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         reconcile_restored_strategy_adoptions(
                             _extras.persistent_strategy_adoptions, _restore_now)
                     )
+                    # P10: ownership validation — a payload whose owner_entry_id is
+                    # present but does NOT match this entry is foreign (copied file);
+                    # drop ALL adaptive authority to prevent cross-zone authority.
+                    _owner = getattr(_extras, "owner_entry_id", None)
+                    if _owner is not None and _owner != self.config_entry.entry_id:
+                        _LOGGER.warning(
+                            "Learning: stored payload owner mismatch — dropping adaptive authority")
+                        self._shadow_active = {}
+                        self._experiments_active = {}
+                        self._adoptions_active = {}
+                        self._strategy_experiments_active = {}
+                        self._strategy_adoptions_active = {}
+                        self._consumed_ledger = ConsumedExperimentLedger()
+                    else:
+                        # P10: restore the permanent consumed-experiment ledger.
+                        self._consumed_ledger = ConsumedExperimentLedger.from_dict(
+                            getattr(_extras, "consumed_experiment_ledger", None))
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
             # /config/.storage/smartshading_learning_<id> is visible right away,
             # even before any learning data has been collected.  Also performs the
             # one-shot controlled save after a v1→v2 migration (coordinator owns it).
+            # Uses the SINGLE complete-snapshot authority (P10) — never partial.
             if self._learning_persistence.fresh_start or self._learning_persistence.migration_dirty:
-                await self._learning_persistence.async_save(
-                    self._learning_store,
-                    set(self.windows.keys()),
-                    _restore_now,
-                    target_adapter=self._target_position_adapter,
-                    pending_outcomes=self._pending_outcomes.all_pending(),
-                    config_generations=self._config_generation_tracker.to_storage_dict(),
-                    thermal_models=self._thermal_models_storage(),
-                    thermal_observations=self._thermal_observations_storage(),
-                    window_contribution_models=self._contribution_models_storage(),
-                    window_contribution_evidence=self._contribution_evidence_storage(),
-                    shadow_proposals=self._shadow_proposals_storage(),
-                    bounded_experiments=self._experiments_storage(),
-                    persistent_adoptions=self._adoptions_storage(),
-                    strategy_experiments=self._strategy_experiments_storage(),
-                    persistent_strategy_adoptions=self._strategy_adoptions_storage(),
-                )
-                self._persistence_last_save_at = _restore_now
+                await self._save_learning_snapshot(_restore_now)
                 self._learning_persistence.clear_migration_dirty()
 
         # P2: monotonic per-cycle id for grouping all windows decided this tick.
@@ -1483,7 +1600,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         ),
                         now=now,
                     )
-                    self._learning_dirty = True
+                    self._mark_learning_dirty()
                 except Exception:
                     pass  # never block the update cycle
 
@@ -1541,7 +1658,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             duration_min=(now - active_override.started_at).total_seconds() / 60,
                             now=now,
                         )
-                        self._learning_dirty = True
+                        self._mark_learning_dirty()
                     except Exception:
                         pass  # never block the update cycle
 
@@ -3426,25 +3543,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             or _elapsed_since_save >= PERSISTENCE_INTERVAL_MINUTES
         )
         if _should_persist:
-            await self._learning_persistence.async_save(
-                self._learning_store,
-                set(self.windows.keys()),
-                now,
-                target_adapter=self._target_position_adapter,
-                pending_outcomes=self._pending_outcomes.all_pending(),
-                config_generations=self._config_generation_tracker.to_storage_dict(),
-                thermal_models=self._thermal_models_storage(),
-                thermal_observations=self._thermal_observations_storage(),
-                window_contribution_models=self._contribution_models_storage(),
-                window_contribution_evidence=self._contribution_evidence_storage(),
-                shadow_proposals=self._shadow_proposals_storage(),
-                bounded_experiments=self._experiments_storage(),
-                persistent_adoptions=self._adoptions_storage(),
-                strategy_experiments=self._strategy_experiments_storage(),
-                persistent_strategy_adoptions=self._strategy_adoptions_storage(),
-            )
-            self._persistence_last_save_at = now
-            self._learning_dirty = False
+            await self._save_learning_snapshot(now)
 
         return SmartShadingData(
             window_results=window_results,
@@ -3858,7 +3957,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             confirmation="command_attempted",
         )
         self._experiment_zone_last_activation[zone_id] = now
-        self._learning_dirty = True
+        self._mark_learning_dirty()
         return ctx["experiment_id"]
 
     def _experiment_confirm_dispatch(
@@ -3889,7 +3988,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             confirmation=("position_change_confirmed" if has_reliable_feedback
                           else "command_sent"),
         )
-        self._learning_dirty = True
+        self._mark_learning_dirty()
 
     def _experiment_finalize_from_outcome(self, outcome) -> None:
         """Evaluate the experiment whose decision produced this outcome."""
@@ -3971,7 +4070,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         )
         self._experiments_active.pop(zone_id, None)
         self._experiment_to_history(completed)
-        self._learning_dirty = True
+        self._mark_learning_dirty()
         # P8: a freshly completed experiment is new evidence — re-evaluate whether
         # a persistent adoption can be created or upgraded for this (window,intensity).
         try:
@@ -3993,7 +4092,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             exp, status=terminal, abort_reason=reason, updated_at=now,
             completed_at=now, rollback_state="logical",
         ))
-        self._learning_dirty = True
+        self._mark_learning_dirty()
 
     def _experiment_to_history(self, exp) -> None:
         self._experiment_history.append(exp)
@@ -4051,7 +4150,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     def _experiments_storage(self) -> list:
         out = [e.to_dict() for e in self._experiments_active.values()]
-        out.extend(e.to_dict() for e in self._experiment_history[-200:])
+        out.extend(e.to_dict() for e in self._retain_terminal_history(self._experiment_history))
         return out
 
     # ------------------------------------------------------------------
@@ -4068,6 +4167,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         for h in self._adoption_history:
             if h.adoption_key == key:
                 ids.update(h.consumed_experiment_ids)
+        ids.update(self._consumed_ledger.consumed_ids(_LEDGER_POSITION))
         return ids
 
     def _adoption_experiment_evidence(self, window_id: str, intensity: str) -> list:
@@ -4301,7 +4401,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             monitoring=AdoptionMonitoringState(monitoring_started_at=now),
         )
         self._adoptions_active[key] = adoption
-        self._learning_dirty = True
+        for _eid in res.selected_experiment_ids:
+            _ce = next((e for e in self._experiment_history if e.experiment_id == _eid), None)
+            self._consumed_ledger.record(
+                _LEDGER_POSITION, _eid, _ce.created_at if _ce is not None else now)
+        self._mark_learning_dirty()
 
     def _monitor_adoption(self, outcome) -> None:
         """Update monitoring for an active adoption from a production outcome and
@@ -4361,7 +4465,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if evaluate_confirmation(stage=a.stage, activated_at=activated,
                                      monitoring=new_mon, now=now):
                 self._adoptions_active[key] = replace(a, status=ADOPT_STATUS_CONFIRMED, updated_at=now)
-        self._learning_dirty = True
+        self._mark_learning_dirty()
 
     def _suspend_zone_adoptions(self, zone_id: str, reason: str, now: datetime) -> None:
         for key, a in list(self._adoptions_active.items()):
@@ -4417,7 +4521,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     def _adoptions_storage(self) -> list:
         out = [a.to_dict() for a in self._adoptions_active.values()]
-        out.extend(a.to_dict() for a in self._adoption_history[-200:])
+        out.extend(a.to_dict() for a in self._retain_terminal_history(self._adoption_history))
         return out
 
     # ------------------------------------------------------------------
@@ -4499,6 +4603,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         for h in self._strategy_adoption_history:
             if h.adoption_key == key:
                 ids.update(h.consumed_experiment_ids)
+        ids.update(self._consumed_ledger.consumed_ids(_LEDGER_STRATEGY))
         return ids
 
     def _strategy_adoption_to_history(self, adoption) -> None:
@@ -4625,7 +4730,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             reliability=res.reliability, distinct_experiment_days=res.distinct_days,
             monitoring=StrategyMonitoringState(monitoring_started_at=now))
         self._strategy_adoptions_active[key] = adoption
-        self._learning_dirty = True
+        # P10: permanently record consumed strategy-experiment ids (never reusable).
+        for _eid in res.selected_experiment_ids:
+            _ce = next((e for e in self._strategy_experiment_history
+                        if e.experiment_id == _eid), None)
+            self._consumed_ledger.record(
+                _LEDGER_STRATEGY, _eid, _ce.created_at if _ce is not None else now)
+        self._mark_learning_dirty()
 
     def _monitor_strategy_adoption(self, outcome) -> None:
         """Continuous monitoring of active strategy adoptions from production
@@ -4686,7 +4797,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                                   monitoring=new_mon, now=now):
                     self._strategy_adoptions_active[key] = replace(
                         a, status=STRAT_AD_CONFIRMED, updated_at=now)
-            self._learning_dirty = True
+            self._mark_learning_dirty()
 
     def _suspend_zone_strategy(self, zone_id: str, reason: str, now: datetime) -> None:
         for key, a in list(self._strategy_adoptions_active.items()):
@@ -4861,12 +4972,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     def _strategy_experiments_storage(self) -> list:
         out = [e.to_dict() for e in self._strategy_experiments_active.values()]
-        out.extend(e.to_dict() for e in self._strategy_experiment_history[-200:])
+        out.extend(e.to_dict() for e in self._retain_terminal_history(self._strategy_experiment_history))
         return out
 
     def _strategy_adoptions_storage(self) -> list:
         out = [a.to_dict() for a in self._strategy_adoptions_active.values()]
-        out.extend(a.to_dict() for a in self._strategy_adoption_history[-200:])
+        out.extend(a.to_dict() for a in self._retain_terminal_history(self._strategy_adoption_history))
         return out
 
     def window_contribution_diagnostics(self, window_id: str) -> dict:
@@ -4926,7 +5037,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     def _shadow_proposals_storage(self) -> list:
         out = [p.to_dict() for p in self._shadow_active.values()]
-        out.extend(p.to_dict() for p in self._shadow_history[-200:])
+        out.extend(p.to_dict() for p in self._retain_terminal_history(self._shadow_history))
         return out
 
     def _contribution_models_storage(self) -> dict:
@@ -5203,7 +5314,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._maybe_shadow(zone_id, acc, mo, _attr, now, gen)
             except Exception:
                 _LOGGER.warning("Learning: shadow update failed for %s (non-fatal)", zone_id)
-            self._learning_dirty = True
+            self._mark_learning_dirty()
         # Whether usable or not, the zone window is now closed.
         self._thermal_open.pop(zone_id, None)
 
@@ -5790,4 +5901,4 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 _oldest = next(iter(self._strategy_applied_by_decision))
                 self._strategy_applied_by_decision.pop(_oldest, None)
         self._last_decision_summaries[window_id] = candidate.to_summary()
-        self._learning_dirty = True
+        self._mark_learning_dirty()

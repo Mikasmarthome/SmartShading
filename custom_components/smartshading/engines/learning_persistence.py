@@ -447,6 +447,9 @@ def serialize_learning_store(
     persistent_adoptions: list | None = None,
     strategy_experiments: list | None = None,
     persistent_strategy_adoptions: list | None = None,
+    consumed_experiment_ledger: dict | None = None,
+    owner_entry_id: str | None = None,
+    owner_zone_id: str | None = None,
 ) -> dict:
     """Serialize the LearningStore to a JSON-safe dict.
 
@@ -540,6 +543,11 @@ def serialize_learning_store(
         # P9B — bounded strategy experiments + persistent strategy adoptions.
         "strategy_experiments": strategy_experiments or [],
         "persistent_strategy_adoptions": persistent_strategy_adoptions or [],
+        # P10 — permanent consumed-experiment ledger + ownership (v3 additive).
+        "consumed_experiment_ledger": consumed_experiment_ledger or {},
+        "owner_entry_id": owner_entry_id,
+        "owner_zone_id": owner_zone_id,
+        "created_by_domain": "smartshading",
     }
 
     if target_adapter is not None:
@@ -705,6 +713,9 @@ class RestoreExtras:
     persistent_adoptions: list  # list[PersistentTargetAdoption]
     strategy_experiments: list  # list[BoundedStrategyExperiment]
     persistent_strategy_adoptions: list  # list[PersistentStrategyAdoption]
+    consumed_experiment_ledger: dict  # ConsumedExperimentLedger payload
+    owner_entry_id: str | None
+    owner_zone_id: str | None
 
 
 def deserialize_into_learning_store(
@@ -922,6 +933,9 @@ def deserialize_into_learning_store(
         persistent_adoptions=persistent_adoptions,
         strategy_experiments=strategy_experiments,
         persistent_strategy_adoptions=persistent_strategy_adoptions,
+        consumed_experiment_ledger=(data.get("consumed_experiment_ledger") or {}),
+        owner_entry_id=data.get("owner_entry_id"),
+        owner_zone_id=data.get("owner_zone_id"),
     )
 
 
@@ -946,6 +960,7 @@ class LearningPersistenceAdapter:
 
         storage_key = f"{LEARNING_STORAGE_KEY}_{entry_id}"
         self._store = Store(hass, LEARNING_STORE_VERSION, storage_key)
+        self._entry_id = entry_id          # P10: payload ownership validation
         self._config = config
         self._fresh_start: bool = False
         # P2 — set True when a v1 payload was migrated to v2 during restore.
@@ -1053,12 +1068,14 @@ class LearningPersistenceAdapter:
         persistent_adoptions: list | None = None,
         strategy_experiments: list | None = None,
         persistent_strategy_adoptions: list | None = None,
-    ) -> None:
+        consumed_experiment_ledger: dict | None = None,
+        owner_zone_id: str | None = None,
+    ) -> bool:
         """Prune and persist the current in-memory learning data.
 
-        Orphan windows (not in *active_window_ids*) are excluded from the
-        saved data.  Any failure is logged as WARNING and does not propagate.
-        """
+        Orphan windows (not in *active_window_ids*) are excluded from the saved
+        data.  Returns True on success, False on failure (P10: callers use this to
+        preserve the dirty generation on a failed save).  Never raises."""
         try:
             data = serialize_learning_store(
                 store, self._config, now,
@@ -1075,7 +1092,12 @@ class LearningPersistenceAdapter:
                 persistent_adoptions=persistent_adoptions,
                 strategy_experiments=strategy_experiments,
                 persistent_strategy_adoptions=persistent_strategy_adoptions,
+                consumed_experiment_ledger=consumed_experiment_ledger,
+                owner_entry_id=getattr(self, "_entry_id", None),
+                owner_zone_id=owner_zone_id,
             )
             await self._store.async_save(data)
         except Exception:
             _LOGGER.warning("Learning: failed to persist learning data (non-fatal)")
+            return False
+        return True

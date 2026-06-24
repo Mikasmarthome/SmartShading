@@ -61,6 +61,9 @@ STORAGE_KEY: str = "smartshading_forecast_learning"
 STORAGE_VERSION: int = 1
 FORECAST_RETENTION_DAYS: int = 90
 
+# P10: forecast payload schema — same hardening standard as the learning store.
+FORECAST_PAYLOAD_SCHEMA: int = 1
+
 # Hard count caps applied after age-based pruning.
 # At the default 90-day retention window and 5-min coordinator interval:
 #   ForecastSnapshot: ~1/h → max ~2 160 per zone per 90 days
@@ -102,9 +105,11 @@ class ForecastPersistenceAdapter:
     Coordinator is never interrupted by a storage failure.
     """
 
-    def __init__(self, store: _StoreProtocol) -> None:
+    def __init__(self, store: _StoreProtocol, entry_id: str | None = None) -> None:
         self._store = store
+        self._entry_id = entry_id
         self._fresh_start: bool = False
+        self._restore_rejected: bool = False
 
     @property
     def fresh_start(self) -> bool:
@@ -130,7 +135,7 @@ class ForecastPersistenceAdapter:
         """
         from homeassistant.helpers.storage import Store  # lazy HA import
 
-        return cls(Store(hass, STORAGE_VERSION, f"{STORAGE_KEY}_{entry_id}"))
+        return cls(Store(hass, STORAGE_VERSION, f"{STORAGE_KEY}_{entry_id}"), entry_id=entry_id)
 
     # ------------------------------------------------------------------
     # async_restore
@@ -160,6 +165,24 @@ class ForecastPersistenceAdapter:
             _log.debug("ForecastPersistenceAdapter: no persisted data found, starting fresh")
             return ForecastLearningStore.empty()
 
+        # P10: same hardening standard as the learning store.
+        from .storage_validation import root_payload_is_valid
+        if not root_payload_is_valid(raw):
+            self._restore_rejected = True
+            _log.warning("Forecast: invalid root payload — no forecast trust authority")
+            return ForecastLearningStore.empty()
+        # Unknown newer schema → no forecast trust authority (baseline control stays).
+        if int(raw.get("payload_schema_version", FORECAST_PAYLOAD_SCHEMA)) > FORECAST_PAYLOAD_SCHEMA:
+            self._restore_rejected = True
+            _log.warning("Forecast: payload schema newer than supported — no trust authority")
+            return ForecastLearningStore.empty()
+        # Owner mismatch → reject the WHOLE forecast payload (no cross-zone trust).
+        _owner = raw.get("owner_entry_id")
+        if _owner is not None and self._entry_id is not None and _owner != self._entry_id:
+            self._restore_rejected = True
+            _log.warning("Forecast: stored payload owner mismatch — rejecting whole payload")
+            return ForecastLearningStore.empty()
+
         # from_dict() never raises; handles corrupt data internally.
         return ForecastLearningStore.from_dict(raw)
 
@@ -187,8 +210,15 @@ class ForecastPersistenceAdapter:
             FORECAST_MAX_FORECAST_RECORDS,
         )
 
+        payload = store.to_dict()
+        # P10: stamp owner + schema envelope (additive; from_dict ignores them).
+        payload["payload_schema_version"] = FORECAST_PAYLOAD_SCHEMA
+        payload["created_by_domain"] = "smartshading"
+        if self._entry_id is not None:
+            payload["owner_entry_id"] = self._entry_id
+
         try:
-            await self._store.async_save(store.to_dict())
+            await self._store.async_save(payload)
         except Exception:
             _log.error(
                 "ForecastPersistenceAdapter: failed to save to storage"

@@ -1023,6 +1023,20 @@ class LearningPersistenceAdapter:
             _LOGGER.debug("Learning: no persisted data found, starting fresh")
             return target_adapter
         self._fresh_start = False
+        # P10: reject a payload from an UNKNOWN NEWER schema — load no adaptive
+        # authority, keep the integration on its deterministic baseline.
+        try:
+            from .learning_migration import (
+                CURRENT_PAYLOAD_SCHEMA,
+                detect_payload_schema_version,
+            )
+            if isinstance(data, dict) and detect_payload_schema_version(data) > CURRENT_PAYLOAD_SCHEMA:
+                _LOGGER.warning(
+                    "Learning: stored payload schema newer than supported — "
+                    "starting with empty store (no adaptive authority)")
+                return target_adapter
+        except Exception:
+            pass
         try:
             needs_migration = detect_payload_version(data) == PAYLOAD_SCHEMA_V1
             extras = deserialize_into_learning_store(data, store, self._config, now)

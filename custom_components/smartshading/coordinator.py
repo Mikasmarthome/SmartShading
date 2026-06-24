@@ -256,6 +256,7 @@ from .models.consumed_ledger import (
     TYPE_STRATEGY as _LEDGER_STRATEGY,
     ConsumedExperimentLedger,
 )
+from .engines.reference_validator import validate_adoptions as _validate_adoptions
 from .engines.strategy_runtime import (
     TimingState,
     apply_deescalation_hysteresis,
@@ -673,6 +674,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._save_lock = asyncio.Lock()
         # P10 completion: coalescing near-immediate save scheduler handle.
         self._pending_save_unsub = None
+        # P10: once unloading, no NEW important-save callbacks are scheduled.
+        self._unloading: bool = False
         # Step 6: per-window, per-intensity learned target position adapter.
         self._target_position_adapter = TargetPositionAdapter()
         # Phase 9F4b-3: pending outcome queue.  P2: now persisted (restart-safe)
@@ -964,6 +967,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         save (a pending handle suppresses re-scheduling).  Safe no-op when the HA
         event loop helper is unavailable (e.g. headless tests)."""
         self._mark_learning_dirty()
+        if self._unloading:
+            return  # unloading: never schedule a new callback (final flush handles it)
         if self._pending_save_unsub is not None:
             return  # already scheduled within this window → coalesce
         try:
@@ -992,13 +997,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         Called by async_unload_entry / shutdown.  Cancels any pending coalesced
         save first, then writes the complete snapshot, so reload/unload/shutdown
-        can never lose data or leave an orphan background save task.  Swallows all
-        errors so unload is never blocked."""
+        can never lose data or orphan a save task.  Re-flushes (bounded) when a
+        mutation bumps dirty_generation mid-save.  Swallows errors so unload is
+        never blocked."""
+        self._unloading = True
         self._cancel_pending_save()
-        try:
-            await self._save_learning_snapshot(dt_util.utcnow())
-        except Exception:
-            _LOGGER.warning("Learning: flush failed (non-fatal)")
+        for _attempt in range(3):
+            try:
+                await self._save_learning_snapshot(dt_util.utcnow())
+            except Exception:
+                _LOGGER.warning("Learning: flush failed (non-fatal)")
+                break
+            if not self._learning_dirty:
+                break  # saved_generation == dirty_generation → nothing left
 
     def storage_diagnostics(self) -> dict:
         """Privacy-safe storage status from CACHED metadata only (no re-serialize,
@@ -1494,6 +1505,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         # P10: restore the permanent consumed-experiment ledger.
                         self._consumed_ledger = ConsumedExperimentLedger.from_dict(
                             getattr(_extras, "consumed_experiment_ledger", None))
+                        # P10: reference-integrity — an adoption whose source/consumed
+                        # experiment evidence is unresolvable is invalidated (hard
+                        # reference), never blindly applied.
+                        self._invalidate_unreferenced_adoptions(_restore_now)
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
@@ -3968,6 +3983,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             eligibility_snapshot=elig.to_dict(),
         )
         self._experiments_active[zone_id] = exp
+        # P10: experiment activation is an important event (not tied to a later
+        # outcome) → schedule a coalesced near-immediate save.
+        self._request_important_save()
 
         # Inject: override exactly this intensity position (Tier-5 parameter).
         param_internal = to_internal_position(reval.experiment_parameter_target_ha)
@@ -4143,7 +4161,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             exp, status=terminal, abort_reason=reason, updated_at=now,
             completed_at=now, rollback_state="logical",
         ))
-        self._mark_learning_dirty()
+        # P10: experiment abort/interruption is an important event.
+        self._request_important_save()
 
     def _experiment_to_history(self, exp) -> None:
         self._experiment_history.append(exp)
@@ -4456,7 +4475,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _ce = next((e for e in self._experiment_history if e.experiment_id == _eid), None)
             self._consumed_ledger.record(
                 _LEDGER_POSITION, _eid, _ce.created_at if _ce is not None else now)
-        self._mark_learning_dirty()
+        # P10: adoption activation + consumed-ledger mutation are important events.
+        self._request_important_save()
 
     def _monitor_adoption(self, outcome) -> None:
         """Update monitoring for an active adoption from a production outcome and
@@ -4523,6 +4543,33 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if a.zone_id == zone_id and not a.suspended:
                 self._adoptions_active[key] = replace(
                     a, suspended=True, current_gate_reason=reason, updated_at=now)
+
+    def _invalidate_unreferenced_adoptions(self, now: datetime) -> None:
+        """P10 reference integrity: drop any restored adoption whose source/consumed
+        experiment evidence is unresolvable (hard reference) → move to history as
+        invalidated, never apply.  Provenance-only gaps (e.g. a missing shadow
+        tombstone) are NOT a reason to invalidate.  Reason code from the validator."""
+        entry_id = self.config_entry.entry_id
+        pos = _validate_adoptions(
+            list(self._adoptions_active.values()),
+            owner_entry_id=entry_id, current_entry_id=entry_id)
+        for key, a in list(self._adoptions_active.items()):
+            if a.adoption_id in pos.invalid_ids:
+                self._adoptions_active.pop(key, None)
+                self._adoption_to_history(replace(
+                    a, status=ADOPT_STATUS_INVALIDATED,
+                    rollback_reason=f"reference:{pos.reason_codes.get(a.adoption_id, 'invalid')}",
+                    updated_at=now))
+        strat = _validate_adoptions(
+            list(self._strategy_adoptions_active.values()),
+            owner_entry_id=entry_id, current_entry_id=entry_id)
+        for key, a in list(self._strategy_adoptions_active.items()):
+            if a.adoption_id in strat.invalid_ids:
+                self._strategy_adoptions_active.pop(key, None)
+                self._strategy_adoption_to_history(replace(
+                    a, status=STRAT_AD_INVALIDATED,
+                    rollback_reason=f"reference:{strat.reason_codes.get(a.adoption_id, 'invalid')}",
+                    updated_at=now))
 
     def _adoption_to_history(self, adoption) -> None:
         self._adoption_history.append(adoption)
@@ -4787,7 +4834,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         if e.experiment_id == _eid), None)
             self._consumed_ledger.record(
                 _LEDGER_STRATEGY, _eid, _ce.created_at if _ce is not None else now)
-        self._mark_learning_dirty()
+        # P10: strategy adoption activation + consumed-ledger mutation are important.
+        self._request_important_save()
 
     def _monitor_strategy_adoption(self, outcome) -> None:
         """Continuous monitoring of active strategy adoptions from production

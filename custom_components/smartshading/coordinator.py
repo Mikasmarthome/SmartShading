@@ -6140,7 +6140,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 observation_duration_min=(now - acc["started_at"]).total_seconds() / 60.0,
                 indoor_start=acc["indoor_start"], indoor_end=outcome.indoor_temp_outcome_c,
                 indoor_samples=tuple(acc["samples"]),
-                outdoor_start=acc["outdoor_start"], outdoor_end=outcome.outdoor_temp_at_decision,
+                outdoor_start=acc["outdoor_start"], outdoor_end=acc["outdoor_start"],
                 solar_start=acc["solar_start"], solar_end=acc["solar_start"],
                 shading_state=acc["shading_state"],
                 target_before_ha=acc["target_before"], target_after_ha=acc["target_before"],

@@ -71,10 +71,12 @@ Each gate is evaluated in order; the first matching gate produces the result.
 
 SENT_AT_UTC ON EXCEPTION
 -------------------------
-When async_call() raises, sent_at_utc is None for that call — the conservative
-choice when we cannot confirm dispatch.  For MOVE_TO_POSITION_AND_TILT where
-position succeeded but tilt raised: sent_at_utc reflects the position dispatch
-time (not None), status=FAILED signals the partial failure.
+When async_call() raises, sent_at_utc is set to now_utc — the call was started,
+which begins the global 1.0 s dispatch interval regardless of outcome.
+For MOVE_TO_POSITION_AND_TILT where position succeeded but tilt raised:
+sent_at_utc reflects the position dispatch time, status=FAILED signals the
+partial failure.  Only NOT_ATTEMPTED and BLOCKED leave sent_at_utc as None
+because no async_call was ever invoked.
 
 HOMEASSISTANT IMPORT
 --------------------
@@ -213,7 +215,7 @@ async def dispatch_cover_intent(
         sent_ok, err = await _dispatch_position(hass, intent, now_utc=now_utc)
         if not sent_ok:
             return build_failed_result(
-                intent, error=err or "unknown", sent_at_utc=None,
+                intent, error=err or "unknown", sent_at_utc=now_utc,
                 reason=f"{err} for {intent.cover_entity_id!r}",
             )
         return build_sent_result(
@@ -235,7 +237,7 @@ async def dispatch_cover_intent(
         tilt_ok, tilt_err = await _dispatch_tilt(hass, intent)
         if not tilt_ok:
             return build_failed_result(
-                intent, error=tilt_err or "unknown", sent_at_utc=None,
+                intent, error=tilt_err or "unknown", sent_at_utc=now_utc,
                 reason=f"{tilt_err} for {intent.cover_entity_id!r}",
             )
         return replace(
@@ -260,7 +262,7 @@ async def dispatch_cover_intent(
             sent_ok, pos_err = await _dispatch_position(hass, intent, now_utc=now_utc)
             if not sent_ok:
                 return build_failed_result(
-                    intent, error=pos_err or "unknown", sent_at_utc=None,
+                    intent, error=pos_err or "unknown", sent_at_utc=now_utc,
                     reason=f"position dispatch failed for {intent.cover_entity_id!r}: {pos_err}",
                 )
         # Step 2: tilt dispatch.

@@ -295,7 +295,6 @@ _NEUTRAL_ADAPTIVE_PROFILE = AdaptiveProfile(
     confidence_level="very_low",
     heat_sensitivity_factor=1.0,
     exposure_sensitivity_factor=1.0,
-    preferred_shade_position_factor=1.0,
     solar_escalation_factor=1.0,
     adaptation_strength=0.0,
 )
@@ -3033,11 +3032,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             _intent_result = await dispatch_cover_intent(
                                 self.hass, _intent, now_utc=dt_util.utcnow()
                             )
-                            # Update throttle clock on confirmed send only.
-                            # Safety SENT also updates so subsequent non-safety
-                            # commands wait the full interval from safety dispatch.
-                            # FAILED: no confirmed dispatch — do not update throttle.
-                            if _intent_result.status is ExecutionStatus.SENT:
+                            # Update throttle clock whenever async_call was started.
+                            # SENT:   confirmed dispatch — always update.
+                            # FAILED: async_call was invoked (but raised) — the call
+                            #   starts the global 1.0 s interval regardless of outcome.
+                            # NOT_ATTEMPTED / BLOCKED: no async_call — do not update.
+                            if _intent_result.status in (
+                                ExecutionStatus.SENT, ExecutionStatus.FAILED
+                            ):
                                 self._serial_dispatch.record_dispatch(dt_util.utcnow())
                                 if self._debug_logging_enabled:
                                     _LOGGER.debug(
@@ -3407,7 +3409,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             ))
             return compute_adaptive_profile(AdaptationInput(
                 aggregate_result=aggregate_result,
-                override_result=override_result,
                 solar_result=solar_result,
             ))
         except Exception:

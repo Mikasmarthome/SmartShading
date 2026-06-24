@@ -346,16 +346,16 @@ class SmartShadingResearchExportButton(ButtonEntity):
         from homeassistant.components.persistent_notification import (
             async_create as pn_async_create,
         )
-        from ..engines.research_export import build_research_export
+        from ..engines.research_export_v3 import build_research_export_v3
         from ..engines.export_retention import cleanup_old_exports
 
         now = datetime.now(timezone.utc)
         try:
-            zone_entries = await _collect_zone_entries(self._hass)
-            export_data = build_research_export(
-                zone_entries=zone_entries,
-                generated_at_utc=now,
-            )
+            rd = getattr(self._entry, "runtime_data", None)
+            coordinator = getattr(rd, "coordinator", None)
+            # Built only on this explicit user request (never in a coordinator cycle);
+            # entry/zone-scoped, baseline-vs-adapted from persisted records.
+            export_data = build_research_export_v3(coordinator, now=now)
         except Exception:
             _LOGGER.error("SmartShading: research export: failed to build export data")
             return

@@ -772,6 +772,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # P9A — per-cycle solar-threshold resolution, tier-order projection and
         # strategy candidate, for provenance + diagnostics (observe/recommend).
         self._cycle_solar_resolution: dict[str, object] = {}
+        # P11.3 closure: read-only per-window solar-transformation + entry-threshold
+        # provenance snapshot (already-computed values; one entry per window).
+        self._cycle_solar_provenance: dict[str, dict] = {}
         self._cycle_tier_order: dict[str, object] = {}
         self._strategy_candidates: dict[str, object] = {}
         # P9A — latest thermal-insufficiency cause per window (diagnostics only).
@@ -2143,9 +2146,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     forecast_available=_fc_applied,
                     forecast_trust_score=(_forecast_modifier.trust_score
                                           if _forecast_modifier is not None else None),
-                    strategy_threshold_delta_wm2=self._strategy_threshold_delta(
+                    strategy_threshold_delta_wm2=(_strat_thr_delta := self._strategy_threshold_delta(
                         window_id, exposure.effective_exposure,
-                        weather_inputs.outdoor_temperature, now),
+                        weather_inputs.outdoor_temperature, now)),
                 )
                 _adapted_bc = replace(
                     _adapted_bc,
@@ -2154,6 +2157,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     strong_shade_threshold_wm2=_solar_res.effective_strong_wm2,
                 )
                 self._cycle_solar_resolution[window_id] = _solar_res
+                # P11.3 closure: read-only solar-transformation + entry-threshold
+                # provenance from values ALREADY computed this cycle (no recompute).
+                # Cloud is reflected in the source value (measured) or applied once in
+                # the estimate path — never a second time here.
+                self._cycle_solar_provenance[window_id] = {
+                    "exposure": exposure,
+                    "base_solar_wm2": effective_radiation,
+                    "solar_source": _solar_source,
+                    "configured_light_wm2": _cfg_bc.light_shade_threshold_wm2,
+                    "configured_normal_wm2": _cfg_bc.normal_shade_threshold_wm2,
+                    "configured_strong_wm2": _cfg_bc.strong_shade_threshold_wm2,
+                    "strategy_threshold_delta_wm2": _strat_thr_delta,
+                }
                 wdi = replace(wdi, effective_behavior=_adapted_bc)
 
                 # Step 6: per-window learned target position adaptation.

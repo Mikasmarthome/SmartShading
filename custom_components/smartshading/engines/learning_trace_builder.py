@@ -96,36 +96,111 @@ def build_input_provenance(coord, window_id: str) -> dict:
                                      else S_MISSING)),
     }
     out["solar"] = build_solar_provenance(coord, window_id, wi)
+    out["threshold_provenance"] = build_threshold_provenance(coord, window_id)
     out["forecast"] = build_forecast_provenance(coord)
     return out
 
 
 def build_solar_provenance(coord, window_id: str, wi=None) -> dict:
-    """Solar-source chain provenance.  Measured solar is authoritative when valid;
-    forecast solar NEVER masquerades as a current measurement.  Intermediate
-    transform values that the runtime path does not separately record are honestly
-    marked not_recorded (no backward factor estimation)."""
+    """Solar-transformation provenance from values ALREADY computed this cycle
+    (WindowExposure + base/source captured at the real exposure path).  Chain:
+    base_solar → ×incidence(direct_radiation_factor)=theoretical → ×learned
+    ×seasonal = effective_exposure (the authoritative evaluator input).  There is
+    no separate cloud factor in the exposure engine: cloud is reflected in the
+    source value (measured) or folded once into the estimate (fallback) — never
+    applied twice.  Missing intermediates are individually not_recorded."""
     wi = wi if wi is not None else _call(coord, "_read_weather_inputs")
     raw = _num(getattr(wi, "solar_radiation", None)) if wi is not None else None
     configured = getattr(coord, "_solar_radiation_sensor_id", None) is not None
     measured_valid = raw is not None
-    return {
+    snap = getattr(coord, "_cycle_solar_provenance", {}).get(window_id)
+    out = {
         "configured_solar_source_category": "sensor" if configured else "none",
         "selected_solar_source_type": (S_MEASURED if measured_valid
                                        else (S_FALLBACK if configured else S_NOT_CONFIGURED)),
         "selected_solar_source_status": (S_MEASURED if measured_valid
                                          else (S_MISSING if configured else S_NOT_CONFIGURED)),
         "raw_measured_solar_w_m2": raw,
-        "raw_measured_solar_status": (S_MEASURED if measured_valid
-                                      else (S_MISSING if configured else S_NOT_CONFIGURED)),
         "fallback_used": (configured and not measured_valid),
-        # forecast solar is planning-only and is never the current measurement.
         "forecast_used_for_current_measurement": False,
-        # Intermediate transform values are not separately recorded in the runtime
-        # path — honest not_recorded rather than a reverse-engineered factor.
-        "cloud_adjustment_recording_status": S_NOT_RECORDED,
-        "incidence_recording_status": S_NOT_RECORDED,
-        "effective_exposure_recording_status": S_NOT_RECORDED,
+    }
+    if snap is None:
+        # No exposure captured this cycle → intermediates honestly not_recorded.
+        out.update({
+            "base_solar_recording_status": S_NOT_RECORDED,
+            "incidence_recording_status": S_NOT_RECORDED,
+            "effective_exposure_recording_status": S_NOT_RECORDED,
+            "cloud_adjustment_count": None,
+        })
+        return out
+    exp = snap.get("exposure")
+    source = snap.get("solar_source")
+    cloud_applied = (source == "estimate")  # cloud folded into the estimate path only
+    out.update({
+        "base_solar_value_w_m2": _num(snap.get("base_solar_wm2")),
+        "base_solar_source_type": (S_ESTIMATED if source == "estimate" else S_MEASURED),
+        "cloud_adjustment_applied": cloud_applied,
+        # 1 in the estimate path; 0 for measured (source already reflects cloud).
+        "cloud_adjustment_count": 1 if cloud_applied else 0,
+        "incidence_factor": _num(getattr(exp, "direct_radiation_factor", None)),
+        "incidence_status": (S_DERIVED if exp is not None else S_NOT_RECORDED),
+        "geometry_adjusted_solar_w_m2": _num(getattr(exp, "theoretical_exposure", None)),
+        "learned_solar_impact_factor": _num(getattr(exp, "learned_solar_impact_factor", None)),
+        "seasonal_factor": _num(getattr(exp, "seasonal_factor", None)),
+        "sun_azimuth_deg": _num(getattr(exp, "sun_azimuth", None)),
+        "sun_elevation_deg": _num(getattr(exp, "sun_elevation", None)),
+        "window_azimuth_delta_deg": _num(getattr(exp, "azimuth_delta_deg", None)),
+        "manual_sector_result": ("inside" if getattr(exp, "is_in_tolerance_window", None)
+                                 else ("outside" if exp is not None else S_NOT_RECORDED)),
+        "above_horizon": getattr(exp, "is_above_horizon", None),
+        "direct_exposure_blocked": (
+            bool(exp is not None and (not getattr(exp, "is_above_horizon", True)
+                                      or not getattr(exp, "is_in_tolerance_window", True)))),
+        # obstruction factor is not modelled in WindowExposure → not_recorded.
+        "obstruction_recording_status": S_NOT_RECORDED,
+        # AUTHORITATIVE effective exposure = exact value passed to the evaluators.
+        "effective_exposure_w_m2": _num(getattr(exp, "effective_exposure", None)),
+        "effective_exposure_status": (S_DERIVED if exp is not None else S_NOT_RECORDED),
+    })
+    return out
+
+
+def build_threshold_provenance(coord, window_id: str) -> dict:
+    """Entry/exit exposure-threshold provenance connected to the REAL evaluator
+    input.  Entry thresholds (light/normal/strong) come from the cycle's
+    SolarThresholdResolution + captured configured/strategy values; the effective
+    value equals the threshold the evaluator used at runtime.  Exit thresholds are
+    surfaced from the strategy exit_threshold family; the exit-comparison value is
+    consumed by the state guard, not this snapshot → not_recorded where absent."""
+    snap = getattr(coord, "_cycle_solar_provenance", {}).get(window_id)
+    res = getattr(coord, "_cycle_solar_resolution", {}).get(window_id)
+    if snap is None or res is None:
+        return {"recording_status": S_NOT_RECORDED}
+    exp = snap.get("exposure")
+    strat_delta = _num(snap.get("strategy_threshold_delta_wm2")) or 0.0
+    entry = {}
+    for tier in ("light", "normal", "strong"):
+        configured = _num(snap.get(f"configured_{tier}_wm2"))
+        learned = _num(getattr(res, f"applied_learned_delta_{tier}", None)) or 0.0
+        forecast = _num(getattr(res, "applied_forecast_delta", None)) or 0.0
+        effective = _num(getattr(res, f"effective_{tier}_wm2", None))
+        entry[tier] = {
+            "configured_entry_threshold_w_m2": configured,
+            "entry_learned_delta_w_m2": learned,
+            "entry_forecast_delta_w_m2": forecast,
+            "entry_strategy_delta_w_m2": strat_delta,
+            # equals the actual evaluator threshold input (the resolver output that
+            # was written into the adapted BehaviorConfig used for tier evaluation).
+            "effective_entry_threshold_w_m2": effective,
+            "entry_threshold_used_by_evaluator_w_m2": effective,
+        }
+    return {
+        "exposure_value_compared_w_m2": _num(getattr(exp, "effective_exposure", None)),
+        "entry_thresholds": entry,
+        "forecast_trust_level": getattr(res, "forecast_trust_level", None),
+        # exit-threshold provenance: surfaced from the strategy family; the runtime
+        # exit comparison lives in the state guard and is not captured here.
+        "exit_threshold_recording_status": S_NOT_RECORDED,
     }
 
 

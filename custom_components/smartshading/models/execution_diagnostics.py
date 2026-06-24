@@ -300,7 +300,18 @@ class WindowExecutionDiagnostics:
     """LifecycleState.value after lifecycle engine evaluation this cycle
     ("day", "night", "morning"). None when not populated."""
 
+    previous_lifecycle_state: str | None = None
+    """LifecycleState.value before lifecycle engine evaluation this cycle —
+    the state the coordinator held entering this cycle. Paired with
+    lifecycle_state_at_cycle to verify lifecycle_trigger independently.
+    None when not populated."""
+
     lifecycle_trigger: str | None = None
     """Reason code for any lifecycle state transition this cycle.
     "no_change" when state is unchanged. "night_start", "morning_start",
     "day_start" when state transitioned. None when not populated."""
+
+    startup_grace_active: bool | None = None
+    """True when startup_grace_remaining > 0 (grace period not yet expired).
+    False when grace has fully elapsed and dispatch is allowed.
+    None when not populated."""

@@ -143,7 +143,7 @@ def _active_profile(now: datetime, config: NightDayLifecycleConfig) -> _Schedule
 
 def _is_night_carryover(
     now: datetime,
-    sun_elevation_deg: float,
+    sun_elevation_deg: float | None,
     config: NightDayLifecycleConfig,
     profile: _ScheduleProfile,
 ) -> bool:
@@ -159,9 +159,10 @@ def _is_night_carryover(
     - The morning trigger has not yet fired.
     - Night is configured (trigger not DISABLED).
     - For SUN_ELEVATION trigger: elevation is still at or below the night threshold.
-    - For FIXED_TIME trigger: sun is still below the horizon (< 0°), which is
-      reliable confirmation that it is genuinely night-time even without prior state.
-    - For BOTH: either elevation condition is satisfied.
+      None elevation → cannot confirm → returns False (preserve existing state).
+    - For FIXED_TIME trigger: evaluated on time alone; no elevation needed when
+      None. When elevation is available it is used as a cross-check (< 0°).
+    - For BOTH: elevation condition requires data; FIXED_TIME part still valid.
     """
     if now.time() >= time(12, 0):
         return False  # PM — definitely not a carryover from last night
@@ -173,18 +174,24 @@ def _is_night_carryover(
         return False
 
     if config.night_trigger is NightTrigger.SUN_ELEVATION:
+        # Cannot confirm SUN_ELEVATION carryover without elevation data.
+        if sun_elevation_deg is None:
+            return False
         return sun_elevation_deg <= config.night_sun_elevation_deg
 
     if config.night_trigger is NightTrigger.BOTH:
-        # Either condition confirms night
-        if sun_elevation_deg <= config.night_sun_elevation_deg:
+        # Elevation part requires data; FIXED_TIME part is handled below.
+        if sun_elevation_deg is not None and sun_elevation_deg <= config.night_sun_elevation_deg:
             return True
 
-    # FIXED_TIME (or BOTH without elevation confirmation): require sun to be
-    # below the horizon as an independent cross-check. This prevents false
-    # positives in unusual configs where morning is very late in the day.
+    # FIXED_TIME (or BOTH without elevation match): FIXED_TIME is evaluated on
+    # time alone — no elevation cross-check is required when data is absent.
+    # When elevation is available, require sun below the horizon (< 0°) as a
+    # cross-check to prevent false positives in unusual config combinations.
     if profile.night_fixed_time is None:
         return False
+    if sun_elevation_deg is None:
+        return True  # FIXED_TIME: before noon, morning not fired → carryover confirmed
     return sun_elevation_deg < _CARRYOVER_SUN_ELEVATION_DEG
 
 
@@ -203,19 +210,19 @@ def check_night_interval_active(
     relying on a cached previous state: previous=DAY triggers the carryover
     path for the after-midnight, before-morning window.
 
-    When sun_elevation_deg is None, 0.0 is substituted. This is safe for
-    FIXED_TIME triggers (sun elevation is only a carryover cross-check there)
-    but SUN_ELEVATION-only triggers return False when sun data is absent.
-    The Night Hard Hold in coordinator.py uses the cached _lifecycle_state as
-    a secondary check to cover that gap.
+    When sun_elevation_deg is None, absent-evidence semantics apply:
+    - FIXED_TIME triggers evaluate on time alone (no elevation needed).
+    - SUN_ELEVATION-only triggers return False — no new elevation-based state
+      is created from absent data.
+    - BOTH triggers use only the FIXED_TIME part when elevation is absent.
+    None is passed through; the trigger functions handle it per type.
     """
     if not config.night_enabled:
         return False
-    elevation = sun_elevation_deg if sun_elevation_deg is not None else 0.0
     profile = _active_profile(now, config)
-    if LifecycleEngine._check_night_trigger(now, elevation, config, profile):
+    if LifecycleEngine._check_night_trigger(now, sun_elevation_deg, config, profile):
         return True
-    return _is_night_carryover(now, elevation, config, profile)
+    return _is_night_carryover(now, sun_elevation_deg, config, profile)
 
 
 class LifecycleEngine:
@@ -233,7 +240,7 @@ class LifecycleEngine:
     def get_lifecycle_state(
         self,
         now: datetime,
-        sun_elevation_deg: float,
+        sun_elevation_deg: float | None,
         config: NightDayLifecycleConfig,
         previous_lifecycle_state: LifecycleState = LifecycleState.DAY,
     ) -> LifecycleState:
@@ -274,22 +281,28 @@ class LifecycleEngine:
     @staticmethod
     def _check_night_trigger(
         now: datetime,
-        sun_elevation_deg: float,
+        sun_elevation_deg: float | None,
         config: NightDayLifecycleConfig,
         profile: _ScheduleProfile,
     ) -> bool:
-        elevation_met = sun_elevation_deg <= config.night_sun_elevation_deg
+        elevation_met = (
+            False if sun_elevation_deg is None
+            else sun_elevation_deg <= config.night_sun_elevation_deg
+        )
         time_met = _time_threshold_met(now, profile.night_fixed_time)
         return _evaluate_trigger(config.night_trigger, elevation_met, time_met)
 
     @staticmethod
     def _check_morning_trigger(
         now: datetime,
-        sun_elevation_deg: float,
+        sun_elevation_deg: float | None,
         config: NightDayLifecycleConfig,
         profile: _ScheduleProfile,
     ) -> bool:
-        elevation_met = sun_elevation_deg >= config.morning_sun_elevation_deg
+        elevation_met = (
+            False if sun_elevation_deg is None
+            else sun_elevation_deg >= config.morning_sun_elevation_deg
+        )
         time_met = _time_threshold_met(now, profile.morning_fixed_time)
         return _evaluate_trigger(config.morning_trigger, elevation_met, time_met)
 

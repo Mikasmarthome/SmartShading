@@ -1685,7 +1685,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         indoor_temperature = self._read_indoor_temperature()
 
         now = dt_util.utcnow()
-        local_now = dt_util.now()
+        local_now = dt_util.as_local(now)  # same instant as now, converted to local timezone
 
         # Forecast Strategy Modifier (v1.0): compute once per cycle from the
         # live ForecastLearningStore.  Returns a no-op modifier when data is
@@ -1701,13 +1701,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             except Exception:
                 _forecast_modifier = None
 
-        # Lifecycle Engine: evaluated every cycle using 0.0 when sun.sun is
-        # unavailable. FIXED_TIME triggers fire on time alone and work correctly.
-        # SUN_ELEVATION triggers with the default threshold (-6.0) also return
-        # False at 0.0 deg (horizon), which is safe. check_night_interval_active
-        # applies the same 0.0 substitution consistently.
+        # Lifecycle Engine: evaluated every cycle with absent-evidence semantics.
+        # When sun.sun is unavailable, None is passed; the engine applies per-trigger
+        # logic: FIXED_TIME fires on time alone, SUN_ELEVATION never triggers a new
+        # state from absent data (elevation_met=False), BOTH uses only the time part.
+        # This prevents false night triggers when a positive SUN_ELEVATION threshold
+        # is configured and sun data is temporarily unavailable.
         _prev_lifecycle_state = self._lifecycle_state
-        _sun_elevation = sun_position.elevation if sun_position is not None else 0.0
+        _sun_elevation = sun_position.elevation if sun_position is not None else None
         self._lifecycle_state = self.lifecycle_engine.get_lifecycle_state(
             local_now, _sun_elevation, self._lifecycle_config, self._lifecycle_state
         )
@@ -1982,7 +1983,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     required_inputs_ready=_required_inputs_ready,
                     degraded_input_codes=_degraded_input_codes,
                     lifecycle_state_at_cycle=self._lifecycle_state.value,
+                    previous_lifecycle_state=_prev_lifecycle_state.value,
                     lifecycle_trigger=_lifecycle_trigger,
+                    startup_grace_active=(self._startup_cycles_remaining > 0),
                 )
                 continue
 
@@ -3459,6 +3462,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     elif self._startup_cycles_remaining > 0 and not _intent.is_safety:
                         # Startup Grace: suppress non-safety dispatch until entity
                         # states have hydrated after HA restart.
+                        # Safety gate: safety intents bypass grace but have already
+                        # passed CommandFilter — active_control_enabled=False blocks
+                        # all commands (including safety) via BLOCKED_RECOMMENDATION_ONLY
+                        # before reaching here. Sensor unavailability prevents safety
+                        # ShadingState from being set. No restored safety state exists.
                         _dispatch_suppressed_reason = "startup_grace_active"
                         _exec_results.append(build_not_attempted_result(
                             _intent,
@@ -3695,7 +3703,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 required_inputs_ready=_required_inputs_ready,
                 degraded_input_codes=_degraded_input_codes,
                 lifecycle_state_at_cycle=self._lifecycle_state.value,
+                previous_lifecycle_state=_prev_lifecycle_state.value,
                 lifecycle_trigger=_lifecycle_trigger,
+                startup_grace_active=(self._startup_cycles_remaining > 0),
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---

@@ -2461,6 +2461,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Priority: Safety (STORM_SAFE / WIND_SAFE) > Manual Override > Night Hard Hold.
             # Covers without a configured night_position are not guarded (night shading
             # is intentionally disabled for those windows).
+            # Window behaviour mode governs the night hard hold and the
+            # behaviour-mode dispatch suppression below.
+            _window_behavior = window.behavior_mode
             _night_hard_hold_applied = False
             if (
                 _night_interval_active

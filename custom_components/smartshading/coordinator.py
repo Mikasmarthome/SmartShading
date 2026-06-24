@@ -2995,36 +2995,35 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         # at the same time.
                         #
                         # While holding the lock:
-                        #   - Non-safety: sleep until the throttle allows the next
-                        #     dispatch (≥1.0 s since the previous SENT command).
-                        #   - Safety: skip the sleep — prioritised, but still serial.
+                        #   1. Throttle: ALL intents (including safety) sleep until
+                        #      ≥1.0 s have elapsed since the previous SENT command.
+                        #      Safety has queue priority but not a timing exemption.
+                        #   2. Stale-intent guard: non-safety only.  Safety always
+                        #      dispatches even if the generation changed.
                         #
                         # POSITION INVARIANT: dispatch_cover_intent uses
                         # target_position_ha, never target_position_internal.
                         async with self._serial_dispatch.lock:
+                            _wait = self._serial_dispatch.time_until_next_allowed()
+                            if _wait.total_seconds() > 0:
+                                _dispatch_throttled = True
+                                _throttle_wait_ms = round(_wait.total_seconds() * 1000)
+                                if self._debug_logging_enabled:
+                                    _LOGGER.debug(
+                                        "SmartShading: dispatch throttle: sleeping %.0f ms "
+                                        "before cover=%s ha_pos=%s",
+                                        _wait.total_seconds() * 1000,
+                                        _intent.cover_entity_id,
+                                        _intent.target_position_ha,
+                                    )
+                                await asyncio.sleep(_wait.total_seconds())
+                            # Stale-intent guard: a presence event that fired
+                            # while we waited for the lock or slept through the
+                            # throttle already incremented _dispatch_generation.
+                            # Cancel this non-safety intent; the refresh queued
+                            # by that event will dispatch the correct state.
+                            # Safety is exempt — always dispatches.
                             if not _intent.is_safety:
-                                _now_pre = dt_util.utcnow()
-                                _wait = self._serial_dispatch.time_until_next_allowed(
-                                    _now_pre
-                                )
-                                if _wait.total_seconds() > 0:
-                                    _dispatch_throttled = True
-                                    _throttle_wait_ms = round(_wait.total_seconds() * 1000)
-                                    if self._debug_logging_enabled:
-                                        _LOGGER.debug(
-                                            "SmartShading: dispatch throttle: sleeping %.0f ms "
-                                            "before cover=%s ha_pos=%s",
-                                            _wait.total_seconds() * 1000,
-                                            _intent.cover_entity_id,
-                                            _intent.target_position_ha,
-                                        )
-                                    await asyncio.sleep(_wait.total_seconds())
-                                # Stale-intent guard: a presence event that fired
-                                # while we waited for the lock or slept through the
-                                # throttle already incremented _dispatch_generation.
-                                # Cancel this non-safety intent; the refresh queued
-                                # by that event will dispatch the correct state.
-                                # Safety is exempt — always dispatches.
                                 if self._dispatch_generation != _this_dispatch_gen:
                                     _exec_results.append(build_not_attempted_result(
                                         _intent,

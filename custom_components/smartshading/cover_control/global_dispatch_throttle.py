@@ -2,9 +2,10 @@
 
 GlobalDispatchThrottle
 ----------------------
-Tracks the timestamp of the last confirmed cover dispatch and computes how
-long the next non-safety dispatch must wait to respect the minimum inter-
-dispatch gap.  Stateful, not thread/task safe on its own.
+Tracks the last confirmed cover dispatch and computes how long the next
+dispatch must wait to respect the minimum inter-dispatch gap.  Uses an
+injectable monotonic clock (defaults to ``time.monotonic``) so elapsed-time
+measurement is immune to wall-clock adjustments (NTP, timezone changes).
 
 GlobalSerialDispatch
 --------------------
@@ -25,11 +26,14 @@ serialised in addition to being throttled.
 Correct usage in the coordinator dispatch loop::
 
     async with self._serial_dispatch.lock:
+        wait = self._serial_dispatch.time_until_next_allowed()
+        if wait.total_seconds() > 0:
+            await asyncio.sleep(wait.total_seconds())
+        # stale-intent guard (non-safety only)
         if not intent.is_safety:
-            wait = self._serial_dispatch.time_until_next_allowed(now)
-            if wait.total_seconds() > 0:
-                await asyncio.sleep(wait.total_seconds())
-        result = await dispatch_cover_intent(hass, intent, now_utc=now)
+            if generation_changed:
+                continue
+        result = await dispatch_cover_intent(hass, intent, now_utc=dt_util.utcnow())
         if result.status is ExecutionStatus.SENT:
             self._serial_dispatch.record_dispatch(dt_util.utcnow())
 
@@ -39,17 +43,27 @@ desired behaviour for Somfy RTS and similar RF-based systems.
 
 Safety behavior
 ---------------
-Safety commands (STORM_SAFE / WIND_SAFE) acquire the lock but skip the
-throttle sleep so they reach the cover as fast as possible within the serial
-queue.  Safety SENT still updates the throttle clock so subsequent non-safety
-commands wait the full interval from the safety dispatch time.
+Safety commands (STORM_SAFE / WIND_SAFE) acquire the lock and wait for the
+throttle exactly like non-safety commands — the 1.0 s minimum is always
+enforced.  Safety's queue priority means it is exempt from stale-intent
+cancellation (it always dispatches even if the generation changed), but it
+never bypasses the timing gate.
+
+Monotonic clock
+---------------
+Elapsed time is measured with a monotonic clock (``time.monotonic`` by
+default) so NTP adjustments and wall-clock jumps cannot shorten the interval.
+The ``last_dispatch_at`` property still returns a wall-clock ``datetime`` for
+human-readable diagnostics.
 
 This module has no Home Assistant dependency.  Pure Python.  Testable without HA.
 """
 from __future__ import annotations
 
 import asyncio
+import time
 from datetime import datetime, timedelta
+from typing import Callable
 
 
 DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS: float = 1.0
@@ -62,19 +76,24 @@ Coordinator cycles are 5 minutes apart, so any intra-cycle burst is at most
 a handful of covers, and the total additional wait is a few seconds.
 """
 
+MonoClock = Callable[[], float]
+"""Type alias for an injectable monotonic clock function (returns float seconds)."""
+
 
 class GlobalDispatchThrottle:
     """Integration-wide minimum inter-dispatch interval.
 
-    Tracks the timestamp of the most recent confirmed SENT dispatch and
-    computes how long the next non-safety dispatch must wait.
+    Tracks the monotonic timestamp of the most recent confirmed SENT dispatch
+    and computes how long the next dispatch must wait.
+
+    The wall-clock ``last_dispatch_at`` is kept separately for diagnostics only
+    and is never used for elapsed-time calculations.
 
     Usage pattern (coordinator dispatch loop)::
 
-        if not intent.is_safety:
-            wait = throttle.time_until_next_allowed(dt_util.utcnow())
-            if wait.total_seconds() > 0:
-                await asyncio.sleep(wait.total_seconds())
+        wait = throttle.time_until_next_allowed()
+        if wait.total_seconds() > 0:
+            await asyncio.sleep(wait.total_seconds())
 
         result = await dispatch_cover_intent(hass, intent, now_utc=dt_util.utcnow())
 
@@ -85,12 +104,17 @@ class GlobalDispatchThrottle:
     def __init__(
         self,
         min_interval: timedelta | None = None,
+        mono_clock: MonoClock | None = None,
     ) -> None:
         self._min_interval: timedelta = (
             min_interval
             if min_interval is not None
             else timedelta(seconds=DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS)
         )
+        self._mono_clock: MonoClock = (
+            mono_clock if mono_clock is not None else time.monotonic
+        )
+        self._last_dispatch_mono: float | None = None
         self._last_dispatch_at: datetime | None = None
 
     @property
@@ -100,12 +124,16 @@ class GlobalDispatchThrottle:
 
     @property
     def last_dispatch_at(self) -> datetime | None:
-        """UTC timestamp of the most recent recorded dispatch.
-        None when no dispatch has been recorded yet."""
+        """Wall-clock UTC timestamp of the most recent recorded dispatch.
+        None when no dispatch has been recorded yet.  For diagnostics only —
+        not used for elapsed-time calculation."""
         return self._last_dispatch_at
 
-    def time_until_next_allowed(self, now: datetime) -> timedelta:
+    def time_until_next_allowed(self) -> timedelta:
         """Return the remaining wait before the next dispatch is allowed.
+
+        Uses the injectable monotonic clock so the result is immune to
+        wall-clock jumps.
 
         Returns ``timedelta(0)`` when:
 
@@ -113,21 +141,16 @@ class GlobalDispatchThrottle:
         - The minimum interval has fully elapsed since the last dispatch.
 
         Returns a positive ``timedelta`` when the minimum interval has not yet
-        elapsed and the caller must wait before dispatching.
-
-        Parameters
-        ----------
-        now:
-            Current UTC timestamp.  Must be timezone-aware.
+        elapsed and the caller must sleep before dispatching.
         """
-        if self._last_dispatch_at is None:
+        if self._last_dispatch_mono is None:
             return timedelta(0)
-        elapsed = now - self._last_dispatch_at
-        remaining = self._min_interval - elapsed
-        return remaining if remaining > timedelta(0) else timedelta(0)
+        elapsed = self._mono_clock() - self._last_dispatch_mono
+        remaining = self._min_interval.total_seconds() - elapsed
+        return timedelta(seconds=remaining) if remaining > 0 else timedelta(0)
 
     def record_dispatch(self, now: datetime) -> None:
-        """Record that a dispatch occurred at *now*.
+        """Record that a dispatch occurred.
 
         Must be called after every SENT result — for both safety and non-safety
         commands.  BLOCKED, NOT_ATTEMPTED, and FAILED results must NOT call
@@ -136,8 +159,11 @@ class GlobalDispatchThrottle:
         Parameters
         ----------
         now:
-            UTC timestamp of the dispatch.  Must be timezone-aware.
+            Wall-clock UTC timestamp of the dispatch.  Stored in
+            ``last_dispatch_at`` for diagnostics.  Elapsed time is always
+            measured with the injected monotonic clock, not from this value.
         """
+        self._last_dispatch_mono = self._mono_clock()
         self._last_dispatch_at = now
 
 
@@ -151,12 +177,18 @@ class GlobalSerialDispatch:
     See module docstring for correct usage.
     """
 
-    def __init__(self, min_interval: timedelta | None = None) -> None:
+    def __init__(
+        self,
+        min_interval: timedelta | None = None,
+        mono_clock: MonoClock | None = None,
+    ) -> None:
         # asyncio.Lock must be created inside the running event loop.
         # Create it lazily on first access, or call ensure_lock() from an
         # async context during setup.
         self._lock: asyncio.Lock | None = None
-        self._throttle: GlobalDispatchThrottle = GlobalDispatchThrottle(min_interval)
+        self._throttle: GlobalDispatchThrottle = GlobalDispatchThrottle(
+            min_interval, mono_clock
+        )
 
     @property
     def lock(self) -> asyncio.Lock:
@@ -169,12 +201,12 @@ class GlobalSerialDispatch:
             self._lock = asyncio.Lock()
         return self._lock
 
-    def time_until_next_allowed(self, now: datetime) -> timedelta:
+    def time_until_next_allowed(self) -> timedelta:
         """Return the remaining wait before the next dispatch is allowed."""
-        return self._throttle.time_until_next_allowed(now)
+        return self._throttle.time_until_next_allowed()
 
     def record_dispatch(self, now: datetime) -> None:
-        """Record a confirmed SENT dispatch at *now*."""
+        """Record a confirmed SENT dispatch."""
         self._throttle.record_dispatch(now)
 
     @property
@@ -184,5 +216,5 @@ class GlobalSerialDispatch:
 
     @property
     def last_dispatch_at(self) -> datetime | None:
-        """UTC timestamp of the most recent confirmed dispatch."""
+        """Wall-clock UTC timestamp of the most recent confirmed dispatch."""
         return self._throttle.last_dispatch_at

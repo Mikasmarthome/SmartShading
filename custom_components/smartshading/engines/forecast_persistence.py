@@ -64,6 +64,23 @@ FORECAST_RETENTION_DAYS: int = 90
 # P10: forecast payload schema — same hardening standard as the learning store.
 FORECAST_PAYLOAD_SCHEMA: int = 1
 
+# Forecast record sections validated per-record on restore.
+_FORECAST_SECTIONS: tuple[str, ...] = (
+    "forecast_snapshots", "reality_snapshots", "forecast_records",
+)
+
+
+def compute_provider_fingerprint(
+    *, forecast_entity: str | None, solar_entity: str | None, owner: str | None,
+) -> str | None:
+    """Privacy-safe stable hash of the forecast source identity (no raw entity ids
+    leave the store).  None when nothing is configured."""
+    import hashlib
+    if not any((forecast_entity, solar_entity, owner)):
+        return None
+    raw = f"{forecast_entity or ''}|{solar_entity or ''}|{owner or ''}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
 # Hard count caps applied after age-based pruning.
 # At the default 90-day retention window and 5-min coordinator interval:
 #   ForecastSnapshot: ~1/h → max ~2 160 per zone per 90 days
@@ -105,11 +122,29 @@ class ForecastPersistenceAdapter:
     Coordinator is never interrupted by a storage failure.
     """
 
-    def __init__(self, store: _StoreProtocol, entry_id: str | None = None) -> None:
+    def __init__(
+        self, store: _StoreProtocol, entry_id: str | None = None,
+        *, owner_zone_id: str | None = None, provider_fingerprint: str | None = None,
+    ) -> None:
         self._store = store
         self._entry_id = entry_id
+        self._owner_zone_id = owner_zone_id
+        self._provider_fingerprint = provider_fingerprint
         self._fresh_start: bool = False
         self._restore_rejected: bool = False
+        self._provider_changed: bool = False
+        self._restore_diagnostics: dict = {}
+
+    @property
+    def provider_changed(self) -> bool:
+        """True when the stored provider fingerprint differs from the current one —
+        the coordinator suspends forecast-dependent strategy authority."""
+        return self._provider_changed
+
+    @property
+    def restore_diagnostics(self) -> dict:
+        """Structured, privacy-safe forecast_restore diagnostics from the last load."""
+        return self._restore_diagnostics
 
     @property
     def fresh_start(self) -> bool:
@@ -122,7 +157,10 @@ class ForecastPersistenceAdapter:
         return self._fresh_start
 
     @classmethod
-    def create(cls, hass: Any, entry_id: str) -> ForecastPersistenceAdapter:
+    def create(
+        cls, hass: Any, entry_id: str, *, owner_zone_id: str | None = None,
+        provider_fingerprint: str | None = None,
+    ) -> ForecastPersistenceAdapter:
         """Create an adapter backed by a real HA Store.
 
         The homeassistant import is intentionally deferred to this factory
@@ -131,11 +169,14 @@ class ForecastPersistenceAdapter:
 
         *entry_id* scopes the storage key to this config entry so that
         multiple SmartShading zones never share a file and cannot overwrite
-        each other's learning data.
+        each other's learning data.  *provider_fingerprint* lets restore reject
+        stale trust after a forecast-source change.
         """
         from homeassistant.helpers.storage import Store  # lazy HA import
 
-        return cls(Store(hass, STORAGE_VERSION, f"{STORAGE_KEY}_{entry_id}"), entry_id=entry_id)
+        return cls(
+            Store(hass, STORAGE_VERSION, f"{STORAGE_KEY}_{entry_id}"), entry_id=entry_id,
+            owner_zone_id=owner_zone_id, provider_fingerprint=provider_fingerprint)
 
     # ------------------------------------------------------------------
     # async_restore
@@ -165,14 +206,26 @@ class ForecastPersistenceAdapter:
             _log.debug("ForecastPersistenceAdapter: no persisted data found, starting fresh")
             return ForecastLearningStore.empty()
 
-        # P10: same hardening standard as the learning store.
-        from .storage_validation import root_payload_is_valid
-        if not root_payload_is_valid(raw):
+        # P10: the single authoritative forecast restore pipeline —
+        # root validation → schema gate → owner → provider fingerprint →
+        # per-record validation → from_dict.
+        from .storage_validation import payload_has_nan_or_inf
+        # Root gate is TYPE-only: a single NaN/Inf inside one record must NOT reject
+        # the whole payload (per-record validation below drops that record while
+        # valid neighbours survive).  A non-mapping root IS a whole-payload error.
+        if not isinstance(raw, dict):
             self._restore_rejected = True
             _log.warning("Forecast: invalid root payload — no forecast trust authority")
             return ForecastLearningStore.empty()
+        schema = int(raw.get("payload_schema_version", FORECAST_PAYLOAD_SCHEMA))
+        self._restore_diagnostics = {
+            "schema_version": schema, "owner_valid": True,
+            "provider_fingerprint_match": True,
+            "invalid_records_by_section": {}, "invalid_records_by_reason": {},
+            "trust_restored": False,
+        }
         # Unknown newer schema → no forecast trust authority (baseline control stays).
-        if int(raw.get("payload_schema_version", FORECAST_PAYLOAD_SCHEMA)) > FORECAST_PAYLOAD_SCHEMA:
+        if schema > FORECAST_PAYLOAD_SCHEMA:
             self._restore_rejected = True
             _log.warning("Forecast: payload schema newer than supported — no trust authority")
             return ForecastLearningStore.empty()
@@ -180,11 +233,39 @@ class ForecastPersistenceAdapter:
         _owner = raw.get("owner_entry_id")
         if _owner is not None and self._entry_id is not None and _owner != self._entry_id:
             self._restore_rejected = True
+            self._restore_diagnostics["owner_valid"] = False
             _log.warning("Forecast: stored payload owner mismatch — rejecting whole payload")
             return ForecastLearningStore.empty()
+        # Provider/source fingerprint change → do NOT restore stale trust authority.
+        _fp = raw.get("provider_fingerprint")
+        if (_fp is not None and self._provider_fingerprint is not None
+                and _fp != self._provider_fingerprint):
+            self._provider_changed = True
+            self._restore_diagnostics["provider_fingerprint_match"] = False
+            _log.warning("Forecast: provider fingerprint changed — old trust not restored")
+            return ForecastLearningStore.empty()
+
+        # Per-record validation: drop NaN/Infinity records per section before from_dict
+        # so a corrupt record never poisons a model; valid neighbours survive.
+        inval_section: dict = {}
+        for section in _FORECAST_SECTIONS:
+            recs = raw.get(section)
+            if not isinstance(recs, dict):
+                continue
+            bad = [rid for rid, rec in recs.items() if payload_has_nan_or_inf(rec)]
+            for rid in bad:
+                recs.pop(rid, None)
+            if bad:
+                inval_section[section] = len(bad)
+        self._restore_diagnostics["invalid_records_by_section"] = inval_section
+        if inval_section:
+            self._restore_diagnostics["invalid_records_by_reason"] = {
+                "nan_or_inf": sum(inval_section.values())}
 
         # from_dict() never raises; handles corrupt data internally.
-        return ForecastLearningStore.from_dict(raw)
+        store = ForecastLearningStore.from_dict(raw)
+        self._restore_diagnostics["trust_restored"] = True
+        return store
 
     # ------------------------------------------------------------------
     # async_save
@@ -211,11 +292,15 @@ class ForecastPersistenceAdapter:
         )
 
         payload = store.to_dict()
-        # P10: stamp owner + schema envelope (additive; from_dict ignores them).
+        # P10: stamp owner + schema + provider envelope (additive; from_dict ignores).
         payload["payload_schema_version"] = FORECAST_PAYLOAD_SCHEMA
         payload["created_by_domain"] = "smartshading"
         if self._entry_id is not None:
             payload["owner_entry_id"] = self._entry_id
+        if self._owner_zone_id is not None:
+            payload["owner_zone_id"] = self._owner_zone_id
+        if self._provider_fingerprint is not None:
+            payload["provider_fingerprint"] = self._provider_fingerprint
 
         try:
             await self._store.async_save(payload)

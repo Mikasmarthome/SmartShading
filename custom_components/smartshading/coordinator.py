@@ -266,10 +266,17 @@ from .models.shadow_tombstone import (
 from .engines.config_invalidation import (
     classify_config_change as _classify_config_change,
     CHANGE_BEHAVIOR_MODE_AWAY as _CI_CHANGE_MODE_AWAY,
+    CHANGE_COVER_REPLACEMENT as _CI_CHANGE_COVER,
+    CHANGE_ORIENTATION as _CI_CHANGE_ORIENTATION,
+    CHANGE_FEEDBACK_CAPABILITY_LOSS as _CI_CHANGE_FEEDBACK_LOSS,
     ACTION_SUSPEND as _CI_SUSPEND,
     ACTION_INVALIDATE as _CI_INVALIDATE,
     SCOPE_POSITION as _CI_SCOPE_POSITION,
     SCOPE_STRATEGY as _CI_SCOPE_STRATEGY,
+)
+from .engines.config_diff import (
+    diff_config_snapshots as _diff_config_snapshots,
+    CHANGE_WINDOW_REMOVAL as _CI_CHANGE_WINDOW_REMOVAL,
 )
 from .engines.strategy_runtime import (
     TimingState,
@@ -685,6 +692,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._saved_generation: int = 0
         self._save_failures: int = 0
         self._restore_failures: int = 0
+        # P10: structured, privacy-safe per-section restore reason counters.
+        self._restore_diagnostics: dict = {}
         self._save_lock = asyncio.Lock()
         # P10 completion: coalescing near-immediate save scheduler handle.
         self._pending_save_unsub = None
@@ -757,7 +766,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._strategy_experiment_history: list[BoundedStrategyExperiment] = []
         self._strategy_adoptions_active: dict[tuple, PersistentStrategyAdoption] = {}
         self._strategy_adoption_history: list[PersistentStrategyAdoption] = []
-        self._strategy_shadows: dict[tuple, object] = {}
+        # P10 Variant A: strategy learning is evidence-based (evaluate_strategy_evidence);
+        # it never materialises strategy shadows, so there is no _strategy_shadows map.
+        # source_shadow_ids on strategy experiments/adoptions stays OPTIONAL provenance
+        # and is never required for validity (source_experiment_ids + decision/outcome
+        # linkage are the hard evidence).
         # P9B live authority: per-window timing trackers + per-cycle applied set +
         # per-decision applied families (for honest monitoring credit).
         self._strategy_timing_state: dict[str, TimingState] = {}
@@ -938,8 +951,44 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "persistent_strategy_adoptions": self._strategy_adoptions_storage(),
             "consumed_experiment_ledger": self._consumed_ledger.to_dict(),
             "shadow_tombstones": [t.to_dict() for t in self._shadow_tombstones.values()],
+            "config_snapshot": self._build_config_snapshot(),
             "owner_zone_id": next(iter(self.zones.keys()), None),
         }
+
+    def _build_config_snapshot(self) -> dict:
+        """P10: normalised config snapshot (stable internal window/zone ids only,
+        never display names).  Persisted with the learning store so the next
+        restore can diff previous vs current config and route real changes through
+        the typed invalidation matrix — not a bare config_generation bump."""
+        zone_indoor = sorted(self._indoor_temperature_sensor_ids)
+        zones = {
+            zid: {
+                "indoor": list(zone_indoor),
+                "solar": self._solar_radiation_sensor_id,
+                "forecast": self._weather_entity_id,
+            }
+            for zid in self.zones
+        }
+        windows = {}
+        for wid, w in self.windows.items():
+            windows[wid] = {
+                "zone_id": getattr(w, "zone_id", ""),
+                "azimuth": getattr(w, "azimuth", None),
+                "sun_sector": [
+                    getattr(w, "manual_sun_sector_start_deg", None),
+                    getattr(w, "manual_sun_sector_end_deg", None),
+                ],
+                "obstruction": repr(getattr(w, "obstruction_zones", []) or []),
+                "cover_group": getattr(w, "cover_group_id", None),
+                "positions": [
+                    getattr(w, "light_shade_position", None),
+                    getattr(w, "normal_shade_position", None),
+                    getattr(w, "strong_shade_position", None),
+                ],
+                "behavior_mode": str(getattr(w, "behavior_mode", None)),
+                "feedback_capable": getattr(w, "reliable_feedback_capable", None),
+            }
+        return {"zones": zones, "windows": windows}
 
     async def _save_learning_snapshot(self, now: datetime) -> bool:
         """Serialize+persist the COMPLETE snapshot under the save lock.
@@ -1067,6 +1116,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if self._persistence_last_save_at is not None else None),
             "learning_store_save_failures": self._save_failures,
             "learning_store_restore_failures": self._restore_failures,
+            "learning_restore": self._restore_diagnostics,
         }
 
     # ------------------------------------------------------------------
@@ -1546,10 +1596,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         # P10: restore the permanent consumed-experiment ledger.
                         self._consumed_ledger = ConsumedExperimentLedger.from_dict(
                             getattr(_extras, "consumed_experiment_ledger", None))
+                        # P10: structured per-section restore reason counters.
+                        self._restore_diagnostics = (
+                            getattr(_extras, "restore_diagnostics", {}) or {})
                         # P10: reference-integrity — an adoption whose source/consumed
                         # experiment evidence is unresolvable is invalidated (hard
                         # reference), never blindly applied.
                         self._invalidate_unreferenced_adoptions(_restore_now)
+                        # P10: typed config-change invalidation — diff the previous
+                        # persisted config snapshot vs current and apply precise
+                        # per-change directives (geometry/cover/sensor/forecast/mode/
+                        # targets/window-removal) above the config_generation gate.
+                        try:
+                            self._apply_config_diff_on_restore(
+                                getattr(_extras, "config_snapshot", {}) or {}, _restore_now)
+                        except Exception:
+                            _LOGGER.warning("Learning: config-diff invalidation failed (non-fatal)")
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
@@ -4970,6 +5032,67 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if applied:
             self._request_important_save()
         return tuple(applied)
+
+    def _apply_config_diff_on_restore(self, prev_snapshot: dict, now: datetime) -> list:
+        """P10: typed config-change invalidation across a restart/reload.
+
+        Diffs the persisted PREVIOUS normalised config snapshot against the current
+        one and routes each real change through the matrix (geometry/cover/sensor/
+        forecast/behaviour/targets) or direct cleanup (window removal).  First setup
+        (no previous snapshot) and an unchanged restart produce zero changes, so
+        neither fabricates an invalidation.  The config_generation gate remains the
+        final safety net.  Returns the applied ConfigChange list (for diagnostics)."""
+        if not prev_snapshot:
+            return []
+        current = self._build_config_snapshot()
+        changes = _diff_config_snapshots(prev_snapshot, current)
+        for ch in changes:
+            if ch.change_type == _CI_CHANGE_WINDOW_REMOVAL:
+                self._cleanup_removed_window(ch.window_id, now)
+                continue
+            self.apply_config_change_invalidation(ch.zone_id, ch.change_type, now)
+            # Geometry / cover replacement / feedback loss also interrupt the single
+            # active experiment of that window's zone (inconclusive, logical rollback).
+            if ch.change_type in (
+                _CI_CHANGE_ORIENTATION, _CI_CHANGE_COVER, _CI_CHANGE_FEEDBACK_LOSS,
+            ) and ch.zone_id:
+                self._abort_zone_experiment(
+                    ch.zone_id, f"config:{ch.change_type}", now)
+        if changes:
+            self._request_important_save()
+        return changes
+
+    def _cleanup_removed_window(self, window_id: str, now: datetime) -> None:
+        """P10: a removed window leaves no orphan runtime/persisted authority.
+
+        Active adoptions/shadows for the window go to terminal history (invalidated);
+        the zone's active experiment for this window is aborted; the pending outcome
+        is dropped.  Consumed-ledger evidence stays protected (never reusable)."""
+        if not window_id:
+            return
+        for key, a in list(self._adoptions_active.items()):
+            if getattr(a, "window_id", None) == window_id:
+                self._adoptions_active.pop(key, None)
+                self._adoption_to_history(replace(
+                    a, status=ADOPT_STATUS_INVALIDATED,
+                    rollback_reason="window_removed", updated_at=now))
+        for key, a in list(self._strategy_adoptions_active.items()):
+            if getattr(a, "window_id", None) == window_id:
+                self._strategy_adoptions_active.pop(key, None)
+                self._strategy_adoption_to_history(replace(
+                    a, status=STRAT_AD_INVALIDATED,
+                    rollback_reason="window_removed", updated_at=now))
+        for key in [k for k, p in self._shadow_active.items()
+                    if getattr(p, "window_id", None) == window_id]:
+            self._shadow_active.pop(key, None)
+        for zid, exp in list(self._experiments_active.items()):
+            if getattr(exp, "window_id", None) == window_id:
+                self._abort_zone_experiment(zid, "window_removed", now)
+        try:
+            self._pending_outcomes.remove(window_id)
+        except Exception:
+            pass
+        self._request_important_save()
 
     def strategy_adoption_diagnostics(self, window_id: str) -> dict:
         """Privacy-safe per-window strategy adoption snapshot."""

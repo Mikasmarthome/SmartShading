@@ -192,7 +192,14 @@ async def _async_setup_zone_entry(
     # Forecast Learning setup — must not abort async_setup_entry.
     # ------------------------------------------------------------------
     try:
-        _fl_adapter = ForecastPersistenceAdapter.create(hass, entry.entry_id)
+        from .engines.forecast_persistence import compute_provider_fingerprint
+        _fl_fp = compute_provider_fingerprint(
+            forecast_entity=entry_data.weather_entity_id,
+            solar_entity=entry_data.solar_radiation_sensor_id,
+            owner=entry.entry_id)
+        _fl_zone = entry_data.zones[0].id if getattr(entry_data, "zones", None) else None
+        _fl_adapter = ForecastPersistenceAdapter.create(
+            hass, entry.entry_id, owner_zone_id=_fl_zone, provider_fingerprint=_fl_fp)
         _fl_store   = await _fl_adapter.async_restore()
         # Write an initial schema-valid storage file on first setup so that
         # smartshading_forecast_learning_<id> appears in /config/.storage/

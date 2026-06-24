@@ -20,6 +20,7 @@ CHANGE_FORECAST_PROVIDER = "forecast_provider"
 CHANGE_BEHAVIOR_MODE_AWAY = "behavior_mode_left_fully_automatic"
 CHANGE_BEHAVIOR_MODE_BACK = "behavior_mode_back_to_fully_automatic"
 CHANGE_CONFIGURED_TARGETS = "configured_targets_or_thresholds"
+CHANGE_FEEDBACK_CAPABILITY_LOSS = "feedback_capability_loss"
 
 # --- actions ---
 ACTION_INVALIDATE = "invalidate"
@@ -112,6 +113,10 @@ _MATRIX: dict[str, tuple[InvalidationDirective, ...]] = {
         _d(SCOPE_STRATEGY, ACTION_INVALIDATE, "configured_targets_changed"),
         # Consumed evidence stays consumed; other independent models retained.
         _d(SCOPE_THERMAL_MODEL, ACTION_RETAIN, "independent_of_targets"),
+    ),
+    CHANGE_FEEDBACK_CAPABILITY_LOSS: (
+        _d(SCOPE_POSITION, ACTION_SUSPEND, "feedback_capability_lost"),
+        _d(SCOPE_STRATEGY, ACTION_SUSPEND, "feedback_capability_lost"),
     ),
 }
 

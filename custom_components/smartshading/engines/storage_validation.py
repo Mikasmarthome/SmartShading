@@ -81,11 +81,6 @@ def delta_within_bounds(delta: object, cap: float) -> bool:
     return is_finite_number(delta) and abs(float(delta)) <= cap + 1e-9
 
 
-def root_payload_is_valid(data: object) -> bool:
-    """A loadable root payload must be a dict and free of NaN/Infinity."""
-    return isinstance(data, dict) and not payload_has_nan_or_inf(data)
-
-
 def dedupe_by_id(records: list, *, id_key: str) -> tuple[list, list]:
     """Deterministically keep the FIRST occurrence of each id; return
     (unique_records, duplicate_ids).  Stable order preserved."""

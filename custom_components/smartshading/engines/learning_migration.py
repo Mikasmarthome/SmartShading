@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .storage_validation import root_payload_is_valid
 
 CURRENT_PAYLOAD_SCHEMA: int = 3
 
@@ -69,7 +68,9 @@ def migrate_payload(
 
     Returns accept_authority=False for an unknown newer payload (baseline only)
     or an unreadable root payload."""
-    if not root_payload_is_valid(data):
+    # Root gate is TYPE-only: a NaN/Inf inside a single record is an isolated-record
+    # problem handled by per-section validation, not a whole-payload rejection.
+    if not isinstance(data, dict):
         return MigrationResult({}, 0, (), accept_authority=False, reason="malformed_root")
     version = detect_payload_schema_version(data)
     if version > CURRENT_PAYLOAD_SCHEMA:

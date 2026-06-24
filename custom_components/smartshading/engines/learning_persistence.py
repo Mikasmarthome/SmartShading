@@ -449,6 +449,7 @@ def serialize_learning_store(
     persistent_strategy_adoptions: list | None = None,
     consumed_experiment_ledger: dict | None = None,
     shadow_tombstones: list | None = None,
+    config_snapshot: dict | None = None,
     owner_entry_id: str | None = None,
     owner_zone_id: str | None = None,
 ) -> dict:
@@ -548,6 +549,8 @@ def serialize_learning_store(
         "consumed_experiment_ledger": consumed_experiment_ledger or {},
         # P10 — compact shadow provenance tombstones (no full time series).
         "shadow_tombstones": shadow_tombstones or [],
+        # P10 — normalised config snapshot for next-restore typed diff invalidation.
+        "config_snapshot": config_snapshot or {},
         "owner_entry_id": owner_entry_id,
         "owner_zone_id": owner_zone_id,
         "created_by_domain": "smartshading",
@@ -720,6 +723,8 @@ class RestoreExtras:
     shadow_tombstones: list  # list[ShadowTombstone]
     owner_entry_id: str | None
     owner_zone_id: str | None
+    restore_diagnostics: dict  # P10 structured per-section reason counts (privacy-safe)
+    config_snapshot: dict  # P10 previous normalised config snapshot (for typed diff)
 
 
 def deserialize_into_learning_store(
@@ -887,39 +892,60 @@ def deserialize_into_learning_store(
         if ev_list:
             contribution_evidence[wid] = ev_list
 
+    # --- P10 central per-section validation: unsafe records (NaN/Inf, bad enum,
+    # duplicate id, future timestamp, missing field) are dropped BEFORE from_dict
+    # so they never reach a model; reason counters feed restore diagnostics. ---
+    from .restore_validation import merge_section_diagnostics, validate_records
+    _sv: dict = {}
+
     # --- P6 shadow proposals (additive, optional) ---
+    _sv["shadow_proposals"] = validate_records(
+        data.get("shadow_proposals", []), now=now, id_key="shadow_id",
+        timestamp_fields=("created_at", "updated_at"))
     shadow_proposals: list = []
-    for i, raw in enumerate(data.get("shadow_proposals", []) or []):
+    for i, raw in enumerate(_sv["shadow_proposals"].valid_records):
         try:
             shadow_proposals.append(ShadowProposal.from_dict(raw))
         except Exception:
             _LOGGER.warning("Learning: skipping malformed shadow proposal #%d", i)
 
     # --- P7 bounded experiments (additive, optional) ---
+    _sv["position_experiments"] = validate_records(
+        data.get("bounded_experiments", []), now=now, id_key="experiment_id",
+        timestamp_fields=("created_at", "updated_at", "completed_at"))
     bounded_experiments: list = []
-    for i, raw in enumerate(data.get("bounded_experiments", []) or []):
+    for i, raw in enumerate(_sv["position_experiments"].valid_records):
         try:
             bounded_experiments.append(BoundedExperiment.from_dict(raw))
         except Exception:
             _LOGGER.warning("Learning: skipping malformed bounded experiment #%d", i)
 
     # --- P8 persistent adoptions (additive, optional) ---
+    _sv["position_adoptions"] = validate_records(
+        data.get("persistent_adoptions", []), now=now, id_key="adoption_id",
+        timestamp_fields=("created_at", "updated_at"))
     persistent_adoptions: list = []
-    for i, raw in enumerate(data.get("persistent_adoptions", []) or []):
+    for i, raw in enumerate(_sv["position_adoptions"].valid_records):
         try:
             persistent_adoptions.append(PersistentTargetAdoption.from_dict(raw))
         except Exception:
             _LOGGER.warning("Learning: skipping malformed persistent adoption #%d", i)
 
     # --- P9B strategy experiments + adoptions (additive, optional) ---
+    _sv["strategy_experiments"] = validate_records(
+        data.get("strategy_experiments", []), now=now, id_key="experiment_id",
+        timestamp_fields=("created_at", "updated_at", "completed_at"))
     strategy_experiments: list = []
-    for i, raw in enumerate(data.get("strategy_experiments", []) or []):
+    for i, raw in enumerate(_sv["strategy_experiments"].valid_records):
         try:
             strategy_experiments.append(BoundedStrategyExperiment.from_dict(raw))
         except Exception:
             _LOGGER.warning("Learning: skipping malformed strategy experiment #%d", i)
+    _sv["strategy_adoptions"] = validate_records(
+        data.get("persistent_strategy_adoptions", []), now=now, id_key="adoption_id",
+        timestamp_fields=("created_at", "updated_at"))
     persistent_strategy_adoptions: list = []
-    for i, raw in enumerate(data.get("persistent_strategy_adoptions", []) or []):
+    for i, raw in enumerate(_sv["strategy_adoptions"].valid_records):
         try:
             persistent_strategy_adoptions.append(PersistentStrategyAdoption.from_dict(raw))
         except Exception:
@@ -927,12 +953,17 @@ def deserialize_into_learning_store(
 
     # --- P10 shadow provenance tombstones (additive, optional) ---
     from ..models.shadow_tombstone import ShadowTombstone
+    _sv["position_tombstones"] = validate_records(
+        data.get("shadow_tombstones", []), now=now, id_key="shadow_id",
+        timestamp_fields=("created_at", "expires_at"))
     shadow_tombstones: list = []
-    for i, raw in enumerate(data.get("shadow_tombstones", []) or []):
+    for i, raw in enumerate(_sv["position_tombstones"].valid_records):
         try:
             shadow_tombstones.append(ShadowTombstone.from_dict(raw))
         except Exception:
             _LOGGER.warning("Learning: skipping malformed shadow tombstone #%d", i)
+
+    restore_diagnostics = merge_section_diagnostics(_sv)
 
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
@@ -950,6 +981,8 @@ def deserialize_into_learning_store(
         shadow_tombstones=shadow_tombstones,
         owner_entry_id=data.get("owner_entry_id"),
         owner_zone_id=data.get("owner_zone_id"),
+        restore_diagnostics=restore_diagnostics,
+        config_snapshot=(data.get("config_snapshot") or {}),
     )
 
 
@@ -1098,6 +1131,7 @@ class LearningPersistenceAdapter:
         persistent_strategy_adoptions: list | None = None,
         consumed_experiment_ledger: dict | None = None,
         shadow_tombstones: list | None = None,
+        config_snapshot: dict | None = None,
         owner_zone_id: str | None = None,
     ) -> bool:
         """Prune and persist the current in-memory learning data.
@@ -1123,6 +1157,7 @@ class LearningPersistenceAdapter:
                 persistent_strategy_adoptions=persistent_strategy_adoptions,
                 consumed_experiment_ledger=consumed_experiment_ledger,
                 shadow_tombstones=shadow_tombstones,
+                config_snapshot=config_snapshot,
                 owner_entry_id=getattr(self, "_entry_id", None),
                 owner_zone_id=owner_zone_id,
             )

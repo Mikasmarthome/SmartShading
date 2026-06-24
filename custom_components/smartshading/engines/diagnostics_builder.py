@@ -144,11 +144,26 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
             "dispatch_healthy": True,
         }
 
+    def _decisions():
+        # PUBLIC: counts only — no ids, states or positions.
+        snap = _call(c, "decision_trace_snapshot") or {}
+        per_zone = {}
+        no_dispatch = 0
+        for i, (_zid, z) in enumerate(snap.items()):
+            per_zone[f"zone_{i}"] = z.get("count", 0)
+            for r in z.get("records", []):
+                nd = r.get("no_dispatch", {})
+                if nd.get("command_sent") is False:
+                    no_dispatch += 1
+        return {"material_decisions_by_zone": per_zone,
+                "no_dispatch_decisions": no_dispatch}
+
     contract = {
         "schema_version": DIAGNOSTICS_SCHEMA_VERSION,
         "generated_at_utc": _iso(now),
         "integration_version": integration_version,
         "system": _safe(_system, errors, "system"),
+        "decisions": _safe(_decisions, errors, "decisions"),
         "learning_active_control_matrix": _safe(_matrix, errors, "matrix"),
         "learning": _safe(_learning, errors, "learning"),
         "execution": _safe(_execution, errors, "execution"),

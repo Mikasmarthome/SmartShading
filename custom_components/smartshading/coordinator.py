@@ -395,6 +395,9 @@ IMPORTANT_SAVE_DELAY_SECONDS: int = 3
 # P11: bounded, EPHEMERAL (never persisted) dispatch-trace ring per zone, used only
 # for read-only diagnostics/support export.  Not part of any control authority.
 DISPATCH_TRACE_MAX_RECORDS_PER_ZONE: int = 500
+# P11 Increment 2: bounded ephemeral decision-trace ring per zone + retarget window.
+DECISION_TRACE_MAX_RECORDS_PER_ZONE: int = 200
+RETARGET_TRACE_WINDOW_SECONDS: int = 300
 
 
 @dataclass(frozen=True)
@@ -710,6 +713,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # small incremental per-cover state for retarget diagnostics.  Read-only.
         self._dispatch_trace: dict[str, deque] = {}
         self._cover_dispatch_state: dict[str, dict] = {}
+        # P11 Increment 2: ephemeral (RAM-only) decision-trace ring per zone.
+        self._decision_trace: dict[str, deque] = {}
         # Step 6: per-window, per-intensity learned target position adapter.
         self._target_position_adapter = TargetPositionAdapter()
         # Phase 9F4b-3: pending outcome queue.  P2: now persisted (restart-safe)
@@ -3675,7 +3680,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     dispatch=_dispatch_prov,
                     now=now,
                 )
-                # P11: read-only ephemeral dispatch trace (never persisted, bounded).
+                # P11: read-only ephemeral decision + dispatch trace (never
+                # persisted, bounded).  Pure observation — control is unaffected.
+                try:
+                    self._record_decision_trace(window_id, s, harm, _dispatch_prov, now)
+                except Exception:
+                    _LOGGER.debug("Diagnostics: decision-trace capture skipped (non-fatal)")
                 try:
                     self._record_dispatch_trace(
                         window_id, s, harm, _dispatch_prov, now)
@@ -3865,6 +3875,137 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "material_target_change_count": 0,
         }
 
+    def _record_decision_trace(self, window_id, s, harm, dispatch_prov, now) -> None:
+        """P11: bounded, ephemeral, read-only decision trace at the real decision
+        path.  Captures the resolved decision, an HONEST candidate trace (winner +
+        baseline recorded; everything else not_recorded — never reconstructed), the
+        authority map (actual runtime influence), the full target chain and the
+        no-dispatch reason.  Never re-runs an evaluator; never affects control."""
+        decision_id = getattr(s, "decision_id", None)
+        if decision_id is None:
+            return  # only material decisions (P2 materiality gates decision_id)
+        window = getattr(s, "window", None)
+        zone_id = getattr(window, "zone_id", None) or "unknown"
+        filt = getattr(s, "exec_filter_result", None)
+
+        def _sv(state):
+            return getattr(state, "value", None) if state is not None else None
+
+        decided_by = getattr(s, "tier_decided_by", None) or getattr(s, "baseline_decided_by", None)
+        resolved_target = filt.target_position_ha if filt is not None else None
+        # --- honest candidate trace: winner + baseline recorded; rest not_recorded ---
+        winner = {
+            "candidate_type": "winner", "recording_status": "recorded",
+            "was_selected": True, "decided_by": decided_by,
+            "proposed_state": _sv(getattr(s, "new_state", None)),
+            "proposed_position_ha": resolved_target,
+        }
+        baseline = {
+            "candidate_type": "baseline", "recording_status": "recorded",
+            "was_selected": False,
+            "decided_by": getattr(s, "baseline_decided_by", None),
+            "proposed_state": _sv(getattr(s, "baseline_state", None)),
+            "proposed_position_ha": getattr(s, "normal_cfg_ha_for_prov", None),
+        }
+        not_recorded = [
+            {"candidate_type": t, "recording_status": "not_recorded"}
+            for t in ("safety", "manual_override", "lifecycle", "absence",
+                      "heat", "glare", "solar", "position_learning", "strategy_learning")
+        ]
+        # --- authority map: actual runtime influence only ---
+        pos_applied = window_id in self._cycle_adoption_applied
+        strat_applied = window_id in self._cycle_strategy_applied
+        cf_blocked = bool(filt is not None and not filt.allowed)
+        authorities = {
+            "safety_authority": {"active": bool(getattr(s, "is_safety", False)),
+                                 "applied": bool(getattr(s, "is_safety", False)),
+                                 "source_type": "safety"},
+            "manual_override_authority": {
+                "active": bool(getattr(s, "manual_override_active_at_decision", False)
+                               or getattr(s, "is_override_active", False)),
+                "source_type": "manual_override"},
+            "lifecycle_authority": {
+                "active": getattr(s, "lifecycle_state_value", "day") != "day",
+                "source_type": "lifecycle"},
+            "behavior_mode_authority": {
+                "source_type": str(getattr(window, "behavior_mode", None))},
+            "absence_authority": {
+                "active": bool(getattr(s, "absence_active_at_decision", False)),
+                "source_type": "absence"},
+            "solar_authority": {"active": bool(getattr(s, "in_solar_sector", True)),
+                                "source_type": "solar"},
+            "position_learning_authority": {"applied": pos_applied,
+                                            "source_type": "position_learning"},
+            "strategy_learning_authority": {"applied": strat_applied,
+                                            "source_type": "strategy_learning"},
+            "harmonization_authority": {
+                "applied": bool(getattr(harm, "harmonized", False)),
+                "source_type": "harmonization"},
+            "state_guard_authority": {"recording_status": "not_recorded"},
+            "command_filter_authority": {
+                "blocked": cf_blocked,
+                "reason_code": (filt.blocked_reason if filt is not None else None),
+                "source_type": "command_filter"},
+            "dispatch_authority": {
+                "applied": bool(dispatch_prov.dispatch_succeeded),
+                "blocked": dispatch_prov.dispatch_allowed is False,
+                "reason_code": dispatch_prov.dispatch_filter_reason,
+                "source_type": "dispatch"},
+        }
+        # --- no-dispatch reason (follows the real gate/filter order) ---
+        command_sent = bool(dispatch_prov.dispatch_succeeded)
+        contributing: list = []
+        primary = None
+        if not command_sent:
+            if not getattr(s, "active_control_enabled", False):
+                primary = "active_control_off"
+            elif cf_blocked:
+                primary = filt.blocked_reason or "command_filter_suppressed"
+            elif not dispatch_prov.dispatch_attempted:
+                primary = "dispatch_not_required"
+            else:
+                primary = dispatch_prov.dispatch_filter_reason or "not_recorded"
+            if dispatch_prov.dispatch_filter_reason and dispatch_prov.dispatch_filter_reason != primary:
+                contributing.append(dispatch_prov.dispatch_filter_reason)
+        rec = {
+            "decision_id": decision_id,
+            "window_id": window_id,
+            "decision_timestamp_utc": now.isoformat() if now is not None else None,
+            "baseline_state": _sv(getattr(s, "baseline_state", None)),
+            "resolved_state": _sv(getattr(s, "new_state", None)),
+            "decided_by": decided_by,
+            "config_generation": getattr(s, "config_generation", 0),
+            "adapt_confidence_level": getattr(s, "adapt_confidence_level", None),
+            "candidates": [winner, baseline] + not_recorded,
+            "authorities": authorities,
+            "target_chain": {
+                "recommendation_position_ha": getattr(s, "normal_cfg_ha_for_prov", None),
+                "resolved_target_position_ha": resolved_target,
+                "pre_command_filter_target_ha": resolved_target,
+                "post_harmonization_target_ha": getattr(harm, "final_target_position_ha", None),
+                "final_dispatched_target_ha": (
+                    dispatch_prov.requested_target_ha if command_sent else None),
+                "actual_payload_position_ha": (
+                    dispatch_prov.requested_target_ha if command_sent else None),
+                "target_tilt_ha": getattr(s, "target_tilt_ha", None),
+            },
+            "no_dispatch": {
+                "recommendation_exists": getattr(s, "normal_cfg_ha_for_prov", None) is not None,
+                "command_sent": command_sent,
+                "primary_reason": primary,
+                "contributing_reasons": contributing,
+            },
+        }
+        ring = self._decision_trace.setdefault(
+            zone_id, deque(maxlen=DECISION_TRACE_MAX_RECORDS_PER_ZONE))
+        ring.append(rec)
+
+    def decision_trace_snapshot(self) -> dict:
+        """Read-only snapshot of the ephemeral decision trace (RAM only, bounded).
+        Raw ids present here; the export layer pseudonymizes them."""
+        return {zid: {"records": list(ring), "count": len(ring)}
+                for zid, ring in self._decision_trace.items()}
+
     def _record_dispatch_trace(self, window_id, s, harm, dispatch_prov, now) -> None:
         """P11: append a read-only, ephemeral, bounded dispatch trace record + update
         per-cover retarget state.  Sources from already-computed values only — it
@@ -3876,11 +4017,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             return  # only real service-boundary attempts enter the trace
         requested = dispatch_prov.requested_target_ha
         filt = getattr(s, "exec_filter_result", None)
+        sent = dispatch_prov.dispatch_status in ("SENT", "sent") or bool(
+            dispatch_prov.dispatch_succeeded)
         rec = {
             "decision_id": getattr(s, "decision_id", None),
             "window_id": window_id,
             "cover_id": cover_id,
             "requested_position_ha": requested,
+            # actual payload == the value sent to cover.set_cover_position (HA
+            # convention), captured from the provenance built at the service call.
+            "actual_payload_position_ha": requested if sent else None,
+            "actual_payload_has_position": bool(sent and requested is not None),
             "dispatch_status": dispatch_prov.dispatch_status,
             "dispatch_filter_reason": dispatch_prov.dispatch_filter_reason,
             "recommendation_position_ha": getattr(s, "normal_cfg_ha_for_prov", None),
@@ -3899,10 +4046,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         prev_at = cstate["last_dispatch_at"]
         is_retarget = (
             prev_req is not None and requested is not None and prev_req != requested
-            and prev_at is not None and (now - prev_at) <= timedelta(minutes=5))
+            and prev_at is not None
+            and (now - prev_at) <= timedelta(seconds=RETARGET_TRACE_WINDOW_SECONDS))
         if is_retarget:
             cstate["same_cover_retarget_count"] += 1
         rec["is_retarget"] = bool(is_retarget)
+        rec["previous_target_position_ha"] = prev_req
+        rec["target_delta_ha"] = (
+            (requested - prev_req) if (is_retarget and requested is not None
+                                       and prev_req is not None) else None)
+        # Source provenance is only exported if production proves it — otherwise
+        # not_recorded (no inference from target direction).
+        rec["retarget_source"] = None
+        rec["source_recording_status"] = "not_recorded" if is_retarget else "n/a"
         cstate["last_requested_position_ha"] = requested
         cstate["last_dispatch_at"] = now
         cstate["recent_at"].append(now)

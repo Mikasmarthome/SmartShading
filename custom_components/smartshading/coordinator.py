@@ -3682,14 +3682,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 )
                 # P11: read-only ephemeral decision + dispatch trace (never
                 # persisted, bounded).  Pure observation — control is unaffected.
+                _disp_ctx = self._dispatch_context(s, _dispatch_throttled, _throttle_wait_ms)
                 try:
                     self._record_decision_trace(
-                        window_id, s, harm, _dispatch_prov, _last_exec_result, now)
+                        window_id, s, harm, _dispatch_prov, _last_exec_result, now,
+                        disp_ctx=_disp_ctx)
                 except Exception:
                     _LOGGER.debug("Diagnostics: decision-trace capture skipped (non-fatal)")
                 try:
                     self._record_dispatch_trace(
-                        window_id, s, harm, _dispatch_prov, _last_exec_result, now)
+                        window_id, s, harm, _dispatch_prov, _last_exec_result, now,
+                        disp_ctx=_disp_ctx)
                 except Exception:
                     _LOGGER.debug("Diagnostics: dispatch-trace capture skipped (non-fatal)")
                 # P7: confirm or abort experiment activation from the real
@@ -3876,7 +3879,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "material_target_change_count": 0,
         }
 
-    def _record_decision_trace(self, window_id, s, harm, dispatch_prov, exec_result, now) -> None:
+    def _record_decision_trace(self, window_id, s, harm, dispatch_prov, exec_result,
+                               now, *, disp_ctx=None) -> None:
         """P11: bounded, ephemeral, read-only decision trace at the real decision
         path.  Captures the resolved decision, an HONEST candidate trace (winner +
         baseline recorded; everything else not_recorded — never reconstructed), the
@@ -4000,6 +4004,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 "primary_reason": primary,
                 "contributing_reasons": contributing,
             },
+            "dispatch_context": disp_ctx if isinstance(disp_ctx, dict) else {},
         }
         ring = self._decision_trace.setdefault(
             zone_id, deque(maxlen=DECISION_TRACE_MAX_RECORDS_PER_ZONE))
@@ -4011,7 +4016,63 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         return {zid: {"records": list(ring), "count": len(ring)}
                 for zid, ring in self._decision_trace.items()}
 
-    def _record_dispatch_trace(self, window_id, s, harm, dispatch_prov, exec_result, now) -> None:
+    def _dispatch_context(self, s, throttled, throttle_wait_ms) -> dict:
+        """P11: read-only global-interval + movement + position-before context from
+        ALREADY-COMPUTED runtime data (this-cycle snapshot + throttle observation).
+        No new polling/state read; honest not_recorded where data is absent.
+
+        Architecture note: there is NO real dispatch queue — only a global asyncio
+        lock + monotonic min-interval throttle.  Queue fields are therefore
+        not_recorded; the global-interval wait is the throttle's monotonic wait."""
+        ctx: dict = {
+            # No real queue exists → honest not_recorded (never mislabel throttle).
+            "queue_entered_at_monotonic": None,
+            "queue_slot_granted_at_monotonic": None,
+            "queue_wait_ms": None,
+            "queue_recording_status": "not_recorded",
+            # Real global serial min-interval wait (monotonic via the throttle).
+            "global_wait_required": bool(throttled),
+            "global_interval_wait_ms": (throttle_wait_ms if throttled else 0),
+            "required_global_interval_ms": None,
+        }
+        try:
+            mi = getattr(getattr(self._serial_dispatch, "_throttle", None), "min_interval", None)
+            ctx["required_global_interval_ms"] = (
+                round(mi.total_seconds() * 1000) if mi is not None else None)
+        except Exception:
+            ctx["required_global_interval_ms"] = None
+        # Movement + position-before from THIS cycle's snapshot (entity_state source).
+        snap = getattr(s, "exec_snapshot", None)
+        if snap is not None:
+            moving = bool(getattr(snap, "is_opening", False) or getattr(snap, "is_closing", False))
+            has_fb = bool(getattr(snap, "has_position_feedback", False))
+            ctx.update({
+                "cover_was_moving": moving,
+                "moving_state_source": "entity_state",
+                "moving_state_confidence": "reported" if has_fb else "low",
+                "movement_recording_status": "recorded",
+                "reported_position_before_ha": (
+                    getattr(snap, "current_position_ha", None) if has_fb else None),
+                "position_feedback_type": "reliable" if has_fb else "estimated_or_none",
+                "position_is_estimated": not has_fb,
+                "position_before_recording_status": "recorded" if has_fb else "not_recorded",
+            })
+        else:
+            ctx.update({
+                "cover_was_moving": None, "moving_state_source": "not_recorded",
+                "moving_state_confidence": None, "movement_recording_status": "not_recorded",
+                "reported_position_before_ha": None,
+                "position_feedback_type": "not_recorded", "position_is_estimated": None,
+                "position_before_recording_status": "not_recorded",
+            })
+        # reported_position_after is honestly not_recorded (no exact later correlation
+        # and no diagnostic polling is performed).
+        ctx["reported_position_after_ha"] = None
+        ctx["post_position_recording_status"] = "not_recorded"
+        return ctx
+
+    def _record_dispatch_trace(self, window_id, s, harm, dispatch_prov, exec_result,
+                               now, *, disp_ctx=None) -> None:
         """P11: append a read-only, ephemeral, bounded dispatch trace record + update
         per-cover retarget state.  The ACTUAL payload + service name + monotonic
         service duration + safe failure type come from the real ExecutionResult
@@ -4058,6 +4119,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "harmonized": bool(getattr(harm, "harmonized", False)),
             "at": now.isoformat() if now is not None else None,
         }
+        # P11 final: global-interval + movement + position-before context (read-only).
+        if isinstance(disp_ctx, dict):
+            rec.update(disp_ctx)
         # Retarget detection on ACTUALLY sent commands only (suppressed / failed-
         # before-start / intended-only do not count).  Per-cover state advances only
         # on an actual send.

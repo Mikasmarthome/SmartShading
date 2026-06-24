@@ -34,6 +34,7 @@ from .diagnostics_privacy import (
     truncate_strings,
 )
 from ..models.runtime_mode import derive_authority
+from ..models.decision_provenance import ProvenanceSummary
 
 RESEARCH_EXPORT_SCHEMA_VERSION: int = 3
 
@@ -140,9 +141,14 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
                 continue
             for d in decs or []:
                 accounting["examined"] += 1
-                if getattr(d, "summary", None) is None:
-                    accounting["excluded"]["no_summary"] = (
-                        accounting["excluded"].get("no_summary", 0) + 1)
+                # A record is eligible if it carries EITHER a compact summary
+                # (demoted records) OR full provenance (recent records).  Reading
+                # only `summary` would silently drop every recent full-provenance
+                # decision — i.e. the entire active window of interest.
+                if (getattr(d, "summary", None) is None
+                        and getattr(d, "provenance", None) is None):
+                    accounting["excluded"]["no_provenance"] = (
+                        accounting["excluded"].get("no_provenance", 0) + 1)
                     continue
                 r = _project_decision(d, wid, pz)
                 if r is None:
@@ -226,12 +232,33 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
     return contract
 
 
+def _first_attr(obj, *names):
+    """Return the first present, non-None attribute among ``names``."""
+    for n in names:
+        v = getattr(obj, n, None)
+        if v is not None:
+            return v
+    return None
+
+
 def _project_decision(d, wid, pz) -> dict | None:
     summary = getattr(d, "summary", None)
     if summary is None:
-        return None  # only decisions with a recorded provenance summary are eligible
-    base = _num(getattr(summary, "baseline_target_ha", None))
-    adapted = _num(getattr(summary, "final_target_ha", None))
+        # Recent records keep full provenance (summary is only populated when a
+        # record is demoted beyond the full-retention window).  Derive the same
+        # compact view from provenance so the active window is not excluded.
+        prov = getattr(d, "provenance", None)
+        if prov is not None:
+            try:
+                summary = ProvenanceSummary.from_provenance(prov)
+            except Exception:
+                summary = None
+    if summary is None:
+        return None
+    # The real ProvenanceSummary uses *_requested_target_ha; tolerate the short
+    # field names as a fallback so both real and synthetic records are read.
+    base = _num(_first_attr(summary, "baseline_requested_target_ha", "baseline_target_ha"))
+    adapted = _num(_first_attr(summary, "final_requested_target_ha", "final_target_ha"))
     sources = getattr(summary, "adaptation_sources", frozenset()) or frozenset()
     is_adapted = bool(sources) and base is not None and adapted is not None and base != adapted
     outcome = getattr(d, "outcome", None)

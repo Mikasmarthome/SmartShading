@@ -135,12 +135,17 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         sd = _call(c, "storage_diagnostics") or {}
         save_fail = sd.get("learning_store_save_failures", 0)
         restore_fail = sd.get("learning_store_restore_failures", 0)
+        thermal_fail = sd.get("learning_thermal_finalize_failures", 0)
         ledger = _ledger_integrity(c)
         reasons: list[str] = []
         if save_fail:
             reasons.append("storage_save_failure")
         if restore_fail:
             reasons.append("restore_validation_rejects")
+        if thermal_fail:
+            # PUBLIC_SAFE: count-driven signal only; the reason is an exception
+            # class name (no message/traceback), surfaced via storage section.
+            reasons.append("thermal_finalize_failure")
         if any(v not in ("valid", "missing") for v in ledger.values()):
             reasons.append("learning_ledger_unsafe")
         status = "healthy"

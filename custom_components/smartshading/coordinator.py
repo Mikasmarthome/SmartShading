@@ -703,6 +703,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._saved_generation: int = 0
         self._save_failures: int = 0
         self._restore_failures: int = 0
+        # Optional thermal-finalization failures (best-effort learning step).
+        # Counter + privacy-safe reason (exception class name only — never the
+        # message/traceback) so a silent finalize failure is observable in
+        # diagnostics without leaking internals or crashing the cycle.
+        self._thermal_finalize_failures: int = 0
+        self._thermal_finalize_last_reason: str | None = None
         # P10: structured, privacy-safe per-section restore reason counters.
         self._restore_diagnostics: dict = {}
         self._save_lock = asyncio.Lock()
@@ -1140,6 +1146,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if self._persistence_last_save_at is not None else None),
             "learning_store_save_failures": self._save_failures,
             "learning_store_restore_failures": self._restore_failures,
+            "learning_thermal_finalize_failures": self._thermal_finalize_failures,
+            "learning_thermal_finalize_last_reason": self._thermal_finalize_last_reason,
             "learning_restore": self._restore_diagnostics,
         }
 
@@ -6133,6 +6141,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 thermal_reliability=mo.reliability.thermal,
                 confounded=mo.confounders.thermal_confounded,
             )
+            # Real current outdoor temperature at finalization (descriptive
+            # metadata; recompute_model does not use the start→end delta).
+            _outdoor_now = self._read_value(self._outdoor_temperature_sensor_id, "temperature")
             obs = ThermalResponseObservation(
                 zone_id=zone_id,
                 decision_ids=tuple(sorted(acc["decision_ids"])),
@@ -6140,7 +6151,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 observation_duration_min=(now - acc["started_at"]).total_seconds() / 60.0,
                 indoor_start=acc["indoor_start"], indoor_end=outcome.indoor_temp_outcome_c,
                 indoor_samples=tuple(acc["samples"]),
-                outdoor_start=acc["outdoor_start"], outdoor_end=acc["outdoor_start"],
+                outdoor_start=acc["outdoor_start"],
+                outdoor_end=(_outdoor_now if _outdoor_now is not None
+                             else acc["outdoor_start"]),
                 solar_start=acc["solar_start"], solar_end=acc["solar_start"],
                 shading_state=acc["shading_state"],
                 target_before_ha=acc["target_before"], target_after_ha=acc["target_before"],
@@ -6516,10 +6529,21 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         except Exception:
             pass  # provenance link is best-effort; never blocks learning
         # P4: feed the resolved outcome into the per-zone thermal response model.
+        # Best-effort: a model error must never crash the cycle, but it must NOT
+        # be silently invisible either (this is exactly how the 3A defect hid).
+        # We record a privacy-safe health signal (exception class name only) and
+        # skip this outcome's thermal step — no partial observation is written
+        # because _thermal_finalize only mutates state after a successful build,
+        # and the same outcome is not re-fed (resolution happens once).
         try:
             self._thermal_finalize(outcome)
-        except Exception:
-            pass  # thermal learning is best-effort; never blocks the cycle
+        except Exception as _exc:
+            self._thermal_finalize_failures += 1
+            self._thermal_finalize_last_reason = type(_exc).__name__
+            _LOGGER.warning(
+                "Learning: thermal finalize failed (non-fatal) for %s — %s",
+                outcome.window_id, type(_exc).__name__,
+            )
         # P7: if this outcome belongs to an active experiment (exact decision_id
         # linkage), finalize and evaluate the experiment.
         try:

@@ -2996,7 +2996,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         #
                         # While holding the lock:
                         #   - Non-safety: sleep until the throttle allows the next
-                        #     dispatch (≥1.5 s since the previous SENT command).
+                        #     dispatch (≥1.0 s since the previous SENT command).
                         #   - Safety: skip the sleep — prioritised, but still serial.
                         #
                         # POSITION INVARIANT: dispatch_cover_intent uses

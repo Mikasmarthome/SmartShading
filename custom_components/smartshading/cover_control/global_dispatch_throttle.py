@@ -52,10 +52,10 @@ import asyncio
 from datetime import datetime, timedelta
 
 
-DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS: float = 1.5
+DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS: float = 1.0
 """Default minimum time between cover service calls (seconds).
 
-Chosen for Somfy RTS / ESP-Somfy reliability: 1.5 seconds gives a single-
+Chosen for Somfy RTS / ESP-Somfy reliability: 1.0 seconds gives a single-
 threaded RF gateway enough time to complete one transmission before the next
 command arrives.  Deliberately conservative — reliability over throughput.
 Coordinator cycles are 5 minutes apart, so any intra-cycle burst is at most

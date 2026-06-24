@@ -371,6 +371,42 @@ def build_window_contribution_research_summary(
         return {"window_model_count": 0}
 
 
+def build_strategy_research_summary(
+    experiments: list | None, adoptions: list | None
+) -> dict:
+    """Aggregate P9B strategy experiment + adoption stats.  Privacy-safe: no
+    entity IDs, no raw keys, no timestamps.  Never raises."""
+    experiments = experiments or []
+    adoptions = adoptions or []
+    try:
+        exp_by_family: dict[str, int] = {}
+        eval_classes: dict[str, int] = {}
+        for e in experiments:
+            exp_by_family[e.parameter_family] = exp_by_family.get(e.parameter_family, 0) + 1
+            eval_classes[e.evaluation_class] = eval_classes.get(e.evaluation_class, 0) + 1
+        ad_by_family: dict[str, int] = {}
+        status_counts: dict[str, int] = {}
+        rollbacks = 0
+        for a in adoptions:
+            ad_by_family[a.parameter_family] = ad_by_family.get(a.parameter_family, 0) + 1
+            status_counts[a.status] = status_counts.get(a.status, 0) + 1
+            if a.rollback_reason:
+                rollbacks += 1
+        n = len(adoptions)
+        return {
+            "strategy_experiment_count": len(experiments),
+            "experiment_count_by_family": exp_by_family,
+            "experiment_evaluation_classes": eval_classes,
+            "strategy_adoption_count": n,
+            "adoption_count_by_family": ad_by_family,
+            "adoption_status_counts": status_counts,
+            "rollback_rate": round(rollbacks / n, 3) if n else None,
+        }
+    except Exception:
+        _LOGGER.warning("SmartShading: research_export: strategy summary failed")
+        return {"strategy_experiment_count": 0, "strategy_adoption_count": 0}
+
+
 def build_adoption_research_summary(adoptions: list | None) -> dict:
     """Aggregate persistent-adoption stats for the Research Export.  Privacy-safe:
     no entity IDs, no raw keys, no timestamps.  Never raises."""

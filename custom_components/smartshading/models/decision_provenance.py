@@ -353,6 +353,12 @@ class AdaptationDecision:
     tier_order_projected: bool = False
     tier_order_notes: tuple[str, ...] = ()
 
+    # P9B — bounded strategy adoption applied this decision (if any).
+    strategy_applied: bool = False
+    strategy_adoption_id: str | None = None
+    strategy_parameter_family: str | None = None
+    strategy_adopted_delta: float | None = None
+
     def __post_init__(self) -> None:
         _validate_ha_position(self.manual_preference_target_ha, "manual_preference_target_ha")
         _validate_ha_position(self.passive_adaptation_target_ha, "passive_adaptation_target_ha")
@@ -403,6 +409,10 @@ class AdaptationDecision:
             "solar_threshold_resolution": self.solar_threshold_resolution,
             "tier_order_projected": self.tier_order_projected,
             "tier_order_notes": list(self.tier_order_notes),
+            "strategy_applied": self.strategy_applied,
+            "strategy_adoption_id": self.strategy_adoption_id,
+            "strategy_parameter_family": self.strategy_parameter_family,
+            "strategy_adopted_delta": self.strategy_adopted_delta,
         }
 
     @classmethod
@@ -446,6 +456,10 @@ class AdaptationDecision:
             solar_threshold_resolution=d.get("solar_threshold_resolution"),
             tier_order_projected=bool(d.get("tier_order_projected", False)),
             tier_order_notes=tuple(d.get("tier_order_notes", []) or []),
+            strategy_applied=bool(d.get("strategy_applied", False)),
+            strategy_adoption_id=d.get("strategy_adoption_id"),
+            strategy_parameter_family=d.get("strategy_parameter_family"),
+            strategy_adopted_delta=d.get("strategy_adopted_delta"),
         )
 
 

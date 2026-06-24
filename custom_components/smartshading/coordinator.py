@@ -214,6 +214,36 @@ from .engines.thermal_insufficiency import (
     classify_thermal_insufficiency,
 )
 from .models.shading_strategy import ForecastLoadFeatures
+from .engines.strategy_experiment_engine import (
+    StrategyEvidence,
+    StrategyMonitoringActionInput,
+    classify_strategy_outcome,
+    evaluate_strategy_confirmation,
+    evaluate_strategy_evidence,
+    evaluate_strategy_monitoring_action,
+    is_cooldown_active as _strategy_cooldown_active,
+    reconcile_restored_strategy_adoptions,
+    reconcile_restored_strategy_experiments,
+    rollback_cooldown_until as _strategy_rollback_cooldown_until,
+    update_strategy_monitoring,
+)
+from .models.strategy_learning import (
+    ACTION_FULL_ROLLBACK as STRAT_ACTION_FULL_ROLLBACK,
+    ACTION_INVALIDATE as STRAT_ACTION_INVALIDATE,
+    ACTION_REDUCE_ONE_STEP as STRAT_ACTION_REDUCE_ONE_STEP,
+    ACTION_TEMPORARY_SUSPEND as STRAT_ACTION_TEMPORARY_SUSPEND,
+    AD_CONFIRMED as STRAT_AD_CONFIRMED,
+    AD_MONITORING as STRAT_AD_MONITORING,
+    AD_REDUCED as STRAT_AD_REDUCED,
+    AD_ROLLED_BACK as STRAT_AD_ROLLED_BACK,
+    AD_INVALIDATED as STRAT_AD_INVALIDATED,
+    ADOPTION_HISTORY_PER_KEY as STRAT_ADOPTION_HISTORY_PER_KEY,
+    FAMILY_BOUNDS as STRAT_FAMILY_BOUNDS,
+    FAMILY_ENTRY_THRESHOLD,
+    StrategyMonitoringState,
+    PersistentStrategyAdoption,
+    BoundedStrategyExperiment,
+)
 from .engines.safety_hold import (
     HARDWARE_SAFE_POSITIONS as _HARDWARE_SAFE_POSITIONS,
     SafetyHold as _SafetyHold,
@@ -664,6 +694,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._strategy_candidates: dict[str, object] = {}
         # P9A — latest thermal-insufficiency cause per window (diagnostics only).
         self._last_thermal_cause: dict[str, tuple] = {}
+        # P9B — bounded strategy experiments + persistent strategy adoptions.
+        # ONE experiment per zone is shared with P7 position experiments (unified
+        # zone-experiment authority).  Adoptions keyed by (window, parameter_family).
+        self._strategy_experiments_active: dict[str, BoundedStrategyExperiment] = {}
+        self._strategy_experiment_history: list[BoundedStrategyExperiment] = []
+        self._strategy_adoptions_active: dict[tuple, PersistentStrategyAdoption] = {}
+        self._strategy_adoption_history: list[PersistentStrategyAdoption] = []
+        self._strategy_shadows: dict[tuple, object] = {}
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
@@ -924,6 +962,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._suspend_zone_adoptions(zone_id, "learning_mode_off", _disable_now)
             except Exception:
                 _LOGGER.warning("Learning: adoption suspend on learning-disable failed for %s", zone_id)
+            try:
+                self._suspend_zone_strategy(zone_id, "learning_mode_off", _disable_now)
+            except Exception:
+                _LOGGER.warning("Learning: strategy suspend on learning-disable failed for %s", zone_id)
         self._persist_zone_controls()
         await self.async_request_refresh()
 
@@ -1238,6 +1280,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         reconcile_restored_adoptions(
                             _extras.persistent_adoptions, _restore_now)
                     )
+                    # P9B: restore strategy experiments + adoptions (never blindly
+                    # reactivated; suspended pending fresh revalidation).
+                    self._strategy_experiments_active, self._strategy_experiment_history = (
+                        reconcile_restored_strategy_experiments(
+                            _extras.strategy_experiments, _restore_now)
+                    )
+                    self._strategy_adoptions_active, self._strategy_adoption_history = (
+                        reconcile_restored_strategy_adoptions(
+                            _extras.persistent_strategy_adoptions, _restore_now)
+                    )
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
@@ -1259,6 +1311,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     shadow_proposals=self._shadow_proposals_storage(),
                     bounded_experiments=self._experiments_storage(),
                     persistent_adoptions=self._adoptions_storage(),
+                    strategy_experiments=self._strategy_experiments_storage(),
+                    persistent_strategy_adoptions=self._strategy_adoptions_storage(),
                 )
                 self._persistence_last_save_at = _restore_now
                 self._learning_persistence.clear_migration_dirty()
@@ -1746,6 +1800,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     forecast_available=_fc_applied,
                     forecast_trust_score=(_forecast_modifier.trust_score
                                           if _forecast_modifier is not None else None),
+                    strategy_threshold_delta_wm2=self._strategy_threshold_delta(
+                        window_id, exposure.effective_exposure,
+                        weather_inputs.outdoor_temperature, now),
                 )
                 _adapted_bc = replace(
                     _adapted_bc,
@@ -3330,6 +3387,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 shadow_proposals=self._shadow_proposals_storage(),
                 bounded_experiments=self._experiments_storage(),
                 persistent_adoptions=self._adoptions_storage(),
+                strategy_experiments=self._strategy_experiments_storage(),
+                persistent_strategy_adoptions=self._strategy_adoptions_storage(),
             )
             self._persistence_last_save_at = now
             self._learning_dirty = False
@@ -3599,6 +3658,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if not (exec_cfg.learning_enabled and exec_cfg.active_control_enabled):
             return wdi
 
+        # Unified zone-experiment authority: a P9B strategy experiment also holds
+        # the single per-zone slot — position and strategy never experiment together.
+        if zone_id in self._strategy_experiments_active:
+            return wdi
         exp = self._experiments_active.get(zone_id)
         if exp is not None and exp.window_id != window_id:
             return wdi  # zone's single slot is held by another window
@@ -4366,6 +4429,252 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         proj = self._cycle_tier_order.get(window_id)
         return proj.to_dict() if proj is not None else {"projected": False}
 
+    # ------------------------------------------------------------------
+    # P9B — Bounded strategy learning (threshold family live; all modeled)
+    # ------------------------------------------------------------------
+
+    def _zone_experiment_locked(self, zone_id: str) -> bool:
+        """Unified zone-experiment authority: at most one active experiment per
+        zone across P7 position experiments AND P9B strategy experiments."""
+        return zone_id in self._experiments_active or zone_id in self._strategy_experiments_active
+
+    def _strategy_consumed_ids(self, key: tuple) -> set:
+        ids: set = set()
+        a = self._strategy_adoptions_active.get(key)
+        if a is not None:
+            ids.update(a.consumed_experiment_ids)
+        for h in self._strategy_adoption_history:
+            if h.adoption_key == key:
+                ids.update(h.consumed_experiment_ids)
+        return ids
+
+    def _strategy_adoption_to_history(self, adoption) -> None:
+        self._strategy_adoption_history.append(adoption)
+        per_key: dict = {}
+        for h in self._strategy_adoption_history:
+            per_key.setdefault(h.adoption_key, []).append(h)
+        trimmed: list = []
+        for _k, items in per_key.items():
+            trimmed.extend(items[-STRAT_ADOPTION_HISTORY_PER_KEY:])
+        trimmed.sort(key=lambda h: (h.updated_at or h.created_at))
+        self._strategy_adoption_history = trimmed
+
+    def _strategy_context_compatible(self, adoption, ctx_family: str) -> bool:
+        fams = set(adoption.validated_context_families) | {adoption.context_family}
+        return ctx_family in fams
+
+    def _strategy_threshold_delta(self, window_id, exposure, outdoor, now) -> float:
+        """Live runtime effect of an active ENTRY_THRESHOLD strategy adoption
+        (bounded, single-clamp via the Unified Solar Threshold Resolver).  Returns
+        0.0 unless applicable (learning on, current generation, compatible
+        context, not suspended)."""
+        key = (window_id, FAMILY_ENTRY_THRESHOLD)
+        a = self._strategy_adoptions_active.get(key)
+        if a is None or a.adopted_delta == 0:
+            return 0.0
+        window = self.windows.get(window_id)
+        if window is None:
+            return 0.0
+        zone_id = window.zone_id
+        exec_cfg = self.effective_zone_execution(zone_id)
+        if not exec_cfg.learning_enabled:
+            self._strategy_adoptions_active[key] = replace(
+                a, suspended=True, current_gate_reason="learning_mode_off", updated_at=now)
+            return 0.0
+        gen = self._thermal_config_generation(zone_id)
+        if a.config_generation != gen:
+            self._strategy_adoptions_active[key] = replace(
+                a, suspended=True, current_gate_reason="config_generation_changed", updated_at=now)
+            return 0.0
+        ctx = self._experiment_context_family(now, outdoor, exposure)
+        if not self._strategy_context_compatible(a, ctx):
+            self._strategy_adoptions_active[key] = replace(
+                a, suspended=True, current_gate_reason="context_incompatible", updated_at=now)
+            return 0.0
+        if a.suspended or a.status == STRAT_AD_MONITORING:
+            self._strategy_adoptions_active[key] = replace(
+                a, suspended=False, current_gate_reason=None,
+                status=(STRAT_AD_MONITORING if a.status in ("adopted", STRAT_AD_MONITORING) else a.status),
+                last_validated_at=now, updated_at=now)
+        return float(a.adopted_delta)
+
+    def _strategy_experiment_evidence(self, window_id: str, family: str) -> list:
+        out: list = []
+        for e in self._strategy_experiment_history:
+            if e.window_id != window_id or e.parameter_family != family:
+                continue
+            if e.completed_at is None or e.evaluation_class == "inconclusive":
+                continue
+            sign = 1 if e.delta > 0 else (-1 if e.delta < 0 else 0)
+            out.append(StrategyEvidence(
+                experiment_id=e.experiment_id, decision_class=e.evaluation_class,
+                day=e.completed_at.date(), reliability=e.reliability, confidence=e.confidence,
+                context_family=e.context_family, config_generation=e.config_generation,
+                direction_sign=sign))
+        return out
+
+    def _maybe_adopt_strategy(self, window_id: str, family: str, zone_id: str, now: datetime) -> None:
+        """Create/upgrade a persistent strategy adoption from multiple fresh, exact,
+        non-consumed terminal strategy experiments (mirror of P8, generalized)."""
+        key = (window_id, family)
+        existing = self._strategy_adoptions_active.get(key)
+        # cooldown after rollback for this identity
+        for h in self._strategy_adoption_history:
+            if (h.adoption_key == key and h.cooldown_until is not None
+                    and existing is None and _strategy_cooldown_active(h.cooldown_until, now)):
+                return
+        bounds = STRAT_FAMILY_BOUNDS.get(family)
+        if bounds is None:
+            return
+        if existing is None:
+            stage = 1
+        elif (existing.status == STRAT_AD_CONFIRMED and existing.activated_at is not None
+              and (now - existing.activated_at) >= timedelta(days=14)
+              and abs(existing.adopted_delta) < bounds.cap - 1e-9):
+            stage = 2
+        else:
+            return
+        gen = self._thermal_config_generation(zone_id)
+        consumed = self._strategy_consumed_ids(key)
+        evidence = self._strategy_experiment_evidence(window_id, family)
+        res = evaluate_strategy_evidence(
+            evidence, stage=stage, consumed_ids=frozenset(consumed), config_generation=gen)
+        if not res.sufficient:
+            return
+        exec_cfg = self.effective_zone_execution(zone_id)
+        if not exec_cfg.learning_enabled:
+            return
+        # Bounded new cumulative delta in the evidence direction.
+        prev_delta = existing.adopted_delta if existing is not None else 0.0
+        new_delta = prev_delta + res.direction_sign * bounds.step
+        if abs(new_delta) - bounds.cap > 1e-9:
+            return
+        # Representative baseline (configured value); 0.0 keeps the delta as the
+        # authoritative bounded value for threshold families.
+        baseline = existing.baseline_value if existing is not None else 0.0
+        new_consumed = tuple(sorted(set(consumed) | set(res.selected_experiment_ids)))
+        fams = tuple(sorted(set(res.validated_context_families)
+                            | (set(existing.validated_context_families) if existing else set())))
+        adoption = PersistentStrategyAdoption(
+            adoption_id=(existing.adoption_id if existing is not None else uuid.uuid4().hex),
+            zone_id=zone_id, window_id=window_id, parameter_family=family,
+            context_family=(existing.context_family if existing is not None
+                            else (res.validated_context_families[0] if res.validated_context_families else "global")),
+            validated_context_families=fams, baseline_value=baseline, adopted_delta=new_delta,
+            effective_value=baseline + new_delta,
+            source_experiment_ids=tuple(sorted(set(res.selected_experiment_ids)
+                                               | (set(existing.source_experiment_ids) if existing else set()))),
+            consumed_experiment_ids=new_consumed,
+            created_at=(existing.created_at if existing is not None else now), updated_at=now,
+            activated_at=(existing.activated_at if existing is not None else now),
+            stage2_activated_at=(now if stage == 2 else None), last_validated_at=now,
+            config_generation=gen, status="adopted", confidence=res.confidence,
+            reliability=res.reliability, distinct_experiment_days=res.distinct_days,
+            monitoring=StrategyMonitoringState(monitoring_started_at=now))
+        self._strategy_adoptions_active[key] = adoption
+        self._learning_dirty = True
+
+    def _monitor_strategy_adoption(self, outcome) -> None:
+        """Continuous monitoring of active strategy adoptions from production
+        outcomes (mirror of P8; robust negative evidence only)."""
+        mo = outcome.multi_objective
+        if mo is None:
+            return
+        now = outcome.decision_timestamp or dt_util.utcnow()
+        for key, a in list(self._strategy_adoptions_active.items()):
+            if key[0] != outcome.window_id or a.adopted_delta == 0:
+                continue
+            open_more = bool(mo.preference.override_direction == "open_more")
+            confounded = bool(getattr(mo.reliability, "thermal_confounded", False))
+            cls = classify_strategy_outcome(
+                thermal_available=bool(mo.thermal.available), thermal_score=mo.thermal.score,
+                confounded=confounded, open_more_rejection=open_more)
+            new_mon = update_strategy_monitoring(
+                a.monitoring, outcome_class=cls, open_more_rejection=open_more,
+                moved=False, day=now.date(), now=now)
+            a = replace(a, monitoring=new_mon, updated_at=now)
+            self._strategy_adoptions_active[key] = a
+            exec_cfg = self.effective_zone_execution(a.zone_id)
+            gen = self._thermal_config_generation(a.zone_id)
+            action, reason = evaluate_strategy_monitoring_action(StrategyMonitoringActionInput(
+                stage=a.stage, learning_enabled=exec_cfg.learning_enabled,
+                config_generation_matches=(a.config_generation == gen), reference_valid=True,
+                context_compatible=True, sensor_available=bool(mo.thermal.available),
+                forecast_trust_ok=True, open_more_rejection_now=open_more, monitoring=new_mon))
+            if action == STRAT_ACTION_FULL_ROLLBACK:
+                self._strategy_adoptions_active.pop(key, None)
+                self._strategy_adoption_to_history(replace(
+                    a, status=STRAT_AD_ROLLED_BACK, rollback_reason=reason, suspended=False,
+                    cooldown_until=_strategy_rollback_cooldown_until(now), updated_at=now))
+            elif action == STRAT_ACTION_INVALIDATE:
+                self._strategy_adoptions_active.pop(key, None)
+                self._strategy_adoption_to_history(replace(
+                    a, status=STRAT_AD_INVALIDATED, rollback_reason=reason, updated_at=now))
+            elif action == STRAT_ACTION_REDUCE_ONE_STEP and a.stage == 2:
+                bounds = STRAT_FAMILY_BOUNDS.get(a.parameter_family)
+                step = bounds.step if bounds else 0
+                reduced = a.adopted_delta - (step if a.adopted_delta > 0 else -step)
+                self._strategy_adoptions_active[key] = replace(
+                    a, adopted_delta=reduced, effective_value=a.baseline_value + reduced,
+                    status=STRAT_AD_REDUCED, rollback_reason=reason,
+                    monitoring=StrategyMonitoringState(monitoring_started_at=now), updated_at=now)
+            elif action == STRAT_ACTION_TEMPORARY_SUSPEND:
+                self._strategy_adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason=reason, updated_at=now)
+            else:
+                activated = a.stage2_activated_at if a.stage == 2 else a.activated_at
+                if evaluate_strategy_confirmation(stage=a.stage, activated_at=activated,
+                                                  monitoring=new_mon, now=now):
+                    self._strategy_adoptions_active[key] = replace(
+                        a, status=STRAT_AD_CONFIRMED, updated_at=now)
+            self._learning_dirty = True
+
+    def _suspend_zone_strategy(self, zone_id: str, reason: str, now: datetime) -> None:
+        for key, a in list(self._strategy_adoptions_active.items()):
+            if a.zone_id == zone_id and not a.suspended:
+                self._strategy_adoptions_active[key] = replace(
+                    a, suspended=True, current_gate_reason=reason, updated_at=now)
+
+    def strategy_adoption_diagnostics(self, window_id: str) -> dict:
+        """Privacy-safe per-window strategy adoption snapshot."""
+        window = self.windows.get(window_id)
+        zone_id = window.zone_id if window is not None else ""
+        exec_cfg = self.effective_zone_execution(zone_id) if zone_id else ZoneExecutionConfig()
+        out: dict = {
+            "learning_mode_gate": (None if exec_cfg.learning_enabled else "learning_mode_required"),
+            "families": {},
+        }
+        for key, a in self._strategy_adoptions_active.items():
+            if key[0] != window_id:
+                continue
+            out["families"][a.parameter_family] = {
+                "adoption_status": a.status, "adoption_id": a.adoption_id,
+                "parameter_family": a.parameter_family, "adopted_delta": a.adopted_delta,
+                "effective_value": a.effective_value, "confidence": round(a.confidence, 3),
+                "reliability": round(a.reliability, 3),
+                "monitoring_count": a.monitoring.outcome_count,
+                "degraded_count": a.monitoring.degraded_count,
+                "preference_rejection_count": a.monitoring.preference_rejection_count,
+                "suspended": a.suspended, "current_gate_reason": a.current_gate_reason,
+                "rollback_reason": a.rollback_reason,
+                "cooldown_remaining_days": (
+                    round((a.cooldown_until - dt_util.utcnow()).total_seconds() / 86400.0, 1)
+                    if a.cooldown_until is not None else None),
+            }
+        if not out["families"]:
+            out["strategy_status"] = "none"
+        return out
+
+    def _strategy_experiments_storage(self) -> list:
+        out = [e.to_dict() for e in self._strategy_experiments_active.values()]
+        out.extend(e.to_dict() for e in self._strategy_experiment_history[-200:])
+        return out
+
+    def _strategy_adoptions_storage(self) -> list:
+        out = [a.to_dict() for a in self._strategy_adoptions_active.values()]
+        out.extend(a.to_dict() for a in self._strategy_adoption_history[-200:])
+        return out
+
     def window_contribution_diagnostics(self, window_id: str) -> dict:
         """Privacy-safe per-window contribution diagnostics.  Eligibility is
         derived from the CURRENT model + config generation (not a stale bool)."""
@@ -4999,6 +5308,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self._classify_outcome_insufficiency(outcome)
         except Exception:
             _LOGGER.warning("Learning: thermal insufficiency classify failed (non-fatal)")
+        # P9B: continuous monitoring of active strategy adoptions.
+        try:
+            self._monitor_strategy_adoption(outcome)
+        except Exception:
+            _LOGGER.warning("Learning: strategy adoption monitoring failed (non-fatal)")
 
     def _restore_pending_outcomes(
         self, pendings: list, now: datetime
@@ -5228,6 +5542,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 tier_order_notes=(
                     tuple(_to.notes) if (_to := self._cycle_tier_order.get(window_id)) is not None
                     else ()),
+                strategy_applied=bool(
+                    (_sa := self._strategy_adoptions_active.get((window_id, FAMILY_ENTRY_THRESHOLD)))
+                    is not None and not _sa.suspended and _sa.adopted_delta != 0),
+                strategy_adoption_id=(
+                    _sa.adoption_id if (_sa := self._strategy_adoptions_active.get(
+                        (window_id, FAMILY_ENTRY_THRESHOLD))) is not None else None),
+                strategy_parameter_family=(
+                    _sa.parameter_family if (_sa := self._strategy_adoptions_active.get(
+                        (window_id, FAMILY_ENTRY_THRESHOLD))) is not None else None),
+                strategy_adopted_delta=(
+                    _sa.adopted_delta if (_sa := self._strategy_adoptions_active.get(
+                        (window_id, FAMILY_ENTRY_THRESHOLD))) is not None else None),
             ),
             resolved=ResolvedDecision(
                 final_state=s.new_state.value,

@@ -88,32 +88,38 @@ def resolve_solar_thresholds(
     forecast_delta_wm2: float = 0.0,
     forecast_available: bool = False,
     forecast_trust_score: float | None = None,
+    strategy_threshold_delta_wm2: float = 0.0,
 ) -> SolarThresholdResolution:
-    """Compose configured + learned + forecast deltas ONCE, with one final clamp.
+    """Compose configured + learned + forecast + P9B strategy deltas ONCE, with a
+    single final clamp.
 
     The learned delta is the per-intensity threshold change produced by the
     adaptive profile (extracted by the caller as adapted − configured); the
-    forecast delta is the single bounded forecast strategy delta.  No threshold
-    is mutated twice and no intermediate clamp is applied.
+    forecast delta is the single bounded forecast strategy delta; the strategy
+    delta is the bounded P9B entry-threshold adoption/experiment delta.  No
+    threshold is mutated twice and no intermediate clamp is applied.
     """
     level = classify_forecast_trust_level(forecast_available, forecast_trust_score)
     # Forecast precaution only at full trust (mirrors the existing applied gate);
     # the caller already passes 0.0 when the forecast modifier was not applied.
     fc = forecast_delta_wm2
+    st = strategy_threshold_delta_wm2
 
     reasons: list[str] = []
     if any((learned_delta_light, learned_delta_normal, learned_delta_strong)):
         reasons.append("learned_solar_delta")
     if fc != 0.0:
         reasons.append("forecast_solar_delta")
+    if st != 0.0:
+        reasons.append("strategy_threshold_delta")
     if not reasons:
         reasons.append("configured_only")
 
-    eff_light = _clamp(configured_light_wm2 + learned_delta_light + fc,
+    eff_light = _clamp(configured_light_wm2 + learned_delta_light + fc + st,
                        LIGHT_FLOOR_WM2, LIGHT_CEIL_WM2)
-    eff_normal = _clamp(configured_normal_wm2 + learned_delta_normal + fc,
+    eff_normal = _clamp(configured_normal_wm2 + learned_delta_normal + fc + st,
                         NORMAL_FLOOR_WM2, NORMAL_CEIL_WM2)
-    eff_strong = _clamp(configured_strong_wm2 + learned_delta_strong + fc,
+    eff_strong = _clamp(configured_strong_wm2 + learned_delta_strong + fc + st,
                         STRONG_FLOOR_WM2, STRONG_CEIL_WM2)
     return SolarThresholdResolution(
         effective_light_wm2=eff_light, effective_normal_wm2=eff_normal,

@@ -53,6 +53,10 @@ from ..models.pending_outcome import PendingOutcome
 from ..models.thermal_response import ThermalResponseModel, ThermalResponseObservation
 from ..models.bounded_experiment import BoundedExperiment
 from ..models.persistent_adoption import PersistentTargetAdoption
+from ..models.strategy_learning import (
+    BoundedStrategyExperiment,
+    PersistentStrategyAdoption,
+)
 from ..models.shadow_proposal import ShadowProposal
 from ..models.window_contribution import (
     WindowContributionEvidence,
@@ -441,6 +445,8 @@ def serialize_learning_store(
     shadow_proposals: list | None = None,
     bounded_experiments: list | None = None,
     persistent_adoptions: list | None = None,
+    strategy_experiments: list | None = None,
+    persistent_strategy_adoptions: list | None = None,
 ) -> dict:
     """Serialize the LearningStore to a JSON-safe dict.
 
@@ -531,6 +537,9 @@ def serialize_learning_store(
         "bounded_experiments": bounded_experiments or [],
         # P8 — persistent target adoptions (active + terminal history; additive).
         "persistent_adoptions": persistent_adoptions or [],
+        # P9B — bounded strategy experiments + persistent strategy adoptions.
+        "strategy_experiments": strategy_experiments or [],
+        "persistent_strategy_adoptions": persistent_strategy_adoptions or [],
     }
 
     if target_adapter is not None:
@@ -694,6 +703,8 @@ class RestoreExtras:
     shadow_proposals: list  # list[ShadowProposal]
     bounded_experiments: list  # list[BoundedExperiment]
     persistent_adoptions: list  # list[PersistentTargetAdoption]
+    strategy_experiments: list  # list[BoundedStrategyExperiment]
+    persistent_strategy_adoptions: list  # list[PersistentStrategyAdoption]
 
 
 def deserialize_into_learning_store(
@@ -885,6 +896,20 @@ def deserialize_into_learning_store(
         except Exception:
             _LOGGER.warning("Learning: skipping malformed persistent adoption #%d", i)
 
+    # --- P9B strategy experiments + adoptions (additive, optional) ---
+    strategy_experiments: list = []
+    for i, raw in enumerate(data.get("strategy_experiments", []) or []):
+        try:
+            strategy_experiments.append(BoundedStrategyExperiment.from_dict(raw))
+        except Exception:
+            _LOGGER.warning("Learning: skipping malformed strategy experiment #%d", i)
+    persistent_strategy_adoptions: list = []
+    for i, raw in enumerate(data.get("persistent_strategy_adoptions", []) or []):
+        try:
+            persistent_strategy_adoptions.append(PersistentStrategyAdoption.from_dict(raw))
+        except Exception:
+            _LOGGER.warning("Learning: skipping malformed strategy adoption #%d", i)
+
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
         config_generations=config_generations,
@@ -895,6 +920,8 @@ def deserialize_into_learning_store(
         shadow_proposals=shadow_proposals,
         bounded_experiments=bounded_experiments,
         persistent_adoptions=persistent_adoptions,
+        strategy_experiments=strategy_experiments,
+        persistent_strategy_adoptions=persistent_strategy_adoptions,
     )
 
 
@@ -1024,6 +1051,8 @@ class LearningPersistenceAdapter:
         shadow_proposals: list | None = None,
         bounded_experiments: list | None = None,
         persistent_adoptions: list | None = None,
+        strategy_experiments: list | None = None,
+        persistent_strategy_adoptions: list | None = None,
     ) -> None:
         """Prune and persist the current in-memory learning data.
 
@@ -1044,6 +1073,8 @@ class LearningPersistenceAdapter:
                 shadow_proposals=shadow_proposals,
                 bounded_experiments=bounded_experiments,
                 persistent_adoptions=persistent_adoptions,
+                strategy_experiments=strategy_experiments,
+                persistent_strategy_adoptions=persistent_strategy_adoptions,
             )
             await self._store.async_save(data)
         except Exception:

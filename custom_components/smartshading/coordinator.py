@@ -4522,7 +4522,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             attribution_quality=proposal.attribution_quality,
             config_generation_matches=(proposal.config_generation == gen),
             thermal_available=tmodel is not None,
-            thermal_mature=bool(tmodel and tmodel.active),
+            # The zone-level ThermalResponseModel has no `.active` attribute
+            # (only the per-context sub-model does).  A zone model is mature/usable
+            # exactly when it has an effective observation window — the same
+            # definition the diagnostics use for thermal_model_active.
+            thermal_mature=bool(tmodel and tmodel.effective_observation_minutes is not None),
             thermal_reliability=(tmodel.confidence if tmodel else 0.0),
             temperature_source_available=reading.available,
             preference_veto=proposal.evaluation.preference_veto,

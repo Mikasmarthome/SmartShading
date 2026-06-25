@@ -4542,14 +4542,32 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             confounded=False,
             candidate_valid=reval.valid,
             other_active_zone_experiment=False,
-            cooldown_active=self._experiment_cooldown(zone_id, proposal.proposal_key, now)[0],
+            # Cooldown is a CREATION gate only: it must prevent arming a NEW
+            # experiment, but must never retroactively abort an already-running
+            # one (which set its own activation cooldown — a self-abort that
+            # otherwise makes every experiment incapable of completing).  For an
+            # existing experiment, continuation validity is governed by the other
+            # gates (safety / override / feedback / candidate / config).
+            cooldown_active=(
+                self._experiment_cooldown(zone_id, proposal.proposal_key, now)[0]
+                if exp is None else False),
         ))
         if not elig.eligible:
             # Lost eligibility while an experiment was armed for this window →
-            # invalidate/abort logically (no command).
+            # invalidate/abort logically (no command).  Genuine continuation
+            # blockers (safety/override/feedback/config) still abort here.
             if exp is not None:
                 self._abort_zone_experiment(
                     zone_id, f"ineligible:{elig.block_reason}", now)
+            return wdi
+
+        # Continuation: an experiment that is activated (just dispatched) or
+        # observing (running with an open pending outcome) must run to its
+        # outcome.  Do NOT re-arm or re-inject — that would revert it to ARMED,
+        # cause a second dispatch and orphan the pending outcome so it never
+        # finalizes.  Only an ARMED experiment (still waiting for the decision to
+        # land on its intensity) is (re-)armed below.
+        if exp is not None and exp.status in (STATUS_ACTIVATED, STATUS_OBSERVING):
             return wdi
 
         # Arm a new experiment if none exists for the zone.

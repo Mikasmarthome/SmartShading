@@ -4687,9 +4687,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         reliability = (mo.reliability.thermal if mo else 0.0)
 
         # Robust baseline: comparable non-experiment thermal scores for this window.
+        # get_outcomes(window_id) is window-scoped (the no-arg call raised
+        # TypeError, which the surrounding except swallowed → the experiment
+        # could never finalize → no adoption).
         baseline_scores: list[float] = []
         baseline_days: set = set()
-        for o in self._learning_store.get_outcomes():
+        for o in self._learning_store.get_outcomes(exp.window_id):
             if o.window_id != exp.window_id or o.decision_id == did:
                 continue
             omo = o.multi_objective

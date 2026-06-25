@@ -64,6 +64,39 @@ class OverrideDetector:
             return None
         return existing
 
+    # ------------------------------------------------------------------
+    # Restart-safe persistence
+    # ------------------------------------------------------------------
+
+    def active_overrides_snapshot(self, now: datetime) -> list[dict]:
+        """Serialize currently-active (non-expired) overrides for persistence."""
+        return [
+            ov.to_dict()
+            for ov in self._active_overrides.values()
+            if now < ov.expires_at
+        ]
+
+    def restore_active_overrides(self, raw: list, now: datetime) -> list[ManualOverride]:
+        """Restore persisted active overrides, dropping any that already expired.
+
+        Restored before the first dispatch decision so a manual movement made
+        before an HA restart is honoured instead of being re-asserted.  A
+        corrupt/old entry is skipped individually (never raises).  Returns the
+        list of restored overrides (so the caller can seed the assumed-state
+        last-commanded reference for post-expiry re-detection).
+        """
+        restored: list[ManualOverride] = []
+        for entry in raw or []:
+            try:
+                ov = ManualOverride.from_dict(entry)
+            except Exception:
+                continue
+            if now >= ov.expires_at:
+                continue  # stale — do not resurrect
+            self._active_overrides[ov.window_id] = ov
+            restored.append(ov)
+        return restored
+
     def tick(
         self,
         *,

@@ -3,10 +3,9 @@
 Produced by OverrideDetector (engines/override_detector.py), consumed by
 ManualOverrideEvaluator (evaluators/manual_override_evaluator.py, Tier 2).
 
-In-memory only — not persisted across HA restarts. If HA restarts while an
-override is active, the override is lost and SmartShading resumes normal
-evaluation after the warmup period. Persistence via hass.storage is a
-planned Phase 2 extension.
+An active override is now persisted across HA restart/reload (to_dict/from_dict
+below) so a manual movement is not silently re-asserted after a restart.  Stale
+overrides are dropped on restore via the ``expires_at`` bound.
 """
 from __future__ import annotations
 
@@ -48,3 +47,27 @@ class ManualOverride:
     source: str
     overridden_state: ShadingState
     overridden_position: int | None
+
+    def to_dict(self) -> dict:
+        """JSON-safe serialization for restart-safe persistence."""
+        return {
+            "window_id": self.window_id,
+            "override_position": self.override_position,
+            "started_at": self.started_at.isoformat(),
+            "expires_at": self.expires_at.isoformat(),
+            "source": self.source,
+            "overridden_state": self.overridden_state.value,
+            "overridden_position": self.overridden_position,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ManualOverride":
+        return cls(
+            window_id=d["window_id"],
+            override_position=int(d["override_position"]),
+            started_at=datetime.fromisoformat(d["started_at"]),
+            expires_at=datetime.fromisoformat(d["expires_at"]),
+            source=d.get("source", "position_delta"),
+            overridden_state=ShadingState(d["overridden_state"]),
+            overridden_position=d.get("overridden_position"),
+        )

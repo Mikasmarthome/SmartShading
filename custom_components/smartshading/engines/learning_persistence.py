@@ -31,7 +31,7 @@ running Home Assistant instance.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 from ..engines.learning_store import LearningStore
@@ -449,6 +449,7 @@ def serialize_learning_store(
     persistent_strategy_adoptions: list | None = None,
     consumed_experiment_ledger: dict | None = None,
     shadow_tombstones: list | None = None,
+    active_overrides: list | None = None,
     config_snapshot: dict | None = None,
     owner_entry_id: str | None = None,
     owner_zone_id: str | None = None,
@@ -549,6 +550,8 @@ def serialize_learning_store(
         "consumed_experiment_ledger": consumed_experiment_ledger or {},
         # P10 — compact shadow provenance tombstones (no full time series).
         "shadow_tombstones": shadow_tombstones or [],
+        # Restart-safe active manual overrides (additive; bounded by expiry).
+        "active_overrides": active_overrides or [],
         # P10 — normalised config snapshot for next-restore typed diff invalidation.
         "config_snapshot": config_snapshot or {},
         "owner_entry_id": owner_entry_id,
@@ -725,6 +728,7 @@ class RestoreExtras:
     owner_zone_id: str | None
     restore_diagnostics: dict  # P10 structured per-section reason counts (privacy-safe)
     config_snapshot: dict  # P10 previous normalised config snapshot (for typed diff)
+    active_overrides: list = field(default_factory=list)  # raw active-override dicts
 
 
 def deserialize_into_learning_store(
@@ -1066,6 +1070,9 @@ def deserialize_into_learning_store(
         owner_zone_id=data.get("owner_zone_id"),
         restore_diagnostics=restore_diagnostics,
         config_snapshot=(data.get("config_snapshot") or {}),
+        # Raw active-override dicts; the coordinator restores them into the
+        # override detector (validating expiry) before the first dispatch.
+        active_overrides=(data.get("active_overrides") or []),
     )
 
 
@@ -1214,6 +1221,7 @@ class LearningPersistenceAdapter:
         persistent_strategy_adoptions: list | None = None,
         consumed_experiment_ledger: dict | None = None,
         shadow_tombstones: list | None = None,
+        active_overrides: list | None = None,
         config_snapshot: dict | None = None,
         owner_zone_id: str | None = None,
     ) -> bool:
@@ -1240,6 +1248,7 @@ class LearningPersistenceAdapter:
                 persistent_strategy_adoptions=persistent_strategy_adoptions,
                 consumed_experiment_ledger=consumed_experiment_ledger,
                 shadow_tombstones=shadow_tombstones,
+                active_overrides=active_overrides,
                 config_snapshot=config_snapshot,
                 owner_entry_id=getattr(self, "_entry_id", None),
                 owner_zone_id=owner_zone_id,

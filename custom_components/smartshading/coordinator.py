@@ -981,6 +981,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "persistent_strategy_adoptions": self._strategy_adoptions_storage(),
             "consumed_experiment_ledger": self._consumed_ledger.to_dict(),
             "shadow_tombstones": [t.to_dict() for t in self._shadow_tombstones.values()],
+            # Restart-safe active manual overrides (so a manual movement is not
+            # re-asserted after restart/reload).  Bounded by per-override expiry.
+            "active_overrides": self._override_detector.active_overrides_snapshot(
+                dt_util.utcnow()),
             "config_snapshot": self._build_config_snapshot(),
             "owner_zone_id": next(iter(self.zones.keys()), None),
         }
@@ -1660,6 +1664,34 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 getattr(_extras, "config_snapshot", {}) or {}, _restore_now)
                         except Exception:
                             _LOGGER.warning("Learning: config-diff invalidation failed (non-fatal)")
+                        # Restart-safe: restore active manual overrides BEFORE the
+                        # first dispatch decision so a pre-restart manual movement is
+                        # honoured (not re-asserted).  Expired entries are dropped.
+                        # Also seed the assumed-state last-commanded reference with the
+                        # pre-override SmartShading target so the override is re-detected
+                        # after its expiry exactly as in the no-restart case (otherwise
+                        # the post-restart fallback to the observed user position would
+                        # mask the override and re-assert the night position).
+                        try:
+                            _restored_ov = self._override_detector.restore_active_overrides(
+                                getattr(_extras, "active_overrides", []) or [], _restore_now)
+                            for _ov in _restored_ov:
+                                if _ov.overridden_position is None:
+                                    continue
+                                _w = self.windows.get(_ov.window_id)
+                                _cg = self.cover_groups.get(_w.cover_group_id) if _w else None
+                                if _cg is None or not _cg.cover_ids:
+                                    continue
+                                _cid = _cg.cover_ids[0]
+                                _cap = self._get_or_detect_capability(_cid)
+                                self.assumed_state_manager.update(
+                                    _cid, _ov.overridden_position,
+                                    commanded_at=_ov.started_at,
+                                    has_reliable_position_feedback=bool(
+                                        getattr(_cap, "has_reliable_position_feedback", False)),
+                                )
+                        except Exception:
+                            _LOGGER.warning("Learning: active-override restore failed (non-fatal)")
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
@@ -1841,11 +1873,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
             # Step 8c: lifecycle transition clears active override so the new
             # phase takes effect immediately without waiting for expiry.
-            if lifecycle_should_break_override(
-                prev=_prev_lifecycle_state,
-                new=self._lifecycle_state,
-                break_enabled=self._override_break_on_lifecycle,
-            ) and active_override is not None:
+            # Restart-safe: during startup grace the lifecycle state is freshly
+            # recomputed (RAM), so the very first post-restart cycle would report
+            # a spurious previous→current "transition" that must NOT break a
+            # restored override.  A genuine later transition (e.g. morning) still
+            # breaks it (grace is over by then).
+            if (self._startup_cycles_remaining == 0
+                    and lifecycle_should_break_override(
+                        prev=_prev_lifecycle_state,
+                        new=self._lifecycle_state,
+                        break_enabled=self._override_break_on_lifecycle,
+                    ) and active_override is not None):
                 # Phase 9C: record lifecycle clear before removing the override.
                 # Learning write is gated — functional clear always runs.
                 if obs_enabled:

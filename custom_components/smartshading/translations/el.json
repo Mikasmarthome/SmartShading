@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Ασφαλές σε καταιγίδα",
           "wind_safe": "Ασφαλές σε άνεμο",
+          "rain_safe": "Rain safe",
           "manual_override": "Χειροκίνητη αντικατάσταση",
           "night_closed": "Νύχτα – κλειστό",
           "absence_closed": "Απουσία – κλειστό",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Ασφαλές σε καταιγίδα",
           "wind_safe": "Ασφαλές σε άνεμο",
+          "rain_safe": "Rain safe",
           "manual_override": "Χειροκίνητη αντικατάσταση",
           "night_closed": "Νύχτα – κλειστό",
           "absence_closed": "Απουσία – κλειστό",

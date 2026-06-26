@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Storm safe",
           "wind_safe": "Wind safe",
+          "rain_safe": "Rain safe",
           "manual_override": "Manual override",
           "night_closed": "Night – closed",
           "absence_closed": "Away – closed",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Storm safe",
           "wind_safe": "Wind safe",
+          "rain_safe": "Rain safe",
           "manual_override": "Manual override",
           "night_closed": "Night – closed",
           "absence_closed": "Away – closed",

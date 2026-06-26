@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Ochrana před bouří",
           "wind_safe": "Ochrana před větrem",
+          "rain_safe": "Rain safe",
           "manual_override": "Ruční přepsání",
           "night_closed": "Noc – zavřeno",
           "absence_closed": "Nepřítomnost – zavřeno",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Ochrana před bouří",
           "wind_safe": "Ochrana před větrem",
+          "rain_safe": "Rain safe",
           "manual_override": "Ruční přepsání",
           "night_closed": "Noc – zavřeno",
           "absence_closed": "Nepřítomnost – zavřeno",

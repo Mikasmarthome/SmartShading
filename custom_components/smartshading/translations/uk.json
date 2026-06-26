@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Захист від бурі",
           "wind_safe": "Захист від вітру",
+          "rain_safe": "Rain safe",
           "manual_override": "Ручне перевизначення",
           "night_closed": "Ніч – закрито",
           "absence_closed": "Відсутність – закрито",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Захист від бурі",
           "wind_safe": "Захист від вітру",
+          "rain_safe": "Rain safe",
           "manual_override": "Ручне перевизначення",
           "night_closed": "Ніч – закрито",
           "absence_closed": "Відсутність – закрито",

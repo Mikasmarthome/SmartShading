@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Viharbiztos",
           "wind_safe": "Szélbiztos",
+          "rain_safe": "Rain safe",
           "manual_override": "Kézi felülírás",
           "night_closed": "Éjszaka – zárva",
           "absence_closed": "Távollét – zárva",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Viharbiztos",
           "wind_safe": "Szélbiztos",
+          "rain_safe": "Rain safe",
           "manual_override": "Kézi felülírás",
           "night_closed": "Éjszaka – zárva",
           "absence_closed": "Távollét – zárva",

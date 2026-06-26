@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Fırtınaya karşı güvenli",
           "wind_safe": "Rüzgâra karşı güvenli",
+          "rain_safe": "Rain safe",
           "manual_override": "Manuel geçersiz kılma",
           "night_closed": "Gece – kapalı",
           "absence_closed": "Yokluk – kapalı",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Fırtınaya karşı güvenli",
           "wind_safe": "Rüzgâra karşı güvenli",
+          "rain_safe": "Rain safe",
           "manual_override": "Manuel geçersiz kılma",
           "night_closed": "Gece – kapalı",
           "absence_closed": "Yokluk – kapalı",

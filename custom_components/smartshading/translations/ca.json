@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Protecció de tempesta",
           "wind_safe": "Protecció de vent",
+          "rain_safe": "Rain safe",
           "manual_override": "Substitució manual",
           "night_closed": "Nit – tancada",
           "absence_closed": "Absència – tancada",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Protecció de tempesta",
           "wind_safe": "Protecció de vent",
+          "rain_safe": "Rain safe",
           "manual_override": "Substitució manual",
           "night_closed": "Nit – tancada",
           "absence_closed": "Absència – tancada",

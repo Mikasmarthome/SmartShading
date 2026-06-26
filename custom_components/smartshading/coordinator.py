@@ -1763,7 +1763,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         )
         _rain_reading = _build_rain_sensor_reading(
             entity_id=self._rain_sensor_id,
-            raw_state=_rain_hs.state if _rain_hs is not None else None,
+            hass_state=_rain_hs.state if _rain_hs is not None else None,
             source_type=_rain_source_type,
             read_at_utc=getattr(_rain_hs, "last_updated", None) if _rain_hs is not None else None,
             now_utc=now,

@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Protejat la furtună",
           "wind_safe": "Protejat la vânt",
+          "rain_safe": "Rain safe",
           "manual_override": "Suprascriere manuală",
           "night_closed": "Noapte – închis",
           "absence_closed": "Absență – închis",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Protejat la furtună",
           "wind_safe": "Protejat la vânt",
+          "rain_safe": "Rain safe",
           "manual_override": "Suprascriere manuală",
           "night_closed": "Noapte – închis",
           "absence_closed": "Absență – închis",

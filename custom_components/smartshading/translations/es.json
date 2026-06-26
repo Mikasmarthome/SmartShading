@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Protección por tormenta",
           "wind_safe": "Protección por viento",
+          "rain_safe": "Rain safe",
           "manual_override": "Anulación manual",
           "night_closed": "Noche – cerrada",
           "absence_closed": "Ausencia – cerrada",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Protección por tormenta",
           "wind_safe": "Protección por viento",
+          "rain_safe": "Rain safe",
           "manual_override": "Anulación manual",
           "night_closed": "Noche – cerrada",
           "absence_closed": "Ausencia – cerrada",

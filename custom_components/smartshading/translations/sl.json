@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Zaščita pred nevihto",
           "wind_safe": "Zaščita pred vetrom",
+          "rain_safe": "Rain safe",
           "manual_override": "Ročna preglasitev",
           "night_closed": "Noč – zaprto",
           "absence_closed": "Odsotnost – zaprto",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Zaščita pred nevihto",
           "wind_safe": "Zaščita pred vetrom",
+          "rain_safe": "Rain safe",
           "manual_override": "Ročna preglasitev",
           "night_closed": "Noč – zaprto",
           "absence_closed": "Odsotnost – zaprto",

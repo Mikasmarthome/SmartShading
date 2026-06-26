@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Myrskyturvallinen",
           "wind_safe": "Tuuliturvallinen",
+          "rain_safe": "Rain safe",
           "manual_override": "Manuaalinen ohitus",
           "night_closed": "Yö – suljettu",
           "absence_closed": "Poissaolo – suljettu",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Myrskyturvallinen",
           "wind_safe": "Tuuliturvallinen",
+          "rain_safe": "Rain safe",
           "manual_override": "Manuaalinen ohitus",
           "night_closed": "Yö – suljettu",
           "absence_closed": "Poissaolo – suljettu",

@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Stormsikker",
           "wind_safe": "Vindsikker",
+          "rain_safe": "Rain safe",
           "manual_override": "Manuel tilsidesættelse",
           "night_closed": "Nat – lukket",
           "absence_closed": "Fravær – lukket",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Stormsikker",
           "wind_safe": "Vindsikker",
+          "rain_safe": "Rain safe",
           "manual_override": "Manuel tilsidesættelse",
           "night_closed": "Nat – lukket",
           "absence_closed": "Fravær – lukket",

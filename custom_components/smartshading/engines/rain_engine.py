@@ -109,15 +109,15 @@ _HA_UNAVAILABLE_STATES: frozenset[str] = frozenset({
 })
 
 
-def normalize_binary_rain_state(raw_state: str | None) -> RainStatus:
+def normalize_binary_rain_state(hass_state: str | None) -> RainStatus:
     """Normalize a HA binary sensor state string to RainStatus.
 
     Matching is case-insensitive.  Any unrecognized state is UNKNOWN
     (fail-safe: absent evidence does not imply dry or raining).
     """
-    if raw_state is None:
+    if hass_state is None:
         return RainStatus.UNKNOWN
-    normalized = raw_state.strip().lower()
+    normalized = hass_state.strip().lower()
     if normalized in _HA_UNAVAILABLE_STATES:
         return RainStatus.UNKNOWN
     if normalized in _BINARY_RAINING_STATES:
@@ -149,7 +149,7 @@ def normalize_numeric_rain_rate(rate_mmh: float | None) -> RainStatus:
 def build_rain_sensor_reading(
     *,
     entity_id: str | None,
-    raw_state: Any,
+    hass_state: Any,
     source_type: RainSourceType,
     read_at_utc: datetime | None,
     staleness_s: float = 600.0,
@@ -161,7 +161,7 @@ def build_rain_sensor_reading(
     ----------
     entity_id:
         HA entity_id of the sensor; None when no rain sensor is configured.
-    raw_state:
+    hass_state:
         Raw HA state value (str for binary sensors, float/str for numeric).
     source_type:
         Whether this is a binary sensor, a numeric rate sensor, or no sensor.
@@ -186,11 +186,11 @@ def build_rain_sensor_reading(
     # Normalize based on source type
     if source_type is RainSourceType.BINARY_SENSOR:
         status = normalize_binary_rain_state(
-            str(raw_state) if raw_state is not None else None
+            str(hass_state) if hass_state is not None else None
         )
     elif source_type is RainSourceType.NUMERIC_RATE:
         try:
-            rate = float(raw_state) if raw_state is not None else None
+            rate = float(hass_state) if hass_state is not None else None
         except (TypeError, ValueError):
             rate = None
         status = normalize_numeric_rain_rate(rate)
@@ -210,7 +210,7 @@ def build_rain_sensor_reading(
     return RainSensorReading(
         status=status,
         source_type=source_type,
-        raw_value=raw_state,
+        raw_value=hass_state,
         sensor_entity_id=entity_id,
         read_at_utc=read_at_utc,
         is_stale=is_stale,

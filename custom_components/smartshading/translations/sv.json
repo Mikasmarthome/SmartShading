@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Stormsäker",
           "wind_safe": "Vindsäker",
+          "rain_safe": "Rain safe",
           "manual_override": "Manuell åsidosättning",
           "night_closed": "Natt – stängt",
           "absence_closed": "Frånvaro – stängt",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Stormsäker",
           "wind_safe": "Vindsäker",
+          "rain_safe": "Rain safe",
           "manual_override": "Manuell åsidosättning",
           "night_closed": "Natt – stängt",
           "absence_closed": "Frånvaro – stängt",

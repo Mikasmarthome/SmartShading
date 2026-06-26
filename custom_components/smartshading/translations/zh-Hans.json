@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "暴风安全",
           "wind_safe": "大风安全",
+          "rain_safe": "Rain safe",
           "manual_override": "手动覆盖",
           "night_closed": "夜间 – 关闭",
           "absence_closed": "离开 – 关闭",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "暴风安全",
           "wind_safe": "大风安全",
+          "rain_safe": "Rain safe",
           "manual_override": "手动覆盖",
           "night_closed": "夜间 – 关闭",
           "absence_closed": "离开 – 关闭",

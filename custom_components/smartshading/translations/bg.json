@@ -452,6 +452,7 @@
         "state": {
           "storm_safe": "Защита при буря",
           "wind_safe": "Защита при вятър",
+          "rain_safe": "Rain safe",
           "manual_override": "Ръчно заместване",
           "night_closed": "Нощ – затворено",
           "absence_closed": "Отсъствие – затворено",
@@ -466,6 +467,7 @@
         "state": {
           "storm_safe": "Защита при буря",
           "wind_safe": "Защита при вятър",
+          "rain_safe": "Rain safe",
           "manual_override": "Ръчно заместване",
           "night_closed": "Нощ – затворено",
           "absence_closed": "Отсъствие – затворено",

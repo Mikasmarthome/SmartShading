@@ -73,6 +73,10 @@ class ExperimentEvidence:
     config_generation: int
     decision_id: str | None = None
     shadow_id: str | None = None
+    # 3H: the close-more magnitude (HA pp) this experiment actually tested.  A
+    # deeper adoption must be backed by experiments that tested AT LEAST that
+    # deviation — a -10 adoption can never rest on -5-only evidence.
+    target_step_ha: int = 5
 
 
 @dataclass(frozen=True)
@@ -97,12 +101,18 @@ def evaluate_adoption_evidence(
     stage: int,
     consumed_ids: frozenset[str],
     config_generation: int,
+    min_experiment_step_ha: int = 0,
 ) -> AdoptionEvidenceResult:
     """Fresh, exact evaluation of terminal P7 experiments for one adoption stage.
 
     Only NON-consumed experiments of the current config generation count.  Any
     degraded or preference-rejected experiment in the comparable series blocks
     the stage (conservative).  A single experiment can never satisfy a stage.
+
+    ``min_experiment_step_ha`` restricts the evidence pool to experiments that
+    actually tested AT LEAST that close-more magnitude (3H): a deeper (-10)
+    adoption must rest only on experiments that tested -10, never on shallower
+    (-5) evidence — this prevents an unintended Stage-1/Stage-2 evidence mix.
     """
     if stage == 2:
         min_exp, min_days, min_improved = S2_MIN_EXPERIMENTS, S2_MIN_DISTINCT_DAYS, S2_MIN_IMPROVED
@@ -114,6 +124,7 @@ def evaluate_adoption_evidence(
     pool = [
         e for e in experiments
         if e.experiment_id not in consumed_ids and e.config_generation == config_generation
+        and e.target_step_ha >= min_experiment_step_ha
     ]
     degraded = [e for e in pool if e.decision_class == EVAL_DEGRADED]
     pref_rej = [e for e in pool if e.decision_class == EVAL_PREFERENCE_REJECTED]

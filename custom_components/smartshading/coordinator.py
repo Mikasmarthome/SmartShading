@@ -5014,6 +5014,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 confidence=e.evaluation.confidence, context_family=e.context_family,
                 config_generation=e.config_generation,
                 decision_id=e.experiment_decision_id, shadow_id=e.source_shadow_id,
+                target_step_ha=e.target_step_ha,
             ))
         return out
 
@@ -5156,8 +5157,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         gen = self._thermal_config_generation(zone_id)
         consumed = self._adoption_consumed_ids(key)
         evidence = self._adoption_experiment_evidence(window_id, intensity)
+        # 3H: a deeper adoption must rest only on experiments that tested at least
+        # the corresponding close-more magnitude (-5 → step≥5; -10 → step≥10), so
+        # a -10 adoption can never be satisfied by -5-only evidence.
+        _min_step = ADOPTION_STEP_HA if stage == 1 else 2 * ADOPTION_STEP_HA
         res = evaluate_adoption_evidence(
-            evidence, stage=stage, consumed_ids=frozenset(consumed), config_generation=gen)
+            evidence, stage=stage, consumed_ids=frozenset(consumed),
+            config_generation=gen, min_experiment_step_ha=_min_step)
         if not res.sufficient:
             return
 

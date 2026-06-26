@@ -464,6 +464,12 @@ def build_experiment_research_summary(experiments: list | None) -> dict:
         rollbacks = 0
         pref_rejections = 0
         no_feedback = 0
+        # 3H — bounded staged + causal aggregates (privacy-safe; no IDs/timestamps).
+        stage_counts: dict[str, int] = {}
+        step_counts: dict[str, int] = {}
+        scope_counts: dict[str, int] = {}
+        staged_escalations = 0
+        score_gaps: list[float] = []
         for e in experiments:
             status_counts[e.status] = status_counts.get(e.status, 0) + 1
             ev = e.evaluation.decision
@@ -479,6 +485,19 @@ def build_experiment_research_summary(experiments: list | None) -> dict:
                 gate_failures[code] = gate_failures.get(code, 0) + 1
             if e.confirmation == "command_sent":  # sent but not confirmed by feedback
                 no_feedback += 1
+            _st = str(getattr(e, "stage", 1))
+            stage_counts[_st] = stage_counts.get(_st, 0) + 1
+            _sp = str(getattr(e, "target_step_ha", 5))
+            step_counts[_sp] = step_counts.get(_sp, 0) + 1
+            if getattr(e, "previous_experiment_id", None) is not None:
+                staged_escalations += 1
+            _dist = (e.evaluation.baseline_thermal_distribution or {}) if e.evaluation else {}
+            _scope = _dist.get("scope") or "none"
+            scope_counts[_scope] = scope_counts.get(_scope, 0) + 1
+            _obs = e.evaluation.experiment_thermal_score if e.evaluation else None
+            _cf = _dist.get("counterfactual_baseline_score")
+            if _obs is not None and _cf is not None:
+                score_gaps.append(round(_obs - _cf, 4))
         n = len(experiments)
 
         def _rate(s: str) -> float | None:
@@ -501,6 +520,14 @@ def build_experiment_research_summary(experiments: list | None) -> dict:
             "preference_rejection_rate": round(pref_rejections / n, 3) if n else None,
             "rollback_rate": round(rollbacks / n, 3) if n else None,
             "experiments_without_reliable_feedback": no_feedback,
+            # 3H bounded staged + causal scoring (aggregates only).
+            "experiment_stage_distribution": stage_counts,
+            "tested_step_distribution": step_counts,
+            "staged_escalation_count": staged_escalations,
+            "baseline_scope_distribution": scope_counts,
+            "causal_score_gap_count": len(score_gaps),
+            "causal_score_gap_mean": (
+                round(sum(score_gaps) / len(score_gaps), 4) if score_gaps else None),
         }
     except Exception:
         _LOGGER.warning("SmartShading: research_export: experiment summary failed")

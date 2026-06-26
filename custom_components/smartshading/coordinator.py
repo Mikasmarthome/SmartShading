@@ -4935,6 +4935,60 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         trimmed.sort(key=lambda e: e.updated_at)
         self._experiment_history = trimmed
 
+    def _experiment_staged_diag(self, obj, window_id: str) -> dict:
+        """Privacy-safe 3H staged + causal fields for one experiment record.
+
+        Surfaces the bounded-staged lineage and the causal same-cycle scores so
+        the observed/counterfactual scores, gap, context quality, confidence,
+        stage, adoption stage, lineage, tested step and any block reason are all
+        traceable in diagnostics and exports."""
+        if obj is None:
+            blk = self._experiment_stage_block.get(window_id)
+            return {
+                "experiment_stage": None, "tested_step_ha": None,
+                "lineage_previous_experiment_id": None,
+                "previous_stage_evaluation": None,
+                "observed_thermal_score": None, "counterfactual_baseline_score": None,
+                "score_gap": None, "baseline_scope": None,
+                "context_baseline_sample_count": None,
+                "context_baseline_distinct_days": None,
+                "evaluation_confidence": None,
+                "stage_block_reason": (blk or {}).get("reason"),
+                "stage_handoff_to_strategy": bool((blk or {}).get("handed_to_strategy")),
+                "adoption_stage": self._adoption_stage_for(window_id, None),
+            }
+        ev = obj.evaluation
+        dist = (ev.baseline_thermal_distribution or {}) if ev else {}
+        obs = ev.experiment_thermal_score if ev else None
+        cf = dist.get("counterfactual_baseline_score")
+        gap = (round(obs - cf, 4) if obs is not None and cf is not None else None)
+        blk = self._experiment_stage_block.get(window_id)
+        return {
+            "experiment_stage": obj.stage, "tested_step_ha": obj.target_step_ha,
+            "lineage_previous_experiment_id": obj.previous_experiment_id,
+            "previous_stage_evaluation": obj.previous_stage_evaluation,
+            "observed_thermal_score": obs,
+            "counterfactual_baseline_score": cf,
+            "score_gap": gap,
+            "baseline_scope": dist.get("scope"),
+            "context_baseline_sample_count": (ev.baseline_sample_count if ev else None),
+            "context_baseline_distinct_days": (ev.baseline_distinct_days if ev else None),
+            "evaluation_confidence": (ev.confidence if ev else None),
+            "stage_block_reason": (blk or {}).get("reason"),
+            "stage_handoff_to_strategy": bool((blk or {}).get("handed_to_strategy")),
+            "adoption_stage": self._adoption_stage_for(window_id, obj.intensity_level),
+        }
+
+    def _adoption_stage_for(self, window_id: str, intensity: str | None) -> int | None:
+        """Current active-adoption stage for (window, intensity), if any."""
+        if intensity is None:
+            for (wid, _int), a in self._adoptions_active.items():
+                if wid == window_id:
+                    return getattr(a, "stage", None)
+            return None
+        a = self._adoptions_active.get((window_id, intensity))
+        return getattr(a, "stage", None) if a is not None else None
+
     def experiment_diagnostics(self, window_id: str) -> dict:
         """Privacy-safe per-window experiment diagnostics.  p8_adoption_eligible
         is a snapshot only; P8 must re-derive from current data."""
@@ -4964,6 +5018,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 "activation_gate": gate,
                 "latest_abort_reason": (latest.abort_reason if latest else None),
                 "rollback_status": (latest.rollback_state if latest else "none"),
+                **self._experiment_staged_diag(latest, window_id),
             }
         return {
             "experiment_status": exp.status, "experiment_id": exp.experiment_id,
@@ -4976,6 +5031,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "evaluation_class": exp.evaluation.decision,
             "p8_adoption_eligible": exp.evaluation.p8_adoption_eligible,
             "cooldown_remaining": None,
+            **self._experiment_staged_diag(exp, window_id),
         }
 
     def _experiments_storage(self) -> list:

@@ -5,7 +5,7 @@ early-exit rule for Tier 1 and Tier 3, collect Tier 4 Protection Floors,
 and delegate position arbitration to PositionResolver.
 
 Tier order:
-  Tier 1 — Safety Guards          StormEvaluator, WindEvaluator       → early exit
+  Tier 1 — Safety Guards          StormEvaluator, WindEvaluator, RainEvaluator → early exit
   Tier 2 — Manual Override        ManualOverrideEvaluator             → early exit
   Tier 3 — Lifecycle Phase Gate   NightEvaluator                      → early exit
   Tier 4 — Protection Floors      AbsenceEvaluator, HeatEvaluator, GlareEvaluator
@@ -13,7 +13,7 @@ Tier order:
   PositionResolver                max(tier4 floors, tier5)
   Fallback                        OPEN (no evaluator active)
 
-Tier 1 currently contains Storm Protection and Wind Protection only.
+Tier 1 currently contains Storm Protection, Wind Protection and Rain Protection.
 Frost Protection is deliberately excluded until a Cover-Type model exists
 in WindowConfig / CoverCapability (see state_machine/states.py for details).
 
@@ -46,6 +46,7 @@ from .heat_evaluator import HeatEvaluator
 from .manual_override_evaluator import ManualOverrideEvaluator
 from .night_evaluator import NightEvaluator
 from .position_resolver import PositionResolver
+from .rain_evaluator import RainEvaluator
 from .solar_evaluator import SolarEvaluator
 from .storm_evaluator import StormEvaluator
 from .wind_evaluator import WindEvaluator
@@ -65,6 +66,7 @@ class TierOrchestrator:
         # Tier 1 — Safety Guards
         self._storm = StormEvaluator()
         self._wind = WindEvaluator()
+        self._rain = RainEvaluator()
         # Tier 2 — Manual Override
         self._manual_override = ManualOverrideEvaluator()
         # Tier 3 — Lifecycle Phase Gate
@@ -90,8 +92,8 @@ class TierOrchestrator:
             A WindowDecision.  Never None — falls back to OPEN if no tier fires.
         """
         # --- Tier 1: Safety Guards (sequential early-exit, highest priority) --
-        # Storm is checked before Wind: STORM_SAFE > WIND_SAFE in priority order.
-        # If storm fires, wind is never consulted (correct and more efficient).
+        # Priority order: STORM_SAFE (1) > WIND_SAFE (2) > RAIN_SAFE (3).
+        # Storm is checked first; if it fires, wind and rain are skipped.
         storm_result = self._storm.evaluate(wdi)
         if storm_result is not None:
             return storm_result
@@ -99,6 +101,10 @@ class TierOrchestrator:
         wind_result = self._wind.evaluate(wdi)
         if wind_result is not None:
             return wind_result
+
+        rain_result = self._rain.evaluate(wdi)
+        if rain_result is not None:
+            return rain_result
 
         # --- Tier 2: Manual Override (early exit) -----------------------------
         override_result = self._manual_override.evaluate(wdi)

@@ -107,6 +107,7 @@ def default_hardware_settings(hardware_type: CoverHardwareType) -> dict:
       allow_anti_heat_buildup_during_absence  bool
       tilt_control_enabled          bool         True when tilt should be used
       wind_protection_enabled       bool         Override default from BehaviorConfig
+      rain_protection_enabled       bool         On for awnings/exterior screens
     """
     _DEFAULTS: dict[CoverHardwareType, dict] = {
         CoverHardwareType.ROLLER_SHUTTER: {
@@ -116,6 +117,7 @@ def default_hardware_settings(hardware_type: CoverHardwareType) -> dict:
             "allow_anti_heat_buildup_during_absence":   False,
             "tilt_control_enabled":                     False,
             "wind_protection_enabled":                  False,
+            "rain_protection_enabled":                  False,
         },
         CoverHardwareType.VENETIAN_BLIND: {
             "daytime_min_open_position_ha":             None,
@@ -124,6 +126,7 @@ def default_hardware_settings(hardware_type: CoverHardwareType) -> dict:
             "allow_anti_heat_buildup_during_absence":   False,
             "tilt_control_enabled":                     True,
             "wind_protection_enabled":                  False,
+            "rain_protection_enabled":                  False,
         },
         CoverHardwareType.EXTERIOR_SCREEN: {
             "daytime_min_open_position_ha":             10,
@@ -132,6 +135,7 @@ def default_hardware_settings(hardware_type: CoverHardwareType) -> dict:
             "allow_anti_heat_buildup_during_absence":   False,
             "tilt_control_enabled":                     False,
             "wind_protection_enabled":                  False,
+            "rain_protection_enabled":                  True,
         },
         CoverHardwareType.AWNING: {
             "daytime_min_open_position_ha":             None,
@@ -140,6 +144,7 @@ def default_hardware_settings(hardware_type: CoverHardwareType) -> dict:
             "allow_anti_heat_buildup_during_absence":   False,
             "tilt_control_enabled":                     False,
             "wind_protection_enabled":                  True,
+            "rain_protection_enabled":                  True,
         },
         CoverHardwareType.GENERIC: {
             "daytime_min_open_position_ha":             None,
@@ -148,6 +153,7 @@ def default_hardware_settings(hardware_type: CoverHardwareType) -> dict:
             "allow_anti_heat_buildup_during_absence":   False,
             "tilt_control_enabled":                     False,
             "wind_protection_enabled":                  False,
+            "rain_protection_enabled":                  False,
         },
     }
     return dict(_DEFAULTS[hardware_type])

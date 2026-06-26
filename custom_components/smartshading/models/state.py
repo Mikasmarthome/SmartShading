@@ -30,6 +30,8 @@ class ReasonCode(Enum):
     STORM_CLEARED = "storm_cleared"
     WIND_DETECTED = "wind_detected"
     WIND_CLEARED = "wind_cleared"
+    RAIN_DETECTED = "rain_detected"
+    RAIN_CLEARED = "rain_cleared"
     NIGHT_LIFECYCLE = "night_lifecycle"
     MORNING_LIFECYCLE = "morning_lifecycle"
     ABSENCE_DETECTED = "absence_detected"

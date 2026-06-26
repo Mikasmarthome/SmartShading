@@ -81,6 +81,15 @@ class WindowConfig:
     normal_shade_position: int | None = None
     strong_shade_position: int | None = None
 
+    # Rain Protection — per-window overrides (None = inherit from hardware default via GlobalDefaults).
+    # rain_protection_enabled=True → RainEvaluator fires for this window when rain is detected.
+    # rain_safe_position_ha: HA position (0=closed, 100=open) to move to when RAIN_SAFE.
+    #   None = use hardware-type default (AWNING/EXTERIOR_SCREEN → HA 0; others → HA 100).
+    # rain_release_delay_min: minutes to wait after rain stops before resuming normal control.
+    rain_protection_enabled: bool | None = None
+    rain_safe_position_ha: int | None = None
+    rain_release_delay_min: int | None = None
+
     # Manual sun sector override.
     # When both fields are not None, the automatic sector (window_azimuth ± tolerance)
     # is replaced by the manually defined [start, end] azimuth range.

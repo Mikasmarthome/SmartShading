@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ..engines.exposure_engine import WindowExposure
+from ..engines.rain_engine import RainStatus
 from ..engines.weather_engine import WeatherCondition
 from ..models.comfort import ComfortConfig
 from ..models.lifecycle import LifecycleState, NightDayLifecycleConfig
@@ -93,6 +94,11 @@ class WindowDecisionInput:
     wind_gust_ms: float | None = None        # peak gust speed; preferred over wind_speed_ms when available
     weather_condition: WeatherCondition | None = None  # parsed WeatherCondition enum
 
+    # Rain status — normalized by rain_engine.RainEngine before WDI is built.
+    # None when no rain sensor is configured or no reading available.
+    # RainEvaluator checks this field; UNKNOWN means "no trigger" (fail-safe).
+    rain_status: RainStatus | None = None
+
 
 # ---------------------------------------------------------------------------
 # Builder
@@ -120,6 +126,11 @@ def build_window_decision_input(
     storm_protection_enabled: bool = True,
     wind_protection_enabled: bool = False,
     wind_threshold_ms: float = 14.0,
+    # Rain protection (Tier 1 — rank 3)
+    rain_status: RainStatus | None = None,
+    rain_protection_enabled: bool = False,
+    rain_safe_position: int | None = None,
+    rain_release_delay_min: int = 30,
     # Tier 2: Manual Override inputs (Step 8)
     active_override: ManualOverride | None = None,
     override_duration_min: int = 240,
@@ -185,6 +196,9 @@ def build_window_decision_input(
         storm_protection_enabled=storm_protection_enabled,
         wind_protection_enabled=wind_protection_enabled,
         wind_threshold_ms=wind_threshold_ms,
+        rain_protection_enabled=rain_protection_enabled,
+        rain_safe_position=rain_safe_position,
+        rain_release_delay_min=rain_release_delay_min,
         override_duration_min=override_duration_min,
         override_detection_tolerance=override_detection_tolerance,
         override_break_on_lifecycle=override_break_on_lifecycle,
@@ -239,4 +253,5 @@ def build_window_decision_input(
         wind_speed_ms=wind_speed_ms,
         wind_gust_ms=wind_gust_ms,
         weather_condition=weather_condition,
+        rain_status=rain_status,
     )

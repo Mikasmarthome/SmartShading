@@ -53,6 +53,7 @@ class SmartShadingConfigEntryData:
     outdoor_temperature_sensor_id: str | None = None
     cloud_cover_sensor_id: str | None = None
     wind_speed_sensor_id: str | None = None
+    rain_sensor_id: str | None = None
     lifecycle_config: NightDayLifecycleConfig = field(
         default_factory=lambda: NightDayLifecycleConfig(id="default")
     )
@@ -163,6 +164,7 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
         "outdoor_temperature_sensor_id": data.outdoor_temperature_sensor_id,
         "cloud_cover_sensor_id": data.cloud_cover_sensor_id,
         "wind_speed_sensor_id": data.wind_speed_sensor_id,
+        "rain_sensor_id": data.rain_sensor_id,
         "lifecycle_config": {
             "id": lifecycle.id,
             "schedule_mode": lifecycle.schedule_mode.value,
@@ -341,6 +343,7 @@ def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
         outdoor_temperature_sensor_id=raw.get("outdoor_temperature_sensor_id"),
         cloud_cover_sensor_id=raw.get("cloud_cover_sensor_id"),
         wind_speed_sensor_id=raw.get("wind_speed_sensor_id"),
+        rain_sensor_id=raw.get("rain_sensor_id"),
         lifecycle_config=_lifecycle_config_from_storage(raw.get("lifecycle_config")),
         presence_entity_ids=raw.get("presence_entity_ids", []),
         absence_delay_min=raw.get("absence_delay_min", 30),

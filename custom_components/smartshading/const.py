@@ -96,6 +96,15 @@ CONF_SOLAR_RADIATION_SENSOR_ID = "solar_radiation_sensor_id"
 CONF_OUTDOOR_TEMPERATURE_SENSOR_ID = "outdoor_temperature_sensor_id"
 CONF_CLOUD_COVER_SENSOR_ID = "cloud_cover_sensor_id"
 CONF_WIND_SPEED_SENSOR_ID = "wind_speed_sensor_id"
+CONF_RAIN_SENSOR_ID = "rain_sensor_id"
+
+# Rain protection per-window config keys (stored in ConfigEntry.data per window).
+CONF_RAIN_PROTECTION_ENABLED = "rain_protection_enabled"
+CONF_RAIN_SAFE_POSITION = "rain_safe_position"
+CONF_RAIN_RELEASE_DELAY_MIN = "rain_release_delay_min"
+
+# Defaults for rain protection settings.
+DEFAULT_RAIN_RELEASE_DELAY_MIN = 30   # minutes dry cooldown before RAIN_SAFE releases
 
 # Lifecycle/Presence inputs (2026-06-16): wires the already-implemented
 # Lifecycle Engine (models/lifecycle.py, engines/lifecycle_engine.py) to

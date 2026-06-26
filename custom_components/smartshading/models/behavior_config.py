@@ -43,6 +43,20 @@ class BehaviorConfig:
     # Must be below the storm threshold (DEFAULT_STORM_WIND_THRESHOLD_MS = 20 m/s).
     wind_threshold_ms: float = 14.0
 
+    # Rain Protection: opt-in; default on for awnings/exterior screens (high rain
+    # exposure), off for roller shutters/venetian blinds/generic (rain safe by design).
+    # build_window_decision_input() resolves per-window override vs hardware default.
+    rain_protection_enabled: bool = False
+
+    # Target position (internal convention: 0=open, 100=shaded) for RAIN_SAFE.
+    # Resolved by the coordinator from rain_safe_position_ha via hardware-type lookup.
+    # None = not applicable (rain protection disabled for this window).
+    rain_safe_position: int | None = None
+
+    # Minutes to wait after rain stops before releasing RAIN_SAFE and allowing
+    # normal automatic control to resume.  Passed dynamically to SafetyHold.update().
+    rain_release_delay_min: int = 30
+
     # --- Tier 2: Manual Override ----------------------------------------------
 
     # Duration (minutes) an override stays active before SmartShading resumes

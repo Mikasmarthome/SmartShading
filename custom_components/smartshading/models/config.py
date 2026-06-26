@@ -30,6 +30,10 @@ class GlobalDefaults:
     position_tolerance: int = 5  # minimum delta to trigger a cover command
     command_debounce_s: float = 3.0
     settle_window_s: float | None = None  # None = 2 x update_interval, computed by the coordinator
+    # Rain Protection global defaults (per-window overrides via WindowConfig).
+    # Hardware-type defaults from default_hardware_settings() take precedence when
+    # the window has no explicit rain_protection_enabled set.
+    rain_release_delay_min: int = 30
 
 
 @dataclass

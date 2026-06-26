@@ -465,6 +465,38 @@ def _detect_oscillation(history: tuple[int, ...]) -> tuple[bool, str | None]:
     return False, None
 
 
+def score_thermal_delta(
+    delta: float,
+    *,
+    has_load: bool,
+    outdoor_temperature_c: float | None,
+) -> float:
+    """Pure shading-state thermal score for an indoor temperature delta (°C).
+
+    Identical to the score model used by ``compute_thermal_outcome`` for shading
+    states, factored out so the bounded-experiment causal same-cycle comparison
+    scores its observed and counterfactual deltas with EXACTLY the production
+    function (no divergent re-implementation):
+
+      - cooling (delta < -0.5 °C)        → +(-delta/3), clamped to [0, 1]
+      - stable  (|delta| ≤ 0.5)          → +0.30 under solar load, else 0.0
+      - warming (delta > 0.5)            → negative (-delta/3), mitigated toward 0
+                                           at extreme outdoor heat, clamped [-1, 0]
+
+    Returns a float in [-1.0, +1.0].
+    """
+    if delta < -_THERMAL_HOLD_DELTA_C:
+        return max(0.0, min(1.0, -delta / _THERMAL_COOL_SCALE_C))
+    if abs(delta) <= _THERMAL_HOLD_DELTA_C:
+        return _THERMAL_HOLD_SCORE if has_load else 0.0
+    raw = -delta / _THERMAL_COOL_SCALE_C
+    if outdoor_temperature_c is not None and outdoor_temperature_c > _OUTDOOR_HEAT_PENALTY_START_C:
+        rng = _OUTDOOR_HEAT_PENALTY_ZERO_C - _OUTDOOR_HEAT_PENALTY_START_C
+        mit = min(1.0, (outdoor_temperature_c - _OUTDOOR_HEAT_PENALTY_START_C) / rng)
+        raw = raw * (1.0 - mit)
+    return max(-1.0, min(0.0, raw))
+
+
 def compute_thermal_outcome(
     *,
     state: ShadingState,
@@ -544,22 +576,16 @@ def compute_thermal_outcome(
 
     if state in _THERMAL_STATES:
         expected = THERMAL_DIR_COOLING_OR_HOLD
+        score = score_thermal_delta(
+            delta, has_load=has_load, outdoor_temperature_c=outdoor_temperature_c)
         if observed == THERMAL_DIR_COOLING:
-            score = max(0.0, min(1.0, -delta / _THERMAL_COOL_SCALE_C))
             protection = True
             reason = "cooling_under_shade"
         elif observed == THERMAL_DIR_STABLE:
             # "stable" is only credited as protection when there was real solar load.
-            score = _THERMAL_HOLD_SCORE if has_load else 0.0
             protection = has_load
             reason = "held_under_load" if has_load else "stable_low_load_uncredited"
         else:  # warming despite shade
-            raw = -delta / _THERMAL_COOL_SCALE_C
-            if outdoor_temperature_c is not None and outdoor_temperature_c > _OUTDOOR_HEAT_PENALTY_START_C:
-                rng = _OUTDOOR_HEAT_PENALTY_ZERO_C - _OUTDOOR_HEAT_PENALTY_START_C
-                mit = min(1.0, (outdoor_temperature_c - _OUTDOOR_HEAT_PENALTY_START_C) / rng)
-                raw = raw * (1.0 - mit)
-            score = max(-1.0, min(0.0, raw))
             insufficient = True
             reason = "insufficient_response"
     else:  # OPEN — ambiguous thermal expectation

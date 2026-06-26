@@ -289,6 +289,138 @@ def evaluate_experiment(inp: ExperimentEvaluationInput) -> ExperimentEvaluation:
 
 
 # ---------------------------------------------------------------------------
+# Causal same-cycle evaluation (Increment 3H)
+# ---------------------------------------------------------------------------
+# The window-wide / context-aggregate baseline median (above) systematically
+# disadvantages a bounded close-more experiment: the experiment is always
+# observed on the HARDEST (rising-forcing, near-noon) cycle, but compared against
+# a baseline median that mixes easier cycles, so a genuinely-helpful step looks
+# merely neutral.  The causal same-cycle comparison instead asks: for THIS
+# observation window, how would the room have responded at the BASELINE (more
+# open) position?  Only the cover position differs; the exogenous inputs (solar,
+# outdoor) are shared.  The counterfactual baseline delta is the observed
+# experiment delta PLUS the solar warming the more-open baseline would have
+# additionally admitted — estimated from the learned typical context response,
+# scaled to this cycle's solar load and the known open-fraction delta.
+
+# Bound on the modelled avoided warming (°C) — a single bounded step cannot
+# plausibly avoid more than this; keeps a noisy coefficient from inventing credit.
+AVOIDED_WARMING_CAP_C: float = 3.0
+_THERMAL_LOAD_MIN_WM2: float = 150.0
+
+
+@dataclass(frozen=True)
+class CausalSameCycleInput:
+    experiment_outcome_available: bool
+    observed_experiment_delta_c: float | None
+    observed_solar_wm2: float | None
+    outdoor_temp_c: float | None
+    baseline_open_fraction: float | None      # of_base (regular authoritative)
+    experiment_open_fraction: float | None    # of_exp (more closed)
+    # Learned typical context response, from the SAME context-family baseline
+    # (non-experiment) outcomes — abs deltas + their solar levels + distinct days.
+    baseline_abs_deltas: tuple[float, ...]
+    baseline_solars: tuple[float, ...]
+    baseline_distinct_days: int
+    reliability: float
+    user_open_more_rejection: bool
+    confounders: tuple[str, ...] = ()
+
+
+def evaluate_experiment_causal(inp: CausalSameCycleInput) -> ExperimentEvaluation:
+    """Classify a bounded close-more experiment by a CAUSAL same-cycle comparison.
+
+    Compares the experiment's observed thermal score against the counterfactual
+    baseline score for the SAME window (only the cover position differs).  The
+    counterfactual delta = observed delta + modelled avoided solar warming.  A
+    thin context baseline yields ``inconclusive`` (it never silently falls back to
+    a favourable window-wide median).  Because more shade can only reduce solar
+    gain, this path never fabricates a thermal degradation; an adverse result is
+    surfaced through the preference path (user open-more rejection)."""
+    from .outcome_resolution import score_thermal_delta
+
+    n = len(inp.baseline_abs_deltas)
+    base_user_acc = "rejected" if inp.user_open_more_rejection else "unknown"
+
+    if inp.user_open_more_rejection:
+        return ExperimentEvaluation(
+            experiment_outcome_available=inp.experiment_outcome_available,
+            experiment_thermal_score=None, baseline_sample_count=n,
+            baseline_distinct_days=inp.baseline_distinct_days,
+            experiment_vs_baseline_class=EVAL_PREFERENCE_REJECTED,
+            user_acceptance="rejected", reliability=inp.reliability,
+            confounders=inp.confounders, decision=EVAL_PREFERENCE_REJECTED,
+            p8_adoption_eligible=False)
+
+    if not inp.experiment_outcome_available or inp.observed_experiment_delta_c is None:
+        return ExperimentEvaluation(
+            experiment_outcome_available=False, baseline_sample_count=n,
+            baseline_distinct_days=inp.baseline_distinct_days,
+            experiment_vs_baseline_class=EVAL_INVALID, user_acceptance=base_user_acc,
+            reliability=inp.reliability, confounders=inp.confounders,
+            decision=EVAL_INVALID, p8_adoption_eligible=False)
+
+    # Thin context baseline → inconclusive (no favourable window-wide fallback).
+    of_base = inp.baseline_open_fraction
+    of_exp = inp.experiment_open_fraction
+    if (n < MIN_BASELINE_SAMPLES or inp.baseline_distinct_days < MIN_BASELINE_DAYS
+            or not inp.baseline_solars or inp.observed_solar_wm2 is None
+            or of_base in (None, 0) or of_exp is None):
+        return ExperimentEvaluation(
+            experiment_outcome_available=True,
+            experiment_thermal_score=None, baseline_sample_count=n,
+            baseline_distinct_days=inp.baseline_distinct_days,
+            baseline_thermal_distribution={"scope": "thin_context_baseline", "n": n},
+            experiment_vs_baseline_class=EVAL_INCONCLUSIVE, user_acceptance=base_user_acc,
+            reliability=inp.reliability, confounders=inp.confounders,
+            decision=EVAL_INCONCLUSIVE, p8_adoption_eligible=False)
+
+    s_typ = _median(list(inp.baseline_solars))
+    typ_resp = _median([abs(d) for d in inp.baseline_abs_deltas])
+    d_of = max(0.0, of_base - of_exp)
+    has_load = inp.observed_solar_wm2 >= _THERMAL_LOAD_MIN_WM2
+
+    # Per-cycle avoided warming: learned typical response, scaled by the position
+    # delta (relative to the baseline opening) and this cycle's solar vs typical.
+    if s_typ and s_typ > 0:
+        avoided = typ_resp * (d_of / of_base) * (inp.observed_solar_wm2 / s_typ)
+    else:
+        avoided = 0.0
+    avoided = max(0.0, min(AVOIDED_WARMING_CAP_C, avoided))
+
+    obs_delta = float(inp.observed_experiment_delta_c)
+    cf_delta = obs_delta + avoided  # counterfactual (more open) admits more warming
+
+    exp_score = score_thermal_delta(
+        obs_delta, has_load=has_load, outdoor_temperature_c=inp.outdoor_temp_c)
+    base_score = score_thermal_delta(
+        cf_delta, has_load=has_load, outdoor_temperature_c=inp.outdoor_temp_c)
+
+    if exp_score >= base_score + IMPROVE_MARGIN:
+        klass = EVAL_IMPROVED
+    elif exp_score <= base_score - DEGRADE_MARGIN:
+        klass = EVAL_DEGRADED
+    else:
+        klass = EVAL_NO_DEGRADATION
+
+    confidence = (min(1.0, n / 6.0) * min(1.0, inp.baseline_distinct_days / 3.0)
+                  * inp.reliability)
+    return ExperimentEvaluation(
+        experiment_outcome_available=True,
+        experiment_thermal_score=round(exp_score, 4),
+        baseline_sample_count=n, baseline_distinct_days=inp.baseline_distinct_days,
+        baseline_thermal_distribution={
+            "scope": "causal_same_cycle",
+            "counterfactual_baseline_score": round(base_score, 4),
+            "avoided_warming_c": round(avoided, 4),
+            "typical_response_c": round(typ_resp, 4),
+            "typical_solar_wm2": round(s_typ, 1), "n": n},
+        experiment_vs_baseline_class=klass, user_acceptance=base_user_acc,
+        reliability=inp.reliability, confidence=round(confidence, 4),
+        confounders=inp.confounders, decision=klass, p8_adoption_eligible=False)
+
+
+# ---------------------------------------------------------------------------
 # Cooldown
 # ---------------------------------------------------------------------------
 

@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Sensor de radiación solar (W/m²)",
           "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
           "cloud_cover_sensor_id": "Sensor de nubosidad (0–100 %)",
-          "wind_speed_sensor_id": "Sensor de velocidad del viento (m/s) — usa la racha de viento para toldos/pantallas si está disponible"
+          "wind_speed_sensor_id": "Sensor de velocidad del viento (m/s) — usa la racha de viento para toldos/pantallas si está disponible",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Sensor de radiación solar (W/m²)",
           "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
           "cloud_cover_sensor_id": "Sensor de nubosidad (0–100 %)",
-          "wind_speed_sensor_id": "Sensor de velocidad del viento (m/s) — usa la racha de viento para toldos/pantallas si está disponible"
+          "wind_speed_sensor_id": "Sensor de velocidad del viento (m/s) — usa la racha de viento para toldos/pantallas si está disponible",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

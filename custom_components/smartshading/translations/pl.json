@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Czujnik promieniowania słonecznego (W/m²)",
           "outdoor_temperature_sensor_id": "Czujnik temperatury zewnętrznej",
           "cloud_cover_sensor_id": "Czujnik zachmurzenia (0–100 %)",
-          "wind_speed_sensor_id": "Czujnik prędkości wiatru (m/s) — w przypadku markiz/rolet zewnętrznych użyj porywów wiatru, jeśli są dostępne"
+          "wind_speed_sensor_id": "Czujnik prędkości wiatru (m/s) — w przypadku markiz/rolet zewnętrznych użyj porywów wiatru, jeśli są dostępne",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Czujnik promieniowania słonecznego (W/m²)",
           "outdoor_temperature_sensor_id": "Czujnik temperatury zewnętrznej",
           "cloud_cover_sensor_id": "Czujnik zachmurzenia (0–100 %)",
-          "wind_speed_sensor_id": "Czujnik prędkości wiatru (m/s) — w przypadku markiz/rolet zewnętrznych użyj porywów wiatru, jeśli są dostępne"
+          "wind_speed_sensor_id": "Czujnik prędkości wiatru (m/s) — w przypadku markiz/rolet zewnętrznych użyj porywów wiatru, jeśli są dostępne",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

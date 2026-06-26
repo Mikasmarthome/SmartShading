@@ -94,6 +94,8 @@ from .const import (
     CONF_USE_HOME_LOCATION,
     CONF_WEATHER_ENTITY_ID,
     CONF_WIND_SPEED_SENSOR_ID,
+    CONF_RAIN_SENSOR_ID,
+    DEFAULT_RAIN_RELEASE_DELAY_MIN,
     CONF_REMOVE_CONFIRMED,
     CONF_WINDOW_ID,
     CONF_WINDOW_NAME,
@@ -252,6 +254,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._outdoor_temperature_sensor_id: str | None = None
         self._cloud_cover_sensor_id: str | None = None
         self._wind_speed_sensor_id: str | None = None
+        self._rain_sensor_id: str | None = None
         self._night_trigger: NightTrigger = NightTrigger(DEFAULT_NIGHT_TRIGGER)
         self._night_fixed_time: time = time.fromisoformat(DEFAULT_NIGHT_FIXED_TIME)
         self._night_sun_elevation: float = DEFAULT_NIGHT_SUN_ELEVATION
@@ -317,6 +320,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._outdoor_temperature_sensor_id = user_input.get(CONF_OUTDOOR_TEMPERATURE_SENSOR_ID)
             self._cloud_cover_sensor_id = user_input.get(CONF_CLOUD_COVER_SENSOR_ID)
             self._wind_speed_sensor_id = user_input.get(CONF_WIND_SPEED_SENSOR_ID)
+            self._rain_sensor_id = user_input.get(CONF_RAIN_SENSOR_ID)
             return await self.async_step_comfort()
 
         # Prefill weather fields from first existing zone entry so the user
@@ -327,6 +331,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_OUTDOOR_TEMPERATURE_SENSOR_ID: None,
             CONF_CLOUD_COVER_SENSOR_ID: None,
             CONF_WIND_SPEED_SENSOR_ID: None,
+            CONF_RAIN_SENSOR_ID: None,
         }
         src = _first_zone_entry_data(self.hass)
         if src:
@@ -344,6 +349,9 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
                 vol.Optional(CONF_CLOUD_COVER_SENSOR_ID, description={"suggested_value": prefill[CONF_CLOUD_COVER_SENSOR_ID]}): EntitySelector(EntitySelectorConfig(domain="sensor")),
                 vol.Optional(CONF_WIND_SPEED_SENSOR_ID, description={"suggested_value": prefill[CONF_WIND_SPEED_SENSOR_ID]}): EntitySelector(EntitySelectorConfig(domain="sensor")),
+                vol.Optional(CONF_RAIN_SENSOR_ID, description={"suggested_value": prefill[CONF_RAIN_SENSOR_ID]}): EntitySelector(
+                    EntitySelectorConfig(domain=["sensor", "binary_sensor"])
+                ),
             }
         )
         return self.async_show_form(step_id="weather", data_schema=schema)
@@ -833,6 +841,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             outdoor_temperature_sensor_id=self._outdoor_temperature_sensor_id,
             cloud_cover_sensor_id=self._cloud_cover_sensor_id,
             wind_speed_sensor_id=self._wind_speed_sensor_id,
+            rain_sensor_id=self._rain_sensor_id,
             indoor_temperature_sensor_ids=self._indoor_temperature_sensor_ids,
             comfort_config=ComfortConfig(
                 heat_protection_enabled=self._heat_protection_enabled,
@@ -897,6 +906,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 CONF_OUTDOOR_TEMPERATURE_SENSOR_ID: user_input.get(CONF_OUTDOOR_TEMPERATURE_SENSOR_ID),
                 CONF_CLOUD_COVER_SENSOR_ID: user_input.get(CONF_CLOUD_COVER_SENSOR_ID),
                 CONF_WIND_SPEED_SENSOR_ID: user_input.get(CONF_WIND_SPEED_SENSOR_ID),
+                CONF_RAIN_SENSOR_ID: user_input.get(CONF_RAIN_SENSOR_ID),
             })
 
         current = self._config_entry.data
@@ -922,6 +932,10 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     CONF_WIND_SPEED_SENSOR_ID,
                     description={"suggested_value": current.get(CONF_WIND_SPEED_SENSOR_ID)},
                 ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+                vol.Optional(
+                    CONF_RAIN_SENSOR_ID,
+                    description={"suggested_value": current.get(CONF_RAIN_SENSOR_ID)},
+                ): EntitySelector(EntitySelectorConfig(domain=["sensor", "binary_sensor"])),
             }
         )
         return self.async_show_form(step_id="weather", data_schema=schema)

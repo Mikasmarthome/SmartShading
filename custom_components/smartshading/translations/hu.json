@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Napsugárzás-érzékelő (W/m²)",
           "outdoor_temperature_sensor_id": "Kültéri hőmérséklet-érzékelő",
           "cloud_cover_sensor_id": "Felhőzet-érzékelő (0–100 %)",
-          "wind_speed_sensor_id": "Szélsebesség-érzékelő (m/s) — napellenzőkhöz/screenekhez használjon széllökést, ha elérhető"
+          "wind_speed_sensor_id": "Szélsebesség-érzékelő (m/s) — napellenzőkhöz/screenekhez használjon széllökést, ha elérhető",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Napsugárzás-érzékelő (W/m²)",
           "outdoor_temperature_sensor_id": "Kültéri hőmérséklet-érzékelő",
           "cloud_cover_sensor_id": "Felhőzet-érzékelő (0–100 %)",
-          "wind_speed_sensor_id": "Szélsebesség-érzékelő (m/s) — napellenzőkhöz/screenekhez használjon széllökést, ha elérhető"
+          "wind_speed_sensor_id": "Szélsebesség-érzékelő (m/s) — napellenzőkhöz/screenekhez használjon széllökést, ha elérhető",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

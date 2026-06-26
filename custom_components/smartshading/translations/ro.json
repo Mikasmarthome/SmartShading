@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Senzor de radiație solară (W/m²)",
           "outdoor_temperature_sensor_id": "Senzor de temperatură exterioară",
           "cloud_cover_sensor_id": "Senzor de nebulozitate (0–100 %)",
-          "wind_speed_sensor_id": "Senzor de viteză a vântului (m/s) — folosiți rafalele de vânt pentru copertine/screenuri dacă sunt disponibile"
+          "wind_speed_sensor_id": "Senzor de viteză a vântului (m/s) — folosiți rafalele de vânt pentru copertine/screenuri dacă sunt disponibile",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Senzor de radiație solară (W/m²)",
           "outdoor_temperature_sensor_id": "Senzor de temperatură exterioară",
           "cloud_cover_sensor_id": "Senzor de nebulozitate (0–100 %)",
-          "wind_speed_sensor_id": "Senzor de viteză a vântului (m/s) — folosiți rafalele de vânt pentru copertine/screenuri dacă sunt disponibile"
+          "wind_speed_sensor_id": "Senzor de viteză a vântului (m/s) — folosiți rafalele de vânt pentru copertine/screenuri dacă sunt disponibile",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

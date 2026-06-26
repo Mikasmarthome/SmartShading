@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Solarstrahlungssensor (W/m²)",
           "outdoor_temperature_sensor_id": "Außentemperatursensor",
           "cloud_cover_sensor_id": "Bewölkungsgrad (0–100 %)",
-          "wind_speed_sensor_id": "Windgeschwindigkeit (m/s) – bei Markisen/Screens möglichst Böengeschwindigkeit verwenden"
+          "wind_speed_sensor_id": "Windgeschwindigkeit (m/s) – bei Markisen/Screens möglichst Böengeschwindigkeit verwenden",
+          "rain_sensor_id": "Regensensor (binär oder mm/h) – optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Solarstrahlungssensor (W/m²)",
           "outdoor_temperature_sensor_id": "Außentemperatursensor",
           "cloud_cover_sensor_id": "Bewölkungsgrad (0–100 %)",
-          "wind_speed_sensor_id": "Windgeschwindigkeit (m/s) – bei Markisen/Screens möglichst Böengeschwindigkeit verwenden"
+          "wind_speed_sensor_id": "Windgeschwindigkeit (m/s) – bei Markisen/Screens möglichst Böengeschwindigkeit verwenden",
+          "rain_sensor_id": "Regensensor (binär oder mm/h) – optional"
         }
       },
       "lifecycle": {

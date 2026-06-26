@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Сензор за слънчева радиация (W/m²)",
           "outdoor_temperature_sensor_id": "Сензор за външна температура",
           "cloud_cover_sensor_id": "Сензор за облачност (0–100 %)",
-          "wind_speed_sensor_id": "Сензор за скорост на вятъра (m/s) — за тенти/екрани използвайте поривите на вятъра, ако са налични"
+          "wind_speed_sensor_id": "Сензор за скорост на вятъра (m/s) — за тенти/екрани използвайте поривите на вятъра, ако са налични",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Сензор за слънчева радиация (W/m²)",
           "outdoor_temperature_sensor_id": "Сензор за външна температура",
           "cloud_cover_sensor_id": "Сензор за облачност (0–100 %)",
-          "wind_speed_sensor_id": "Сензор за скорост на вятъра (m/s) — за тенти/екрани използвайте поривите на вятъра, ако са налични"
+          "wind_speed_sensor_id": "Сензор за скорост на вятъра (m/s) — за тенти/екрани използвайте поривите на вятъра, ако са налични",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

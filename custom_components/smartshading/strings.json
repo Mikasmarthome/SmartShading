@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Solar radiation sensor (W/m²)",
           "outdoor_temperature_sensor_id": "Outdoor temperature sensor",
           "cloud_cover_sensor_id": "Cloud cover sensor (0–100 %)",
-          "wind_speed_sensor_id": "Wind speed sensor (m/s) — use wind gust for awnings/screens if available"
+          "wind_speed_sensor_id": "Wind speed sensor (m/s) — use wind gust for awnings/screens if available",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Solar radiation sensor (W/m²)",
           "outdoor_temperature_sensor_id": "Outdoor temperature sensor",
           "cloud_cover_sensor_id": "Cloud cover sensor (0–100 %)",
-          "wind_speed_sensor_id": "Wind speed sensor (m/s) — use wind gust for awnings/screens if available"
+          "wind_speed_sensor_id": "Wind speed sensor (m/s) — use wind gust for awnings/screens if available",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

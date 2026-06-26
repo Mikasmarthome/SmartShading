@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Zonnestralingssensor (W/m²)",
           "outdoor_temperature_sensor_id": "Buitentemperatuursensor",
           "cloud_cover_sensor_id": "Bewolkingssensor (0–100 %)",
-          "wind_speed_sensor_id": "Windsnelheidssensor (m/s) — gebruik windstoten voor zonneschermen/screens indien beschikbaar"
+          "wind_speed_sensor_id": "Windsnelheidssensor (m/s) — gebruik windstoten voor zonneschermen/screens indien beschikbaar",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Zonnestralingssensor (W/m²)",
           "outdoor_temperature_sensor_id": "Buitentemperatuursensor",
           "cloud_cover_sensor_id": "Bewolkingssensor (0–100 %)",
-          "wind_speed_sensor_id": "Windsnelheidssensor (m/s) — gebruik windstoten voor zonneschermen/screens indien beschikbaar"
+          "wind_speed_sensor_id": "Windsnelheidssensor (m/s) — gebruik windstoten voor zonneschermen/screens indien beschikbaar",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

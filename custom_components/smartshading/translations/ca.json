@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Sensor de radiació solar (W/m²)",
           "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
           "cloud_cover_sensor_id": "Sensor de nuvolositat (0–100 %)",
-          "wind_speed_sensor_id": "Sensor de velocitat del vent (m/s) — fes servir la ratxa de vent per a tendals/screens si està disponible"
+          "wind_speed_sensor_id": "Sensor de velocitat del vent (m/s) — fes servir la ratxa de vent per a tendals/screens si està disponible",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Sensor de radiació solar (W/m²)",
           "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
           "cloud_cover_sensor_id": "Sensor de nuvolositat (0–100 %)",
-          "wind_speed_sensor_id": "Sensor de velocitat del vent (m/s) — fes servir la ratxa de vent per a tendals/screens si està disponible"
+          "wind_speed_sensor_id": "Sensor de velocitat del vent (m/s) — fes servir la ratxa de vent per a tendals/screens si està disponible",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

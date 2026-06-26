@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Αισθητήρας ηλιακής ακτινοβολίας (W/m²)",
           "outdoor_temperature_sensor_id": "Αισθητήρας εξωτερικής θερμοκρασίας",
           "cloud_cover_sensor_id": "Αισθητήρας νεφοκάλυψης (0–100 %)",
-          "wind_speed_sensor_id": "Αισθητήρας ταχύτητας ανέμου (m/s) — για τέντες/screens χρησιμοποιήστε τις ριπές ανέμου, αν είναι διαθέσιμες"
+          "wind_speed_sensor_id": "Αισθητήρας ταχύτητας ανέμου (m/s) — για τέντες/screens χρησιμοποιήστε τις ριπές ανέμου, αν είναι διαθέσιμες",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Αισθητήρας ηλιακής ακτινοβολίας (W/m²)",
           "outdoor_temperature_sensor_id": "Αισθητήρας εξωτερικής θερμοκρασίας",
           "cloud_cover_sensor_id": "Αισθητήρας νεφοκάλυψης (0–100 %)",
-          "wind_speed_sensor_id": "Αισθητήρας ταχύτητας ανέμου (m/s) — για τέντες/screens χρησιμοποιήστε τις ριπές ανέμου, αν είναι διαθέσιμες"
+          "wind_speed_sensor_id": "Αισθητήρας ταχύτητας ανέμου (m/s) — για τέντες/screens χρησιμοποιήστε τις ριπές ανέμου, αν είναι διαθέσιμες",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

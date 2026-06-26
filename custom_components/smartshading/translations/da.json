@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Solstrålingssensor (W/m²)",
           "outdoor_temperature_sensor_id": "Udendørstemperatursensor",
           "cloud_cover_sensor_id": "Skydækkesensor (0–100 %)",
-          "wind_speed_sensor_id": "Vindhastighedssensor (m/s) — brug vindstød til markiser/screens, hvis tilgængeligt"
+          "wind_speed_sensor_id": "Vindhastighedssensor (m/s) — brug vindstød til markiser/screens, hvis tilgængeligt",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Solstrålingssensor (W/m²)",
           "outdoor_temperature_sensor_id": "Udendørstemperatursensor",
           "cloud_cover_sensor_id": "Skydækkesensor (0–100 %)",
-          "wind_speed_sensor_id": "Vindhastighedssensor (m/s) — brug vindstød til markiser/screens, hvis tilgængeligt"
+          "wind_speed_sensor_id": "Vindhastighedssensor (m/s) — brug vindstød til markiser/screens, hvis tilgængeligt",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

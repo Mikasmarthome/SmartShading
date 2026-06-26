@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Sensore di radiazione solare (W/m²)",
           "outdoor_temperature_sensor_id": "Sensore di temperatura esterna",
           "cloud_cover_sensor_id": "Sensore di nuvolosità (0–100 %)",
-          "wind_speed_sensor_id": "Sensore di velocità del vento (m/s) — usa le raffiche per tende da sole/screen se disponibili"
+          "wind_speed_sensor_id": "Sensore di velocità del vento (m/s) — usa le raffiche per tende da sole/screen se disponibili",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Sensore di radiazione solare (W/m²)",
           "outdoor_temperature_sensor_id": "Sensore di temperatura esterna",
           "cloud_cover_sensor_id": "Sensore di nuvolosità (0–100 %)",
-          "wind_speed_sensor_id": "Sensore di velocità del vento (m/s) — usa le raffiche per tende da sole/screen se disponibili"
+          "wind_speed_sensor_id": "Sensore di velocità del vento (m/s) — usa le raffiche per tende da sole/screen se disponibili",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Auringon säteilyn anturi (W/m²)",
           "outdoor_temperature_sensor_id": "Ulkolämpötila-anturi",
           "cloud_cover_sensor_id": "Pilvisyysanturi (0–100 %)",
-          "wind_speed_sensor_id": "Tuulennopeusanturi (m/s) — käytä tuulenpuuskia markiiseille/screeneille, jos saatavilla"
+          "wind_speed_sensor_id": "Tuulennopeusanturi (m/s) — käytä tuulenpuuskia markiiseille/screeneille, jos saatavilla",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Auringon säteilyn anturi (W/m²)",
           "outdoor_temperature_sensor_id": "Ulkolämpötila-anturi",
           "cloud_cover_sensor_id": "Pilvisyysanturi (0–100 %)",
-          "wind_speed_sensor_id": "Tuulennopeusanturi (m/s) — käytä tuulenpuuskia markiiseille/screeneille, jos saatavilla"
+          "wind_speed_sensor_id": "Tuulennopeusanturi (m/s) — käytä tuulenpuuskia markiiseille/screeneille, jos saatavilla",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

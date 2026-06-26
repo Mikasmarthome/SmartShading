@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Датчик солнечной радиации (Вт/м²)",
           "outdoor_temperature_sensor_id": "Датчик наружной температуры",
           "cloud_cover_sensor_id": "Датчик облачности (0–100 %)",
-          "wind_speed_sensor_id": "Датчик скорости ветра (м/с) — для маркиз/screen используйте порывы ветра, если доступно"
+          "wind_speed_sensor_id": "Датчик скорости ветра (м/с) — для маркиз/screen используйте порывы ветра, если доступно",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Датчик солнечной радиации (Вт/м²)",
           "outdoor_temperature_sensor_id": "Датчик наружной температуры",
           "cloud_cover_sensor_id": "Датчик облачности (0–100 %)",
-          "wind_speed_sensor_id": "Датчик скорости ветра (м/с) — для маркиз/screen используйте порывы ветра, если доступно"
+          "wind_speed_sensor_id": "Датчик скорости ветра (м/с) — для маркиз/screen используйте порывы ветра, если доступно",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

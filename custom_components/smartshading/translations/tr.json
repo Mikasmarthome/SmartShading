@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Güneş radyasyonu sensörü (W/m²)",
           "outdoor_temperature_sensor_id": "Dış mekân sıcaklık sensörü",
           "cloud_cover_sensor_id": "Bulutluluk sensörü (0–100 %)",
-          "wind_speed_sensor_id": "Rüzgâr hızı sensörü (m/s) — tente/screenler için varsa rüzgâr hamlesini kullanın"
+          "wind_speed_sensor_id": "Rüzgâr hızı sensörü (m/s) — tente/screenler için varsa rüzgâr hamlesini kullanın",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Güneş radyasyonu sensörü (W/m²)",
           "outdoor_temperature_sensor_id": "Dış mekân sıcaklık sensörü",
           "cloud_cover_sensor_id": "Bulutluluk sensörü (0–100 %)",
-          "wind_speed_sensor_id": "Rüzgâr hızı sensörü (m/s) — tente/screenler için varsa rüzgâr hamlesini kullanın"
+          "wind_speed_sensor_id": "Rüzgâr hızı sensörü (m/s) — tente/screenler için varsa rüzgâr hamlesini kullanın",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

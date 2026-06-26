@@ -23,7 +23,8 @@
           "solar_radiation_sensor_id": "Senzor solárního záření (W/m²)",
           "outdoor_temperature_sensor_id": "Senzor venkovní teploty",
           "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
-          "wind_speed_sensor_id": "Senzor rychlosti větru (m/s) — pro markýzy/screeny použijte nárazy větru, pokud jsou k dispozici"
+          "wind_speed_sensor_id": "Senzor rychlosti větru (m/s) — pro markýzy/screeny použijte nárazy větru, pokud jsou k dispozici",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -237,7 +238,8 @@
           "solar_radiation_sensor_id": "Senzor solárního záření (W/m²)",
           "outdoor_temperature_sensor_id": "Senzor venkovní teploty",
           "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
-          "wind_speed_sensor_id": "Senzor rychlosti větru (m/s) — pro markýzy/screeny použijte nárazy větru, pokud jsou k dispozici"
+          "wind_speed_sensor_id": "Senzor rychlosti větru (m/s) — pro markýzy/screeny použijte nárazy větru, pokud jsou k dispozici",
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

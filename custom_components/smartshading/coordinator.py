@@ -2982,6 +2982,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 experiment_id=self._experiment_pending_link(
                                     window_id, new_state, _decision_id, now,
                                 ),
+                                rain_status_at_decision=_rain_status_global.value,
+                                rain_safe_active_at_decision=(
+                                    new_state is ShadingState.RAIN_SAFE
+                                    or _rain_status_global is _RainStatus.RAINING
+                                ),
                             )
                             _old_pending = self._pending_outcomes.replace(_new_pending)
                             if _old_pending is not None:
@@ -4747,7 +4752,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             manual_preference_active=manual_pref_active,
             fully_automatic=getattr(window.behavior_mode, "name", "") == "FULLY_AUTOMATIC",
             manual_override_active=self._override_detector.get(window_id, now) is not None,
-            safety_active=current_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE),
+            safety_active=current_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE, ShadingState.RAIN_SAFE),
             lifecycle_active=self._lifecycle_state.value != "day",
             presence_absence_transition=False,
             solar_context_ok=((exposure_wm2 or 0.0) >= 150.0

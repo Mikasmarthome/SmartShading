@@ -59,6 +59,11 @@ class PendingOutcome:
     # P7 — bounded-experiment linkage (None for normal decisions).  The outcome
     # is attached to the experiment by decision_id/experiment_id, never by time.
     experiment_id: str | None = None
+    # Rain context — recorded at decision time so rain-coincident outcomes can be
+    # flagged as confounded during resolution without re-reading sensor state.
+    # "unknown" when no rain sensor is configured (RainStatus.UNKNOWN.value).
+    rain_status_at_decision: str | None = None  # RainStatus.value or None
+    rain_safe_active_at_decision: bool = False
 
     def to_dict(self) -> dict:
         """Serialize to a JSON-safe dict (P2 — restart-safe persistence)."""
@@ -81,6 +86,8 @@ class PendingOutcome:
             "thermal_authority_applied": self.thermal_authority_applied,
             "thermal_confidence_at_decision": self.thermal_confidence_at_decision,
             "experiment_id": self.experiment_id,
+            "rain_status_at_decision": self.rain_status_at_decision,
+            "rain_safe_active_at_decision": self.rain_safe_active_at_decision,
         }
 
     @classmethod
@@ -114,4 +121,6 @@ class PendingOutcome:
             thermal_authority_applied=bool(d.get("thermal_authority_applied", False)),
             thermal_confidence_at_decision=d.get("thermal_confidence_at_decision"),
             experiment_id=d.get("experiment_id"),
+            rain_status_at_decision=d.get("rain_status_at_decision"),
+            rain_safe_active_at_decision=bool(d.get("rain_safe_active_at_decision", False)),
         )

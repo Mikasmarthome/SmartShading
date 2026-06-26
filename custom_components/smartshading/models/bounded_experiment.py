@@ -30,13 +30,27 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-EXPERIMENT_SCHEMA_VERSION: int = 1
+EXPERIMENT_SCHEMA_VERSION: int = 2       # v2: bounded staged experiments (stage/lineage)
 
 # --- bounded parameters (HA percentage points) ---
-EXPERIMENT_STEP_HA: int = 5              # single fixed close-more step magnitude
+EXPERIMENT_STEP_HA: int = 5              # single fixed close-more step magnitude (Stage 1)
 EXPERIMENT_DELTA_HA: int = -EXPERIMENT_STEP_HA   # signed close-more delta (lower HA)
 EXPERIMENT_CUMULATIVE_CAP_HA: int = 10   # max cumulative deviation vs config base
 EXPERIMENT_MATERIALITY_HA: int = 3       # below this an effective delta is not material
+
+# --- bounded staged experiments (3H) ---
+# Stage 1 closes 5 pp; a later Stage 2 (same context, distinct day, after a real
+# non-degraded Stage 1) closes 10 pp TOTAL vs the authoritative baseline — never
+# 5+10.  There is no Stage 3.  The per-stage magnitude is exactly stage * 5 pp,
+# bounded by EXPERIMENT_CUMULATIVE_CAP_HA.
+EXPERIMENT_MAX_STAGE: int = 2
+EXPERIMENT_STAGE_STEP_HA: int = 5        # per-stage close-more increment
+
+
+def stage_step_ha(stage: int) -> int:
+    """Close-more magnitude (HA pp) for a given 1-based stage, bounded by the cap."""
+    s = max(1, min(EXPERIMENT_MAX_STAGE, int(stage)))
+    return min(EXPERIMENT_CUMULATIVE_CAP_HA, s * EXPERIMENT_STAGE_STEP_HA)
 
 DIRECTION_CLOSE_MORE: str = "close_more"
 
@@ -259,6 +273,11 @@ class BoundedExperiment:
     outcome_reference: str | None = None                     # decision_id carrying the outcome
     evaluation: ExperimentEvaluation = field(default_factory=ExperimentEvaluation)
     rollback_state: str = ROLLBACK_NONE
+    # --- bounded staged experiments (3H) ---
+    stage: int = 1                                            # 1 = 5pp, 2 = 10pp (cap)
+    target_step_ha: int = EXPERIMENT_STEP_HA                  # close-more magnitude used
+    previous_experiment_id: str | None = None                # lineage: prior stage's id
+    previous_stage_evaluation: str | None = None             # prior stage's terminal verdict
     schema_version: int = EXPERIMENT_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
@@ -306,7 +325,11 @@ class BoundedExperiment:
             "experiment_decision_id": self.experiment_decision_id,
             "outcome_reference": self.outcome_reference,
             "evaluation": self.evaluation.to_dict(),
-            "rollback_state": self.rollback_state, "schema_version": self.schema_version,
+            "rollback_state": self.rollback_state,
+            "stage": self.stage, "target_step_ha": self.target_step_ha,
+            "previous_experiment_id": self.previous_experiment_id,
+            "previous_stage_evaluation": self.previous_stage_evaluation,
+            "schema_version": self.schema_version,
         }
 
     @classmethod
@@ -340,5 +363,10 @@ class BoundedExperiment:
             outcome_reference=d.get("outcome_reference"),
             evaluation=ExperimentEvaluation.from_dict(d.get("evaluation")),
             rollback_state=d.get("rollback_state", ROLLBACK_NONE),
+            # Backward-compatible: pre-3H payloads have no stage fields → safe Stage 1.
+            stage=int(d.get("stage", 1) or 1),
+            target_step_ha=int(d.get("target_step_ha", EXPERIMENT_STEP_HA) or EXPERIMENT_STEP_HA),
+            previous_experiment_id=d.get("previous_experiment_id"),
+            previous_stage_evaluation=d.get("previous_stage_evaluation"),
             schema_version=int(d.get("schema_version", EXPERIMENT_SCHEMA_VERSION)),
         )

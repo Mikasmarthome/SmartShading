@@ -58,15 +58,22 @@ def compute_shadow_candidate(
     in_solar_sector: bool,
     effective_exposure_wm2: float | None,
     allow_ahb_during_absence: bool = False,
+    step_ha: int = SHADOW_STEP_HA,
 ) -> ShadowCandidateResult:
     """Dry-run a close-more candidate through the REAL clamp functions.
 
-    Steps: authoritative target − 5 pp (parameter) → daytime-min clamp →
+    Steps: authoritative target − ``step_ha`` pp (parameter) → daytime-min clamp →
     anti-heat-buildup clamp → cumulative cap vs configured base.  A candidate is
     valid only when, after all real guardrails, it is still materially MORE
     closed than the real applied target.
+
+    ``step_ha`` is the close-more magnitude in HA percentage points.  It defaults
+    to the conservative single Stage-1 step (``SHADOW_STEP_HA`` = 5); a later
+    bounded stage may pass a larger magnitude (e.g. 10).  The cumulative cap vs
+    the configured base (``SHADOW_CUMULATIVE_CAP_HA``) is always enforced below,
+    so a larger step can never exceed the total deviation bound.
     """
-    param = clamp_position(current_authoritative_target_ha - SHADOW_STEP_HA)
+    param = clamp_position(current_authoritative_target_ha - max(0, step_ha))
 
     # Real daytime-minimum-open clamp.
     after_daytime, _, _ = apply_daytime_min_open(param, daytime_min_ha, new_state)

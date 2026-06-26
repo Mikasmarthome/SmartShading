@@ -137,11 +137,15 @@ def revalidate_experiment_candidate(
     hardware_type: CoverHardwareType,
     in_solar_sector: bool,
     effective_exposure_wm2: float | None,
+    step_ha: int = EXPERIMENT_STEP_HA,
 ) -> ExperimentCandidateResult:
-    """Re-simulate the -5pp close-more candidate through the REAL clamps now.
+    """Re-simulate the close-more candidate through the REAL clamps now.
 
     Never blindly reuses the P6-stored value.  Enforces the cumulative cap and
-    materiality after the real guardrails.
+    materiality after the real guardrails.  ``step_ha`` is the close-more
+    magnitude (Stage 1 = 5; a bounded Stage 2 = 10).  The cumulative cap vs the
+    configured base (``EXPERIMENT_CUMULATIVE_CAP_HA`` = 10) is enforced after the
+    real guardrails, so a larger step can never exceed the total deviation bound.
     """
     dry = compute_shadow_candidate(
         current_authoritative_target_ha=current_authoritative_target_ha,
@@ -154,6 +158,7 @@ def revalidate_experiment_candidate(
         hardware_type=hardware_type,
         in_solar_sector=in_solar_sector,
         effective_exposure_wm2=effective_exposure_wm2,
+        step_ha=step_ha,
     )
     final = dry.shadow_final_candidate_target_ha
     cumulative = (

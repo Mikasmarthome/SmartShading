@@ -2196,6 +2196,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # rain_safe_position_ha: window override → HARDWARE_RAIN_SAFE_POSITIONS
             #   (HA convention: AWNING/EXTERIOR_SCREEN → 0 = retracted; others → 100 = raised).
             # rain_release_delay_min: window override → global default (30 min).
+            # _early_hw_type is also used below for wind/storm position correction
+            # and Night Hard Hold; resolved once here to avoid duplication.
+            _early_cg = self.cover_groups.get(window.cover_group_id)
+            _early_hw_type = (
+                _early_cg.hardware_type
+                if _early_cg is not None
+                else CoverHardwareType.GENERIC
+            )
             _hw_settings = default_hardware_settings(_early_hw_type)
             _rain_prot_enabled: bool = (
                 window.rain_protection_enabled
@@ -2469,16 +2477,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     _prov_fingerprint, _prov_generation = self._config_fingerprint_for_window(window, zone)
                 except Exception:
                     _baseline_decision = None
-
-            # Hardware type — needed for safety position correction and Night Hard Hold.
-            # Resolved from CoverGroup early so both guards can use it before the
-            # Execution Pipeline (which also computes _hw_type at line ~1804).
-            _early_cg = self.cover_groups.get(window.cover_group_id)
-            _early_hw_type = (
-                _early_cg.hardware_type
-                if _early_cg is not None
-                else CoverHardwareType.GENERIC
-            )
 
             # --- Hardware-aware Safety Position Correction -------------------------
             # The evaluators (WindEvaluator, StormEvaluator) produce

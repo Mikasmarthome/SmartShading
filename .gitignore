@@ -60,8 +60,7 @@ RELEASE_NOTES*.md
 # Published brand assets live in two locations (both intentionally NOT ignored):
 #   brand/                                — top-level, for HACS/GitHub display
 #   custom_components/smartshading/brand/ — internal, served by HA Core locally
-# The root source file "logo smartshading.png" is the local source only and must
-# never be published under that name.
+# Brand SOURCE images are kept entirely outside the repository; only the derived
+# brand/{icon,logo}.png artefacts are ever published.
 tests/
 scripts/
-logo smartshading.png

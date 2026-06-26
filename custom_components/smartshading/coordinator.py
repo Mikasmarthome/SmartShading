@@ -2076,6 +2076,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     previous_lifecycle_state=_prev_lifecycle_state.value,
                     lifecycle_trigger=_lifecycle_trigger,
                     startup_grace_active=(self._startup_cycles_remaining > 0),
+                    rain_status=_rain_status_global.value,
+                    rain_safe_active=None,
+                    rain_release_remaining_s=None,
                 )
                 continue
 
@@ -3865,6 +3868,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 previous_lifecycle_state=_prev_lifecycle_state.value,
                 lifecycle_trigger=_lifecycle_trigger,
                 startup_grace_active=(self._startup_cycles_remaining > 0),
+                rain_status=_rain_status_global.value,
+                rain_safe_active=(
+                    _rain_held
+                    or current_state is ShadingState.RAIN_SAFE
+                    or new_state is ShadingState.RAIN_SAFE
+                ),
+                rain_release_remaining_s=(
+                    max(0.0, _rain_delay_min * 60 - (_rain_h.seconds_held(now) or 0.0))
+                    if _rain_held and not _eval_is_rain
+                    else None
+                ),
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---

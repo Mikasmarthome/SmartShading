@@ -315,3 +315,15 @@ class WindowExecutionDiagnostics:
     """True when startup_grace_remaining > 0 (grace period not yet expired).
     False when grace has fully elapsed and dispatch is allowed.
     None when not populated."""
+
+    rain_status: str | None = None
+    """Normalized rain status for this cycle: "raining", "dry", "unknown", or None
+    when no rain sensor is configured."""
+
+    rain_safe_active: bool | None = None
+    """True when this window is currently in RAIN_SAFE state or holding via
+    RainSafeHold. False when rain protection is idle. None when not populated."""
+
+    rain_release_remaining_s: float | None = None
+    """Seconds remaining in the rain dry-cooldown hold, or None when no hold
+    is active. Computed from SafetyHold._last_triggered and rain_release_delay_min."""

@@ -131,6 +131,13 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 getattr(c, "_indoor_temperature_sensor_ids", None)),
             "solar_sensor_configured": getattr(c, "_solar_radiation_sensor_id", None) is not None,
             "weather_configured": getattr(c, "_weather_entity_id", None) is not None,
+            "rain_sensor_configured": getattr(c, "_rain_sensor_id", None) is not None,
+            "rain_sensor_available": (
+                getattr(c, "hass", None) is not None
+                and getattr(c, "_rain_sensor_id", None) is not None
+                and c.hass.states.get(c._rain_sensor_id) is not None
+                and c.hass.states.get(c._rain_sensor_id).state not in ("unavailable", "unknown")
+            ) if getattr(c, "_rain_sensor_id", None) is not None else None,
             "windows": windows,
         }
 

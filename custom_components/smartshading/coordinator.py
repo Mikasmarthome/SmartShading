@@ -128,13 +128,17 @@ from .engines.experiment_eligibility import (
     evaluate_experiment_eligibility,
 )
 from .engines.experiment_engine import (
-    ExperimentEvaluationInput,
+    CausalSameCycleInput,
     P8AdoptionInput,
     derive_p8_adoption_eligible,
-    evaluate_experiment,
+    evaluate_experiment_causal,
     is_cooldown_active,
     reconcile_restored_experiments,
     revalidate_experiment_candidate,
+)
+from .engines.staged_experiment import (
+    enforce_monotonic_spacing,
+    evaluate_stage_escalation,
 )
 from .models.bounded_experiment import (
     ACTIVE_STATUSES as _EXP_ACTIVE_STATUSES,
@@ -143,6 +147,7 @@ from .models.bounded_experiment import (
     EVAL_NO_DEGRADATION,
     EVAL_PREFERENCE_REJECTED,
     EXPERIMENT_HISTORY_PER_WINDOW,
+    EXPERIMENT_MATERIALITY_HA,
     STATUS_ABORTED,
     STATUS_ACCEPTED_FOR_P8,
     STATUS_ACTIVATED,
@@ -766,6 +771,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._experiments_active: dict[str, BoundedExperiment] = {}   # zone_id → experiment
         self._experiment_history: list[BoundedExperiment] = []
         self._experiment_zone_last_activation: dict[str, datetime] = {}
+        # 3H — last staged-experiment block per window (diagnostics/export only;
+        # not adaptive authority).  Set when a candidate is blocked, e.g. the
+        # monotonic spacing is insufficient and the slot is handed to strategy.
+        self._experiment_stage_block: dict[str, dict] = {}
         # Per-cycle injection context (window_id → dict), reset each cycle.
         self._cycle_experiment: dict[str, dict] = {}
         # P8 — persistent target adoptions.  At most ONE active adoption per
@@ -4479,6 +4488,26 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             last_rejection_at=last_rej, window_activations_last_30d=win_count,
         )
 
+    def _experiment_stage_handoff(
+        self, *, zone_id, window_id, intensity, context_family, reason, now,
+    ):
+        """Record a staged-experiment block and hand the zone slot to Strategy
+        Learning (privacy-safe diagnostics only — no adaptive authority).
+
+        Called when a position experiment cannot proceed safely (e.g. the
+        next-stronger shade level leaves too little room for a material,
+        monotonicity-preserving close-more step).  The zone slot is simply left
+        free: with no position experiment armed, the existing strategy-experiment
+        path can use it on a later cycle.
+        """
+        self._experiment_stage_block[window_id] = {
+            "reason": reason, "intensity": intensity,
+            "context_family": context_family, "at": now.isoformat(),
+            "handed_to_strategy": True,
+        }
+        self._experiment_stage_handoff_count = (
+            getattr(self, "_experiment_stage_handoff_count", 0) + 1)
+
     def _experiment_try_inject(
         self, *, zone, window, window_id, wdi, eff_ha, cfg_ha, exposure_wm2,
         outdoor_temp, in_solar_sector, manual_pref_active, current_state, now,
@@ -4537,6 +4566,25 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         cur_auth_ha = eff_ha[intensity]
         cfg_base_ha = cfg_ha[intensity]
         hw = default_hardware_settings(cg.hardware_type) if cg is not None else {}
+
+        # 3H staged step: a NEW experiment escalates per the bounded staged
+        # contract (Stage 1 = 5pp; Stage 2 = 10pp TOTAL vs the authoritative base
+        # only after a complete, attributable, non-confounded, non-degraded Stage 1
+        # on a later distinct day; never a Stage 3).  A running experiment keeps
+        # its stamped step.  The config-base cumulative cap (10pp) is enforced in
+        # revalidate, so a larger step can never exceed the total deviation bound.
+        if exp is None:
+            _terminal_for_key = [
+                e for e in self._experiment_history
+                if e.experiment_key == (window_id, intensity, ctx_family)
+            ]
+            stage_dec = evaluate_stage_escalation(
+                terminal_experiments_for_key=_terminal_for_key, now=now)
+            step_ha = stage_dec.target_step_ha
+        else:
+            stage_dec = None
+            step_ha = exp.target_step_ha
+
         reval = revalidate_experiment_candidate(
             current_authoritative_target_ha=cur_auth_ha,
             real_regular_target_ha=cur_auth_ha,
@@ -4548,7 +4596,39 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             hardware_type=(cg.hardware_type if cg is not None else CoverHardwareType.GENERIC),
             in_solar_sector=in_solar_sector,
             effective_exposure_wm2=exposure_wm2,
+            step_ha=step_ha,
         )
+
+        # 3H monotonicity + min spacing: a close-more candidate must never cross
+        # (or come within the minimum spacing of) the next-stronger configured
+        # shade level — strong < normal < light must be preserved and neighbour
+        # intensities are never silently shifted.  ``strong`` has no stronger
+        # neighbour.  If the remaining room is too small for a material step, the
+        # position experiment is blocked, diagnosed, and the zone slot is left for
+        # Strategy Learning.
+        if reval.valid and reval.experiment_parameter_target_ha is not None:
+            _stronger = {"light": eff_ha.get("normal"),
+                         "normal": eff_ha.get("strong")}.get(intensity)
+            _floor, _was = enforce_monotonic_spacing(
+                intensity_level=intensity,
+                candidate_ha=reval.experiment_parameter_target_ha,
+                stronger_neighbor_ha=_stronger)
+            if _was:
+                if abs(cur_auth_ha - _floor) < EXPERIMENT_MATERIALITY_HA:
+                    self._experiment_stage_handoff(
+                        zone_id=zone_id, window_id=window_id, intensity=intensity,
+                        context_family=ctx_family,
+                        reason="monotonic_spacing_insufficient", now=now)
+                    if exp is not None:
+                        self._abort_zone_experiment(
+                            zone_id, "monotonic_spacing_insufficient", now)
+                    return wdi
+                _final = reval.expected_final_candidate_target_ha
+                _final = _floor if _final is None else max(_final, _floor)
+                reval = replace(
+                    reval, experiment_parameter_target_ha=_floor,
+                    expected_final_candidate_target_ha=_final,
+                    cumulative_delta_from_config_ha=(cfg_base_ha - _final))
 
         elig = evaluate_experiment_eligibility(ExperimentEligibilityInput(
             intensity_level=intensity,
@@ -4617,6 +4697,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 config_generation=gen,
                 source_decision_ids=proposal.source_decision_ids[:10],
                 status=STATUS_ARMED, planned_start_at=now,
+                # 3H staged lineage (stamped from the escalation decision).
+                stage=stage_dec.stage, target_step_ha=stage_dec.target_step_ha,
+                previous_experiment_id=stage_dec.previous_experiment_id,
+                previous_stage_evaluation=stage_dec.previous_stage_evaluation,
             )
         exp = replace(
             exp, updated_at=now, status=STATUS_ARMED,
@@ -4719,35 +4803,62 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         mo = outcome.multi_objective
         exp_thermal = mo.thermal.score if (mo and mo.thermal.available) else None
-        exp_pref = mo.preference.score if mo else None
-        exp_move = mo.movement.score if mo else None
         open_more = bool(mo and mo.preference.override_direction == "open_more")
         reliability = (mo.reliability.thermal if mo else 0.0)
 
-        # Robust baseline: comparable non-experiment thermal scores for this window.
-        # get_outcomes(window_id) is window-scoped (the no-arg call raised
-        # TypeError, which the surrounding except swallowed → the experiment
-        # could never finalize → no adoption).
-        baseline_scores: list[float] = []
+        # Causal same-cycle baseline (3H): collect ONLY comparable, regular
+        # (non-experiment) outcomes from the SAME context family.  The current
+        # experiment is excluded (by decision_id) and so are all other experiment
+        # outcomes (by their experiment_decision_ids) — an experiment must never
+        # be part of its own / any experiment's counterfactual baseline.  A thin
+        # context yields inconclusive in evaluate_experiment_causal (no fallback
+        # to a favourable window-wide median).
+        exp_ctx = exp.context_family
+        _exp_decision_ids = {
+            e.experiment_decision_id
+            for e in (list(self._experiment_history)
+                      + list(self._experiments_active.values()))
+            if e.experiment_decision_id is not None
+        }
+        baseline_abs_deltas: list[float] = []
+        baseline_solars: list[float] = []
         baseline_days: set = set()
         for o in self._learning_store.get_outcomes(exp.window_id):
             if o.window_id != exp.window_id or o.decision_id == did:
                 continue
+            if o.decision_id in _exp_decision_ids:
+                continue  # never use an experiment outcome as a baseline
             omo = o.multi_objective
             if omo is None or not omo.thermal.available or omo.thermal.score is None:
                 continue
-            baseline_scores.append(omo.thermal.score)
+            if (omo.thermal.temperature_delta is None
+                    or omo.thermal.solar_exposure_at_decision is None):
+                continue
+            o_ctx = self._experiment_context_family(
+                o.decision_timestamp, omo.thermal.outdoor_temp_at_decision,
+                omo.thermal.solar_exposure_at_decision)
+            if o_ctx != exp_ctx:
+                continue
+            baseline_abs_deltas.append(abs(omo.thermal.temperature_delta))
+            baseline_solars.append(omo.thermal.solar_exposure_at_decision)
             baseline_days.add(o.decision_timestamp.date())
 
-        evaluation = evaluate_experiment(ExperimentEvaluationInput(
+        evaluation = evaluate_experiment_causal(CausalSameCycleInput(
             experiment_outcome_available=exp_thermal is not None,
-            experiment_thermal_score=exp_thermal,
-            experiment_preference_score=exp_pref,
-            experiment_movement_score=exp_move,
-            baseline_thermal_scores=tuple(baseline_scores[-30:]),
+            observed_experiment_delta_c=(mo.thermal.temperature_delta if mo else None),
+            observed_solar_wm2=(mo.thermal.solar_exposure_at_decision if mo else None),
+            outdoor_temp_c=(mo.thermal.outdoor_temp_at_decision if mo else None),
+            baseline_open_fraction=(
+                exp.baseline_parameter_target_ha / 100.0
+                if exp.baseline_parameter_target_ha is not None else None),
+            experiment_open_fraction=(
+                exp.expected_final_candidate_target_ha / 100.0
+                if exp.expected_final_candidate_target_ha is not None else None),
+            baseline_abs_deltas=tuple(baseline_abs_deltas[-30:]),
+            baseline_solars=tuple(baseline_solars[-30:]),
             baseline_distinct_days=len(baseline_days),
-            user_open_more_rejection=open_more,
             reliability=reliability,
+            user_open_more_rejection=open_more,
         ))
 
         # P8 adoption snapshot from this window/context history (+ this result).

@@ -297,10 +297,17 @@ from .engines.strategy_runtime import (
     effective_min_hold_minutes,
 )
 from .engines.safety_hold import (
+    HARDWARE_RAIN_SAFE_POSITIONS as _HARDWARE_RAIN_SAFE_POSITIONS,
     HARDWARE_SAFE_POSITIONS as _HARDWARE_SAFE_POSITIONS,
+    RAIN_HOLD_S as _RAIN_HOLD_S,
     SafetyHold as _SafetyHold,
     WIND_HOLD_S as _WIND_HOLD_S,
     STORM_HOLD_S as _STORM_HOLD_S,
+)
+from .engines.rain_engine import (
+    RainSourceType as _RainSourceType,
+    RainStatus as _RainStatus,
+    build_rain_sensor_reading as _build_rain_sensor_reading,
 )
 from .engines.sun_sector import azimuth_in_sector
 from .engines.adaptation_layer import AdaptationInput, AdaptiveProfile, compute_adaptive_profile
@@ -611,6 +618,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         cloud_cover_sensor_id: str | None = None,
         wind_speed_sensor_id: str | None = None,
         wind_gust_sensor_id: str | None = None,
+        rain_sensor_id: str | None = None,
         storm_protection_enabled: bool = True,
         wind_protection_enabled: bool = False,
         wind_threshold_ms: float = 14.0,
@@ -649,6 +657,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._cloud_cover_sensor_id = cloud_cover_sensor_id
         self._wind_speed_sensor_id = wind_speed_sensor_id
         self._wind_gust_sensor_id = wind_gust_sensor_id
+        self._rain_sensor_id = rain_sensor_id
         self._storm_protection_enabled = storm_protection_enabled
         self._wind_protection_enabled = wind_protection_enabled
         self._wind_threshold_ms = wind_threshold_ms
@@ -901,6 +910,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # wind thresholds can differ (though in practice they share one sensor).
         self._wind_holds: dict[str, _SafetyHold] = {}
         self._storm_holds: dict[str, _SafetyHold] = {}
+        self._rain_holds: dict[str, _SafetyHold] = {}
 
         _zone_controls_raw = config_entry.options.get("zone_controls", {})
         # Defensive: a corrupted/old options blob may store None or a non-dict
@@ -1734,6 +1744,31 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         indoor_temperature = self._read_indoor_temperature()
 
         now = dt_util.utcnow()
+
+        # Rain sensor reading — once per cycle, shared across all windows.
+        # Source type auto-detected from entity domain: binary_sensor.* → BINARY_SENSOR,
+        # sensor.* → NUMERIC_RATE (mm/h), unconfigured → NONE.
+        # build_rain_sensor_reading() handles absent/unavailable/stale → UNKNOWN.
+        # Per-window enable/disable is resolved inside the window loop below.
+        _rain_hs = (
+            self.hass.states.get(self._rain_sensor_id)
+            if self._rain_sensor_id else None
+        )
+        _rain_source_type: _RainSourceType = (
+            _RainSourceType.BINARY_SENSOR
+            if (self._rain_sensor_id or "").startswith("binary_sensor.")
+            else _RainSourceType.NUMERIC_RATE
+            if self._rain_sensor_id is not None
+            else _RainSourceType.NONE
+        )
+        _rain_reading = _build_rain_sensor_reading(
+            entity_id=self._rain_sensor_id,
+            raw_state=_rain_hs.state if _rain_hs is not None else None,
+            source_type=_rain_source_type,
+            read_at_utc=getattr(_rain_hs, "last_updated", None) if _rain_hs is not None else None,
+            now_utc=now,
+        )
+        _rain_status_global: _RainStatus = _rain_reading.status
         local_now = dt_util.as_local(now)  # same instant as now, converted to local timezone
 
         # Forecast Strategy Modifier (v1.0): compute once per cycle from the
@@ -2153,6 +2188,30 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 night_position=_active_lc_profile.night_position,
                 morning_position=_active_lc_profile.morning_position,
             )
+            # --- Per-window rain config resolution --------------------------------
+            # rain_protection_enabled: window override → hardware-type default.
+            # rain_safe_position_ha: window override → HARDWARE_RAIN_SAFE_POSITIONS
+            #   (HA convention: AWNING/EXTERIOR_SCREEN → 0 = retracted; others → 100 = raised).
+            # rain_release_delay_min: window override → global default (30 min).
+            _hw_settings = default_hardware_settings(_early_hw_type)
+            _rain_prot_enabled: bool = (
+                window.rain_protection_enabled
+                if window.rain_protection_enabled is not None
+                else _hw_settings.get("rain_protection_enabled", False)
+            )
+            _rain_safe_ha: int = (
+                window.rain_safe_position_ha
+                if window.rain_safe_position_ha is not None
+                else _HARDWARE_RAIN_SAFE_POSITIONS.get(_early_hw_type, 0)
+            )
+            # Convert HA convention to internal (0=open, 100=shaded).
+            _rain_safe_internal: int = 100 - _rain_safe_ha
+            _rain_delay_min: int = (
+                window.rain_release_delay_min
+                if window.rain_release_delay_min is not None
+                else self.global_defaults.rain_release_delay_min
+            )
+
             wdi = build_window_decision_input(
                 window=window,
                 zone=zone,
@@ -2173,6 +2232,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 storm_protection_enabled=self._storm_protection_enabled,
                 wind_protection_enabled=self._wind_protection_enabled,
                 wind_threshold_ms=self._wind_threshold_ms,
+                rain_status=_rain_status_global,
+                rain_protection_enabled=_rain_prot_enabled,
+                rain_safe_position=_rain_safe_internal,
+                rain_release_delay_min=_rain_delay_min,
                 active_override=active_override,
                 override_duration_min=self._override_duration_min,
                 override_detection_tolerance=self._override_detection_tolerance,
@@ -2488,6 +2551,38 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     decided_by="WindSafeHold",
                 )
 
+            # --- Rain Safe Position Correction + Release Hold ----------------------
+            # Mirror of the storm/wind position-correction block above.
+            # AWNING/EXTERIOR_SCREEN: "safe" is HA 0 = retracted (internal 100).
+            # Other types: already correct via HARDWARE_RAIN_SAFE_POSITIONS.
+            # Position correction is only needed if the evaluator fired directly.
+            if tier_decision.shading_state is ShadingState.RAIN_SAFE:
+                if tier_decision.target_position != _rain_safe_internal:
+                    tier_decision = replace(tier_decision, target_position=_rain_safe_internal)
+
+            # Rain hysteresis hold — dry cooldown via per-call hold_s override.
+            # RAIN_SAFE does not override STORM_SAFE or WIND_SAFE (lower priority).
+            _eval_is_rain = tier_decision.shading_state is ShadingState.RAIN_SAFE
+            _rain_sensor_unavailable = _rain_status_global is _RainStatus.UNKNOWN
+            _rain_h = self._rain_holds.setdefault(window_id, _SafetyHold(_hold_s=_RAIN_HOLD_S))
+            _rain_held = _rain_h.update(
+                evaluator_triggered=_eval_is_rain,
+                now=now,
+                sensor_unavailable=_rain_sensor_unavailable,
+                hold_s=_rain_delay_min * 60,
+            )
+            if (
+                _rain_held
+                and not _eval_is_rain
+                and tier_decision.shading_state not in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
+            ):
+                tier_decision = WindowDecision(
+                    window_id=window_id,
+                    shading_state=ShadingState.RAIN_SAFE,
+                    target_position=_rain_safe_internal,
+                    decided_by="RainSafeHold",
+                )
+
             if self._debug_logging_enabled:
                 _tier_ha = (
                     to_ha_position(tier_decision.target_position)
@@ -2529,6 +2624,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 and tier_decision.shading_state not in (
                     ShadingState.STORM_SAFE,
                     ShadingState.WIND_SAFE,
+                    ShadingState.RAIN_SAFE,
                     ShadingState.MANUAL_OVERRIDE,
                 )
                 and tier_decision.target_position is not None

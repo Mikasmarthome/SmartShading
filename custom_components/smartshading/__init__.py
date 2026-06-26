@@ -253,6 +253,7 @@ async def _async_setup_zone_entry(
         outdoor_temperature_sensor_id=entry_data.outdoor_temperature_sensor_id,
         cloud_cover_sensor_id=entry_data.cloud_cover_sensor_id,
         wind_speed_sensor_id=entry_data.wind_speed_sensor_id,
+        rain_sensor_id=entry_data.rain_sensor_id,
         lifecycle_config=entry_data.lifecycle_config,
         presence_entity_ids=entry_data.presence_entity_ids,
         absence_delay_min=entry_data.absence_delay_min,

@@ -84,6 +84,11 @@ class ComfortConfig:
     heat_protection_indoor_temp_c: float = 24.0
     heat_protection_outdoor_temp_c: float = 26.0
     solar_gain_max_outdoor_temp_c: float = 12.0
+    # Minimum effective window exposure (W/m²) for glare to be plausible.  Glare
+    # must not fire on geometry alone: the window must also be meaningfully lit.
+    # Kept BELOW the solar light-shade threshold (default 150) so diffuse glare
+    # still applies before full solar shading, but above trivial diffuse levels.
+    glare_min_exposure_wm2: float = 100.0
 
 
 @dataclass(frozen=True)

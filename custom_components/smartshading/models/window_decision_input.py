@@ -230,6 +230,7 @@ def build_window_decision_input(
         heat_outdoor_threshold_c=heat_outdoor_threshold_c,
         heat_indoor_threshold_c=heat_indoor_threshold_c,
         glare_protection_enabled=_comfort.glare_protection_enabled,
+        glare_min_exposure_wm2=_comfort.glare_min_exposure_wm2,
         solar_gain_suppresses_shading=_solar_gain_suppresses,
         night_block_on_window_open=night_block_on_window_open,
         night_lift_on_window_open=night_lift_on_window_open,

@@ -177,6 +177,28 @@ def build_solar_provenance(coord, window_id: str, wi=None) -> dict:
         "effective_exposure_w_m2": _num(getattr(exp, "effective_exposure", None)),
         "effective_exposure_status": (S_DERIVED if exp is not None else S_NOT_RECORDED),
     })
+    # Glare distinction (P-solar): separate "geometrically in sector" from
+    # "meaningfully lit".  Glare fires only when in-sector AND effective exposure
+    # >= glare_min_exposure_wm2 (authoritative source).  Surfaces why glare was
+    # active or suppressed so the in-sector / low-exposure real case is visible.
+    _glare_min = _num(snap.get("glare_min_exposure_wm2"))
+    _glare_enabled = snap.get("glare_protection_enabled")
+    _eff = _num(getattr(exp, "effective_exposure", None))
+    _in_sector = bool(getattr(exp, "is_in_tolerance_window", False))
+    _sufficient = (_eff is not None and _glare_min is not None and _eff >= _glare_min)
+    if _glare_min is not None:
+        out.update({
+            "geometrically_in_solar_sector": _in_sector,
+            "glare_protection_enabled": bool(_glare_enabled),
+            "glare_min_exposure_w_m2": _glare_min,
+            "glare_exposure_sufficient": _sufficient,
+            "glare_active": bool(_glare_enabled and _in_sector and _sufficient),
+            "glare_suppressed_reason": (
+                None if (_glare_enabled and _in_sector and _sufficient)
+                else ("glare_disabled" if not _glare_enabled
+                      else ("not_in_sector" if not _in_sector
+                            else "below_min_exposure"))),
+        })
     return out
 
 

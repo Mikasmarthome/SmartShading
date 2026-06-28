@@ -103,6 +103,13 @@ class BehaviorConfig:
     # Pre-resolved from ComfortConfig by build_window_decision_input().
     glare_protection_enabled: bool = True
 
+    # Minimum effective window exposure (W/m²) required for glare protection.
+    # Glare must not be triggered by geometry (in-sector) alone — the window must
+    # also be meaningfully lit.  Pre-resolved from ComfortConfig.  Kept below the
+    # solar light-shade threshold so diffuse glare still applies before full solar
+    # shading.
+    glare_min_exposure_wm2: float = 100.0
+
     # Solar gain suppression flag.
     # True = GlareEvaluator and SolarEvaluator both return None so that
     # winter sunlight can provide beneficial heat gain rather than being

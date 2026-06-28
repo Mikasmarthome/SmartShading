@@ -40,6 +40,11 @@ class GlareEvaluator:
     Returns None when:
       - glare_protection_enabled is False (disabled for this window).
       - is_in_solar_sector is False (sun not facing this window).
+      - effective window exposure is below glare_min_exposure_wm2 (geometry alone
+        is NOT enough — the window must be meaningfully lit).  This uses the
+        authoritative effective window exposure (measured solar source when valid;
+        diagnosed fallback otherwise), never the ignored raw weather brightness,
+        and never a second cloud reduction.
     """
 
     def evaluate(self, wdi: WindowDecisionInput) -> WindowDecision | None:
@@ -50,6 +55,13 @@ class GlareEvaluator:
             return None
 
         if not wdi.is_in_solar_sector:
+            return None
+
+        # Glare must not fire on geometry alone — require a meaningful effective
+        # window exposure.  Exposure unavailable (sun.sun missing) → no glare.
+        if wdi.exposure is None:
+            return None
+        if wdi.exposure.effective_exposure < wdi.effective_behavior.glare_min_exposure_wm2:
             return None
 
         return WindowDecision(

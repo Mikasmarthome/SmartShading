@@ -2380,6 +2380,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     "base_solar_wm2": effective_radiation,
                     "solar_source": _solar_source,
                     "solar_selection": _solar_sel,
+                    "glare_protection_enabled": wdi.effective_behavior.glare_protection_enabled,
+                    "glare_min_exposure_wm2": wdi.effective_behavior.glare_min_exposure_wm2,
                     "configured_light_wm2": _cfg_bc.light_shade_threshold_wm2,
                     "configured_normal_wm2": _cfg_bc.normal_shade_threshold_wm2,
                     "configured_strong_wm2": _cfg_bc.strong_shade_threshold_wm2,

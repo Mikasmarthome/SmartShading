@@ -204,6 +204,7 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             "heat_protection_indoor_temp_c": data.comfort_config.heat_protection_indoor_temp_c,
             "heat_protection_outdoor_temp_c": data.comfort_config.heat_protection_outdoor_temp_c,
             "solar_gain_max_outdoor_temp_c": data.comfort_config.solar_gain_max_outdoor_temp_c,
+            "glare_min_exposure_wm2": data.comfort_config.glare_min_exposure_wm2,
         },
     }
 
@@ -319,6 +320,7 @@ def _comfort_config_from_storage(raw: dict[str, Any] | None) -> ComfortConfig:
         heat_protection_indoor_temp_c=float(raw.get("heat_protection_indoor_temp_c", 24.0)),
         heat_protection_outdoor_temp_c=float(raw.get("heat_protection_outdoor_temp_c", 26.0)),
         solar_gain_max_outdoor_temp_c=float(raw.get("solar_gain_max_outdoor_temp_c", 12.0)),
+        glare_min_exposure_wm2=float(raw.get("glare_min_exposure_wm2", 100.0)),
     )
 
 

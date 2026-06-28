@@ -1646,10 +1646,11 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     _night_lift = bool(user_input.get(CONF_NIGHT_LIFT_ON_WINDOW_OPEN, False))
                     if _night_lift and not _night_block:
                         errors[CONF_NIGHT_LIFT_ON_WINDOW_OPEN] = "night_lift_requires_night_block"
-                    if _night_lift and not _contact_sensor:
-                        errors[CONF_CONTACT_SENSOR_ENTITY_ID] = "contact_sensor_required_for_lift"
                     if _night_block and not _contact_sensor:
                         errors[CONF_CONTACT_SENSOR_ENTITY_ID] = "contact_sensor_required_for_block"
+                    if _night_lift and not _contact_sensor:
+                        # Overrides block error when both options need a sensor.
+                        errors[CONF_CONTACT_SENSOR_ENTITY_ID] = "contact_sensor_required_for_lift"
                     raw_vent_pos = user_input.get(CONF_WINDOW_OPEN_NIGHT_POSITION)
 
                     if not errors:
@@ -1671,7 +1672,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                                     "contact_sensor_entity_id": _contact_sensor,
                                     "night_block_on_window_open": _night_block,
                                     "night_lift_on_window_open": _night_lift if _night_block else False,
-                                    "window_open_night_position_ha": int(raw_vent_pos) if raw_vent_pos is not None else None,
+                                    "window_open_night_position_ha": int(raw_vent_pos) if raw_vent_pos is not None else DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA,
                                 }
                                 break
                         hw_type = cover_hardware_type_from_str(user_input.get(CONF_COVER_HARDWARE_TYPE))

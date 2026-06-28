@@ -826,9 +826,14 @@ def _build_multi_objective(
 
     # --- Confounders (dimension-specific) ---
     sensor_unavailable = inp.indoor_temp_outcome_c is None
+    # Solar source was a weather/cloud fallback (or low quality) at decision time:
+    # the solar/thermal interpretation is unreliable.  None == not captured (legacy)
+    # and is NOT penalised; only an explicit non-measured quality confounds.
+    solar_fallback_confounded = pending.solar_source_quality not in (None, "measured_high")
     thermal_confounded = (
         is_override or is_safety or inp.observation_interrupted
         or inp.config_changed or inp.behavior_mode_changed
+        or solar_fallback_confounded
     )
     # Movement is confounded only by config/mode change (safety/lifecycle/manual
     # are EXCLUDED, not confounded — handled by movement_cause).
@@ -842,6 +847,7 @@ def _build_multi_objective(
         ("behavior_mode_changed", inp.behavior_mode_changed),
         ("safety_event", is_safety),
         ("manual_override", is_override),
+        ("solar_fallback", solar_fallback_confounded),
     ):
         if flag:
             detected.append(name)
@@ -849,6 +855,7 @@ def _build_multi_objective(
         thermal_confounded=thermal_confounded,
         movement_confounded=movement_confounded,
         preference_confounded=preference_confounded,
+        solar_fallback_confounded=solar_fallback_confounded,
         sensor_unavailable=sensor_unavailable,
         ha_restart_interruption=inp.observation_interrupted,
         config_changed=inp.config_changed,

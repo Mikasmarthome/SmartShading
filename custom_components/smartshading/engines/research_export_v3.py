@@ -276,8 +276,17 @@ def _project_decision(d, wid, pz) -> dict | None:
         if getattr(outcome, "override_occurred", False):
             confounders.append("manual_override")
         mo = getattr(outcome, "multi_objective", None)
-        if mo is not None and getattr(mo, "confounded", False):
-            confounders.append("thermal_confounded")
+        if mo is not None:
+            # The real model exposes confounded on multi_objective.reliability; keep
+            # the flat mo.confounded read for backward-compatible callers/tests.
+            _rel = getattr(mo, "reliability", None)
+            if getattr(_rel, "confounded", False) or getattr(mo, "confounded", False):
+                confounders.append("thermal_confounded")
+            # Solar source was a fallback/low quality at decision time → make the
+            # measured-vs-fallback difference visible and non-attributable.
+            _conf = getattr(mo, "confounders", None)
+            if getattr(_conf, "solar_fallback_confounded", False):
+                confounders.append("solar_fallback")
         score = _num(getattr(outcome, "outcome_score", None))
         resolution = getattr(outcome, "resolution_status", None)
     src_type = _learning_source_type(sources)

@@ -45,6 +45,9 @@ class PendingOutcome:
     outdoor_temp_at_decision: float | None = None
     # LE 2.0 / P3 — solar exposure at decision time (W/m²), thermal context.
     solar_exposure_at_decision: float | None = None
+    # Solar source quality at decision time (measured_high / estimated_low / none).
+    # None for records written before this field existed (backward compatible).
+    solar_source_quality: str | None = None
     # LE 2.0 / P2 — link to the LearningDecisionRecord this observation belongs to.
     decision_id: str | None = None
     # P2.6 — config fingerprint captured at decision time; on restart-restore a
@@ -82,6 +85,7 @@ class PendingOutcome:
             "indoor_temp_at_decision": self.indoor_temp_at_decision,
             "outdoor_temp_at_decision": self.outdoor_temp_at_decision,
             "solar_exposure_at_decision": self.solar_exposure_at_decision,
+            "solar_source_quality": self.solar_source_quality,
             "decision_id": self.decision_id,
             "config_fingerprint": self.config_fingerprint,
             "created_at_utc": self.created_at_utc.isoformat() if self.created_at_utc else None,
@@ -119,6 +123,7 @@ class PendingOutcome:
             indoor_temp_at_decision=d.get("indoor_temp_at_decision"),
             outdoor_temp_at_decision=d.get("outdoor_temp_at_decision"),
             solar_exposure_at_decision=d.get("solar_exposure_at_decision"),
+            solar_source_quality=d.get("solar_source_quality"),
             decision_id=d.get("decision_id"),
             config_fingerprint=d.get("config_fingerprint"),
             created_at_utc=_p(d.get("created_at_utc")),

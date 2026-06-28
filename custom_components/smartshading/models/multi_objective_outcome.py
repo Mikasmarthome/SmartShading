@@ -343,6 +343,10 @@ class OutcomeConfounders:
     thermal_confounded: bool = False
     movement_confounded: bool = False
     preference_confounded: bool = False
+    # Solar source was a weather/cloud fallback (or low quality) at decision time:
+    # the thermal/solar interpretation is unreliable, so the outcome must not give
+    # attributable credit (also forces thermal_confounded upstream).
+    solar_fallback_confounded: bool = False
     # Raw events (some reliably detected in P3, others reserved/None until later)
     sensor_unavailable: bool = False
     ha_restart_interruption: bool = False
@@ -363,6 +367,7 @@ class OutcomeConfounders:
             "thermal_confounded": self.thermal_confounded,
             "movement_confounded": self.movement_confounded,
             "preference_confounded": self.preference_confounded,
+            "solar_fallback_confounded": self.solar_fallback_confounded,
             "sensor_unavailable": self.sensor_unavailable,
             "ha_restart_interruption": self.ha_restart_interruption,
             "config_changed": self.config_changed,
@@ -386,6 +391,7 @@ class OutcomeConfounders:
             thermal_confounded=bool(d.get("thermal_confounded", False)),
             movement_confounded=bool(d.get("movement_confounded", False)),
             preference_confounded=bool(d.get("preference_confounded", False)),
+            solar_fallback_confounded=bool(d.get("solar_fallback_confounded", False)),
             sensor_unavailable=bool(d.get("sensor_unavailable", False)),
             ha_restart_interruption=bool(d.get("ha_restart_interruption", False)),
             config_changed=bool(d.get("config_changed", False)),

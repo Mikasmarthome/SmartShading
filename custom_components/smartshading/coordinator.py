@@ -40,6 +40,7 @@ from .cover_control.cover_capabilities import CoverCapability
 from .cover_control.cover_controller import CoverController
 from .engines.comfort_engine import ComfortEngine
 from .engines.exposure_engine import ExposureEngine
+from .engines.solar_source import SOURCE_MEASURED, classify_solar_source
 from .engines.learning_persistence import (
     LearningPersistenceAdapter,
     LearningPersistenceConfig,
@@ -429,6 +430,7 @@ class _WeatherInputs:
 
     outdoor_temperature: float | None
     solar_radiation: float | None
+    solar_radiation_age_s: float | None             # seconds since the solar sensor last updated
     cloud_cover: float | None
     wind_speed: float | None
     wind_gust: float | None                         # Step 7: from optional gust sensor
@@ -1562,9 +1564,23 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if weather_state is not None and weather_state.state not in ("unknown", "unavailable"):
                 weather_condition = weather_state.state
 
+        # Staleness of the measured solar sensor: seconds since its last state write.
+        # Defensive — any missing/unreadable timestamp yields None (treated as fresh),
+        # so a stubbed/real state without last_updated never forces a false fallback.
+        solar_age_s: float | None = None
+        if self._solar_radiation_sensor_id is not None:
+            _solar_state = self.hass.states.get(self._solar_radiation_sensor_id)
+            _last_updated = getattr(_solar_state, "last_updated", None) if _solar_state is not None else None
+            if _last_updated is not None:
+                try:
+                    solar_age_s = (dt_util.utcnow() - _last_updated).total_seconds()
+                except Exception:
+                    solar_age_s = None
+
         return _WeatherInputs(
             outdoor_temperature=self._read_value(self._outdoor_temperature_sensor_id, "temperature"),
             solar_radiation=self._read_value(self._solar_radiation_sensor_id, None),
+            solar_radiation_age_s=solar_age_s,
             cloud_cover=self._read_value(self._cloud_cover_sensor_id, "cloud_coverage"),
             wind_speed=self._read_value(self._wind_speed_sensor_id, "wind_speed"),
             wind_gust=self._read_value(self._wind_gust_sensor_id, "wind_gust_speed"),
@@ -2112,19 +2128,24 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 floor_level=window.floor_level,
                 overhang_depth_m=window.overhang_depth_m,
             )
-            # Dedicated solar radiation sensor (if configured) is used
-            # as-is; otherwise fall back to the geometry/cloud-cover-based
-            # estimate (ARCHITECTURE.md §5.3).  Track which source was used
-            # so the trace fields in WindowObservation are accurate.
-            if weather_inputs.solar_radiation is not None:
-                effective_radiation = weather_inputs.solar_radiation
-                _solar_source = "sensor"
-            else:
-                effective_radiation = self.weather_engine.calculate_effective_radiation(
-                    sun_elevation_deg=sun_position.elevation,
-                    cloud_cover_pct=weather_inputs.cloud_cover or 0.0,
-                )
-                _solar_source = "estimate"
+            # Authoritative solar source (solar_source.py): a configured, valid,
+            # fresh and plausible measured sensor value is authoritative; a weather/
+            # cloud estimate is a diagnosed fallback only and never overrides or
+            # double-damps the measured value.  The estimate is always computed so
+            # the diagnostics can show the value that was (or was not) used.
+            _solar_estimate = self.weather_engine.calculate_effective_radiation(
+                sun_elevation_deg=sun_position.elevation,
+                cloud_cover_pct=weather_inputs.cloud_cover or 0.0,
+            )
+            _solar_sel = classify_solar_source(
+                sensor_configured=self._solar_radiation_sensor_id is not None,
+                measured_wm2=weather_inputs.solar_radiation,
+                measured_age_s=weather_inputs.solar_radiation_age_s,
+                estimated_wm2=_solar_estimate,
+                cloud_cover_pct=weather_inputs.cloud_cover,
+            )
+            effective_radiation = _solar_sel.effective_radiation_wm2
+            _solar_source = "sensor" if _solar_sel.source == SOURCE_MEASURED else "estimate"
             exposure = self.exposure_engine.calculate(
                 sun_geometry=sun_geometry,
                 effective_solar_radiation_wm2=effective_radiation,
@@ -2358,6 +2379,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     "exposure": exposure,
                     "base_solar_wm2": effective_radiation,
                     "solar_source": _solar_source,
+                    "solar_selection": _solar_sel,
                     "configured_light_wm2": _cfg_bc.light_shade_threshold_wm2,
                     "configured_normal_wm2": _cfg_bc.normal_shade_threshold_wm2,
                     "configured_strong_wm2": _cfg_bc.strong_shade_threshold_wm2,

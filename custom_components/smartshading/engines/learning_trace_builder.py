@@ -136,6 +136,21 @@ def build_solar_provenance(coord, window_id: str, wi=None) -> dict:
     exp = snap.get("exposure")
     source = snap.get("solar_source")
     cloud_applied = (source == "estimate")  # cloud folded into the estimate path only
+    # Authoritative source selection (solar_source.py): surface measured vs the
+    # estimate that was (or was not) used, the source quality, and the fallback /
+    # cloud-not-applied reasons so a user/support can see exactly which value drove
+    # the decision and why (answers "where did the weather value come from").
+    sel = snap.get("solar_selection")
+    if sel is not None:
+        out.update({
+            "selected_solar_source": getattr(sel, "source", None),
+            "solar_source_quality": getattr(sel, "quality", None),
+            "measured_solar_w_m2": _num(getattr(sel, "measured_wm2", None)),
+            "measured_solar_valid": getattr(sel, "measured_valid", None),
+            "estimated_solar_w_m2": _num(getattr(sel, "estimated_wm2", None)),
+            "solar_fallback_reason": getattr(sel, "fallback_reason", None),
+            "cloud_not_applied_reason": getattr(sel, "cloud_not_applied_reason", None),
+        })
     out.update({
         "base_solar_value_w_m2": _num(snap.get("base_solar_wm2")),
         "base_solar_source_type": (S_ESTIMATED if source == "estimate" else S_MEASURED),

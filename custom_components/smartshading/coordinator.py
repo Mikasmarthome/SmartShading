@@ -524,6 +524,7 @@ class _WindowComputeState:
     # Night contact hold diagnostics (v1.1.0).
     contact_sensor_configured: bool = False
     contact_status_value: str | None = None
+    contact_is_stale: bool = False
     night_contact_blocked: bool = False
     night_contact_catch_up_pending: bool = False
     night_contact_catch_up_done: bool = False
@@ -2649,6 +2650,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _nc_hold.on_lifecycle_transition(night_active=_night_interval_active)
             _nc_action = _nc_hold.evaluate(
                 contact_open=_cs_reading.status is _ContactStatus.OPEN,
+                contact_unknown=_cs_reading.status is _ContactStatus.UNKNOWN,
                 night_active=_night_interval_active,
                 night_block_enabled=wdi.effective_behavior.night_block_on_window_open,
                 night_lift_enabled=wdi.effective_behavior.night_lift_on_window_open,
@@ -3551,6 +3553,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 night_hard_hold_applied=_night_hard_hold_applied,
                 contact_sensor_configured=_cs_entity_id is not None,
                 contact_status_value=_cs_reading.status.value,
+                contact_is_stale=_cs_reading.is_stale,
                 night_contact_blocked=_nc_hold.blocked_this_night,
                 night_contact_catch_up_pending=_nc_hold.catch_up_pending,
                 night_contact_catch_up_done=_nc_hold.caught_up_this_night,
@@ -3972,6 +3975,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 ),
                 contact_sensor_configured=s.contact_sensor_configured,
                 contact_status=s.contact_status_value,
+                contact_is_stale=s.contact_is_stale,
                 night_contact_blocked=s.night_contact_blocked,
                 catch_up_pending=s.night_contact_catch_up_pending,
                 catch_up_done=s.night_contact_catch_up_done,

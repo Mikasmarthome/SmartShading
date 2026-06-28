@@ -8,9 +8,10 @@ HA state strings.
 Absent-evidence semantics: an unavailable or unknown sensor → UNKNOWN.
 The NightContactHold treats UNKNOWN conservatively:
   - Option A (block): UNKNOWN does NOT block the night move.
-  - Option B (lift): UNKNOWN does NOT trigger the lift.
-  - Catch-up: UNKNOWN is treated as CLOSED (allow catch-up to avoid
-    permanent night-move suppression after a sensor fault).
+  - Catch-up: UNKNOWN does NOT trigger catch-up.  The hold stays blocked
+    until a definitive CLOSED reading arrives (sensor fault never moves cover).
+  - Option B (lift): UNKNOWN does NOT trigger HOLD_NIGHT_VENT.
+  - Option B (return): UNKNOWN does NOT trigger RETURN_TO_NIGHT while venting.
 
 Position convention note:
   All contact_engine output is ContactStatus (an enum). The coordinator

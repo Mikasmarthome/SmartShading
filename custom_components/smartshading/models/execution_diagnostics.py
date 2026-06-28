@@ -336,6 +336,10 @@ class WindowExecutionDiagnostics:
     contact_status: str | None = None
     """ContactStatus.value ("open", "closed", "unknown") or None when not configured."""
 
+    contact_is_stale: bool = False
+    """True when the contact sensor reading is older than the staleness threshold (10 min default).
+    A stale reading keeps its last normalized status; the flag surfaces the age in diagnostics."""
+
     night_contact_blocked: bool = False
     """True when the night move was blocked this night (Option A active, contact OPEN)."""
 

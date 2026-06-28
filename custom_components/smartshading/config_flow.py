@@ -128,6 +128,11 @@ from .const import (
     CONF_WEEKEND_MORNING_FIXED_TIME,
     CONF_WEEKEND_MORNING_POSITION,
     CONF_WINDOW_BEHAVIOR_MODE,
+    CONF_CONTACT_SENSOR_ENTITY_ID,
+    CONF_NIGHT_BLOCK_ON_WINDOW_OPEN,
+    CONF_NIGHT_LIFT_ON_WINDOW_OPEN,
+    CONF_WINDOW_OPEN_NIGHT_POSITION,
+    DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA,
     CONF_MANUAL_SUN_SECTOR_ENABLED,
     CONF_MANUAL_SUN_SECTOR_START_DEG,
     CONF_MANUAL_SUN_SECTOR_END_DEG,
@@ -1634,6 +1639,19 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                             errors["base"] = "obstruction_elevation_range_invalid"
                             break
 
+                    # Contact sensor and night-contact behavior.
+                    # Server-side rule: Option B requires Option A.
+                    _contact_sensor = user_input.get(CONF_CONTACT_SENSOR_ENTITY_ID) or None
+                    _night_block = bool(user_input.get(CONF_NIGHT_BLOCK_ON_WINDOW_OPEN, False))
+                    _night_lift = bool(user_input.get(CONF_NIGHT_LIFT_ON_WINDOW_OPEN, False))
+                    if _night_lift and not _night_block:
+                        errors[CONF_NIGHT_LIFT_ON_WINDOW_OPEN] = "night_lift_requires_night_block"
+                    if _night_lift and not _contact_sensor:
+                        errors[CONF_CONTACT_SENSOR_ENTITY_ID] = "contact_sensor_required_for_lift"
+                    if _night_block and not _contact_sensor:
+                        errors[CONF_CONTACT_SENSOR_ENTITY_ID] = "contact_sensor_required_for_block"
+                    raw_vent_pos = user_input.get(CONF_WINDOW_OPEN_NIGHT_POSITION)
+
                     if not errors:
                         for i, w in enumerate(windows):
                             if w["id"] == window_id:
@@ -1650,6 +1668,10 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                                     "manual_sun_sector_start_deg": _sector_start,
                                     "manual_sun_sector_end_deg": _sector_end,
                                     "obstruction_zones": _new_oz_list,
+                                    "contact_sensor_entity_id": _contact_sensor,
+                                    "night_block_on_window_open": _night_block,
+                                    "night_lift_on_window_open": _night_lift if _night_block else False,
+                                    "window_open_night_position_ha": int(raw_vent_pos) if raw_vent_pos is not None else None,
                                 }
                                 break
                         hw_type = cover_hardware_type_from_str(user_input.get(CONF_COVER_HARDWARE_TYPE))
@@ -1700,6 +1722,13 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         )
         _elev_selector = NumberSelector(
             NumberSelectorConfig(min=0, max=90, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="°")
+        )
+        # Contact sensor stored values
+        _stored_contact = window.get("contact_sensor_entity_id")
+        _stored_night_block = window.get("night_block_on_window_open", False)
+        _stored_night_lift = window.get("night_lift_on_window_open", False)
+        _stored_vent_pos = window.get(
+            "window_open_night_position_ha", DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA
         )
         schema = vol.Schema({
             vol.Required(CONF_WINDOW_NAME, default=window["name"]): str,
@@ -1765,6 +1794,19 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             vol.Optional(CONF_OBSTRUCTION_3_AZIMUTH_END, description={"suggested_value": _oz_stored(2, "azimuth_end_deg")}): _az_selector,
             vol.Optional(CONF_OBSTRUCTION_3_BLOCK_FROM_ELEVATION, description={"suggested_value": _oz_stored(2, "block_from_elevation_deg")}): _elev_selector,
             vol.Optional(CONF_OBSTRUCTION_3_BLOCK_UNTIL_ELEVATION, description={"suggested_value": _oz_stored(2, "block_until_elevation_deg")}): _elev_selector,
+            # --- Window contact sensor (night-block / night-lift) ---
+            vol.Optional(
+                CONF_CONTACT_SENSOR_ENTITY_ID,
+                description={"suggested_value": _stored_contact},
+            ): EntitySelector(EntitySelectorConfig(domain="binary_sensor")),
+            vol.Required(CONF_NIGHT_BLOCK_ON_WINDOW_OPEN, default=_stored_night_block): BooleanSelector(),
+            vol.Required(CONF_NIGHT_LIFT_ON_WINDOW_OPEN, default=_stored_night_lift): BooleanSelector(),
+            vol.Optional(
+                CONF_WINDOW_OPEN_NIGHT_POSITION,
+                description={"suggested_value": _stored_vent_pos},
+            ): NumberSelector(
+                NumberSelectorConfig(min=0, max=100, step=1, mode=NumberSelectorMode.SLIDER, unit_of_measurement="%")
+            ),
         })
         return self.async_show_form(
             step_id="edit_window_detail",

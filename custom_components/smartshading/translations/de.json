@@ -177,7 +177,11 @@
           "obstruction_3_azimuth_start_deg": "Zone 3 Azimut-Start (°)",
           "obstruction_3_azimuth_end_deg": "Zone 3 Azimut-Ende (°)",
           "obstruction_3_block_from_elevation_deg": "Zone 3 blockiert ab Sonnenhöhe (°)",
-          "obstruction_3_block_until_elevation_deg": "Zone 3 blockiert bis Sonnenhöhe (°)"
+          "obstruction_3_block_until_elevation_deg": "Zone 3 blockiert bis Sonnenhöhe (°)",
+          "contact_sensor_entity_id": "Fensterkontaktsensor (optional)",
+          "night_block_on_window_open": "Nachtfahrt blockieren, wenn Fenster geöffnet (Option A)",
+          "night_lift_on_window_open": "Auf Lüftungsposition fahren, wenn Fenster nachts geöffnet wird (Option B)",
+          "window_open_night_position": "Lüftungsposition bei geöffnetem Fenster nachts (%)"
         },
         "data_description": {
           "absence_position": "Leer lassen, um die Zonen-Standardposition zu übernehmen. Wert setzen, um sie nur für dieses Fenster zu überschreiben.",
@@ -195,7 +199,11 @@
           "obstruction_3_enabled": "Dritte optionale Schattenzone für dieses Fenster.",
           "obstruction_3_block_from_elevation_deg": "Optionale untere Sonnenhöhengrenze für Zone 3 (siehe Zone-1-Beschreibung).",
           "obstruction_3_block_until_elevation_deg": "Optionale obere Sonnenhöhengrenze für Zone 3 (siehe Zone-1-Beschreibung).",
-          "floor_level": "Wird genutzt, um die minimale Sonnenhöhe für direkte Einstrahlung abzuleiten. −1 (Keller/UG) → 20°, 0 (EG) → 15°, 1 (1. OG) → 10°, 2 (2. OG) → 5°, 3 und höher → 0°. Für Fenster in Lichtschächten oder mit starken Hindernissen Schattenzonen verwenden."
+          "floor_level": "Wird genutzt, um die minimale Sonnenhöhe für direkte Einstrahlung abzuleiten. −1 (Keller/UG) → 20°, 0 (EG) → 15°, 1 (1. OG) → 10°, 2 (2. OG) → 5°, 3 und höher → 0°. Für Fenster in Lichtschächten oder mit starken Hindernissen Schattenzonen verwenden.",
+          "contact_sensor_entity_id": "Wähle eine binary_sensor-Entität, die den physischen Fenster-Öffnungsstatus meldet (z. B. Reedkontakt). Leer lassen, um die kontaktbasierte Nachtlogik für dieses Fenster zu deaktivieren.",
+          "night_block_on_window_open": "Option A: Ist das Fenster zur Nachtzeit geöffnet, wird die automatische Nachtfahrt zurückgestellt. SmartShading schließt den Rolladen genau einmal nach, sobald das Fenster in derselben Nacht geschlossen wird.",
+          "night_lift_on_window_open": "Option B (erfordert Option A und Kontaktsensor): Wird das Fenster nach der Nachtfahrt geöffnet, fährt der Rolladen auf die Lüftungsposition; beim Schließen des Fensters kehrt er zur Nachtposition zurück.",
+          "window_open_night_position": "Zielposition (HA-Konvention: 0=geschlossen, 100=geöffnet) für Option B. Leer lassen für 100 % offen (vollständig für Lüftung). Niedrigeren Wert setzen, um Lüftung bei teilweise erhaltener Sichtschutzfunktion zu ermöglichen."
         }
       },
       "remove_window": {
@@ -215,7 +223,10 @@
     },
     "error": {
       "cannot_remove_last_window": "Das letzte Fenster kann nicht entfernt werden. Eine Zone muss mindestens ein Fenster haben.",
-      "obstruction_elevation_range_invalid": "\"Blockiert ab Sonnenhöhe\" darf nicht größer als \"Blockiert bis Sonnenhöhe\" sein."
+      "obstruction_elevation_range_invalid": "\"Blockiert ab Sonnenhöhe\" darf nicht größer als \"Blockiert bis Sonnenhöhe\" sein.",
+      "night_lift_requires_night_block": "Option B (Lüftungsposition) erfordert, dass Option A (Nachtfahrt blockieren) aktiviert ist.",
+      "contact_sensor_required_for_block": "Für Option A muss ein Kontaktsensor ausgewählt sein.",
+      "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein."
     },
     "abort": {
       "no_options_for_system_entry": "Der SmartShading-System-Eintrag hat keine konfigurierbaren Optionen."
@@ -349,7 +360,10 @@
       "invalid_custom_azimuth": "Gib einen benutzerdefinierten Azimut zwischen 0 und 359 Grad ein oder wähle eine Himmelsrichtung.",
       "no_covers_selected": "Wähle mindestens eine Cover-Entität für dieses Fenster aus.",
       "empty_zone_name": "Zonenname ist erforderlich.",
-      "obstruction_elevation_range_invalid": "\"Blockiert ab Sonnenhöhe\" darf nicht größer als \"Blockiert bis Sonnenhöhe\" sein."
+      "obstruction_elevation_range_invalid": "\"Blockiert ab Sonnenhöhe\" darf nicht größer als \"Blockiert bis Sonnenhöhe\" sein.",
+      "night_lift_requires_night_block": "Option B (Lüftungsposition) erfordert, dass Option A (Nachtfahrt blockieren) aktiviert ist.",
+      "contact_sensor_required_for_block": "Für Option A muss ein Kontaktsensor ausgewählt sein.",
+      "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein."
     },
     "abort": {
       "single_instance_allowed": "SmartShading ist bereits eingerichtet.",

@@ -818,6 +818,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # P11.3 closure: read-only per-window solar-transformation + entry-threshold
         # provenance snapshot (already-computed values; one entry per window).
         self._cycle_solar_provenance: dict[str, dict] = {}
+        # This cycle's house-wide forecast strategy modifier (read-only diagnostics).
+        self._cycle_forecast_modifier: object | None = None
         self._cycle_tier_order: dict[str, object] = {}
         self._strategy_candidates: dict[str, object] = {}
         # P9A — latest thermal-insufficiency cause per window (diagnostics only).
@@ -1818,6 +1820,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 )
             except Exception:
                 _forecast_modifier = None
+        # Expose this cycle's forecast modifier for read-only diagnostics (trust,
+        # applied delta, reason, forecast fields used) — never used as a measurement.
+        self._cycle_forecast_modifier = _forecast_modifier
 
         # Lifecycle Engine: evaluated every cycle with absent-evidence semantics.
         # When sun.sun is unavailable, None is passed; the engine applies per-trigger

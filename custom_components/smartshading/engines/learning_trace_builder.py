@@ -243,18 +243,47 @@ def build_threshold_provenance(coord, window_id: str) -> dict:
 
 def build_forecast_provenance(coord) -> dict:
     """Forecast provenance — availability is NOT usage; current control never uses
-    forecast as a measurement."""
+    forecast as a measurement.  Forecast may only shift precautionary solar entry
+    thresholds (bounded), and only when trust is high and a current forecast
+    snapshot exists; it never replaces a measured value or overrides safety."""
+    from . import forecast_strategy_modifier as _fsm
     adapter = getattr(coord, "forecast_adapter", None)
     store_loaded = getattr(coord, "_forecast_learning_store", None) is not None
     diag = getattr(adapter, "restore_diagnostics", {}) if adapter is not None else {}
-    return {
+    out = {
         "forecast_configured": getattr(coord, "_weather_entity_id", None) is not None,
         "forecast_store_loaded": store_loaded,
         "forecast_provider_match": (diag or {}).get("provider_fingerprint_match"),
         "forecast_used_for_current_measurement": False,
         "forecast_used_for_current_control": False,
         "forecast_used_for_planning": store_loaded,
+        # Bounded threshold-only usage; measured solar stays authoritative.
+        "forecast_role": "threshold_bias_only",
+        "forecast_max_threshold_delta_w_m2": _fsm.FORECAST_MAX_DELTA_WM2,
+        "forecast_horizon_lookback_min": _fsm._LOOKBACK_MINUTES,
+        "forecast_horizon_lookahead_h": _fsm._LOOKAHEAD_HOURS,
     }
+    # This cycle's forecast strategy modifier (read-only): trust, applied delta,
+    # reason (why applied or not), and the forecast fields used.
+    fm = getattr(coord, "_cycle_forecast_modifier", None)
+    if fm is not None:
+        out.update({
+            "forecast_modifier_applied": bool(getattr(fm, "applied", False)),
+            "forecast_trust_score": _num(getattr(fm, "trust_score", None)),
+            "forecast_threshold_delta_w_m2": _num(getattr(fm, "threshold_delta_wm2", None)),
+            "forecast_reason": getattr(fm, "reason", None),
+            "forecast_solar_w_m2": _num(getattr(fm, "forecast_solar_wm2", None)),
+            "forecast_cloud_pct": _num(getattr(fm, "forecast_cloud_pct", None)),
+            # Fields actually consulted by the modifier this cycle.
+            "forecast_fields_used": [
+                f for f, v in (("solar_irradiance", getattr(fm, "forecast_solar_wm2", None)),
+                               ("cloud_coverage", getattr(fm, "forecast_cloud_pct", None)))
+                if v is not None],
+        })
+    else:
+        out["forecast_modifier_applied"] = False
+        out["forecast_reason"] = "no_forecast_modifier"
+    return out
 
 
 # ---------------------------------------------------------------------------

@@ -88,13 +88,15 @@
           "indoor_temperature_sensor_ids": "Senzory vnitřní teploty (volitelné)",
           "heat_protection_enabled": "Povolit ochranu před teplem",
           "glare_protection_enabled": "Povolit ochranu před oslněním",
-          "solar_gain_enabled": "Povolit solární zisk (zimní slunce)"
+          "solar_gain_enabled": "Povolit solární zisk (zimní slunce)",
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Jeden nebo více vnitřních senzorů. Při konfiguraci více senzorů se použije průměr všech platných hodnot.",
           "heat_protection_enabled": "Zabraňuje přehřívání proaktivním stíněním na základě polohy slunce, počasí a teplot.",
           "glare_protection_enabled": "Snižuje přímé sluneční světlo, když slunce dopadá na okno.",
-          "solar_gain_enabled": "Udržuje stínění více otevřené v chladném počasí pro podporu pasivního ohřevu. Ochrana před teplem má prioritu."
+          "solar_gain_enabled": "Udržuje stínění více otevřené v chladném počasí pro podporu pasivního ohřevu. Ochrana před teplem má prioritu.",
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
         }
       },
       "behavior": {
@@ -226,7 +228,8 @@
       "obstruction_elevation_range_invalid": "„Blokována od výšky“ nesmí být větší než „Blokována do výšky“.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
     },
     "abort": {
       "no_options_for_system_entry": "Systémová položka SmartShading nemá žádné konfigurovatelné možnosti."
@@ -346,13 +349,15 @@
           "indoor_temperature_sensor_ids": "Senzory vnitřní teploty (volitelné)",
           "heat_protection_enabled": "Povolit ochranu před teplem",
           "glare_protection_enabled": "Povolit ochranu před oslněním",
-          "solar_gain_enabled": "Povolit solární zisk (zimní slunce)"
+          "solar_gain_enabled": "Povolit solární zisk (zimní slunce)",
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Jeden nebo více vnitřních senzorů. Při konfiguraci více senzorů se použije průměr všech platných hodnot.",
           "heat_protection_enabled": "Zabraňuje přehřívání proaktivním stíněním na základě polohy slunce, počasí a teplot.",
           "glare_protection_enabled": "Snižuje přímé sluneční světlo, když slunce dopadá na okno.",
-          "solar_gain_enabled": "Udržuje stínění více otevřené v chladném počasí pro podporu pasivního ohřevu. Ochrana před teplem má prioritu."
+          "solar_gain_enabled": "Udržuje stínění více otevřené v chladném počasí pro podporu pasivního ohřevu. Ochrana před teplem má prioritu.",
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
         }
       }
     },
@@ -363,7 +368,8 @@
       "obstruction_elevation_range_invalid": "„Blokována od výšky“ nesmí být větší než „Blokována do výšky“.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
     },
     "abort": {
       "single_instance_allowed": "SmartShading je již nakonfigurován.",

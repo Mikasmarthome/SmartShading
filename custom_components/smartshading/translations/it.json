@@ -88,13 +88,15 @@
           "indoor_temperature_sensor_ids": "Sensori di temperatura interna (facoltativo)",
           "heat_protection_enabled": "Abilita protezione dal caldo",
           "glare_protection_enabled": "Abilita protezione dall'abbagliamento",
-          "solar_gain_enabled": "Abilita guadagno solare (sole invernale)"
+          "solar_gain_enabled": "Abilita guadagno solare (sole invernale)",
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Uno o più sensori interni. Quando sono configurati più sensori, viene usata la media di tutte le letture valide.",
           "heat_protection_enabled": "Previene il surriscaldamento ombreggiando in modo proattivo in base alla posizione del sole, al meteo e alle temperature.",
           "glare_protection_enabled": "Riduce la luce solare diretta quando il sole colpisce la finestra.",
-          "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità."
+          "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità.",
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
         }
       },
       "behavior": {
@@ -226,7 +228,8 @@
       "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione».",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
     },
     "abort": {
       "no_options_for_system_entry": "La voce Sistema di SmartShading non ha opzioni configurabili."
@@ -346,13 +349,15 @@
           "indoor_temperature_sensor_ids": "Sensori di temperatura interna (facoltativo)",
           "heat_protection_enabled": "Abilita protezione dal caldo",
           "glare_protection_enabled": "Abilita protezione dall'abbagliamento",
-          "solar_gain_enabled": "Abilita guadagno solare (sole invernale)"
+          "solar_gain_enabled": "Abilita guadagno solare (sole invernale)",
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Uno o più sensori interni. Quando sono configurati più sensori, viene usata la media di tutte le letture valide.",
           "heat_protection_enabled": "Previene il surriscaldamento ombreggiando in modo proattivo in base alla posizione del sole, al meteo e alle temperature.",
           "glare_protection_enabled": "Riduce la luce solare diretta quando il sole colpisce la finestra.",
-          "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità."
+          "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità.",
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
         }
       }
     },
@@ -363,7 +368,8 @@
       "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione».",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
     },
     "abort": {
       "single_instance_allowed": "SmartShading è già configurato.",

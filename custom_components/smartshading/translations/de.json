@@ -88,13 +88,15 @@
           "indoor_temperature_sensor_ids": "Innentemperatursensoren (optional)",
           "heat_protection_enabled": "Hitzeschutz aktivieren",
           "glare_protection_enabled": "Blendschutz aktivieren",
-          "solar_gain_enabled": "Solar-Gewinn aktivieren (Wintersonne)"
+          "solar_gain_enabled": "Solar-Gewinn aktivieren (Wintersonne)",
+          "glare_min_exposure_wm2": "Mindestexposition für Blendschutz"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Ein oder mehrere Innensensoren. Bei mehreren Sensoren wird der Durchschnitt aller gültigen Messwerte verwendet.",
           "heat_protection_enabled": "Beschattet vorbeugend, bevor Räume überhitzen – basierend auf Sonnenstand, Wetter und Temperaturen.",
           "glare_protection_enabled": "Reduziert direkte Sonneneinstrahlung, wenn die Sonne direkt auf das Fenster trifft.",
-          "solar_gain_enabled": "Hält Beschattung bei kühlem Wetter offener, um passive Erwärmung zu unterstützen. Hitzeschutz hat Vorrang."
+          "solar_gain_enabled": "Hält Beschattung bei kühlem Wetter offener, um passive Erwärmung zu unterstützen. Hitzeschutz hat Vorrang.",
+          "glare_min_exposure_wm2": "Blendschutz wird nur ausgelöst, wenn das Fenster im Sonnensektor liegt und die effektive Fensterexposition mindestens diesen Wert erreicht. Dadurch wird verhindert, dass eine rein geometrische Sonnenlage ohne relevante Einstrahlung unnötige Beschattung auslöst."
         }
       },
       "behavior": {
@@ -226,7 +228,8 @@
       "obstruction_elevation_range_invalid": "\"Blockiert ab Sonnenhöhe\" darf nicht größer als \"Blockiert bis Sonnenhöhe\" sein.",
       "night_lift_requires_night_block": "Option B (Lüftungsposition) erfordert, dass Option A (Nachtfahrt blockieren) aktiviert ist.",
       "contact_sensor_required_for_block": "Für Option A muss ein Kontaktsensor ausgewählt sein.",
-      "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein."
+      "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein.",
+      "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben."
     },
     "abort": {
       "no_options_for_system_entry": "Der SmartShading-System-Eintrag hat keine konfigurierbaren Optionen."
@@ -346,13 +349,15 @@
           "indoor_temperature_sensor_ids": "Innentemperatursensoren (optional)",
           "heat_protection_enabled": "Hitzeschutz aktivieren",
           "glare_protection_enabled": "Blendschutz aktivieren",
-          "solar_gain_enabled": "Solar-Gewinn aktivieren (Wintersonne)"
+          "solar_gain_enabled": "Solar-Gewinn aktivieren (Wintersonne)",
+          "glare_min_exposure_wm2": "Mindestexposition für Blendschutz"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Ein oder mehrere Innensensoren. Bei mehreren Sensoren wird der Durchschnitt aller gültigen Messwerte verwendet.",
           "heat_protection_enabled": "Beschattet vorbeugend, bevor Räume überhitzen – basierend auf Sonnenstand, Wetter und Temperaturen.",
           "glare_protection_enabled": "Reduziert direkte Sonneneinstrahlung, wenn die Sonne direkt auf das Fenster trifft.",
-          "solar_gain_enabled": "Hält Beschattung bei kühlem Wetter offener, um passive Erwärmung zu unterstützen. Hitzeschutz hat Vorrang."
+          "solar_gain_enabled": "Hält Beschattung bei kühlem Wetter offener, um passive Erwärmung zu unterstützen. Hitzeschutz hat Vorrang.",
+          "glare_min_exposure_wm2": "Blendschutz wird nur ausgelöst, wenn das Fenster im Sonnensektor liegt und die effektive Fensterexposition mindestens diesen Wert erreicht. Dadurch wird verhindert, dass eine rein geometrische Sonnenlage ohne relevante Einstrahlung unnötige Beschattung auslöst."
         }
       }
     },
@@ -363,7 +368,8 @@
       "obstruction_elevation_range_invalid": "\"Blockiert ab Sonnenhöhe\" darf nicht größer als \"Blockiert bis Sonnenhöhe\" sein.",
       "night_lift_requires_night_block": "Option B (Lüftungsposition) erfordert, dass Option A (Nachtfahrt blockieren) aktiviert ist.",
       "contact_sensor_required_for_block": "Für Option A muss ein Kontaktsensor ausgewählt sein.",
-      "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein."
+      "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein.",
+      "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben."
     },
     "abort": {
       "single_instance_allowed": "SmartShading ist bereits eingerichtet.",

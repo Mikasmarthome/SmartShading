@@ -114,6 +114,9 @@ from .const import (
     DEFAULT_NIGHT_SUN_ELEVATION,
     DEFAULT_NIGHT_TRIGGER,
     DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C,
+    CONF_GLARE_MIN_EXPOSURE_WM2,
+    DEFAULT_GLARE_MIN_EXPOSURE_WM2,
+    GLARE_MIN_EXPOSURE_MAX_WM2,
     DEFAULT_WEEKDAY_MORNING_FIXED_TIME,
     DEFAULT_WEEKDAY_NIGHT_FIXED_TIME,
     DEFAULT_WEEKEND_MORNING_FIXED_TIME,
@@ -290,6 +293,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._heat_protection_enabled: bool = True
         self._glare_protection_enabled: bool = True
         self._solar_gain_enabled: bool = True
+        self._glare_min_exposure_wm2: float = DEFAULT_GLARE_MIN_EXPOSURE_WM2
         self._heat_protection_indoor_temp_c: float = DEFAULT_HEAT_PROTECTION_INDOOR_TEMP_C
         self._heat_protection_outdoor_temp_c: float = DEFAULT_HEAT_PROTECTION_OUTDOOR_TEMP_C
         self._solar_gain_max_outdoor_temp_c: float = DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C
@@ -613,13 +617,23 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.ConfigFlowResult:
         # Prefill from first existing zone entry
         _prefill = _first_zone_entry_data(self.hass)
+        errors: dict[str, str] = {}
 
         if user_input is not None:
-            self._indoor_temperature_sensor_ids = user_input.get(CONF_INDOOR_TEMPERATURE_SENSOR_IDS) or []
-            self._heat_protection_enabled = bool(user_input[CONF_HEAT_PROTECTION_ENABLED])
-            self._glare_protection_enabled = bool(user_input[CONF_GLARE_PROTECTION_ENABLED])
-            self._solar_gain_enabled = bool(user_input[CONF_SOLAR_GAIN_ENABLED])
-            return await self.async_step_lifecycle()
+            _raw_glare = user_input.get(CONF_GLARE_MIN_EXPOSURE_WM2)
+            try:
+                _glare_min = float(_raw_glare)
+                if not (0.0 <= _glare_min <= GLARE_MIN_EXPOSURE_MAX_WM2):
+                    raise ValueError
+            except (TypeError, ValueError):
+                errors["base"] = "invalid_glare_min_exposure"
+            if not errors:
+                self._indoor_temperature_sensor_ids = user_input.get(CONF_INDOOR_TEMPERATURE_SENSOR_IDS) or []
+                self._heat_protection_enabled = bool(user_input[CONF_HEAT_PROTECTION_ENABLED])
+                self._glare_protection_enabled = bool(user_input[CONF_GLARE_PROTECTION_ENABLED])
+                self._solar_gain_enabled = bool(user_input[CONF_SOLAR_GAIN_ENABLED])
+                self._glare_min_exposure_wm2 = _glare_min
+                return await self.async_step_lifecycle()
 
         # Indoor temperature sensors are per-zone and must never be carried
         # over from another zone. The sensor list always starts empty so the
@@ -634,9 +648,18 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_HEAT_PROTECTION_ENABLED, default=_prefill_comfort.get("heat_protection_enabled", True)): BooleanSelector(),
                 vol.Required(CONF_GLARE_PROTECTION_ENABLED, default=_prefill_comfort.get("glare_protection_enabled", True)): BooleanSelector(),
                 vol.Required(CONF_SOLAR_GAIN_ENABLED, default=_prefill_comfort.get("solar_gain_enabled", True)): BooleanSelector(),
+                vol.Required(
+                    CONF_GLARE_MIN_EXPOSURE_WM2,
+                    default=_prefill_comfort.get("glare_min_exposure_wm2", DEFAULT_GLARE_MIN_EXPOSURE_WM2),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=0, max=GLARE_MIN_EXPOSURE_MAX_WM2, step=5,
+                        mode=NumberSelectorMode.BOX, unit_of_measurement="W/m²",
+                    )
+                ),
             }
         )
-        return self.async_show_form(step_id="comfort", data_schema=schema)
+        return self.async_show_form(step_id="comfort", data_schema=schema, errors=errors)
 
     # -- Step 6: add a window --
 
@@ -855,6 +878,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 heat_protection_indoor_temp_c=self._heat_protection_indoor_temp_c,
                 heat_protection_outdoor_temp_c=self._heat_protection_outdoor_temp_c,
                 solar_gain_max_outdoor_temp_c=self._solar_gain_max_outdoor_temp_c,
+                glare_min_exposure_wm2=self._glare_min_exposure_wm2,
             ),
         )
         return self.async_create_entry(title=self._zone_name, data=to_storage_dict(entry_data))
@@ -1290,20 +1314,37 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
     ) -> config_entries.ConfigFlowResult:
         current = self._config_entry.data
         stored_comfort = current.get("comfort_config") or {}
+        errors: dict[str, str] = {}
 
         if user_input is not None:
-            new_comfort = {
-                **stored_comfort,
-                "heat_protection_enabled": bool(user_input[CONF_HEAT_PROTECTION_ENABLED]),
-                "glare_protection_enabled": bool(user_input[CONF_GLARE_PROTECTION_ENABLED]),
-                "solar_gain_enabled": bool(user_input[CONF_SOLAR_GAIN_ENABLED]),
-            }
-            return self._save_and_reload(
-                {
-                    CONF_INDOOR_TEMPERATURE_SENSOR_IDS: user_input.get(CONF_INDOOR_TEMPERATURE_SENSOR_IDS) or [],
-                    "comfort_config": new_comfort,
+            # Server-side validation: numeric, finite, non-negative and within a
+            # sensible glare range.  NumberSelector already constrains input, but
+            # we validate again so a malformed/out-of-range value never reaches the
+            # stored config (the BehaviorConfig default is the safe fallback).
+            _glare_min = stored_comfort.get(
+                "glare_min_exposure_wm2", DEFAULT_GLARE_MIN_EXPOSURE_WM2)
+            _raw_glare = user_input.get(CONF_GLARE_MIN_EXPOSURE_WM2)
+            try:
+                _glare_min = float(_raw_glare)
+            except (TypeError, ValueError):
+                errors["base"] = "invalid_glare_min_exposure"
+            else:
+                if not (0.0 <= _glare_min <= GLARE_MIN_EXPOSURE_MAX_WM2):
+                    errors["base"] = "invalid_glare_min_exposure"
+            if not errors:
+                new_comfort = {
+                    **stored_comfort,
+                    "heat_protection_enabled": bool(user_input[CONF_HEAT_PROTECTION_ENABLED]),
+                    "glare_protection_enabled": bool(user_input[CONF_GLARE_PROTECTION_ENABLED]),
+                    "solar_gain_enabled": bool(user_input[CONF_SOLAR_GAIN_ENABLED]),
+                    "glare_min_exposure_wm2": _glare_min,
                 }
-            )
+                return self._save_and_reload(
+                    {
+                        CONF_INDOOR_TEMPERATURE_SENSOR_IDS: user_input.get(CONF_INDOOR_TEMPERATURE_SENSOR_IDS) or [],
+                        "comfort_config": new_comfort,
+                    }
+                )
 
         # Backward compat: read stored IDs — new key preferred, legacy single-ID fallback.
         _stored_ids: list[str] = (
@@ -1328,9 +1369,19 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     CONF_SOLAR_GAIN_ENABLED,
                     default=stored_comfort.get("solar_gain_enabled", True),
                 ): BooleanSelector(),
+                vol.Required(
+                    CONF_GLARE_MIN_EXPOSURE_WM2,
+                    default=stored_comfort.get(
+                        "glare_min_exposure_wm2", DEFAULT_GLARE_MIN_EXPOSURE_WM2),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=0, max=GLARE_MIN_EXPOSURE_MAX_WM2, step=5,
+                        mode=NumberSelectorMode.BOX, unit_of_measurement="W/m²",
+                    )
+                ),
             }
         )
-        return self.async_show_form(step_id="comfort", data_schema=schema)
+        return self.async_show_form(step_id="comfort", data_schema=schema, errors=errors)
 
     # -- Behavior / shade-position defaults --
 

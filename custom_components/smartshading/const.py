@@ -188,10 +188,18 @@ CONF_SOLAR_GAIN_ENABLED = "solar_gain_enabled"
 CONF_HEAT_PROTECTION_INDOOR_TEMP_C = "heat_protection_indoor_temp_c"
 CONF_HEAT_PROTECTION_OUTDOOR_TEMP_C = "heat_protection_outdoor_temp_c"
 CONF_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C = "solar_gain_max_outdoor_temp_c"
+CONF_GLARE_MIN_EXPOSURE_WM2 = "glare_min_exposure_wm2"
 
 DEFAULT_HEAT_PROTECTION_INDOOR_TEMP_C = 24.0
 DEFAULT_HEAT_PROTECTION_OUTDOOR_TEMP_C = 26.0
 DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C = 12.0
+# Minimum effective window exposure (W/m²) for glare protection to fire.  Must
+# match models.comfort.ComfortConfig.glare_min_exposure_wm2 default.  The upper
+# bound keeps the value in a sensible glare range (below/around the solar
+# shading thresholds); above it glare would only fire when full solar shading
+# already applies.
+DEFAULT_GLARE_MIN_EXPOSURE_WM2 = 100.0
+GLARE_MIN_EXPOSURE_MAX_WM2 = 500.0
 
 # Schedule position defaults: night closes the cover (0), morning opens it (100).
 # HA position convention: 0=closed, 100=open.

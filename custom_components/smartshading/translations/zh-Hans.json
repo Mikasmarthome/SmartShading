@@ -88,13 +88,15 @@
           "indoor_temperature_sensor_ids": "室内温度传感器（可选）",
           "heat_protection_enabled": "启用隔热保护",
           "glare_protection_enabled": "启用防眩光保护",
-          "solar_gain_enabled": "启用太阳得热（冬季阳光）"
+          "solar_gain_enabled": "启用太阳得热（冬季阳光）",
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "一个或多个室内传感器。配置多个传感器时，使用所有有效读数的平均值。",
           "heat_protection_enabled": "根据太阳位置、天气和温度主动遮阳，从而防止过热。",
           "glare_protection_enabled": "当阳光照射到窗户时减少直射阳光。",
-          "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。"
+          "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。",
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
         }
       },
       "behavior": {
@@ -226,7 +228,8 @@
       "obstruction_elevation_range_invalid": "“从该高度起被遮挡”不得大于“至该高度止被遮挡”。",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading 系统条目没有可配置的选项。"
@@ -346,13 +349,15 @@
           "indoor_temperature_sensor_ids": "室内温度传感器（可选）",
           "heat_protection_enabled": "启用隔热保护",
           "glare_protection_enabled": "启用防眩光保护",
-          "solar_gain_enabled": "启用太阳得热（冬季阳光）"
+          "solar_gain_enabled": "启用太阳得热（冬季阳光）",
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "一个或多个室内传感器。配置多个传感器时，使用所有有效读数的平均值。",
           "heat_protection_enabled": "根据太阳位置、天气和温度主动遮阳，从而防止过热。",
           "glare_protection_enabled": "当阳光照射到窗户时减少直射阳光。",
-          "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。"
+          "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。",
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
         }
       }
     },
@@ -363,7 +368,8 @@
       "obstruction_elevation_range_invalid": "“从该高度起被遮挡”不得大于“至该高度止被遮挡”。",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
     },
     "abort": {
       "single_instance_allowed": "SmartShading 已配置。",

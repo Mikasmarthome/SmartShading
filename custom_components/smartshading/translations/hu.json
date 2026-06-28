@@ -88,13 +88,15 @@
           "indoor_temperature_sensor_ids": "Beltéri hőmérséklet-érzékelők (opcionális)",
           "heat_protection_enabled": "Hővédelem engedélyezése",
           "glare_protection_enabled": "Vakításvédelem engedélyezése",
-          "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)"
+          "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)",
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Egy vagy több beltéri érzékelő. Több érzékelő konfigurálása esetén az összes érvényes mérés átlaga használatos.",
           "heat_protection_enabled": "Megakadályozza a túlmelegedést azzal, hogy a napállás, az időjárás és a hőmérsékletek alapján proaktívan árnyékol.",
           "glare_protection_enabled": "Csökkenti a közvetlen napfényt, amikor a nap az ablakra süt.",
-          "solar_gain_enabled": "Hűvös időben jobban nyitva tartja az árnyékolást a passzív felmelegedés támogatására. A hővédelem elsőbbséget élvez."
+          "solar_gain_enabled": "Hűvös időben jobban nyitva tartja az árnyékolást a passzív felmelegedés támogatására. A hővédelem elsőbbséget élvez.",
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
         }
       },
       "behavior": {
@@ -226,7 +228,8 @@
       "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
     },
     "abort": {
       "no_options_for_system_entry": "A SmartShading rendszerbejegyzésnek nincsenek konfigurálható beállításai."
@@ -346,13 +349,15 @@
           "indoor_temperature_sensor_ids": "Beltéri hőmérséklet-érzékelők (opcionális)",
           "heat_protection_enabled": "Hővédelem engedélyezése",
           "glare_protection_enabled": "Vakításvédelem engedélyezése",
-          "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)"
+          "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)",
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Egy vagy több beltéri érzékelő. Több érzékelő konfigurálása esetén az összes érvényes mérés átlaga használatos.",
           "heat_protection_enabled": "Megakadályozza a túlmelegedést azzal, hogy a napállás, az időjárás és a hőmérsékletek alapján proaktívan árnyékol.",
           "glare_protection_enabled": "Csökkenti a közvetlen napfényt, amikor a nap az ablakra süt.",
-          "solar_gain_enabled": "Hűvös időben jobban nyitva tartja az árnyékolást a passzív felmelegedés támogatására. A hővédelem elsőbbséget élvez."
+          "solar_gain_enabled": "Hűvös időben jobban nyitva tartja az árnyékolást a passzív felmelegedés támogatására. A hővédelem elsőbbséget élvez.",
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
         }
       }
     },
@@ -363,7 +368,8 @@
       "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
     },
     "abort": {
       "single_instance_allowed": "A SmartShading már konfigurálva van.",

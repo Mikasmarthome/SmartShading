@@ -177,7 +177,11 @@
           "obstruction_3_azimuth_start_deg": "Αρχικό αζιμούθιο ζώνης 3 (°)",
           "obstruction_3_azimuth_end_deg": "Τελικό αζιμούθιο ζώνης 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Ζώνη 3 αποκλεισμένη από ύψος (°)",
-          "obstruction_3_block_until_elevation_deg": "Ζώνη 3 αποκλεισμένη έως ύψος (°)"
+          "obstruction_3_block_until_elevation_deg": "Ζώνη 3 αποκλεισμένη έως ύψος (°)",
+          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
         },
         "data_description": {
           "absence_position": "Αφήστε κενό για να κληρονομήσετε την προεπιλεγμένη θέση απουσίας της ζώνης. Ορίστε μια τιμή για να την αντικαταστήσετε μόνο για αυτό το παράθυρο.",
@@ -195,7 +199,11 @@
           "obstruction_3_enabled": "Τρίτη προαιρετική ζώνη εμποδίου για αυτό το παράθυρο.",
           "obstruction_3_block_from_elevation_deg": "Προαιρετικό κάτω όριο ύψους για τη ζώνη 3 (δείτε την περιγραφή της ζώνης 1).",
           "obstruction_3_block_until_elevation_deg": "Προαιρετικό άνω όριο ύψους για τη ζώνη 3 (δείτε την περιγραφή της ζώνης 1).",
-          "floor_level": "Χρησιμοποιείται για τον υπολογισμό της ελάχιστης ηλιακής ύψωσης για άμεση ακτινοβολία. −1 (υπόγειο) → 20°, 0 (ισόγειο) → 15°, 1 (1ος) → 10°, 2 (2ος) → 5°, 3 και άνω → 0°. Για παράθυρα σε φωταγωγούς ή με μεγάλα εμπόδια χρησιμοποιήστε ζώνες παρεμπόδισης."
+          "floor_level": "Χρησιμοποιείται για τον υπολογισμό της ελάχιστης ηλιακής ύψωσης για άμεση ακτινοβολία. −1 (υπόγειο) → 20°, 0 (ισόγειο) → 15°, 1 (1ος) → 10°, 2 (2ος) → 5°, 3 και άνω → 0°. Για παράθυρα σε φωταγωγούς ή με μεγάλα εμπόδια χρησιμοποιήστε ζώνες παρεμπόδισης.",
+          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
+          "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
+          "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."
         }
       },
       "remove_window": {
@@ -215,7 +223,10 @@
     },
     "error": {
       "cannot_remove_last_window": "Δεν είναι δυνατή η αφαίρεση του τελευταίου παραθύρου. Μια ζώνη πρέπει να έχει τουλάχιστον ένα παράθυρο.",
-      "obstruction_elevation_range_invalid": "Το «Αποκλεισμένη από ύψος» δεν πρέπει να είναι μεγαλύτερο από το «Αποκλεισμένη έως ύψος»."
+      "obstruction_elevation_range_invalid": "Το «Αποκλεισμένη από ύψος» δεν πρέπει να είναι μεγαλύτερο από το «Αποκλεισμένη έως ύψος».",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "no_options_for_system_entry": "Η καταχώριση Συστήματος του SmartShading δεν έχει διαμορφώσιμες επιλογές."
@@ -349,7 +360,10 @@
       "invalid_custom_azimuth": "Εισαγάγετε ένα προσαρμοσμένο αζιμούθιο μεταξύ 0 και 359 μοιρών ή επιλέξτε μια κατεύθυνση πυξίδας.",
       "no_covers_selected": "Επιλέξτε τουλάχιστον μία οντότητα σκιάστρου για αυτό το παράθυρο.",
       "empty_zone_name": "Το όνομα ζώνης είναι υποχρεωτικό.",
-      "obstruction_elevation_range_invalid": "Το «Αποκλεισμένη από ύψος» δεν πρέπει να είναι μεγαλύτερο από το «Αποκλεισμένη έως ύψος»."
+      "obstruction_elevation_range_invalid": "Το «Αποκλεισμένη από ύψος» δεν πρέπει να είναι μεγαλύτερο από το «Αποκλεισμένη έως ύψος».",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "single_instance_allowed": "Το SmartShading έχει ήδη διαμορφωθεί.",

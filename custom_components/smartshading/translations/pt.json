@@ -177,7 +177,11 @@
           "obstruction_3_azimuth_start_deg": "Azimute inicial da zona 3 (°)",
           "obstruction_3_azimuth_end_deg": "Azimute final da zona 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Zona 3 bloqueada a partir da elevação (°)",
-          "obstruction_3_block_until_elevation_deg": "Zona 3 bloqueada até à elevação (°)"
+          "obstruction_3_block_until_elevation_deg": "Zona 3 bloqueada até à elevação (°)",
+          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
         },
         "data_description": {
           "absence_position": "Deixe vazio para herdar a posição de ausência predefinida da zona. Defina um valor para a substituir apenas nesta janela.",
@@ -195,7 +199,11 @@
           "obstruction_3_enabled": "Terceira zona de obstrução opcional para esta janela.",
           "obstruction_3_block_from_elevation_deg": "Limite de elevação inferior opcional para a zona 3 (ver descrição da zona 1).",
           "obstruction_3_block_until_elevation_deg": "Limite de elevação superior opcional para a zona 3 (ver descrição da zona 1).",
-          "floor_level": "Usado para derivar a elevação solar mínima para exposição direta. −1 (cave) → 20°, 0 (rés do chão) → 15°, 1 (1.º andar) → 10°, 2 (2.º andar) → 5°, 3 e acima → 0°. Para janelas em poços de luz ou com obstruções graves, use zonas de obstrução."
+          "floor_level": "Usado para derivar a elevação solar mínima para exposição direta. −1 (cave) → 20°, 0 (rés do chão) → 15°, 1 (1.º andar) → 10°, 2 (2.º andar) → 5°, 3 e acima → 0°. Para janelas em poços de luz ou com obstruções graves, use zonas de obstrução.",
+          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
+          "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
+          "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."
         }
       },
       "remove_window": {
@@ -215,7 +223,10 @@
     },
     "error": {
       "cannot_remove_last_window": "Não é possível remover a última janela. Uma zona tem de ter pelo menos uma janela.",
-      "obstruction_elevation_range_invalid": "«Bloqueada a partir da elevação» não pode ser maior do que «Bloqueada até à elevação»."
+      "obstruction_elevation_range_invalid": "«Bloqueada a partir da elevação» não pode ser maior do que «Bloqueada até à elevação».",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "no_options_for_system_entry": "A entrada de Sistema do SmartShading não tem opções configuráveis."
@@ -349,7 +360,10 @@
       "invalid_custom_azimuth": "Introduza um azimute personalizado entre 0 e 359 graus, ou escolha uma direção da bússola.",
       "no_covers_selected": "Selecione pelo menos uma entidade de estore para esta janela.",
       "empty_zone_name": "O nome da zona é obrigatório.",
-      "obstruction_elevation_range_invalid": "«Bloqueada a partir da elevação» não pode ser maior do que «Bloqueada até à elevação»."
+      "obstruction_elevation_range_invalid": "«Bloqueada a partir da elevação» não pode ser maior do que «Bloqueada até à elevação».",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "single_instance_allowed": "O SmartShading já está configurado.",

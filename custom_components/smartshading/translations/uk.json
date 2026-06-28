@@ -177,7 +177,11 @@
           "obstruction_3_azimuth_start_deg": "Початковий азимут зони 3 (°)",
           "obstruction_3_azimuth_end_deg": "Кінцевий азимут зони 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Зона 3 блокується від висоти (°)",
-          "obstruction_3_block_until_elevation_deg": "Зона 3 блокується до висоти (°)"
+          "obstruction_3_block_until_elevation_deg": "Зона 3 блокується до висоти (°)",
+          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
         },
         "data_description": {
           "absence_position": "Залиште порожнім, щоб успадкувати типове положення відсутності зони. Укажіть значення, щоб перевизначити його лише для цього вікна.",
@@ -195,7 +199,11 @@
           "obstruction_3_enabled": "Третя необов’язкова зона перешкоди для цього вікна.",
           "obstruction_3_block_from_elevation_deg": "Необов’язкова нижня межа висоти для зони 3 (див. опис зони 1).",
           "obstruction_3_block_until_elevation_deg": "Необов’язкова верхня межа висоти для зони 3 (див. опис зони 1).",
-          "floor_level": "Використовується для визначення мінімальної висоти сонця для прямого освітлення. −1 (підвал) → 20°, 0 (перший поверх) → 15°, 1 (другий поверх) → 10°, 2 (третій поверх) → 5°, 3 і вище → 0°. Для вікон у світлових шахтах або зі значними перешкодами використовуйте зони перешкод."
+          "floor_level": "Використовується для визначення мінімальної висоти сонця для прямого освітлення. −1 (підвал) → 20°, 0 (перший поверх) → 15°, 1 (другий поверх) → 10°, 2 (третій поверх) → 5°, 3 і вище → 0°. Для вікон у світлових шахтах або зі значними перешкодами використовуйте зони перешкод.",
+          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
+          "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
+          "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."
         }
       },
       "remove_window": {
@@ -215,7 +223,10 @@
     },
     "error": {
       "cannot_remove_last_window": "Неможливо видалити останнє вікно. У зоні має бути принаймні одне вікно.",
-      "obstruction_elevation_range_invalid": "«Блокується від висоти» не може бути більшим за «Блокується до висоти»."
+      "obstruction_elevation_range_invalid": "«Блокується від висоти» не може бути більшим за «Блокується до висоти».",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "no_options_for_system_entry": "Системний запис SmartShading не має налаштовуваних параметрів."
@@ -349,7 +360,10 @@
       "invalid_custom_azimuth": "Введіть власний азимут від 0 до 359 градусів або виберіть напрямок компаса.",
       "no_covers_selected": "Виберіть принаймні одну сутність штори для цього вікна.",
       "empty_zone_name": "Назва зони обов’язкова.",
-      "obstruction_elevation_range_invalid": "«Блокується від висоти» не може бути більшим за «Блокується до висоти»."
+      "obstruction_elevation_range_invalid": "«Блокується від висоти» не може бути більшим за «Блокується до висоти».",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "single_instance_allowed": "SmartShading уже налаштовано.",

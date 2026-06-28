@@ -177,7 +177,11 @@
           "obstruction_3_azimuth_start_deg": "3. zóna kezdő azimutja (°)",
           "obstruction_3_azimuth_end_deg": "3. zóna záró azimutja (°)",
           "obstruction_3_block_from_elevation_deg": "3. zóna blokkolva ettől a magasságtól (°)",
-          "obstruction_3_block_until_elevation_deg": "3. zóna blokkolva eddig a magasságig (°)"
+          "obstruction_3_block_until_elevation_deg": "3. zóna blokkolva eddig a magasságig (°)",
+          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
         },
         "data_description": {
           "absence_position": "Hagyja üresen a zóna alapértelmezett távolléti pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél az ablaknál.",
@@ -195,7 +199,11 @@
           "obstruction_3_enabled": "Harmadik opcionális akadályzóna ehhez az ablakhoz.",
           "obstruction_3_block_from_elevation_deg": "Opcionális alsó magassági határ a 3. zónához (lásd az 1. zóna leírását).",
           "obstruction_3_block_until_elevation_deg": "Opcionális felső magassági határ a 3. zónához (lásd az 1. zóna leírását).",
-          "floor_level": "A közvetlen benapozáshoz szükséges minimális napmagasság meghatározásához használatos. −1 (pince) → 20°, 0 (földszint) → 15°, 1 (1. emelet) → 10°, 2 (2. emelet) → 5°, 3 felett → 0°. Fénykutakban lévő vagy erősen takart ablakokhoz használjon akadályzónákat."
+          "floor_level": "A közvetlen benapozáshoz szükséges minimális napmagasság meghatározásához használatos. −1 (pince) → 20°, 0 (földszint) → 15°, 1 (1. emelet) → 10°, 2 (2. emelet) → 5°, 3 felett → 0°. Fénykutakban lévő vagy erősen takart ablakokhoz használjon akadályzónákat.",
+          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
+          "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
+          "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."
         }
       },
       "remove_window": {
@@ -215,7 +223,10 @@
     },
     "error": {
       "cannot_remove_last_window": "Az utolsó ablak nem távolítható el. Egy zónának legalább egy ablakkal kell rendelkeznie.",
-      "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”."
+      "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”.",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "no_options_for_system_entry": "A SmartShading rendszerbejegyzésnek nincsenek konfigurálható beállításai."
@@ -349,7 +360,10 @@
       "invalid_custom_azimuth": "Adjon meg egy egyéni azimutot 0 és 359 fok között, vagy válasszon iránytű-irányt.",
       "no_covers_selected": "Válasszon legalább egy árnyékoló entitást ehhez az ablakhoz.",
       "empty_zone_name": "A zóna neve kötelező.",
-      "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”."
+      "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”.",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "single_instance_allowed": "A SmartShading már konfigurálva van.",

@@ -177,7 +177,11 @@
           "obstruction_3_azimuth_start_deg": "Azimut d'inici de la zona 3 (°)",
           "obstruction_3_azimuth_end_deg": "Azimut de fi de la zona 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Zona 3 bloquejada des de l'elevació (°)",
-          "obstruction_3_block_until_elevation_deg": "Zona 3 bloquejada fins a l'elevació (°)"
+          "obstruction_3_block_until_elevation_deg": "Zona 3 bloquejada fins a l'elevació (°)",
+          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
         },
         "data_description": {
           "absence_position": "Deixa-ho buit per heretar la posició d'absència per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra.",
@@ -195,7 +199,11 @@
           "obstruction_3_enabled": "Tercera zona d'obstrucció opcional per a aquesta finestra.",
           "obstruction_3_block_from_elevation_deg": "Límit d'elevació inferior opcional per a la zona 3 (vegeu la descripció de la zona 1).",
           "obstruction_3_block_until_elevation_deg": "Límit d'elevació superior opcional per a la zona 3 (vegeu la descripció de la zona 1).",
-          "floor_level": "S'utilitza per derivar l'elevació solar mínima per a exposició directa. −1 (soterrani) → 20°, 0 (baixos) → 15°, 1 (1a planta) → 10°, 2 (2a planta) → 5°, 3 i superior → 0°. Per a finestres en patis de llum o amb obstruccions greus, useu zones d'obstrucció."
+          "floor_level": "S'utilitza per derivar l'elevació solar mínima per a exposició directa. −1 (soterrani) → 20°, 0 (baixos) → 15°, 1 (1a planta) → 10°, 2 (2a planta) → 5°, 3 i superior → 0°. Per a finestres en patis de llum o amb obstruccions greus, useu zones d'obstrucció.",
+          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
+          "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
+          "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."
         }
       },
       "remove_window": {
@@ -215,7 +223,10 @@
     },
     "error": {
       "cannot_remove_last_window": "No es pot eliminar l'última finestra. Una zona ha de tenir almenys una finestra.",
-      "obstruction_elevation_range_invalid": "«Bloquejada des de l'elevació» no pot ser més gran que «Bloquejada fins a l'elevació»."
+      "obstruction_elevation_range_invalid": "«Bloquejada des de l'elevació» no pot ser més gran que «Bloquejada fins a l'elevació».",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "no_options_for_system_entry": "L'entrada de Sistema de SmartShading no té opcions configurables."
@@ -349,7 +360,10 @@
       "invalid_custom_azimuth": "Introdueix un azimut personalitzat entre 0 i 359 graus, o tria una direcció de la brúixola.",
       "no_covers_selected": "Selecciona almenys una entitat de persiana per a aquesta finestra.",
       "empty_zone_name": "El nom de la zona és obligatori.",
-      "obstruction_elevation_range_invalid": "«Bloquejada des de l'elevació» no pot ser més gran que «Bloquejada fins a l'elevació»."
+      "obstruction_elevation_range_invalid": "«Bloquejada des de l'elevació» no pot ser més gran que «Bloquejada fins a l'elevació».",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "single_instance_allowed": "SmartShading ja està configurat.",

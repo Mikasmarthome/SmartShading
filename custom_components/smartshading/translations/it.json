@@ -177,7 +177,11 @@
           "obstruction_3_azimuth_start_deg": "Azimut iniziale della zona 3 (°)",
           "obstruction_3_azimuth_end_deg": "Azimut finale della zona 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Zona 3 bloccata dall'elevazione (°)",
-          "obstruction_3_block_until_elevation_deg": "Zona 3 bloccata fino all'elevazione (°)"
+          "obstruction_3_block_until_elevation_deg": "Zona 3 bloccata fino all'elevazione (°)",
+          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
         },
         "data_description": {
           "absence_position": "Lascia vuoto per ereditare la posizione di assenza predefinita della zona. Imposta un valore per sostituirla solo per questa finestra.",
@@ -195,7 +199,11 @@
           "obstruction_3_enabled": "Terza zona di ostruzione facoltativa per questa finestra.",
           "obstruction_3_block_from_elevation_deg": "Limite di elevazione inferiore facoltativo per la zona 3 (vedi descrizione della zona 1).",
           "obstruction_3_block_until_elevation_deg": "Limite di elevazione superiore facoltativo per la zona 3 (vedi descrizione della zona 1).",
-          "floor_level": "Usato per ricavare l'elevazione solare minima per l'esposizione diretta. −1 (seminterrato) → 20°, 0 (piano terra) → 15°, 1 (1° piano) → 10°, 2 (2° piano) → 5°, 3 e superiori → 0°. Per finestre in cavedi o con ostruzioni significative, usare le zone di ostruzione."
+          "floor_level": "Usato per ricavare l'elevazione solare minima per l'esposizione diretta. −1 (seminterrato) → 20°, 0 (piano terra) → 15°, 1 (1° piano) → 10°, 2 (2° piano) → 5°, 3 e superiori → 0°. Per finestre in cavedi o con ostruzioni significative, usare le zone di ostruzione.",
+          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
+          "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
+          "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."
         }
       },
       "remove_window": {
@@ -215,7 +223,10 @@
     },
     "error": {
       "cannot_remove_last_window": "Impossibile rimuovere l'ultima finestra. Una zona deve avere almeno una finestra.",
-      "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione»."
+      "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione».",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "no_options_for_system_entry": "La voce Sistema di SmartShading non ha opzioni configurabili."
@@ -349,7 +360,10 @@
       "invalid_custom_azimuth": "Inserisci un azimut personalizzato tra 0 e 359 gradi, oppure scegli una direzione della bussola.",
       "no_covers_selected": "Seleziona almeno un'entità tapparella per questa finestra.",
       "empty_zone_name": "Il nome della zona è obbligatorio.",
-      "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione»."
+      "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione».",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "single_instance_allowed": "SmartShading è già configurato.",

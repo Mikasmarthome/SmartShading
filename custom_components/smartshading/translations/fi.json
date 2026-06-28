@@ -177,7 +177,11 @@
           "obstruction_3_azimuth_start_deg": "Vyöhykkeen 3 aloitusatsimuutti (°)",
           "obstruction_3_azimuth_end_deg": "Vyöhykkeen 3 lopetusatsimuutti (°)",
           "obstruction_3_block_from_elevation_deg": "Vyöhyke 3 estetty korkeudesta (°)",
-          "obstruction_3_block_until_elevation_deg": "Vyöhyke 3 estetty korkeuteen asti (°)"
+          "obstruction_3_block_until_elevation_deg": "Vyöhyke 3 estetty korkeuteen asti (°)",
+          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
         },
         "data_description": {
           "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle ikkunalle.",
@@ -195,7 +199,11 @@
           "obstruction_3_enabled": "Kolmas valinnainen estevyöhyke tälle ikkunalle.",
           "obstruction_3_block_from_elevation_deg": "Valinnainen alempi korkeusraja vyöhykkeelle 3 (katso vyöhykkeen 1 kuvaus).",
           "obstruction_3_block_until_elevation_deg": "Valinnainen ylempi korkeusraja vyöhykkeelle 3 (katso vyöhykkeen 1 kuvaus).",
-          "floor_level": "Käytetään johtamaan minimaalinen auringon korkeus suoraa altistusta varten. −1 (kellari) → 20°, 0 (maantasokerros) → 15°, 1 (1. kerros) → 10°, 2 (2. kerros) → 5°, 3 ja enemmän → 0°. Valokaivossa sijaitseville ikkunoille tai voimakkaiden esteiden kanssa käytä estevyöhykkeitä."
+          "floor_level": "Käytetään johtamaan minimaalinen auringon korkeus suoraa altistusta varten. −1 (kellari) → 20°, 0 (maantasokerros) → 15°, 1 (1. kerros) → 10°, 2 (2. kerros) → 5°, 3 ja enemmän → 0°. Valokaivossa sijaitseville ikkunoille tai voimakkaiden esteiden kanssa käytä estevyöhykkeitä.",
+          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
+          "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
+          "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."
         }
       },
       "remove_window": {
@@ -215,7 +223,10 @@
     },
     "error": {
       "cannot_remove_last_window": "Viimeistä ikkunaa ei voi poistaa. Vyöhykkeellä on oltava vähintään yksi ikkuna.",
-      "obstruction_elevation_range_invalid": "”Estetty korkeudesta” ei saa olla suurempi kuin ”Estetty korkeuteen asti”."
+      "obstruction_elevation_range_invalid": "”Estetty korkeudesta” ei saa olla suurempi kuin ”Estetty korkeuteen asti”.",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-järjestelmämerkinnällä ei ole määritettäviä asetuksia."
@@ -349,7 +360,10 @@
       "invalid_custom_azimuth": "Anna mukautettu atsimuutti väliltä 0–359 astetta tai valitse kompassisuunta.",
       "no_covers_selected": "Valitse vähintään yksi varjostinentiteetti tälle ikkunalle.",
       "empty_zone_name": "Vyöhykkeen nimi vaaditaan.",
-      "obstruction_elevation_range_invalid": "”Estetty korkeudesta” ei saa olla suurempi kuin ”Estetty korkeuteen asti”."
+      "obstruction_elevation_range_invalid": "”Estetty korkeudesta” ei saa olla suurempi kuin ”Estetty korkeuteen asti”.",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "single_instance_allowed": "SmartShading on jo määritetty.",

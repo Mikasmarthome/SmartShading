@@ -177,7 +177,11 @@
           "obstruction_3_azimuth_start_deg": "Azimut de start al zonei 3 (°)",
           "obstruction_3_azimuth_end_deg": "Azimut de final al zonei 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Zona 3 blocată de la înălțimea (°)",
-          "obstruction_3_block_until_elevation_deg": "Zona 3 blocată până la înălțimea (°)"
+          "obstruction_3_block_until_elevation_deg": "Zona 3 blocată până la înălțimea (°)",
+          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
         },
         "data_description": {
           "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră.",
@@ -195,7 +199,11 @@
           "obstruction_3_enabled": "A treia zonă de obstrucție opțională pentru această fereastră.",
           "obstruction_3_block_from_elevation_deg": "Limită inferioară de înălțime opțională pentru zona 3 (vezi descrierea zonei 1).",
           "obstruction_3_block_until_elevation_deg": "Limită superioară de înălțime opțională pentru zona 3 (vezi descrierea zonei 1).",
-          "floor_level": "Folosit pentru a determina elevația solară minimă pentru expunere directă. −1 (subsol) → 20°, 0 (parter) → 15°, 1 (etaj 1) → 10°, 2 (etaj 2) → 5°, 3 și mai sus → 0°. Pentru ferestre în puțuri de lumină sau cu obstacole mari, utilizați zonele de obstrucție."
+          "floor_level": "Folosit pentru a determina elevația solară minimă pentru expunere directă. −1 (subsol) → 20°, 0 (parter) → 15°, 1 (etaj 1) → 10°, 2 (etaj 2) → 5°, 3 și mai sus → 0°. Pentru ferestre în puțuri de lumină sau cu obstacole mari, utilizați zonele de obstrucție.",
+          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
+          "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
+          "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."
         }
       },
       "remove_window": {
@@ -215,7 +223,10 @@
     },
     "error": {
       "cannot_remove_last_window": "Nu se poate elimina ultima fereastră. O zonă trebuie să aibă cel puțin o fereastră.",
-      "obstruction_elevation_range_invalid": "„Blocată de la înălțimea” nu trebuie să fie mai mare decât „Blocată până la înălțimea”."
+      "obstruction_elevation_range_invalid": "„Blocată de la înălțimea” nu trebuie să fie mai mare decât „Blocată până la înălțimea”.",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "no_options_for_system_entry": "Intrarea de Sistem SmartShading nu are opțiuni configurabile."
@@ -349,7 +360,10 @@
       "invalid_custom_azimuth": "Introduceți un azimut personalizat între 0 și 359 de grade sau alegeți o direcție a busolei.",
       "no_covers_selected": "Selectați cel puțin o entitate de umbrar pentru această fereastră.",
       "empty_zone_name": "Numele zonei este obligatoriu.",
-      "obstruction_elevation_range_invalid": "„Blocată de la înălțimea” nu trebuie să fie mai mare decât „Blocată până la înălțimea”."
+      "obstruction_elevation_range_invalid": "„Blocată de la înălțimea” nu trebuie să fie mai mare decât „Blocată până la înălțimea”.",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "single_instance_allowed": "SmartShading este deja configurat.",

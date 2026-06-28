@@ -177,7 +177,11 @@
           "obstruction_3_azimuth_start_deg": "Startazimut zone 3 (°)",
           "obstruction_3_azimuth_end_deg": "Eindazimut zone 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Zone 3 geblokkeerd vanaf hoogte (°)",
-          "obstruction_3_block_until_elevation_deg": "Zone 3 geblokkeerd tot hoogte (°)"
+          "obstruction_3_block_until_elevation_deg": "Zone 3 geblokkeerd tot hoogte (°)",
+          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
         },
         "data_description": {
           "absence_position": "Laat leeg om de standaard afwezigheidspositie van de zone te erven. Stel een waarde in om deze alleen voor dit venster te overschrijven.",
@@ -195,7 +199,11 @@
           "obstruction_3_enabled": "Derde optionele obstructiezone voor dit venster.",
           "obstruction_3_block_from_elevation_deg": "Optionele ondergrens voor de hoogte voor zone 3 (zie beschrijving van zone 1).",
           "obstruction_3_block_until_elevation_deg": "Optionele bovengrens voor de hoogte voor zone 3 (zie beschrijving van zone 1).",
-          "floor_level": "Gebruikt om de minimale zonhoogte voor directe zonnestraling te bepalen. −1 (kelder) → 20°, 0 (begane grond) → 15°, 1 (1e verd.) → 10°, 2 (2e verd.) → 5°, 3 en hoger → 0°. Voor ramen in lichtkokers of met zware obstructies, gebruik obstructiezones."
+          "floor_level": "Gebruikt om de minimale zonhoogte voor directe zonnestraling te bepalen. −1 (kelder) → 20°, 0 (begane grond) → 15°, 1 (1e verd.) → 10°, 2 (2e verd.) → 5°, 3 en hoger → 0°. Voor ramen in lichtkokers of met zware obstructies, gebruik obstructiezones.",
+          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
+          "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
+          "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."
         }
       },
       "remove_window": {
@@ -215,7 +223,10 @@
     },
     "error": {
       "cannot_remove_last_window": "Kan het laatste venster niet verwijderen. Een zone moet minstens één venster hebben.",
-      "obstruction_elevation_range_invalid": "\"Geblokkeerd vanaf hoogte\" mag niet groter zijn dan \"Geblokkeerd tot hoogte\"."
+      "obstruction_elevation_range_invalid": "\"Geblokkeerd vanaf hoogte\" mag niet groter zijn dan \"Geblokkeerd tot hoogte\".",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "no_options_for_system_entry": "De SmartShading-systeeminvoer heeft geen configureerbare opties."
@@ -349,7 +360,10 @@
       "invalid_custom_azimuth": "Voer een aangepaste azimut tussen 0 en 359 graden in, of kies een kompasrichting.",
       "no_covers_selected": "Selecteer ten minste één zonweringsentiteit voor dit venster.",
       "empty_zone_name": "Zonenaam is vereist.",
-      "obstruction_elevation_range_invalid": "\"Geblokkeerd vanaf hoogte\" mag niet groter zijn dan \"Geblokkeerd tot hoogte\"."
+      "obstruction_elevation_range_invalid": "\"Geblokkeerd vanaf hoogte\" mag niet groter zijn dan \"Geblokkeerd tot hoogte\".",
+      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
+      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
+      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled."
     },
     "abort": {
       "single_instance_allowed": "SmartShading is al geconfigureerd.",

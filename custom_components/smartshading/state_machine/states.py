@@ -21,7 +21,7 @@ from enum import Enum
 
 
 class ShadingState(Enum):
-    """The ten approved shading states (ARCHITECTURE.md §4.1).
+    """The eleven approved shading states (ARCHITECTURE.md §4.1).
 
     Tier 1 Safety cluster (ranks 1–9):
       STORM_SAFE — always active; structural storm damage affects all exterior covers.
@@ -37,6 +37,7 @@ class ShadingState(Enum):
     RAIN_SAFE       = "rain_safe"
     MANUAL_OVERRIDE = "manual_override"
     NIGHT_CLOSED    = "night_closed"
+    NIGHT_VENT      = "night_vent"
     ABSENCE_CLOSED  = "absence_closed"
     STRONG_SHADE    = "strong_shade"
     NORMAL_SHADE    = "normal_shade"
@@ -60,6 +61,10 @@ STATE_PRIORITY: dict[ShadingState, int] = {
     ShadingState.MANUAL_OVERRIDE: 10,
     # Tier 3 — Lifecycle
     ShadingState.NIGHT_CLOSED:    20,
+    # Night ventilation: window contact open during night; cover at ventilation position.
+    # Ranked between NIGHT_CLOSED and ABSENCE_CLOSED so that absence logic
+    # can still apply but normal comfort tiers are suppressed.
+    ShadingState.NIGHT_VENT:      25,
     # Tier 4 — Protection Floors
     ShadingState.ABSENCE_CLOSED:  30,
     ShadingState.STRONG_SHADE:    40,

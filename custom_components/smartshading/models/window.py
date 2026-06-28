@@ -102,3 +102,24 @@ class WindowConfig:
     # Empty list = no obstruction (default, behavior unchanged).
     # Evaluated OR-style: any active blocking zone suppresses direct solar exposure.
     obstruction_zones: list[ObstructionZone] = field(default_factory=list)
+
+    # Window contact sensor — physical open/close sensor for this window.
+    # None = no contact sensor configured (contact night logic is disabled).
+    # Stored as entity_id string; coordinator reads the HA state each cycle.
+    contact_sensor_entity_id: str | None = None
+
+    # Night behavior when contact sensor is configured.
+    # Option A: block the automatic night move while the window is open.
+    #   When the window closes during the same night, SmartShading performs
+    #   exactly one catch-up move to the night position.
+    # Option B (requires A): when the window is opened after the night move
+    #   was done, drive to window_open_night_position_ha; drive back to night
+    #   position when the window closes again.
+    # Both default to False (opt-in); None = inherit (not used for booleans here,
+    # since these are per-window-only — no zone/global inheritance path).
+    night_block_on_window_open: bool = False
+    night_lift_on_window_open: bool = False  # Option B; only effective when A=True
+
+    # HA-convention position (0=closed, 100=open) for Option B (NIGHT_VENT state).
+    # None → coordinator uses DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA (100 = fully open).
+    window_open_night_position_ha: int | None = None

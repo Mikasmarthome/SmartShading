@@ -112,6 +112,23 @@ class BehaviorConfig:
     # Always False when heat protection is active.
     solar_gain_suppresses_shading: bool = False
 
+    # --- Tier 3 (cont.): Night Contact Behavior --------------------------------
+
+    # Option A: block the automatic night move while the window contact is open.
+    # When True, the NightEvaluator result is suppressed if contact is OPEN.
+    # A catch-up move to night_position fires exactly once when contact closes.
+    night_block_on_window_open: bool = False
+
+    # Option B: drive to window_open_night_position when contact opens after the
+    # night move was already performed; return to night_position on close.
+    # Only effective when night_block_on_window_open is True.
+    night_lift_on_window_open: bool = False
+
+    # Target internal position for NIGHT_VENT state (Option B).
+    # 0 = fully open (ventilation-friendly default).
+    # Resolved from window_open_night_position_ha by coordinator before WDI build.
+    window_open_night_position: int = 0
+
     # --- Tier 5: Comfort Pipeline positions ----------------------------------
 
     light_shade_position: int = 60

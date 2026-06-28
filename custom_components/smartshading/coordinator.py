@@ -2415,6 +2415,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 # so every downstream resolver/clamp/harmonization/command-filter
                 # still applies.  Returns the (possibly) modified wdi.
                 try:
+                    _nc_hold_pre = self._night_contact_holds.get(window_id)
+                    _nc_blocked_pre = (
+                        _nc_hold_pre is not None
+                        and (_nc_hold_pre.blocked_this_night or _nc_hold_pre.night_vent_active)
+                    )
                     wdi = self._experiment_try_inject(
                         zone=zone, window=window, window_id=window_id, wdi=wdi,
                         eff_ha=_eff_ha, cfg_ha=_cfg_ha,
@@ -2423,6 +2428,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         in_solar_sector=_effective_in_solar_sector,
                         manual_pref_active=_any_pos_adapted,
                         current_state=current_state,
+                        night_contact_blocked=_nc_blocked_pre,
                         now=now,
                     )
                 except Exception:
@@ -3066,6 +3072,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     new_state is ShadingState.RAIN_SAFE
                                     or _rain_status_global is _RainStatus.RAINING
                                 ),
+                                night_contact_blocked_at_decision=_nc_hold.blocked_this_night,
+                                night_vent_active_at_decision=_nc_hold.night_vent_active,
                             )
                             _old_pending = self._pending_outcomes.replace(_new_pending)
                             if _old_pending is not None:
@@ -4715,7 +4723,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     def _experiment_try_inject(
         self, *, zone, window, window_id, wdi, eff_ha, cfg_ha, exposure_wm2,
-        outdoor_temp, in_solar_sector, manual_pref_active, current_state, now,
+        outdoor_temp, in_solar_sector, manual_pref_active, current_state,
+        night_contact_blocked: bool = False, now,
     ):
         """Plan/arm + (single) inject a bounded experiment parameter.  Returns wdi
         (possibly with one intensity position overridden).  Fully gated; never
@@ -4874,6 +4883,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             cooldown_active=(
                 self._experiment_cooldown(zone_id, proposal.proposal_key, now)[0]
                 if exp is None else False),
+            night_contact_blocked=night_contact_blocked,
         ))
         if not elig.eligible:
             # Lost eligibility while an experiment was armed for this window →

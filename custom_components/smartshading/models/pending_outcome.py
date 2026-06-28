@@ -64,6 +64,9 @@ class PendingOutcome:
     # "unknown" when no rain sensor is configured (RainStatus.UNKNOWN.value).
     rain_status_at_decision: str | None = None  # RainStatus.value or None
     rain_safe_active_at_decision: bool = False
+    # Night contact context — recorded at decision time for outcome resolution.
+    night_contact_blocked_at_decision: bool = False
+    night_vent_active_at_decision: bool = False
 
     def to_dict(self) -> dict:
         """Serialize to a JSON-safe dict (P2 — restart-safe persistence)."""
@@ -88,6 +91,8 @@ class PendingOutcome:
             "experiment_id": self.experiment_id,
             "rain_status_at_decision": self.rain_status_at_decision,
             "rain_safe_active_at_decision": self.rain_safe_active_at_decision,
+            "night_contact_blocked_at_decision": self.night_contact_blocked_at_decision,
+            "night_vent_active_at_decision": self.night_vent_active_at_decision,
         }
 
     @classmethod
@@ -123,4 +128,6 @@ class PendingOutcome:
             experiment_id=d.get("experiment_id"),
             rain_status_at_decision=d.get("rain_status_at_decision"),
             rain_safe_active_at_decision=bool(d.get("rain_safe_active_at_decision", False)),
+            night_contact_blocked_at_decision=bool(d.get("night_contact_blocked_at_decision", False)),
+            night_vent_active_at_decision=bool(d.get("night_vent_active_at_decision", False)),
         )

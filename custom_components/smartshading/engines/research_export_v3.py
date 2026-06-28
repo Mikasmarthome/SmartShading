@@ -190,6 +190,10 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
             "window_count": len(getattr(c, "windows", {}) or {}),
             "runtime_mode": _zone_runtime_mode(c),
             "rain_sensor_configured": getattr(c, "_rain_sensor_id", None) is not None,
+            "contact_sensor_any_configured": any(
+                getattr(w, "contact_sensor_entity_id", None) is not None
+                for w in (getattr(c, "windows", {}) or {}).values()
+            ),
         }, errors, "system"),
         "research_records": capped,
         "aggregations": _safe(lambda: _aggregations(research_records, c), errors, "aggregations"),

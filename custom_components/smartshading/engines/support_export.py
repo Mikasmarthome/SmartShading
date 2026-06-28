@@ -158,6 +158,16 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             if isinstance(prov, dict) and "window_id" in prov:
                 prov.pop("window_id", None)
                 prov["window_ref"] = _wref(wid)
+            # Append contact sensor state (no entity_id — privacy-safe).
+            diag = (getattr(getattr(coord, "data", None), "execution_diagnostics", None) or {}).get(wid)
+            if isinstance(prov, dict):
+                prov["contact"] = {
+                    "sensor_configured": bool(getattr(diag, "contact_sensor_configured", False)),
+                    "status": getattr(diag, "contact_status", None),
+                    "night_contact_blocked": bool(getattr(diag, "night_contact_blocked", False)),
+                    "night_vent_active": bool(getattr(diag, "night_vent_active", False)),
+                    "state_label": getattr(diag, "night_contact_state_label", None),
+                } if diag is not None else {"sensor_configured": False}
             return prov
         return _per_window(_b)
 

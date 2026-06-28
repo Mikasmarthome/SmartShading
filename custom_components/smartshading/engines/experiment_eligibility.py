@@ -56,6 +56,8 @@ class ExperimentEligibilityInput:
     # Zone lock / cooldown.
     other_active_zone_experiment: bool
     cooldown_active: bool
+    # Night contact guard: blocked night (Option A) or active NIGHT_VENT (Option B).
+    night_contact_blocked: bool = False
 
 
 def evaluate_experiment_eligibility(
@@ -109,6 +111,7 @@ def evaluate_experiment_eligibility(
     # --- zone lock / cooldown ---
     gate(not inp.other_active_zone_experiment, "zone_experiment_active")
     gate(not inp.cooldown_active, "cooldown_active")
+    gate(not inp.night_contact_blocked, "night_contact_blocked")
 
     eligible = not blocked
     return ExperimentEligibilityResult(

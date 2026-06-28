@@ -327,3 +327,26 @@ class WindowExecutionDiagnostics:
     rain_release_remaining_s: float | None = None
     """Seconds remaining in the rain dry-cooldown hold, or None when no hold
     is active. Computed from SafetyHold._last_triggered and rain_release_delay_min."""
+
+    # --- Night contact diagnostics (v1.1.0) ----------------------------------
+
+    contact_sensor_configured: bool = False
+    """True when a contact_sensor_entity_id is set for this window."""
+
+    contact_status: str | None = None
+    """ContactStatus.value ("open", "closed", "unknown") or None when not configured."""
+
+    night_contact_blocked: bool = False
+    """True when the night move was blocked this night (Option A active, contact OPEN)."""
+
+    catch_up_pending: bool = False
+    """True when the night move was blocked and the contact has not yet closed (catch-up waiting)."""
+
+    catch_up_done: bool = False
+    """True when a catch-up move was executed this night (contact closed after block)."""
+
+    night_vent_active: bool = False
+    """True when the cover is currently commanded to NIGHT_VENT position (Option B)."""
+
+    night_contact_state_label: str | None = None
+    """Human-readable NightContactHold.state_label: "idle", "blocked", "caught_up", "night_vent_active"."""

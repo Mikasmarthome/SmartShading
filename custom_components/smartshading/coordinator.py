@@ -61,6 +61,14 @@ from .engines.outcome_resolution import (
     OutcomeResolutionTrigger,
     resolve_outcome,
 )
+from .engines.contact_engine import (
+    ContactStatus as _ContactStatus,
+    build_contact_reading as _build_contact_reading,
+)
+from .engines.night_contact_hold import (
+    NightContactAction as _NightContactAction,
+    NightContactHold as _NightContactHold,
+)
 from .engines.pending_outcome_queue import PendingOutcomeQueue
 from .models.pending_outcome import PendingOutcome
 from .engines.lifecycle_engine import LifecycleEngine, PresenceDebouncer, check_night_interval_active
@@ -355,7 +363,7 @@ from .cover_control.shading_group_harmonizer import (
     compute_harmonization,
 )
 from .models.execution_diagnostics import WindowExecutionDiagnostics
-from .const import DATA_DEBUG_LOGGING, DOMAIN
+from .const import DATA_DEBUG_LOGGING, DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA as _DEFAULT_VENT_POS_HA, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -513,6 +521,14 @@ class _WindowComputeState:
     # Night Hard Hold: True when the hard-hold gate overrode the tier decision
     # to keep the cover at night_position instead of dispatching an OPEN command.
     night_hard_hold_applied: bool = False
+    # Night contact hold diagnostics (v1.1.0).
+    contact_sensor_configured: bool = False
+    contact_status_value: str | None = None
+    night_contact_blocked: bool = False
+    night_contact_catch_up_pending: bool = False
+    night_contact_catch_up_done: bool = False
+    night_vent_active: bool = False
+    night_contact_state_label: str | None = None
     # Tilt target (Steps 9G10f-d/e): None for non-tilt covers and non-shading states.
     # Set by calculate_simple_tilt_target(); gated by exec_cap.supports_tilt
     # and tilt_control_enabled; only VENETIAN_BLIND covers produce a value.
@@ -911,6 +927,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._wind_holds: dict[str, _SafetyHold] = {}
         self._storm_holds: dict[str, _SafetyHold] = {}
         self._rain_holds: dict[str, _SafetyHold] = {}
+        self._night_contact_holds: dict[str, _NightContactHold] = {}
 
         _zone_controls_raw = config_entry.options.get("zone_controls", {})
         # Defensive: a corrupted/old options blob may store None or a non-dict
@@ -2223,6 +2240,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 else self.global_defaults.rain_release_delay_min
             )
 
+            # --- Per-window contact sensor reading --------------------------------
+            _cs_entity_id = window.contact_sensor_entity_id
+            _cs_state_obj = self.hass.states.get(_cs_entity_id) if _cs_entity_id else None
+            _cs_reading = _build_contact_reading(
+                entity_id=_cs_entity_id,
+                hass_state=_cs_state_obj.state if _cs_state_obj is not None else None,
+                read_at_utc=_cs_state_obj.last_updated if _cs_state_obj is not None else None,
+                now_utc=now,
+            )
+            _vent_pos_ha: int = (
+                window.window_open_night_position_ha
+                if window.window_open_night_position_ha is not None
+                else _DEFAULT_VENT_POS_HA
+            )
+            _vent_pos_internal: int = to_internal_position(_vent_pos_ha)
+
             wdi = build_window_decision_input(
                 window=window,
                 zone=zone,
@@ -2251,6 +2284,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 override_duration_min=self._override_duration_min,
                 override_detection_tolerance=self._override_detection_tolerance,
                 override_break_on_lifecycle=self._override_break_on_lifecycle,
+                night_block_on_window_open=window.night_block_on_window_open,
+                night_lift_on_window_open=window.night_lift_on_window_open,
+                window_open_night_position=_vent_pos_internal,
+                contact_status=_cs_reading.status,
             )
             # P2 provenance: snapshot the pre-adaptation (config) WDI so the
             # deterministic baseline can be evaluated from the same input.
@@ -2597,6 +2634,49 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     _tier_ha,
                 )
 
+            # --- Night Contact Hold ------------------------------------------------
+            # Post-safety modifier: Option A (block night move while contact OPEN),
+            # Option B (lift to NIGHT_VENT when contact opens after night move done).
+            # Runs BEFORE Night Hard Hold so NIGHT_VENT is exempt from NightHardHold.
+            # Safety states (STORM_SAFE / WIND_SAFE / RAIN_SAFE) are never modified.
+            _nc_hold = self._night_contact_holds.setdefault(window_id, _NightContactHold())
+            _nc_hold.on_lifecycle_transition(night_active=_night_interval_active)
+            _nc_action = _nc_hold.evaluate(
+                contact_open=_cs_reading.status is _ContactStatus.OPEN,
+                night_active=_night_interval_active,
+                night_block_enabled=wdi.effective_behavior.night_block_on_window_open,
+                night_lift_enabled=wdi.effective_behavior.night_lift_on_window_open,
+                night_decision_pending=tier_decision.shading_state is ShadingState.NIGHT_CLOSED,
+            )
+            if _nc_action == _NightContactAction.BLOCK:
+                tier_decision = WindowDecision(
+                    window_id=window_id,
+                    shading_state=ShadingState.OPEN,
+                    target_position=None,
+                    decided_by="NightContactBlock",
+                )
+            elif _nc_action == _NightContactAction.CATCH_UP:
+                tier_decision = WindowDecision(
+                    window_id=window_id,
+                    shading_state=ShadingState.NIGHT_CLOSED,
+                    target_position=wdi.effective_behavior.night_position,
+                    decided_by="NightContactCatchUp",
+                )
+            elif _nc_action == _NightContactAction.HOLD_NIGHT_VENT:
+                tier_decision = WindowDecision(
+                    window_id=window_id,
+                    shading_state=ShadingState.NIGHT_VENT,
+                    target_position=wdi.effective_behavior.window_open_night_position,
+                    decided_by="NightContactVent",
+                )
+            elif _nc_action == _NightContactAction.RETURN_TO_NIGHT:
+                tier_decision = WindowDecision(
+                    window_id=window_id,
+                    shading_state=ShadingState.NIGHT_CLOSED,
+                    target_position=wdi.effective_behavior.night_position,
+                    decided_by="NightContactReturnToNight",
+                )
+
             # --- Night Hard Hold ---------------------------------------------------
             # Block non-safety commands that would move a night-configured cover
             # more open than night_position during the active night interval.
@@ -2609,11 +2689,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # ABSENCE_AND_SCHEDULE keeps the night lifecycle active, so the hold
             # must guard it the same way as FULLY_AUTOMATIC.
             #
-            # Priority: Safety (STORM_SAFE / WIND_SAFE) > Manual Override > Night Hard Hold.
-            # Covers without a configured night_position are not guarded (night shading
-            # is intentionally disabled for those windows).
-            # Window behaviour mode governs the night hard hold and the
-            # behaviour-mode dispatch suppression below.
+            # Priority: Safety > Night Contact Hold > Night Hard Hold.
+            # NIGHT_VENT is exempt — it is an intentional above-night-position state.
             _window_behavior = window.behavior_mode
             _night_hard_hold_applied = False
             if (
@@ -2627,6 +2704,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     ShadingState.WIND_SAFE,
                     ShadingState.RAIN_SAFE,
                     ShadingState.MANUAL_OVERRIDE,
+                    ShadingState.NIGHT_VENT,
                 )
                 and tier_decision.target_position is not None
                 and wdi.effective_behavior.night_position is not None
@@ -3463,6 +3541,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 target_tilt_ha=_effective_tilt_ha,
                 in_solar_sector=_effective_in_solar_sector,
                 night_hard_hold_applied=_night_hard_hold_applied,
+                contact_sensor_configured=_cs_entity_id is not None,
+                contact_status_value=_cs_reading.status.value,
+                night_contact_blocked=_nc_hold.blocked_this_night,
+                night_contact_catch_up_pending=_nc_hold.catch_up_pending,
+                night_contact_catch_up_done=_nc_hold.caught_up_this_night,
+                night_vent_active=_nc_hold.night_vent_active,
+                night_contact_state_label=_nc_hold.state_label,
                 override_ref_source=_override_ref_source,
                 prev_observation_was_available=_prev_obs_was_available,
                 last_commanded_was_available=_last_commanded_was_available,
@@ -3877,6 +3962,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     if _rain_held and not _eval_is_rain
                     else None
                 ),
+                contact_sensor_configured=s.contact_sensor_configured,
+                contact_status=s.contact_status_value,
+                night_contact_blocked=s.night_contact_blocked,
+                catch_up_pending=s.night_contact_catch_up_pending,
+                catch_up_done=s.night_contact_catch_up_done,
+                night_vent_active=s.night_vent_active,
+                night_contact_state_label=s.night_contact_state_label,
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---

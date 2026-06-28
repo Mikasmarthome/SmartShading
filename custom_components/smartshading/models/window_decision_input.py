@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ..engines.contact_engine import ContactStatus
 from ..engines.exposure_engine import WindowExposure
 from ..engines.rain_engine import RainStatus
 from ..engines.weather_engine import WeatherCondition
@@ -99,6 +100,10 @@ class WindowDecisionInput:
     # RainEvaluator checks this field; UNKNOWN means "no trigger" (fail-safe).
     rain_status: RainStatus | None = None
 
+    # Contact sensor reading for night-contact behavior (Option A / Option B).
+    # None when no sensor is configured. UNKNOWN means fail-safe (no block).
+    contact_status: ContactStatus | None = None
+
 
 # ---------------------------------------------------------------------------
 # Builder
@@ -136,6 +141,11 @@ def build_window_decision_input(
     override_duration_min: int = 240,
     override_detection_tolerance: int = 10,
     override_break_on_lifecycle: bool = True,
+    # Tier 3 extension: night contact behavior (v1.1.0)
+    night_block_on_window_open: bool = False,
+    night_lift_on_window_open: bool = False,
+    window_open_night_position: int = 0,
+    contact_status: ContactStatus | None = None,
 ) -> WindowDecisionInput:
     """Assemble a WindowDecisionInput for one window evaluation cycle.
 
@@ -221,6 +231,9 @@ def build_window_decision_input(
         heat_indoor_threshold_c=heat_indoor_threshold_c,
         glare_protection_enabled=_comfort.glare_protection_enabled,
         solar_gain_suppresses_shading=_solar_gain_suppresses,
+        night_block_on_window_open=night_block_on_window_open,
+        night_lift_on_window_open=night_lift_on_window_open,
+        window_open_night_position=window_open_night_position,
         light_shade_position=_ha_to_internal(
             window.light_shade_position
             if window.light_shade_position is not None
@@ -254,4 +267,5 @@ def build_window_decision_input(
         wind_gust_ms=wind_gust_ms,
         weather_condition=weather_condition,
         rain_status=rain_status,
+        contact_status=contact_status,
     )

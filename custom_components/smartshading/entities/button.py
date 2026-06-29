@@ -215,6 +215,33 @@ async def _collect_zone_entries(hass: HomeAssistant) -> list[dict]:
     return result
 
 
+def _resolve_zone_coordinator(hass: HomeAssistant):
+    """Return the live coordinator of the (first) active SmartShading zone entry.
+
+    The export buttons live on the SYSTEM entry, which deliberately has NO
+    coordinator — the real zone/window/sensor context lives on the
+    ENTRY_TYPE_ZONE entries.  Reading ``system_entry.runtime_data.coordinator``
+    therefore yields None and produces an empty export (zone_count 0, sensors
+    false, runtime_mode inactive).  Resolve the actual zone coordinator instead.
+
+    Returns ``(coordinator, zone_entry, zone_count)``.  ``coordinator``/``zone_entry``
+    are None when no active zone entry exists.  ``zone_count`` is how many active
+    zone coordinators were found (the v3 builders are single-zone-scoped; the
+    primary zone is used and the count is surfaced for transparency/logging).
+    """
+    zone_coords: list = []
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.data.get(CONF_ENTRY_TYPE, ENTRY_TYPE_ZONE) != ENTRY_TYPE_ZONE:
+            continue
+        coordinator = getattr(getattr(entry, "runtime_data", None), "coordinator", None)
+        if coordinator is not None:
+            zone_coords.append((coordinator, entry))
+    if not zone_coords:
+        return None, None, 0
+    coordinator, zone_entry = zone_coords[0]
+    return coordinator, zone_entry, len(zone_coords)
+
+
 class SmartShadingExportButton(ButtonEntity):
     """Button that triggers a global privacy-safe learning export.
 
@@ -249,15 +276,26 @@ class SmartShadingExportButton(ButtonEntity):
 
         now = datetime.now(timezone.utc)
         try:
-            rd = getattr(self._entry, "runtime_data", None)
-            coordinator = getattr(rd, "coordinator", None)
+            # The button lives on the system entry (no coordinator); resolve the
+            # active zone coordinator so the export reflects the running zone.
+            coordinator, zone_entry, zone_count = _resolve_zone_coordinator(self._hass)
+            if coordinator is None:
+                _LOGGER.warning(
+                    "SmartShading: support export: no active zone coordinator found"
+                )
+            elif zone_count > 1:
+                _LOGGER.info(
+                    "SmartShading: support export reflects the primary of %d zones",
+                    zone_count,
+                )
             # Build only on this explicit user request (never in a coordinator cycle).
             export_data = build_support_export_v3(coordinator, now=now)
         except Exception:
             _LOGGER.error("SmartShading: support export: failed to build export data")
             return
 
-        filename = _export_filename(now, self._entry.entry_id)
+        scope_entry_id = zone_entry.entry_id if zone_entry is not None else self._entry.entry_id
+        filename = _export_filename(now, scope_entry_id)
         config_dir = pathlib.Path(self._hass.config.config_dir)
         www_dir = config_dir / _WWW_SUBDIR
         filepath = www_dir / filename
@@ -351,8 +389,18 @@ class SmartShadingResearchExportButton(ButtonEntity):
 
         now = datetime.now(timezone.utc)
         try:
-            rd = getattr(self._entry, "runtime_data", None)
-            coordinator = getattr(rd, "coordinator", None)
+            # The button lives on the system entry (no coordinator); resolve the
+            # active zone coordinator so the export reflects the running zone.
+            coordinator, _zone_entry, zone_count = _resolve_zone_coordinator(self._hass)
+            if coordinator is None:
+                _LOGGER.warning(
+                    "SmartShading: research export: no active zone coordinator found"
+                )
+            elif zone_count > 1:
+                _LOGGER.info(
+                    "SmartShading: research export reflects the primary of %d zones",
+                    zone_count,
+                )
             # Built only on this explicit user request (never in a coordinator cycle);
             # entry/zone-scoped, baseline-vs-adapted from persisted records.
             export_data = build_research_export_v3(coordinator, now=now)

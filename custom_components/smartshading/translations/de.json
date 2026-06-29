@@ -148,7 +148,8 @@
         }
       },
       "edit_window_menu": {
-        "title": "Fenster bearbeiten: {window_name}",
+        "title": "Fenster bearbeiten",
+        "description": "Ausgewähltes Fenster: {window_name}",
         "menu_options": {
           "edit_window_basics": "Grunddaten & Rollladen",
           "edit_window_shading": "Beschattungsverhalten",

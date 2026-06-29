@@ -86,6 +86,14 @@ CONF_LIGHT_SHADE_POSITION = "light_shade_position"
 CONF_NORMAL_SHADE_POSITION = "normal_shade_position"
 CONF_STRONG_SHADE_POSITION = "strong_shade_position"
 
+# Starting cover positions per shading intensity for NEW setups/zones (HA cover
+# convention: 0 = closed, 100 = open). Stronger shading → more closed → lower %.
+# These are defaults only: applied when no explicit value is stored. Existing
+# stored values and per-window overrides are never changed by these.
+DEFAULT_LIGHT_SHADE_POSITION = 50
+DEFAULT_NORMAL_SHADE_POSITION = 30
+DEFAULT_STRONG_SHADE_POSITION = 10
+
 # Per-window manual sun sector override (v1.0).
 CONF_MANUAL_SUN_SECTOR_ENABLED = "manual_sun_sector_enabled"
 CONF_MANUAL_SUN_SECTOR_START_DEG = "manual_sun_sector_start_deg"

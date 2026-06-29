@@ -76,6 +76,9 @@ from .const import (
     CONF_INDOOR_TEMPERATURE_SENSOR_IDS,
     CONF_LIGHT_SHADE_POSITION,
     CONF_MORNING_ELEVATION_PRESET,
+    DEFAULT_LIGHT_SHADE_POSITION,
+    DEFAULT_NORMAL_SHADE_POSITION,
+    DEFAULT_STRONG_SHADE_POSITION,
     CONF_MORNING_FIXED_TIME,
     CONF_MORNING_POSITION,
     CONF_MORNING_SUN_ELEVATION,
@@ -789,7 +792,11 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             if user_input[CONF_ADD_ANOTHER_WINDOW]:
                 return await self.async_step_window()
-            return self._async_finish(light=40, normal=25, strong=10)
+            return self._async_finish(
+                light=DEFAULT_LIGHT_SHADE_POSITION,
+                normal=DEFAULT_NORMAL_SHADE_POSITION,
+                strong=DEFAULT_STRONG_SHADE_POSITION,
+            )
 
         schema = vol.Schema({vol.Required(CONF_ADD_ANOTHER_WINDOW, default=False): BooleanSelector()})
         return self.async_show_form(
@@ -1413,15 +1420,18 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             {
                 vol.Required(
                     CONF_LIGHT_SHADE_POSITION,
-                    default=stored_shade.get("light_shade_position", 40),
+                    default=stored_shade.get(
+                        "light_shade_position", DEFAULT_LIGHT_SHADE_POSITION),
                 ): percent_selector,
                 vol.Required(
                     CONF_NORMAL_SHADE_POSITION,
-                    default=stored_shade.get("normal_shade_position", 25),
+                    default=stored_shade.get(
+                        "normal_shade_position", DEFAULT_NORMAL_SHADE_POSITION),
                 ): percent_selector,
                 vol.Required(
                     CONF_STRONG_SHADE_POSITION,
-                    default=stored_shade.get("strong_shade_position", 10),
+                    default=stored_shade.get(
+                        "strong_shade_position", DEFAULT_STRONG_SHADE_POSITION),
                 ): percent_selector,
             }
         )

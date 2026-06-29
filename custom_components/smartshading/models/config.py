@@ -4,6 +4,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from ..const import (
+    DEFAULT_LIGHT_SHADE_POSITION,
+    DEFAULT_NORMAL_SHADE_POSITION,
+    DEFAULT_STRONG_SHADE_POSITION,
+)
+
 if TYPE_CHECKING:
     from .window import WindowConfig
     from .zone import ZoneConfig
@@ -48,9 +54,9 @@ class ShadePositionDefaults:
     and what the Config Flow's "Grundverhalten" step collects for now.
     """
 
-    light_shade_position: int = 40
-    normal_shade_position: int = 25
-    strong_shade_position: int = 10
+    light_shade_position: int = DEFAULT_LIGHT_SHADE_POSITION
+    normal_shade_position: int = DEFAULT_NORMAL_SHADE_POSITION
+    strong_shade_position: int = DEFAULT_STRONG_SHADE_POSITION
 
 
 class ConfigResolver:

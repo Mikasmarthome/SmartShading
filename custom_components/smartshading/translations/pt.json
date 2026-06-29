@@ -148,7 +148,8 @@
         }
       },
       "edit_window_menu": {
-        "title": "Edit window: {window_name}",
+        "title": "Edit window",
+        "description": "Selected window: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",

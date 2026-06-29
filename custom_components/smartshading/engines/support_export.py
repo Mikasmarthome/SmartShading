@@ -164,10 +164,26 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 prov["contact"] = {
                     "sensor_configured": bool(getattr(diag, "contact_sensor_configured", False)),
                     "status": getattr(diag, "contact_status", None),
+                    "is_stale": bool(getattr(diag, "contact_is_stale", False)),
                     "night_contact_blocked": bool(getattr(diag, "night_contact_blocked", False)),
+                    "catch_up_pending": bool(getattr(diag, "catch_up_pending", False)),
+                    "catch_up_done": bool(getattr(diag, "catch_up_done", False)),
                     "night_vent_active": bool(getattr(diag, "night_vent_active", False)),
                     "state_label": getattr(diag, "night_contact_state_label", None),
                 } if diag is not None else {"sensor_configured": False}
+                # Rain safety status (privacy-safe: status + hold, no entity_id).
+                prov["rain"] = {
+                    "configured": getattr(c, "_rain_sensor_id", None) is not None,
+                    "status": getattr(diag, "rain_status", None),
+                    "rain_safe_active": getattr(diag, "rain_safe_active", None),
+                    "release_remaining_s": getattr(diag, "rain_release_remaining_s", None),
+                    "source_quality": (
+                        "measured" if getattr(diag, "rain_status", None) in ("raining", "dry")
+                        else ("unavailable"
+                              if getattr(c, "_rain_sensor_id", None) is None else "unknown")),
+                } if diag is not None else {
+                    "configured": getattr(c, "_rain_sensor_id", None) is not None,
+                    "status": None}
             return prov
         return _per_window(_b)
 

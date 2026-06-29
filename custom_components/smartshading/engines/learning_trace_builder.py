@@ -262,6 +262,8 @@ def build_forecast_provenance(coord) -> dict:
         "forecast_max_threshold_delta_w_m2": _fsm.FORECAST_MAX_DELTA_WM2,
         "forecast_horizon_lookback_min": _fsm._LOOKBACK_MINUTES,
         "forecast_horizon_lookahead_h": _fsm._LOOKAHEAD_HOURS,
+        # Availability is NOT usage: a forecast can be available yet not applied.
+        "forecast_available": store_loaded,
     }
     # This cycle's forecast strategy modifier (read-only): trust, applied delta,
     # reason (why applied or not), and the forecast fields used.
@@ -281,7 +283,11 @@ def build_forecast_provenance(coord) -> dict:
                 if v is not None],
         })
     else:
+        # Keep the section shape stable so a support case always shows the
+        # trust / threshold-delta fields (here: not recorded this cycle).
         out["forecast_modifier_applied"] = False
+        out["forecast_trust_score"] = None
+        out["forecast_threshold_delta_w_m2"] = None
         out["forecast_reason"] = "no_forecast_modifier"
     return out
 

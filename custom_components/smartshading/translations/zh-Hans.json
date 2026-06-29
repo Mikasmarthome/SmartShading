@@ -233,8 +233,8 @@
         },
         "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
-          "night_block_on_window_open": "Option A: if the window is open at night or the contact state cannot be confirmed closed, the automatic night move is blocked. SmartShading closes the cover only once the window is safely closed. Requires a window contact.",
-          "night_lift_on_window_open": "Option B: if the window is open at night, SmartShading moves the cover at most to the ventilation position; when the window closes it returns to the night position. Requires a window contact, but not Option A.",
+          "night_block_on_window_open": "Option A: if the window is open when the night drive is due, or the contact state is unclear, the automatic night drive is blocked. SmartShading closes the cover only once the window is safely closed. Requires a window contact.",
+          "night_lift_on_window_open": "Option B: if the window is opened at night after the night position has been reached, SmartShading moves to the ventilation position; when the window is closed it returns to the night position. Requires a window contact (not Option A).",
           "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."
         }
       },

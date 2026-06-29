@@ -233,8 +233,8 @@
         },
         "data_description": {
           "contact_sensor_entity_ids": "Eine oder mehrere binary_sensor-Entitäten, die den Öffnungsstatus melden. Bei mehreren Kontakten gilt das Fenster als geöffnet, sobald mindestens einer geöffnet ist. Leer lassen, um die kontaktbasierte Nachtlogik für dieses Fenster zu deaktivieren.",
-          "night_block_on_window_open": "Option A: Ist das Fenster zur Nachtzeit geöffnet oder der Kontaktstatus nicht sicher geschlossen, wird die automatische Nachtfahrt blockiert. SmartShading schließt den Rollladen erst, sobald das Fenster sicher geschlossen ist. Erfordert einen Fensterkontakt.",
-          "night_lift_on_window_open": "Option B: Ist das Fenster nachts geöffnet, fährt SmartShading den Rollladen höchstens auf die Lüftungsposition; beim Schließen kehrt er zur Nachtposition zurück. Erfordert einen Fensterkontakt, aber nicht Option A.",
+          "night_block_on_window_open": "Option A: Ist das Fenster zur Nachtfahrt geöffnet oder der Kontaktstatus unklar, wird die automatische Nachtfahrt blockiert. SmartShading schließt den Rollladen erst, sobald das Fenster sicher geschlossen ist. Erfordert einen Fensterkontakt.",
+          "night_lift_on_window_open": "Option B: Wird das Fenster nachts geöffnet, nachdem die Nachtposition erreicht wurde, fährt SmartShading auf die Lüftungsposition; beim Schließen kehrt der Rollladen zur Nachtposition zurück. Erfordert einen Fensterkontakt (nicht Option A).",
           "window_open_night_position": "Zielposition (HA-Konvention: 0=geschlossen, 100=geöffnet) für Option B. Leer lassen für 100 % offen (vollständig für Lüftung). Niedrigeren Wert setzen, um Lüftung bei teilweise erhaltener Sichtschutzfunktion zu ermöglichen."
         }
       },

@@ -7274,6 +7274,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 manual_preference_confidence=s.adapt_confidence_level if mp_applied else None,
                 forecast_modifier_delta_wm2=fm_delta,
                 forecast_trust_score=fm_trust,
+                selected_solar_source=(
+                    getattr(_ssel, "source", None)
+                    if (_ssel := self._cycle_solar_provenance.get(
+                        window_id, {}).get("solar_selection")) is not None else None),
+                solar_source_quality=(
+                    getattr(_ssel, "quality", None)
+                    if (_ssel := self._cycle_solar_provenance.get(
+                        window_id, {}).get("solar_selection")) is not None else None),
                 solar_threshold_resolution=(
                     _sr.to_dict() if (_sr := self._cycle_solar_resolution.get(window_id)) is not None
                     else None),

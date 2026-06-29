@@ -331,6 +331,13 @@ class AdaptationDecision:
     forecast_modifier_delta_wm2: float | None = None
     forecast_trust_score: float | None = None
 
+    # Solar source authority at decision time (from solar_source.classify_*).
+    # selected_solar_source: "measured_sensor"|"weather_estimate"|"unavailable"|None
+    # solar_source_quality:  "measured_high"|"estimated_low"|"none"|None
+    # None = not recorded (legacy/older provenance) — never inferred.
+    selected_solar_source: str | None = None
+    solar_source_quality: str | None = None
+
     # Bounded experiment (P7) — populated only when a real experiment is injected.
     experiment_applied: bool = False
     experiment_id: str | None = None
@@ -393,6 +400,8 @@ class AdaptationDecision:
             "shadow_candidate_reason": self.shadow_candidate_reason,
             "forecast_modifier_delta_wm2": self.forecast_modifier_delta_wm2,
             "forecast_trust_score": self.forecast_trust_score,
+            "selected_solar_source": self.selected_solar_source,
+            "solar_source_quality": self.solar_source_quality,
             "experiment_applied": self.experiment_applied,
             "experiment_id": self.experiment_id,
             "target_before_experiment_ha": self.target_before_experiment_ha,
@@ -440,6 +449,8 @@ class AdaptationDecision:
             shadow_candidate_reason=d.get("shadow_candidate_reason"),
             forecast_modifier_delta_wm2=d.get("forecast_modifier_delta_wm2"),
             forecast_trust_score=d.get("forecast_trust_score"),
+            selected_solar_source=d.get("selected_solar_source"),
+            solar_source_quality=d.get("solar_source_quality"),
             experiment_applied=bool(d.get("experiment_applied", False)),
             experiment_id=d.get("experiment_id"),
             target_before_experiment_ha=d.get("target_before_experiment_ha"),
@@ -642,6 +653,10 @@ class ProvenanceSummary:
     net_target_delta_ha: int | None
     dispatch_status: str | None
     config_generation: int
+    # Solar source authority carried forward so demoted records still aggregate
+    # measured-vs-fallback.  None = not recorded (legacy / pre-extension data).
+    selected_solar_source: str | None = None
+    solar_source_quality: str | None = None
     # True when full provenance once existed for this decision (a demoted v2
     # record).  False for legacy records that never had provenance.
     provenance_available: bool = True
@@ -661,6 +676,8 @@ class ProvenanceSummary:
             net_target_delta_ha=p.adaptation.net_target_delta_ha,
             dispatch_status=p.dispatch.dispatch_status,
             config_generation=p.context.config_generation,
+            selected_solar_source=p.adaptation.selected_solar_source,
+            solar_source_quality=p.adaptation.solar_source_quality,
             provenance_available=True,
         )
 
@@ -674,6 +691,8 @@ class ProvenanceSummary:
             "net_target_delta_ha": self.net_target_delta_ha,
             "dispatch_status": self.dispatch_status,
             "config_generation": self.config_generation,
+            "selected_solar_source": self.selected_solar_source,
+            "solar_source_quality": self.solar_source_quality,
             "provenance_available": self.provenance_available,
         }
 
@@ -688,6 +707,8 @@ class ProvenanceSummary:
             net_target_delta_ha=d.get("net_target_delta_ha"),
             dispatch_status=d.get("dispatch_status"),
             config_generation=int(d.get("config_generation", 0)),
+            selected_solar_source=d.get("selected_solar_source"),
+            solar_source_quality=d.get("solar_source_quality"),
             provenance_available=bool(d.get("provenance_available", True)),
         )
 

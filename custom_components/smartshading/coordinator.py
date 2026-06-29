@@ -2044,7 +2044,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 resolution_timestamp=now,
                                 indoor_temp_outcome_c=indoor_temperature,
                                 solar_exposure_at_decision=_lc_pending.solar_exposure_at_decision,
-                                solar_source_quality=_lc_pending.solar_source_quality,
                                 cleared_by_lifecycle=True,
                                 observation_interrupted=(window_id, _lc_pending.decision_timestamp)
                                 in self._interrupted_decision_keys,
@@ -2888,7 +2887,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     resolution_timestamp=now,
                                     indoor_temp_outcome_c=indoor_temperature,
                                     solar_exposure_at_decision=_safety_pending.solar_exposure_at_decision,
-                                    solar_source_quality=_safety_pending.solar_source_quality,
                                     cleared_by_safety=True,
                                     observation_interrupted=(window_id, _safety_pending.decision_timestamp)
                                     in self._interrupted_decision_keys,
@@ -3118,7 +3116,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         resolution_timestamp=now,
                                         indoor_temp_outcome_c=indoor_temperature,
                                         solar_exposure_at_decision=_old_pending.solar_exposure_at_decision,
-                                        solar_source_quality=_old_pending.solar_source_quality,
                                         observation_interrupted=(window_id, _old_pending.decision_timestamp)
                                         in self._interrupted_decision_keys,
                                         movement_observation=self._movement_take(window_id, _mv_cause),
@@ -3207,7 +3204,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         if _ov_pending.target_position is not None else None
                                     ),
                                     solar_exposure_at_decision=_ov_pending.solar_exposure_at_decision,
-                                    solar_source_quality=_ov_pending.solar_source_quality,
                                     observation_interrupted=(window_id, _ov_pending.decision_timestamp)
                                     in self._interrupted_decision_keys,
                                     movement_observation=self._movement_take(window_id, MOVE_CAUSE_MANUAL),
@@ -3267,7 +3263,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         if _ren_pending.target_position is not None else None
                                     ),
                                     solar_exposure_at_decision=_ren_pending.solar_exposure_at_decision,
-                                    solar_source_quality=_ren_pending.solar_source_quality,
                                     observation_interrupted=(window_id, _ren_pending.decision_timestamp)
                                     in self._interrupted_decision_keys,
                                     movement_observation=self._movement_take(window_id, MOVE_CAUSE_MANUAL),
@@ -3334,7 +3329,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         resolution_timestamp=now,
                                         indoor_temp_outcome_c=indoor_temperature,
                                         solar_exposure_at_decision=_to_pending.solar_exposure_at_decision,
-                                        solar_source_quality=_to_pending.solar_source_quality,
                                         observation_interrupted=(window_id, _to_pending.decision_timestamp)
                                         in self._interrupted_decision_keys,
                                         movement_observation=self._movement_take(window_id, MOVE_CAUSE_NONE),

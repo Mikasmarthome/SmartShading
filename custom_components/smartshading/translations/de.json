@@ -367,7 +367,7 @@
       },
       "add_another_window": {
         "title": "Weiteres Fenster hinzufügen?",
-        "description": "Bisher {window_count} Fenster konfiguriert.",
+        "description": "Bisher {window_count} Fenster konfiguriert. Du kannst jetzt abschließen und diese Zone mit sinnvollen Standardwerten nutzen. Erweiterte Einstellungen pro Fenster — Sonnenbereich, Schattenzonen, Fensterkontakte, Nachtlüftung und individuelle Beschattungspositionen — findest du später unter „Konfigurieren → Fenster bearbeiten“.",
         "data": {
           "add_another_window": "Weiteres Fenster hinzufügen"
         }

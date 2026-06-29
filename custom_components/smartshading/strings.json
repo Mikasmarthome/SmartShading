@@ -367,7 +367,7 @@
       },
       "add_another_window": {
         "title": "Add another window?",
-        "description": "{window_count} window(s) configured so far.",
+        "description": "{window_count} window(s) configured so far. You can finish now and use this zone with sensible defaults. Advanced per-window settings — sun sector, obstruction zones, window contacts, night ventilation and individual shade positions — are available later under Configure → Edit window.",
         "data": {
           "add_another_window": "Add another window"
         }

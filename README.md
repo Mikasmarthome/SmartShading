@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg" alt="HACS Custom"/></a>
-  <a href="https://github.com/Mikasmarthome/SmartShading/releases"><img src="https://img.shields.io/badge/release-v1.1.0--beta.3-orange.svg" alt="Release"/></a>
+  <a href="https://github.com/Mikasmarthome/SmartShading/releases"><img src="https://img.shields.io/badge/release-v1.1.0--beta.4-orange.svg" alt="Release"/></a>
   <img src="https://img.shields.io/badge/status-beta-orange.svg" alt="Beta"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/></a>
 </p>
@@ -216,6 +216,29 @@ Both exports are written to your Home Assistant `config/www` directory and are a
 24 hours. SmartShading never uploads them. The **Debug logging** switch is a temporary diagnostic aid — turn
 it on while investigating an issue and off again afterwards.
 
+Both exports include the **installed integration version** and a **history-metadata** block so the time span
+and coverage are explicit:
+
+- oldest and newest record timestamps,
+- total available and exported record counts,
+- whether the data was truncated and the cap reason,
+- the store scope the export was read from.
+
+The two exports read different sources, which is reflected in the store scope:
+
+- **Support Export** is a **runtime-recent** diagnostic snapshot. It reflects recent activity since the last
+  start and **resets on restart or reload** — so shortly after a restart it only shows recent data.
+- **Research Export** uses the **persistent learning history**, so it reflects what has accumulated over time.
+
+No-dispatch outcomes are reported with registered reason codes, including `same_position`,
+`no_target_position`, `recommendation_only`, and `guard_action_interval`, so a "no command this cycle" result
+is always explained rather than appearing as an unknown code.
+
+SmartShading keeps a persistent, bounded learning decision history. Retention is age-based up to 365 days and
+is additionally bounded by per-window caps, so the history is designed to support seasonal learning that
+grows with real runtime. Because a hard per-window cap also applies, the export history metadata shows whether
+records were truncated or capped rather than implying that a full 365 days is always exported in full.
+
 ## Privacy
 
 - SmartShading runs locally in Home Assistant.
@@ -281,6 +304,17 @@ adjust most runtime settings through the integration's options (three-dot menu �
 Windows and their assigned cover entities can be added, edited, or removed through the options flow of the
 relevant zone. Some structural changes are made by adding another SmartShading entry, and a few may require
 removing and re-adding the zone's entry.
+
+Editing a window is organized into four focused pages, reached from a menu after you pick the window:
+
+- **Basics & cover** — name, floor level, orientation, and the assigned cover entities and hardware type.
+- **Shading behavior** — behavior mode, absence position, and the light/normal/strong shade positions.
+- **Solar sector & obstruction zones** — the optional manual sun sector and up to three obstruction zones.
+- **Window contact & night ventilation** — contact sensors, night-open blocking, and ventilation behavior.
+
+Each page saves only its own settings and keeps the others untouched. A window can use **multiple contact
+sensors**; the night/ventilation logic then reacts to the aggregated contact state (open if any selected
+sensor is open). Existing single-contact configurations remain compatible.
 
 When referring to covers or sensors, use your own entity IDs. Generic examples:
 
@@ -348,6 +382,20 @@ Swedish, Turkish, and Ukrainian.
 
 Home Assistant selects the matching translation automatically based on your user language and falls back to
 English when a language is unavailable.
+
+## Contributing
+
+**Bugs** → [GitHub Issues](https://github.com/Mikasmarthome/SmartShading/issues): Home Assistant version, SmartShading version, what happened, relevant log lines (`Settings → System → Logs → smartshading`), and, if possible, a Support Export.
+
+**Features** → Issues with the `enhancement` label.
+
+**Especially welcome:** Testing with different cover types, facade orientations, solar sensors, rain sensors, window contact setups, and translations.
+
+**Setup or behavior questions?** Open a GitHub Discussion and include your cover type, window orientation, selected sensors, behavior mode, and a short description of what you expected SmartShading to do.
+
+**Useful discussions:**
+- [Getting help & support](https://github.com/Mikasmarthome/SmartShading/discussions/1)
+- [Feedback & real-world experience](https://github.com/Mikasmarthome/SmartShading/discussions/2)
 
 ## License
 

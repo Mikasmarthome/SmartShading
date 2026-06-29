@@ -331,7 +331,13 @@ class WindowExecutionDiagnostics:
     # --- Night contact diagnostics (v1.1.0) ----------------------------------
 
     contact_sensor_configured: bool = False
-    """True when a contact_sensor_entity_id is set for this window."""
+    """True when at least one contact sensor is set for this window."""
+
+    contact_sensor_count: int = 0
+    """Number of contact sensors configured for this window (multi-contact)."""
+
+    contact_open_count: int = 0
+    """How many of the configured contacts currently read open (aggregated)."""
 
     contact_status: str | None = None
     """ContactStatus.value ("open", "closed", "unknown") or None when not configured."""

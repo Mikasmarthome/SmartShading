@@ -180,7 +180,7 @@
           "obstruction_3_azimuth_end_deg": "区域 3 结束方位角（°）",
           "obstruction_3_block_from_elevation_deg": "区域 3 从该高度起被遮挡（°）",
           "obstruction_3_block_until_elevation_deg": "区域 3 至该高度止被遮挡（°）",
-          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
           "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
           "window_open_night_position": "Ventilation position when window is open at night (%)"
@@ -202,7 +202,7 @@
           "obstruction_3_block_from_elevation_deg": "区域 3 的可选高度下限（参见区域 1 的说明）。",
           "obstruction_3_block_until_elevation_deg": "区域 3 的可选高度上限（参见区域 1 的说明）。",
           "floor_level": "用于推导直接照射所需的最低太阳高度角。−1（地下室）→ 20°，0（一层）→ 15°，1（二层）→ 10°，2（三层）→ 5°，3 层及以上 → 0°。对于采光井内的窗户或有严重遮挡的窗户，请使用遮挡区域进行精细控制。",
-          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
           "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."

@@ -180,7 +180,7 @@
           "obstruction_3_azimuth_end_deg": "Azymut końcowy strefy 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Strefa 3 blokowana od wysokości (°)",
           "obstruction_3_block_until_elevation_deg": "Strefa 3 blokowana do wysokości (°)",
-          "contact_sensor_entity_id": "Window contact sensor (optional)",
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
           "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
           "window_open_night_position": "Ventilation position when window is open at night (%)"
@@ -202,7 +202,7 @@
           "obstruction_3_block_from_elevation_deg": "Opcjonalny dolny limit wysokości dla strefy 3 (zob. opis strefy 1).",
           "obstruction_3_block_until_elevation_deg": "Opcjonalny górny limit wysokości dla strefy 3 (zob. opis strefy 1).",
           "floor_level": "Służy do wyznaczenia minimalnej elewacji słońca dla bezpośredniego nasłonecznienia. −1 (piwnica) → 20°, 0 (parter) → 15°, 1 (1. piętro) → 10°, 2 (2. piętro) → 5°, 3 i wyżej → 0°. Dla okien w szybach świetlnych lub z dużymi przeszkodami użyj stref przeszkód.",
-          "contact_sensor_entity_id": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
+          "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",
           "window_open_night_position": "Target cover position (HA convention: 0=closed, 100=open) for Option B. Leave empty to use 100% open (fully open for ventilation). Set a lower value to allow ventilation while maintaining some privacy."

@@ -132,6 +132,7 @@ from .const import (
     CONF_WEEKEND_MORNING_POSITION,
     CONF_WINDOW_BEHAVIOR_MODE,
     CONF_CONTACT_SENSOR_ENTITY_ID,
+    CONF_CONTACT_SENSOR_ENTITY_IDS,
     CONF_NIGHT_BLOCK_ON_WINDOW_OPEN,
     CONF_NIGHT_LIFT_ON_WINDOW_OPEN,
     CONF_WINDOW_OPEN_NIGHT_POSITION,
@@ -1690,18 +1691,26 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                             errors["base"] = "obstruction_elevation_range_invalid"
                             break
 
-                    # Contact sensor and night-contact behavior.
-                    # Server-side rule: Option B requires Option A.
-                    _contact_sensor = user_input.get(CONF_CONTACT_SENSOR_ENTITY_ID) or None
+                    # Contact sensor(s) and night-contact behavior.
+                    # Server-side rule: Option B requires Option A.  The selector
+                    # is multi-select → a list; tolerate a legacy single string.
+                    _contact_raw = user_input.get(CONF_CONTACT_SENSOR_ENTITY_IDS)
+                    if _contact_raw is None:
+                        _contact_raw = user_input.get(CONF_CONTACT_SENSOR_ENTITY_ID)
+                    if isinstance(_contact_raw, str):
+                        _contact_sensors = [_contact_raw] if _contact_raw else []
+                    else:
+                        _contact_sensors = [e for e in (_contact_raw or []) if e]
+                    _contact_sensors = list(dict.fromkeys(_contact_sensors))  # dedupe
                     _night_block = bool(user_input.get(CONF_NIGHT_BLOCK_ON_WINDOW_OPEN, False))
                     _night_lift = bool(user_input.get(CONF_NIGHT_LIFT_ON_WINDOW_OPEN, False))
                     if _night_lift and not _night_block:
                         errors[CONF_NIGHT_LIFT_ON_WINDOW_OPEN] = "night_lift_requires_night_block"
-                    if _night_block and not _contact_sensor:
-                        errors[CONF_CONTACT_SENSOR_ENTITY_ID] = "contact_sensor_required_for_block"
-                    if _night_lift and not _contact_sensor:
+                    if _night_block and not _contact_sensors:
+                        errors[CONF_CONTACT_SENSOR_ENTITY_IDS] = "contact_sensor_required_for_block"
+                    if _night_lift and not _contact_sensors:
                         # Overrides block error when both options need a sensor.
-                        errors[CONF_CONTACT_SENSOR_ENTITY_ID] = "contact_sensor_required_for_lift"
+                        errors[CONF_CONTACT_SENSOR_ENTITY_IDS] = "contact_sensor_required_for_lift"
                     raw_vent_pos = user_input.get(CONF_WINDOW_OPEN_NIGHT_POSITION)
 
                     if not errors:
@@ -1720,7 +1729,9 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                                     "manual_sun_sector_start_deg": _sector_start,
                                     "manual_sun_sector_end_deg": _sector_end,
                                     "obstruction_zones": _new_oz_list,
-                                    "contact_sensor_entity_id": _contact_sensor,
+                                    "contact_sensor_entity_ids": _contact_sensors,
+                                    "contact_sensor_entity_id": (
+                                        _contact_sensors[0] if _contact_sensors else None),
                                     "night_block_on_window_open": _night_block,
                                     "night_lift_on_window_open": _night_lift if _night_block else False,
                                     "window_open_night_position_ha": int(raw_vent_pos) if raw_vent_pos is not None else DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA,
@@ -1776,7 +1787,15 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             NumberSelectorConfig(min=0, max=90, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="°")
         )
         # Contact sensor stored values
-        _stored_contact = window.get("contact_sensor_entity_id")
+        # Normalise stored contact(s) to a list so an existing single contact
+        # appears as a one-element multi-select (no migration needed).
+        _stored_contact_raw = window.get("contact_sensor_entity_ids")
+        if _stored_contact_raw is None:
+            _stored_contact_raw = window.get("contact_sensor_entity_id")
+        if isinstance(_stored_contact_raw, str):
+            _stored_contact = [_stored_contact_raw] if _stored_contact_raw else []
+        else:
+            _stored_contact = [e for e in (_stored_contact_raw or []) if e]
         _stored_night_block = window.get("night_block_on_window_open", False)
         _stored_night_lift = window.get("night_lift_on_window_open", False)
         _stored_vent_pos = window.get(
@@ -1846,11 +1865,18 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             vol.Optional(CONF_OBSTRUCTION_3_AZIMUTH_END, description={"suggested_value": _oz_stored(2, "azimuth_end_deg")}): _az_selector,
             vol.Optional(CONF_OBSTRUCTION_3_BLOCK_FROM_ELEVATION, description={"suggested_value": _oz_stored(2, "block_from_elevation_deg")}): _elev_selector,
             vol.Optional(CONF_OBSTRUCTION_3_BLOCK_UNTIL_ELEVATION, description={"suggested_value": _oz_stored(2, "block_until_elevation_deg")}): _elev_selector,
-            # --- Window contact sensor (night-block / night-lift) ---
+            # --- Window contact sensor(s) (night-block / night-lift) ---
+            # Multi-select, restricted to binary_sensor and opening device classes
+            # (window / door / opening / garage_door).  Window counts as open if
+            # ANY selected contact is open.
             vol.Optional(
-                CONF_CONTACT_SENSOR_ENTITY_ID,
+                CONF_CONTACT_SENSOR_ENTITY_IDS,
                 description={"suggested_value": _stored_contact},
-            ): EntitySelector(EntitySelectorConfig(domain="binary_sensor")),
+            ): EntitySelector(EntitySelectorConfig(
+                domain="binary_sensor",
+                device_class=["window", "door", "opening", "garage_door"],
+                multiple=True,
+            )),
             vol.Required(CONF_NIGHT_BLOCK_ON_WINDOW_OPEN, default=_stored_night_block): BooleanSelector(),
             vol.Required(CONF_NIGHT_LIFT_ON_WINDOW_OPEN, default=_stored_night_lift): BooleanSelector(),
             vol.Optional(

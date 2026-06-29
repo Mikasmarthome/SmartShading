@@ -64,6 +64,7 @@ from .engines.outcome_resolution import (
 )
 from .engines.contact_engine import (
     ContactStatus as _ContactStatus,
+    aggregate_contact_readings as _aggregate_contact_readings,
     build_contact_reading as _build_contact_reading,
 )
 from .engines.night_contact_hold import (
@@ -525,6 +526,8 @@ class _WindowComputeState:
     night_hard_hold_applied: bool = False
     # Night contact hold diagnostics (v1.1.0).
     contact_sensor_configured: bool = False
+    contact_sensor_count: int = 0
+    contact_open_count: int = 0
     contact_status_value: str | None = None
     contact_is_stale: bool = False
     night_contact_blocked: bool = False
@@ -2267,15 +2270,32 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 else self.global_defaults.rain_release_delay_min
             )
 
-            # --- Per-window contact sensor reading --------------------------------
-            _cs_entity_id = window.contact_sensor_entity_id
-            _cs_state_obj = self.hass.states.get(_cs_entity_id) if _cs_entity_id else None
+            # --- Per-window contact sensor reading(s) -----------------------------
+            # A window may have several contacts (multiple sashes, a door+window
+            # pair): build one reading per configured contact and aggregate them
+            # (any open → open).  A single-contact window keeps prior behaviour.
+            _cs_ids = window.contact_entity_ids
+            _cs_configured = bool(_cs_ids)
+            _cs_entity_id = _cs_ids[0] if _cs_ids else None  # legacy single (compat)
+            _cs_readings = []
+            for _eid in _cs_ids:
+                _st_obj = self.hass.states.get(_eid)
+                _cs_readings.append(_build_contact_reading(
+                    entity_id=_eid,
+                    hass_state=_st_obj.state if _st_obj is not None else None,
+                    read_at_utc=_st_obj.last_updated if _st_obj is not None else None,
+                    now_utc=now,
+                ))
+            _cs_agg = _aggregate_contact_readings(_cs_readings)
             _cs_reading = _build_contact_reading(
-                entity_id=_cs_entity_id,
-                hass_state=_cs_state_obj.state if _cs_state_obj is not None else None,
-                read_at_utc=_cs_state_obj.last_updated if _cs_state_obj is not None else None,
+                entity_id=None, hass_state=None, read_at_utc=_cs_agg.read_at_utc,
                 now_utc=now,
             )
+            # Carry the aggregated status/staleness (build_contact_reading from a
+            # None state yields UNKNOWN/closed defaults; override with the aggregate).
+            from dataclasses import replace as _dc_replace
+            _cs_reading = _dc_replace(
+                _cs_reading, status=_cs_agg.status, is_stale=_cs_agg.is_stale)
             _vent_pos_ha: int = (
                 window.window_open_night_position_ha
                 if window.window_open_night_position_ha is not None
@@ -3581,7 +3601,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 target_tilt_ha=_effective_tilt_ha,
                 in_solar_sector=_effective_in_solar_sector,
                 night_hard_hold_applied=_night_hard_hold_applied,
-                contact_sensor_configured=_cs_entity_id is not None,
+                contact_sensor_configured=_cs_configured,
+                contact_sensor_count=_cs_agg.total,
+                contact_open_count=_cs_agg.open_count,
                 contact_status_value=_cs_reading.status.value,
                 contact_is_stale=_cs_reading.is_stale,
                 night_contact_blocked=_nc_hold.blocked_this_night,
@@ -4004,6 +4026,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     else None
                 ),
                 contact_sensor_configured=s.contact_sensor_configured,
+                contact_sensor_count=s.contact_sensor_count,
+                contact_open_count=s.contact_open_count,
                 contact_status=s.contact_status_value,
                 contact_is_stale=s.contact_is_stale,
                 night_contact_blocked=s.night_contact_blocked,

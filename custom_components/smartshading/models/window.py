@@ -103,10 +103,16 @@ class WindowConfig:
     # Evaluated OR-style: any active blocking zone suppresses direct solar exposure.
     obstruction_zones: list[ObstructionZone] = field(default_factory=list)
 
-    # Window contact sensor — physical open/close sensor for this window.
-    # None = no contact sensor configured (contact night logic is disabled).
-    # Stored as entity_id string; coordinator reads the HA state each cycle.
+    # Window contact sensor(s) — physical open/close sensor(s) for this window.
+    # None/empty = no contact sensor configured (contact night logic disabled).
+    # ``contact_sensor_entity_id`` is the legacy single value (kept for backward
+    # compatibility with v1.1.0-beta.3 and earlier configs).
+    # ``contact_sensor_entity_ids`` is the v1.1.0+ multi-contact list.  Read code
+    # should use the ``contact_entity_ids`` property, which normalises both into
+    # a deduplicated list (a window with several sashes / a door+window pair can
+    # have multiple contacts; the window counts as open if ANY contact is open).
     contact_sensor_entity_id: str | None = None
+    contact_sensor_entity_ids: list[str] | None = None
 
     # Night behavior when contact sensor is configured.
     # Option A: block the automatic night move while the window is open.
@@ -123,3 +129,19 @@ class WindowConfig:
     # HA-convention position (0=closed, 100=open) for Option B (NIGHT_VENT state).
     # None → coordinator uses DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA (100 = fully open).
     window_open_night_position_ha: int | None = None
+
+    @property
+    def contact_entity_ids(self) -> list[str]:
+        """Normalised list of configured contact entity ids (legacy + multi).
+
+        Prefers the multi-contact list; falls back to the legacy single value.
+        Deduplicates, preserves order and drops empty/None — so existing
+        single-contact configs keep working unchanged (as a one-element list).
+        """
+        if self.contact_sensor_entity_ids:
+            ids = [e for e in self.contact_sensor_entity_ids if e]
+        elif self.contact_sensor_entity_id:
+            ids = [self.contact_sensor_entity_id]
+        else:
+            ids = []
+        return list(dict.fromkeys(ids))

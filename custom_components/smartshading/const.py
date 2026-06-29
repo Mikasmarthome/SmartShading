@@ -237,7 +237,8 @@ CONF_WINDOW_BEHAVIOR_MODE = "window_behavior_mode"
 WINDOW_BEHAVIOR_MODE_OPTIONS = ["fully_automatic", "absence_and_schedule", "absence_only", "disabled_automatic"]
 
 # Window contact sensor and night-contact behavior (v1.1.0).
-CONF_CONTACT_SENSOR_ENTITY_ID = "contact_sensor_entity_id"
+CONF_CONTACT_SENSOR_ENTITY_ID = "contact_sensor_entity_id"       # legacy single (compat)
+CONF_CONTACT_SENSOR_ENTITY_IDS = "contact_sensor_entity_ids"     # v1.1.0+ multi-contact list
 CONF_NIGHT_BLOCK_ON_WINDOW_OPEN = "night_block_on_window_open"   # Option A
 CONF_NIGHT_LIFT_ON_WINDOW_OPEN = "night_lift_on_window_open"     # Option B
 CONF_WINDOW_OPEN_NIGHT_POSITION = "window_open_night_position"   # position for Option B

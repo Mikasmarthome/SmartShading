@@ -178,7 +178,7 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
             "runtime_mode": _zone_runtime_mode(c),
             "rain_sensor_configured": getattr(c, "_rain_sensor_id", None) is not None,
             "contact_sensor_any_configured": any(
-                getattr(w, "contact_sensor_entity_id", None) is not None
+                bool(getattr(w, "contact_entity_ids", None))
                 for w in (getattr(c, "windows", {}) or {}).values()
             ),
         }, errors, "system"),

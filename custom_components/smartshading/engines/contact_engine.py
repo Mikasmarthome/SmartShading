@@ -140,3 +140,54 @@ def build_contact_reading(
         read_at_utc=read_at_utc,
         is_stale=is_stale,
     )
+
+
+@dataclass(frozen=True)
+class AggregatedContact:
+    """Aggregated open/close state across one window's contact sensors.
+
+    OPEN when ANY contact is open; UNKNOWN when none is open but at least one is
+    unknown/unavailable (cannot confirm all closed — conservative); CLOSED only
+    when every contact reports closed.  Counts are privacy-safe (no entity ids).
+    """
+
+    status: ContactStatus
+    is_stale: bool
+    total: int
+    open_count: int
+    closed_count: int
+    unknown_count: int
+    read_at_utc: datetime | None = None
+
+
+def aggregate_contact_readings(readings: list[ContactReading]) -> AggregatedContact:
+    """Aggregate per-sensor readings into one window contact state.
+
+    Semantics (any-open):
+      - any OPEN          → OPEN
+      - else any UNKNOWN  → UNKNOWN (conservative: cannot confirm fully closed)
+      - else              → CLOSED
+    A single-sensor window keeps its prior behaviour (one reading in the list).
+    """
+    open_count = sum(1 for r in readings if r.status is ContactStatus.OPEN)
+    closed_count = sum(1 for r in readings if r.status is ContactStatus.CLOSED)
+    unknown_count = sum(1 for r in readings if r.status is ContactStatus.UNKNOWN)
+    total = len(readings)
+    if total == 0:
+        status = ContactStatus.UNKNOWN
+    elif open_count > 0:
+        status = ContactStatus.OPEN
+    elif unknown_count > 0:
+        status = ContactStatus.UNKNOWN
+    else:
+        status = ContactStatus.CLOSED
+    read_ats = [r.read_at_utc for r in readings if r.read_at_utc is not None]
+    return AggregatedContact(
+        status=status,
+        is_stale=any(r.is_stale for r in readings),
+        total=total,
+        open_count=open_count,
+        closed_count=closed_count,
+        unknown_count=unknown_count,
+        read_at_utc=(max(read_ats) if read_ats else None),
+    )

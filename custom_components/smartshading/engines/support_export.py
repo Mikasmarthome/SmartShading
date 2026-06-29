@@ -163,6 +163,8 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             if isinstance(prov, dict):
                 prov["contact"] = {
                     "sensor_configured": bool(getattr(diag, "contact_sensor_configured", False)),
+                    "sensor_count": int(getattr(diag, "contact_sensor_count", 0) or 0),
+                    "open_count": int(getattr(diag, "contact_open_count", 0) or 0),
                     "status": getattr(diag, "contact_status", None),
                     "is_stale": bool(getattr(diag, "contact_is_stale", False)),
                     "night_contact_blocked": bool(getattr(diag, "night_contact_blocked", False)),

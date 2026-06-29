@@ -1857,8 +1857,8 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             _night_block = bool(user_input.get(CONF_NIGHT_BLOCK_ON_WINDOW_OPEN, False))
             _night_lift = bool(user_input.get(CONF_NIGHT_LIFT_ON_WINDOW_OPEN, False))
             raw_vent = user_input.get(CONF_WINDOW_OPEN_NIGHT_POSITION)
-            if _night_lift and not _night_block:
-                errors[CONF_NIGHT_LIFT_ON_WINDOW_OPEN] = "night_lift_requires_night_block"
+            # Option A (block) and Option B (ventilation) are independent: each
+            # may be enabled on its own.  Both require a configured contact.
             if _night_block and not _contacts:
                 errors[CONF_CONTACT_SENSOR_ENTITY_IDS] = "contact_sensor_required_for_block"
             if _night_lift and not _contacts:
@@ -1868,7 +1868,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     "contact_sensor_entity_ids": _contacts,
                     "contact_sensor_entity_id": _contacts[0] if _contacts else None,
                     "night_block_on_window_open": _night_block,
-                    "night_lift_on_window_open": _night_lift if _night_block else False,
+                    "night_lift_on_window_open": _night_lift,
                     "window_open_night_position_ha": int(raw_vent) if raw_vent is not None else DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA,
                 })
         _raw_stored = window.get("contact_sensor_entity_ids")

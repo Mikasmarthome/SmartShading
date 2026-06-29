@@ -1,31 +1,38 @@
 """Per-window state machine for night-contact behavior.
 
-Tracks whether the automatic night move was blocked (Option A), whether a
-catch-up move has already been executed this night, and whether the cover
-is currently in NIGHT_VENT position (Option B).
+Option A (night_block_on_window_open) and Option B (night_lift_on_window_open)
+are INDEPENDENT contact-night features.  Both require a configured window
+contact, but neither requires the other:
+
+  - Option A — block: while the window is open (or its state cannot be confirmed
+    closed) at night, the full night move is blocked.  Option A never lifts or
+    vents; it only holds the cover until the window is safely closed.
+  - Option B — ventilation: while the window is open at night, the cover is
+    driven at most to the configured ventilation position instead of the full
+    night position; when the window closes it returns to the night position.
+
+When BOTH are enabled and the window is open, Option B wins (the ventilation
+position is the more specific, deliberately configured action).
 
 The state machine is in-memory and resets when the night phase ends.
 After a restart during night, the machine starts fresh — the coordinator
 re-derives the correct state from the current contact sensor reading.
 
-State transitions:
+State transitions (decided by contact state each cycle):
   Any state  →  reset()         on morning/day transition
-  idle       →  blocked         Option A active + night transition + contact OPEN
-  idle       →  caught_up       night transition + contact CLOSED (normal night move done)
-  blocked    →  caught_up       contact closes during night (triggers catch-up move)
-  caught_up  →  night_vent      Option B active + contact opens while caught_up
-  night_vent →  caught_up       contact closes while in NIGHT_VENT
+  any        →  blocked         contact OPEN + Option A only (no Option B)
+  any        →  night_vent      contact OPEN + Option B enabled
+  any        →  blocked         contact UNKNOWN (and not already venting)
+  blocked    →  caught_up       contact CLOSED during night (catch-up move)
+  night_vent →  caught_up       contact CLOSED while venting (return to night)
 
 UNKNOWN contact semantics (conservative — UNKNOWN is never treated as CLOSED):
-  - Option A block: UNKNOWN BLOCKS the night move and does NOT mark caught_up.
-    The full night move requires a definitive CLOSED reading; a sensor that is
-    unavailable/unknown (e.g. not yet hydrated after restart) holds the cover.
-  - Catch-up: UNKNOWN does NOT trigger catch-up.  The hold stays in blocked
-    state until a definitive CLOSED reading arrives.  This prevents a cover
-    from moving to night position solely because a sensor went unavailable.
-  - Option B HOLD_NIGHT_VENT: UNKNOWN maintains the vent position.  The hold
-    stays in night_vent state until a definitive CLOSED reading arrives.
-  - Option B RETURN_TO_NIGHT: UNKNOWN does NOT trigger a return move.
+  - The full night move is BLOCKED and caught_up is NOT marked; a definitive
+    CLOSED reading is required before the cover moves to the night position.
+  - No NEW active vent move is started on an unconfirmed state.  If the cover
+    was already venting (window was known open before the fault) the vent
+    position is maintained rather than dropping to night.
+  - Catch-up and RETURN_TO_NIGHT never fire on UNKNOWN.
 
 Conservative restart semantics:
   After restart with contact OPEN during night → block the night move
@@ -132,69 +139,82 @@ class NightContactHold:
         NightContactAction
             One of: PASS_THROUGH, BLOCK, CATCH_UP, HOLD_NIGHT_VENT, RETURN_TO_NIGHT.
         """
-        if not night_active or not night_block_enabled:
-            # Feature disabled or not in night phase — no modification.
+        # Gate: contact-based night logic acts only during the night phase and
+        # only when at least one option is enabled.  Option A and Option B are
+        # INDEPENDENT — either may be enabled on its own (both require a contact,
+        # enforced by the config flow).  When neither is enabled the contact has
+        # no effect on the night decision.
+        if not night_active or (not night_block_enabled and not night_lift_enabled):
             if self.night_vent_active:
-                # Safety: if we somehow lost night context while in vent, reset.
+                # Lost night context while venting — reset.
                 self.night_vent_active = False
             return NightContactAction.PASS_THROUGH
 
-        # --- Option A: block the night move if contact is OPEN ---------------
+        # The contact only modifies an actual full-night intent: a pending
+        # NIGHT_CLOSED decision, an already-established block, or an active vent.
+        _night_close_relevant = (
+            (night_decision_pending and not self.caught_up_this_night)
+            or self.blocked_this_night
+            or self.night_vent_active
+            or self.caught_up_this_night
+        )
 
-        if night_decision_pending and not self.caught_up_this_night:
-            if contact_open:
-                # Block the night move this cycle.
+        # --- Contact OPEN ----------------------------------------------------
+        if contact_open:
+            if night_lift_enabled:
+                # Option B is the more specific action and is preferred over a
+                # plain block when both options are active: move to (or hold) the
+                # ventilation position instead of the full night position.  Only
+                # acts when there is a night-close intent to downgrade, an active
+                # vent to maintain, or a completed night move to lift.
+                if _night_close_relevant:
+                    self.night_vent_active = True
+                    self.blocked_this_night = False
+                    return NightContactAction.HOLD_NIGHT_VENT
+                return NightContactAction.PASS_THROUGH
+            # Option A only: block the full night move; A never lifts/vents.
+            if (night_decision_pending and not self.caught_up_this_night) or (
+                    self.blocked_this_night and not self.caught_up_this_night):
+                self.night_vent_active = False
                 self.blocked_this_night = True
                 return NightContactAction.BLOCK
-            if contact_unknown:
-                # Cannot confirm the window is closed — e.g. the contact sensor
-                # is still unavailable/unknown right after an HA restart, before
-                # its state has hydrated.  Treat this conservatively like OPEN:
-                # block the full night move and do NOT mark caught_up.  A later
-                # definitive CLOSED reading then drives the deferred night move
-                # (catch-up), and a later OPEN keeps the cover held / lifts to
-                # NIGHT_VENT.  This prevents a cover from driving to full night
-                # position solely because the sensor had not loaded yet.
-                self.blocked_this_night = True
-                return NightContactAction.BLOCK
-            # Contact is definitively CLOSED — night move executes normally.
-            # Mark as caught_up so we don't re-block after the window opens.
-            if not self.caught_up_this_night:
-                self.caught_up_this_night = True
-                self.blocked_this_night = False
             return NightContactAction.PASS_THROUGH
 
-        # --- Catch-up: contact closed after a blocked night ------------------
+        # --- Contact UNKNOWN / UNAVAILABLE / stale ---------------------------
+        if contact_unknown:
+            # Conservative for BOTH options: the window cannot be confirmed
+            # closed (e.g. the sensor has not hydrated after an HA restart).
+            # Never drive to the full night position and never start a NEW active
+            # vent move on an unconfirmed state.  If we were already venting (the
+            # window was known open before the fault) keep the vent position;
+            # otherwise block the night move until a definitive reading arrives.
+            # Never mark caught_up.
+            if self.night_vent_active:
+                return NightContactAction.HOLD_NIGHT_VENT
+            if (night_decision_pending and not self.caught_up_this_night) or (
+                    self.blocked_this_night and not self.caught_up_this_night):
+                self.blocked_this_night = True
+                return NightContactAction.BLOCK
+            return NightContactAction.PASS_THROUGH
 
-        if self.blocked_this_night and not contact_open and not self.caught_up_this_night:
-            if contact_unknown:
-                # Sensor unavailable — don't catch up; stay blocked until a
-                # definitive CLOSED reading arrives.
-                return NightContactAction.PASS_THROUGH
+        # --- Contact CLOSED (definitive) -------------------------------------
+        if self.night_vent_active:
+            # Was venting; the window is now closed → return to night position.
+            self.night_vent_active = False
+            self.caught_up_this_night = True
+            self.blocked_this_night = False
+            return NightContactAction.RETURN_TO_NIGHT
+        if self.blocked_this_night and not self.caught_up_this_night:
+            # The full night move was deferred while the window was open/unknown
+            # → catch up now that it is confirmed closed.
             self.blocked_this_night = False
             self.caught_up_this_night = True
-            self.night_vent_active = False
             return NightContactAction.CATCH_UP
-
-        # --- Option B: lift/return while in night context --------------------
-
-        if night_lift_enabled and self.caught_up_this_night:
-            if contact_open and not self.night_vent_active:
-                # Window opened after night move was done → go to NIGHT_VENT.
-                self.night_vent_active = True
-                return NightContactAction.HOLD_NIGHT_VENT
-
-            if self.night_vent_active and not contact_open and not contact_unknown:
-                # Window closed while in NIGHT_VENT → return to night position.
-                # UNKNOWN: maintain vent; don't move on sensor fault alone.
-                self.night_vent_active = False
-                return NightContactAction.RETURN_TO_NIGHT
-
-            if self.night_vent_active and (contact_open or contact_unknown):
-                # Maintain NIGHT_VENT when open or sensor temporarily unknown.
-                return NightContactAction.HOLD_NIGHT_VENT
-
-        # No modification needed.
+        # Normal night move (or the cover is already at night): let the tier
+        # decision through and record that the night move has happened.
+        if night_decision_pending and not self.caught_up_this_night:
+            self.caught_up_this_night = True
+            self.blocked_this_night = False
         return NightContactAction.PASS_THROUGH
 
     # --- Diagnostic helpers --------------------------------------------------

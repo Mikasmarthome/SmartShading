@@ -657,6 +657,10 @@ class ProvenanceSummary:
     # measured-vs-fallback.  None = not recorded (legacy / pre-extension data).
     selected_solar_source: str | None = None
     solar_source_quality: str | None = None
+    # Forecast modifier signals carried forward so demoted records still aggregate
+    # forecast trust / threshold-bias usage.  None = not recorded.
+    forecast_trust_score: float | None = None
+    forecast_modifier_delta_wm2: float | None = None
     # True when full provenance once existed for this decision (a demoted v2
     # record).  False for legacy records that never had provenance.
     provenance_available: bool = True
@@ -678,6 +682,8 @@ class ProvenanceSummary:
             config_generation=p.context.config_generation,
             selected_solar_source=p.adaptation.selected_solar_source,
             solar_source_quality=p.adaptation.solar_source_quality,
+            forecast_trust_score=p.adaptation.forecast_trust_score,
+            forecast_modifier_delta_wm2=p.adaptation.forecast_modifier_delta_wm2,
             provenance_available=True,
         )
 
@@ -693,6 +699,8 @@ class ProvenanceSummary:
             "config_generation": self.config_generation,
             "selected_solar_source": self.selected_solar_source,
             "solar_source_quality": self.solar_source_quality,
+            "forecast_trust_score": self.forecast_trust_score,
+            "forecast_modifier_delta_wm2": self.forecast_modifier_delta_wm2,
             "provenance_available": self.provenance_available,
         }
 
@@ -709,6 +717,8 @@ class ProvenanceSummary:
             config_generation=int(d.get("config_generation", 0)),
             selected_solar_source=d.get("selected_solar_source"),
             solar_source_quality=d.get("solar_source_quality"),
+            forecast_trust_score=d.get("forecast_trust_score"),
+            forecast_modifier_delta_wm2=d.get("forecast_modifier_delta_wm2"),
             provenance_available=bool(d.get("provenance_available", True)),
         )
 

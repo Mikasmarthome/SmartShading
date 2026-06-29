@@ -49,6 +49,18 @@ _IMPROVEMENT_NEUTRAL_TOLERANCE = 0.10  # outcome_score is -1.0..+1.0
 # Explicit, documented, deterministic bucket boundaries.
 _CONFIDENCE_BUCKETS = ((0.0, 0.5, "low"), (0.5, 0.7, "medium"),
                        (0.7, 0.85, "high"), (0.85, 1.0001, "very_high"))
+# Forecast trust buckets (trust score is 0..1).  Below APPLY_MIN a forecast bias
+# is treated as "low trust" for the not-applied reason.
+_FORECAST_TRUST_BUCKETS = ((0.0, 0.4, "low"), (0.4, 0.7, "medium"),
+                           (0.7, 1.0001, "high"))
+_FORECAST_TRUST_APPLY_MIN = 0.4
+# Authority of the solar value that drove the decision — the explicit separation
+# of measured/current vs forecast-bias vs fallback estimate vs no source vs legacy.
+_SOLAR_AUTHORITY_BY_SOURCE = {
+    "measured_sensor": "measured_current",
+    "weather_estimate": "fallback_estimate",
+    "unavailable": "no_source",
+}
 _SEASON_BY_MONTH = {12: "winter", 1: "winter", 2: "winter", 3: "spring", 4: "spring",
                     5: "spring", 6: "summer", 7: "summer", 8: "summer",
                     9: "autumn", 10: "autumn", 11: "autumn"}
@@ -213,7 +225,8 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
         "data_availability": {
             "research_records": ("available" if research_records else "not_available"),
             "counterfactual": "not_available",
-            "solar_buckets": "not_available",  # exposure not in the persisted summary
+            "solar_buckets": "available",  # source authority persisted in summary
+            "forecast_buckets": "available",  # forecast trust/delta persisted in summary
             "confidence_buckets": "available_from_adoption_history",
             "reliability_buckets": "not_available",   # not in the persisted summary
             "behavior_mode_buckets": "not_available",  # not in the persisted summary
@@ -266,6 +279,26 @@ def _project_decision(d, wid, pz) -> dict | None:
     base = _num(_first_attr(summary, "baseline_requested_target_ha", "baseline_target_ha"))
     adapted = _num(_first_attr(summary, "final_requested_target_ha", "final_target_ha"))
     sources = getattr(summary, "adaptation_sources", frozenset()) or frozenset()
+    # Solar source authority + forecast usage (carried in the summary; populated
+    # from provenance for recent records, None/legacy for pre-extension data).
+    sel_solar = getattr(summary, "selected_solar_source", None)
+    solar_quality = getattr(summary, "solar_source_quality", None)
+    solar_authority = _solar_authority(sel_solar)
+    solar_is_fallback = (sel_solar == "weather_estimate"
+                         or solar_quality == "estimated_low")
+    fc_trust = _num(getattr(summary, "forecast_trust_score", None))
+    fc_delta = _num(getattr(summary, "forecast_modifier_delta_wm2", None))
+    forecast_in_sources = any("forecast" in str(s) for s in sources)
+    forecast_available = fc_trust is not None or forecast_in_sources
+    forecast_applied = forecast_in_sources or (fc_delta is not None and fc_delta != 0)
+    if forecast_applied:
+        forecast_not_applied_reason = None
+    elif not forecast_available:
+        forecast_not_applied_reason = "forecast_unavailable"
+    elif fc_trust is not None and fc_trust < _FORECAST_TRUST_APPLY_MIN:
+        forecast_not_applied_reason = "low_trust"
+    else:
+        forecast_not_applied_reason = "no_threshold_effect"
     is_adapted = bool(sources) and base is not None and adapted is not None and base != adapted
     outcome = getattr(d, "outcome", None)
     confounders: list = []
@@ -344,6 +377,16 @@ def _project_decision(d, wid, pz) -> dict | None:
         "season_bucket": _SEASON_BY_MONTH.get(
             getattr(getattr(d, "decision_timestamp", None), "month", 0), "unknown"),
         "lifecycle_bucket": getattr(outcome, "lifecycle_state", None) if outcome else None,
+        # Solar source authority + forecast usage (privacy-safe, no raw values).
+        "selected_solar_source": sel_solar if sel_solar is not None else "not_recorded",
+        "solar_source_quality": solar_quality if solar_quality is not None else "not_recorded",
+        "solar_authority": solar_authority,
+        "solar_is_fallback": solar_is_fallback,
+        "forecast_available": forecast_available,
+        "forecast_applied": forecast_applied,
+        "forecast_not_applied_reason": forecast_not_applied_reason,
+        "forecast_trust_bucket": _trust_bucket(fc_trust),
+        "forecast_threshold_delta_wm2": fc_delta,
     }
 
 
@@ -396,6 +439,100 @@ def _aggregations(records, coord) -> dict:
         "season_basis": "northern_hemisphere_calendar",
         "by_lifecycle": _bucket_counts(records, "lifecycle_bucket"),
         "confidence_buckets": cb,
+        "solar_forecast": _solar_forecast_aggregations(records),
+    }
+
+
+def _solar_authority(selected_solar_source) -> str:
+    if selected_solar_source is None:
+        return "legacy_not_recorded"
+    return _SOLAR_AUTHORITY_BY_SOURCE.get(selected_solar_source, "unknown")
+
+
+def _trust_bucket(score) -> str:
+    if score is None:
+        return "not_recorded"
+    for lo, hi, name in _FORECAST_TRUST_BUCKETS:
+        if lo <= score < hi:
+            return name
+    return "unknown"
+
+
+def _solar_forecast_aggregations(records) -> dict:
+    """Privacy-safe solar-source / forecast-usage aggregates over all eligible
+    records.  Counts and buckets only — never raw exposure values or entity ids."""
+    total = len(records)
+    with_outcome = [r for r in records
+                    if r.get("outcome_status") not in (None, "none", "pending")]
+    fallback = [r for r in records if r.get("solar_is_fallback")]
+    fallback_confounded = [r for r in with_outcome
+                           if "solar_fallback" in (r.get("confounder_codes") or [])]
+    # measured vs fallback vs no_source vs not_recorded (mutually exclusive).
+    mvf = {"measured": 0, "fallback": 0, "no_source": 0, "not_recorded": 0}
+    for r in records:
+        auth = r.get("solar_authority")
+        if auth == "measured_current":
+            mvf["measured"] += 1
+        elif auth == "fallback_estimate":
+            mvf["fallback"] += 1
+        elif auth == "no_source":
+            mvf["no_source"] += 1
+        else:
+            mvf["not_recorded"] += 1
+    # forecast usage
+    fc_available = [r for r in records if r.get("forecast_available")]
+    fc_applied = [r for r in records if r.get("forecast_applied")]
+    not_applied_reasons: dict = {}
+    for r in records:
+        reason = r.get("forecast_not_applied_reason")
+        if reason is not None:
+            not_applied_reasons[reason] = not_applied_reasons.get(reason, 0) + 1
+    deltas = [r.get("forecast_threshold_delta_wm2") for r in records
+              if isinstance(r.get("forecast_threshold_delta_wm2"), (int, float))
+              and not isinstance(r.get("forecast_threshold_delta_wm2"), bool)]
+    delta_stats = {
+        "sample": len(deltas),
+        "min_wm2": round(min(deltas), 2) if deltas else None,
+        "max_wm2": round(max(deltas), 2) if deltas else None,
+        "avg_wm2": round(sum(deltas) / len(deltas), 2) if deltas else None,
+        "sample_status": ("available" if len(deltas) >= MIN_BUCKET_SAMPLE
+                          else "insufficient_sample"),
+    }
+    return {
+        "by_selected_solar_source": _bucket_counts(records, "selected_solar_source"),
+        "by_solar_source_quality": _bucket_counts(records, "solar_source_quality"),
+        "by_solar_authority": _bucket_counts(records, "solar_authority"),
+        "authority_separation": {
+            "measured_current": mvf["measured"],
+            "forecast_threshold_bias_only": len(
+                [r for r in records if r.get("forecast_applied")
+                 and r.get("solar_authority") == "measured_current"]),
+            "fallback_estimate": mvf["fallback"],
+            "no_source": mvf["no_source"],
+            "legacy_not_recorded": mvf["not_recorded"],
+        },
+        "measured_vs_fallback": {
+            **mvf,
+            "fallback_rate": round(len(fallback) / total, 4) if total else 0.0,
+        },
+        "solar_fallback_decisions": {
+            "count": len(fallback),
+            "share": round(len(fallback) / total, 4) if total else 0.0,
+        },
+        "solar_fallback_confounded_outcomes": {
+            "count": len(fallback_confounded),
+            "share": (round(len(fallback_confounded) / len(with_outcome), 4)
+                      if with_outcome else 0.0),
+            "basis": "resolved_outcomes",
+        },
+        "forecast_usage": {
+            "available_count": len(fc_available),
+            "applied_count": len(fc_applied),
+            "applied_rate": round(len(fc_applied) / total, 4) if total else 0.0,
+            "not_applied_by_reason": dict(sorted(not_applied_reasons.items())),
+            "trust_buckets": _bucket_counts(records, "forecast_trust_bucket"),
+            "threshold_delta": delta_stats,
+        },
     }
 
 

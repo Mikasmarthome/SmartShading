@@ -305,7 +305,9 @@ class SmartShadingExportButton(ButtonEntity):
                     "SmartShading: support export covering %d zone(s)", len(coordinators)
                 )
             # Build only on this explicit user request (never in a coordinator cycle).
-            export_data = build_support_export_all_zones(coordinators, now=now)
+            from ..const import integration_version
+            export_data = build_support_export_all_zones(
+                coordinators, now=now, integration_version=integration_version())
         except Exception:
             _LOGGER.error("SmartShading: support export: failed to build export data")
             return
@@ -417,7 +419,9 @@ class SmartShadingResearchExportButton(ButtonEntity):
                 )
             # Built only on this explicit user request (never in a coordinator cycle);
             # baseline-vs-adapted from persisted records, aggregated across all zones.
-            export_data = build_research_export_all_zones(coordinators, now=now)
+            from ..const import integration_version
+            export_data = build_research_export_all_zones(
+                coordinators, now=now, integration_version=integration_version())
         except Exception:
             _LOGGER.error("SmartShading: research export: failed to build export data")
             return

@@ -121,6 +121,19 @@ _REGISTRY: dict[str, ReasonCode] = {r.code: r for r in (
        "No cover command: safety state holds the cover.", SEV_OPERATIONAL),
     _r("dispatch_not_required", CAT_NO_DISPATCH, "no change required",
        "No cover command required this cycle.", SEV_INFO),
+    # --- command-filter block reasons (cover_control/command_filter.py) ---
+    _r("same_position", CAT_NO_DISPATCH, "target within tolerance of current",
+       "No cover command: already at the target position (within tolerance; no command needed).",
+       SEV_INFO),
+    _r("no_target_position", CAT_NO_DISPATCH, "no actionable target position",
+       "No cover command: no actionable target position — the current mode/decision "
+       "intentionally holds or suppresses dispatch.", SEV_INFO),
+    _r("recommendation_only", CAT_NO_DISPATCH, "recommendation-only execution mode",
+       "No cover command: execution is recommendation-only (active control off).",
+       SEV_OPERATIONAL),
+    _r("guard_action_interval", CAT_NO_DISPATCH, "state-guard minimum action interval",
+       "No cover command: the state-guard minimum action interval has not elapsed.",
+       SEV_INFO),
     # --- health (P11) ---
     _r("missing_optional_input", CAT_HEALTH, "optional input missing",
        "An optional input is missing; deterministic control unaffected.", SEV_OPERATIONAL,

@@ -184,6 +184,9 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
         }, errors, "system"),
         "research_records": capped,
         "aggregations": _safe(lambda: _aggregations(research_records, [c]), errors, "aggregations"),
+        "history_metadata": _safe(lambda: _history_metadata(
+            research_records if isinstance(research_records, list) else [], len(capped),
+            store_scope="persistent_learning_history"), errors, "history_metadata"),
         "survivorship": _safe(lambda: _survivorship([c]), errors, "survivorship"),
         "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
                                       "per_window_summaries"),
@@ -224,6 +227,25 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
                 "generated_at_utc": _iso_s(now),
                 "section_errors": {"json_safety": {"count": 1, "reason_codes": ["json_unsafe"]}}}
     return contract
+
+
+def _history_metadata(eligible_records, serialized_count, *, store_scope) -> dict:
+    """Transparent history span/coverage for an export (privacy-safe — timestamps
+    and counts only).  Makes it explicit whether the export is the full persisted
+    learning history or a bounded recent sample, and the actual data span."""
+    stamps = sorted(r.get("decision_timestamp_utc") for r in eligible_records
+                    if r.get("decision_timestamp_utc"))
+    total = len(eligible_records)
+    return {
+        "store_scope": store_scope,
+        "oldest_record_utc": stamps[0] if stamps else None,
+        "newest_record_utc": stamps[-1] if stamps else None,
+        "records_total_available": total,
+        "records_exported": serialized_count,
+        "truncated": serialized_count < total,
+        "cap_reason": ("record_cap_or_byte_cap" if serialized_count < total
+                       else "within_cap"),
+    }
 
 
 def _project_store_records(store, pz, accounting) -> list:
@@ -335,6 +357,9 @@ def build_research_export_all_zones(coordinators, *, now=None,
         "per_zone": per_zone,
         "research_records": capped,
         "aggregations": _safe(lambda: _aggregations(all_records, coords), errors, "aggregations"),
+        "history_metadata": _safe(lambda: _history_metadata(
+            all_records, len(capped), store_scope="persistent_learning_history"),
+            errors, "history_metadata"),
         "survivorship": _safe(lambda: _survivorship(coords), errors, "survivorship"),
         "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
                                       "per_window_summaries"),

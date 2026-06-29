@@ -76,6 +76,25 @@ def _safe(fn, errors, name, default=None):
         return default if default is not None else {"section_error": True}
 
 
+def _support_history_metadata(recent_dec, dec_trunc) -> dict:
+    """Transparent span/coverage for the support export.  The support export
+    reads the *runtime recent* decision ring (bounded, reset on restart), NOT the
+    persisted learning history — so this is labelled store_scope=runtime_recent
+    and its span starts at the last restart/reload, by design."""
+    stamps = sorted(r.get("decision_timestamp_utc") for r in recent_dec
+                    if r.get("decision_timestamp_utc"))
+    truncated = bool((dec_trunc or {}).get("truncated"))
+    return {
+        "store_scope": "runtime_recent",
+        "scope_note": "recent in-memory decision ring; resets on restart/reload",
+        "oldest_record_utc": stamps[0] if stamps else None,
+        "newest_record_utc": stamps[-1] if stamps else None,
+        "records_exported": len(recent_dec),
+        "truncated": truncated,
+        "cap_reason": "per_zone_recent_cap" if truncated else "within_cap",
+    }
+
+
 def build_support_export_v3(coordinator, *, now=None, integration_version="unknown") -> dict:
     """Build the v3 support export for one config entry / its zone."""
     now = now or datetime.now(timezone.utc)
@@ -307,6 +326,9 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         "recent_learning_transitions": {"section_status": "not_recorded",
                                         "reason": "no_dedicated_transition_history_ring"},
         "storage": _safe(_storage, errors, "storage"),
+        "history_metadata": _safe(
+            lambda: _support_history_metadata(recent_dec, dec_trunc), errors,
+            "history_metadata"),
         "section_errors": errors,
     }
     # current_decisions: latest record per zone (pseudonymized).
@@ -330,6 +352,36 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 "generated_at_utc": _iso_s(now),
                 "section_errors": {"json_safety": {"count": 1, "reason_codes": ["json_unsafe"]}}}
     return contract
+
+
+def _aggregate_history_metadata(zones) -> dict:
+    """System-level span/coverage across all zones' runtime-recent decision rings,
+    plus per-zone exported counts (privacy-safe — counts/timestamps only)."""
+    olds, news = [], []
+    total_exported = 0
+    truncated = False
+    per_zone: list = []
+    for i, z in enumerate(zones):
+        hm = z.get("history_metadata", {}) if isinstance(z, dict) else {}
+        if hm.get("oldest_record_utc"):
+            olds.append(hm["oldest_record_utc"])
+        if hm.get("newest_record_utc"):
+            news.append(hm["newest_record_utc"])
+        cnt = int(hm.get("records_exported", 0) or 0)
+        total_exported += cnt
+        truncated = truncated or bool(hm.get("truncated"))
+        per_zone.append({"zone_index": i, "records_exported": cnt,
+                         "oldest_record_utc": hm.get("oldest_record_utc"),
+                         "newest_record_utc": hm.get("newest_record_utc")})
+    return {
+        "store_scope": "runtime_recent",
+        "scope_note": "recent in-memory decision rings; reset on restart/reload",
+        "oldest_record_utc": min(olds) if olds else None,
+        "newest_record_utc": max(news) if news else None,
+        "records_exported": total_exported,
+        "truncated": truncated,
+        "per_zone": per_zone,
+    }
 
 
 def build_support_export_all_zones(coordinators, *, now=None,
@@ -397,6 +449,7 @@ def build_support_export_all_zones(coordinators, *, now=None,
             "configured_sensors_summary": sensors_any,
         },
         "zones": zones,
+        "history_metadata": _aggregate_history_metadata(zones),
         "section_errors": ({} if not degraded
                            else {"zones": {"count": 1, "reason_codes": ["zone_degraded"]}}),
     }

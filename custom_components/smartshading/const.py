@@ -1,9 +1,31 @@
 """Central constants for the SmartShading integration."""
 from __future__ import annotations
 
+import json as _json
+import pathlib as _pathlib
 from datetime import timedelta
 
 DOMAIN = "smartshading"
+
+_INTEGRATION_VERSION_CACHE: str | None = None
+
+
+def integration_version() -> str:
+    """Resolve the integration version from manifest.json (single source).
+
+    Cached after first read.  Returns "unknown" only on a real read/parse error,
+    so support/research exports show the real version (e.g. "1.1.0-beta.4")
+    instead of a hardcoded default.  HA-free and import-safe (no hass needed).
+    """
+    global _INTEGRATION_VERSION_CACHE
+    if _INTEGRATION_VERSION_CACHE is None:
+        try:
+            _mf = _pathlib.Path(__file__).resolve().parent / "manifest.json"
+            _INTEGRATION_VERSION_CACHE = (
+                _json.loads(_mf.read_text(encoding="utf-8")).get("version") or "unknown")
+        except Exception:
+            _INTEGRATION_VERSION_CACHE = "unknown"
+    return _INTEGRATION_VERSION_CACHE
 
 # Entry type discrimination: distinguishes the system entry from zone entries.
 # Stored in ConfigEntry.data[CONF_ENTRY_TYPE].  Absent = zone (legacy compat).

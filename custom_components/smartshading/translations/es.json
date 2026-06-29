@@ -147,21 +147,49 @@
           "window_id": "Ventana"
         }
       },
-      "edit_window_detail": {
-        "title": "Editar ventana: {window_name}",
-        "description": "Actualiza los ajustes de la ventana «{window_name}». Los cambios de persiana se aplican al guardar.",
+      "edit_window_menu": {
+        "title": "Edit window: {window_name}",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Nombre de la ventana",
           "floor_level": "Planta (-1 = sótano, 0 = planta baja, 1 = 1.ª planta, …)",
           "compass_direction": "Orientación",
           "custom_azimuth": "Acimut personalizado (0-359°, solo se usa si la Orientación es Personalizada)",
           "cover_entities": "Persianas de esta ventana",
-          "cover_hardware_type": "Tipo de hardware de la persiana",
+          "cover_hardware_type": "Tipo de hardware de la persiana"
+        },
+        "data_description": {
+          "floor_level": "Se usa para derivar la elevación solar mínima para exposición directa. −1 (sótano) → 20°, 0 (planta baja) → 15°, 1 (1.ª planta) → 10°, 2 (2.ª planta) → 5°, 3 y superior → 0°. Para ventanas en patios de luz o con obstrucciones grandes, use zonas de obstrucción."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Posición de ausencia (anula el valor por defecto de la zona)",
           "window_behavior_mode": "Modo de sombreado automático",
           "light_shade_position": "Posición de sombra ligera (anula el valor por defecto de la zona)",
           "normal_shade_position": "Posición de sombra normal (anula el valor por defecto de la zona)",
-          "strong_shade_position": "Posición de sombra fuerte (anula el valor por defecto de la zona)",
+          "strong_shade_position": "Posición de sombra fuerte (anula el valor por defecto de la zona)"
+        },
+        "data_description": {
+          "absence_position": "Déjalo vacío para heredar la posición de ausencia por defecto de la zona. Indica un valor para anularla solo en esta ventana.",
+          "window_behavior_mode": "Totalmente automático: sol, confort, ausencia y horario activos. Ausencia y horario: control por ausencia, horario nocturno y matutino activos; sin sombreado solar, térmico o antirreflejo. Solo ausencia: solo control por ausencia. Automatización desactivada: sin sombreado automático. Las protecciones de seguridad (tormenta/viento) permanecen siempre activas.",
+          "light_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra ligera solo en esta ventana.",
+          "normal_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra normal solo en esta ventana.",
+          "strong_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra fuerte solo en esta ventana."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Activar anulación manual del sector solar",
           "manual_sun_sector_start_deg": "Acimut de inicio del sector solar (°)",
           "manual_sun_sector_end_deg": "Acimut de fin del sector solar (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Acimut de inicio de la zona 3 (°)",
           "obstruction_3_azimuth_end_deg": "Acimut de fin de la zona 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Zona 3 bloqueada desde la elevación (°)",
-          "obstruction_3_block_until_elevation_deg": "Zona 3 bloqueada hasta la elevación (°)",
-          "contact_sensor_entity_ids": "Window contact sensor (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "Zona 3 bloqueada hasta la elevación (°)"
         },
         "data_description": {
-          "absence_position": "Déjalo vacío para heredar la posición de ausencia por defecto de la zona. Indica un valor para anularla solo en esta ventana.",
-          "window_behavior_mode": "Totalmente automático: sol, confort, ausencia y horario activos. Ausencia y horario: control por ausencia, horario nocturno y matutino activos; sin sombreado solar, térmico o antirreflejo. Solo ausencia: solo control por ausencia. Automatización desactivada: sin sombreado automático. Las protecciones de seguridad (tormenta/viento) permanecen siempre activas.",
-          "light_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra ligera solo en esta ventana.",
-          "normal_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra normal solo en esta ventana.",
-          "strong_shade_position": "Déjalo vacío para usar el valor por defecto de la zona. Indica un valor para anular la posición objetivo de sombra fuerte solo en esta ventana.",
           "manual_sun_sector_enabled": "El azimut de inicio y fin se sugiere según la orientación y la tolerancia de la ventana. Active para usar este rango en lugar del sector solar automático. Los valores se pueden ajustar antes de guardar. Compatible con desbordamiento 0°/360° (p. ej., 330° a 30° cruza el norte).",
           "obstruction_1_enabled": "Actívalo para marcar un rango de acimut donde una obstrucción física (árbol, edificio, alero del tejado) bloquea el sol directo. Deja vacíos los campos de elevación para bloquear en toda elevación solar dentro del rango de acimut.",
           "obstruction_1_block_from_elevation_deg": "Opcional. La obstrucción bloquea solo cuando la elevación solar es igual o superior a este valor. Ejemplo: 45° bloquea un alero que solo da sombra con ángulos solares altos. Déjalo vacío si no hay límite inferior.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Límite superior de elevación opcional para la zona 2 (ver la descripción de la zona 1).",
           "obstruction_3_enabled": "Tercera zona de obstrucción opcional para esta ventana.",
           "obstruction_3_block_from_elevation_deg": "Límite inferior de elevación opcional para la zona 3 (ver la descripción de la zona 1).",
-          "obstruction_3_block_until_elevation_deg": "Límite superior de elevación opcional para la zona 3 (ver la descripción de la zona 1).",
-          "floor_level": "Se usa para derivar la elevación solar mínima para exposición directa. −1 (sótano) → 20°, 0 (planta baja) → 15°, 1 (1.ª planta) → 10°, 2 (2.ª planta) → 5°, 3 y superior → 0°. Para ventanas en patios de luz o con obstrucciones grandes, use zonas de obstrucción.",
+          "obstruction_3_block_until_elevation_deg": "Límite superior de elevación opcional para la zona 3 (ver la descripción de la zona 1)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

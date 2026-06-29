@@ -147,21 +147,49 @@
           "window_id": "Окно"
         }
       },
-      "edit_window_detail": {
-        "title": "Изменить окно: {window_name}",
-        "description": "Обновите настройки окна «{window_name}». Изменения штор вступают в силу после сохранения.",
+      "edit_window_menu": {
+        "title": "Edit window: {window_name}",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Имя окна",
           "floor_level": "Этаж (-1 = подвал, 0 = первый этаж, 1 = 2-й этаж, …)",
           "compass_direction": "Ориентация",
           "custom_azimuth": "Пользовательский азимут (0-359°, используется только если для Ориентации выбрано «Пользовательская»)",
           "cover_entities": "Шторы для этого окна",
-          "cover_hardware_type": "Тип оборудования шторы",
+          "cover_hardware_type": "Тип оборудования шторы"
+        },
+        "data_description": {
+          "floor_level": "Используется для определения минимальной высоты солнца для прямого освещения. −1 (подвал) → 20°, 0 (первый этаж) → 15°, 1 (второй этаж) → 10°, 2 (третий этаж) → 5°, 3 и выше → 0°. Для окон в световых шахтах или с сильными препятствиями используйте зоны препятствий."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Положение при отсутствии (переопределяет значение зоны по умолчанию)",
           "window_behavior_mode": "Автоматический режим затенения",
           "light_shade_position": "Положение лёгкого затенения (переопределяет значение зоны по умолчанию)",
           "normal_shade_position": "Положение нормального затенения (переопределяет значение зоны по умолчанию)",
-          "strong_shade_position": "Положение сильного затенения (переопределяет значение зоны по умолчанию)",
+          "strong_shade_position": "Положение сильного затенения (переопределяет значение зоны по умолчанию)"
+        },
+        "data_description": {
+          "absence_position": "Оставьте пустым, чтобы унаследовать положение отсутствия зоны по умолчанию. Укажите значение, чтобы переопределить его только для этого окна.",
+          "window_behavior_mode": "Полностью автоматический: солнце, комфорт, отсутствие и расписание активны. Отсутствие и расписание: управление по отсутствию, ночное и утреннее расписание активны; без солнечного, теплового или антибликового затенения. Только отсутствие: только управление по отсутствию. Автоматизация отключена: без автоматического затенения. Защита (буря/ветер) всегда остаётся активной.",
+          "light_shade_position": "Оставьте пустым, чтобы использовать значение зоны по умолчанию. Укажите значение, чтобы переопределить целевое положение лёгкого затенения только для этого окна.",
+          "normal_shade_position": "Оставьте пустым, чтобы использовать значение зоны по умолчанию. Укажите значение, чтобы переопределить целевое положение нормального затенения только для этого окна.",
+          "strong_shade_position": "Оставьте пустым, чтобы использовать значение зоны по умолчанию. Укажите значение, чтобы переопределить целевое положение сильного затенения только для этого окна."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Включить ручное переопределение солнечного сектора",
           "manual_sun_sector_start_deg": "Начальный азимут солнечного сектора (°)",
           "manual_sun_sector_end_deg": "Конечный азимут солнечного сектора (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Начальный азимут зоны 3 (°)",
           "obstruction_3_azimuth_end_deg": "Конечный азимут зоны 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Зона 3 блокируется от высоты (°)",
-          "obstruction_3_block_until_elevation_deg": "Зона 3 блокируется до высоты (°)",
-          "contact_sensor_entity_ids": "Window contact sensor (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "Зона 3 блокируется до высоты (°)"
         },
         "data_description": {
-          "absence_position": "Оставьте пустым, чтобы унаследовать положение отсутствия зоны по умолчанию. Укажите значение, чтобы переопределить его только для этого окна.",
-          "window_behavior_mode": "Полностью автоматический: солнце, комфорт, отсутствие и расписание активны. Отсутствие и расписание: управление по отсутствию, ночное и утреннее расписание активны; без солнечного, теплового или антибликового затенения. Только отсутствие: только управление по отсутствию. Автоматизация отключена: без автоматического затенения. Защита (буря/ветер) всегда остаётся активной.",
-          "light_shade_position": "Оставьте пустым, чтобы использовать значение зоны по умолчанию. Укажите значение, чтобы переопределить целевое положение лёгкого затенения только для этого окна.",
-          "normal_shade_position": "Оставьте пустым, чтобы использовать значение зоны по умолчанию. Укажите значение, чтобы переопределить целевое положение нормального затенения только для этого окна.",
-          "strong_shade_position": "Оставьте пустым, чтобы использовать значение зоны по умолчанию. Укажите значение, чтобы переопределить целевое положение сильного затенения только для этого окна.",
           "manual_sun_sector_enabled": "Начальный и конечный азимут предлагаются исходя из ориентации и допусков окна. Включите, чтобы использовать этот диапазон вместо автоматического. Значения можно изменить перед сохранением. Поддерживает переход через 0°/360° (напр., 330° – 30° проходит через север).",
           "obstruction_1_enabled": "Включите, чтобы отметить диапазон азимута, где физическое препятствие (дерево, здание, свес крыши) блокирует прямое солнце. Оставьте поля высоты пустыми, чтобы блокировать при любой высоте солнца в диапазоне азимута.",
           "obstruction_1_block_from_elevation_deg": "Необязательно. Препятствие блокирует только тогда, когда высота солнца равна этому значению или выше. Пример: 45° блокирует свес крыши, который затеняет только при крутых углах солнца. Оставьте пустым, чтобы не задавать нижний предел.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Необязательная верхняя граница высоты для зоны 2 (см. описание зоны 1).",
           "obstruction_3_enabled": "Третья необязательная зона препятствия для этого окна.",
           "obstruction_3_block_from_elevation_deg": "Необязательная нижняя граница высоты для зоны 3 (см. описание зоны 1).",
-          "obstruction_3_block_until_elevation_deg": "Необязательная верхняя граница высоты для зоны 3 (см. описание зоны 1).",
-          "floor_level": "Используется для определения минимальной высоты солнца для прямого освещения. −1 (подвал) → 20°, 0 (первый этаж) → 15°, 1 (второй этаж) → 10°, 2 (третий этаж) → 5°, 3 и выше → 0°. Для окон в световых шахтах или с сильными препятствиями используйте зоны препятствий.",
+          "obstruction_3_block_until_elevation_deg": "Необязательная верхняя граница высоты для зоны 3 (см. описание зоны 1)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

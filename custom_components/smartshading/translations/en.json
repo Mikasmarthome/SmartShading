@@ -147,21 +147,49 @@
           "window_id": "Window"
         }
       },
-      "edit_window_detail": {
+      "edit_window_menu": {
         "title": "Edit window: {window_name}",
-        "description": "Update the settings for window \"{window_name}\". Cover changes take effect after saving.",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Window name",
           "floor_level": "Floor level (-1 = basement, 0 = ground floor, 1 = 1st floor, …)",
           "compass_direction": "Orientation",
           "custom_azimuth": "Custom azimuth (0-359°, only used if Orientation is set to Custom)",
           "cover_entities": "Covers for this window",
-          "cover_hardware_type": "Cover hardware type",
+          "cover_hardware_type": "Cover hardware type"
+        },
+        "data_description": {
+          "floor_level": "Used to derive the minimum sun elevation for direct exposure. −1 (basement) → 20°, 0 (ground floor) → 15°, 1 (1st floor) → 10°, 2 (2nd floor) → 5°, 3 and above → 0°. For windows in light wells or with heavy obstructions, use obstruction zones for more precise control."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Absence position (overrides zone default)",
           "window_behavior_mode": "Automatic shading mode",
           "light_shade_position": "Light shade position (overrides zone default)",
           "normal_shade_position": "Normal shade position (overrides zone default)",
-          "strong_shade_position": "Strong shade position (overrides zone default)",
+          "strong_shade_position": "Strong shade position (overrides zone default)"
+        },
+        "data_description": {
+          "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this window only.",
+          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence and schedule: absence control, night, and morning schedule active; no solar, heat, or glare shading. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active.",
+          "light_shade_position": "Leave empty to use the zone default. Set a value to override the light shade target position for this window only.",
+          "normal_shade_position": "Leave empty to use the zone default. Set a value to override the normal shade target position for this window only.",
+          "strong_shade_position": "Leave empty to use the zone default. Set a value to override the strong shade target position for this window only."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Enable manual sun sector override",
           "manual_sun_sector_start_deg": "Sun sector start azimuth (°)",
           "manual_sun_sector_end_deg": "Sun sector end azimuth (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Zone 3 azimuth start (°)",
           "obstruction_3_azimuth_end_deg": "Zone 3 azimuth end (°)",
           "obstruction_3_block_from_elevation_deg": "Zone 3 blocked from elevation (°)",
-          "obstruction_3_block_until_elevation_deg": "Zone 3 blocked until elevation (°)",
-          "contact_sensor_entity_ids": "Window contact sensors (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "Zone 3 blocked until elevation (°)"
         },
         "data_description": {
-          "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this window only.",
-          "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence and schedule: absence control, night, and morning schedule active; no solar, heat, or glare shading. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active.",
-          "light_shade_position": "Leave empty to use the zone default. Set a value to override the light shade target position for this window only.",
-          "normal_shade_position": "Leave empty to use the zone default. Set a value to override the normal shade target position for this window only.",
-          "strong_shade_position": "Leave empty to use the zone default. Set a value to override the strong shade target position for this window only.",
           "manual_sun_sector_enabled": "Start and end azimuth are suggested from the window's orientation and tolerance. Enable to use this range instead of the automatic sun sector. The values can be adjusted before saving. Supports wrap-around (e.g. 330° to 30° crosses north).",
           "obstruction_1_enabled": "Enable to mark an azimuth range where a physical obstruction (tree, building, roof overhang) blocks direct sun. Leave elevation fields empty to block at every sun elevation in the azimuth range.",
           "obstruction_1_block_from_elevation_deg": "Optional. Obstruction blocks only when sun elevation is at or above this value. Example: 45° blocks a roof overhang that only shades at steep sun angles. Leave empty for no lower limit.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Optional upper elevation bound for zone 2 (see zone 1 description).",
           "obstruction_3_enabled": "Third optional obstruction zone for this window.",
           "obstruction_3_block_from_elevation_deg": "Optional lower elevation bound for zone 3 (see zone 1 description).",
-          "obstruction_3_block_until_elevation_deg": "Optional upper elevation bound for zone 3 (see zone 1 description).",
-          "floor_level": "Used to derive the minimum sun elevation for direct exposure. −1 (basement) → 20°, 0 (ground floor) → 15°, 1 (1st floor) → 10°, 2 (2nd floor) → 5°, 3 and above → 0°. For windows in light wells or with heavy obstructions, use obstruction zones for more precise control.",
+          "obstruction_3_block_until_elevation_deg": "Optional upper elevation bound for zone 3 (see zone 1 description)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensors (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "One or more binary_sensor entities that report the window open/closed state. With several contacts the window counts as open as soon as at least one is open. Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

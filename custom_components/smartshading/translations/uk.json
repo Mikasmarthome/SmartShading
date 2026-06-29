@@ -147,21 +147,49 @@
           "window_id": "Вікно"
         }
       },
-      "edit_window_detail": {
-        "title": "Змінити вікно: {window_name}",
-        "description": "Оновіть налаштування вікна «{window_name}». Зміни штор набувають чинності після збереження.",
+      "edit_window_menu": {
+        "title": "Edit window: {window_name}",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Назва вікна",
           "floor_level": "Поверх (-1 = підвал, 0 = перший поверх, 1 = 2-й поверх, …)",
           "compass_direction": "Орієнтація",
           "custom_azimuth": "Власний азимут (0-359°, використовується лише якщо для Орієнтації вибрано «Власна»)",
           "cover_entities": "Штори для цього вікна",
-          "cover_hardware_type": "Тип обладнання штори",
+          "cover_hardware_type": "Тип обладнання штори"
+        },
+        "data_description": {
+          "floor_level": "Використовується для визначення мінімальної висоти сонця для прямого освітлення. −1 (підвал) → 20°, 0 (перший поверх) → 15°, 1 (другий поверх) → 10°, 2 (третій поверх) → 5°, 3 і вище → 0°. Для вікон у світлових шахтах або зі значними перешкодами використовуйте зони перешкод."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Положення за відсутності (перевизначає типове значення зони)",
           "window_behavior_mode": "Автоматичний режим затінення",
           "light_shade_position": "Положення легкого затінення (перевизначає типове значення зони)",
           "normal_shade_position": "Положення нормального затінення (перевизначає типове значення зони)",
-          "strong_shade_position": "Положення сильного затінення (перевизначає типове значення зони)",
+          "strong_shade_position": "Положення сильного затінення (перевизначає типове значення зони)"
+        },
+        "data_description": {
+          "absence_position": "Залиште порожнім, щоб успадкувати типове положення відсутності зони. Укажіть значення, щоб перевизначити його лише для цього вікна.",
+          "window_behavior_mode": "Повністю автоматичний: сонце, комфорт, відсутність і розклад активні. Відсутність і розклад: керування за відсутністю, нічний і ранковий розклад активні; без сонячного, теплового або антибліскового затінення. Лише відсутність: лише керування за відсутністю. Автоматизацію вимкнено: без автоматичного затінення. Захист (буря/вітер) завжди залишається активним.",
+          "light_shade_position": "Залиште порожнім, щоб використати типове значення зони. Укажіть значення, щоб перевизначити цільове положення легкого затінення лише для цього вікна.",
+          "normal_shade_position": "Залиште порожнім, щоб використати типове значення зони. Укажіть значення, щоб перевизначити цільове положення нормального затінення лише для цього вікна.",
+          "strong_shade_position": "Залиште порожнім, щоб використати типове значення зони. Укажіть значення, щоб перевизначити цільове положення сильного затінення лише для цього вікна."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Увімкнути ручне перевизначення сонячного сектора",
           "manual_sun_sector_start_deg": "Початковий азимут сонячного сектора (°)",
           "manual_sun_sector_end_deg": "Кінцевий азимут сонячного сектора (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Початковий азимут зони 3 (°)",
           "obstruction_3_azimuth_end_deg": "Кінцевий азимут зони 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Зона 3 блокується від висоти (°)",
-          "obstruction_3_block_until_elevation_deg": "Зона 3 блокується до висоти (°)",
-          "contact_sensor_entity_ids": "Window contact sensor (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "Зона 3 блокується до висоти (°)"
         },
         "data_description": {
-          "absence_position": "Залиште порожнім, щоб успадкувати типове положення відсутності зони. Укажіть значення, щоб перевизначити його лише для цього вікна.",
-          "window_behavior_mode": "Повністю автоматичний: сонце, комфорт, відсутність і розклад активні. Відсутність і розклад: керування за відсутністю, нічний і ранковий розклад активні; без сонячного, теплового або антибліскового затінення. Лише відсутність: лише керування за відсутністю. Автоматизацію вимкнено: без автоматичного затінення. Захист (буря/вітер) завжди залишається активним.",
-          "light_shade_position": "Залиште порожнім, щоб використати типове значення зони. Укажіть значення, щоб перевизначити цільове положення легкого затінення лише для цього вікна.",
-          "normal_shade_position": "Залиште порожнім, щоб використати типове значення зони. Укажіть значення, щоб перевизначити цільове положення нормального затінення лише для цього вікна.",
-          "strong_shade_position": "Залиште порожнім, щоб використати типове значення зони. Укажіть значення, щоб перевизначити цільове положення сильного затінення лише для цього вікна.",
           "manual_sun_sector_enabled": "Початковий та кінцевий азимут пропонуються відповідно до орієнтації та допусків вікна. Увімкніть, щоб використовувати цей діапазон замість автоматичного. Значення можна змінити перед збереженням. Підтримує перехід через 0°/360° (напр., 330° – 30° проходить через північ).",
           "obstruction_1_enabled": "Увімкніть, щоб позначити діапазон азимута, де фізична перешкода (дерево, будівля, звис даху) блокує пряме сонце. Залиште поля висоти порожніми, щоб блокувати за будь-якої висоти сонця в діапазоні азимута.",
           "obstruction_1_block_from_elevation_deg": "Необов’язково. Перешкода блокує лише тоді, коли висота сонця дорівнює цьому значенню або вища. Приклад: 45° блокує звис даху, який затінює лише за крутих кутів сонця. Залиште порожнім для відсутності нижньої межі.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Необов’язкова верхня межа висоти для зони 2 (див. опис зони 1).",
           "obstruction_3_enabled": "Третя необов’язкова зона перешкоди для цього вікна.",
           "obstruction_3_block_from_elevation_deg": "Необов’язкова нижня межа висоти для зони 3 (див. опис зони 1).",
-          "obstruction_3_block_until_elevation_deg": "Необов’язкова верхня межа висоти для зони 3 (див. опис зони 1).",
-          "floor_level": "Використовується для визначення мінімальної висоти сонця для прямого освітлення. −1 (підвал) → 20°, 0 (перший поверх) → 15°, 1 (другий поверх) → 10°, 2 (третій поверх) → 5°, 3 і вище → 0°. Для вікон у світлових шахтах або зі значними перешкодами використовуйте зони перешкод.",
+          "obstruction_3_block_until_elevation_deg": "Необов’язкова верхня межа висоти для зони 3 (див. опис зони 1)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

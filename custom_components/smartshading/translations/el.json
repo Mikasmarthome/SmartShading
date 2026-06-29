@@ -147,21 +147,49 @@
           "window_id": "Παράθυρο"
         }
       },
-      "edit_window_detail": {
-        "title": "Επεξεργασία παραθύρου: {window_name}",
-        "description": "Ενημερώστε τις ρυθμίσεις του παραθύρου «{window_name}». Οι αλλαγές στα σκίαστρα τίθενται σε ισχύ μετά την αποθήκευση.",
+      "edit_window_menu": {
+        "title": "Edit window: {window_name}",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Όνομα παραθύρου",
           "floor_level": "Όροφος (-1 = υπόγειο, 0 = ισόγειο, 1 = 1ος όροφος, …)",
           "compass_direction": "Προσανατολισμός",
           "custom_azimuth": "Προσαρμοσμένο αζιμούθιο (0-359°, χρησιμοποιείται μόνο αν ο Προσανατολισμός έχει οριστεί σε Προσαρμοσμένο)",
           "cover_entities": "Σκίαστρα για αυτό το παράθυρο",
-          "cover_hardware_type": "Τύπος υλικού σκιάστρου",
+          "cover_hardware_type": "Τύπος υλικού σκιάστρου"
+        },
+        "data_description": {
+          "floor_level": "Χρησιμοποιείται για τον υπολογισμό της ελάχιστης ηλιακής ύψωσης για άμεση ακτινοβολία. −1 (υπόγειο) → 20°, 0 (ισόγειο) → 15°, 1 (1ος) → 10°, 2 (2ος) → 5°, 3 και άνω → 0°. Για παράθυρα σε φωταγωγούς ή με μεγάλα εμπόδια χρησιμοποιήστε ζώνες παρεμπόδισης."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Θέση απουσίας (αντικαθιστά την προεπιλογή της ζώνης)",
           "window_behavior_mode": "Αυτόματη λειτουργία σκίασης",
           "light_shade_position": "Θέση ελαφριάς σκίασης (αντικαθιστά την προεπιλογή της ζώνης)",
           "normal_shade_position": "Θέση κανονικής σκίασης (αντικαθιστά την προεπιλογή της ζώνης)",
-          "strong_shade_position": "Θέση έντονης σκίασης (αντικαθιστά την προεπιλογή της ζώνης)",
+          "strong_shade_position": "Θέση έντονης σκίασης (αντικαθιστά την προεπιλογή της ζώνης)"
+        },
+        "data_description": {
+          "absence_position": "Αφήστε κενό για να κληρονομήσετε την προεπιλεγμένη θέση απουσίας της ζώνης. Ορίστε μια τιμή για να την αντικαταστήσετε μόνο για αυτό το παράθυρο.",
+          "window_behavior_mode": "Πλήρως αυτόματο: ήλιος, άνεση, απουσία και πρόγραμμα ενεργά. Απουσία και πρόγραμμα: έλεγχος απουσίας, νυχτερινό και πρωινό πρόγραμμα ενεργά· χωρίς ηλιακή, θερμική ή αντιθαμβωτική σκίαση. Μόνο απουσία: μόνο έλεγχος απουσίας. Αυτοματισμός απενεργοποιημένος: καμία αυτόματη σκίαση. Οι προστασίες ασφαλείας (καταιγίδα/άνεμος) παραμένουν πάντα ενεργές.",
+          "light_shade_position": "Αφήστε κενό για να χρησιμοποιήσετε την προεπιλογή της ζώνης. Ορίστε μια τιμή για να αντικαταστήσετε τη θέση-στόχο ελαφριάς σκίασης μόνο για αυτό το παράθυρο.",
+          "normal_shade_position": "Αφήστε κενό για να χρησιμοποιήσετε την προεπιλογή της ζώνης. Ορίστε μια τιμή για να αντικαταστήσετε τη θέση-στόχο κανονικής σκίασης μόνο για αυτό το παράθυρο.",
+          "strong_shade_position": "Αφήστε κενό για να χρησιμοποιήσετε την προεπιλογή της ζώνης. Ορίστε μια τιμή για να αντικαταστήσετε τη θέση-στόχο έντονης σκίασης μόνο για αυτό το παράθυρο."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Ενεργοποίηση χειροκίνητης αντικατάστασης του ηλιακού τομέα",
           "manual_sun_sector_start_deg": "Αρχικό αζιμούθιο ηλιακού τομέα (°)",
           "manual_sun_sector_end_deg": "Τελικό αζιμούθιο ηλιακού τομέα (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Αρχικό αζιμούθιο ζώνης 3 (°)",
           "obstruction_3_azimuth_end_deg": "Τελικό αζιμούθιο ζώνης 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Ζώνη 3 αποκλεισμένη από ύψος (°)",
-          "obstruction_3_block_until_elevation_deg": "Ζώνη 3 αποκλεισμένη έως ύψος (°)",
-          "contact_sensor_entity_ids": "Window contact sensor (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "Ζώνη 3 αποκλεισμένη έως ύψος (°)"
         },
         "data_description": {
-          "absence_position": "Αφήστε κενό για να κληρονομήσετε την προεπιλεγμένη θέση απουσίας της ζώνης. Ορίστε μια τιμή για να την αντικαταστήσετε μόνο για αυτό το παράθυρο.",
-          "window_behavior_mode": "Πλήρως αυτόματο: ήλιος, άνεση, απουσία και πρόγραμμα ενεργά. Απουσία και πρόγραμμα: έλεγχος απουσίας, νυχτερινό και πρωινό πρόγραμμα ενεργά· χωρίς ηλιακή, θερμική ή αντιθαμβωτική σκίαση. Μόνο απουσία: μόνο έλεγχος απουσίας. Αυτοματισμός απενεργοποιημένος: καμία αυτόματη σκίαση. Οι προστασίες ασφαλείας (καταιγίδα/άνεμος) παραμένουν πάντα ενεργές.",
-          "light_shade_position": "Αφήστε κενό για να χρησιμοποιήσετε την προεπιλογή της ζώνης. Ορίστε μια τιμή για να αντικαταστήσετε τη θέση-στόχο ελαφριάς σκίασης μόνο για αυτό το παράθυρο.",
-          "normal_shade_position": "Αφήστε κενό για να χρησιμοποιήσετε την προεπιλογή της ζώνης. Ορίστε μια τιμή για να αντικαταστήσετε τη θέση-στόχο κανονικής σκίασης μόνο για αυτό το παράθυρο.",
-          "strong_shade_position": "Αφήστε κενό για να χρησιμοποιήσετε την προεπιλογή της ζώνης. Ορίστε μια τιμή για να αντικαταστήσετε τη θέση-στόχο έντονης σκίασης μόνο για αυτό το παράθυρο.",
           "manual_sun_sector_enabled": "Το αζιμούθιο έναρξης και λήξης προτείνεται βάσει του προσανατολισμού και της ανοχής του παραθύρου. Ενεργοποιήστε για χρήση αυτού του εύρους αντί του αυτόματου. Οι τιμές μπορούν να ρυθμιστούν πριν αποθήκευση. Υποστηρίζει αναδίπλωση 0°/360° (π.χ. 330° έως 30° διασχίζει βορρά).",
           "obstruction_1_enabled": "Ενεργοποιήστε για να επισημάνετε ένα εύρος αζιμουθίου όπου ένα φυσικό εμπόδιο (δέντρο, κτίριο, προεξοχή στέγης) μπλοκάρει τον άμεσο ήλιο. Αφήστε τα πεδία ύψους κενά για να μπλοκάρετε σε κάθε ύψος ήλιου εντός του εύρους αζιμουθίου.",
           "obstruction_1_block_from_elevation_deg": "Προαιρετικό. Το εμπόδιο μπλοκάρει μόνο όταν το ύψος του ήλιου είναι ίσο ή μεγαλύτερο από αυτή την τιμή. Παράδειγμα: 45° μπλοκάρει μια προεξοχή στέγης που σκιάζει μόνο σε απότομες γωνίες ήλιου. Αφήστε κενό για κανένα κάτω όριο.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Προαιρετικό άνω όριο ύψους για τη ζώνη 2 (δείτε την περιγραφή της ζώνης 1).",
           "obstruction_3_enabled": "Τρίτη προαιρετική ζώνη εμποδίου για αυτό το παράθυρο.",
           "obstruction_3_block_from_elevation_deg": "Προαιρετικό κάτω όριο ύψους για τη ζώνη 3 (δείτε την περιγραφή της ζώνης 1).",
-          "obstruction_3_block_until_elevation_deg": "Προαιρετικό άνω όριο ύψους για τη ζώνη 3 (δείτε την περιγραφή της ζώνης 1).",
-          "floor_level": "Χρησιμοποιείται για τον υπολογισμό της ελάχιστης ηλιακής ύψωσης για άμεση ακτινοβολία. −1 (υπόγειο) → 20°, 0 (ισόγειο) → 15°, 1 (1ος) → 10°, 2 (2ος) → 5°, 3 και άνω → 0°. Για παράθυρα σε φωταγωγούς ή με μεγάλα εμπόδια χρησιμοποιήστε ζώνες παρεμπόδισης.",
+          "obstruction_3_block_until_elevation_deg": "Προαιρετικό άνω όριο ύψους για τη ζώνη 3 (δείτε την περιγραφή της ζώνης 1)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

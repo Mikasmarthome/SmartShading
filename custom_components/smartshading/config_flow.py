@@ -1569,7 +1569,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
 
         if user_input is not None:
             self._edit_window_id = user_input[CONF_WINDOW_ID]
-            return await self.async_step_edit_window_detail()
+            return await self.async_step_edit_window_menu()
 
         window_options = [{"value": w["id"], "label": w["name"]} for w in windows]
         schema = vol.Schema({
@@ -1579,228 +1579,104 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         })
         return self.async_show_form(step_id="edit_window", data_schema=schema)
 
-    async def async_step_edit_window_detail(
+    # -- Edit Window: shared helpers ----------------------------------------
+    def _get_edit_window(self) -> dict[str, Any] | None:
+        return next(
+            (w for w in self._config_entry.data.get("windows", [])
+             if w["id"] == self._edit_window_id),
+            None,
+        )
+
+    def _edit_window_cover_group(self) -> dict[str, Any] | None:
+        return next(
+            (cg for cg in self._config_entry.data.get("cover_groups", [])
+             if cg.get("window_id") == self._edit_window_id),
+            None,
+        )
+
+    def _merge_save_window(
+        self, updates: dict[str, Any], cover_updates: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Merge a per-page slice into the stored window (and optionally its cover
+        group) WITHOUT touching any other field, then persist + reload.
+
+        Reading the current stored window fresh each time means a partial edit of
+        one page never resets the values owned by the other pages.
+        """
+        windows = list(self._config_entry.data.get("windows", []))
+        cover_groups = list(self._config_entry.data.get("cover_groups", []))
+        for i, w in enumerate(windows):
+            if w["id"] == self._edit_window_id:
+                windows[i] = {**w, **updates}
+                break
+        if cover_updates is not None:
+            for j, cg in enumerate(cover_groups):
+                if cg.get("window_id") == self._edit_window_id:
+                    cover_groups[j] = {**cg, **cover_updates}
+                    break
+        return self._save_and_reload({"windows": windows, "cover_groups": cover_groups})
+
+    def _edit_window_effective_tol(self, window: dict, field: str) -> float:
+        """Effective azimuth tolerance: Window → Zone → GlobalDefaults."""
+        v = window.get(field)
+        if v is not None:
+            return float(v)
+        zone_id = window.get("zone_id")
+        if zone_id:
+            zone = next((z for z in self._config_entry.data.get("zones", [])
+                         if z["id"] == zone_id), None)
+            if zone and zone.get(field) is not None:
+                return float(zone[field])
+        return float(getattr(GlobalDefaults(), field))
+
+    # -- Edit Window: 4-page sub-menu ---------------------------------------
+    async def async_step_edit_window_menu(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        current = self._config_entry.data
-        window_id = self._edit_window_id
-        windows = list(current.get("windows", []))
-        cover_groups = list(current.get("cover_groups", []))
-
-        window = next((w for w in windows if w["id"] == window_id), None)
+        window = self._get_edit_window()
         if window is None:
             return self.async_abort(reason="window_not_found")
+        return self.async_show_menu(
+            step_id="edit_window_menu",
+            menu_options=[
+                "edit_window_basics",
+                "edit_window_shading",
+                "edit_window_solar",
+                "edit_window_contact",
+            ],
+            description_placeholders={"window_name": window["name"]},
+        )
 
-        cover_group = next((cg for cg in cover_groups if cg.get("window_id") == window_id), None)
-        current_cover_ids = cover_group["cover_ids"] if cover_group else []
-        current_hw_type = cover_group.get("hardware_type", CoverHardwareType.ROLLER_SHUTTER.value) if cover_group else CoverHardwareType.ROLLER_SHUTTER.value
-
+    # -- Page 1: basics & cover ---------------------------------------------
+    async def async_step_edit_window_basics(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        window = self._get_edit_window()
+        if window is None:
+            return self.async_abort(reason="window_not_found")
         errors: dict[str, str] = {}
-
-        # Resolve effective azimuth tolerance: Window → Zone → GlobalDefaults.
-        # Used both in user_input processing and form display (suggested values).
-        def _effective_tol(field: str) -> float:
-            v = window.get(field)
-            if v is not None:
-                return float(v)
-            zone_dicts = self._config_entry.data.get("zones", [])
-            window_zone_id = window.get("zone_id")
-            if window_zone_id:
-                zone_dict = next(
-                    (z for z in zone_dicts if z["id"] == window_zone_id), None
-                )
-                if zone_dict:
-                    v = zone_dict.get(field)
-                    if v is not None:
-                        return float(v)
-            return float(getattr(GlobalDefaults(), field))
-
         if user_input is not None:
             new_cover_ids = user_input.get(CONF_COVER_ENTITIES, [])
+            new_azimuth = _resolve_azimuth(user_input)
             if not new_cover_ids:
                 errors["base"] = "no_covers_selected"
+            elif new_azimuth is None:
+                errors["base"] = "invalid_custom_azimuth"
             else:
-                new_azimuth = _resolve_azimuth(user_input)
-                if new_azimuth is None:
-                    errors["base"] = "invalid_custom_azimuth"
-                else:
-                    raw_abs = user_input.get(CONF_ABSENCE_POSITION)
-                    new_behavior_mode = user_input.get(CONF_WINDOW_BEHAVIOR_MODE, WindowBehaviorMode.FULLY_AUTOMATIC.value)
-                    raw_light = user_input.get(CONF_LIGHT_SHADE_POSITION)
-                    raw_normal = user_input.get(CONF_NORMAL_SHADE_POSITION)
-                    raw_strong = user_input.get(CONF_STRONG_SHADE_POSITION)
-                    # Manual sun sector override
-                    _sector_enabled = user_input.get(CONF_MANUAL_SUN_SECTOR_ENABLED, False)
-                    raw_sector_start = user_input.get(CONF_MANUAL_SUN_SECTOR_START_DEG)
-                    raw_sector_end = user_input.get(CONF_MANUAL_SUN_SECTOR_END_DEG)
-                    _existing_start = window.get("manual_sun_sector_start_deg")
-                    _existing_end = window.get("manual_sun_sector_end_deg")
-                    if _sector_enabled:
-                        # Use submitted value; fall back to stored, then computed suggestion.
-                        _computed_start = (new_azimuth - _effective_tol("tolerance_start")) % 360.0
-                        _computed_end = (new_azimuth + _effective_tol("tolerance_end")) % 360.0
-                        _sector_start: float | None = (
-                            float(raw_sector_start) if raw_sector_start is not None
-                            else (_existing_start if _existing_start is not None else _computed_start)
-                        )
-                        _sector_end: float | None = (
-                            float(raw_sector_end) if raw_sector_end is not None
-                            else (_existing_end if _existing_end is not None else _computed_end)
-                        )
-                    else:
-                        # Switch off: preserve existing stored values unchanged.
-                        _sector_start = _existing_start
-                        _sector_end = _existing_end
-
-                    # Obstruction zones — build list from up-to-3 zone form fields.
-                    # block_from_elevation_deg and block_until_elevation_deg are
-                    # independently optional; both None = blocks at every elevation.
-                    def _oz_dict(enabled_key, start_key, end_key, from_key, until_key) -> dict | None:
-                        oz_enabled = user_input.get(enabled_key, False)
-                        start = user_input.get(start_key)
-                        end = user_input.get(end_key)
-                        blk_from = user_input.get(from_key)
-                        blk_until = user_input.get(until_key)
-                        if start is None and end is None and blk_from is None and blk_until is None:
-                            return None
-                        return {
-                            "azimuth_start_deg": float(start) if start is not None else 0.0,
-                            "azimuth_end_deg": float(end) if end is not None else 0.0,
-                            "block_from_elevation_deg": float(blk_from) if blk_from is not None else None,
-                            "block_until_elevation_deg": float(blk_until) if blk_until is not None else None,
-                            "enabled": bool(oz_enabled),
-                        }
-                    _new_oz_list = [
-                        d for d in [
-                            _oz_dict(CONF_OBSTRUCTION_1_ENABLED, CONF_OBSTRUCTION_1_AZIMUTH_START, CONF_OBSTRUCTION_1_AZIMUTH_END, CONF_OBSTRUCTION_1_BLOCK_FROM_ELEVATION, CONF_OBSTRUCTION_1_BLOCK_UNTIL_ELEVATION),
-                            _oz_dict(CONF_OBSTRUCTION_2_ENABLED, CONF_OBSTRUCTION_2_AZIMUTH_START, CONF_OBSTRUCTION_2_AZIMUTH_END, CONF_OBSTRUCTION_2_BLOCK_FROM_ELEVATION, CONF_OBSTRUCTION_2_BLOCK_UNTIL_ELEVATION),
-                            _oz_dict(CONF_OBSTRUCTION_3_ENABLED, CONF_OBSTRUCTION_3_AZIMUTH_START, CONF_OBSTRUCTION_3_AZIMUTH_END, CONF_OBSTRUCTION_3_BLOCK_FROM_ELEVATION, CONF_OBSTRUCTION_3_BLOCK_UNTIL_ELEVATION),
-                        ]
-                        if d is not None
-                    ]
-
-                    # Validate: block_from must not exceed block_until
-                    for _oz_d in _new_oz_list:
-                        _oz_from = _oz_d.get("block_from_elevation_deg")
-                        _oz_until = _oz_d.get("block_until_elevation_deg")
-                        if (
-                            _oz_from is not None
-                            and _oz_until is not None
-                            and _oz_from > _oz_until
-                        ):
-                            errors["base"] = "obstruction_elevation_range_invalid"
-                            break
-
-                    # Contact sensor(s) and night-contact behavior.
-                    # Server-side rule: Option B requires Option A.  The selector
-                    # is multi-select → a list; tolerate a legacy single string.
-                    _contact_raw = user_input.get(CONF_CONTACT_SENSOR_ENTITY_IDS)
-                    if _contact_raw is None:
-                        _contact_raw = user_input.get(CONF_CONTACT_SENSOR_ENTITY_ID)
-                    if isinstance(_contact_raw, str):
-                        _contact_sensors = [_contact_raw] if _contact_raw else []
-                    else:
-                        _contact_sensors = [e for e in (_contact_raw or []) if e]
-                    _contact_sensors = list(dict.fromkeys(_contact_sensors))  # dedupe
-                    _night_block = bool(user_input.get(CONF_NIGHT_BLOCK_ON_WINDOW_OPEN, False))
-                    _night_lift = bool(user_input.get(CONF_NIGHT_LIFT_ON_WINDOW_OPEN, False))
-                    if _night_lift and not _night_block:
-                        errors[CONF_NIGHT_LIFT_ON_WINDOW_OPEN] = "night_lift_requires_night_block"
-                    if _night_block and not _contact_sensors:
-                        errors[CONF_CONTACT_SENSOR_ENTITY_IDS] = "contact_sensor_required_for_block"
-                    if _night_lift and not _contact_sensors:
-                        # Overrides block error when both options need a sensor.
-                        errors[CONF_CONTACT_SENSOR_ENTITY_IDS] = "contact_sensor_required_for_lift"
-                    raw_vent_pos = user_input.get(CONF_WINDOW_OPEN_NIGHT_POSITION)
-
-                    if not errors:
-                        for i, w in enumerate(windows):
-                            if w["id"] == window_id:
-                                windows[i] = {
-                                    **w,
-                                    "name": user_input[CONF_WINDOW_NAME],
-                                    "floor_level": int(user_input[CONF_FLOOR_LEVEL]),
-                                    "azimuth": new_azimuth,
-                                    "absence_position": int(raw_abs) if raw_abs is not None else None,
-                                    "behavior_mode": new_behavior_mode,
-                                    "light_shade_position": int(raw_light) if raw_light is not None else None,
-                                    "normal_shade_position": int(raw_normal) if raw_normal is not None else None,
-                                    "strong_shade_position": int(raw_strong) if raw_strong is not None else None,
-                                    "manual_sun_sector_start_deg": _sector_start,
-                                    "manual_sun_sector_end_deg": _sector_end,
-                                    "obstruction_zones": _new_oz_list,
-                                    "contact_sensor_entity_ids": _contact_sensors,
-                                    "contact_sensor_entity_id": (
-                                        _contact_sensors[0] if _contact_sensors else None),
-                                    "night_block_on_window_open": _night_block,
-                                    "night_lift_on_window_open": _night_lift if _night_block else False,
-                                    "window_open_night_position_ha": int(raw_vent_pos) if raw_vent_pos is not None else DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA,
-                                }
-                                break
-                        hw_type = cover_hardware_type_from_str(user_input.get(CONF_COVER_HARDWARE_TYPE))
-                        for j, cg in enumerate(cover_groups):
-                            if cg.get("window_id") == window_id:
-                                cover_groups[j] = {**cg, "cover_ids": new_cover_ids, "hardware_type": hw_type.value}
-                                break
-                        return self._save_and_reload({"windows": windows, "cover_groups": cover_groups})
-
+                hw_type = cover_hardware_type_from_str(user_input.get(CONF_COVER_HARDWARE_TYPE))
+                return self._merge_save_window(
+                    {
+                        "name": user_input[CONF_WINDOW_NAME],
+                        "floor_level": int(user_input.get(CONF_FLOOR_LEVEL, 0)),
+                        "azimuth": new_azimuth,
+                    },
+                    {"cover_ids": new_cover_ids, "hardware_type": hw_type.value},
+                )
         compass, custom_az = _compass_from_azimuth(window.get("azimuth", 180.0))
-        _hw_options = [t.value for t in CoverHardwareType]
-        _stored_absence = window.get("absence_position")
-        _stored_behavior_mode = window.get("behavior_mode", WindowBehaviorMode.FULLY_AUTOMATIC.value)
-        _stored_light = window.get("light_shade_position")
-        _stored_normal = window.get("normal_shade_position")
-        _stored_strong = window.get("strong_shade_position")
-        # Manual sun sector: use stored values when present; otherwise suggest
-        # computed values from the window's azimuth and tolerances so the user
-        # can see a reasonable starting point without any prior interaction.
-        _stored_sector_start = window.get("manual_sun_sector_start_deg")
-        _stored_sector_end = window.get("manual_sun_sector_end_deg")
-        _stored_sector_enabled = _stored_sector_start is not None and _stored_sector_end is not None
-        _display_azimuth = window.get("azimuth", 180.0)
-        _suggested_sector_start = (
-            _stored_sector_start if _stored_sector_start is not None
-            else (_display_azimuth - _effective_tol("tolerance_start")) % 360.0
-        )
-        _suggested_sector_end = (
-            _stored_sector_end if _stored_sector_end is not None
-            else (_display_azimuth + _effective_tol("tolerance_end")) % 360.0
-        )
-        # Obstruction zone stored values (flat per-zone dicts → up to 3).
-        # Migration: old min_elevation_deg read → block_until_elevation_deg when
-        # new fields are absent, so existing users see their data correctly.
-        _stored_oz = (window.get("obstruction_zones") or [])[:3]
-        def _oz_stored(idx: int, key: str, default=None):
-            if idx >= len(_stored_oz):
-                return default
-            raw_oz = _stored_oz[idx]
-            if key == "block_until_elevation_deg" and key not in raw_oz:
-                return raw_oz.get("min_elevation_deg", default)
-            return raw_oz.get(key, default)
-        _pos_selector = NumberSelector(
-            NumberSelectorConfig(min=0, max=100, step=1, mode=NumberSelectorMode.SLIDER, unit_of_measurement="%")
-        )
-        _az_selector = NumberSelector(
-            NumberSelectorConfig(min=0, max=359, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="°")
-        )
-        _elev_selector = NumberSelector(
-            NumberSelectorConfig(min=0, max=90, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="°")
-        )
-        # Contact sensor stored values
-        # Normalise stored contact(s) to a list so an existing single contact
-        # appears as a one-element multi-select (no migration needed).
-        _stored_contact_raw = window.get("contact_sensor_entity_ids")
-        if _stored_contact_raw is None:
-            _stored_contact_raw = window.get("contact_sensor_entity_id")
-        if isinstance(_stored_contact_raw, str):
-            _stored_contact = [_stored_contact_raw] if _stored_contact_raw else []
-        else:
-            _stored_contact = [e for e in (_stored_contact_raw or []) if e]
-        _stored_night_block = window.get("night_block_on_window_open", False)
-        _stored_night_lift = window.get("night_lift_on_window_open", False)
-        _stored_vent_pos = window.get(
-            "window_open_night_position_ha", DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA
-        )
+        cover_group = self._edit_window_cover_group()
+        current_cover_ids = cover_group["cover_ids"] if cover_group else []
+        current_hw_type = (cover_group.get("hardware_type", CoverHardwareType.ROLLER_SHUTTER.value)
+                           if cover_group else CoverHardwareType.ROLLER_SHUTTER.value)
         schema = vol.Schema({
             vol.Required(CONF_WINDOW_NAME, default=window["name"]): str,
             vol.Required(CONF_FLOOR_LEVEL, default=window.get("floor_level", 0)): NumberSelector(
@@ -1816,80 +1692,194 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 EntitySelectorConfig(domain="cover", multiple=True)
             ),
             vol.Required(CONF_COVER_HARDWARE_TYPE, default=current_hw_type): SelectSelector(
-                SelectSelectorConfig(options=_hw_options, translation_key="cover_hardware_type", mode=SelectSelectorMode.LIST)
+                SelectSelectorConfig(options=[t.value for t in CoverHardwareType], translation_key="cover_hardware_type", mode=SelectSelectorMode.LIST)
             ),
-            vol.Optional(
-                CONF_ABSENCE_POSITION,
-                description={"suggested_value": _stored_absence},
-            ): NumberSelector(
-                NumberSelectorConfig(min=0, max=100, step=1, mode=NumberSelectorMode.SLIDER, unit_of_measurement="%")
+        })
+        return self.async_show_form(
+            step_id="edit_window_basics", data_schema=schema, errors=errors,
+            description_placeholders={"window_name": window["name"]},
+        )
+
+    # -- Page 2: shading behaviour & positions ------------------------------
+    async def async_step_edit_window_shading(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        window = self._get_edit_window()
+        if window is None:
+            return self.async_abort(reason="window_not_found")
+        if user_input is not None:
+            raw_abs = user_input.get(CONF_ABSENCE_POSITION)
+            raw_light = user_input.get(CONF_LIGHT_SHADE_POSITION)
+            raw_normal = user_input.get(CONF_NORMAL_SHADE_POSITION)
+            raw_strong = user_input.get(CONF_STRONG_SHADE_POSITION)
+            return self._merge_save_window({
+                "behavior_mode": user_input.get(CONF_WINDOW_BEHAVIOR_MODE, WindowBehaviorMode.FULLY_AUTOMATIC.value),
+                "absence_position": int(raw_abs) if raw_abs is not None else None,
+                "light_shade_position": int(raw_light) if raw_light is not None else None,
+                "normal_shade_position": int(raw_normal) if raw_normal is not None else None,
+                "strong_shade_position": int(raw_strong) if raw_strong is not None else None,
+            })
+        _pos_selector = NumberSelector(
+            NumberSelectorConfig(min=0, max=100, step=1, mode=NumberSelectorMode.SLIDER, unit_of_measurement="%"))
+        schema = vol.Schema({
+            vol.Required(CONF_WINDOW_BEHAVIOR_MODE, default=window.get("behavior_mode", WindowBehaviorMode.FULLY_AUTOMATIC.value)): SelectSelector(
+                SelectSelectorConfig(options=WINDOW_BEHAVIOR_MODE_OPTIONS, mode=SelectSelectorMode.LIST, translation_key="window_behavior_mode")
             ),
-            vol.Required(CONF_WINDOW_BEHAVIOR_MODE, default=_stored_behavior_mode): SelectSelector(
-                SelectSelectorConfig(
-                    options=WINDOW_BEHAVIOR_MODE_OPTIONS,
-                    mode=SelectSelectorMode.LIST,
-                    translation_key="window_behavior_mode",
-                )
-            ),
-            vol.Optional(
-                CONF_LIGHT_SHADE_POSITION,
-                description={"suggested_value": _stored_light},
-            ): _pos_selector,
-            vol.Optional(
-                CONF_NORMAL_SHADE_POSITION,
-                description={"suggested_value": _stored_normal},
-            ): _pos_selector,
-            vol.Optional(
-                CONF_STRONG_SHADE_POSITION,
-                description={"suggested_value": _stored_strong},
-            ): _pos_selector,
-            # --- Manual sun sector override ---
-            vol.Required(CONF_MANUAL_SUN_SECTOR_ENABLED, default=_stored_sector_enabled): BooleanSelector(),
-            vol.Optional(CONF_MANUAL_SUN_SECTOR_START_DEG, default=_suggested_sector_start): _az_selector,
-            vol.Optional(CONF_MANUAL_SUN_SECTOR_END_DEG, default=_suggested_sector_end): _az_selector,
-            # --- Obstruction zone 1 ---
+            vol.Optional(CONF_ABSENCE_POSITION, description={"suggested_value": window.get("absence_position")}): _pos_selector,
+            vol.Optional(CONF_LIGHT_SHADE_POSITION, description={"suggested_value": window.get("light_shade_position")}): _pos_selector,
+            vol.Optional(CONF_NORMAL_SHADE_POSITION, description={"suggested_value": window.get("normal_shade_position")}): _pos_selector,
+            vol.Optional(CONF_STRONG_SHADE_POSITION, description={"suggested_value": window.get("strong_shade_position")}): _pos_selector,
+        })
+        return self.async_show_form(
+            step_id="edit_window_shading", data_schema=schema,
+            description_placeholders={"window_name": window["name"]},
+        )
+
+    # -- Page 3: manual sun sector & obstruction zones ----------------------
+    async def async_step_edit_window_solar(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        window = self._get_edit_window()
+        if window is None:
+            return self.async_abort(reason="window_not_found")
+        errors: dict[str, str] = {}
+        _display_azimuth = window.get("azimuth", 180.0)
+        if user_input is not None:
+            _sector_enabled = user_input.get(CONF_MANUAL_SUN_SECTOR_ENABLED, False)
+            raw_start = user_input.get(CONF_MANUAL_SUN_SECTOR_START_DEG)
+            raw_end = user_input.get(CONF_MANUAL_SUN_SECTOR_END_DEG)
+            _ex_start = window.get("manual_sun_sector_start_deg")
+            _ex_end = window.get("manual_sun_sector_end_deg")
+            if _sector_enabled:
+                _c_start = (_display_azimuth - self._edit_window_effective_tol(window, "tolerance_start")) % 360.0
+                _c_end = (_display_azimuth + self._edit_window_effective_tol(window, "tolerance_end")) % 360.0
+                _sector_start = float(raw_start) if raw_start is not None else (_ex_start if _ex_start is not None else _c_start)
+                _sector_end = float(raw_end) if raw_end is not None else (_ex_end if _ex_end is not None else _c_end)
+            else:
+                _sector_start, _sector_end = _ex_start, _ex_end
+
+            def _oz_dict(en, sk, ek, fk, uk) -> dict | None:
+                start = user_input.get(sk); end = user_input.get(ek)
+                blk_from = user_input.get(fk); blk_until = user_input.get(uk)
+                if start is None and end is None and blk_from is None and blk_until is None:
+                    return None
+                return {
+                    "azimuth_start_deg": float(start) if start is not None else 0.0,
+                    "azimuth_end_deg": float(end) if end is not None else 0.0,
+                    "block_from_elevation_deg": float(blk_from) if blk_from is not None else None,
+                    "block_until_elevation_deg": float(blk_until) if blk_until is not None else None,
+                    "enabled": bool(user_input.get(en, False)),
+                }
+            _new_oz = [d for d in [
+                _oz_dict(CONF_OBSTRUCTION_1_ENABLED, CONF_OBSTRUCTION_1_AZIMUTH_START, CONF_OBSTRUCTION_1_AZIMUTH_END, CONF_OBSTRUCTION_1_BLOCK_FROM_ELEVATION, CONF_OBSTRUCTION_1_BLOCK_UNTIL_ELEVATION),
+                _oz_dict(CONF_OBSTRUCTION_2_ENABLED, CONF_OBSTRUCTION_2_AZIMUTH_START, CONF_OBSTRUCTION_2_AZIMUTH_END, CONF_OBSTRUCTION_2_BLOCK_FROM_ELEVATION, CONF_OBSTRUCTION_2_BLOCK_UNTIL_ELEVATION),
+                _oz_dict(CONF_OBSTRUCTION_3_ENABLED, CONF_OBSTRUCTION_3_AZIMUTH_START, CONF_OBSTRUCTION_3_AZIMUTH_END, CONF_OBSTRUCTION_3_BLOCK_FROM_ELEVATION, CONF_OBSTRUCTION_3_BLOCK_UNTIL_ELEVATION),
+            ] if d is not None]
+            for _d in _new_oz:
+                _f, _u = _d.get("block_from_elevation_deg"), _d.get("block_until_elevation_deg")
+                if _f is not None and _u is not None and _f > _u:
+                    errors["base"] = "obstruction_elevation_range_invalid"
+                    break
+            if not errors:
+                return self._merge_save_window({
+                    "manual_sun_sector_start_deg": _sector_start,
+                    "manual_sun_sector_end_deg": _sector_end,
+                    "obstruction_zones": _new_oz,
+                })
+        _az_selector = NumberSelector(NumberSelectorConfig(min=0, max=359, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="°"))
+        _elev_selector = NumberSelector(NumberSelectorConfig(min=0, max=90, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="°"))
+        _st_start = window.get("manual_sun_sector_start_deg")
+        _st_end = window.get("manual_sun_sector_end_deg")
+        _sector_on = _st_start is not None and _st_end is not None
+        _sug_start = _st_start if _st_start is not None else (_display_azimuth - self._edit_window_effective_tol(window, "tolerance_start")) % 360.0
+        _sug_end = _st_end if _st_end is not None else (_display_azimuth + self._edit_window_effective_tol(window, "tolerance_end")) % 360.0
+        _stored_oz = (window.get("obstruction_zones") or [])[:3]
+
+        def _oz_stored(idx, key, default=None):
+            if idx >= len(_stored_oz):
+                return default
+            raw_oz = _stored_oz[idx]
+            if key == "block_until_elevation_deg" and key not in raw_oz:
+                return raw_oz.get("min_elevation_deg", default)
+            return raw_oz.get(key, default)
+        schema = vol.Schema({
+            vol.Required(CONF_MANUAL_SUN_SECTOR_ENABLED, default=_sector_on): BooleanSelector(),
+            vol.Optional(CONF_MANUAL_SUN_SECTOR_START_DEG, default=_sug_start): _az_selector,
+            vol.Optional(CONF_MANUAL_SUN_SECTOR_END_DEG, default=_sug_end): _az_selector,
             vol.Required(CONF_OBSTRUCTION_1_ENABLED, default=_oz_stored(0, "enabled", False)): BooleanSelector(),
             vol.Optional(CONF_OBSTRUCTION_1_AZIMUTH_START, description={"suggested_value": _oz_stored(0, "azimuth_start_deg")}): _az_selector,
             vol.Optional(CONF_OBSTRUCTION_1_AZIMUTH_END, description={"suggested_value": _oz_stored(0, "azimuth_end_deg")}): _az_selector,
             vol.Optional(CONF_OBSTRUCTION_1_BLOCK_FROM_ELEVATION, description={"suggested_value": _oz_stored(0, "block_from_elevation_deg")}): _elev_selector,
             vol.Optional(CONF_OBSTRUCTION_1_BLOCK_UNTIL_ELEVATION, description={"suggested_value": _oz_stored(0, "block_until_elevation_deg")}): _elev_selector,
-            # --- Obstruction zone 2 ---
             vol.Required(CONF_OBSTRUCTION_2_ENABLED, default=_oz_stored(1, "enabled", False)): BooleanSelector(),
             vol.Optional(CONF_OBSTRUCTION_2_AZIMUTH_START, description={"suggested_value": _oz_stored(1, "azimuth_start_deg")}): _az_selector,
             vol.Optional(CONF_OBSTRUCTION_2_AZIMUTH_END, description={"suggested_value": _oz_stored(1, "azimuth_end_deg")}): _az_selector,
             vol.Optional(CONF_OBSTRUCTION_2_BLOCK_FROM_ELEVATION, description={"suggested_value": _oz_stored(1, "block_from_elevation_deg")}): _elev_selector,
             vol.Optional(CONF_OBSTRUCTION_2_BLOCK_UNTIL_ELEVATION, description={"suggested_value": _oz_stored(1, "block_until_elevation_deg")}): _elev_selector,
-            # --- Obstruction zone 3 ---
             vol.Required(CONF_OBSTRUCTION_3_ENABLED, default=_oz_stored(2, "enabled", False)): BooleanSelector(),
             vol.Optional(CONF_OBSTRUCTION_3_AZIMUTH_START, description={"suggested_value": _oz_stored(2, "azimuth_start_deg")}): _az_selector,
             vol.Optional(CONF_OBSTRUCTION_3_AZIMUTH_END, description={"suggested_value": _oz_stored(2, "azimuth_end_deg")}): _az_selector,
             vol.Optional(CONF_OBSTRUCTION_3_BLOCK_FROM_ELEVATION, description={"suggested_value": _oz_stored(2, "block_from_elevation_deg")}): _elev_selector,
             vol.Optional(CONF_OBSTRUCTION_3_BLOCK_UNTIL_ELEVATION, description={"suggested_value": _oz_stored(2, "block_until_elevation_deg")}): _elev_selector,
-            # --- Window contact sensor(s) (night-block / night-lift) ---
-            # Multi-select, restricted to binary_sensor and opening device classes
-            # (window / door / opening / garage_door).  Window counts as open if
-            # ANY selected contact is open.
-            vol.Optional(
-                CONF_CONTACT_SENSOR_ENTITY_IDS,
-                description={"suggested_value": _stored_contact},
-            ): EntitySelector(EntitySelectorConfig(
-                domain="binary_sensor",
-                device_class=["window", "door", "opening", "garage_door"],
-                multiple=True,
-            )),
-            vol.Required(CONF_NIGHT_BLOCK_ON_WINDOW_OPEN, default=_stored_night_block): BooleanSelector(),
-            vol.Required(CONF_NIGHT_LIFT_ON_WINDOW_OPEN, default=_stored_night_lift): BooleanSelector(),
-            vol.Optional(
-                CONF_WINDOW_OPEN_NIGHT_POSITION,
-                description={"suggested_value": _stored_vent_pos},
-            ): NumberSelector(
+        })
+        return self.async_show_form(
+            step_id="edit_window_solar", data_schema=schema, errors=errors,
+            description_placeholders={"window_name": window["name"]},
+        )
+
+    # -- Page 4: window contact(s) & night ventilation ----------------------
+    async def async_step_edit_window_contact(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        window = self._get_edit_window()
+        if window is None:
+            return self.async_abort(reason="window_not_found")
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            _raw = user_input.get(CONF_CONTACT_SENSOR_ENTITY_IDS)
+            if _raw is None:  # tolerate the legacy single-contact key
+                _raw = user_input.get(CONF_CONTACT_SENSOR_ENTITY_ID)
+            if isinstance(_raw, str):
+                _contacts = [_raw] if _raw else []
+            else:
+                _contacts = [e for e in (_raw or []) if e]
+            _contacts = list(dict.fromkeys(_contacts))
+            _night_block = bool(user_input.get(CONF_NIGHT_BLOCK_ON_WINDOW_OPEN, False))
+            _night_lift = bool(user_input.get(CONF_NIGHT_LIFT_ON_WINDOW_OPEN, False))
+            raw_vent = user_input.get(CONF_WINDOW_OPEN_NIGHT_POSITION)
+            if _night_lift and not _night_block:
+                errors[CONF_NIGHT_LIFT_ON_WINDOW_OPEN] = "night_lift_requires_night_block"
+            if _night_block and not _contacts:
+                errors[CONF_CONTACT_SENSOR_ENTITY_IDS] = "contact_sensor_required_for_block"
+            if _night_lift and not _contacts:
+                errors[CONF_CONTACT_SENSOR_ENTITY_IDS] = "contact_sensor_required_for_lift"
+            if not errors:
+                return self._merge_save_window({
+                    "contact_sensor_entity_ids": _contacts,
+                    "contact_sensor_entity_id": _contacts[0] if _contacts else None,
+                    "night_block_on_window_open": _night_block,
+                    "night_lift_on_window_open": _night_lift if _night_block else False,
+                    "window_open_night_position_ha": int(raw_vent) if raw_vent is not None else DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA,
+                })
+        _raw_stored = window.get("contact_sensor_entity_ids")
+        if _raw_stored is None:
+            _raw_stored = window.get("contact_sensor_entity_id")
+        if isinstance(_raw_stored, str):
+            _stored_contacts = [_raw_stored] if _raw_stored else []
+        else:
+            _stored_contacts = [e for e in (_raw_stored or []) if e]
+        schema = vol.Schema({
+            vol.Optional(CONF_CONTACT_SENSOR_ENTITY_IDS, description={"suggested_value": _stored_contacts}): EntitySelector(
+                EntitySelectorConfig(domain="binary_sensor", device_class=["window", "door", "opening", "garage_door"], multiple=True)
+            ),
+            vol.Required(CONF_NIGHT_BLOCK_ON_WINDOW_OPEN, default=window.get("night_block_on_window_open", False)): BooleanSelector(),
+            vol.Required(CONF_NIGHT_LIFT_ON_WINDOW_OPEN, default=window.get("night_lift_on_window_open", False)): BooleanSelector(),
+            vol.Optional(CONF_WINDOW_OPEN_NIGHT_POSITION, description={"suggested_value": window.get("window_open_night_position_ha", DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA)}): NumberSelector(
                 NumberSelectorConfig(min=0, max=100, step=1, mode=NumberSelectorMode.SLIDER, unit_of_measurement="%")
             ),
         })
         return self.async_show_form(
-            step_id="edit_window_detail",
-            data_schema=schema,
-            errors=errors,
+            step_id="edit_window_contact", data_schema=schema, errors=errors,
             description_placeholders={"window_name": window["name"]},
         )
 

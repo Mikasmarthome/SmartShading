@@ -147,21 +147,49 @@
           "window_id": "Okno"
         }
       },
-      "edit_window_detail": {
-        "title": "Edytuj okno: {window_name}",
-        "description": "Zaktualizuj ustawienia okna „{window_name}”. Zmiany osłon zaczynają obowiązywać po zapisaniu.",
+      "edit_window_menu": {
+        "title": "Edit window: {window_name}",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Nazwa okna",
           "floor_level": "Piętro (-1 = piwnica, 0 = parter, 1 = 1. piętro, …)",
           "compass_direction": "Orientacja",
           "custom_azimuth": "Niestandardowy azymut (0-359°, używany tylko, gdy Orientacja jest ustawiona na Niestandardowa)",
           "cover_entities": "Osłony dla tego okna",
-          "cover_hardware_type": "Typ sprzętu osłony",
+          "cover_hardware_type": "Typ sprzętu osłony"
+        },
+        "data_description": {
+          "floor_level": "Służy do wyznaczenia minimalnej elewacji słońca dla bezpośredniego nasłonecznienia. −1 (piwnica) → 20°, 0 (parter) → 15°, 1 (1. piętro) → 10°, 2 (2. piętro) → 5°, 3 i wyżej → 0°. Dla okien w szybach świetlnych lub z dużymi przeszkodami użyj stref przeszkód."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Pozycja przy nieobecności (zastępuje domyślną dla strefy)",
           "window_behavior_mode": "Automatyczny tryb zacieniania",
           "light_shade_position": "Pozycja lekkiego zacienienia (zastępuje domyślną dla strefy)",
           "normal_shade_position": "Pozycja normalnego zacienienia (zastępuje domyślną dla strefy)",
-          "strong_shade_position": "Pozycja silnego zacienienia (zastępuje domyślną dla strefy)",
+          "strong_shade_position": "Pozycja silnego zacienienia (zastępuje domyślną dla strefy)"
+        },
+        "data_description": {
+          "absence_position": "Pozostaw puste, aby odziedziczyć domyślną pozycję nieobecności strefy. Ustaw wartość, aby zastąpić ją tylko dla tego okna.",
+          "window_behavior_mode": "W pełni automatyczny: słońce, komfort, nieobecność i harmonogram aktywne. Nieobecność i harmonogram: sterowanie nieobecnością, nocny i poranny harmonogram aktywne; bez zacienienia słonecznego, cieplnego ani przeciwodblaskowego. Tylko nieobecność: tylko sterowanie nieobecnością. Automatyka wyłączona: brak automatycznego zacieniania. Zabezpieczenia (burza/wiatr) pozostają zawsze aktywne.",
+          "light_shade_position": "Pozostaw puste, aby użyć wartości domyślnej strefy. Ustaw wartość, aby zastąpić docelową pozycję lekkiego zacienienia tylko dla tego okna.",
+          "normal_shade_position": "Pozostaw puste, aby użyć wartości domyślnej strefy. Ustaw wartość, aby zastąpić docelową pozycję normalnego zacienienia tylko dla tego okna.",
+          "strong_shade_position": "Pozostaw puste, aby użyć wartości domyślnej strefy. Ustaw wartość, aby zastąpić docelową pozycję silnego zacienienia tylko dla tego okna."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Włącz ręczne zastąpienie sektora słonecznego",
           "manual_sun_sector_start_deg": "Azymut początkowy sektora słonecznego (°)",
           "manual_sun_sector_end_deg": "Azymut końcowy sektora słonecznego (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Azymut początkowy strefy 3 (°)",
           "obstruction_3_azimuth_end_deg": "Azymut końcowy strefy 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Strefa 3 blokowana od wysokości (°)",
-          "obstruction_3_block_until_elevation_deg": "Strefa 3 blokowana do wysokości (°)",
-          "contact_sensor_entity_ids": "Window contact sensor (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "Strefa 3 blokowana do wysokości (°)"
         },
         "data_description": {
-          "absence_position": "Pozostaw puste, aby odziedziczyć domyślną pozycję nieobecności strefy. Ustaw wartość, aby zastąpić ją tylko dla tego okna.",
-          "window_behavior_mode": "W pełni automatyczny: słońce, komfort, nieobecność i harmonogram aktywne. Nieobecność i harmonogram: sterowanie nieobecnością, nocny i poranny harmonogram aktywne; bez zacienienia słonecznego, cieplnego ani przeciwodblaskowego. Tylko nieobecność: tylko sterowanie nieobecnością. Automatyka wyłączona: brak automatycznego zacieniania. Zabezpieczenia (burza/wiatr) pozostają zawsze aktywne.",
-          "light_shade_position": "Pozostaw puste, aby użyć wartości domyślnej strefy. Ustaw wartość, aby zastąpić docelową pozycję lekkiego zacienienia tylko dla tego okna.",
-          "normal_shade_position": "Pozostaw puste, aby użyć wartości domyślnej strefy. Ustaw wartość, aby zastąpić docelową pozycję normalnego zacienienia tylko dla tego okna.",
-          "strong_shade_position": "Pozostaw puste, aby użyć wartości domyślnej strefy. Ustaw wartość, aby zastąpić docelową pozycję silnego zacienienia tylko dla tego okna.",
           "manual_sun_sector_enabled": "Początkowy i końcowy azymut są sugerowane na podstawie orientacji i tolerancji okna. Włącz, aby użyć tego zakresu zamiast automatycznego sektora. Wartości można dostosować przed zapisaniem. Obsługuje przekrócenie 0°/360° (np. 330° do 30° przechodzi przez północ).",
           "obstruction_1_enabled": "Włącz, aby oznaczyć zakres azymutu, w którym fizyczna przeszkoda (drzewo, budynek, okap dachu) blokuje bezpośrednie słońce. Pozostaw pola wysokości puste, aby blokować przy każdej wysokości słońca w zakresie azymutu.",
           "obstruction_1_block_from_elevation_deg": "Opcjonalne. Przeszkoda blokuje tylko, gdy wysokość słońca jest równa tej wartości lub wyższa. Przykład: 45° blokuje okap dachu, który zacienia tylko przy stromych kątach słońca. Pozostaw puste, aby nie ustawiać dolnego limitu.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Opcjonalny górny limit wysokości dla strefy 2 (zob. opis strefy 1).",
           "obstruction_3_enabled": "Trzecia opcjonalna strefa przeszkody dla tego okna.",
           "obstruction_3_block_from_elevation_deg": "Opcjonalny dolny limit wysokości dla strefy 3 (zob. opis strefy 1).",
-          "obstruction_3_block_until_elevation_deg": "Opcjonalny górny limit wysokości dla strefy 3 (zob. opis strefy 1).",
-          "floor_level": "Służy do wyznaczenia minimalnej elewacji słońca dla bezpośredniego nasłonecznienia. −1 (piwnica) → 20°, 0 (parter) → 15°, 1 (1. piętro) → 10°, 2 (2. piętro) → 5°, 3 i wyżej → 0°. Dla okien w szybach świetlnych lub z dużymi przeszkodami użyj stref przeszkód.",
+          "obstruction_3_block_until_elevation_deg": "Opcjonalny górny limit wysokości dla strefy 3 (zob. opis strefy 1)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

@@ -147,21 +147,49 @@
           "window_id": "Okno"
         }
       },
-      "edit_window_detail": {
-        "title": "Upravit okno: {window_name}",
-        "description": "Aktualizujte nastavení okna „{window_name}“. Změny stínění se projeví po uložení.",
+      "edit_window_menu": {
+        "title": "Edit window: {window_name}",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Název okna",
           "floor_level": "Podlaží (-1 = suterén, 0 = přízemí, 1 = 1. patro, …)",
           "compass_direction": "Orientace",
           "custom_azimuth": "Vlastní azimut (0-359°, použije se pouze pokud je Orientace nastavena na Vlastní)",
           "cover_entities": "Stínění pro toto okno",
-          "cover_hardware_type": "Typ hardwaru stínění",
+          "cover_hardware_type": "Typ hardwaru stínění"
+        },
+        "data_description": {
+          "floor_level": "Slouží k odvození minimální elevace slunce pro přímé osvětlení. −1 (suterén) → 20°, 0 (přízemí) → 15°, 1 (1. patro) → 10°, 2 (2. patro) → 5°, 3 a výše → 0°. Pro okna ve světlících nebo s výraznými překážkami použijte zóny překážek."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Poloha při nepřítomnosti (přepíše výchozí hodnotu zóny)",
           "window_behavior_mode": "Automatický režim stínění",
           "light_shade_position": "Poloha lehkého stínění (přepíše výchozí hodnotu zóny)",
           "normal_shade_position": "Poloha normálního stínění (přepíše výchozí hodnotu zóny)",
-          "strong_shade_position": "Poloha silného stínění (přepíše výchozí hodnotu zóny)",
+          "strong_shade_position": "Poloha silného stínění (přepíše výchozí hodnotu zóny)"
+        },
+        "data_description": {
+          "absence_position": "Ponechte prázdné pro zdědění výchozí polohy nepřítomnosti zóny. Zadejte hodnotu pro její přepsání pouze pro toto okno.",
+          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Nepřítomnost a plán: řízení podle nepřítomnosti, noční a ranní plán aktivní; bez slunečního, tepelného nebo protioslnivého stínění. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní.",
+          "light_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy lehkého stínění pouze pro toto okno.",
+          "normal_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy normálního stínění pouze pro toto okno.",
+          "strong_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy silného stínění pouze pro toto okno."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Povolit ruční přepsání slunečního sektoru",
           "manual_sun_sector_start_deg": "Počáteční azimut slunečního sektoru (°)",
           "manual_sun_sector_end_deg": "Koncový azimut slunečního sektoru (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Počáteční azimut zóny 3 (°)",
           "obstruction_3_azimuth_end_deg": "Koncový azimut zóny 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Zóna 3 blokována od výšky (°)",
-          "obstruction_3_block_until_elevation_deg": "Zóna 3 blokována do výšky (°)",
-          "contact_sensor_entity_ids": "Window contact sensor (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "Zóna 3 blokována do výšky (°)"
         },
         "data_description": {
-          "absence_position": "Ponechte prázdné pro zdědění výchozí polohy nepřítomnosti zóny. Zadejte hodnotu pro její přepsání pouze pro toto okno.",
-          "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Nepřítomnost a plán: řízení podle nepřítomnosti, noční a ranní plán aktivní; bez slunečního, tepelného nebo protioslnivého stínění. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní.",
-          "light_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy lehkého stínění pouze pro toto okno.",
-          "normal_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy normálního stínění pouze pro toto okno.",
-          "strong_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy silného stínění pouze pro toto okno.",
           "manual_sun_sector_enabled": "Počáteční a konečný azimut jsou navrhovány podle orientace a tolerance okna. Aktivujte, chcete-li použít tento rozsah místo automatického sektoru. Hodnoty lze před uložením upravit. Podporuje přelom 0°/360° (např. 330° až 30° překráčí sever).",
           "obstruction_1_enabled": "Povolte pro označení rozsahu azimutu, kde fyzická překážka (strom, budova, přesah střechy) blokuje přímé slunce. Ponechte pole výšky prázdná pro blokování při každé výšce slunce v rozsahu azimutu.",
           "obstruction_1_block_from_elevation_deg": "Volitelné. Překážka blokuje pouze tehdy, když je výška slunce rovna této hodnotě nebo vyšší. Příklad: 45° blokuje přesah střechy, který stíní pouze při strmých úhlech slunce. Ponechte prázdné pro žádný dolní limit.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Volitelná horní mez výšky pro zónu 2 (viz popis zóny 1).",
           "obstruction_3_enabled": "Třetí volitelná zóna překážky pro toto okno.",
           "obstruction_3_block_from_elevation_deg": "Volitelná dolní mez výšky pro zónu 3 (viz popis zóny 1).",
-          "obstruction_3_block_until_elevation_deg": "Volitelná horní mez výšky pro zónu 3 (viz popis zóny 1).",
-          "floor_level": "Slouží k odvození minimální elevace slunce pro přímé osvětlení. −1 (suterén) → 20°, 0 (přízemí) → 15°, 1 (1. patro) → 10°, 2 (2. patro) → 5°, 3 a výše → 0°. Pro okna ve světlících nebo s výraznými překážkami použijte zóny překážek.",
+          "obstruction_3_block_until_elevation_deg": "Volitelná horní mez výšky pro zónu 3 (viz popis zóny 1)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

@@ -147,21 +147,49 @@
           "window_id": "Ablak"
         }
       },
-      "edit_window_detail": {
-        "title": "Ablak szerkesztése: {window_name}",
-        "description": "Frissítse a(z) „{window_name}” ablak beállításait. Az árnyékolók módosításai mentés után lépnek életbe.",
+      "edit_window_menu": {
+        "title": "Edit window: {window_name}",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Ablak neve",
           "floor_level": "Emelet (-1 = pince, 0 = földszint, 1 = 1. emelet, …)",
           "compass_direction": "Tájolás",
           "custom_azimuth": "Egyéni azimut (0-359°, csak akkor használatos, ha a Tájolás Egyéni értékre van állítva)",
           "cover_entities": "Árnyékolók ehhez az ablakhoz",
-          "cover_hardware_type": "Az árnyékoló hardvertípusa",
+          "cover_hardware_type": "Az árnyékoló hardvertípusa"
+        },
+        "data_description": {
+          "floor_level": "A közvetlen benapozáshoz szükséges minimális napmagasság meghatározásához használatos. −1 (pince) → 20°, 0 (földszint) → 15°, 1 (1. emelet) → 10°, 2 (2. emelet) → 5°, 3 felett → 0°. Fénykutakban lévő vagy erősen takart ablakokhoz használjon akadályzónákat."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Távolléti pozíció (felülírja a zóna alapértelmezését)",
           "window_behavior_mode": "Automatikus árnyékolási mód",
           "light_shade_position": "Enyhe árnyékolás pozíciója (felülírja a zóna alapértelmezését)",
           "normal_shade_position": "Normál árnyékolás pozíciója (felülírja a zóna alapértelmezését)",
-          "strong_shade_position": "Erős árnyékolás pozíciója (felülírja a zóna alapértelmezését)",
+          "strong_shade_position": "Erős árnyékolás pozíciója (felülírja a zóna alapértelmezését)"
+        },
+        "data_description": {
+          "absence_position": "Hagyja üresen a zóna alapértelmezett távolléti pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél az ablaknál.",
+          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Távollét és ütemezés: távollétvezérlés, éjszakai és reggeli ütemezés aktív; nincs napfény-, hő- vagy tükröződésvédelmi árnyékolás. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak.",
+          "light_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket az enyhe árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
+          "normal_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket a normál árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
+          "strong_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket az erős árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Napszektor kézi felülírásának engedélyezése",
           "manual_sun_sector_start_deg": "Napszektor kezdő azimutja (°)",
           "manual_sun_sector_end_deg": "Napszektor záró azimutja (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "3. zóna kezdő azimutja (°)",
           "obstruction_3_azimuth_end_deg": "3. zóna záró azimutja (°)",
           "obstruction_3_block_from_elevation_deg": "3. zóna blokkolva ettől a magasságtól (°)",
-          "obstruction_3_block_until_elevation_deg": "3. zóna blokkolva eddig a magasságig (°)",
-          "contact_sensor_entity_ids": "Window contact sensor (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "3. zóna blokkolva eddig a magasságig (°)"
         },
         "data_description": {
-          "absence_position": "Hagyja üresen a zóna alapértelmezett távolléti pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél az ablaknál.",
-          "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Távollét és ütemezés: távollétvezérlés, éjszakai és reggeli ütemezés aktív; nincs napfény-, hő- vagy tükröződésvédelmi árnyékolás. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak.",
-          "light_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket az enyhe árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
-          "normal_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket a normál árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
-          "strong_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket az erős árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
           "manual_sun_sector_enabled": "A kezdeti és záró azimut az ablak tájékozódása és tűrése alapján kerül javaslatként megjelenítésre. Engedélyezze, hogy ezt a tartományt használja az automatikus szár helyett. Az értékek mentés előtt módosíthatók. Támogatja a 0°/360° átfordulját (pl. 330°-tól 30°-ig északón át).",
           "obstruction_1_enabled": "Engedélyezze egy olyan azimuttartomány megjelöléséhez, ahol fizikai akadály (fa, épület, tetőkiugrás) blokkolja a közvetlen napot. Hagyja üresen a magasság mezőket, hogy az azimuttartományban minden napmagasságnál blokkoljon.",
           "obstruction_1_block_from_elevation_deg": "Opcionális. Az akadály csak akkor blokkol, ha a napmagasság egyenlő ezzel az értékkel vagy magasabb. Példa: 45° blokkol egy tetőkiugrást, amely csak meredek napszögeknél árnyékol. Hagyja üresen, ha nincs alsó határ.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Opcionális felső magassági határ a 2. zónához (lásd az 1. zóna leírását).",
           "obstruction_3_enabled": "Harmadik opcionális akadályzóna ehhez az ablakhoz.",
           "obstruction_3_block_from_elevation_deg": "Opcionális alsó magassági határ a 3. zónához (lásd az 1. zóna leírását).",
-          "obstruction_3_block_until_elevation_deg": "Opcionális felső magassági határ a 3. zónához (lásd az 1. zóna leírását).",
-          "floor_level": "A közvetlen benapozáshoz szükséges minimális napmagasság meghatározásához használatos. −1 (pince) → 20°, 0 (földszint) → 15°, 1 (1. emelet) → 10°, 2 (2. emelet) → 5°, 3 felett → 0°. Fénykutakban lévő vagy erősen takart ablakokhoz használjon akadályzónákat.",
+          "obstruction_3_block_until_elevation_deg": "Opcionális felső magassági határ a 3. zónához (lásd az 1. zóna leírását)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

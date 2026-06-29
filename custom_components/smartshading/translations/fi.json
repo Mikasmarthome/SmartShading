@@ -147,21 +147,49 @@
           "window_id": "Ikkuna"
         }
       },
-      "edit_window_detail": {
-        "title": "Muokkaa ikkunaa: {window_name}",
-        "description": "Päivitä ikkunan ”{window_name}” asetukset. Varjostinten muutokset tulevat voimaan tallennuksen jälkeen.",
+      "edit_window_menu": {
+        "title": "Edit window: {window_name}",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Ikkunan nimi",
           "floor_level": "Kerros (-1 = kellarikerros, 0 = maantasokerros, 1 = 1. kerros, …)",
           "compass_direction": "Suuntaus",
           "custom_azimuth": "Mukautettu atsimuutti (0-359°, käytetään vain, jos Suuntaus on asetettu Mukautettu-tilaan)",
           "cover_entities": "Tämän ikkunan varjostimet",
-          "cover_hardware_type": "Varjostimen laitteistotyyppi",
+          "cover_hardware_type": "Varjostimen laitteistotyyppi"
+        },
+        "data_description": {
+          "floor_level": "Käytetään johtamaan minimaalinen auringon korkeus suoraa altistusta varten. −1 (kellari) → 20°, 0 (maantasokerros) → 15°, 1 (1. kerros) → 10°, 2 (2. kerros) → 5°, 3 ja enemmän → 0°. Valokaivossa sijaitseville ikkunoille tai voimakkaiden esteiden kanssa käytä estevyöhykkeitä."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Poissaolosijainti (ohittaa vyöhykkeen oletuksen)",
           "window_behavior_mode": "Automaattinen varjostustila",
           "light_shade_position": "Kevyen varjostuksen sijainti (ohittaa vyöhykkeen oletuksen)",
           "normal_shade_position": "Normaalin varjostuksen sijainti (ohittaa vyöhykkeen oletuksen)",
-          "strong_shade_position": "Voimakkaan varjostuksen sijainti (ohittaa vyöhykkeen oletuksen)",
+          "strong_shade_position": "Voimakkaan varjostuksen sijainti (ohittaa vyöhykkeen oletuksen)"
+        },
+        "data_description": {
+          "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle ikkunalle.",
+          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Poissaolo ja aikataulu: poissaolo-ohjaus, yö- ja aamuaikataulu aktiivisia; ei aurinko-, lämpö- tai häikäisysuojavarjostusta. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina.",
+          "light_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi kevyen varjostuksen tavoitesijainnin vain tälle ikkunalle.",
+          "normal_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi normaalin varjostuksen tavoitesijainnin vain tälle ikkunalle.",
+          "strong_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi voimakkaan varjostuksen tavoitesijainnin vain tälle ikkunalle."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Ota käyttöön aurinkosektorin manuaalinen ohitus",
           "manual_sun_sector_start_deg": "Aurinkosektorin aloitusatsimuutti (°)",
           "manual_sun_sector_end_deg": "Aurinkosektorin lopetusatsimuutti (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Vyöhykkeen 3 aloitusatsimuutti (°)",
           "obstruction_3_azimuth_end_deg": "Vyöhykkeen 3 lopetusatsimuutti (°)",
           "obstruction_3_block_from_elevation_deg": "Vyöhyke 3 estetty korkeudesta (°)",
-          "obstruction_3_block_until_elevation_deg": "Vyöhyke 3 estetty korkeuteen asti (°)",
-          "contact_sensor_entity_ids": "Window contact sensor (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "Vyöhyke 3 estetty korkeuteen asti (°)"
         },
         "data_description": {
-          "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle ikkunalle.",
-          "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Poissaolo ja aikataulu: poissaolo-ohjaus, yö- ja aamuaikataulu aktiivisia; ei aurinko-, lämpö- tai häikäisysuojavarjostusta. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina.",
-          "light_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi kevyen varjostuksen tavoitesijainnin vain tälle ikkunalle.",
-          "normal_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi normaalin varjostuksen tavoitesijainnin vain tälle ikkunalle.",
-          "strong_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi voimakkaan varjostuksen tavoitesijainnin vain tälle ikkunalle.",
           "manual_sun_sector_enabled": "Aloitus- ja lopetusatsimuutti ehdotetaan ikkunan suunnan ja toleranssien perusteella. Ota käyttöön, jotta tämä alue käytetään automaattisen sektorin sijaan. Arvoja voidaan muokata ennen tallentamista. Tukee ylivääntyä 0°/360° (esim. 330° –30° ylittää pohjoisen).",
           "obstruction_1_enabled": "Ota käyttöön merkitäksesi atsimuuttialueen, jossa fyysinen este (puu, rakennus, katon räystäs) estää suoran auringon. Jätä korkeuskentät tyhjiksi estääksesi jokaisella auringon korkeudella atsimuuttialueella.",
           "obstruction_1_block_from_elevation_deg": "Valinnainen. Este estää vain, kun auringon korkeus on yhtä suuri kuin tämä arvo tai suurempi. Esimerkki: 45° estää katon räystään, joka varjostaa vain jyrkillä aurinkokulmilla. Jätä tyhjäksi, jos ei alarajaa.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Valinnainen ylempi korkeusraja vyöhykkeelle 2 (katso vyöhykkeen 1 kuvaus).",
           "obstruction_3_enabled": "Kolmas valinnainen estevyöhyke tälle ikkunalle.",
           "obstruction_3_block_from_elevation_deg": "Valinnainen alempi korkeusraja vyöhykkeelle 3 (katso vyöhykkeen 1 kuvaus).",
-          "obstruction_3_block_until_elevation_deg": "Valinnainen ylempi korkeusraja vyöhykkeelle 3 (katso vyöhykkeen 1 kuvaus).",
-          "floor_level": "Käytetään johtamaan minimaalinen auringon korkeus suoraa altistusta varten. −1 (kellari) → 20°, 0 (maantasokerros) → 15°, 1 (1. kerros) → 10°, 2 (2. kerros) → 5°, 3 ja enemmän → 0°. Valokaivossa sijaitseville ikkunoille tai voimakkaiden esteiden kanssa käytä estevyöhykkeitä.",
+          "obstruction_3_block_until_elevation_deg": "Valinnainen ylempi korkeusraja vyöhykkeelle 3 (katso vyöhykkeen 1 kuvaus)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

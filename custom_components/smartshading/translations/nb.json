@@ -147,21 +147,49 @@
           "window_id": "Vindu"
         }
       },
-      "edit_window_detail": {
-        "title": "Rediger vindu: {window_name}",
-        "description": "Oppdater innstillingene for vinduet \"{window_name}\". Endringer i solskjerminger trer i kraft etter lagring.",
+      "edit_window_menu": {
+        "title": "Edit window: {window_name}",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Vindunavn",
           "floor_level": "Etasje (-1 = kjeller, 0 = bakkeplan, 1 = 1. etasje, …)",
           "compass_direction": "Orientering",
           "custom_azimuth": "Tilpasset asimut (0-359°, brukes bare hvis Orientering er satt til Tilpasset)",
           "cover_entities": "Solskjerminger for dette vinduet",
-          "cover_hardware_type": "Solskjermingens maskinvaretype",
+          "cover_hardware_type": "Solskjermingens maskinvaretype"
+        },
+        "data_description": {
+          "floor_level": "Brukes til å bestemme minimum solhøyde for direkte solinnstråling. −1 (kjeller) → 20°, 0 (bakkeplan) → 15°, 1 (1. etasje) → 10°, 2 (2. etasje) → 5°, 3 og høyere → 0°. For vinduer i lysgårder eller med store hindringer, bruk hindringssoner."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Fraværsposisjon (overstyrer sonens standard)",
           "window_behavior_mode": "Automatisk solskjermingsmodus",
           "light_shade_position": "Posisjon for lett skjerming (overstyrer sonens standard)",
           "normal_shade_position": "Posisjon for normal skjerming (overstyrer sonens standard)",
-          "strong_shade_position": "Posisjon for kraftig skjerming (overstyrer sonens standard)",
+          "strong_shade_position": "Posisjon for kraftig skjerming (overstyrer sonens standard)"
+        },
+        "data_description": {
+          "absence_position": "La stå tom for å arve sonens standard fraværsposisjon. Angi en verdi for å overstyre den bare for dette vinduet.",
+          "window_behavior_mode": "Helautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, natt- og morgentidsplan aktive; ingen sol-, varme- eller blendingsbeskyttelse. Bare fravær: bare fraværsstyring. Automatisering deaktivert: ingen automatisk solskjerming. Sikkerhetsbeskyttelser (storm/vind) forblir alltid aktive.",
+          "light_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for lett skjerming bare for dette vinduet.",
+          "normal_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for normal skjerming bare for dette vinduet.",
+          "strong_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for kraftig skjerming bare for dette vinduet."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Aktiver manuell overstyring av solsektoren",
           "manual_sun_sector_start_deg": "Solsektorens startasimut (°)",
           "manual_sun_sector_end_deg": "Solsektorens sluttasimut (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Sone 3 startasimut (°)",
           "obstruction_3_azimuth_end_deg": "Sone 3 sluttasimut (°)",
           "obstruction_3_block_from_elevation_deg": "Sone 3 blokkert fra høyde (°)",
-          "obstruction_3_block_until_elevation_deg": "Sone 3 blokkert til høyde (°)",
-          "contact_sensor_entity_ids": "Window contact sensor (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "Sone 3 blokkert til høyde (°)"
         },
         "data_description": {
-          "absence_position": "La stå tom for å arve sonens standard fraværsposisjon. Angi en verdi for å overstyre den bare for dette vinduet.",
-          "window_behavior_mode": "Helautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, natt- og morgentidsplan aktive; ingen sol-, varme- eller blendingsbeskyttelse. Bare fravær: bare fraværsstyring. Automatisering deaktivert: ingen automatisk solskjerming. Sikkerhetsbeskyttelser (storm/vind) forblir alltid aktive.",
-          "light_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for lett skjerming bare for dette vinduet.",
-          "normal_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for normal skjerming bare for dette vinduet.",
-          "strong_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for kraftig skjerming bare for dette vinduet.",
           "manual_sun_sector_enabled": "Start- og slutt-azimut foreslås basert på vinduets orientering og toleranser. Aktiver for å bruke dette området i stedet for det automatiske. Verdiene kan justeres før lagring. Støtter overlapping ved 0°/360° (f.eks. 330° til 30° krysser nord).",
           "obstruction_1_enabled": "Aktiver for å markere et asimutintervall der en fysisk hindring (tre, bygning, takutstikk) blokkerer direkte sol. La høydefeltene stå tomme for å blokkere ved enhver solhøyde innenfor asimutintervallet.",
           "obstruction_1_block_from_elevation_deg": "Valgfritt. Hindringen blokkerer bare når solhøyden er lik eller over denne verdien. Eksempel: 45° blokkerer et takutstikk som bare gir skygge ved bratte solvinkler. La stå tom for ingen nedre grense.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Valgfri øvre høydegrense for sone 2 (se beskrivelsen av sone 1).",
           "obstruction_3_enabled": "Tredje valgfrie hindringssone for dette vinduet.",
           "obstruction_3_block_from_elevation_deg": "Valgfri nedre høydegrense for sone 3 (se beskrivelsen av sone 1).",
-          "obstruction_3_block_until_elevation_deg": "Valgfri øvre høydegrense for sone 3 (se beskrivelsen av sone 1).",
-          "floor_level": "Brukes til å bestemme minimum solhøyde for direkte solinnstråling. −1 (kjeller) → 20°, 0 (bakkeplan) → 15°, 1 (1. etasje) → 10°, 2 (2. etasje) → 5°, 3 og høyere → 0°. For vinduer i lysgårder eller med store hindringer, bruk hindringssoner.",
+          "obstruction_3_block_until_elevation_deg": "Valgfri øvre høydegrense for sone 3 (se beskrivelsen av sone 1)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

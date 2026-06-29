@@ -147,21 +147,49 @@
           "window_id": "Fenster"
         }
       },
-      "edit_window_detail": {
+      "edit_window_menu": {
         "title": "Fenster bearbeiten: {window_name}",
-        "description": "Einstellungen für Fenster \"{window_name}\" aktualisieren. Änderungen an den Rolladen-Entitäten werden nach dem Speichern wirksam.",
+        "menu_options": {
+          "edit_window_basics": "Grunddaten & Rollladen",
+          "edit_window_shading": "Beschattungsverhalten",
+          "edit_window_solar": "Sonnenbereich & Schattenzonen",
+          "edit_window_contact": "Fensterkontakt & Nachtlüftung"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Grunddaten & Rollladen",
         "data": {
           "window_name": "Fenstername",
           "floor_level": "Stockwerk (-1 = Keller/UG, 0 = Erdgeschoss, 1 = 1. OG, …)",
           "compass_direction": "Ausrichtung",
           "custom_azimuth": "Benutzerdefinierter Azimut (0–359°, nur wenn Ausrichtung auf 'Benutzerdefiniert' gesetzt)",
           "cover_entities": "Rolladen dieses Fensters",
-          "cover_hardware_type": "Rolladen-Typ",
+          "cover_hardware_type": "Rolladen-Typ"
+        },
+        "data_description": {
+          "floor_level": "Wird genutzt, um die minimale Sonnenhöhe für direkte Einstrahlung abzuleiten. −1 (Keller/UG) → 20°, 0 (EG) → 15°, 1 (1. OG) → 10°, 2 (2. OG) → 5°, 3 und höher → 0°. Für Fenster in Lichtschächten oder mit starken Hindernissen Schattenzonen verwenden."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Beschattungsverhalten",
+        "data": {
           "absence_position": "Abwesenheitsposition (überschreibt Zonen-Standard)",
           "window_behavior_mode": "Automatischer Beschattungsmodus",
           "light_shade_position": "Leichte Beschattungsposition (überschreibt Zonen-Standard)",
           "normal_shade_position": "Normale Beschattungsposition (überschreibt Zonen-Standard)",
-          "strong_shade_position": "Starke Beschattungsposition (überschreibt Zonen-Standard)",
+          "strong_shade_position": "Starke Beschattungsposition (überschreibt Zonen-Standard)"
+        },
+        "data_description": {
+          "absence_position": "Leer lassen, um die Zonen-Standardposition zu übernehmen. Wert setzen, um sie nur für dieses Fenster zu überschreiben.",
+          "window_behavior_mode": "Vollautomatisch: Sonne, Komfort, Abwesenheit und Zeitplan aktiv. Abwesenheit und Zeitplan: Abwesenheitssteuerung, Nacht- und Morgenzeitplan aktiv; keine Sonnen-, Wärme- oder Blendbeschattung. Nur Abwesenheit: nur Abwesenheitssteuerung aktiv. Automatik deaktiviert: keine automatische Beschattung. Sicherheitsschutz (Sturm/Wind) bleibt immer aktiv.",
+          "light_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei leichter Beschattung nur für dieses Fenster zu überschreiben.",
+          "normal_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei normaler Beschattung nur für dieses Fenster zu überschreiben.",
+          "strong_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei starker Beschattung nur für dieses Fenster zu überschreiben."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sonnenbereich & Schattenzonen",
+        "data": {
           "manual_sun_sector_enabled": "Manuellen Sonnenbereich aktivieren",
           "manual_sun_sector_start_deg": "Sonnenbereich Startazimut (°)",
           "manual_sun_sector_end_deg": "Sonnenbereich Endazimut (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Zone 3 Azimut-Start (°)",
           "obstruction_3_azimuth_end_deg": "Zone 3 Azimut-Ende (°)",
           "obstruction_3_block_from_elevation_deg": "Zone 3 blockiert ab Sonnenhöhe (°)",
-          "obstruction_3_block_until_elevation_deg": "Zone 3 blockiert bis Sonnenhöhe (°)",
-          "contact_sensor_entity_ids": "Fensterkontaktsensoren (optional)",
-          "night_block_on_window_open": "Nachtfahrt blockieren, wenn Fenster geöffnet (Option A)",
-          "night_lift_on_window_open": "Auf Lüftungsposition fahren, wenn Fenster nachts geöffnet wird (Option B)",
-          "window_open_night_position": "Lüftungsposition bei geöffnetem Fenster nachts (%)"
+          "obstruction_3_block_until_elevation_deg": "Zone 3 blockiert bis Sonnenhöhe (°)"
         },
         "data_description": {
-          "absence_position": "Leer lassen, um die Zonen-Standardposition zu übernehmen. Wert setzen, um sie nur für dieses Fenster zu überschreiben.",
-          "window_behavior_mode": "Vollautomatisch: Sonne, Komfort, Abwesenheit und Zeitplan aktiv. Abwesenheit und Zeitplan: Abwesenheitssteuerung, Nacht- und Morgenzeitplan aktiv; keine Sonnen-, Wärme- oder Blendbeschattung. Nur Abwesenheit: nur Abwesenheitssteuerung aktiv. Automatik deaktiviert: keine automatische Beschattung. Sicherheitsschutz (Sturm/Wind) bleibt immer aktiv.",
-          "light_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei leichter Beschattung nur für dieses Fenster zu überschreiben.",
-          "normal_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei normaler Beschattung nur für dieses Fenster zu überschreiben.",
-          "strong_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei starker Beschattung nur für dieses Fenster zu überschreiben.",
           "manual_sun_sector_enabled": "Start- und Endazimut werden anhand der Fensterausrichtung und Toleranzen vorgeschlagen. Aktivieren, um diesen Bereich anstelle des automatischen Sonnenbereichs zu verwenden. Die Werte können vor dem Speichern angepasst werden. Unterstützt Überlauf über 0°/360° (z. B. 330° bis 30° quert Nord).",
           "obstruction_1_enabled": "Aktivieren, um einen Azimutbereich zu markieren, in dem ein physisches Hindernis (Baum, Gebäude, Dachüberstand) die direkte Sonne blockiert. Lege optional fest, bei welchen Sonnenhöhen das Hindernis wirkt. Ohne Angabe gilt die Schattenzone bei jeder Sonnenhöhe.",
           "obstruction_1_block_from_elevation_deg": "Optional. Das Hindernis blockiert nur, wenn die Sonnenhöhe größer oder gleich diesem Wert ist. Beispiel: 45° für einen Dachüberstand, der nur bei steiler Sonne wirkt. Leer lassen für keine Untergrenze.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Optionale obere Sonnenhöhengrenze für Zone 2 (siehe Zone-1-Beschreibung).",
           "obstruction_3_enabled": "Dritte optionale Schattenzone für dieses Fenster.",
           "obstruction_3_block_from_elevation_deg": "Optionale untere Sonnenhöhengrenze für Zone 3 (siehe Zone-1-Beschreibung).",
-          "obstruction_3_block_until_elevation_deg": "Optionale obere Sonnenhöhengrenze für Zone 3 (siehe Zone-1-Beschreibung).",
-          "floor_level": "Wird genutzt, um die minimale Sonnenhöhe für direkte Einstrahlung abzuleiten. −1 (Keller/UG) → 20°, 0 (EG) → 15°, 1 (1. OG) → 10°, 2 (2. OG) → 5°, 3 und höher → 0°. Für Fenster in Lichtschächten oder mit starken Hindernissen Schattenzonen verwenden.",
+          "obstruction_3_block_until_elevation_deg": "Optionale obere Sonnenhöhengrenze für Zone 3 (siehe Zone-1-Beschreibung)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Fensterkontakt & Nachtlüftung",
+        "data": {
+          "contact_sensor_entity_ids": "Fensterkontaktsensoren (optional)",
+          "night_block_on_window_open": "Nachtfahrt blockieren, wenn Fenster geöffnet (Option A)",
+          "night_lift_on_window_open": "Auf Lüftungsposition fahren, wenn Fenster nachts geöffnet wird (Option B)",
+          "window_open_night_position": "Lüftungsposition bei geöffnetem Fenster nachts (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Eine oder mehrere binary_sensor-Entitäten, die den Öffnungsstatus melden. Bei mehreren Kontakten gilt das Fenster als geöffnet, sobald mindestens einer geöffnet ist. Leer lassen, um die kontaktbasierte Nachtlogik für dieses Fenster zu deaktivieren.",
           "night_block_on_window_open": "Option A: Ist das Fenster zur Nachtzeit geöffnet, wird die automatische Nachtfahrt zurückgestellt. SmartShading schließt den Rolladen genau einmal nach, sobald das Fenster in derselben Nacht geschlossen wird.",
           "night_lift_on_window_open": "Option B (erfordert Option A und Kontaktsensor): Wird das Fenster nach der Nachtfahrt geöffnet, fährt der Rolladen auf die Lüftungsposition; beim Schließen des Fensters kehrt er zur Nachtposition zurück.",

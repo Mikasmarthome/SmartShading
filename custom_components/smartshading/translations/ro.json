@@ -147,21 +147,49 @@
           "window_id": "Fereastră"
         }
       },
-      "edit_window_detail": {
-        "title": "Editați fereastra: {window_name}",
-        "description": "Actualizați setările ferestrei „{window_name}”. Modificările umbrarelor intră în vigoare după salvare.",
+      "edit_window_menu": {
+        "title": "Edit window: {window_name}",
+        "menu_options": {
+          "edit_window_basics": "Basics & cover",
+          "edit_window_shading": "Shading behaviour",
+          "edit_window_solar": "Sun sector & obstruction zones",
+          "edit_window_contact": "Window contact & night ventilation"
+        }
+      },
+      "edit_window_basics": {
+        "title": "Basics & cover",
         "data": {
           "window_name": "Numele ferestrei",
           "floor_level": "Etaj (-1 = subsol, 0 = parter, 1 = etaj 1, …)",
           "compass_direction": "Orientare",
           "custom_azimuth": "Azimut personalizat (0-359°, folosit doar dacă Orientarea este setată pe Personalizat)",
           "cover_entities": "Umbrare pentru această fereastră",
-          "cover_hardware_type": "Tipul de hardware al umbrarului",
+          "cover_hardware_type": "Tipul de hardware al umbrarului"
+        },
+        "data_description": {
+          "floor_level": "Folosit pentru a determina elevația solară minimă pentru expunere directă. −1 (subsol) → 20°, 0 (parter) → 15°, 1 (etaj 1) → 10°, 2 (etaj 2) → 5°, 3 și mai sus → 0°. Pentru ferestre în puțuri de lumină sau cu obstacole mari, utilizați zonele de obstrucție."
+        }
+      },
+      "edit_window_shading": {
+        "title": "Shading behaviour",
+        "data": {
           "absence_position": "Poziție de absență (suprascrie valoarea implicită a zonei)",
           "window_behavior_mode": "Mod de umbrire automată",
           "light_shade_position": "Poziție de umbrire ușoară (suprascrie valoarea implicită a zonei)",
           "normal_shade_position": "Poziție de umbrire normală (suprascrie valoarea implicită a zonei)",
-          "strong_shade_position": "Poziție de umbrire puternică (suprascrie valoarea implicită a zonei)",
+          "strong_shade_position": "Poziție de umbrire puternică (suprascrie valoarea implicită a zonei)"
+        },
+        "data_description": {
+          "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră.",
+          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Absență și program: control prin absență, program de noapte și dimineață active; fără umbrire solară, termică sau anti-strălucire. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active.",
+          "light_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire ușoară doar pentru această fereastră.",
+          "normal_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire normală doar pentru această fereastră.",
+          "strong_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire puternică doar pentru această fereastră."
+        }
+      },
+      "edit_window_solar": {
+        "title": "Sun sector & obstruction zones",
+        "data": {
           "manual_sun_sector_enabled": "Activați suprascrierea manuală a sectorului solar",
           "manual_sun_sector_start_deg": "Azimut de start al sectorului solar (°)",
           "manual_sun_sector_end_deg": "Azimut de final al sectorului solar (°)",
@@ -179,18 +207,9 @@
           "obstruction_3_azimuth_start_deg": "Azimut de start al zonei 3 (°)",
           "obstruction_3_azimuth_end_deg": "Azimut de final al zonei 3 (°)",
           "obstruction_3_block_from_elevation_deg": "Zona 3 blocată de la înălțimea (°)",
-          "obstruction_3_block_until_elevation_deg": "Zona 3 blocată până la înălțimea (°)",
-          "contact_sensor_entity_ids": "Window contact sensor (optional)",
-          "night_block_on_window_open": "Block night move while window is open (Option A)",
-          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
-          "window_open_night_position": "Ventilation position when window is open at night (%)"
+          "obstruction_3_block_until_elevation_deg": "Zona 3 blocată până la înălțimea (°)"
         },
         "data_description": {
-          "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră.",
-          "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Absență și program: control prin absență, program de noapte și dimineață active; fără umbrire solară, termică sau anti-strălucire. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active.",
-          "light_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire ușoară doar pentru această fereastră.",
-          "normal_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire normală doar pentru această fereastră.",
-          "strong_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire puternică doar pentru această fereastră.",
           "manual_sun_sector_enabled": "Azimutele de început şi sfârşit sunt sugerate în funcţie de orientarea şi toleranţele ferestrei. Activaţi pentru a folosi acest interval în locul sectorului solar automat. Valorile pot fi ajustate înainte de salvare. Suportă depăşire 0°/360° (ex. 330° până la 30° trece prin nord).",
           "obstruction_1_enabled": "Activați pentru a marca un interval de azimut în care o obstrucție fizică (copac, clădire, streașină) blochează soarele direct. Lăsați câmpurile de înălțime goale pentru a bloca la orice înălțime a soarelui în intervalul de azimut.",
           "obstruction_1_block_from_elevation_deg": "Opțional. Obstrucția blochează doar când înălțimea soarelui este egală sau mai mare decât această valoare. Exemplu: 45° blochează o streașină care umbrește doar la unghiuri abrupte ale soarelui. Lăsați gol pentru nicio limită inferioară.",
@@ -200,8 +219,18 @@
           "obstruction_2_block_until_elevation_deg": "Limită superioară de înălțime opțională pentru zona 2 (vezi descrierea zonei 1).",
           "obstruction_3_enabled": "A treia zonă de obstrucție opțională pentru această fereastră.",
           "obstruction_3_block_from_elevation_deg": "Limită inferioară de înălțime opțională pentru zona 3 (vezi descrierea zonei 1).",
-          "obstruction_3_block_until_elevation_deg": "Limită superioară de înălțime opțională pentru zona 3 (vezi descrierea zonei 1).",
-          "floor_level": "Folosit pentru a determina elevația solară minimă pentru expunere directă. −1 (subsol) → 20°, 0 (parter) → 15°, 1 (etaj 1) → 10°, 2 (etaj 2) → 5°, 3 și mai sus → 0°. Pentru ferestre în puțuri de lumină sau cu obstacole mari, utilizați zonele de obstrucție.",
+          "obstruction_3_block_until_elevation_deg": "Limită superioară de înălțime opțională pentru zona 3 (vezi descrierea zonei 1)."
+        }
+      },
+      "edit_window_contact": {
+        "title": "Window contact & night ventilation",
+        "data": {
+          "contact_sensor_entity_ids": "Window contact sensor (optional)",
+          "night_block_on_window_open": "Block night move while window is open (Option A)",
+          "night_lift_on_window_open": "Lift to ventilation position when window opens at night (Option B)",
+          "window_open_night_position": "Ventilation position when window is open at night (%)"
+        },
+        "data_description": {
           "contact_sensor_entity_ids": "Select a binary_sensor entity that reports the physical window open/closed state (e.g. a reed switch). Leave empty to disable contact-based night logic for this window.",
           "night_block_on_window_open": "Option A: if the window is open at night, the automatic night move is postponed. SmartShading closes the cover exactly once when the window closes during the same night.",
           "night_lift_on_window_open": "Option B (requires Option A and a contact sensor): after the night move was performed, opening the window lifts the cover to the ventilation position; closing the window returns it to the night position.",

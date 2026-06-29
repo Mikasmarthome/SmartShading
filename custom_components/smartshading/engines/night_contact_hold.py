@@ -16,8 +16,10 @@ State transitions:
   caught_up  →  night_vent      Option B active + contact opens while caught_up
   night_vent →  caught_up       contact closes while in NIGHT_VENT
 
-UNKNOWN contact semantics:
-  - Option A block: UNKNOWN does NOT block the night move (PASS_THROUGH).
+UNKNOWN contact semantics (conservative — UNKNOWN is never treated as CLOSED):
+  - Option A block: UNKNOWN BLOCKS the night move and does NOT mark caught_up.
+    The full night move requires a definitive CLOSED reading; a sensor that is
+    unavailable/unknown (e.g. not yet hydrated after restart) holds the cover.
   - Catch-up: UNKNOWN does NOT trigger catch-up.  The hold stays in blocked
     state until a definitive CLOSED reading arrives.  This prevents a cover
     from moving to night position solely because a sensor went unavailable.
@@ -28,6 +30,9 @@ UNKNOWN contact semantics:
 Conservative restart semantics:
   After restart with contact OPEN during night → block the night move
     (behaves as if freshly blocked; catch_up_done=False after restart).
+  After restart with contact UNKNOWN during night → also block the night move
+    (cannot confirm the window is closed) until a definitive reading arrives;
+    a later CLOSED then drives the deferred move, a later OPEN keeps it held.
   After restart with contact CLOSED during night → normal night move.
   The "catch-up already done" guard works only within a single HA session.
   If HA restarts and contact is still open, a new night move will be blocked
@@ -108,8 +113,10 @@ class NightContactHold:
             False for CLOSED or UNKNOWN.
         contact_unknown:
             True when the sensor is unavailable, stale-unknown, or absent.
-            When True: catch-up and RETURN_TO_NIGHT are suppressed so that a
-            sensor fault never triggers an unexpected cover movement.
+            When True: the initial night move is BLOCKED (cannot confirm the
+            window is closed) and catch-up / RETURN_TO_NIGHT are suppressed, so
+            a sensor fault never drives the cover to night position nor triggers
+            an unexpected movement.
         night_active:
             True when the current lifecycle phase is NIGHT.
         night_block_enabled:
@@ -139,13 +146,23 @@ class NightContactHold:
                 # Block the night move this cycle.
                 self.blocked_this_night = True
                 return NightContactAction.BLOCK
-            else:
-                # Contact is closed, night move is being executed normally.
-                # Mark as caught_up so we don't re-block after window opens.
-                if not self.caught_up_this_night:
-                    self.caught_up_this_night = True
-                    self.blocked_this_night = False
-                return NightContactAction.PASS_THROUGH
+            if contact_unknown:
+                # Cannot confirm the window is closed — e.g. the contact sensor
+                # is still unavailable/unknown right after an HA restart, before
+                # its state has hydrated.  Treat this conservatively like OPEN:
+                # block the full night move and do NOT mark caught_up.  A later
+                # definitive CLOSED reading then drives the deferred night move
+                # (catch-up), and a later OPEN keeps the cover held / lifts to
+                # NIGHT_VENT.  This prevents a cover from driving to full night
+                # position solely because the sensor had not loaded yet.
+                self.blocked_this_night = True
+                return NightContactAction.BLOCK
+            # Contact is definitively CLOSED — night move executes normally.
+            # Mark as caught_up so we don't re-block after the window opens.
+            if not self.caught_up_this_night:
+                self.caught_up_this_night = True
+                self.blocked_this_night = False
+            return NightContactAction.PASS_THROUGH
 
         # --- Catch-up: contact closed after a blocked night ------------------
 

@@ -242,6 +242,23 @@ def _resolve_zone_coordinator(hass: HomeAssistant):
     return coordinator, zone_entry, len(zone_coords)
 
 
+def _active_zone_coordinators(hass: HomeAssistant) -> list:
+    """Return the live coordinators of ALL active SmartShading zone entries.
+
+    The system export buttons must aggregate every zone (a real install has many
+    zones/windows), never just the first.  Skips the system entry and any zone
+    entry without a live coordinator.
+    """
+    coords: list = []
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.data.get(CONF_ENTRY_TYPE, ENTRY_TYPE_ZONE) != ENTRY_TYPE_ZONE:
+            continue
+        coordinator = getattr(getattr(entry, "runtime_data", None), "coordinator", None)
+        if coordinator is not None:
+            coords.append(coordinator)
+    return coords
+
+
 class SmartShadingExportButton(ButtonEntity):
     """Button that triggers a global privacy-safe learning export.
 
@@ -272,30 +289,28 @@ class SmartShadingExportButton(ButtonEntity):
         from homeassistant.components.persistent_notification import (
             async_create as pn_async_create,
         )
-        from ..engines.support_export import build_support_export_v3
+        from ..engines.support_export import build_support_export_all_zones
 
         now = datetime.now(timezone.utc)
         try:
-            # The button lives on the system entry (no coordinator); resolve the
-            # active zone coordinator so the export reflects the running zone.
-            coordinator, zone_entry, zone_count = _resolve_zone_coordinator(self._hass)
-            if coordinator is None:
+            # The button lives on the system entry (no coordinator); aggregate ALL
+            # active zone coordinators (never just the first).
+            coordinators = _active_zone_coordinators(self._hass)
+            if not coordinators:
                 _LOGGER.warning(
                     "SmartShading: support export: no active zone coordinator found"
                 )
-            elif zone_count > 1:
+            else:
                 _LOGGER.info(
-                    "SmartShading: support export reflects the primary of %d zones",
-                    zone_count,
+                    "SmartShading: support export covering %d zone(s)", len(coordinators)
                 )
             # Build only on this explicit user request (never in a coordinator cycle).
-            export_data = build_support_export_v3(coordinator, now=now)
+            export_data = build_support_export_all_zones(coordinators, now=now)
         except Exception:
             _LOGGER.error("SmartShading: support export: failed to build export data")
             return
 
-        scope_entry_id = zone_entry.entry_id if zone_entry is not None else self._entry.entry_id
-        filename = _export_filename(now, scope_entry_id)
+        filename = _export_filename(now, self._entry.entry_id)
         config_dir = pathlib.Path(self._hass.config.config_dir)
         www_dir = config_dir / _WWW_SUBDIR
         filepath = www_dir / filename
@@ -384,26 +399,25 @@ class SmartShadingResearchExportButton(ButtonEntity):
         from homeassistant.components.persistent_notification import (
             async_create as pn_async_create,
         )
-        from ..engines.research_export_v3 import build_research_export_v3
+        from ..engines.research_export_v3 import build_research_export_all_zones
         from ..engines.export_retention import cleanup_old_exports
 
         now = datetime.now(timezone.utc)
         try:
-            # The button lives on the system entry (no coordinator); resolve the
-            # active zone coordinator so the export reflects the running zone.
-            coordinator, _zone_entry, zone_count = _resolve_zone_coordinator(self._hass)
-            if coordinator is None:
+            # The button lives on the system entry (no coordinator); aggregate ALL
+            # active zone coordinators (never just the first).
+            coordinators = _active_zone_coordinators(self._hass)
+            if not coordinators:
                 _LOGGER.warning(
                     "SmartShading: research export: no active zone coordinator found"
                 )
-            elif zone_count > 1:
+            else:
                 _LOGGER.info(
-                    "SmartShading: research export reflects the primary of %d zones",
-                    zone_count,
+                    "SmartShading: research export covering %d zone(s)", len(coordinators)
                 )
             # Built only on this explicit user request (never in a coordinator cycle);
-            # entry/zone-scoped, baseline-vs-adapted from persisted records.
-            export_data = build_research_export_v3(coordinator, now=now)
+            # baseline-vs-adapted from persisted records, aggregated across all zones.
+            export_data = build_research_export_all_zones(coordinators, now=now)
         except Exception:
             _LOGGER.error("SmartShading: research export: failed to build export data")
             return

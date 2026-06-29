@@ -39,6 +39,9 @@ from ..models.decision_provenance import ProvenanceSummary
 RESEARCH_EXPORT_SCHEMA_VERSION: int = 3
 
 MAX_RESEARCH_RECORDS_PER_ZONE = 500
+# Bounded ceiling for the aggregated all-zones export (per-zone cap × zones,
+# clamped) so a many-zone install stays bounded and JSON-serialisable.
+MAX_RESEARCH_RECORDS_ALL_ZONES = 4000
 MAX_RESEARCH_WINDOW_SUMMARIES = 60
 MAX_RESEARCH_EXPORT_BYTES = 2_000_000
 MIN_BUCKET_SAMPLE = 5  # smaller groups → insufficient_sample (no misleading stats)
@@ -139,35 +142,7 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
     accounting = {"examined": 0, "excluded": {}}
 
     def _records():
-        recs: list = []
-        if store is None:
-            return recs
-        try:
-            window_ids = list(store.window_ids())
-        except Exception:
-            return recs
-        for wid in window_ids:
-            try:
-                decs = store.get_decisions(wid)
-            except Exception:
-                continue
-            for d in decs or []:
-                accounting["examined"] += 1
-                # A record is eligible if it carries EITHER a compact summary
-                # (demoted records) OR full provenance (recent records).  Reading
-                # only `summary` would silently drop every recent full-provenance
-                # decision — i.e. the entire active window of interest.
-                if (getattr(d, "summary", None) is None
-                        and getattr(d, "provenance", None) is None):
-                    accounting["excluded"]["no_provenance"] = (
-                        accounting["excluded"].get("no_provenance", 0) + 1)
-                    continue
-                r = _project_decision(d, wid, pz)
-                if r is None:
-                    accounting["excluded"]["not_projectable"] = (
-                        accounting["excluded"].get("not_projectable", 0) + 1)
-                    continue
-                recs.append(r)
+        recs = _project_store_records(store, pz, accounting)
         # deterministic order: by timestamp then decision_ref.
         recs.sort(key=lambda r: (r.get("decision_timestamp_utc") or "", r.get("decision_ref") or ""))
         return recs
@@ -208,8 +183,8 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
             ),
         }, errors, "system"),
         "research_records": capped,
-        "aggregations": _safe(lambda: _aggregations(research_records, c), errors, "aggregations"),
-        "survivorship": _safe(lambda: _survivorship(c), errors, "survivorship"),
+        "aggregations": _safe(lambda: _aggregations(research_records, [c]), errors, "aggregations"),
+        "survivorship": _safe(lambda: _survivorship([c]), errors, "survivorship"),
         "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
                                       "per_window_summaries"),
         "record_accounting": {
@@ -247,6 +222,150 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
     if not is_json_safe(contract):
         return {"research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
                 "generated_at_utc": _iso_s(now),
+                "section_errors": {"json_safety": {"count": 1, "reason_codes": ["json_unsafe"]}}}
+    return contract
+
+
+def _project_store_records(store, pz, accounting) -> list:
+    """Project a single learning store's persisted decisions into research records.
+
+    Reusable across one store (single-zone export) or many (all-zones export).
+    Every examined decision is counted as eligible or excluded-by-reason so no
+    record silently vanishes (survivorship-bias guard).
+    """
+    recs: list = []
+    if store is None:
+        return recs
+    try:
+        window_ids = list(store.window_ids())
+    except Exception:
+        return recs
+    for wid in window_ids:
+        try:
+            decs = store.get_decisions(wid)
+        except Exception:
+            continue
+        for d in decs or []:
+            accounting["examined"] += 1
+            # Eligible if it carries EITHER a compact summary (demoted records) OR
+            # full provenance (recent records) — reading only `summary` would drop
+            # every recent full-provenance decision (the active window of interest).
+            if (getattr(d, "summary", None) is None
+                    and getattr(d, "provenance", None) is None):
+                accounting["excluded"]["no_provenance"] = (
+                    accounting["excluded"].get("no_provenance", 0) + 1)
+                continue
+            r = _project_decision(d, wid, pz)
+            if r is None:
+                accounting["excluded"]["not_projectable"] = (
+                    accounting["excluded"].get("not_projectable", 0) + 1)
+                continue
+            recs.append(r)
+    return recs
+
+
+def build_research_export_all_zones(coordinators, *, now=None,
+                                    integration_version="unknown") -> dict:
+    """Aggregate, privacy-safe Research Export across ALL active zone coordinators.
+
+    Collects eligible records from every zone store into one dataset and runs the
+    same aggregation logic, so counts, solar/forecast buckets and per-window
+    summaries are correct cross-zone sums.  No active zone → an honest no-zone
+    section_error (never a misleading healthy empty export).  A single shared
+    pseudonymizer keeps refs stable + namespace-separated within the export.
+    """
+    now = now or datetime.now(timezone.utc)
+    coords = [c for c in (coordinators or []) if c is not None]
+    errors: dict = {}
+    if not coords:
+        return {
+            "research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
+            "generated_at_utc": _iso_s(now),
+            "integration_version": integration_version,
+            "export_scope": "system_all_zones",
+            "overall_status": "no_active_zone",
+            "system": {"zone_count": 0, "window_count": 0},
+            "research_records": [],
+            "record_accounting": {"total_decisions_examined": 0, "eligible_record_count": 0,
+                                  "zone_count": 0},
+            "section_errors": {"zones": {"count": 1,
+                                         "reason_codes": ["no_active_zone_coordinator"]}},
+        }
+    # Stable shared pseudonymizer seed (first zone entry id → deterministic).
+    seed = getattr(getattr(coords[0], "config_entry", None), "entry_id", None)
+    pz = Pseudonymizer(seed)
+    accounting = {"examined": 0, "excluded": {}}
+    all_records: list = []
+    per_zone: list = []
+    for c in coords:
+        store = getattr(c, "_learning_store", None)
+        before = accounting["examined"]
+        recs = _safe(lambda: _project_store_records(store, pz, accounting), errors,
+                     "research_records", default=[])
+        recs = recs if isinstance(recs, list) else []
+        all_records.extend(recs)
+        entry_id = getattr(getattr(c, "config_entry", None), "entry_id", None)
+        per_zone.append({
+            "entry_ref": pz.ref(NS_ENTRY, entry_id),
+            "zone_ref": pz.ref(NS_ZONE, next(iter(getattr(c, "zones", {}) or {}), None)),
+            "window_count": len(getattr(c, "windows", {}) or {}),
+            "runtime_mode": _zone_runtime_mode(c),
+            "examined": accounting["examined"] - before,
+            "eligible": len(recs),
+        })
+    all_records.sort(key=lambda r: (r.get("decision_timestamp_utc") or "",
+                                    r.get("decision_ref") or ""))
+    cap = min(MAX_RESEARCH_RECORDS_ALL_ZONES,
+              MAX_RESEARCH_RECORDS_PER_ZONE * len(coords))
+    capped, rec_trunc = cap_records(all_records, cap)
+    total_windows = sum(len(getattr(c, "windows", {}) or {}) for c in coords)
+    contract: dict = {
+        "research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
+        "generated_at_utc": _iso_s(now),
+        "integration_version": integration_version,
+        "export_scope": "system_all_zones",
+        "overall_status": ("degraded" if errors else "ok"),
+        "pseudonymization": {"algorithm": "hmac_sha256", "output_bits": 64,
+                             "namespace_separated": True, "stability_scope": "export"},
+        "system": {
+            "zone_count": len(coords),
+            "window_count": total_windows,
+            "runtime_modes": sorted({_zone_runtime_mode(c) for c in coords}),
+        },
+        "per_zone": per_zone,
+        "research_records": capped,
+        "aggregations": _safe(lambda: _aggregations(all_records, coords), errors, "aggregations"),
+        "survivorship": _safe(lambda: _survivorship(coords), errors, "survivorship"),
+        "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
+                                      "per_window_summaries"),
+        "record_accounting": {
+            "zone_count": len(coords),
+            "total_decisions_examined": accounting["examined"],
+            "eligible_record_count": len(all_records),
+            "excluded_record_count": sum(accounting["excluded"].values()),
+            "excluded_by_reason": dict(sorted(accounting["excluded"].items())),
+            "capped_record_count": len(capped),
+            "serialized_record_count": None,
+            "record_cap": cap,
+            "cap_reason": ("per_zone_cap_times_zones_bounded"
+                           if len(all_records) > cap else "within_cap"),
+        },
+        "data_availability": {
+            "research_records": ("available" if all_records else "not_available"),
+            "solar_buckets": "available", "forecast_buckets": "available",
+        },
+        "section_errors": errors,
+    }
+    contract = enforce_depth(truncate_strings(contract, max_len=MAX_STRING_LENGTH),
+                             max_depth=MAX_NESTED_DEPTH)
+    contract = _byte_cap(contract, rec_trunc)
+    if (isinstance(contract.get("record_accounting"), dict)
+            and isinstance(contract.get("research_records"), list)):
+        contract["record_accounting"]["serialized_record_count"] = len(
+            contract["research_records"])
+    if not is_json_safe(contract):
+        return {"research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
+                "generated_at_utc": _iso_s(now), "export_scope": "system_all_zones",
                 "section_errors": {"json_safety": {"count": 1, "reason_codes": ["json_unsafe"]}}}
     return contract
 
@@ -390,8 +509,9 @@ def _project_decision(d, wid, pz) -> dict | None:
     }
 
 
-def _aggregations(records, coord) -> dict:
-    # records == ALL eligible projected records (computed BEFORE the per-record count
+def _aggregations(records, coords) -> dict:
+    # records == ALL eligible projected records across the given coordinator(s),
+    # (computed BEFORE the per-record count
     # cap and byte truncation), so aggregations use the full eligible dataset.  The
     # serialized record list is a bounded sample — see record_accounting for the
     # eligible/capped/serialized counts.
@@ -408,7 +528,7 @@ def _aggregations(records, coord) -> dict:
     neutral = [r for r in attributable if r.get("thermal_objective_classification") == "neutral"]
     degraded = [r for r in attributable if r.get("thermal_objective_classification") == "degraded"]
     inconclusive = [r for r in records if r.get("attribution_status") != "attributable"]
-    cb = _confidence_buckets(coord)
+    cb = _confidence_buckets(coords)
     cb["scope"] = "adoption_history_snapshots"  # NOT per-decision confidence
     return {
         "total_eligible_decisions": total,
@@ -546,34 +666,36 @@ def _bucket_counts(records, key) -> dict:
     return dict(sorted(out.items()))
 
 
-def _confidence_buckets(coord) -> dict:
+def _confidence_buckets(coords) -> dict:
     out = {name: 0 for _lo, _hi, name in _CONFIDENCE_BUCKETS}
     sample = 0
-    for hist_attr in ("_adoption_history", "_strategy_adoption_history"):
-        for a in getattr(coord, hist_attr, []) or []:
-            cv = _num(getattr(a, "confidence", None))
-            if cv is None:
-                continue
-            sample += 1
-            for lo, hi, name in _CONFIDENCE_BUCKETS:
-                if lo <= cv < hi:
-                    out[name] += 1
-                    break
+    for coord in coords:
+        for hist_attr in ("_adoption_history", "_strategy_adoption_history"):
+            for a in getattr(coord, hist_attr, []) or []:
+                cv = _num(getattr(a, "confidence", None))
+                if cv is None:
+                    continue
+                sample += 1
+                for lo, hi, name in _CONFIDENCE_BUCKETS:
+                    if lo <= cv < hi:
+                        out[name] += 1
+                        break
     out["sample"] = sample
     out["sample_status"] = "available" if sample >= MIN_BUCKET_SAMPLE else "insufficient_sample"
     return out
 
 
-def _survivorship(coord) -> dict:
+def _survivorship(coords) -> dict:
     """Rejected / rolled-back / invalidated / expired adoptions are NOT dropped —
-    survivorship-bias guard."""
+    survivorship-bias guard.  Aggregated across the given coordinator(s)."""
     terminal = {"rolled_back", "rejected", "invalidated", "expired", "reduced"}
     counts: dict = {}
-    for hist_attr in ("_adoption_history", "_strategy_adoption_history"):
-        for a in getattr(coord, hist_attr, []) or []:
-            st = getattr(a, "status", None)
-            if st in terminal:
-                counts[st] = counts.get(st, 0) + 1
+    for coord in coords:
+        for hist_attr in ("_adoption_history", "_strategy_adoption_history"):
+            for a in getattr(coord, hist_attr, []) or []:
+                st = getattr(a, "status", None)
+                if st in terminal:
+                    counts[st] = counts.get(st, 0) + 1
     return {"terminal_adoption_counts": dict(sorted(counts.items())),
             "note": "rejected/rolled_back/expired adoptions retained (no survivorship bias)"}
 

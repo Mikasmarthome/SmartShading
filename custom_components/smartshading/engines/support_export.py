@@ -330,6 +330,84 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
     return contract
 
 
+def build_support_export_all_zones(coordinators, *, now=None,
+                                   integration_version="unknown") -> dict:
+    """Aggregate Support Export across ALL active zone coordinators.
+
+    Builds the per-zone v3 support export for every active zone and nests them
+    under ``zones``, with a top-level system summary (zone/window/cover totals,
+    runtime-mode + configured-sensor summary).  A zone that fails to build is
+    captured as a per-zone section_error and degrades ``overall_status`` without
+    aborting the whole export.  No active zone → an honest no-zone status, never
+    a misleading healthy empty export.
+    """
+    now = now or datetime.now(timezone.utc)
+    coords = [c for c in (coordinators or []) if c is not None]
+    if not coords:
+        return {
+            "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
+            "generated_at_utc": _iso_s(now),
+            "integration_version": integration_version,
+            "export_scope": "system_all_zones",
+            "overall_status": "no_active_zone",
+            "system": {"zone_count": 0, "total_window_count": 0, "total_cover_count": 0},
+            "zones": [],
+            "section_errors": {"zones": {"count": 1,
+                                         "reason_codes": ["no_active_zone_coordinator"]}},
+        }
+    zones: list = []
+    total_windows = total_covers = 0
+    runtime_modes: set = set()
+    sensors_any = {"solar": False, "weather": False, "rain": False,
+                   "indoor": False, "outdoor": False}
+    degraded = False
+    for c in coords:
+        try:
+            z = build_support_export_v3(c, now=now, integration_version=integration_version)
+        except Exception:
+            z = {"section_errors": {"zone": {"count": 1,
+                                             "reason_codes": ["zone_builder_failed"]}}}
+        zones.append(z)
+        sysd = z.get("system", {}) if isinstance(z, dict) else {}
+        cfg = z.get("configuration", {}) if isinstance(z, dict) else {}
+        total_windows += int(sysd.get("window_count", 0) or 0)
+        total_covers += int(sysd.get("cover_count", 0) or 0)
+        runtime_modes.add(cfg.get("runtime_mode", "unknown"))
+        for k in sensors_any:
+            if cfg.get(f"{k}_sensor_configured") or cfg.get(f"{k}_configured"):
+                sensors_any[k] = True
+        if z.get("section_errors"):
+            degraded = True
+    contract = {
+        "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
+        "generated_at_utc": _iso_s(now),
+        "integration_version": integration_version,
+        "export_scope": "system_all_zones",
+        "overall_status": ("degraded" if degraded else "ok"),
+        "pseudonymization": {"algorithm": "hmac_sha256", "output_bits": 64,
+                             "namespace_separated": True,
+                             "stability_scope": "per_zone_config_entry"},
+        "system": {
+            "zone_count": len(coords),
+            "total_window_count": total_windows,
+            "total_cover_count": total_covers,
+            "runtime_modes": sorted(m for m in runtime_modes if m),
+            "configured_sensors_summary": sensors_any,
+        },
+        "zones": zones,
+        "section_errors": ({} if not degraded
+                           else {"zones": {"count": 1, "reason_codes": ["zone_degraded"]}}),
+    }
+    contract = enforce_depth(truncate_strings(contract, max_len=MAX_SUPPORT_STRING_LENGTH),
+                             max_depth=MAX_SUPPORT_NESTED_DEPTH)
+    contract = _enforce_byte_cap(contract)
+    if not is_json_safe(contract):
+        return {"support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
+                "generated_at_utc": _iso_s(now), "export_scope": "system_all_zones",
+                "section_errors": {"json_safety": {"count": 1, "reason_codes": ["json_unsafe"]}}}
+    return contract
+
+
 def _collect_reason_codes(contract) -> dict:
     codes: set = set()
 

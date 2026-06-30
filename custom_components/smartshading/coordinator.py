@@ -577,6 +577,31 @@ class _WindowComputeState:
     decision_id: str | None = None
 
 
+# Suppressed-hold decisions: the orchestrator/mode-gate produced a result that
+# sent NO cover command (target_position=None), so the state machine must stay at
+# current_state — recording a transition or outcome would desync state from the
+# unmoved cover.  PresenceUncertain:hold carries shading_state=OPEN, so excluding
+# it here is what keeps an ABSENCE_CLOSED window from silently flipping to OPEN on
+# a transient uncertain cycle and then failing to release after returning home.
+_NO_DISPATCH_HOLD_DECIDERS = frozenset({"BehaviorMode:hold", "PresenceUncertain:hold"})
+
+
+def _hold_state_for_no_dispatch(
+    decided_by: str,
+    proposed_state: ShadingState,
+    current_state: ShadingState,
+) -> ShadingState:
+    """Return the state the machine should hold for a no-dispatch hold decision.
+
+    A suppressed hold (see _NO_DISPATCH_HOLD_DECIDERS) sent no command, so the
+    state machine must stay at current_state; every other decision keeps its
+    proposed_state.  Pure function so the rule is unit-testable.
+    """
+    if decided_by in _NO_DISPATCH_HOLD_DECIDERS:
+        return current_state
+    return proposed_state
+
+
 def _apply_window_behavior_mode(
     wdi: WindowDecisionInput,
     behavior_mode: WindowBehaviorMode,
@@ -3181,14 +3206,21 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 _observed_internal_stored = observed_internal is not None
 
             proposed_state = tier_decision.shading_state
-            # BehaviorMode:hold: no command was sent, no state transition should be
-            # recorded.  The suppressed orchestrator result (OPEN fallback) must not
-            # become a published state change or a misleading snapshot entry — e.g.
-            # "State=OPEN, cover=20%" would be factually wrong when no dispatch ran.
-            # Hold the state machine at current_state so no StateTransitionRecord or
-            # PendingOutcome is created for this suppressed cycle.
-            if tier_decision.decided_by == "BehaviorMode:hold":
-                proposed_state = current_state
+            # Suppressed hold decisions: no command was sent (target_position=None),
+            # so no state transition should be recorded.  The suppressed orchestrator
+            # result (an OPEN shading_state with no target) must not become a published
+            # state change or a misleading snapshot entry — e.g. "State=OPEN, cover=20%"
+            # would be factually wrong when no dispatch ran.  Hold the state machine at
+            # current_state so no StateTransitionRecord or PendingOutcome is created.
+            #
+            # PresenceUncertain:hold matters here especially for ABSENCE_ONLY /
+            # ABSENCE_AND_SCHEDULE: it carries shading_state=OPEN, so without this hold
+            # it would flip current_state ABSENCE_CLOSED → OPEN while the cover stays at
+            # the absence position (no dispatch).  The next cycle would then no longer
+            # recognise the absence-release (which requires current_state ABSENCE_CLOSED)
+            # and the cover would stay closed after returning home.
+            proposed_state = _hold_state_for_no_dispatch(
+                tier_decision.decided_by, proposed_state, current_state)
 
             # StateGuard — same logic as the former DecisionEngine.decide().
             # bypasses_guard() covers: no-ops, escalations, lifecycle-direct
@@ -3268,12 +3300,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     # Phase 9F4b-3: create PendingOutcome for evaluator-driven states.
                     # MANUAL_OVERRIDE / safety states are excluded — they are not
                     # evaluator decisions and must not generate outcome observations.
-                    # BehaviorMode:hold is also excluded: no command was sent, so
-                    # there is no evaluator outcome to observe or score.
+                    # BehaviorMode:hold / PresenceUncertain:hold are also excluded:
+                    # no command was sent, so there is no evaluator outcome to observe
+                    # or score.
                     # When a new pending is created, replace() returns the old one
                     # (if any) so it can be resolved as STATE_CHANGE before the new
                     # observation window starts.
-                    if new_state not in _NO_OUTCOME_STATES and tier_decision.decided_by != "BehaviorMode:hold":
+                    if new_state not in _NO_OUTCOME_STATES and tier_decision.decided_by not in _NO_DISPATCH_HOLD_DECIDERS:
                         try:
                             # P3 movement: record this transition into the OLD window
                             # before it resolves, classifying comfort vs excluded.

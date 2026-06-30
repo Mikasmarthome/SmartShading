@@ -211,6 +211,14 @@ def _recommendation_attributes(
         "execution_error": diag.execution_error,
         "is_safety": diag.is_safety,
         "safety_result_failed": diag.safety_result_failed,
+        # Learning trace (beta.10): deterministic baseline vs final + adaptive state.
+        # All None when there is no sun data / no learning history yet, so the
+        # attributes are robust whether or not learning is enabled.
+        "deterministic_baseline_target": diag.deterministic_baseline_target_ha,
+        "deterministic_baseline_decided_by": diag.deterministic_baseline_decided_by,
+        "baseline_to_final_delta": diag.baseline_to_final_delta_ha,
+        "adaptive_strength": diag.adaptive_strength,
+        "adaptive_applied": diag.adaptive_applied,
         "dispatch_throttled": diag.dispatch_throttled,
         "throttle_wait_ms": diag.throttle_wait_ms,
         "cover_available": diag.cover_available,

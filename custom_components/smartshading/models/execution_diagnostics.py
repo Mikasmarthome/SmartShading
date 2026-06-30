@@ -360,3 +360,24 @@ class WindowExecutionDiagnostics:
 
     night_contact_state_label: str | None = None
     """Human-readable NightContactHold.state_label: "idle", "blocked", "caught_up", "night_vent_active"."""
+
+    # --- Learning trace (beta.10) — read-only diagnostics, HA convention ---
+    # These surface the deterministic baseline vs the final dispatched target plus
+    # the adaptive-layer state at decision time, so beta testers can see what
+    # learning changed (if anything) without a research export.  All None on the
+    # no-sun / unavailable path and when no learning data exists yet.
+    deterministic_baseline_target_ha: int | None = None
+    """The deterministic (no-learning) baseline target for this cycle, HA convention."""
+
+    deterministic_baseline_decided_by: str | None = None
+    """Which evaluator produced the deterministic baseline (e.g. SolarEvaluator)."""
+
+    baseline_to_final_delta_ha: int | None = None
+    """final target_position_ha − deterministic baseline (HA convention).  Includes the
+    adaptive layer and any post-baseline clamps; 0 means learning/clamps changed nothing."""
+
+    adaptive_strength: float | None = None
+    """AdaptiveProfile.adaptation_strength at decision time [0.0, 1.0]; 0.0 = no adaptation."""
+
+    adaptive_applied: bool | None = None
+    """True when a learned position adaptation was actually applied this cycle."""

@@ -4182,6 +4182,20 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if s.override_ref_source is not None  # non-safety path ran
                 else None  # safety / no-sun path: field stays None
             )
+            # Learning trace (beta.10): deterministic baseline vs final target, in
+            # HA convention, plus the adaptive-layer state at decision time.
+            _lt_baseline_ha: int | None = (
+                to_ha_position(s.baseline_target_internal, invert=False)
+                if s.baseline_target_internal is not None else None
+            )
+            _lt_final_ha: int | None = (
+                _exec_filter_for_dispatch.target_position_ha
+                if _exec_filter_for_dispatch is not None else None
+            )
+            _lt_delta_ha: int | None = (
+                _lt_final_ha - _lt_baseline_ha
+                if _lt_baseline_ha is not None and _lt_final_ha is not None else None
+            )
             execution_diagnostics[window_id] = WindowExecutionDiagnostics(
                 learning_enabled=s.obs_enabled,
                 active_control_enabled=s.active_control_enabled,
@@ -4305,6 +4319,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 catch_up_done=s.night_contact_catch_up_done,
                 night_vent_active=s.night_vent_active,
                 night_contact_state_label=s.night_contact_state_label,
+                deterministic_baseline_target_ha=_lt_baseline_ha,
+                deterministic_baseline_decided_by=s.baseline_decided_by,
+                baseline_to_final_delta_ha=_lt_delta_ha,
+                adaptive_strength=s.adapt_strength,
+                adaptive_applied=s.any_pos_adapted,
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---

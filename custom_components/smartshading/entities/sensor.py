@@ -34,6 +34,7 @@ from ..coordinator import SmartShadingCoordinator
 from ..cover_control.command_filter import BLOCKED_GUARD_ACTION_INTERVAL
 from ..engines.observability_evaluator import WindowObservation
 from ..models.execution_diagnostics import WindowExecutionDiagnostics
+from ..models.runtime_mode import derive_runtime_mode
 from ..state_machine.states import ShadingState
 from .base import SmartShadingWindowEntity
 from .zone_summary import (
@@ -191,6 +192,12 @@ def _recommendation_attributes(
         "execution_mode": diag.execution_mode,
         "learning_enabled": diag.learning_enabled,
         "active_control_enabled": diag.active_control_enabled,
+        # Resolved two-switch runtime mode (inactive / shadow_only / deterministic
+        # / adaptive) so the mode is readable directly instead of recombining the
+        # two switch attributes by hand.
+        "runtime_mode": derive_runtime_mode(
+            diag.learning_enabled, diag.active_control_enabled
+        ).value,
         "tier_decided_by": diag.tier_decided_by,
         "command_allowed": diag.command_allowed,
         "command_blocked_reason": diag.command_blocked_reason,

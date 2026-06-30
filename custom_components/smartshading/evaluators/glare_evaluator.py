@@ -1,16 +1,20 @@
-"""GlareEvaluator — Tier 4 Protection Floor: LIGHT_SHADE on glare.
+"""GlareEvaluator — Tier 4 Protection Floor: glare shading at scaled intensity.
 
-Responsibility: return a WindowDecision encoding a LIGHT_SHADE floor when
-the sun is within the window's azimuth tolerance sector and glare protection
-is enabled.
+Responsibility: return a WindowDecision when the sun is within the window's
+azimuth tolerance sector, glare protection is enabled, and the window is
+meaningfully lit.  The reason is always glare; the *intensity* (LIGHT / NORMAL /
+STRONG shade, with the matching configured-or-learned position) scales with how
+strongly THIS window is lit, classified with the same light/normal/strong
+thresholds the SolarEvaluator uses.  Glare therefore no longer stays pinned to
+LIGHT_SHADE when a window faces genuinely strong direct sun — without having to
+re-label the reason as heat or solar.
 
-This is a 1:1 migration of the ComfortAwareStateEvaluator / ComfortEngine
-glare-protection logic (comfort_engine.py, Rule 2) into the Tier 4 floor
-pattern.  The effective result is identical:
-    ComfortAwareStateEvaluator: _most_shading(proposed, LIGHT_SHADE)
-    GlareEvaluator:             WindowDecision(LIGHT_SHADE, light_shade_position)
-Because PositionResolver takes max() of all Tier 4 floors, the "at least
-LIGHT_SHADE" semantic is preserved.
+The intensity is always per-window: it is derived only from this window's own
+exposure and thresholds, never from any other window or floor (no cross-window
+derivation).  It is monotonic — never weaker than the LIGHT_SHADE floor — so
+moderate-glare behaviour (the historical LIGHT_SHADE result) is unchanged.
+Because PositionResolver takes max() of all Tier 4 floors, the floor semantic is
+preserved.
 
 Key difference from SolarEvaluator:
     SolarEvaluator gates on both is_in_solar_sector AND effective_exposure ≥ 150 W/m².
@@ -32,45 +36,54 @@ from ..models.window_decision_input import WindowDecisionInput
 from ..state_machine.states import ShadingState
 
 
-def is_low_angle_direct_sun(wdi: WindowDecisionInput) -> bool:
-    """True when low-angle direct sun should trigger glare on a vertical window.
-
-    Independent glare entry condition for the case where the sun is low and in
-    the window's sector, the measured solar beam is real (not dusk/diffuse), and
-    the vertical-window direct-glare estimate clears the glare threshold — even
-    though the standard horizontal-projected effective exposure is below it.
-
-    Caller has already verified glare is enabled, not solar-gain suppressed, the
-    window is in the solar sector (which also implies the sun reaches the glazing
-    — not floor-clipped, not obstructed), and exposure is available.
+def _low_angle_glare_value(wdi: WindowDecisionInput) -> float:
+    """Vertical-window low-angle direct-glare estimate, gated by a real measured
+    beam (0.0 when below the minimum measured beam or outside the low-sun band).
     """
     exposure = wdi.exposure
     if exposure is None:
-        return False
-    if exposure.measured_solar_wm2 < LOW_ANGLE_GLARE_MIN_MEASURED_WM2:
-        return False
-    # low_angle_direct_glare_wm2 is 0.0 outside the low-elevation band, so this
-    # naturally excludes normal/high-sun cases (handled by the effective path).
-    return (
-        exposure.low_angle_direct_glare_wm2
-        >= wdi.effective_behavior.glare_min_exposure_wm2
-    )
+        return 0.0
+    # getattr defaults keep older exposure objects (e.g. test fakes predating the
+    # beta.7 fields) working — they simply contribute no low-angle glare.
+    if getattr(exposure, "measured_solar_wm2", 0.0) < LOW_ANGLE_GLARE_MIN_MEASURED_WM2:
+        return 0.0
+    return getattr(exposure, "low_angle_direct_glare_wm2", 0.0)
+
+
+def glare_exposure_wm2(wdi: WindowDecisionInput) -> float:
+    """The glare-relevant exposure for this window: the larger of the standard
+    effective exposure and the gated low-angle vertical-window estimate.  Both
+    use the authoritative measured source value; no second cloud reduction."""
+    exposure = wdi.exposure
+    if exposure is None:
+        return 0.0
+    return max(exposure.effective_exposure, _low_angle_glare_value(wdi))
+
+
+def is_low_angle_direct_sun(wdi: WindowDecisionInput) -> bool:
+    """True when low-angle direct sun alone would trigger glare on a vertical
+    window (real low east/west beam clears the glare threshold even though the
+    horizontal-projected effective exposure does not).  Diagnostic helper."""
+    return _low_angle_glare_value(wdi) >= wdi.effective_behavior.glare_min_exposure_wm2
 
 
 class GlareEvaluator:
-    """Tier 4 Protection Floor: LIGHT_SHADE when sun is in window's sector.
+    """Tier 4 Protection Floor: glare shading at LIGHT/NORMAL/STRONG intensity.
 
-    Returns a WindowDecision for LIGHT_SHADE when glare protection is enabled
-    and the sun is within the window's azimuth tolerance window.
+    Fires when glare protection is enabled and the sun is in the window's sector
+    and the window is meaningfully lit.  The shade intensity scales with this
+    window's glare-relevant exposure (the larger of the standard effective
+    exposure and the gated low-angle vertical estimate) against the configured-
+    or-learned light/normal/strong thresholds.
 
     Returns None when:
       - glare_protection_enabled is False (disabled for this window).
+      - solar gain suppresses shading (cold-weather opt-out).
       - is_in_solar_sector is False (sun not facing this window).
-      - effective window exposure is below glare_min_exposure_wm2 (geometry alone
-        is NOT enough — the window must be meaningfully lit).  This uses the
-        authoritative effective window exposure (measured solar source when valid;
-        diagnosed fallback otherwise), never the ignored raw weather brightness,
-        and never a second cloud reduction.
+      - the glare-relevant exposure is below glare_min_exposure_wm2 (geometry
+        alone is NOT enough — the window must be meaningfully lit).  Uses the
+        authoritative measured solar source value (or diagnosed fallback), never
+        raw weather brightness, and never a second cloud reduction.
     """
 
     def evaluate(self, wdi: WindowDecisionInput) -> WindowDecision | None:
@@ -88,23 +101,35 @@ class GlareEvaluator:
         if wdi.exposure is None:
             return None
 
-        # Two independent entry conditions:
-        #  1. Normal path: the standard effective window exposure clears the
-        #     threshold (the existing behaviour, unchanged).
-        #  2. Low-angle direct-sun path: at a low sun angle the horizontal-
-        #     projected effective exposure under-represents vertical-window glare,
-        #     so a vertical-incidence estimate is used instead (real east/west
-        #     morning/evening sun) — gated by a minimum measured beam.
-        _normal = (
-            wdi.exposure.effective_exposure
-            >= wdi.effective_behavior.glare_min_exposure_wm2
-        )
-        if not (_normal or is_low_angle_direct_sun(wdi)):
+        behavior = wdi.effective_behavior
+        # Glare-relevant exposure for the entry gate: the larger of the standard
+        # effective exposure (normal path) and the gated low-angle vertical
+        # estimate (low east/west sun the horizontal projection under-represents).
+        if glare_exposure_wm2(wdi) < behavior.glare_min_exposure_wm2:
             return None
+
+        # Intensity scaling is driven ONLY by the low-angle vertical estimate —
+        # the part the SolarEvaluator under-counts at a low sun angle.  For
+        # ordinary high-sun exposure the SolarEvaluator already classifies
+        # NORMAL/STRONG (and owns that attribution); glare there stays the
+        # LIGHT_SHADE floor, so this never overrides solar's reason or changes
+        # existing high-sun behaviour.  Per window only — derived solely from this
+        # window's own exposure/thresholds, never from any other window.  The
+        # thresholds and positions are the configured-or-learned solar ones.
+        low_angle = _low_angle_glare_value(wdi)
+        if low_angle >= behavior.strong_shade_threshold_wm2:
+            state = ShadingState.STRONG_SHADE
+            position = behavior.strong_shade_position
+        elif low_angle >= behavior.normal_shade_threshold_wm2:
+            state = ShadingState.NORMAL_SHADE
+            position = behavior.normal_shade_position
+        else:
+            state = ShadingState.LIGHT_SHADE
+            position = behavior.light_shade_position
 
         return WindowDecision(
             window_id=wdi.window_config.id,
-            shading_state=ShadingState.LIGHT_SHADE,
-            target_position=wdi.effective_behavior.light_shade_position,
+            shading_state=state,
+            target_position=position,
             decided_by="GlareEvaluator",
         )

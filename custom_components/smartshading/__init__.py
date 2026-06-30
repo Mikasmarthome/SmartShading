@@ -85,8 +85,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
     coordinator = getattr(getattr(entry, "runtime_data", None), "coordinator", None)
     if coordinator is not None:
         # Explicit teardown as a safety net; also called via entry.async_on_unload
-        # registered in async_setup_presence_listeners.  Idempotent.
+        # registered in async_setup_presence_listeners / async_setup_contact_listeners.
+        # Idempotent.
         coordinator.async_teardown_presence_listeners()
+        coordinator.async_teardown_contact_listeners()
         await coordinator.async_flush_learning()
     return await hass.config_entries.async_unload_platforms(entry, ZONE_PLATFORMS)
 
@@ -271,6 +273,11 @@ async def _async_setup_zone_entry(
     # an away→home transition triggers all affected zones at once rather than
     # waiting up to 5 minutes for the next polling cycle.
     coordinator.async_setup_presence_listeners(entry)
+
+    # Likewise for window contacts: opening/closing a window at night must drive
+    # Option A (block/catch-up) and Option B (ventilation/return) promptly rather
+    # than waiting for the next periodic cycle.
+    coordinator.async_setup_contact_listeners(entry)
 
     entry.runtime_data = SmartShadingRuntimeData(
         coordinator=coordinator,

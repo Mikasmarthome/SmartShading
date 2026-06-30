@@ -884,6 +884,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Unsubscribe callbacks for presence state change listeners.
         # Populated by async_setup_presence_listeners(); cleared by teardown.
         self._unsub_presence_listeners: list[Callable[[], None]] = []
+        # Unsubscribe callbacks for window-contact state change listeners.
+        # Populated by async_setup_contact_listeners(); cleared by teardown.
+        self._unsub_contact_listeners: list[Callable[[], None]] = []
         # Presence dispatch generation (v1.0.4 stale-intent guard).
         # Incremented by each _on_presence_change callback; checked inside the
         # dispatch lock to cancel non-safety intents computed before a newer
@@ -1258,6 +1261,60 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         for unsub in self._unsub_presence_listeners:
             unsub()
         self._unsub_presence_listeners.clear()
+
+    def async_setup_contact_listeners(self, entry: ConfigEntry) -> None:
+        """Register immediate-refresh listeners for every configured window contact.
+
+        A window contact opening or closing at night must be acted on promptly —
+        Option A block / catch-up and Option B ventilation / return-to-night are
+        event-driven, not something to wait up to 5 minutes for.  Any contact
+        state change therefore requests an immediate coordinator refresh.
+
+        The refresh only RE-EVALUATES; every gate is unchanged (night-phase gate,
+        NightContactHold, CommandFilter, safety, global dispatch serialisation),
+        so daytime shading and safety are unaffected and a contact never blocks
+        anything by itself — it merely triggers a fresh decision.  Covers both
+        the multi-contact list and the legacy single-contact key via
+        WindowConfig.contact_entity_ids; per-coordinator isolation means a zone
+        only subscribes to its own windows' contacts.  Idempotent via teardown,
+        so reload/restart re-registers cleanly.
+        """
+        contact_ids: list[str] = []
+        for window in self.windows.values():
+            for eid in window.contact_entity_ids:
+                if eid and eid not in contact_ids:
+                    contact_ids.append(eid)
+        if not contact_ids:
+            return
+
+        @callback
+        def _on_contact_change(event: Event) -> None:
+            new_state = event.data.get("new_state")
+            old_state = event.data.get("old_state")
+            # Entity added/removed with no prior state — not a meaningful change.
+            if new_state is None or old_state is None:
+                return
+            # Deduplicate: ignore attribute-only updates with an unchanged state.
+            if new_state.state == old_state.state:
+                return
+            # Bump generation so any intents waiting on the dispatch lock see the
+            # newer generation and self-cancel, then re-evaluate immediately.
+            self._dispatch_generation += 1
+            self.hass.async_create_task(self.async_request_refresh())
+
+        for entity_id in contact_ids:
+            unsub = async_track_state_change_event(
+                self.hass, entity_id, _on_contact_change
+            )
+            self._unsub_contact_listeners.append(unsub)
+
+        entry.async_on_unload(self.async_teardown_contact_listeners)
+
+    def async_teardown_contact_listeners(self) -> None:
+        """Cancel all window-contact state change listeners.  Idempotent."""
+        for unsub in self._unsub_contact_listeners:
+            unsub()
+        self._unsub_contact_listeners.clear()
 
     # ------------------------------------------------------------------
     # Zone execution config API (Step 9G11)

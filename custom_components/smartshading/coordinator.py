@@ -1590,24 +1590,33 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         return False  # every readable person reported a non-"home" state
 
     def _presence_uncertain(self) -> bool:
-        """True when presence is configured but currently undeterminable.
+        """True when presence cannot be resolved clearly enough to actively open.
 
-        Every configured presence entity is missing or unknown/unavailable, so
-        absence cannot be evaluated (e.g. right after an HA restart before the
-        person entities hydrate).  _read_presence() falls back to "present" in
-        this case (the safe default against a false absence-close), which means a
-        FULLY_AUTOMATIC window would otherwise reach the daytime fallback and open
-        fully.  The TierOrchestrator uses this flag to hold instead.  Returns
-        False when no presence is configured (then the fallback open is the
-        intended behaviour) or when at least one entity has a definitive reading.
+        Uncertain means: presence is configured, NO person is definitively home,
+        and at least one person's state is currently undeterminable (missing or
+        unknown/unavailable, e.g. right after an HA restart before the person
+        entities hydrate).  In that situation absence cannot be confirmed either,
+        so a FULLY_AUTOMATIC window must hold rather than drive the daytime
+        fallback fully open (the dressing-room-opens-on-restart report).
+
+        Returns False as soon as ANY person is definitively home (someone is
+        clearly here → normal decision) or when every configured person has a
+        definitive reading (all home/away → absence/fallback handle it), and
+        also when no presence is configured at all (fallback open is intended).
+        unknown is never treated as away — this only suppresses the open; it
+        never forces a close.
         """
         if not self._presence_entity_ids:
             return False
+        any_uncertain = False
         for entity_id in self._presence_entity_ids:
             state = self.hass.states.get(entity_id)
-            if state is not None and state.state not in ("unknown", "unavailable"):
-                return False
-        return True
+            if state is None or state.state in ("unknown", "unavailable"):
+                any_uncertain = True
+                continue
+            if state.state == "home":
+                return False  # at least one person definitively home → not uncertain
+        return any_uncertain
 
     def _read_indoor_temperature(self) -> float | None:
         """Read indoor temperature as average of all configured sensors.

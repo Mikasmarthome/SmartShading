@@ -602,6 +602,44 @@ def _hold_state_for_no_dispatch(
     return proposed_state
 
 
+def _mode_dispatch_allowed(
+    behavior_mode: WindowBehaviorMode,
+    shading_state: ShadingState,
+    *,
+    is_absence_release: bool,
+    is_lifecycle_release: bool,
+) -> bool:
+    """Whether a non-FULLY_AUTOMATIC mode may dispatch this decision's command.
+
+    Pure function so the per-mode allowlist is unit-testable.  FULLY_AUTOMATIC is
+    unrestricted.  Safety and manual override always pass.  ABSENCE_ONLY /
+    ABSENCE_AND_SCHEDULE may close for absence and release on return.
+    ABSENCE_AND_SCHEDULE keeps the night schedule active, so it must also allow
+    NIGHT_CLOSED *and* NIGHT_VENT (night-contact Option B ventilation and its
+    return to night position) — otherwise a window opened at night would never
+    vent.  Everything else is suppressed (held) by the caller.
+    """
+    if behavior_mode is WindowBehaviorMode.FULLY_AUTOMATIC:
+        return True
+    return (
+        shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
+        or shading_state is ShadingState.MANUAL_OVERRIDE
+        or (
+            behavior_mode in (
+                WindowBehaviorMode.ABSENCE_ONLY,
+                WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+            )
+            and shading_state is ShadingState.ABSENCE_CLOSED
+        )
+        or (
+            behavior_mode is WindowBehaviorMode.ABSENCE_AND_SCHEDULE
+            and shading_state in (ShadingState.NIGHT_CLOSED, ShadingState.NIGHT_VENT)
+        )
+        or is_absence_release
+        or is_lifecycle_release
+    )
+
+
 def _apply_window_behavior_mode(
     wdi: WindowDecisionInput,
     behavior_mode: WindowBehaviorMode,
@@ -3021,7 +3059,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # to specific allowed states per mode.
             #
             # ABSENCE_AND_SCHEDULE allows: Safety, Manual Override, NIGHT_CLOSED,
-            # ABSENCE_CLOSED, absence-release (ABSENCE_CLOSED → OPEN), and
+            # NIGHT_VENT (night-contact Option B ventilation — this mode keeps the
+            # night schedule active, so a window opened at night must still vent and
+            # return), ABSENCE_CLOSED, absence-release (ABSENCE_CLOSED → OPEN), and
             # lifecycle-release (NIGHT_CLOSED → OPEN when night ends).
             # Daytime OPEN fallback and all solar/heat/glare decisions are suppressed.
             #
@@ -3063,24 +3103,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         proposed_is_open=tier_decision.shading_state is ShadingState.OPEN,
                     )
                 )
-                _mode_dispatch_allowed = (
-                    tier_decision.shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
-                    or tier_decision.shading_state is ShadingState.MANUAL_OVERRIDE
-                    or (
-                        _window_behavior in (
-                            WindowBehaviorMode.ABSENCE_ONLY,
-                            WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
-                        )
-                        and tier_decision.shading_state is ShadingState.ABSENCE_CLOSED
-                    )
-                    or (
-                        _window_behavior is WindowBehaviorMode.ABSENCE_AND_SCHEDULE
-                        and tier_decision.shading_state is ShadingState.NIGHT_CLOSED
-                    )
-                    or _is_absence_release
-                    or _is_lifecycle_release
+                _dispatch_allowed = _mode_dispatch_allowed(
+                    _window_behavior,
+                    tier_decision.shading_state,
+                    is_absence_release=_is_absence_release,
+                    is_lifecycle_release=_is_lifecycle_release,
                 )
-                if not _mode_dispatch_allowed:
+                if not _dispatch_allowed:
                     tier_decision = replace(
                         tier_decision,
                         target_position=None,

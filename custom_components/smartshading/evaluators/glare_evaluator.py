@@ -26,9 +26,35 @@ Scope:
 """
 from __future__ import annotations
 
+from ..const import LOW_ANGLE_GLARE_MIN_MEASURED_WM2
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
 from ..state_machine.states import ShadingState
+
+
+def is_low_angle_direct_sun(wdi: WindowDecisionInput) -> bool:
+    """True when low-angle direct sun should trigger glare on a vertical window.
+
+    Independent glare entry condition for the case where the sun is low and in
+    the window's sector, the measured solar beam is real (not dusk/diffuse), and
+    the vertical-window direct-glare estimate clears the glare threshold — even
+    though the standard horizontal-projected effective exposure is below it.
+
+    Caller has already verified glare is enabled, not solar-gain suppressed, the
+    window is in the solar sector (which also implies the sun reaches the glazing
+    — not floor-clipped, not obstructed), and exposure is available.
+    """
+    exposure = wdi.exposure
+    if exposure is None:
+        return False
+    if exposure.measured_solar_wm2 < LOW_ANGLE_GLARE_MIN_MEASURED_WM2:
+        return False
+    # low_angle_direct_glare_wm2 is 0.0 outside the low-elevation band, so this
+    # naturally excludes normal/high-sun cases (handled by the effective path).
+    return (
+        exposure.low_angle_direct_glare_wm2
+        >= wdi.effective_behavior.glare_min_exposure_wm2
+    )
 
 
 class GlareEvaluator:
@@ -61,7 +87,19 @@ class GlareEvaluator:
         # window exposure.  Exposure unavailable (sun.sun missing) → no glare.
         if wdi.exposure is None:
             return None
-        if wdi.exposure.effective_exposure < wdi.effective_behavior.glare_min_exposure_wm2:
+
+        # Two independent entry conditions:
+        #  1. Normal path: the standard effective window exposure clears the
+        #     threshold (the existing behaviour, unchanged).
+        #  2. Low-angle direct-sun path: at a low sun angle the horizontal-
+        #     projected effective exposure under-represents vertical-window glare,
+        #     so a vertical-incidence estimate is used instead (real east/west
+        #     morning/evening sun) — gated by a minimum measured beam.
+        _normal = (
+            wdi.exposure.effective_exposure
+            >= wdi.effective_behavior.glare_min_exposure_wm2
+        )
+        if not (_normal or is_low_angle_direct_sun(wdi)):
             return None
 
         return WindowDecision(

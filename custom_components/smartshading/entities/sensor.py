@@ -159,6 +159,17 @@ def _recommendation_attributes(
         "solar_exposure_w_m2": (
             round(_exposure.effective_exposure, 1) if _exposure is not None else None
         ),
+        # Authoritative measured (or fallback) source value and the vertical-window
+        # low-angle direct-glare estimate.  Makes the morning/evening case explicit:
+        # the standard effective exposure can be low while low-angle direct sun is
+        # high (the glare floor then fires via the low-angle path).
+        "measured_solar_w_m2": (
+            round(_exposure.measured_solar_wm2, 1) if _exposure is not None else None
+        ),
+        "low_angle_direct_glare_w_m2": (
+            round(_exposure.low_angle_direct_glare_wm2, 1)
+            if _exposure is not None else None
+        ),
         "heat_protection_active": (
             obs.comfort_assessment.heat_protection_needed
             if obs is not None and obs.comfort_assessment is not None

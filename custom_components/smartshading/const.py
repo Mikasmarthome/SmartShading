@@ -94,6 +94,16 @@ DEFAULT_LIGHT_SHADE_POSITION = 50
 DEFAULT_NORMAL_SHADE_POSITION = 30
 DEFAULT_STRONG_SHADE_POSITION = 10
 
+# Low-angle direct-sun glare (vertical windows). The measured solar sensor reads
+# HORIZONTAL global irradiance, which already contains a sin(elevation) factor;
+# projecting it onto a vertical window with the standard cos(delta)*sin(elevation)
+# factor applies sin(elevation) twice and under-represents low east/west sun. In
+# this elevation band the glare path also evaluates a vertical-incidence estimate,
+# gated by a minimum measured beam so dusk/diffuse light never triggers it.
+LOW_ANGLE_GLARE_MIN_ELEVATION_DEG = 3.0
+LOW_ANGLE_GLARE_MAX_ELEVATION_DEG = 30.0
+LOW_ANGLE_GLARE_MIN_MEASURED_WM2 = 40.0
+
 # Per-window manual sun sector override (v1.0).
 CONF_MANUAL_SUN_SECTOR_ENABLED = "manual_sun_sector_enabled"
 CONF_MANUAL_SUN_SECTOR_START_DEG = "manual_sun_sector_start_deg"

@@ -30,7 +30,11 @@ Scope:
 """
 from __future__ import annotations
 
-from ..const import LOW_ANGLE_GLARE_MIN_MEASURED_WM2
+from ..const import (
+    GLARE_INTENSITY_NORMAL_RATIO,
+    GLARE_INTENSITY_STRONG_RATIO,
+    LOW_ANGLE_GLARE_MIN_MEASURED_WM2,
+)
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
 from ..state_machine.states import ShadingState
@@ -113,14 +117,18 @@ class GlareEvaluator:
         # ordinary high-sun exposure the SolarEvaluator already classifies
         # NORMAL/STRONG (and owns that attribution); glare there stays the
         # LIGHT_SHADE floor, so this never overrides solar's reason or changes
-        # existing high-sun behaviour.  Per window only — derived solely from this
-        # window's own exposure/thresholds, never from any other window.  The
-        # thresholds and positions are the configured-or-learned solar ones.
+        # existing high-sun behaviour.  The stage is taken from how far the real
+        # low-angle beam exceeds the glare threshold (a geometry-weighted ratio,
+        # since the estimate already encodes cot(elevation)·cos(azimuth_delta)).
+        # Per window only — derived solely from this window's own exposure; never
+        # from any other window.  Monotonic: never weaker than the light floor.
         low_angle = _low_angle_glare_value(wdi)
-        if low_angle >= behavior.strong_shade_threshold_wm2:
+        glare_min = behavior.glare_min_exposure_wm2
+        ratio = (low_angle / glare_min) if glare_min > 0 else 0.0
+        if ratio >= GLARE_INTENSITY_STRONG_RATIO:
             state = ShadingState.STRONG_SHADE
             position = behavior.strong_shade_position
-        elif low_angle >= behavior.normal_shade_threshold_wm2:
+        elif ratio >= GLARE_INTENSITY_NORMAL_RATIO:
             state = ShadingState.NORMAL_SHADE
             position = behavior.normal_shade_position
         else:

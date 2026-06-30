@@ -104,6 +104,17 @@ LOW_ANGLE_GLARE_MIN_ELEVATION_DEG = 3.0
 LOW_ANGLE_GLARE_MAX_ELEVATION_DEG = 30.0
 LOW_ANGLE_GLARE_MIN_MEASURED_WM2 = 40.0
 
+# Low-angle direct-sun glare INTENSITY (light / normal / strong) for vertical
+# windows.  The low-angle vertical estimate already embodies the geometry that
+# matters for glare — deeper room penetration at a low sun angle (cot(elevation))
+# and incidence at a side angle (cos(azimuth_delta)) — so a stronger geometric
+# risk yields a larger value.  It is classified relative to the glare threshold
+# (glare_min_exposure_wm2), so the stage scales with how far the real low-angle
+# beam exceeds the "meaningfully lit" floor.  Per window only; never from another
+# window; monotonic (never weaker than the light floor).
+GLARE_INTENSITY_NORMAL_RATIO = 1.8   # >= 1.8x glare_min  -> NORMAL shade
+GLARE_INTENSITY_STRONG_RATIO = 3.0   # >= 3.0x glare_min  -> STRONG shade
+
 # Per-window manual sun sector override (v1.0).
 CONF_MANUAL_SUN_SECTOR_ENABLED = "manual_sun_sector_enabled"
 CONF_MANUAL_SUN_SECTOR_START_DEG = "manual_sun_sector_start_deg"

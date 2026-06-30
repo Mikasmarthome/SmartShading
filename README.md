@@ -7,8 +7,8 @@
 
 <p align="center">
   <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg" alt="HACS Custom"/></a>
-  <a href="https://github.com/Mikasmarthome/SmartShading/releases"><img src="https://img.shields.io/badge/release-v1.1.0--beta.7-orange.svg" alt="Release"/></a>
-  <img src="https://img.shields.io/badge/status-beta-orange.svg" alt="Beta"/>
+  <a href="https://github.com/Mikasmarthome/SmartShading/releases"><img src="https://img.shields.io/badge/version-v1.0.6-blue.svg" alt="Version"/></a>
+  <img src="https://img.shields.io/badge/status-stable-brightgreen.svg" alt="Stable"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/></a>
 </p>
 

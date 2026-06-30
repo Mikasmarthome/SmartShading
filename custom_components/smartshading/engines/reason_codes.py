@@ -134,6 +134,11 @@ _REGISTRY: dict[str, ReasonCode] = {r.code: r for r in (
     _r("guard_action_interval", CAT_NO_DISPATCH, "state-guard minimum action interval",
        "No cover command: the state-guard minimum action interval has not elapsed.",
        SEV_INFO),
+    _r("presence_uncertain", CAT_NO_DISPATCH, "presence configured but undeterminable",
+       "No cover command: presence is configured but currently undeterminable "
+       "(all presence entities unknown/unavailable, e.g. just after a restart), "
+       "so the daytime fallback holds instead of opening fully until presence is "
+       "known.", SEV_INFO),
     # --- health (P11) ---
     _r("missing_optional_input", CAT_HEALTH, "optional input missing",
        "An optional input is missing; deterministic control unaffected.", SEV_OPERATIONAL,

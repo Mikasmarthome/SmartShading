@@ -131,6 +131,23 @@ class TierOrchestrator:
         if winner is not None:
             return winner
 
+        # --- Presence-uncertain hold (instead of the daytime fallback open) ---
+        # No safety / manual / night / absence / heat / glare / solar candidate
+        # fired, so the only remaining action would be the daytime fallback that
+        # opens the cover fully.  If presence is configured but cannot currently
+        # be determined (every presence entity unknown/unavailable, e.g. right
+        # after a restart), do NOT actively open: absence might in fact be active.
+        # Hold the current position (target None → no dispatch) until presence is
+        # known.  This only ever suppresses this non-protective fallback open —
+        # every protective/required decision already returned above.
+        if wdi.presence_uncertain:
+            return WindowDecision(
+                window_id=wdi.window_config.id,
+                shading_state=ShadingState.OPEN,
+                target_position=None,
+                decided_by="PresenceUncertain:hold",
+            )
+
         # --- Fallback: OPEN ---------------------------------------------------
         return WindowDecision(
             window_id=wdi.window_config.id,

@@ -1589,6 +1589,26 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         return False  # every readable person reported a non-"home" state
 
+    def _presence_uncertain(self) -> bool:
+        """True when presence is configured but currently undeterminable.
+
+        Every configured presence entity is missing or unknown/unavailable, so
+        absence cannot be evaluated (e.g. right after an HA restart before the
+        person entities hydrate).  _read_presence() falls back to "present" in
+        this case (the safe default against a false absence-close), which means a
+        FULLY_AUTOMATIC window would otherwise reach the daytime fallback and open
+        fully.  The TierOrchestrator uses this flag to hold instead.  Returns
+        False when no presence is configured (then the fallback open is the
+        intended behaviour) or when at least one entity has a definitive reading.
+        """
+        if not self._presence_entity_ids:
+            return False
+        for entity_id in self._presence_entity_ids:
+            state = self.hass.states.get(entity_id)
+            if state is not None and state.state not in ("unknown", "unavailable"):
+                return False
+        return True
+
     def _read_indoor_temperature(self) -> float | None:
         """Read indoor temperature as average of all configured sensors.
         Returns None when no sensors are configured or all readings are invalid.
@@ -2052,6 +2072,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         absence_active = self._presence_debouncer.is_absence_active(
             presence_present, now, self._absence_delay_min
         )
+        # True when presence is configured but undeterminable this cycle (all
+        # entities unknown/unavailable, e.g. just after a restart): the daytime
+        # fallback must hold instead of opening fully (absence might be active).
+        presence_uncertain = self._presence_uncertain()
 
         window_results: dict[str, WindowObservation] = {}
         execution_diagnostics: dict[str, WindowExecutionDiagnostics] = {}
@@ -2509,6 +2533,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 night_lift_on_window_open=window.night_lift_on_window_open,
                 window_open_night_position=_vent_pos_internal,
                 contact_status=_cs_reading.status,
+                presence_uncertain=presence_uncertain,
             )
             # P2 provenance: snapshot the pre-adaptation (config) WDI so the
             # deterministic baseline can be evaluated from the same input.

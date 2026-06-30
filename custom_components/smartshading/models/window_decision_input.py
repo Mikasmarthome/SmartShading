@@ -104,6 +104,13 @@ class WindowDecisionInput:
     # None when no sensor is configured. UNKNOWN means fail-safe (no block).
     contact_status: ContactStatus | None = None
 
+    # True when presence is configured but its state cannot currently be
+    # determined (every configured presence entity is unknown/unavailable, e.g.
+    # right after an HA restart before they hydrate).  The TierOrchestrator uses
+    # this only to hold instead of driving the non-protective daytime fallback to
+    # fully open — it never affects safety/manual/night/absence/heat/glare/solar.
+    presence_uncertain: bool = False
+
 
 # ---------------------------------------------------------------------------
 # Builder
@@ -146,6 +153,7 @@ def build_window_decision_input(
     night_lift_on_window_open: bool = False,
     window_open_night_position: int = 0,
     contact_status: ContactStatus | None = None,
+    presence_uncertain: bool = False,
 ) -> WindowDecisionInput:
     """Assemble a WindowDecisionInput for one window evaluation cycle.
 
@@ -269,4 +277,5 @@ def build_window_decision_input(
         weather_condition=weather_condition,
         rain_status=rain_status,
         contact_status=contact_status,
+        presence_uncertain=presence_uncertain,
     )

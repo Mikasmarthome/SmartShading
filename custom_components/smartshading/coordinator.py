@@ -90,7 +90,12 @@ from .engines.weather_engine import WeatherCondition, WeatherEngine
 from .models.comfort import ComfortConfig
 from .models.config import ConfigResolver, GlobalDefaults, ShadePositionDefaults
 from .models.cover_group import CoverGroup, CoverHardwareType, default_hardware_settings
-from .models.lifecycle import LifecycleState, NightDayLifecycleConfig
+from .models.lifecycle import (
+    LifecycleState,
+    MorningTrigger,
+    NightDayLifecycleConfig,
+    NightTrigger,
+)
 from .models.window import WindowBehaviorMode, WindowConfig
 from .models.zone import ZoneConfig
 from .models.zone_execution_config import ZoneExecutionConfig
@@ -887,6 +892,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Unsubscribe callbacks for window-contact state change listeners.
         # Populated by async_setup_contact_listeners(); cleared by teardown.
         self._unsub_contact_listeners: list[Callable[[], None]] = []
+        # Single point-in-time timer for the next fixed-time lifecycle boundary
+        # (night start / morning release).  Managed by the lifecycle-boundary
+        # scheduler so those time-based moves fire promptly, not at the next
+        # periodic cycle.  Diagnostic fields record the scheduled/last boundary.
+        self._unsub_lifecycle_boundary: Callable[[], None] | None = None
+        self._next_lifecycle_boundary_utc: datetime | None = None
+        self._next_lifecycle_boundary_reason: str | None = None
+        self._last_lifecycle_boundary_refresh_utc: datetime | None = None
         # Presence dispatch generation (v1.0.4 stale-intent guard).
         # Incremented by each _on_presence_change callback; checked inside the
         # dispatch lock to cancel non-safety intents computed before a newer
@@ -1315,6 +1328,110 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         for unsub in self._unsub_contact_listeners:
             unsub()
         self._unsub_contact_listeners.clear()
+
+    # ------------------------------------------------------------------
+    # Lifecycle schedule-boundary immediate refresh (v1.1.0-beta.7)
+    # ------------------------------------------------------------------
+
+    def _next_lifecycle_boundary(
+        self, now_local: datetime
+    ) -> tuple[datetime, str] | None:
+        """Soonest upcoming fixed-time lifecycle boundary, or None.
+
+        Considers night start and morning release whenever their trigger uses a
+        fixed time (FIXED_TIME or BOTH).  Sun-elevation-only triggers have no
+        fixed clock boundary (the periodic cycle covers them).  Looks ahead up to
+        8 local days so weekday/weekend profiles are honoured.  Pure/no HA calls.
+        """
+        config = self._lifecycle_config
+        night_time_based = config.night_enabled and config.night_trigger in (
+            NightTrigger.FIXED_TIME, NightTrigger.BOTH)
+        morning_time_based = config.morning_enabled and config.morning_trigger in (
+            MorningTrigger.FIXED_TIME, MorningTrigger.BOTH)
+        if not night_time_based and not morning_time_based:
+            return None
+        best: tuple[datetime, str] | None = None
+        for day_offset in range(0, 8):
+            day = now_local + timedelta(days=day_offset)
+            profile = self.lifecycle_engine.active_profile(day, config)
+            for fixed_time, reason, enabled in (
+                (profile.night_fixed_time, "night_start", night_time_based),
+                (profile.morning_fixed_time, "morning_release", morning_time_based),
+            ):
+                if not enabled or fixed_time is None:
+                    continue
+                candidate = day.replace(
+                    hour=fixed_time.hour, minute=fixed_time.minute,
+                    second=fixed_time.second, microsecond=0)
+                if candidate > now_local and (best is None or candidate < best[0]):
+                    best = (candidate, reason)
+        return best
+
+    def async_setup_lifecycle_boundary_timer(self, entry: ConfigEntry) -> None:
+        """Register the lifecycle-boundary timer and its one-time teardown.
+
+        Night start and morning release are time-based core functions: they must
+        fire at (practically) the configured minute, not up to one periodic cycle
+        (5 min) later.  A single point-in-time timer is scheduled at the next
+        fixed-time boundary; on firing it requests an immediate refresh and
+        reschedules the following boundary.  The refresh only RE-EVALUATES — the
+        lifecycle engine, NightContactHold, CommandFilter, safety and the global
+        dispatch serialisation are unchanged.  Per-coordinator (per-zone), so
+        zones with different times are independent; the dispatch stays globally
+        serialised.  Re-registered on reload/options change via entry setup.
+        """
+        entry.async_on_unload(self.async_teardown_lifecycle_boundary_timer)
+        self._schedule_next_lifecycle_boundary()
+
+    def _schedule_next_lifecycle_boundary(self) -> None:
+        """Cancel any pending boundary timer and schedule the next one."""
+        if self._unsub_lifecycle_boundary is not None:
+            self._unsub_lifecycle_boundary()
+            self._unsub_lifecycle_boundary = None
+        self._next_lifecycle_boundary_utc = None
+        self._next_lifecycle_boundary_reason = None
+        try:
+            nxt = self._next_lifecycle_boundary(dt_util.now())
+        except Exception:  # never let scheduling break the coordinator
+            _LOGGER.warning("SmartShading: lifecycle boundary computation failed",
+                            exc_info=True)
+            return
+        if nxt is None:
+            return
+        when_local, reason = nxt
+        self._next_lifecycle_boundary_utc = dt_util.as_utc(when_local)
+        self._next_lifecycle_boundary_reason = reason
+
+        # Lazy HA import (matches forecast_scheduler): keeps the module-level
+        # import surface unchanged so importing the coordinator never requires
+        # this helper to be stubbed.
+        from homeassistant.helpers.event import async_track_point_in_time
+
+        @callback
+        def _on_boundary(_fire_time: datetime) -> None:
+            self._unsub_lifecycle_boundary = None
+            self._last_lifecycle_boundary_refresh_utc = dt_util.utcnow()
+            # Bump generation so any stale queued intent self-cancels, refresh now.
+            self._dispatch_generation += 1
+            self.hass.async_create_task(self.async_request_refresh())
+            # Schedule the following boundary (exceptions must not break the chain).
+            try:
+                self._schedule_next_lifecycle_boundary()
+            except Exception:
+                _LOGGER.warning(
+                    "SmartShading: rescheduling lifecycle boundary failed",
+                    exc_info=True)
+
+        self._unsub_lifecycle_boundary = async_track_point_in_time(
+            self.hass, _on_boundary, self._next_lifecycle_boundary_utc)
+
+    def async_teardown_lifecycle_boundary_timer(self) -> None:
+        """Cancel the pending lifecycle-boundary timer.  Idempotent."""
+        if self._unsub_lifecycle_boundary is not None:
+            self._unsub_lifecycle_boundary()
+            self._unsub_lifecycle_boundary = None
+        self._next_lifecycle_boundary_utc = None
+        self._next_lifecycle_boundary_reason = None
 
     # ------------------------------------------------------------------
     # Zone execution config API (Step 9G11)

@@ -39,6 +39,11 @@ def compute_low_angle_direct_glare_wm2(
     when there is no measured beam.  Cloud handling is NOT re-applied here — the
     measured value passed in is already the authoritative source value.
     """
+    # Invalid / non-finite inputs (e.g. a sensor reporting NaN) never contribute
+    # low-angle glare — fail safe to 0.0 rather than propagating NaN.
+    if not (math.isfinite(measured_solar_wm2) and math.isfinite(sun_elevation_deg)
+            and math.isfinite(azimuth_delta_deg)):
+        return 0.0
     if measured_solar_wm2 <= 0.0:
         return 0.0
     if not (

@@ -381,3 +381,9 @@ class WindowExecutionDiagnostics:
 
     adaptive_applied: bool | None = None
     """True when a learned position adaptation was actually applied this cycle."""
+
+    thermal_attribution_source: str | None = None
+    """Indoor-temperature basis for this window's thermal reasoning: "window",
+    "zone", "global" (house-wide average — the current default when an indoor
+    sensor exists) or "unknown" (no indoor sensor).  Transparency only; it does
+    not change control or learning."""

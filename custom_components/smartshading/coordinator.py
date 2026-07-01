@@ -117,6 +117,7 @@ from .engines.thermal_response_engine import (
     select_observation_window,
 )
 from .models.thermal_response import ThermalResponseModel, ThermalResponseObservation
+from .engines.thermal_attribution import resolve_thermal_attribution_source
 from .engines.window_attribution import WindowEventFacts, classify_window_attribution
 from .engines.window_contribution_engine import (
     WindowPriorFacts,
@@ -4324,6 +4325,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 baseline_to_final_delta_ha=_lt_delta_ha,
                 adaptive_strength=s.adapt_strength,
                 adaptive_applied=s.any_pos_adapted,
+                thermal_attribution_source=resolve_thermal_attribution_source(
+                    has_indoor_temperature=indoor_temperature is not None
+                ),
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---

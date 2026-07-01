@@ -219,6 +219,10 @@ def _recommendation_attributes(
         "baseline_to_final_delta": diag.baseline_to_final_delta_ha,
         "adaptive_strength": diag.adaptive_strength,
         "adaptive_applied": diag.adaptive_applied,
+        # Which indoor-temperature basis fed this window's thermal reasoning:
+        # "global" (house-wide average, current default), "unknown" (no sensor),
+        # or "window"/"zone" if a more specific source is configured later.
+        "thermal_attribution_source": diag.thermal_attribution_source,
         "dispatch_throttled": diag.dispatch_throttled,
         "throttle_wait_ms": diag.throttle_wait_ms,
         "cover_available": diag.cover_available,

@@ -1707,6 +1707,20 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             return None
         return sum(readings) / len(readings)
 
+    def _read_indoor_temperature_for_zone(self, zone_id: str | None) -> float | None:
+        """Indoor temperature used for a zone's export/diagnostics provenance.
+
+        Indoor temperature is currently a single house-wide reading (see
+        _read_indoor_temperature); zone_id is accepted so per-zone sensors can be
+        wired here later without changing callers.  This method exists specifically
+        so the support/research export input provenance reports the REAL configured
+        indoor value and status: the trace builder already calls this name, but the
+        method was missing, so _call() returned None and the export always showed
+        indoor_temperature as "missing" even when a valid sensor was configured and
+        readable.  The decision path (_read_indoor_temperature) was never affected.
+        """
+        return self._read_indoor_temperature()
+
     def _build_cover_position_observation(self, window: WindowConfig, now: datetime) -> CoverPositionObservation:
         cover_group = self.cover_groups.get(window.cover_group_id)
         if cover_group is None or not cover_group.cover_ids:

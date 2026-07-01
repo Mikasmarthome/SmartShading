@@ -547,6 +547,9 @@ class _WindowComputeState:
     night_contact_catch_up_done: bool = False
     night_vent_active: bool = False
     night_contact_state_label: str | None = None
+    # True when a contact-driven night-contact move bypassed the minimum action
+    # interval this cycle (Option B immediate reaction) — read-only diagnostics.
+    min_interval_bypassed: bool = False
     # Tilt target (Steps 9G10f-d/e): None for non-tilt covers and non-shading states.
     # Set by calculate_simple_tilt_target(); gated by exec_cap.supports_tilt
     # and tilt_control_enabled; only VENETIAN_BLIND covers produce a value.
@@ -645,6 +648,43 @@ def _mode_dispatch_allowed(
         or is_absence_release
         or is_lifecycle_release
     )
+
+
+# Night-contact dispatch decisions that a real, fresh window open/close produced.
+_NIGHT_CONTACT_DISPATCH_DECIDERS = frozenset({
+    "NightContactVent", "NightContactReturnToNight", "NightContactCatchUp",
+})
+
+
+def _night_contact_bypasses_action_interval(
+    decided_by: str,
+    behavior_mode: WindowBehaviorMode,
+    *,
+    contact_valid_and_fresh: bool,
+) -> bool:
+    """Whether a contact-driven night-contact move may bypass the per-window
+    minimum action interval.
+
+    Night-contact Option B (vent on open, return to night on close, and the
+    catch-up night move) is driven by a real, user-caused window transition, so it
+    should react at once instead of waiting out a cooldown left by a prior cover
+    command — otherwise a quick open→close→open sequence feels broken.  Pure
+    function so the exact, narrow conditions are unit-testable.
+
+    Only the night-contact dispatch decisions qualify, only in the modes where the
+    night schedule/contact applies (FULLY_AUTOMATIC / ABSENCE_AND_SCHEDULE), and
+    only on a valid, fresh contact reading.  It does NOT relax same_position
+    (compared elsewhere), safety, or any solar/heat/glare/lifecycle decision — those
+    keep the normal action interval.
+    """
+    if decided_by not in _NIGHT_CONTACT_DISPATCH_DECIDERS:
+        return False
+    if behavior_mode not in (
+        WindowBehaviorMode.FULLY_AUTOMATIC,
+        WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+    ):
+        return False
+    return contact_valid_and_fresh
 
 
 def _apply_window_behavior_mode(
@@ -3715,8 +3755,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _exec_target_internal = tier_decision.target_position
             _exec_filter_result: CommandFilterResult | None = None
 
+            # Night-contact Option B (and its catch-up/return) reacts to a real
+            # window open/close, so let it bypass the per-window minimum action
+            # interval on a valid, fresh contact — same_position and safety still
+            # apply.  Only narrows the action-interval guard, nothing else.
+            _min_interval_bypassed = _night_contact_bypasses_action_interval(
+                tier_decision.decided_by, _window_behavior,
+                contact_valid_and_fresh=(
+                    _cs_reading.status in (_ContactStatus.OPEN, _ContactStatus.CLOSED)
+                    and not _cs_reading.is_stale
+                ),
+            )
             if _exec_entity_id is not None and _exec_cap is not None and _exec_snapshot is not None:
-                _guard_action_allowed = self.guard.can_send_action(window_id, new_state, now)
+                _guard_action_allowed = (
+                    self.guard.can_send_action(window_id, new_state, now)
+                    or _min_interval_bypassed
+                )
                 _exec_filter_result = CommandFilter().evaluate(
                     target_position_internal=_exec_target_internal,
                     current_position_internal=_exec_snapshot.assumed_position_internal,
@@ -3871,6 +3925,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 zone=zone,
                 obs_enabled=obs_enabled,
                 active_control_enabled=_exec.active_control_enabled,
+                min_interval_bypassed=_min_interval_bypassed,
                 new_state=new_state,
                 exec_entity_id=_exec_entity_id,
                 exec_cap=_exec_cap,
@@ -4346,8 +4401,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 adaptive_strength=s.adapt_strength,
                 adaptive_applied=s.any_pos_adapted,
                 thermal_attribution_source=resolve_thermal_attribution_source(
-                    has_indoor_temperature=indoor_temperature is not None
+                    # A config entry is one zone and indoor sensors are configured
+                    # per entry, so a readable indoor value is zone-scoped.
+                    has_indoor_temperature=indoor_temperature is not None,
+                    zone_indoor_temp_available=indoor_temperature is not None,
                 ),
+                min_interval_bypassed=s.min_interval_bypassed,
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---

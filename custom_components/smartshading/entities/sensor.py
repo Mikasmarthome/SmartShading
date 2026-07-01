@@ -223,6 +223,9 @@ def _recommendation_attributes(
         # "global" (house-wide average, current default), "unknown" (no sensor),
         # or "window"/"zone" if a more specific source is configured later.
         "thermal_attribution_source": diag.thermal_attribution_source,
+        # True when a contact-driven Option B night move skipped the minimum action
+        # interval this cycle (immediate reaction to a real window open/close).
+        "min_interval_bypassed": diag.min_interval_bypassed,
         "dispatch_throttled": diag.dispatch_throttled,
         "throttle_wait_ms": diag.throttle_wait_ms,
         "cover_available": diag.cover_available,

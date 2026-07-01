@@ -5,13 +5,15 @@ basis fed a window's thermal reasoning this cycle, so a beta tester (and the
 outcome layer) can tell a window-specific reading apart from the house-wide
 average fallback.
 
-Today SmartShading reads a single house-wide indoor temperature (the average of
-all configured indoor sensors) and shares it across every window, so the live
-source is either ``global`` (at least one indoor sensor configured and readable)
-or ``unknown`` (none).  The ``window`` and ``zone`` sources are already part of
-the vocabulary so that, if a per-zone or per-window indoor temperature is wired
-up later behind explicit configuration, this resolver returns the more specific
-value without any attribute rename.
+Each SmartShading config entry is exactly one zone, and indoor temperature sensors
+are configured per entry (the per-zone comfort step), averaged across the valid
+sensors of that zone.  A configured, readable indoor reading is therefore
+ZONE-scoped, so the live source is ``zone`` (this zone has at least one readable
+indoor sensor) or ``unknown`` (none configured/readable).  ``window`` is reserved
+for a future per-window sensor and ``global`` for a possible cross-zone shared
+source; neither is produced today, but both stay in the vocabulary so the resolver
+can return the more specific/less specific value later without renaming the
+attribute.
 
 This module intentionally does NOT change any control or learning behaviour — it
 only labels the basis.  The outcome layer keeps its own, separate
@@ -37,10 +39,11 @@ def resolve_thermal_attribution_source(
     """Return the indoor-temperature basis label for a window this cycle.
 
     Preference order (most specific first): a per-window reading, then a per-zone
-    reading, then the house-wide average, then nothing.  The two specific inputs
-    default to False because SmartShading has no per-zone/per-window indoor
-    temperature configuration today; they are here so the resolver stays correct
-    if that is added later without renaming the attribute.
+    reading, then a cross-zone shared reading, then nothing.  Because a config
+    entry is one zone and indoor sensors are configured per entry, the coordinator
+    passes ``zone_indoor_temp_available`` for a readable indoor value, so the
+    normal result is ``zone`` or ``unknown``.  ``window`` and ``global`` are
+    reserved for future per-window / cross-zone sources.
     """
     if window_indoor_temp_available:
         return THERMAL_SOURCE_WINDOW

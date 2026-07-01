@@ -383,7 +383,13 @@ class WindowExecutionDiagnostics:
     """True when a learned position adaptation was actually applied this cycle."""
 
     thermal_attribution_source: str | None = None
-    """Indoor-temperature basis for this window's thermal reasoning: "window",
-    "zone", "global" (house-wide average — the current default when an indoor
-    sensor exists) or "unknown" (no indoor sensor).  Transparency only; it does
-    not change control or learning."""
+    """Indoor-temperature basis for this window's thermal reasoning: "zone" (this
+    zone's configured indoor sensor(s) — a config entry is one zone), "window" or
+    "global" (reserved), or "unknown" (no indoor sensor).  Transparency only; it
+    does not change control or learning."""
+
+    min_interval_bypassed: bool = False
+    """True when a contact-driven night-contact move (Option B vent / return /
+    catch-up) bypassed the minimum action interval this cycle so it could react to
+    a real window open/close at once.  False for all other decisions, which keep
+    the normal interval."""

@@ -36,11 +36,17 @@ from ..models.runtime_mode import derive_authority
 
 SUPPORT_EXPORT_SCHEMA_VERSION: int = 3
 
-MAX_SUPPORT_DECISIONS_PER_ZONE = 100
-MAX_SUPPORT_DISPATCHES_PER_ZONE = 100
-MAX_SUPPORT_NO_DISPATCHES_PER_ZONE = 100
-MAX_SUPPORT_OUTCOMES_PER_ZONE = 50
-MAX_SUPPORT_LEARNING_TRANSITIONS_PER_ZONE = 50
+# beta.10: raised so a support export can carry roughly the last 24 h of decisions
+# and no-dispatch holds per zone (≈1 decision / 5 min per window), which is what a
+# user needs to analyse an evening field test the next morning.  cap_records keeps
+# the NEWEST records, so the recent test stays in; the byte cap
+# (MAX_SUPPORT_EXPORT_BYTES) and history_metadata (oldest/newest/truncated) still
+# bound and describe the actual exported window.
+MAX_SUPPORT_DECISIONS_PER_ZONE = 300
+MAX_SUPPORT_DISPATCHES_PER_ZONE = 200
+MAX_SUPPORT_NO_DISPATCHES_PER_ZONE = 300
+MAX_SUPPORT_OUTCOMES_PER_ZONE = 100
+MAX_SUPPORT_LEARNING_TRANSITIONS_PER_ZONE = 100
 MAX_SUPPORT_STORAGE_EVENTS_PER_ZONE = 50
 MAX_SUPPORT_EXPORT_BYTES = 2_000_000
 MAX_SUPPORT_STRING_LENGTH = MAX_STRING_LENGTH

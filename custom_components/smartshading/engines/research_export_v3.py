@@ -38,10 +38,16 @@ from ..models.decision_provenance import ProvenanceSummary
 
 RESEARCH_EXPORT_SCHEMA_VERSION: int = 3
 
-MAX_RESEARCH_RECORDS_PER_ZONE = 500
+# beta.10: raised so the research export projects far more of the persisted
+# learning store per zone (the store keeps up to 5000 outcomes / 500 transitions /
+# 2000 snapshots per window), giving long-term learning data instead of only a
+# recent slice.  cap_records keeps the NEWEST records and reports truncation; the
+# all-zones ceiling and the byte cap (MAX_RESEARCH_EXPORT_BYTES) still bound the
+# total export size and JSON serialisability.
+MAX_RESEARCH_RECORDS_PER_ZONE = 2000
 # Bounded ceiling for the aggregated all-zones export (per-zone cap × zones,
 # clamped) so a many-zone install stays bounded and JSON-serialisable.
-MAX_RESEARCH_RECORDS_ALL_ZONES = 4000
+MAX_RESEARCH_RECORDS_ALL_ZONES = 8000
 MAX_RESEARCH_WINDOW_SUMMARIES = 60
 MAX_RESEARCH_EXPORT_BYTES = 2_000_000
 MIN_BUCKET_SAMPLE = 5  # smaller groups → insufficient_sample (no misleading stats)

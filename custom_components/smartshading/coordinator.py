@@ -1575,6 +1575,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             learning_enabled=enabled,
             active_control_enabled=current.active_control_enabled,
         )
+        # Push the new switch state to HA immediately. CoordinatorEntity is
+        # push-only (should_poll=False), so without this the Learning Mode
+        # switch would show no state_changed event until the full refresh below
+        # completes (which can take several seconds for a busy zone) — long
+        # enough that the frontend reverts its optimistic toggle back to the old
+        # value and then flips again once the real update finally arrives,
+        # producing a visible flicker. effective_zone_execution() already
+        # reflects the new value synchronously, so this only pushes the correct,
+        # already-true state; it does not touch coordinator.data or dispatch.
+        self.async_update_listeners()
         if not enabled:
             _disable_now = dt_util.utcnow()
             try:
@@ -1611,6 +1621,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             learning_enabled=current.learning_enabled,
             active_control_enabled=enabled,
         )
+        # See the matching comment in async_set_zone_learning_enabled: push the
+        # new switch state immediately so the frontend does not revert its
+        # optimistic toggle while the (potentially multi-second) refresh below
+        # is still running.
+        self.async_update_listeners()
         if enabled:
             # When Active Control is turned ON, clear any existing manual
             # override AND suppress detection for the first cycle.

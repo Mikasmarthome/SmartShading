@@ -26,6 +26,7 @@ Thresholds (from BehaviorConfig, pre-resolved by build_window_decision_input()):
 """
 from __future__ import annotations
 
+from ..const import HEAT_MIN_EFFECTIVE_EXPOSURE_WM2
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
 from ..state_machine.states import ShadingState
@@ -79,6 +80,21 @@ class HeatEvaluator:
         # sector still matches — the exposure engine is driven by the automatic
         # geometry, not by the manual sector override.
         if not wdi.is_in_solar_sector:
+            return None
+
+        # Effective-exposure gate: heat protection blocks SOLAR heat gain, so a
+        # window that is only GEOMETRICALLY in the sun sector but receives almost
+        # no solar energy (e.g. heavy cloud damps effective exposure to near zero)
+        # has no solar heat to protect against.  When a measured/effective exposure
+        # reading is available and is below the meaningful-solar floor, do not shade
+        # for heat.  A missing exposure reading (no sun data at all) keeps the prior
+        # temperature+sector behaviour — this gate only ever SUPPRESSES a shade, so
+        # it makes HeatEvaluator more conservative on weak/uncertain solar input,
+        # never more aggressive.
+        if (
+            wdi.exposure is not None
+            and wdi.exposure.effective_exposure < HEAT_MIN_EFFECTIVE_EXPOSURE_WM2
+        ):
             return None
 
         return WindowDecision(

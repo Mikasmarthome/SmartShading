@@ -115,6 +115,17 @@ LOW_ANGLE_GLARE_MIN_MEASURED_WM2 = 40.0
 GLARE_INTENSITY_NORMAL_RATIO = 1.8   # >= 1.8x glare_min  -> NORMAL shade
 GLARE_INTENSITY_STRONG_RATIO = 3.0   # >= 3.0x glare_min  -> STRONG shade
 
+# Heat protection minimum effective solar exposure (W/m²).  Heat protection blocks
+# SOLAR heat gain through the window, so it must not fire when the sun is only
+# GEOMETRICALLY in the window's sector but almost no solar energy actually reaches
+# it (e.g. heavy cloud damps the effective exposure to near zero).  When an
+# effective-exposure reading is available and is below this floor, HeatEvaluator
+# does not shade — mirroring the meaningful-solar floor the SolarEvaluator and the
+# anti-heat-buildup path already use.  A missing exposure reading (no sun data)
+# keeps the prior temperature+sector behaviour (conservative: this only ever
+# suppresses a shade, never adds one).
+HEAT_MIN_EFFECTIVE_EXPOSURE_WM2 = 100.0
+
 # Per-window manual sun sector override (v1.0).
 CONF_MANUAL_SUN_SECTOR_ENABLED = "manual_sun_sector_enabled"
 CONF_MANUAL_SUN_SECTOR_START_DEG = "manual_sun_sector_start_deg"

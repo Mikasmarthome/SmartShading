@@ -26,7 +26,6 @@ Thresholds (from BehaviorConfig, pre-resolved by build_window_decision_input()):
 """
 from __future__ import annotations
 
-from ..const import HEAT_MIN_EFFECTIVE_EXPOSURE_WM2
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
 from ..state_machine.states import ShadingState
@@ -92,14 +91,17 @@ class HeatEvaluator:
         # it makes HeatEvaluator more conservative on weak/uncertain solar input,
         # never more aggressive.
         #
-        # The floor is the shared meaningful-solar value HEAT_MIN_EFFECTIVE_EXPOSURE_WM2
-        # (identical to the anti-heat-buildup and glare floors), but it is capped at
-        # this window's own configured light-shade threshold so heat protection can
-        # never demand MORE solar energy than the lightest comfort shade — it must not
-        # work against the user's configured thresholds.  For the common default
-        # (light threshold 150) the effective floor is 100 W/m².
+        # The floor reuses the SAME user-configurable "meaningful effective exposure"
+        # value that already gates glare — glare_min_exposure_wm2, exposed in the HA
+        # options flow as "Minimum exposure for glare protection" — so there is one
+        # visible knob for "is there real sun at this window", not a second hidden
+        # constant.  It is additionally capped at the window's own light-shade
+        # threshold so heat protection can never demand MORE solar than the lightest
+        # comfort shade.  With the defaults (glare min 100, light threshold 150) the
+        # effective floor is 100 W/m²; the field case (effective ~5 W/m²) is below it,
+        # exactly as glare protection was also not met.
         heat_min_exposure_wm2 = min(
-            HEAT_MIN_EFFECTIVE_EXPOSURE_WM2, b.light_shade_threshold_wm2
+            b.glare_min_exposure_wm2, b.light_shade_threshold_wm2
         )
         if (
             wdi.exposure is not None

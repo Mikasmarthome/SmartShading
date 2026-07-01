@@ -115,23 +115,13 @@ LOW_ANGLE_GLARE_MIN_MEASURED_WM2 = 40.0
 GLARE_INTENSITY_NORMAL_RATIO = 1.8   # >= 1.8x glare_min  -> NORMAL shade
 GLARE_INTENSITY_STRONG_RATIO = 3.0   # >= 3.0x glare_min  -> STRONG shade
 
-# Heat protection minimum effective solar exposure (W/m²).  Heat protection blocks
-# SOLAR heat gain through the window, so it must not fire when the sun is only
-# GEOMETRICALLY in the window's sector but almost no solar energy actually reaches
-# it (e.g. heavy cloud damps the effective exposure to near zero).  When an
-# effective-exposure reading is available and is below this floor, HeatEvaluator
-# does not shade.  A missing exposure reading (no sun data) keeps the prior
-# temperature+sector behaviour (conservative: this only ever suppresses a shade,
-# never adds one).
-#
-# This is deliberately the SAME "meaningful solar radiation" floor already used
-# elsewhere for heat/solar-load decisions — it is not a new magic number:
-#   - ANTI_HEAT_BUILDUP_MIN_EXPOSURE_WM2 = 100.0 (cover_control/anti_heat_buildup.py)
-#   - DEFAULT_GLARE_MIN_EXPOSURE_WM2     = 100.0 (below)
-# HeatEvaluator additionally caps the floor at the window's own configured
-# light-shade threshold, so it can never require more solar than the lightest
-# comfort shade (see evaluators/heat_evaluator.py).
-HEAT_MIN_EFFECTIVE_EXPOSURE_WM2 = 100.0
+# Heat protection meaningful-exposure floor: HeatEvaluator does NOT introduce its
+# own minimum-exposure constant.  It reuses the user-configurable
+# glare_min_exposure_wm2 ("Minimum exposure for glare protection" in the options
+# flow; default DEFAULT_GLARE_MIN_EXPOSURE_WM2 below), capped at the window's own
+# light-shade threshold — so there is a single visible knob for "is there real sun
+# at this window" instead of a second hidden 100 W/m² value.  See
+# evaluators/heat_evaluator.py.
 
 # Per-window manual sun sector override (v1.0).
 CONF_MANUAL_SUN_SECTOR_ENABLED = "manual_sun_sector_enabled"

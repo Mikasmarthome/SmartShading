@@ -425,7 +425,13 @@ IMPORTANT_SAVE_DELAY_SECONDS: int = 3
 # for read-only diagnostics/support export.  Not part of any control authority.
 DISPATCH_TRACE_MAX_RECORDS_PER_ZONE: int = 500
 # P11 Increment 2: bounded ephemeral decision-trace ring per zone + retarget window.
-DECISION_TRACE_MAX_RECORDS_PER_ZONE: int = 200
+# beta.10: raised from 200 so an overnight field test (e.g. a Night-Contact
+# Option B sequence run late in the evening) is still in the runtime-recent ring
+# when the support export is created the next morning.  At ~1 decision / 5 min per
+# window this covers roughly 15 h for a two-window zone; the ring stays bounded
+# and ephemeral (reset on restart, never persisted).  The support export already
+# reports the covered window via history_metadata (oldest/newest/truncated).
+DECISION_TRACE_MAX_RECORDS_PER_ZONE: int = 720
 RETARGET_TRACE_WINDOW_SECONDS: int = 300
 
 

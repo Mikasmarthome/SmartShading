@@ -120,10 +120,17 @@ GLARE_INTENSITY_STRONG_RATIO = 3.0   # >= 3.0x glare_min  -> STRONG shade
 # GEOMETRICALLY in the window's sector but almost no solar energy actually reaches
 # it (e.g. heavy cloud damps the effective exposure to near zero).  When an
 # effective-exposure reading is available and is below this floor, HeatEvaluator
-# does not shade — mirroring the meaningful-solar floor the SolarEvaluator and the
-# anti-heat-buildup path already use.  A missing exposure reading (no sun data)
-# keeps the prior temperature+sector behaviour (conservative: this only ever
-# suppresses a shade, never adds one).
+# does not shade.  A missing exposure reading (no sun data) keeps the prior
+# temperature+sector behaviour (conservative: this only ever suppresses a shade,
+# never adds one).
+#
+# This is deliberately the SAME "meaningful solar radiation" floor already used
+# elsewhere for heat/solar-load decisions — it is not a new magic number:
+#   - ANTI_HEAT_BUILDUP_MIN_EXPOSURE_WM2 = 100.0 (cover_control/anti_heat_buildup.py)
+#   - DEFAULT_GLARE_MIN_EXPOSURE_WM2     = 100.0 (below)
+# HeatEvaluator additionally caps the floor at the window's own configured
+# light-shade threshold, so it can never require more solar than the lightest
+# comfort shade (see evaluators/heat_evaluator.py).
 HEAT_MIN_EFFECTIVE_EXPOSURE_WM2 = 100.0
 
 # Per-window manual sun sector override (v1.0).

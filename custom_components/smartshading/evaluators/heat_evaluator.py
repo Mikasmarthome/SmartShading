@@ -91,9 +91,19 @@ class HeatEvaluator:
         # temperature+sector behaviour — this gate only ever SUPPRESSES a shade, so
         # it makes HeatEvaluator more conservative on weak/uncertain solar input,
         # never more aggressive.
+        #
+        # The floor is the shared meaningful-solar value HEAT_MIN_EFFECTIVE_EXPOSURE_WM2
+        # (identical to the anti-heat-buildup and glare floors), but it is capped at
+        # this window's own configured light-shade threshold so heat protection can
+        # never demand MORE solar energy than the lightest comfort shade — it must not
+        # work against the user's configured thresholds.  For the common default
+        # (light threshold 150) the effective floor is 100 W/m².
+        heat_min_exposure_wm2 = min(
+            HEAT_MIN_EFFECTIVE_EXPOSURE_WM2, b.light_shade_threshold_wm2
+        )
         if (
             wdi.exposure is not None
-            and wdi.exposure.effective_exposure < HEAT_MIN_EFFECTIVE_EXPOSURE_WM2
+            and wdi.exposure.effective_exposure < heat_min_exposure_wm2
         ):
             return None
 

@@ -34,12 +34,26 @@ def should_allow_lifecycle_release(
 ) -> bool:
     """True when ABSENCE_AND_SCHEDULE should dispatch the lifecycle-triggered OPEN.
 
-    Fires only on NIGHT→MORNING/DAY transitions when:
-    - the tier proposed OPEN (proposed_is_open=True),
-    - no active manual override remains,
-    - the window's last recorded state was either NIGHT_CLOSED (normal path)
-      or MANUAL_OVERRIDE (night-override path: user moved cover during the night,
-      override was just cleared by lifecycle_should_break_override).
+    Fires whenever the current lifecycle is no longer NIGHT and the window is
+    still in a state established by the night schedule.
+
+    Two eligible states:
+
+    NIGHT_CLOSED — state-based release (no prev=NIGHT requirement):
+      The window was closed to night_position by NightEvaluator and is still
+      there.  Release fires whenever lifecycle has left NIGHT, regardless of the
+      previous lifecycle value in this session.  This covers both the normal
+      live NIGHT→MORNING/DAY transition AND the post-restart scenario where
+      prev was never NIGHT in the current session (coordinator initialises to
+      DAY), as well as the NightHardHold interference path where the transition
+      cycle had proposed_is_open=False and the release opportunity was missed.
+
+    MANUAL_OVERRIDE — transition-based (prev=NIGHT required):
+      The user moved the cover during the night and the override was just
+      cleared by lifecycle_should_break_override.  The prev=NIGHT guard
+      distinguishes "override held through the night, now morning" from a
+      daytime override present at coordinator restart (where prev is DAY, not
+      NIGHT) — we must not inadvertently release a daytime override.
 
     Called from the coordinator's behavior-mode dispatch suppression block.
     The caller must check ``_window_behavior is ABSENCE_AND_SCHEDULE`` before
@@ -49,7 +63,14 @@ def should_allow_lifecycle_release(
         return False
     if active_override is not None:
         return False
-    # Transition must be OUT of NIGHT (prev=NIGHT, new≠NIGHT).
-    if prev is not LifecycleState.NIGHT or new is LifecycleState.NIGHT:
+    # Current lifecycle must not be NIGHT (all paths share this guard).
+    if new is LifecycleState.NIGHT:
         return False
-    return current_shading_state in (ShadingState.NIGHT_CLOSED, ShadingState.MANUAL_OVERRIDE)
+    # NIGHT_CLOSED: state-based — fires whenever lifecycle has left NIGHT.
+    if current_shading_state is ShadingState.NIGHT_CLOSED:
+        return True
+    # MANUAL_OVERRIDE: transition-based — requires a live NIGHT→MORNING/DAY edge
+    # to avoid releasing daytime overrides after a coordinator restart.
+    if current_shading_state is ShadingState.MANUAL_OVERRIDE:
+        return prev is LifecycleState.NIGHT
+    return False

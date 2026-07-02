@@ -50,6 +50,7 @@ Shading Result Sensor (v1.0.0):
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
@@ -355,11 +356,58 @@ _CONFIDENCE_LEVEL_CAPS: dict[str, float] = {
     "very_high": 1.00,
 }
 
+# ---------------------------------------------------------------------------
+# Learning progress calibration — conservative caps based on dispatch telemetry
+# ---------------------------------------------------------------------------
+
+# Days of confirmed coordinator activity required before progress can reach its
+# maximum.  Progress scales linearly: min(1.0, days_observed / _MIN_DAYS_FULL_PROGRESS).
+_MIN_DAYS_FULL_PROGRESS: int = 60
+
+# Physical-dispatch fraction threshold below which progress is capped at
+# _SHADOW_ONLY_CAP.  Installations in recommendation-only mode accumulate
+# observational data but cannot verify actual cover movements, so progress
+# should not overstate learning quality.
+_MIN_DISPATCH_FRACTION: float = 0.10
+
+# Maximum progress when the physical dispatch fraction is below _MIN_DISPATCH_FRACTION.
+_SHADOW_ONLY_CAP: float = 0.20
+
+
+@dataclass
+class _LearningProgressContext:
+    """Calibration context derived from coordinator dispatch telemetry."""
+
+    days_observed: int = 0
+    dispatched_count: int = 0
+    recommendation_only_count: int = 0
+
+
+def _build_learning_context(coordinator: Any) -> _LearningProgressContext | None:
+    """Build calibration context from a coordinator's research_daily_buckets.
+
+    Returns None when the coordinator has no dispatch telemetry attribute
+    (e.g. in isolated unit tests), leaving compute_learning_progress behaviour
+    identical to before this calibration layer was added.
+    """
+    buckets = getattr(coordinator, "_research_daily_buckets", None)
+    if not isinstance(buckets, dict):
+        return None
+    days_observed = len(buckets)
+    dispatched = sum(b.get("dispatched", 0) for b in buckets.values())
+    rec_only = sum(b.get("recommendation_only", 0) for b in buckets.values())
+    return _LearningProgressContext(
+        days_observed=days_observed,
+        dispatched_count=dispatched,
+        recommendation_only_count=rec_only,
+    )
+
 
 def compute_learning_progress(
     window_ids: list[str],
     coordinator_data: Any,  # SmartShadingData | None
     window_configs: dict[str, Any] | None = None,  # dict[str, WindowConfig] | None
+    learning_context: _LearningProgressContext | None = None,
 ) -> tuple[int | None, dict[str, Any]]:
     """Derive zone-level learning progress from per-window AdaptiveProfiles.
 
@@ -371,6 +419,13 @@ def compute_learning_progress(
     contribute neither to the numerator nor to the denominator.
     Returns (None, attrs) when no eligible windows exist — the sensor entity
     should then report unavailable.
+
+    When learning_context is provided, two additional conservative caps are
+    applied on top of the per-confidence-level caps:
+      1. Days-based cap: progress scales linearly over _MIN_DAYS_FULL_PROGRESS days.
+      2. Dispatch fraction cap: capped at _SHADOW_ONLY_CAP when physical dispatch
+         is below _MIN_DISPATCH_FRACTION of all observed decisions.
+    When learning_context is None the function behaves identically to before.
 
     Uses only privacy-safe aggregate values.  Safe with coordinator_data=None.
     """
@@ -427,7 +482,29 @@ def compute_learning_progress(
                 n_adapting += 1
 
     avg_strength = total_strength / n_eligible
-    progress_pct = round(avg_strength * 100)
+
+    # Apply calibration caps when dispatch telemetry is available.
+    calibrated_strength = avg_strength
+    limiters: list[str] = []
+
+    if learning_context is not None:
+        days = learning_context.days_observed
+        dispatched = learning_context.dispatched_count
+        rec_only = learning_context.recommendation_only_count
+        total_decisions = dispatched + rec_only
+        dispatch_fraction = dispatched / total_decisions if total_decisions > 0 else 0.0
+
+        days_cap = min(1.0, days / _MIN_DAYS_FULL_PROGRESS) if days > 0 else 0.0
+        if days_cap < 0.85:
+            limiters.append("insufficient_days")
+
+        if total_decisions > 0 and dispatch_fraction < _MIN_DISPATCH_FRACTION:
+            calibrated_strength = min(calibrated_strength, _SHADOW_ONLY_CAP)
+            limiters.append("low_dispatch_ratio")
+
+        calibrated_strength = min(calibrated_strength, days_cap)
+
+    progress_pct = round(calibrated_strength * 100)
 
     if progress_pct == 0:
         status = _LEARNING_STATUS_COLLECTING
@@ -438,13 +515,74 @@ def compute_learning_progress(
     else:
         status = _LEARNING_STATUS_CONFIDENT
 
-    return progress_pct, {
+    attrs: dict[str, Any] = {
         "status": status,
         "eligible_windows": n_eligible,
         "excluded_windows": n_excluded,
         "windows_learning_active": n_learning,
         "adaptation_active": n_adapting > 0,
     }
+
+    if learning_context is not None:
+        if not limiters:
+            progress_limited_by = "none"
+        elif len(limiters) == 2:
+            progress_limited_by = "both"
+        else:
+            progress_limited_by = limiters[0]
+
+        if days < 7:
+            situation_diversity = "low"
+        elif days < 21 or dispatch_fraction < 0.20:
+            situation_diversity = "moderate"
+        else:
+            situation_diversity = "high"
+
+        if dispatched < 10:
+            outcome_coverage = "low"
+        elif dispatched < 50:
+            outcome_coverage = "moderate"
+        else:
+            outcome_coverage = "high"
+
+        if avg_strength == 0.0:
+            confidence_quality = "none"
+        elif avg_strength < 0.10:
+            confidence_quality = "very_low"
+        elif avg_strength < 0.30:
+            confidence_quality = "low"
+        elif avg_strength < 0.50:
+            confidence_quality = "medium"
+        elif avg_strength < 0.75:
+            confidence_quality = "high"
+        else:
+            confidence_quality = "very_high"
+
+        if days < 3:
+            learning_stage = "recent_start"
+        elif progress_pct == 0:
+            learning_stage = "collecting_data"
+        elif progress_pct < 15:
+            learning_stage = "early_patterns"
+        elif progress_pct < 40:
+            learning_stage = "partial_understanding"
+        elif progress_pct < 70:
+            learning_stage = "reliable_learning"
+        else:
+            learning_stage = "mature"
+
+        attrs.update({
+            "learning_stage": learning_stage,
+            "progress_limited_by": progress_limited_by,
+            "days_observed": days,
+            "dispatched_count": dispatched,
+            "recommendation_only_count": rec_only,
+            "situation_diversity": situation_diversity,
+            "outcome_coverage": outcome_coverage,
+            "confidence_quality": confidence_quality,
+        })
+
+    return progress_pct, attrs
 
 
 # ---------------------------------------------------------------------------
@@ -507,15 +645,17 @@ class SmartShadingLearningProgressSensor(CoordinatorEntity[SmartShadingCoordinat
 
     @property
     def native_value(self) -> int | None:
+        ctx = _build_learning_context(self.coordinator)
         pct, _ = compute_learning_progress(
-            self._window_ids, self.coordinator.data, self.coordinator.windows
+            self._window_ids, self.coordinator.data, self.coordinator.windows, ctx
         )
         return pct
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
+        ctx = _build_learning_context(self.coordinator)
         _, attrs = compute_learning_progress(
-            self._window_ids, self.coordinator.data, self.coordinator.windows
+            self._window_ids, self.coordinator.data, self.coordinator.windows, ctx
         )
         return attrs
 

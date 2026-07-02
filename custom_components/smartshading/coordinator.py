@@ -874,6 +874,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._cover_dispatch_state: dict[str, dict] = {}
         # P11 Increment 2: ephemeral (RAM-only) decision-trace ring per zone.
         self._decision_trace: dict[str, deque] = {}
+        # P4c: persisted support critical events + daily research accumulation buckets.
+        self._support_critical_events: list = []
+        self._research_daily_buckets: dict = {}
         # Step 6: per-window, per-intensity learned target position adapter.
         self._target_position_adapter = TargetPositionAdapter()
         # Phase 9F4b-3: pending outcome queue.  P2: now persisted (restart-safe)
@@ -1158,6 +1161,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 dt_util.utcnow()),
             "config_snapshot": self._build_config_snapshot(),
             "owner_zone_id": next(iter(self.zones.keys()), None),
+            "support_critical_events": list(self._support_critical_events),
+            "research_daily_buckets": dict(self._research_daily_buckets),
         }
 
     def _build_config_snapshot(self) -> dict:
@@ -2028,6 +2033,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         self._strategy_adoptions_active = {}
                         self._strategy_adoption_history = []
                         self._consumed_ledger = ConsumedExperimentLedger()
+                        self._support_critical_events = []
+                        self._research_daily_buckets = {}
                         self._restore_failures += 1
                     else:
                         # P10 acceptance fix: FAIL-CLOSED ledger restore.  Corruption
@@ -2093,6 +2100,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 )
                         except Exception:
                             _LOGGER.warning("Learning: active-override restore failed (non-fatal)")
+                        # P4c: restore persisted support critical events + daily buckets.
+                        try:
+                            self._support_critical_events = list(
+                                getattr(_extras, "support_critical_events", []) or [])
+                            self._research_daily_buckets = dict(
+                                getattr(_extras, "research_daily_buckets", {}) or {})
+                        except Exception:
+                            _LOGGER.debug("Learning: P4c store restore skipped (non-fatal)")
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
             # Write a schema-valid storage file immediately on first setup so
@@ -4505,6 +4520,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 except Exception:
                     _LOGGER.debug("Diagnostics: decision-trace capture skipped (non-fatal)")
                 try:
+                    self._record_support_event(window_id, s, _dispatch_prov, now)
+                except Exception:
+                    _LOGGER.debug("Diagnostics: support event capture skipped (non-fatal)")
+                try:
+                    self._update_daily_research_bucket(window_id, s, _dispatch_prov, now)
+                except Exception:
+                    _LOGGER.debug("Diagnostics: daily bucket update skipped (non-fatal)")
+                try:
                     self._record_dispatch_trace(
                         window_id, s, harm, _dispatch_prov, _last_exec_result, now,
                         disp_ctx=_disp_ctx)
@@ -4830,6 +4853,132 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         Raw ids present here; the export layer pseudonymizes them."""
         return {zid: {"records": list(ring), "count": len(ring)}
                 for zid, ring in self._decision_trace.items()}
+
+    def _record_support_event(self, window_id: str, s, dispatch_prov, now) -> None:
+        """P4c: record a compact critical support event into the persisted history."""
+        filt = getattr(s, "exec_filter_result", None)
+        command_sent = bool(getattr(dispatch_prov, "dispatch_succeeded", False))
+        state = getattr(getattr(s, "new_state", None), "value", None)
+        decided_by = (getattr(s, "tier_decided_by", None)
+                      or getattr(s, "baseline_decided_by", None))
+        cf_blocked = bool(filt is not None and not getattr(filt, "allowed", True))
+
+        primary = None
+        if not command_sent:
+            if not getattr(s, "active_control_enabled", False):
+                primary = "active_control_off"
+            elif cf_blocked:
+                primary = getattr(filt, "blocked_reason", None) or "command_filter_suppressed"
+            elif not getattr(dispatch_prov, "dispatch_attempted", False):
+                primary = "dispatch_not_required"
+            else:
+                primary = getattr(dispatch_prov, "dispatch_filter_reason", None) or "not_recorded"
+
+        ps = primary or ""
+        if command_sent:
+            evt_type = "dispatch_sent"
+        elif ps == "active_control_off":
+            evt_type = "recommendation_only"
+        elif state in ("storm_safe", "wind_safe", "rain_safe"):
+            evt_type = "safety"
+        elif state == "manual_override":
+            evt_type = "manual_override"
+        elif ps == "behavior_mode_hold":
+            evt_type = "behavior_hold"
+        elif ps == "presence_uncertain_hold":
+            evt_type = "presence_hold"
+        elif ps == "min_interval_not_elapsed":
+            evt_type = "min_interval"
+        elif ps == "startup_grace":
+            evt_type = "startup_grace"
+        elif decided_by and "Night" in decided_by:
+            evt_type = "night_transition"
+        elif decided_by and "Absence" in decided_by:
+            evt_type = "absence"
+        elif ps:
+            evt_type = "command_blocked"
+        else:
+            evt_type = "no_change"
+
+        _CRITICAL_SE = frozenset({
+            "dispatch_sent", "dispatch_failed", "command_blocked", "recommendation_only",
+            "safety", "manual_override", "absence", "night_transition", "presence_hold",
+            "behavior_hold", "contact_event", "min_interval_bypass",
+        })
+        if evt_type not in _CRITICAL_SE:
+            return
+
+        if command_sent and filt is not None:
+            target_ha = getattr(filt, "target_position_ha", None)
+        else:
+            target_ha = getattr(s, "normal_cfg_ha_for_prov", None)
+
+        self._support_critical_events.append({
+            "ts": now.isoformat(),
+            "window_id": window_id,
+            "event_type": evt_type,
+            "decided_by": decided_by,
+            "resolved_state": state,
+            "target_ha": target_ha,
+            "reason": primary,
+            "is_recommendation_only": (evt_type == "recommendation_only"),
+        })
+        if len(self._support_critical_events) > 500:
+            self._support_critical_events = self._support_critical_events[-500:]
+
+    def _update_daily_research_bucket(self, window_id: str, s, dispatch_prov, now) -> None:
+        """P4c: increment today's daily research accumulation bucket."""
+        date_key = now.strftime("%Y-%m-%d")
+        bucket = self._research_daily_buckets.setdefault(date_key, {
+            "decisions": 0, "dispatched": 0, "recommendation_only": 0,
+            "safety": 0, "absence": 0, "night": 0,
+            "behavior_hold": 0, "presence_hold": 0, "command_blocked": 0, "adapted": 0,
+        })
+        filt = getattr(s, "exec_filter_result", None)
+        command_sent = bool(getattr(dispatch_prov, "dispatch_succeeded", False))
+        state = getattr(getattr(s, "new_state", None), "value", None)
+        decided_by = (getattr(s, "tier_decided_by", None)
+                      or getattr(s, "baseline_decided_by", None) or "")
+        cf_blocked = bool(filt is not None and not getattr(filt, "allowed", True))
+
+        primary = None
+        if not command_sent:
+            if not getattr(s, "active_control_enabled", False):
+                primary = "active_control_off"
+            elif cf_blocked:
+                primary = getattr(filt, "blocked_reason", None) or "command_filter_suppressed"
+            elif not getattr(dispatch_prov, "dispatch_attempted", False):
+                primary = "dispatch_not_required"
+            else:
+                primary = getattr(dispatch_prov, "dispatch_filter_reason", None) or "not_recorded"
+
+        bucket["decisions"] = bucket.get("decisions", 0) + 1
+        if command_sent:
+            bucket["dispatched"] = bucket.get("dispatched", 0) + 1
+        if primary == "active_control_off":
+            bucket["recommendation_only"] = bucket.get("recommendation_only", 0) + 1
+        if state in ("storm_safe", "wind_safe", "rain_safe"):
+            bucket["safety"] = bucket.get("safety", 0) + 1
+        if "Absence" in decided_by:
+            bucket["absence"] = bucket.get("absence", 0) + 1
+        if "Night" in decided_by:
+            bucket["night"] = bucket.get("night", 0) + 1
+        if primary == "behavior_mode_hold":
+            bucket["behavior_hold"] = bucket.get("behavior_hold", 0) + 1
+        if primary == "presence_uncertain_hold":
+            bucket["presence_hold"] = bucket.get("presence_hold", 0) + 1
+        if (primary is not None
+                and primary not in ("active_control_off", "dispatch_not_required",
+                                    "same_position", "same_position_no_change")
+                and not command_sent):
+            bucket["command_blocked"] = bucket.get("command_blocked", 0) + 1
+        if (window_id in getattr(self, "_cycle_adoption_applied", set())
+                or window_id in getattr(self, "_cycle_strategy_applied", set())):
+            bucket["adapted"] = bucket.get("adapted", 0) + 1
+
+        if len(self._research_daily_buckets) > 365:
+            oldest = sorted(self._research_daily_buckets)[0]
+            del self._research_daily_buckets[oldest]
 
     def _dispatch_context(self, s, *, throttled=False, planned_ms=None, actual_ms=None,
                           started_mono=None, slot_granted_mono=None,

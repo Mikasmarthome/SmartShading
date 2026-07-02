@@ -199,6 +199,8 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
             errors, "development_summary"),
         "adoption_timeline": _safe(lambda: _adoption_timeline([c], pz),
                                    errors, "adoption_timeline"),
+        "long_term_summary": _safe(lambda: _long_term_summary([c]),
+                                   errors, "long_term_summary"),
         "survivorship": _safe(lambda: _survivorship([c]), errors, "survivorship"),
         "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
                                       "per_window_summaries"),
@@ -223,7 +225,7 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
             "per_decision_confidence": "not_available",  # only adoption snapshots exist
             "per_decision_reliability": "not_available",
             "adoption_timeline": "available_from_adoption_history",
-            "long_term_decision_evolution": "not_available_raw_records_rotate_3_5_days",
+            "long_term_decision_evolution": "available_from_daily_buckets",
         },
         "section_errors": errors,
     }
@@ -388,6 +390,8 @@ def build_research_export_all_zones(coordinators, *, now=None,
             errors, "development_summary"),
         "adoption_timeline": _safe(lambda: _adoption_timeline(coords, pz),
                                    errors, "adoption_timeline"),
+        "long_term_summary": _safe(lambda: _long_term_summary(coords),
+                                   errors, "long_term_summary"),
         "survivorship": _safe(lambda: _survivorship(coords), errors, "survivorship"),
         "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
                                       "per_window_summaries"),
@@ -407,7 +411,7 @@ def build_research_export_all_zones(coordinators, *, now=None,
             "research_records": ("available" if all_records else "not_available"),
             "solar_buckets": "available", "forecast_buckets": "available",
             "adoption_timeline": "available_from_adoption_history",
-            "long_term_decision_evolution": "not_available_raw_records_rotate_3_5_days",
+            "long_term_decision_evolution": "available_from_daily_buckets",
         },
         "section_errors": errors,
     }
@@ -912,6 +916,48 @@ def _adoption_timeline(coords, pz) -> dict:
                           "older terminal adoptions are pruned",
         "source": "persistent_adoption_history",
         "entries": entries,
+    }
+
+
+def _long_term_summary(coords) -> dict:
+    """Aggregate daily decision-count buckets across all zone coordinators.
+
+    Each coordinator accumulates per-day counters in _research_daily_buckets
+    (keyed by ISO date string).  This function aggregates across zones to give
+    a cross-zone view of how decision activity has evolved over months.
+    """
+    all_buckets: dict = {}
+    zone_count = 0
+    for coord in coords:
+        raw = getattr(coord, "_research_daily_buckets", {}) or {}
+        if raw:
+            zone_count += 1
+        for date_key, bucket in raw.items():
+            if not isinstance(date_key, str) or not isinstance(bucket, dict):
+                continue
+            dest = all_buckets.setdefault(date_key, {})
+            for k, v in bucket.items():
+                dest[k] = dest.get(k, 0) + (v if isinstance(v, (int, float)) else 0)
+
+    if not all_buckets:
+        return {
+            "available": False,
+            "note": "no daily buckets yet; accumulates from the next decision cycle",
+            "bucket_count": 0,
+            "zone_count": zone_count,
+            "buckets": [],
+        }
+
+    sorted_dates = sorted(all_buckets)
+    buckets_out = [{"date": d, **all_buckets[d]} for d in sorted_dates]
+    return {
+        "available": True,
+        "bucket_count": len(buckets_out),
+        "zone_count": zone_count,
+        "date_range": {"from": sorted_dates[0], "to": sorted_dates[-1]},
+        "retention_note": "daily buckets retained up to 365 days / 365 entries per zone",
+        "source": "research_daily_buckets",
+        "buckets": buckets_out,
     }
 
 

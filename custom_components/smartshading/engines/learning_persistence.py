@@ -429,6 +429,36 @@ def _serialize_outcome(r: DecisionOutcome) -> dict:
     }
 
 
+def _prune_support_events(events: list, now: datetime) -> list:
+    """Keep support critical events < 48 h old and bounded to 500 records."""
+    cutoff = now.timestamp() - 48 * 3600
+    kept = []
+    for e in events:
+        ts = e.get("ts")
+        if ts is None:
+            continue
+        try:
+            dt = datetime.fromisoformat(ts)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            if dt.timestamp() >= cutoff:
+                kept.append(e)
+        except Exception:
+            pass
+    return kept[-500:]  # newest 500
+
+
+def _prune_daily_buckets(buckets: dict, now: datetime) -> dict:
+    """Keep daily research buckets within the last 365 days, capped at 365 entries."""
+    cutoff = (now - timedelta(days=365)).date().isoformat()
+    filtered = {k: v for k, v in buckets.items()
+                if isinstance(k, str) and len(k) == 10 and k >= cutoff}
+    if len(filtered) > 365:
+        sorted_keys = sorted(filtered)
+        filtered = {k: filtered[k] for k in sorted_keys[-365:]}
+    return filtered
+
+
 def serialize_learning_store(
     store: LearningStore,
     config: LearningPersistenceConfig,
@@ -453,6 +483,8 @@ def serialize_learning_store(
     config_snapshot: dict | None = None,
     owner_entry_id: str | None = None,
     owner_zone_id: str | None = None,
+    support_critical_events: list | None = None,
+    research_daily_buckets: dict | None = None,
 ) -> dict:
     """Serialize the LearningStore to a JSON-safe dict.
 
@@ -556,6 +588,9 @@ def serialize_learning_store(
         "config_snapshot": config_snapshot or {},
         "owner_entry_id": owner_entry_id,
         "owner_zone_id": owner_zone_id,
+        # P4c — persisted critical support events + daily research accumulation buckets.
+        "support_critical_events": _prune_support_events(support_critical_events or [], now),
+        "research_daily_buckets": _prune_daily_buckets(research_daily_buckets or {}, now),
         "created_by_domain": "smartshading",
     }
 
@@ -729,6 +764,8 @@ class RestoreExtras:
     restore_diagnostics: dict  # P10 structured per-section reason counts (privacy-safe)
     config_snapshot: dict  # P10 previous normalised config snapshot (for typed diff)
     active_overrides: list = field(default_factory=list)  # raw active-override dicts
+    support_critical_events: list = field(default_factory=list)  # P4c compact critical events
+    research_daily_buckets: dict = field(default_factory=dict)  # P4c date → counts
 
 
 def deserialize_into_learning_store(
@@ -1052,6 +1089,20 @@ def deserialize_into_learning_store(
 
     restore_diagnostics = merge_section_diagnostics(_sv)
 
+    # P4c — persisted support critical events (non-authority, additive).
+    _raw_se = data.get("support_critical_events") or []
+    support_critical_events: list = [
+        e for e in _raw_se
+        if isinstance(e, dict) and "ts" in e and "event_type" in e
+    ]
+
+    # P4c — daily research accumulation buckets (non-authority, additive).
+    _raw_db = data.get("research_daily_buckets") or {}
+    research_daily_buckets: dict = {
+        k: v for k, v in _raw_db.items()
+        if isinstance(k, str) and isinstance(v, dict)
+    }
+
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
         config_generations=config_generations,
@@ -1073,6 +1124,8 @@ def deserialize_into_learning_store(
         # Raw active-override dicts; the coordinator restores them into the
         # override detector (validating expiry) before the first dispatch.
         active_overrides=(data.get("active_overrides") or []),
+        support_critical_events=support_critical_events,
+        research_daily_buckets=research_daily_buckets,
     )
 
 
@@ -1224,6 +1277,8 @@ class LearningPersistenceAdapter:
         active_overrides: list | None = None,
         config_snapshot: dict | None = None,
         owner_zone_id: str | None = None,
+        support_critical_events: list | None = None,
+        research_daily_buckets: dict | None = None,
     ) -> bool:
         """Prune and persist the current in-memory learning data.
 
@@ -1252,6 +1307,8 @@ class LearningPersistenceAdapter:
                 config_snapshot=config_snapshot,
                 owner_entry_id=getattr(self, "_entry_id", None),
                 owner_zone_id=owner_zone_id,
+                support_critical_events=support_critical_events,
+                research_daily_buckets=research_daily_buckets,
             )
             await self._store.async_save(data)
         except Exception:

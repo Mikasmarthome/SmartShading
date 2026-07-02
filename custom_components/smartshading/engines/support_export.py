@@ -336,6 +336,35 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         raw_recs: list = []
         for _zid, z in (dec_snap_raw or {}).items():
             raw_recs.extend(z.get("records", []))
+        # Merge pre-restart persisted critical events into the ring records.
+        # The ring covers since-restart; persisted events fill the gap before that.
+        _persisted_evts = list(getattr(c, "_support_critical_events", []) or [])
+        if _persisted_evts:
+            ring_oldest_ts = (
+                min((r.get("decision_timestamp_utc") or "") for r in raw_recs)
+                if raw_recs else "")
+            for pe in _persisted_evts:
+                pe_ts = pe.get("ts") or ""
+                if ring_oldest_ts and pe_ts >= ring_oldest_ts:
+                    continue  # covered by ring records
+                raw_recs.append({
+                    "decision_timestamp_utc": pe_ts,
+                    "window_id": pe.get("window_id"),
+                    "resolved_state": pe.get("resolved_state"),
+                    "decided_by": pe.get("decided_by"),
+                    "no_dispatch": {
+                        "command_sent": pe.get("event_type") == "dispatch_sent",
+                        "primary_reason": pe.get("reason"),
+                    },
+                    "target_chain": {
+                        "final_dispatched_target_ha": (
+                            pe.get("target_ha")
+                            if pe.get("event_type") == "dispatch_sent" else None),
+                        "recommendation_position_ha": (
+                            pe.get("target_ha")
+                            if pe.get("event_type") != "dispatch_sent" else None),
+                    },
+                })
         # Sort newest-first so non-critical fill-up keeps the most recent records.
         raw_recs.sort(key=lambda r: r.get("decision_timestamp_utc") or "", reverse=True)
 
@@ -410,11 +439,15 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
 
         critical_count = sum(1 for e in events if e["is_critical"])
         non_critical_count = len(events) - critical_count
+        _has_persisted = bool(_persisted_evts)
         return {
             "requested_window_h": 24,
-            "coverage_scope": "since_restart",
-            "since_restart_only": True,
-            "scope_note": "decision ring is runtime-only; resets on HA restart",
+            "coverage_scope": "24h_window" if _has_persisted else "since_restart",
+            "since_restart_only": not _has_persisted,
+            "scope_note": (
+                "pre-restart events backfilled from persisted store; ring covers since-restart"
+                if _has_persisted else "decision ring is runtime-only; resets on HA restart"
+            ),
             "events": events,
             "event_count": len(events),
             "same_position_noise_suppressed": noise_same_pos,

@@ -197,6 +197,8 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
             lambda: _development_summary(
                 research_records if isinstance(research_records, list) else [], [c]),
             errors, "development_summary"),
+        "adoption_timeline": _safe(lambda: _adoption_timeline([c], pz),
+                                   errors, "adoption_timeline"),
         "survivorship": _safe(lambda: _survivorship([c]), errors, "survivorship"),
         "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
                                       "per_window_summaries"),
@@ -220,6 +222,8 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
             "behavior_mode_buckets": "not_available",  # not in the persisted summary
             "per_decision_confidence": "not_available",  # only adoption snapshots exist
             "per_decision_reliability": "not_available",
+            "adoption_timeline": "available_from_adoption_history",
+            "long_term_decision_evolution": "not_available_raw_records_rotate_3_5_days",
         },
         "section_errors": errors,
     }
@@ -382,6 +386,8 @@ def build_research_export_all_zones(coordinators, *, now=None,
         "development_summary": _safe(
             lambda: _development_summary(all_records, coords),
             errors, "development_summary"),
+        "adoption_timeline": _safe(lambda: _adoption_timeline(coords, pz),
+                                   errors, "adoption_timeline"),
         "survivorship": _safe(lambda: _survivorship(coords), errors, "survivorship"),
         "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
                                       "per_window_summaries"),
@@ -400,6 +406,8 @@ def build_research_export_all_zones(coordinators, *, now=None,
         "data_availability": {
             "research_records": ("available" if all_records else "not_available"),
             "solar_buckets": "available", "forecast_buckets": "available",
+            "adoption_timeline": "available_from_adoption_history",
+            "long_term_decision_evolution": "not_available_raw_records_rotate_3_5_days",
         },
         "section_errors": errors,
     }
@@ -826,6 +834,85 @@ def _survivorship(coords) -> dict:
                     counts[st] = counts.get(st, 0) + 1
     return {"terminal_adoption_counts": dict(sorted(counts.items())),
             "note": "rejected/rolled_back/expired adoptions retained (no survivorship bias)"}
+
+
+def _adoption_timeline(coords, pz) -> dict:
+    """Timestamped history of position and strategy adoption lifecycle events.
+
+    Reads the already-persisted _adoption_history and _strategy_adoption_history
+    from each coordinator (retained up to 200 entries / 365 days by
+    _retain_terminal_history, written on every status change).  This is the only
+    source that spans months: raw decision/outcome records rotate out after ~3-5
+    days per window; adoption history remains for up to a year.
+
+    The timeline answers over-time questions that raw records cannot:
+      - When did SmartShading first commit to a learned adaptation?
+      - Did confidence grow, hold, or oscillate?
+      - Were there rollbacks, and how many outcomes preceded them?
+      - Are manual override rejections decreasing (preference convergence)?
+      - Has learning entered stage 2 (deeper adaptation)?
+
+    Privacy: raw window_id / adoption_id / zone_id replaced with pseudonymous refs.
+    Positions (adopted_delta_ha) are bucketed, not exact.  No entity ids, no raw
+    positions from the configured target.
+    """
+    def _bucket_delta(d) -> str:
+        if d is None:
+            return "unknown"
+        if d == 0:
+            return "none"
+        if d == -5:
+            return "stage_1"
+        if d <= -10:
+            return "stage_2"
+        return "other"
+
+    entries: list = []
+    for coord in coords:
+        for hist_attr, atype in (
+            ("_adoption_history", "position"),
+            ("_strategy_adoption_history", "strategy"),
+        ):
+            for a in getattr(coord, hist_attr, None) or []:
+                wid = getattr(a, "window_id", None)
+                aid = getattr(a, "adoption_id", None)
+                mon = getattr(a, "monitoring", None)
+                entries.append({
+                    "adoption_ref": pz.ref(NS_ADOPTION, aid),
+                    "window_ref": pz.ref(NS_WINDOW, wid),
+                    "adoption_type": atype,
+                    "intensity_level": getattr(a, "intensity_level", None),
+                    "context_family": getattr(a, "context_family", None),
+                    "status": str(getattr(a, "status", None) or "unknown"),
+                    "stage": getattr(a, "stage", None),
+                    "delta_bucket": _bucket_delta(getattr(a, "adopted_delta_ha", None)),
+                    "confidence": (round(float(getattr(a, "confidence", 0) or 0), 3)),
+                    "reliability": (round(float(getattr(a, "reliability", 0) or 0), 3)),
+                    "suspended": bool(getattr(a, "suspended", False)),
+                    "created_at": _iso_s(getattr(a, "created_at", None)),
+                    "activated_at": _iso_s(getattr(a, "activated_at", None)),
+                    "stage2_activated_at": _iso_s(getattr(a, "stage2_activated_at", None)),
+                    "updated_at": _iso_s(getattr(a, "updated_at", None)),
+                    "rollback_reason": getattr(a, "rollback_reason", None),
+                    "monitoring_summary": {
+                        "outcome_count": getattr(mon, "outcome_count", 0) if mon else 0,
+                        "improved_count": getattr(mon, "improved_count", 0) if mon else 0,
+                        "degraded_count": getattr(mon, "degraded_count", 0) if mon else 0,
+                        "inconclusive_count": getattr(mon, "inconclusive_count", 0) if mon else 0,
+                        "preference_rejection_count": (
+                            getattr(mon, "preference_rejection_count", 0) if mon else 0),
+                    } if mon is not None else None,
+                })
+
+    # Oldest-first so the timeline reads as evolution over time.
+    entries.sort(key=lambda e: e.get("created_at") or "")
+    return {
+        "adoption_timeline_count": len(entries),
+        "retention_note": "adoption records retained up to 365 days / 200 entries; "
+                          "older terminal adoptions are pruned",
+        "source": "persistent_adoption_history",
+        "entries": entries,
+    }
 
 
 def _per_window(records, pz) -> list:

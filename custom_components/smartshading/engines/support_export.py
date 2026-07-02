@@ -322,17 +322,26 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         tagged with is_recommendation_only so support can distinguish real cover
         moves from SHADOW_ONLY trace records.
 
+        Critical events are guaranteed to appear regardless of cap: the 200-event
+        cap is filled first with all critical events from the full ring, then with
+        the newest non-critical events up to the remaining slots.  This prevents a
+        burst of min_interval / no_change records from displacing an earlier safety
+        trigger or manual override.
+
         Source is the raw decision ring records (pre-pseudonymization), so we
         can classify on primary_reason without any field renames.
         """
-        events: list = []
         noise_same_pos = 0
         dec_snap_raw = getattr(c, "decision_trace_snapshot", lambda: {})() or {}
         raw_recs: list = []
         for _zid, z in (dec_snap_raw or {}).items():
             raw_recs.extend(z.get("records", []))
-        # Sort newest-first for event output.
+        # Sort newest-first so non-critical fill-up keeps the most recent records.
         raw_recs.sort(key=lambda r: r.get("decision_timestamp_utc") or "", reverse=True)
+
+        critical_evts: list = []
+        non_critical_evts: list = []
+
         for r in raw_recs:
             ts = r.get("decision_timestamp_utc")
             wid = r.get("window_id")
@@ -346,10 +355,10 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             target_ha = (tc.get("final_dispatched_target_ha")
                          or tc.get("recommendation_position_ha"))
 
-            # Classify event type.
+            # Suppress same-position noise before classifying anything else.
             if primary in _SAME_POS_REASONS:
                 noise_same_pos += 1
-                continue  # suppress same-position noise
+                continue
 
             if command_sent is True:
                 evt_type = "dispatch_sent"
@@ -376,7 +385,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             else:
                 evt_type = "no_change"
 
-            events.append({
+            evt = {
                 "ts": _iso_s(ts),
                 "event_type": evt_type,
                 "window_ref": wref,
@@ -386,11 +395,21 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 "target_ha": target_ha,
                 "is_recommendation_only": (evt_type == "recommendation_only"),
                 "is_critical": evt_type in _CRITICAL_EVENT_TYPES,
-            })
-            if len(events) >= MAX_SUPPORT_TIMELINE_EVENTS:
-                break
+            }
+            if evt["is_critical"]:
+                critical_evts.append(evt)
+            else:
+                non_critical_evts.append(evt)
+
+        # Merge: all critical events + newest non-critical up to cap.
+        # non_critical_evts is already newest-first (ring was sorted that way).
+        remaining_slots = max(0, MAX_SUPPORT_TIMELINE_EVENTS - len(critical_evts))
+        events = critical_evts + non_critical_evts[:remaining_slots]
+        # Re-sort merged list newest-first for output.
+        events.sort(key=lambda e: e.get("ts") or "", reverse=True)
 
         critical_count = sum(1 for e in events if e["is_critical"])
+        non_critical_count = len(events) - critical_count
         return {
             "requested_window_h": 24,
             "coverage_scope": "since_restart",
@@ -400,7 +419,9 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             "event_count": len(events),
             "same_position_noise_suppressed": noise_same_pos,
             "critical_event_count": critical_count,
-            "truncated_at_cap": len(events) >= MAX_SUPPORT_TIMELINE_EVENTS,
+            "non_critical_event_count": non_critical_count,
+            "critical_events_guaranteed": True,
+            "truncated_at_cap": len(non_critical_evts) > remaining_slots,
         }
 
     def _decision_records(ring_snapshot, cap):

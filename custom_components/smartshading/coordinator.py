@@ -379,6 +379,7 @@ _LOGGER = logging.getLogger(__name__)
 _NO_OUTCOME_STATES: frozenset[ShadingState] = frozenset({
     ShadingState.STORM_SAFE,
     ShadingState.WIND_SAFE,
+    ShadingState.RAIN_SAFE,       # Safety state: transition not a thermal learning signal
     ShadingState.MANUAL_OVERRIDE,
 })
 
@@ -3408,10 +3409,21 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     # BehaviorMode:hold / PresenceUncertain:hold are also excluded:
                     # no command was sent, so there is no evaluator outcome to observe
                     # or score.
+                    # active_control_enabled=False (SHADOW_ONLY / RECOMMENDATION_ONLY):
+                    # no cover moved, so indoor-temperature observations are NOT caused
+                    # by a SmartShading dispatch. Creating outcomes here would let the
+                    # LE learn from non-causal thermal changes and corrupt confidence/
+                    # adoption. Excluded.  StateTransitionRecord and LearningDecisionRecord
+                    # are still produced (see above and _maybe_record_provenance) so
+                    # SHADOW_ONLY remains visible in diagnostics and research exports.
                     # When a new pending is created, replace() returns the old one
                     # (if any) so it can be resolved as STATE_CHANGE before the new
                     # observation window starts.
-                    if new_state not in _NO_OUTCOME_STATES and tier_decision.decided_by not in _NO_DISPATCH_HOLD_DECIDERS:
+                    if (
+                        new_state not in _NO_OUTCOME_STATES
+                        and tier_decision.decided_by not in _NO_DISPATCH_HOLD_DECIDERS
+                        and _exec.active_control_enabled  # dispatch allowed → outcome causal
+                    ):
                         try:
                             # P3 movement: record this transition into the OLD window
                             # before it resolves, classifying comfort vs excluded.

@@ -193,6 +193,10 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
         "history_metadata": _safe(lambda: _history_metadata(
             research_records if isinstance(research_records, list) else [], len(capped),
             store_scope="persistent_learning_history"), errors, "history_metadata"),
+        "development_summary": _safe(
+            lambda: _development_summary(
+                research_records if isinstance(research_records, list) else [], [c]),
+            errors, "development_summary"),
         "survivorship": _safe(lambda: _survivorship([c]), errors, "survivorship"),
         "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
                                       "per_window_summaries"),
@@ -251,6 +255,15 @@ def _history_metadata(eligible_records, serialized_count, *, store_scope) -> dic
         "truncated": serialized_count < total,
         "cap_reason": ("record_cap_or_byte_cap" if serialized_count < total
                        else "within_cap"),
+        "store_retention_per_window": {
+            "decisions": 5000,
+            "outcomes": 5000,
+            "transitions": 500,
+            "overrides": 200,
+            "snapshots": 2000,
+            "note": "oldest records evicted when capacity is reached; aggregate "
+                    "profiles and adoption history are retained separately",
+        },
     }
 
 
@@ -366,6 +379,9 @@ def build_research_export_all_zones(coordinators, *, now=None,
         "history_metadata": _safe(lambda: _history_metadata(
             all_records, len(capped), store_scope="persistent_learning_history"),
             errors, "history_metadata"),
+        "development_summary": _safe(
+            lambda: _development_summary(all_records, coords),
+            errors, "development_summary"),
         "survivorship": _safe(lambda: _survivorship(coords), errors, "survivorship"),
         "per_window_summaries": _safe(lambda: _per_window(capped, pz), errors,
                                       "per_window_summaries"),
@@ -517,6 +533,8 @@ def _project_decision(d, wid, pz) -> dict | None:
         "baseline_comparison": baseline_comparison,
         "delta_baseline_adapted_ha": (adapted - base) if (is_adapted) else 0,
         "executed_dispatch_status": getattr(summary, "dispatch_status", None),
+        "is_recommendation_only": str(getattr(summary, "dispatch_status", None) or "").lower()
+            in ("recommendation_only",),
         "learning_source_type": src_type,
         "outcome_status": getattr(d, "outcome_status", None),
         "outcome_resolution_status": resolution,
@@ -695,6 +713,85 @@ def _bucket_counts(records, key) -> dict:
             b = "unknown"
         out[str(b)] = out.get(str(b), 0) + 1
     return dict(sorted(out.items()))
+
+
+def _development_summary(eligible_records, coords) -> dict:
+    """How SmartShading started learning and how it has evolved.
+
+    Answers: how old is the learning data, how many records exist, what
+    adoptions are active, what was rolled back/rejected, how confident is
+    the system in the current adaptation state.  Derived from the already-
+    projected eligible records + coordinator adoption state.
+
+    All values are counts/timestamps only — no raw entity ids or positions.
+    """
+    stamps = sorted(r.get("decision_timestamp_utc") for r in eligible_records
+                    if r.get("decision_timestamp_utc"))
+    total = len(eligible_records)
+    adapted = sum(1 for r in eligible_records if r.get("is_adapted"))
+    dispatched = sum(1 for r in eligible_records
+                     if r.get("executed_dispatch_status") in ("sent", "SENT"))
+    recommendation_only = sum(1 for r in eligible_records if r.get("is_recommendation_only"))
+    resolved = sum(1 for r in eligible_records
+                   if r.get("outcome_resolution_status") == "complete")
+    improved = sum(1 for r in eligible_records
+                   if r.get("thermal_objective_classification") == "improved")
+
+    # Active adoptions (live runtime — may differ from terminal history).
+    active_pos = 0
+    active_strat = 0
+    for c in coords:
+        active_pos += len(getattr(c, "_adoptions_active", None) or {})
+        active_strat += len(getattr(c, "_strategy_adoptions_active", None) or {})
+
+    # Terminal adoption history (survivorship guard — no bias).
+    terminal_pos: dict = {}
+    terminal_strat: dict = {}
+    for c in coords:
+        for a in getattr(c, "_adoption_history", None) or []:
+            st = str(getattr(a, "status", "unknown") or "unknown")
+            terminal_pos[st] = terminal_pos.get(st, 0) + 1
+        for a in getattr(c, "_strategy_adoption_history", None) or []:
+            st = str(getattr(a, "status", "unknown") or "unknown")
+            terminal_strat[st] = terminal_strat.get(st, 0) + 1
+
+    # Learning age from the oldest eligible record.
+    learning_age_days: float | None = None
+    if stamps:
+        try:
+            from datetime import datetime, timezone
+            oldest = datetime.fromisoformat(stamps[0])
+            if oldest.tzinfo is None:
+                oldest = oldest.replace(tzinfo=timezone.utc)
+            delta = datetime.now(timezone.utc) - oldest
+            learning_age_days = round(delta.total_seconds() / 86400, 1)
+        except Exception:
+            pass
+
+    return {
+        "oldest_learning_record_utc": stamps[0] if stamps else None,
+        "newest_learning_record_utc": stamps[-1] if stamps else None,
+        "learning_age_days": learning_age_days,
+        "decisions_eligible": total,
+        "decisions_adapted": adapted,
+        "decisions_dispatched": dispatched,
+        "decisions_recommendation_only": recommendation_only,
+        "outcomes_resolved": resolved,
+        "outcomes_thermal_improved": improved,
+        "active_position_adoptions": active_pos,
+        "active_strategy_adoptions": active_strat,
+        "terminal_position_adoptions_by_status": dict(sorted(terminal_pos.items())),
+        "terminal_strategy_adoptions_by_status": dict(sorted(terminal_strat.items())),
+        "store_retention_per_window": {
+            "decisions": 5000,
+            "outcomes": 5000,
+            "transitions": 500,
+            "overrides": 200,
+            "snapshots": 2000,
+            "note": "oldest records evicted when capacity is reached; aggregate "
+                    "profiles and adoption history are retained separately",
+        },
+    }
 
 
 def _confidence_buckets(coords) -> dict:

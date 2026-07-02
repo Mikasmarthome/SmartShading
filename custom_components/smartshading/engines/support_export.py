@@ -43,6 +43,20 @@ SUPPORT_EXPORT_SCHEMA_VERSION: int = 3
 # (MAX_SUPPORT_EXPORT_BYTES) and history_metadata (oldest/newest/truncated) still
 # bound and describe the actual exported window.
 MAX_SUPPORT_DECISIONS_PER_ZONE = 300
+
+# Support timeline: max structured events before noise compression (same_position) and
+# before byte-cap truncation.  Only significant events survive same_position compression.
+MAX_SUPPORT_TIMELINE_EVENTS = 200
+
+# Event types that constitute "critical" support events (non-noise).
+_CRITICAL_EVENT_TYPES = frozenset({
+    "dispatch_sent", "dispatch_failed", "command_blocked", "recommendation_only",
+    "safety", "manual_override", "absence", "night_transition", "presence_hold",
+    "behavior_hold", "contact_event", "min_interval_bypass",
+})
+
+# Decision no_dispatch.primary_reason values that are same-position noise.
+_SAME_POS_REASONS = frozenset({"same_position", "same_position_no_change"})
 MAX_SUPPORT_DISPATCHES_PER_ZONE = 200
 MAX_SUPPORT_NO_DISPATCHES_PER_ZONE = 300
 MAX_SUPPORT_OUTCOMES_PER_ZONE = 100
@@ -93,6 +107,11 @@ def _support_history_metadata(recent_dec, dec_trunc) -> dict:
     return {
         "store_scope": "runtime_recent",
         "scope_note": "recent in-memory decision ring; resets on restart/reload",
+        "requested_window_h": 24,
+        "full_window_covered": False,
+        "coverage_scope": "since_restart",
+        "since_restart_only": True,
+        "history_not_persistent": True,
         "oldest_record_utc": stamps[0] if stamps else None,
         "newest_record_utc": stamps[-1] if stamps else None,
         "records_exported": len(recent_dec),
@@ -230,6 +249,160 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 a.pop("adoption_id_internal", None)
         return tr
 
+    def _current_snapshot():
+        """Per-window current state snapshot from execution diagnostics.
+
+        Answers 'what is SmartShading doing right now?' — lifecycle state,
+        shading state, command/dispatch status, safety/contact/cover state.
+        All data comes from already-computed execution_diagnostics; nothing is
+        re-evaluated.  Fields are None/not_available when data is absent.
+        """
+        diags = getattr(getattr(c, "data", None), "execution_diagnostics", None) or {}
+        windows_out = {}
+        for wid in (getattr(c, "windows", {}) or {}):
+            diag = diags.get(wid)
+            w = (getattr(c, "windows", {}) or {}).get(wid)
+            wref = _wref(wid)
+            if diag is None:
+                windows_out[wref] = {
+                    "window_ref": wref,
+                    "data_available": False,
+                    "reason": "no_execution_diagnostics",
+                }
+                continue
+            windows_out[wref] = {
+                "window_ref": wref,
+                "data_available": True,
+                # Mode / dispatch authorization
+                "execution_mode": getattr(diag, "execution_mode", None),
+                "active_control_enabled": getattr(diag, "active_control_enabled", None),
+                "learning_enabled": getattr(diag, "learning_enabled", None),
+                "is_recommendation_only": (
+                    getattr(diag, "execution_mode", None) == "recommendation_only"),
+                # Current decision
+                "decided_by": getattr(diag, "tier_decided_by", None),
+                "is_safety": bool(getattr(diag, "is_safety", False)),
+                # Command / filter outcome
+                "command_allowed": getattr(diag, "command_allowed", None),
+                "command_blocked_reason": getattr(diag, "command_blocked_reason", None),
+                "last_command_status": getattr(diag, "last_command_status", None),
+                # Position
+                "actual_position_ha": getattr(diag, "actual_position_ha", None),
+                "target_position_ha": getattr(diag, "target_position_ha", None),
+                "cover_available": getattr(diag, "cover_available", None),
+                # Learning trace
+                "adaptive_applied": getattr(diag, "adaptive_applied", None),
+                "deterministic_baseline_target_ha": getattr(
+                    diag, "deterministic_baseline_target_ha", None),
+                "baseline_to_final_delta_ha": getattr(
+                    diag, "baseline_to_final_delta_ha", None),
+                # Safety / rain
+                "rain_safe_active": getattr(diag, "rain_safe_active", None),
+                # Night contact
+                "contact_status": getattr(diag, "contact_status", None),
+                "night_contact_blocked": bool(getattr(diag, "night_contact_blocked", False)),
+                "catch_up_pending": bool(getattr(diag, "catch_up_pending", False)),
+                "night_vent_active": bool(getattr(diag, "night_vent_active", False)),
+                # Lifecycle
+                "lifecycle_state": getattr(diag, "lifecycle_state_at_cycle", None),
+                # Startup
+                "startup_grace_active": getattr(diag, "startup_grace_active", None),
+                # Hardware type (from window config — privacy-safe category, not entity id)
+                "hardware_type": (str(getattr(w, "hardware_type", None))
+                                  .replace("CoverHardwareType.", "") if w else None),
+            }
+        return windows_out
+
+    def _support_timeline(dec_records_raw):
+        """Classify decision records into typed support events, newest-first.
+
+        Suppresses same_position/no-change noise; retains and marks all critical
+        events (dispatches, blocks, safety, overrides, holds, absence, night
+        transitions, recommendation-only in SHADOW_ONLY mode).  Each event is
+        tagged with is_recommendation_only so support can distinguish real cover
+        moves from SHADOW_ONLY trace records.
+
+        Source is the raw decision ring records (pre-pseudonymization), so we
+        can classify on primary_reason without any field renames.
+        """
+        events: list = []
+        noise_same_pos = 0
+        dec_snap_raw = getattr(c, "decision_trace_snapshot", lambda: {})() or {}
+        raw_recs: list = []
+        for _zid, z in (dec_snap_raw or {}).items():
+            raw_recs.extend(z.get("records", []))
+        # Sort newest-first for event output.
+        raw_recs.sort(key=lambda r: r.get("decision_timestamp_utc") or "", reverse=True)
+        for r in raw_recs:
+            ts = r.get("decision_timestamp_utc")
+            wid = r.get("window_id")
+            wref = _wref(wid)
+            state = r.get("resolved_state")
+            decided_by = r.get("decided_by")
+            no_disp = r.get("no_dispatch") or {}
+            command_sent = no_disp.get("command_sent")
+            primary = no_disp.get("primary_reason") or ""
+            tc = r.get("target_chain") or {}
+            target_ha = (tc.get("final_dispatched_target_ha")
+                         or tc.get("recommendation_position_ha"))
+
+            # Classify event type.
+            if primary in _SAME_POS_REASONS:
+                noise_same_pos += 1
+                continue  # suppress same-position noise
+
+            if command_sent is True:
+                evt_type = "dispatch_sent"
+            elif primary == "active_control_off":
+                evt_type = "recommendation_only"
+            elif state in ("storm_safe", "wind_safe", "rain_safe"):
+                evt_type = "safety"
+            elif state == "manual_override":
+                evt_type = "manual_override"
+            elif primary in ("behavior_mode_hold",):
+                evt_type = "behavior_hold"
+            elif primary in ("presence_uncertain_hold",):
+                evt_type = "presence_hold"
+            elif primary in ("min_interval_not_elapsed",):
+                evt_type = "min_interval"
+            elif primary in ("startup_grace",):
+                evt_type = "startup_grace"
+            elif decided_by and "Night" in decided_by:
+                evt_type = "night_transition"
+            elif decided_by and "Absence" in decided_by:
+                evt_type = "absence"
+            elif primary:
+                evt_type = "command_blocked"
+            else:
+                evt_type = "no_change"
+
+            events.append({
+                "ts": _iso_s(ts),
+                "event_type": evt_type,
+                "window_ref": wref,
+                "shading_state": state,
+                "decided_by": decided_by,
+                "reason": primary or None,
+                "target_ha": target_ha,
+                "is_recommendation_only": (evt_type == "recommendation_only"),
+                "is_critical": evt_type in _CRITICAL_EVENT_TYPES,
+            })
+            if len(events) >= MAX_SUPPORT_TIMELINE_EVENTS:
+                break
+
+        critical_count = sum(1 for e in events if e["is_critical"])
+        return {
+            "requested_window_h": 24,
+            "coverage_scope": "since_restart",
+            "since_restart_only": True,
+            "scope_note": "decision ring is runtime-only; resets on HA restart",
+            "events": events,
+            "event_count": len(events),
+            "same_position_noise_suppressed": noise_same_pos,
+            "critical_event_count": critical_count,
+            "truncated_at_cap": len(events) >= MAX_SUPPORT_TIMELINE_EVENTS,
+        }
+
     def _decision_records(ring_snapshot, cap):
         # ring_snapshot: {zone: {"records": [...]}}; flatten + pseudonymize + cap.
         recs = []
@@ -318,6 +491,9 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         "system": _safe(_system, errors, "system"),
         "configuration": _safe(_configuration, errors, "configuration"),
         "health": _safe(_health, errors, "health"),
+        "current_snapshot": _safe(_current_snapshot, errors, "current_snapshot"),
+        "support_timeline": _safe(lambda: _support_timeline(recent_dec), errors,
+                                  "support_timeline"),
         "inputs": _safe(_inputs, errors, "inputs"),
         "position_learning": _safe(_position_learning, errors, "position_learning"),
         "strategy_learning": _safe(_strategy_learning, errors, "strategy_learning"),

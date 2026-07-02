@@ -195,7 +195,10 @@ async def _collect_zone_entries(hass: HomeAssistant) -> list[dict]:
                         ),
                     }
                 except Exception:
-                    pass
+                    _LOGGER.debug(
+                        "SmartShading: export: zone runtime data collection failed"
+                        " for entry %s (non-fatal, defaults used)",
+                        entry.entry_id, exc_info=True)
             result.append({
                 "entry_id": entry.entry_id,
                 "window_ids": window_ids,

@@ -143,10 +143,11 @@ class BehaviorConfig:
     strong_shade_position: int = 90
 
     # Solar entry thresholds (W/m²) for Tier 5 classification.
-    # Defaults match the hardcoded constants that SolarEvaluator previously used
-    # (_LIGHT_SHADE_WM2 = 150, _NORMAL_SHADE_WM2 = 300, _STRONG_SHADE_WM2 = 500).
+    # normal=250 calibrated for direct east/west morning/evening sun: incidence
+    # factors of ~0.6 on a 400 W/m² day yield ~240 W/m² effective, which is
+    # genuine direct sun and warrants normal shade, not light shade.
     # Adaptation Application (9F17+) may replace these with learned values bounded
     # within hard clamps; BehaviorConfig.defaults guarantee backward compatibility.
     light_shade_threshold_wm2: float = 150.0
-    normal_shade_threshold_wm2: float = 300.0
+    normal_shade_threshold_wm2: float = 250.0
     strong_shade_threshold_wm2: float = 500.0

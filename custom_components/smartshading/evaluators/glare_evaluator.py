@@ -32,6 +32,7 @@ from __future__ import annotations
 
 from ..const import (
     GLARE_INTENSITY_NORMAL_RATIO,
+    GLARE_INTENSITY_STRONG_EXIT_RATIO,
     GLARE_INTENSITY_STRONG_RATIO,
     LOW_ANGLE_GLARE_MIN_MEASURED_WM2,
 )
@@ -125,7 +126,20 @@ class GlareEvaluator:
         low_angle = _low_angle_glare_value(wdi)
         glare_min = behavior.glare_min_exposure_wm2
         ratio = (low_angle / glare_min) if glare_min > 0 else 0.0
-        if ratio >= GLARE_INTENSITY_STRONG_RATIO:
+
+        # Exit hysteresis (v1.1.1): once already in STRONG_SHADE, require the
+        # ratio to drop below the lower GLARE_INTENSITY_STRONG_EXIT_RATIO —
+        # not just back below the entry ratio — before de-escalating. Entry
+        # into STRONG stays instant and unaffected (see const.py). Currently
+        # STRONG + ratio still >= the exit ratio (even if below the entry
+        # ratio) holds at STRONG rather than flapping to NORMAL/LIGHT.
+        if (
+            wdi.current_shading_state is ShadingState.STRONG_SHADE
+            and GLARE_INTENSITY_STRONG_EXIT_RATIO <= ratio < GLARE_INTENSITY_STRONG_RATIO
+        ):
+            state = ShadingState.STRONG_SHADE
+            position = behavior.strong_shade_position
+        elif ratio >= GLARE_INTENSITY_STRONG_RATIO:
             state = ShadingState.STRONG_SHADE
             position = behavior.strong_shade_position
         elif ratio >= GLARE_INTENSITY_NORMAL_RATIO:

@@ -171,6 +171,13 @@ def _recommendation_attributes(
             round(_exposure.low_angle_direct_glare_wm2, 1)
             if _exposure is not None else None
         ),
+        # Diagnostic-only (v1.1.1): the window is in its solar sector, the sun
+        # is high enough for direct sun to be plausible, the measured sensor
+        # (not a weather/cloud estimate) is authoritative and unusually low,
+        # and it is not raining — suggests the sensor may be locally shaded /
+        # unrepresentative for this window. Never drives any decision; purely
+        # informational. See coordinator._measured_solar_may_be_locally_shaded.
+        "measured_solar_may_be_locally_shaded": diag.measured_solar_may_be_locally_shaded,
         "heat_protection_active": (
             obs.comfort_assessment.heat_protection_needed
             if obs is not None and obs.comfort_assessment is not None

@@ -115,6 +115,34 @@ LOW_ANGLE_GLARE_MIN_MEASURED_WM2 = 40.0
 GLARE_INTENSITY_NORMAL_RATIO = 1.8   # >= 1.8x glare_min  -> NORMAL shade
 GLARE_INTENSITY_STRONG_RATIO = 3.0   # >= 3.0x glare_min  -> STRONG shade
 
+# v1.1.1 field fix: exit hysteresis for the STRONG_SHADE glare intensity.
+# Entering STRONG still requires ratio >= GLARE_INTENSITY_STRONG_RATIO (3.0,
+# unchanged — real strong glare is still protected against instantly).
+# Leaving STRONG for NORMAL, while currently in STRONG_SHADE, additionally
+# requires the ratio to fall below this LOWER exit ratio, not just back below
+# the entry ratio. Without this, a ratio hovering near 3.0 (e.g. thin/moving
+# cloud at the glare-relevant elevation) flapped STRONG<->NORMAL every few
+# minutes on two west-facing windows once the unrelated StateGuard
+# minimum_state_duration hold for STRONG_SHADE expired. Scoped to the
+# STRONG->NORMAL exit only; does not affect entry, LIGHT<->NORMAL, or the
+# NORMAL->STRONG escalation (still instant), and does not weaken safety,
+# manual override, absence, night, or rain/wind/storm handling (all resolved
+# in earlier tiers, before GlareEvaluator ever runs).
+GLARE_INTENSITY_STRONG_EXIT_RATIO = 2.5
+
+# v1.1.1 field fix: diagnostic-only flag for a measured solar sensor that may
+# be locally shaded/unrepresentative for a specific window (e.g. a morning
+# tree/roof obstruction near the sensor, not near the window). Fires only
+# when the window is geometrically in its solar sector, the sun is high
+# enough for direct sun to be geometrically plausible, the MEASURED sensor
+# (never the weather/cloud estimate — a low estimate is legitimate cloud) is
+# unusually low, and it is not currently raining (rain is a legitimate cause
+# of low measured solar). Never used to drive shading — measured solar stays
+# authoritative; this only surfaces the discrepancy in diagnostics/export so
+# a user can reposition or reconsider their sensor placement.
+MEASURED_SOLAR_UNDERREPRESENTATION_MIN_ELEVATION_DEG = 10.0
+MEASURED_SOLAR_UNDERREPRESENTATION_MAX_WM2 = 100.0
+
 # Heat protection meaningful-exposure floor: HeatEvaluator does NOT introduce its
 # own minimum-exposure constant.  It reuses the user-configurable
 # glare_min_exposure_wm2 ("Minimum exposure for glare protection" in the options

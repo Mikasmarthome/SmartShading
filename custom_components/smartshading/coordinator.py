@@ -371,7 +371,13 @@ from .cover_control.shading_group_harmonizer import (
     compute_harmonization,
 )
 from .models.execution_diagnostics import WindowExecutionDiagnostics
-from .const import DATA_DEBUG_LOGGING, DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA as _DEFAULT_VENT_POS_HA, DOMAIN
+from .const import (
+    DATA_DEBUG_LOGGING,
+    DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA as _DEFAULT_VENT_POS_HA,
+    DOMAIN,
+    MEASURED_SOLAR_UNDERREPRESENTATION_MAX_WM2,
+    MEASURED_SOLAR_UNDERREPRESENTATION_MIN_ELEVATION_DEG,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -520,6 +526,13 @@ class _WindowComputeState:
     # post-tick override state — matches what CommandFilter uses this cycle.
     is_override_active: bool
     cover_available: bool | None
+    # v1.1.1: the evaluator's own shading_state for THIS cycle's tier_decision,
+    # distinct from new_state (which may be held at the PRIOR state by
+    # StateGuard.is_locked() for hysteresis/outcome bookkeeping while a command
+    # for the new decision still dispatches under the separate, weaker
+    # minimum_action_interval check). Lets the support-event trace report the
+    # state that was actually acted on instead of a stale held label.
+    tier_decided_state: ShadingState | None = None
     # Daytime Minimum Open Position (Step 9G10f-b): clamp tracking.
     daytime_min_open_applied: bool = False
     pre_daytime_min_target_position_ha: int | None = None
@@ -534,6 +547,9 @@ class _WindowComputeState:
     # are excluded from harmonization — they must not be pulled into shade by
     # another window whose sun IS within sector.
     in_solar_sector: bool = True
+    # v1.1.1: diagnostic-only — measured solar sensor may be locally shaded /
+    # unrepresentative for this window this cycle. Never affects shading.
+    measured_solar_may_be_locally_shaded: bool = False
     # Night Hard Hold: True when the hard-hold gate overrode the tier decision
     # to keep the cover at night_position instead of dispatching an OPEN command.
     night_hard_hold_applied: bool = False
@@ -686,6 +702,50 @@ def _night_contact_bypasses_action_interval(
     ):
         return False
     return contact_valid_and_fresh
+
+
+def _measured_solar_may_be_locally_shaded(
+    *,
+    is_in_solar_sector: bool,
+    sun_elevation_deg: float | None,
+    solar_source: str,
+    measured_solar_wm2: float | None,
+    rain_status: _RainStatus,
+) -> bool:
+    """Diagnostic-only: True when a locally-shaded/unrepresentative measured
+    solar sensor is plausible for this window this cycle (v1.1.1 field fix).
+
+    Narrow, safe gate — ALL of:
+      - the window is geometrically in its solar sector,
+      - the sun is high enough for direct sun to be geometrically plausible,
+      - the authoritative source this cycle is the MEASURED sensor (not the
+        weather/cloud estimate — a low estimate is legitimate cloud, not a
+        sensor placement issue),
+      - the measured value is unusually low despite the above,
+      - it is not currently raining (rain is a legitimate cause of low
+        measured solar, not a sensor placement issue).
+
+    Never drives any shading decision — measured solar remains authoritative
+    for exposure and thresholds exactly as before. Pure function so the exact
+    gate is unit-testable in isolation.
+    """
+    if not is_in_solar_sector:
+        return False
+    if (
+        sun_elevation_deg is None
+        or sun_elevation_deg < MEASURED_SOLAR_UNDERREPRESENTATION_MIN_ELEVATION_DEG
+    ):
+        return False
+    if solar_source != "sensor":
+        return False
+    if (
+        measured_solar_wm2 is None
+        or measured_solar_wm2 >= MEASURED_SOLAR_UNDERREPRESENTATION_MAX_WM2
+    ):
+        return False
+    if rain_status is _RainStatus.RAINING:
+        return False
+    return True
 
 
 def _apply_window_behavior_mode(
@@ -2569,6 +2629,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         _obstruction_blocked = True
                         break
 
+            # v1.1.1: diagnostic-only flag — a locally-shaded/unrepresentative
+            # measured solar sensor is plausible for this window this cycle.
+            # Never affects exposure/thresholds/shading; surfaced in
+            # diagnostics/export only. See _measured_solar_may_be_locally_shaded.
+            _measured_solar_underrepresentation_flag = _measured_solar_may_be_locally_shaded(
+                is_in_solar_sector=_effective_in_solar_sector,
+                sun_elevation_deg=sun_position.elevation,
+                solar_source=_solar_source,
+                measured_solar_wm2=exposure.measured_solar_wm2,
+                rain_status=_rain_status_global,
+            )
+
             # Comfort Engine round (2026-06-17): per-window assessment because
             # is_in_solar_sector depends on the window's azimuth tolerance.
             # outdoor/indoor temperatures are house-wide (computed outside loop).
@@ -3977,6 +4049,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 exec_target_internal=_exec_target_internal,
                 exec_filter_result=_exec_filter_result,
                 tier_decided_by=tier_decision.decided_by,
+                tier_decided_state=tier_decision.shading_state,
                 is_override_active=current_override is not None,
                 cover_available=(
                     _exec_snapshot.available if _exec_snapshot is not None else None
@@ -3988,6 +4061,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 min_position_floor_ha=_min_position_floor_ha,
                 target_tilt_ha=_effective_tilt_ha,
                 in_solar_sector=_effective_in_solar_sector,
+                measured_solar_may_be_locally_shaded=_measured_solar_underrepresentation_flag,
                 night_hard_hold_applied=_night_hard_hold_applied,
                 contact_sensor_configured=_cs_configured,
                 contact_sensor_count=_cs_agg.total,
@@ -4449,6 +4523,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     zone_indoor_temp_available=indoor_temperature is not None,
                 ),
                 min_interval_bypassed=s.min_interval_bypassed,
+                measured_solar_may_be_locally_shaded=s.measured_solar_may_be_locally_shaded,
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---
@@ -4858,7 +4933,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         """P4c: record a compact critical support event into the persisted history."""
         filt = getattr(s, "exec_filter_result", None)
         command_sent = bool(getattr(dispatch_prov, "dispatch_succeeded", False))
-        state = getattr(getattr(s, "new_state", None), "value", None)
+        # v1.1.1: when a command was actually sent, report the state that was
+        # acted on (tier_decided_state) rather than new_state, which may still
+        # be held at a PRIOR state by StateGuard.is_locked() for hysteresis
+        # bookkeeping even though the dispatch itself proceeded under the
+        # separate minimum_action_interval check — avoids a trace showing a
+        # stale shading_state (e.g. "strong_shade") next to the freshly
+        # dispatched target_ha (e.g. 100 = fully open).
+        state = getattr(
+            getattr(s, "tier_decided_state", None) if command_sent else getattr(s, "new_state", None),
+            "value", None,
+        )
         decided_by = (getattr(s, "tier_decided_by", None)
                       or getattr(s, "baseline_decided_by", None))
         cf_blocked = bool(filt is not None and not getattr(filt, "allowed", True))

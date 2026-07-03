@@ -393,3 +393,13 @@ class WindowExecutionDiagnostics:
     catch-up) bypassed the minimum action interval this cycle so it could react to
     a real window open/close at once.  False for all other decisions, which keep
     the normal interval."""
+
+    measured_solar_may_be_locally_shaded: bool = False
+    """Diagnostic-only (v1.1.1): True when the window is geometrically in its solar
+    sector, the sun is high enough for direct sun to be plausible, the measured
+    solar sensor (not a weather/cloud estimate) is authoritative this cycle, its
+    reading is unusually low, and it is not currently raining. Suggests the sensor
+    may be locally shaded/unrepresentative for this specific window (e.g. a nearby
+    obstruction near the sensor). Never overrides measured solar, never drives
+    shading, and never re-applies cloud damping — purely surfaces the discrepancy
+    so the installation can be reviewed."""

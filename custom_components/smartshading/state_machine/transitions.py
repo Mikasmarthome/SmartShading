@@ -55,6 +55,15 @@ def bypasses_guard(current: ShadingState, proposed: ShadingState) -> bool:
        respective clear-hysteresis already gates *when* the evaluator proposes
        leaving the safety state; once proposed, the return to the previous
        state must not be additionally delayed by minimum_state_duration.
+    6. Night-Contact Option B ventilation (NIGHT_CLOSED <-> NIGHT_VENT): both
+       directions are driven directly by the window contact sensor (a real,
+       user-caused open/close), not by hysteresis. NIGHT_VENT -> NIGHT_CLOSED
+       is already an escalation (rule 2) and bypasses on its own; NIGHT_CLOSED
+       -> NIGHT_VENT is a de-escalation by rank and would otherwise be gated
+       by minimum_state_duration, silently dropping a repeated open shortly
+       after a completed return-to-night. Listed explicitly for symmetry with
+       the reverse direction and so a future minimum_state_duration entry for
+       NIGHT_CLOSED can never re-introduce this gap.
     """
     if proposed == current:
         return True
@@ -65,5 +74,10 @@ def bypasses_guard(current: ShadingState, proposed: ShadingState) -> bool:
     if current is ShadingState.MANUAL_OVERRIDE:
         return True
     if current in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
+        return True
+    if (
+        current is ShadingState.NIGHT_CLOSED
+        and proposed is ShadingState.NIGHT_VENT
+    ):
         return True
     return False

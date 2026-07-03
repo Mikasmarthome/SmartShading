@@ -114,6 +114,12 @@ def build_solar_provenance(coord, window_id: str, wi=None) -> dict:
     configured = getattr(coord, "_solar_radiation_sensor_id", None) is not None
     measured_valid = raw is not None
     snap = getattr(coord, "_cycle_solar_provenance", {}).get(window_id)
+    # Diagnostic-only (v1.1.1): a locally-shaded/unrepresentative measured
+    # sensor is plausible for this window this cycle. Read from the already-
+    # computed WindowExecutionDiagnostics — never recomputed here, never used
+    # to drive any decision. False when execution diagnostics are unavailable.
+    _diag = getattr(getattr(coord, "data", None), "execution_diagnostics", None)
+    _diag = _diag.get(window_id) if _diag is not None else None
     out = {
         "configured_solar_source_category": "sensor" if configured else "none",
         "selected_solar_source_type": (S_MEASURED if measured_valid
@@ -123,6 +129,9 @@ def build_solar_provenance(coord, window_id: str, wi=None) -> dict:
         "raw_measured_solar_w_m2": raw,
         "fallback_used": (configured and not measured_valid),
         "forecast_used_for_current_measurement": False,
+        "measured_solar_may_be_locally_shaded": bool(
+            getattr(_diag, "measured_solar_may_be_locally_shaded", False)
+        ),
     }
     if snap is None:
         # No exposure captured this cycle → intermediates honestly not_recorded.

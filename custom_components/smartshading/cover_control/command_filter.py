@@ -23,8 +23,9 @@ BLOCKING ORDER (evaluated top-to-bottom; first match wins)
 3. RECOMMENDATION_ONLY mode        → blocked (even for safety — user opt-out)
 4. StateGuard action interval      → blocked, unless is_safety=True
 5. Target position within tolerance → blocked, unless is_safety=True
-6. No target position              → blocked ("no_target_position")
-7. Otherwise                       → allowed
+6. Comfort Movement Stability Hold  → blocked, unless is_safety=True (v1.1.1)
+7. No target position              → blocked ("no_target_position")
+8. Otherwise                       → allowed
 
 SAFETY BYPASS SEMANTICS
 -----------------------
@@ -68,6 +69,11 @@ BLOCKED_GUARD_ACTION_INTERVAL: str = "guard_action_interval"
 
 #: The target position is within tolerance of the current position.
 BLOCKED_SAME_POSITION: str = "same_position"
+
+#: A comfort-tier re-target (Solar/Heat/Glare) within the Comfort Movement
+#: Stability Hold window of a previous comfort dispatch — suppressed to avoid
+#: rapid back-and-forth movement (v1.1.1 field fix). See engines/comfort_movement_hold.py.
+BLOCKED_COMFORT_POSITION_HOLD: str = "comfort_position_hold"
 
 #: No concrete target position is available for this decision.
 BLOCKED_NO_TARGET_POSITION: str = "no_target_position"
@@ -218,6 +224,7 @@ class CommandFilter:
         execution_capability: ExecutionCapability,
         invert_position: bool = False,
         target_tilt_ha: int | None = None,
+        comfort_hold_allowed: bool = True,
     ) -> CommandFilterResult:
         """Evaluate all blocking conditions and return a CommandFilterResult.
 
@@ -251,6 +258,12 @@ class CommandFilter:
         invert_position:
             Mirror of CoverCapability.invert_position.  Passed to
             to_ha_position() for the HA-convention conversion.
+        comfort_hold_allowed:
+            False when the coordinator's ComfortMovementHold determined this
+            comfort-tier (Solar/Heat/Glare) re-target is within the stability
+            hold window of a previous comfort dispatch (v1.1.1 field fix).
+            Default True preserves prior behavior for every non-comfort
+            decision path. Does not bypass is_safety.
 
         Returns
         -------
@@ -340,7 +353,19 @@ class CommandFilter:
             return _blocked(BLOCKED_SAME_POSITION)
 
         # ------------------------------------------------------------------
-        # Blocking check 6: No target position available.
+        # Blocking check 6: Comfort Movement Stability Hold (v1.1.1).
+        # A comfort-tier re-target (Solar/Heat/Glare) within the hold window
+        # of a previous comfort dispatch is suppressed. comfort_hold_allowed
+        # is computed by the coordinator's ComfortMovementHold and is already
+        # True for every non-comfort decision (Safety, Night, Night Contact,
+        # Absence, Manual Override, fallback/open) — `not is_safety` here is
+        # defense in depth only.
+        # ------------------------------------------------------------------
+        if not comfort_hold_allowed and not is_safety:
+            return _blocked(BLOCKED_COMFORT_POSITION_HOLD)
+
+        # ------------------------------------------------------------------
+        # Blocking check 7: No target position available.
         # ------------------------------------------------------------------
         if target_position_internal is None:
             return _blocked(BLOCKED_NO_TARGET_POSITION)

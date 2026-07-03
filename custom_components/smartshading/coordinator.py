@@ -71,6 +71,10 @@ from .engines.night_contact_hold import (
     NightContactAction as _NightContactAction,
     NightContactHold as _NightContactHold,
 )
+from .engines.comfort_movement_hold import (
+    COMFORT_MOVEMENT_MIN_HOLD_MINUTES,
+    ComfortMovementHold as _ComfortMovementHold,
+)
 from .engines.pending_outcome_queue import PendingOutcomeQueue
 from .models.pending_outcome import PendingOutcome
 from .engines.lifecycle_engine import LifecycleEngine, PresenceDebouncer, check_night_interval_active
@@ -550,6 +554,10 @@ class _WindowComputeState:
     # v1.1.1: diagnostic-only — measured solar sensor may be locally shaded /
     # unrepresentative for this window this cycle. Never affects shading.
     measured_solar_may_be_locally_shaded: bool = False
+    # Comfort Movement Stability Hold (v1.1.1) diagnostics — None when no
+    # comfort dispatch has ever been recorded for this window.
+    comfort_hold_last_dispatch_age_min: float | None = None
+    comfort_hold_remaining_min: float | None = None
     # Night Hard Hold: True when the hard-hold gate overrode the tier decision
     # to keep the cover at night_position instead of dispatching an OPEN command.
     night_hard_hold_applied: bool = False
@@ -1126,6 +1134,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._storm_holds: dict[str, _SafetyHold] = {}
         self._rain_holds: dict[str, _SafetyHold] = {}
         self._night_contact_holds: dict[str, _NightContactHold] = {}
+        # Comfort Movement Stability Hold (v1.1.1): per-window tracker of the
+        # last confirmed dispatch, used to throttle rapid comfort-tier
+        # (Solar/Heat/Glare) re-targets. See engines/comfort_movement_hold.py.
+        self._comfort_movement_holds: dict[str, _ComfortMovementHold] = {}
 
         _zone_controls_raw = config_entry.options.get("zone_controls", {})
         # Defensive: a corrupted/old options blob may store None or a non-dict
@@ -3880,6 +3892,31 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     and not _cs_reading.is_stale
                 ),
             )
+            # Comfort Movement Stability Hold (v1.1.1): throttles repeated real
+            # comfort-tier (Solar/Heat/Glare) dispatches for the same window —
+            # e.g. SolarEvaluator and GlareEvaluator alternately winning
+            # PositionResolver as measured exposure hovers near both
+            # evaluators' thresholds. Independent of StateGuard/
+            # minimum_state_duration; every other decision path (Safety,
+            # Night, Night Contact, Absence, Manual Override, fallback/open)
+            # is unaffected — see engines/comfort_movement_hold.py.
+            _comfort_hold = self._comfort_movement_holds.setdefault(
+                window_id, _ComfortMovementHold()
+            )
+            _comfort_target_ha = (
+                to_ha_position(_exec_target_internal, invert=_exec_cap.invert_position)
+                if _exec_target_internal is not None and _exec_cap is not None
+                else None
+            )
+            _comfort_hold_held = _comfort_hold.should_hold(
+                proposed_decided_by=tier_decision.decided_by,
+                proposed_target_ha=_comfort_target_ha,
+                is_strong_escalation=(tier_decision.shading_state is ShadingState.STRONG_SHADE),
+                now=now,
+            )
+            _comfort_hold_last_dispatch_age_min = _comfort_hold.age_minutes(now)
+            _comfort_hold_remaining_min = _comfort_hold.hold_remaining_minutes(now)
+
             if _exec_entity_id is not None and _exec_cap is not None and _exec_snapshot is not None:
                 _guard_action_allowed = (
                     self.guard.can_send_action(window_id, new_state, now)
@@ -3895,6 +3932,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     state_guard_allowed=_guard_action_allowed,
                     execution_capability=ExecutionCapability(),
                     invert_position=_exec_cap.invert_position,
+                    comfort_hold_allowed=not _comfort_hold_held,
                 )
 
             # Cover group + hardware settings — resolved once and shared between
@@ -4062,6 +4100,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 target_tilt_ha=_effective_tilt_ha,
                 in_solar_sector=_effective_in_solar_sector,
                 measured_solar_may_be_locally_shaded=_measured_solar_underrepresentation_flag,
+                comfort_hold_last_dispatch_age_min=_comfort_hold_last_dispatch_age_min,
+                comfort_hold_remaining_min=_comfort_hold_remaining_min,
                 night_hard_hold_applied=_night_hard_hold_applied,
                 contact_sensor_configured=_cs_configured,
                 contact_sensor_count=_cs_agg.total,
@@ -4331,6 +4371,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if _exec_plan_result.any_sent and not _exec_plan_result.any_failed:
                     # Record the action timestamp so StateGuard cooldown works correctly.
                     self.guard.record_action_sent(window_id, now)
+                    # Comfort Movement Stability Hold (v1.1.1): record EVERY
+                    # confirmed dispatch (comfort or not) so a non-comfort
+                    # event (safety/night/absence/etc.) correctly clears the
+                    # hold for the next comfort decision. Uses the final
+                    # (post-harmonization) dispatched target.
+                    self._comfort_movement_holds[window_id].record_dispatch(
+                        decided_by=s.tier_decided_by or "unknown",
+                        target_ha=(
+                            _exec_filter_for_dispatch.target_position_ha
+                            if _exec_filter_for_dispatch is not None else None
+                        ),
+                        now=now,
+                    )
                     # Update assumed position for covers sent a command this cycle.
                     # For feedback-rich covers, the next observe() cycle will overwrite
                     # with the actual position; update() provides immediate best-estimate.
@@ -4524,6 +4577,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 ),
                 min_interval_bypassed=s.min_interval_bypassed,
                 measured_solar_may_be_locally_shaded=s.measured_solar_may_be_locally_shaded,
+                comfort_hold_last_dispatch_age_min=s.comfort_hold_last_dispatch_age_min,
+                comfort_hold_remaining_min=s.comfort_hold_remaining_min,
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---

@@ -403,3 +403,15 @@ class WindowExecutionDiagnostics:
     obstruction near the sensor). Never overrides measured solar, never drives
     shading, and never re-applies cloud damping — purely surfaces the discrepancy
     so the installation can be reviewed."""
+
+    comfort_hold_last_dispatch_age_min: float | None = None
+    """Comfort Movement Stability Hold (v1.1.1): minutes since the last confirmed
+    dispatch of any kind for this window. None when no dispatch has ever been
+    recorded. Surfaced so command_blocked_reason="comfort_position_hold" is
+    explainable without a research export."""
+
+    comfort_hold_remaining_min: float | None = None
+    """Comfort Movement Stability Hold (v1.1.1): minutes remaining before a new
+    comfort-tier (Solar/Heat/Glare) dispatch is allowed again. None when not
+    currently held (no prior comfort dispatch, or the hold window has elapsed).
+    See engines/comfort_movement_hold.py."""

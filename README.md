@@ -15,7 +15,7 @@
 
 ---
 
-> ⚠️ **Use at your own risk.** SmartShading is not affiliated with Home Assistant or Nabu Casa. It controls physical shading devices. Verify cover direction, hardware type, and safety sensors, and review the recommended positions in Observation Mode before enabling Active Control. SmartShading is one layer alongside your covers' own protections, not a replacement for them.
+> ⚠️ **Use at your own risk.** SmartShading is not affiliated with Home Assistant or Nabu Casa. It controls physical shading devices. Verify cover direction, hardware type, and safety sensors, and review the recommended positions in Learning Mode before enabling Active Control. SmartShading is one layer alongside your covers' own protections, not a replacement for them.
 
 ---
 
@@ -70,11 +70,11 @@ Each window has one or more **assigned cover entities** — the physical covers 
 only carry out what SmartShading decided for their window. Where useful, SmartShading coordinates covers
 that shade the same surface so closely related covers settle to a consistent level.
 
-### Observation Mode
+### Learning Mode
 
-Observation Mode lets SmartShading observe, learn, and adapt its recommendations. It defaults to **on**.
+Learning Mode lets SmartShading observe, learn, and adapt its recommendations. It defaults to **on**.
 Turning it off pauses observation, learning, and adaptation, but does **not** delete learned data — existing
-data is reused when you turn it back on. Observation Mode never moves a cover by itself; automatic movement
+data is reused when you turn it back on. Learning Mode never moves a cover by itself; automatic movement
 is controlled separately by Active Control.
 
 ### Active Control
@@ -159,7 +159,7 @@ recommendations over time:
 - Manual adjustments and their outcomes inform future recommendations.
 - Adaptation is gated by **confidence** and applied to **shading targets** conservatively and gradually.
 - Learning data uses **bounded retention** and is pruned over time.
-- Learning data is **not** deleted when Observation Mode is disabled.
+- Learning data is **not** deleted when Learning Mode is disabled.
 
 Learning refines recommendations over time. It does not promise perfect personalization, instant results, or
 a guaranteed comfort outcome.
@@ -180,7 +180,7 @@ not exposed.
 | Entity | Type | Description |
 |--------|------|-------------|
 | Zone Summary | Sensor | Compact, machine-readable overview of the zone (active / recommendation-only / disabled / override / safety) with aggregate counts. |
-| Observation Mode | Switch | Enables observation, learning, and adaptation for the zone. Default on. |
+| Learning Mode | Switch | Enables observation, learning, and adaptation for the zone. Default on. |
 | Active Control | Switch | Enables automatic cover commands for the zone. Default off. |
 
 ### Window entities
@@ -280,7 +280,7 @@ SmartShading is installed as a custom repository; it is not part of the default 
 2. Add your first **Zone**.
 3. Add one or more **Windows** and their **Covers** to the zone.
 4. Optionally configure weather, solar, presence, and comfort inputs.
-5. Keep **Observation Mode** enabled so SmartShading produces recommendations and can adapt.
+5. Keep **Learning Mode** enabled so SmartShading produces recommendations and can adapt.
 6. Enable **Active Control** only when you want SmartShading to move covers automatically.
 
 Every controllable shading element belongs to a zone, and there is one Zone Entry per zone. A minimal setup
@@ -299,7 +299,7 @@ adjust most runtime settings through the integration's options (three-dot menu �
 | Presence entities and absence delay | Options → Presence settings |
 | Comfort goals and temperature thresholds | Options → Comfort settings |
 | Shade-position defaults | Options → Shading behavior |
-| Observation Mode per zone | Zone switch entity |
+| Learning Mode per zone | Zone switch entity |
 | Active Control per zone | Zone switch entity |
 
 Windows and their assigned cover entities can be added, edited, or removed through the options flow of the

@@ -230,6 +230,16 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 } if diag is not None else {
                     "configured": getattr(c, "_rain_sensor_id", None) is not None,
                     "status": None}
+                # Comfort Movement Stability Hold (v1.1.1/v1.1.2 field-fix
+                # follow-up). Timing context for a held non-priority dispatch;
+                # active/blocked-reason itself is already visible via the
+                # sibling command_blocked_reason field.
+                prov["comfort_hold"] = {
+                    "last_dispatch_age_min": getattr(diag, "comfort_hold_last_dispatch_age_min", None),
+                    "remaining_min": getattr(diag, "comfort_hold_remaining_min", None),
+                } if diag is not None else {
+                    "last_dispatch_age_min": None,
+                    "remaining_min": None}
             return prov
         return _per_window(_b)
 

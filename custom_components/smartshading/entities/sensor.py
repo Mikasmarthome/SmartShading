@@ -270,6 +270,14 @@ def _recommendation_attributes(
         "tilt_command_sent": diag.tilt_command_sent,
         "tilt_command_failed": diag.tilt_command_failed,
         "tilt_error": diag.tilt_error,
+        # Comfort Movement Stability Hold (v1.1.1/v1.1.2). Whether the hold is
+        # currently active for this window is derivable from
+        # command_blocked_reason == "comfort_position_hold" above; these two
+        # fields add the timing context (how long since the last real
+        # non-priority dispatch, how many minutes remain) so a held state is
+        # explainable without a research export.
+        "comfort_hold_last_dispatch_age_min": diag.comfort_hold_last_dispatch_age_min,
+        "comfort_hold_remaining_min": diag.comfort_hold_remaining_min,
     })
     return attrs
 

@@ -69,21 +69,46 @@ def build_next_action(
 ) -> str:
     """Display-only preview of what a future PositionCalculator
     (ARCHITECTURE.md §5.7 step 11) would do - no command is ever sent in
-    this phase."""
+    this phase.
+
+    v1.1.2 field fix: ShadingState.NIGHT_VENT and ShadingState.RAIN_SAFE were
+    missing from the mapping below, so a real Night Contact Option B vent
+    (ShadingState.NIGHT_VENT) raised a KeyError here and crashed the
+    coordinator refresh (all SmartShading entities for the zone went
+    unavailable). This function is display-only diagnostics — it must never
+    be able to crash the coordinator, so an unmapped/future ShadingState now
+    falls back to a safe, self-describing label instead of raising.
+
+    NIGHT_VENT and RAIN_SAFE (like NIGHT_CLOSED/ABSENCE_CLOSED before them)
+    do not have a real target position available here — `defaults` only
+    carries light/normal/strong shade positions (ShadePositionDefaults), not
+    the per-window night/vent/absence/rain-safe position. NIGHT_VENT is
+    labelled as a named action (its real position is per-window config, not
+    a fixed default) rather than a fabricated percentage; RAIN_SAFE mirrors
+    STORM_SAFE/WIND_SAFE (all three Tier-1 safety states are already
+    simplified to "MOVE_TO_0" here for the same reason).
+    """
     if new_state == current_state:
         return "NO_ACTION"
     if new_state is ShadingState.MANUAL_OVERRIDE:
         return "NO_ACTION"  # never override the user
-    return {
+    action = {
         ShadingState.OPEN: "OPEN",
         ShadingState.LIGHT_SHADE: f"MOVE_TO_{defaults.light_shade_position}",
         ShadingState.NORMAL_SHADE: f"MOVE_TO_{defaults.normal_shade_position}",
         ShadingState.STRONG_SHADE: f"MOVE_TO_{defaults.strong_shade_position}",
         ShadingState.NIGHT_CLOSED: "MOVE_TO_0",
+        ShadingState.NIGHT_VENT: "MOVE_TO_NIGHT_VENT",
         ShadingState.ABSENCE_CLOSED: "MOVE_TO_30",
         ShadingState.STORM_SAFE: "MOVE_TO_0",
         ShadingState.WIND_SAFE: "MOVE_TO_0",
-    }[new_state]
+        ShadingState.RAIN_SAFE: "MOVE_TO_0",
+    }.get(new_state)
+    if action is not None:
+        return action
+    # Defensive fallback: a future ShadingState added without updating this
+    # display-only mapping must never crash the coordinator refresh.
+    return f"UNKNOWN_STATE:{getattr(new_state, 'value', new_state)}"
 
 
 @dataclass(frozen=True)

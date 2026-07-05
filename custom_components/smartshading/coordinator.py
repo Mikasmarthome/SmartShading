@@ -3892,13 +3892,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     and not _cs_reading.is_stale
                 ),
             )
-            # Comfort Movement Stability Hold (v1.1.1): throttles repeated real
-            # comfort-tier (Solar/Heat/Glare) dispatches for the same window —
-            # e.g. SolarEvaluator and GlareEvaluator alternately winning
-            # PositionResolver as measured exposure hovers near both
-            # evaluators' thresholds. Independent of StateGuard/
-            # minimum_state_duration; every other decision path (Safety,
-            # Night, Night Contact, Absence, Manual Override, fallback/open)
+            # Comfort Movement Stability Hold (v1.1.1, tightened v1.1.2):
+            # throttles repeated real non-priority dispatches for the same
+            # window — Solar/Heat/Glare comfort tiers and the daytime OPEN
+            # fallback (e.g. SolarEvaluator and GlareEvaluator alternately
+            # winning PositionResolver as measured exposure hovers near both
+            # evaluators' thresholds). Independent of StateGuard/
+            # minimum_state_duration; every genuinely prioritized decision
+            # path (Safety, Night, Night Contact, Absence, Manual Override)
             # is unaffected — see engines/comfort_movement_hold.py.
             _comfort_hold = self._comfort_movement_holds.setdefault(
                 window_id, _ComfortMovementHold()
@@ -3911,7 +3912,24 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _comfort_hold_held = _comfort_hold.should_hold(
                 proposed_decided_by=tier_decision.decided_by,
                 proposed_target_ha=_comfort_target_ha,
-                is_strong_escalation=(tier_decision.shading_state is ShadingState.STRONG_SHADE),
+                # v1.1.2 field-fix follow-up: STRONG_SHADE no longer bypasses
+                # the hold unconditionally — no robust numeric escalation
+                # margin is available here without duplicating each
+                # evaluator's own threshold/ratio logic (see
+                # engines/comfort_movement_hold.py module docstring). A
+                # late-but-stable strong escalation is preferred over
+                # frequent, unstable movement.
+                is_strong_escalation=False,
+                # v1.1.2 second follow-up: a Fallback/Open proposal on a
+                # window confirmed OUT of its solar sector this cycle is a
+                # geometric, hysteresis-free end-reason (not exposure-
+                # threshold noise), so it may open even within the hold
+                # window. Never applied to Solar/Heat/Glare comfort
+                # proposals or STRONG_SHADE — see module docstring.
+                is_confirmed_exit=(
+                    tier_decision.decided_by == "TierOrchestrator:fallback"
+                    and not _effective_in_solar_sector
+                ),
                 now=now,
             )
             _comfort_hold_last_dispatch_age_min = _comfort_hold.age_minutes(now)

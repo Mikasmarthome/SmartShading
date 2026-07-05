@@ -278,6 +278,17 @@ def _recommendation_attributes(
         # explainable without a research export.
         "comfort_hold_last_dispatch_age_min": diag.comfort_hold_last_dispatch_age_min,
         "comfort_hold_remaining_min": diag.comfort_hold_remaining_min,
+        # Manual Override daytime/night duration scope (v1.1.3). scope is
+        # "daytime" (fixed duration, default 120 min) or "night" (held until
+        # the Morning lifecycle transition; expires_at is a safety-net cap,
+        # not the real release point). release_reason explains why an
+        # override that was active last cycle is not active this cycle:
+        # "timeout", "lifecycle_transition", "safety", or None.
+        "manual_override_active": diag.manual_override_active,
+        "manual_override_scope": diag.manual_override_scope,
+        "manual_override_expires_at": diag.manual_override_expires_at,
+        "manual_override_remaining_min": diag.manual_override_remaining_min,
+        "manual_override_release_reason": diag.manual_override_release_reason,
     })
     return attrs
 

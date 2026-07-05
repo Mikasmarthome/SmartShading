@@ -240,6 +240,16 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 } if diag is not None else {
                     "last_dispatch_age_min": None,
                     "remaining_min": None}
+                # Manual Override daytime/night duration scope (v1.1.3).
+                prov["manual_override"] = {
+                    "active": bool(getattr(diag, "manual_override_active", False)),
+                    "scope": getattr(diag, "manual_override_scope", None),
+                    "expires_at": _iso_s(getattr(diag, "manual_override_expires_at", None)),
+                    "remaining_min": getattr(diag, "manual_override_remaining_min", None),
+                    "release_reason": getattr(diag, "manual_override_release_reason", None),
+                } if diag is not None else {
+                    "active": False, "scope": None, "expires_at": None,
+                    "remaining_min": None, "release_reason": None}
             return prov
         return _per_window(_b)
 

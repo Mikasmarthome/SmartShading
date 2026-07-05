@@ -480,6 +480,7 @@ def serialize_learning_store(
     consumed_experiment_ledger: dict | None = None,
     shadow_tombstones: list | None = None,
     active_overrides: list | None = None,
+    current_states: dict | None = None,
     config_snapshot: dict | None = None,
     owner_entry_id: str | None = None,
     owner_zone_id: str | None = None,
@@ -584,6 +585,14 @@ def serialize_learning_store(
         "shadow_tombstones": shadow_tombstones or [],
         # Restart-safe active manual overrides (additive; bounded by expiry).
         "active_overrides": active_overrides or [],
+        # Restart-safe per-window shading state (additive).  Without this, a
+        # window's FSM state resets to the OPEN default on restart, which can
+        # permanently strand an ABSENCE_ONLY/ABSENCE_AND_SCHEDULE window: the
+        # absence-release gate requires current_state == ABSENCE_CLOSED, and a
+        # forgotten ABSENCE_CLOSED can never be recovered without this restore.
+        "current_states": (
+            {wid: state.value for wid, state in (current_states or {}).items()}
+        ),
         # P10 — normalised config snapshot for next-restore typed diff invalidation.
         "config_snapshot": config_snapshot or {},
         "owner_entry_id": owner_entry_id,
@@ -764,6 +773,7 @@ class RestoreExtras:
     restore_diagnostics: dict  # P10 structured per-section reason counts (privacy-safe)
     config_snapshot: dict  # P10 previous normalised config snapshot (for typed diff)
     active_overrides: list = field(default_factory=list)  # raw active-override dicts
+    current_states: dict = field(default_factory=dict)  # window_id -> ShadingState.value
     support_critical_events: list = field(default_factory=list)  # P4c compact critical events
     research_daily_buckets: dict = field(default_factory=dict)  # P4c date → counts
 
@@ -1103,6 +1113,17 @@ def deserialize_into_learning_store(
         if isinstance(k, str) and isinstance(v, dict)
     }
 
+    # Restart-safe per-window shading state (additive). Raw {window_id: value}
+    # dict; the coordinator restores it into _current_states before the first
+    # dispatch decision. An unknown/corrupt value is skipped individually —
+    # that window simply falls back to the existing OPEN default, never raises.
+    _raw_cs = data.get("current_states") or {}
+    _valid_state_values = {s.value for s in ShadingState}
+    current_states: dict = {
+        k: v for k, v in _raw_cs.items()
+        if isinstance(k, str) and isinstance(v, str) and v in _valid_state_values
+    }
+
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
         config_generations=config_generations,
@@ -1124,6 +1145,7 @@ def deserialize_into_learning_store(
         # Raw active-override dicts; the coordinator restores them into the
         # override detector (validating expiry) before the first dispatch.
         active_overrides=(data.get("active_overrides") or []),
+        current_states=current_states,
         support_critical_events=support_critical_events,
         research_daily_buckets=research_daily_buckets,
     )
@@ -1275,6 +1297,7 @@ class LearningPersistenceAdapter:
         consumed_experiment_ledger: dict | None = None,
         shadow_tombstones: list | None = None,
         active_overrides: list | None = None,
+        current_states: dict | None = None,
         config_snapshot: dict | None = None,
         owner_zone_id: str | None = None,
         support_critical_events: list | None = None,
@@ -1304,6 +1327,7 @@ class LearningPersistenceAdapter:
                 consumed_experiment_ledger=consumed_experiment_ledger,
                 shadow_tombstones=shadow_tombstones,
                 active_overrides=active_overrides,
+                current_states=current_states,
                 config_snapshot=config_snapshot,
                 owner_entry_id=getattr(self, "_entry_id", None),
                 owner_zone_id=owner_zone_id,

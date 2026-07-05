@@ -415,3 +415,29 @@ class WindowExecutionDiagnostics:
     comfort-tier (Solar/Heat/Glare) dispatch is allowed again. None when not
     currently held (no prior comfort dispatch, or the hold window has elapsed).
     See engines/comfort_movement_hold.py."""
+
+    manual_override_active: bool = False
+    """v1.1.3: True when a manual override is currently active for this window
+    (OverrideDetector.get() returned non-None this cycle)."""
+
+    manual_override_scope: str | None = None
+    """v1.1.3: "daytime" or "night" — which duration policy produced the active
+    override's expires_at (see engines/override_detector.py). None when no
+    override is active."""
+
+    manual_override_expires_at: datetime | None = None
+    """v1.1.3: absolute UTC timestamp the active override expires at. For a
+    "night"-scope override this is a generous safety-net cap, not the real
+    release point — the real release is the Morning lifecycle transition.
+    None when no override is active."""
+
+    manual_override_remaining_min: float | None = None
+    """v1.1.3: minutes remaining until manual_override_expires_at. None when no
+    override is active."""
+
+    manual_override_release_reason: str | None = None
+    """v1.1.3: why the override that was active last cycle is no longer active
+    this cycle: "timeout" (duration elapsed), "lifecycle_transition" (Morning/
+    other lifecycle change), "safety" (Tier 1 Safety took over), or None (no
+    release happened this cycle — either still active or already inactive
+    before this cycle)."""

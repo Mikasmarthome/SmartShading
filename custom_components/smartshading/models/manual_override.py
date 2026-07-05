@@ -38,6 +38,16 @@ class ManualOverride:
         overridden_position:  The target_position SmartShading would have held
                               (internal convention) — kept for the Learning Engine.
                               None if the previous state had no target (e.g. OPEN).
+        scope:                "daytime" or "night" — which duration policy produced
+                              this override's expires_at (v1.1.3).  "daytime": a
+                              fixed duration from started_at (default 120 min).
+                              "night": held until the Morning lifecycle transition;
+                              expires_at is a generous safety-net far beyond any
+                              real night, not the real release mechanism (see
+                              engines/override_detector.py / lifecycle_guard.py).
+                              Defaults to "daytime" for entries persisted before
+                              this field existed (the pre-v1.1.3 flat duration was
+                              closer in spirit to the daytime policy).
     """
 
     window_id: str
@@ -47,6 +57,7 @@ class ManualOverride:
     source: str
     overridden_state: ShadingState
     overridden_position: int | None
+    scope: str = "daytime"
 
     def to_dict(self) -> dict:
         """JSON-safe serialization for restart-safe persistence."""
@@ -58,6 +69,7 @@ class ManualOverride:
             "source": self.source,
             "overridden_state": self.overridden_state.value,
             "overridden_position": self.overridden_position,
+            "scope": self.scope,
         }
 
     @classmethod
@@ -70,4 +82,5 @@ class ManualOverride:
             source=d.get("source", "position_delta"),
             overridden_state=ShadingState(d["overridden_state"]),
             overridden_position=d.get("overridden_position"),
+            scope=d.get("scope", "daytime"),
         )

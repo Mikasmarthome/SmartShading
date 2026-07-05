@@ -558,6 +558,11 @@ class _WindowComputeState:
     # comfort dispatch has ever been recorded for this window.
     comfort_hold_last_dispatch_age_min: float | None = None
     comfort_hold_remaining_min: float | None = None
+    # Manual Override diagnostics (v1.1.3): daytime-vs-night duration scope.
+    manual_override_scope: str | None = None
+    manual_override_expires_at: "datetime | None" = None
+    manual_override_remaining_min: float | None = None
+    manual_override_release_reason: str | None = None
     # Night Hard Hold: True when the hard-hold gate overrode the tier decision
     # to keep the cover at night_position instead of dispatching an OPEN command.
     night_hard_hold_applied: bool = False
@@ -828,7 +833,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         storm_protection_enabled: bool = True,
         wind_protection_enabled: bool = False,
         wind_threshold_ms: float = 14.0,
-        override_duration_min: int = 240,
+        override_duration_min: int = 120,
+        override_night_duration_min: int = 720,
         override_detection_tolerance: int = 10,
         override_break_on_lifecycle: bool = True,
         lifecycle_config: NightDayLifecycleConfig | None = None,
@@ -867,7 +873,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._storm_protection_enabled = storm_protection_enabled
         self._wind_protection_enabled = wind_protection_enabled
         self._wind_threshold_ms = wind_threshold_ms
+        # v1.1.3: daytime manual override now holds for a fixed duration
+        # (default 120 min) instead of lasting until the next lifecycle
+        # transition. Night override still holds until Morning — see the
+        # scope computation at the OverrideDetector.tick() call site.
+        # override_night_duration_min is a generous safety-net cap only
+        # (the real night release is the Morning lifecycle transition via
+        # lifecycle_should_break_override()), not a target duration.
         self._override_duration_min = override_duration_min
+        self._override_night_duration_min = override_night_duration_min
         self._override_detection_tolerance = override_detection_tolerance
         self._override_break_on_lifecycle = override_break_on_lifecycle
 
@@ -1231,6 +1245,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # re-asserted after restart/reload).  Bounded by per-override expiry.
             "active_overrides": self._override_detector.active_overrides_snapshot(
                 dt_util.utcnow()),
+            # Restart-safe per-window shading state — see restore site for why
+            # (absence-release recovery after HA restart/reload).
+            "current_states": {
+                wid: st for wid, st in self._current_states.items() if wid in self.windows
+            },
             "config_snapshot": self._build_config_snapshot(),
             "owner_zone_id": next(iter(self.zones.keys()), None),
             "support_critical_events": list(self._support_critical_events),
@@ -2172,6 +2191,27 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 )
                         except Exception:
                             _LOGGER.warning("Learning: active-override restore failed (non-fatal)")
+                        # Restart-safe: restore per-window shading state BEFORE the
+                        # first dispatch decision.  Without this, current_state
+                        # resets to the OPEN default on every restart, which can
+                        # permanently strand an ABSENCE_ONLY/ABSENCE_AND_SCHEDULE
+                        # window closed — the absence-release gate requires
+                        # current_state == ABSENCE_CLOSED, and a forgotten
+                        # ABSENCE_CLOSED can never be recovered without this.
+                        # Unknown/corrupt entries are skipped individually; the
+                        # window then simply falls back to the OPEN default,
+                        # exactly as before this restore existed.
+                        try:
+                            _raw_cs = getattr(_extras, "current_states", {}) or {}
+                            for _wid, _sv in _raw_cs.items():
+                                if _wid not in self.windows:
+                                    continue
+                                try:
+                                    self._current_states[_wid] = ShadingState(_sv)
+                                except Exception:
+                                    continue
+                        except Exception:
+                            _LOGGER.warning("Learning: current-state restore failed (non-fatal)")
                         # P4c: restore persisted support critical events + daily buckets.
                         try:
                             self._support_critical_events = list(
@@ -2338,6 +2378,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # always carries a fresh (or None) active_override this cycle.
             active_override = self._override_detector.get(window_id, now)
 
+            # v1.1.3: manual_override_release_reason diagnostic — computed
+            # unconditionally (unlike the obs_enabled-gated Learning record
+            # below) so it is available even when Learning/observation is off.
+            # May be overwritten later this cycle by the lifecycle-break or
+            # safety-clear paths, which are mutually exclusive with this one
+            # (both require active_override is not None, which a natural
+            # timeout here has just made None).
+            _override_release_reason: str | None = (
+                "timeout" if _prev_override is not None and active_override is None else None
+            )
+
             # Phase 9C: detect natural expiry (detector.get() returned None
             # because expires_at < now, not because of an explicit clear).
             if obs_enabled and _prev_override is not None and active_override is None:
@@ -2456,6 +2507,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         pass  # never block the update cycle
 
                 self._override_detector.clear(window_id)
+                _override_release_reason = "lifecycle_transition"
                 # Suppress the next tick so that tick() in this same cycle does
                 # not immediately re-create the override from the user's manual
                 # position before the new morning/day target has been dispatched.
@@ -2774,7 +2826,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 rain_safe_position=_rain_safe_internal,
                 rain_release_delay_min=_rain_delay_min,
                 active_override=active_override,
-                override_duration_min=self._override_duration_min,
+                # Informational only (no evaluator reads this WDI field) — shown
+                # here as whichever duration currently applies (v1.1.3 scope).
+                override_duration_min=(
+                    self._override_night_duration_min
+                    if self._lifecycle_state is LifecycleState.NIGHT
+                    else self._override_duration_min
+                ),
                 override_detection_tolerance=self._override_detection_tolerance,
                 override_break_on_lifecycle=self._override_break_on_lifecycle,
                 night_block_on_window_open=window.night_block_on_window_open,
@@ -3331,6 +3389,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         ))
                     except Exception:
                         _LOGGER.warning("Learning: override 'cleared_by_safety' record failed for %s", window_id)
+                if active_override is not None:
+                    _override_release_reason = "safety"
                 self._override_detector.clear(window_id)
                 # Phase 9F4b-3: safety event resolves any active pending outcome.
                 # Gated: pending outcomes only exist when obs_enabled=True.
@@ -3397,6 +3457,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     # the OverrideDetector fail-safe handles that case (returns early).
                     _override_assumed = observed_internal
                     _override_ref_source = "unavailable"
+                # v1.1.3: daytime override holds for a fixed duration; a night
+                # override instead relies on the Morning lifecycle transition
+                # (lifecycle_should_break_override(), unchanged) — the night
+                # duration here is only a generous safety-net cap so a stuck
+                # lifecycle detector cannot hold an override forever.
+                _override_scope = (
+                    "night" if self._lifecycle_state is LifecycleState.NIGHT else "daytime"
+                )
+                _override_duration_for_scope = (
+                    self._override_night_duration_min
+                    if _override_scope == "night"
+                    else self._override_duration_min
+                )
                 self._override_detector.tick(
                     window_id=window_id,
                     observed_position=observed_internal,
@@ -3404,7 +3477,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     smartshading_assumed=_override_assumed,
                     prev_state=current_state,
                     tolerance=self._override_detection_tolerance,
-                    duration_min=self._override_duration_min,
+                    duration_min=_override_duration_for_scope,
+                    scope=_override_scope,
                     now=now,
                 )
                 self._prev_observed_internal[window_id] = observed_internal
@@ -3630,6 +3704,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # detected this cycle (effective next cycle for the evaluator,
             # but reflected in the observation immediately).
             current_override = self._override_detector.get(window_id, now)
+
+            # v1.1.3: Manual Override diagnostics, derived from the post-tick
+            # current_override (consistent with is_override_active below).
+            _mo_scope: str | None = None
+            _mo_expires_at: datetime | None = None
+            _mo_remaining_min: float | None = None
+            if current_override is not None:
+                _mo_scope = current_override.scope
+                _mo_expires_at = current_override.expires_at
+                _mo_remaining_min = max(
+                    0.0, (current_override.expires_at - now).total_seconds() / 60,
+                )
 
             # Phase 9C: detect "started" and "renewed" from tick() outcome.
             # Safety path clears the override — no started/renewed possible there.
@@ -4107,6 +4193,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 tier_decided_by=tier_decision.decided_by,
                 tier_decided_state=tier_decision.shading_state,
                 is_override_active=current_override is not None,
+                manual_override_scope=_mo_scope,
+                manual_override_expires_at=_mo_expires_at,
+                manual_override_remaining_min=_mo_remaining_min,
+                manual_override_release_reason=_override_release_reason,
                 cover_available=(
                     _exec_snapshot.available if _exec_snapshot is not None else None
                 ),
@@ -4597,6 +4687,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 measured_solar_may_be_locally_shaded=s.measured_solar_may_be_locally_shaded,
                 comfort_hold_last_dispatch_age_min=s.comfort_hold_last_dispatch_age_min,
                 comfort_hold_remaining_min=s.comfort_hold_remaining_min,
+                manual_override_active=s.is_override_active,
+                manual_override_scope=s.manual_override_scope,
+                manual_override_expires_at=s.manual_override_expires_at,
+                manual_override_remaining_min=s.manual_override_remaining_min,
+                manual_override_release_reason=s.manual_override_release_reason,
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---

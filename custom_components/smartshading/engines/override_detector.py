@@ -108,6 +108,7 @@ class OverrideDetector:
         tolerance: int,
         duration_min: int,
         now: datetime,
+        scope: str = "daytime",
     ) -> None:
         """Update override state for one window in one coordinator cycle.
 
@@ -129,8 +130,16 @@ class OverrideDetector:
             prev_state:           Window's ShadingState before this cycle
                                   (stored on the ManualOverride for Learning).
             tolerance:            Minimum delta to declare an override.
-            duration_min:         Override duration in minutes.
+            duration_min:         Override duration in minutes — the caller computes
+                                  this per current lifecycle state (v1.1.3): a short
+                                  fixed daytime duration, or a long night safety-net
+                                  (the real night release is the Morning lifecycle
+                                  transition via lifecycle_should_break_override(),
+                                  not this duration).
             now:                  Current UTC timestamp.
+            scope:                "daytime" or "night" (v1.1.3) — recorded on the
+                                  ManualOverride for diagnostics; does not itself
+                                  change detection/renewal behavior.
         """
         # Advance warmup counter.
         cycle_count = self._warmup_counters.get(window_id, 0)
@@ -182,6 +191,7 @@ class OverrideDetector:
                     source="position_delta",
                     overridden_state=prev_state,
                     overridden_position=smartshading_target,
+                    scope=scope,
                 )
         else:
             # Override already active — check if user moved again (renewal).
@@ -195,6 +205,7 @@ class OverrideDetector:
                     # Preserve original overridden context for Learning.
                     overridden_state=existing.overridden_state,
                     overridden_position=existing.overridden_position,
+                    scope=scope,
                 )
 
     def suppress_next_override_tick(self, window_id: str) -> None:

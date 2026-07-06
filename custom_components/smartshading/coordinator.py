@@ -563,6 +563,8 @@ class _WindowComputeState:
     manual_override_expires_at: "datetime | None" = None
     manual_override_remaining_min: float | None = None
     manual_override_release_reason: str | None = None
+    # v1.1.5 position-based self-healing recovery open (ABSENCE_ONLY / A&S).
+    behavior_mode_recovery_open: bool = False
     # Night Hard Hold: True when the hard-hold gate overrode the tier decision
     # to keep the cover at night_position instead of dispatching an OPEN command.
     night_hard_hold_applied: bool = False
@@ -648,6 +650,7 @@ def _mode_dispatch_allowed(
     *,
     is_absence_release: bool,
     is_lifecycle_release: bool,
+    is_position_recovery: bool = False,
 ) -> bool:
     """Whether a non-FULLY_AUTOMATIC mode may dispatch this decision's command.
 
@@ -657,7 +660,10 @@ def _mode_dispatch_allowed(
     ABSENCE_AND_SCHEDULE keeps the night schedule active, so it must also allow
     NIGHT_CLOSED *and* NIGHT_VENT (night-contact Option B ventilation and its
     return to night position) — otherwise a window opened at night would never
-    vent.  Everything else is suppressed (held) by the caller.
+    vent.  is_position_recovery is the v1.1.5 position-based self-healing OPEN
+    (see _is_position_recovery_release) — a strictly one-directional retract for
+    a cover stuck physically down after a current_state desync.  Everything else
+    is suppressed (held) by the caller.
     """
     if behavior_mode is WindowBehaviorMode.FULLY_AUTOMATIC:
         return True
@@ -677,7 +683,97 @@ def _mode_dispatch_allowed(
         )
         or is_absence_release
         or is_lifecycle_release
+        or is_position_recovery
     )
+
+
+#: A cover is "clearly below open" for position-recovery purposes when its
+#: observed HA position is at least this many points below fully-open (HA
+#: convention, 100 = open).  Deliberately far larger than the CommandFilter
+#: same-position tolerance (3 internal units) so recovery never fights a small
+#: deviation of an essentially-open cover; the real field-stuck cases (terrace
+#: at 0, bathroom at 30) sit far below this margin, while a cover already at/
+#: near open (>= 80) is treated as open and left untouched.
+_RECOVERY_MIN_BELOW_OPEN_HA: int = 20
+
+#: The fully-open cover position in HA convention (0 = closed, 100 = open).
+_OPEN_POSITION_HA: int = 100
+
+
+def _is_position_recovery_release(
+    *,
+    behavior_mode: WindowBehaviorMode,
+    proposed_is_open: bool,
+    actual_position_ha: int | None,
+    cover_available: bool,
+    active_control_enabled: bool,
+    lifecycle_is_night: bool,
+    is_safety: bool,
+    safety_hold_active: bool,
+    active_override_present: bool,
+    night_contact_blocking: bool,
+    absence_active: bool,
+    open_position_ha: int = _OPEN_POSITION_HA,
+    min_below_open_ha: int = _RECOVERY_MIN_BELOW_OPEN_HA,
+) -> bool:
+    """Position-based self-healing release for ABSENCE_ONLY / ABSENCE_AND_SCHEDULE.
+
+    Field motivation (v1.1.5): a window whose internal current_state has desynced
+    from the physical position — e.g. an ABSENCE_CLOSED that was lost across a
+    restart / a v1.1.3->v1.1.4 upgrade (v1.1.3 did not persist current_states),
+    or an external/manual close SmartShading never recorded — can get stuck
+    physically DOWN indefinitely.  The absence-/lifecycle-release gates require
+    current_state == ABSENCE_CLOSED / NIGHT_CLOSED, plain OPEN is not itself an
+    allowed dispatch for these modes, so BehaviorMode:hold blocks with
+    no_target_position every cycle and nothing brings the cover back up.
+
+    This is a narrow, strictly ONE-DIRECTIONAL safety net: it may allow exactly
+    one controlled OPEN (retract) dispatch — never a close, and never any
+    solar/heat/glare shading for ABSENCE_ONLY — when ALL of these hold:
+      - the window is ABSENCE_ONLY or ABSENCE_AND_SCHEDULE,
+      - the tier baseline itself proposes OPEN (no absence/shading wanted now),
+      - active control is enabled (a real dispatch would be sent),
+      - the cover is available with a real observed position,
+      - that observed position is clearly below open (>= min_below_open_ha
+        below open_position_ha),
+      - it is not the real NIGHT lifecycle phase,
+      - no Safety and no rain/storm/wind hold is active,
+      - no Manual Override is active,
+      - Night Contact is not blocking,
+      - absence is not currently active (presence is back / no away-close due).
+
+    Because it only ever dispatches OPEN, it cannot introduce shading; because
+    the raised cover then matches an OPEN internal state, subsequent cycles are
+    same-position no-ops — so it fires at most once per desync and never loops.
+    Pure function so every guard is unit-testable in isolation.
+    """
+    if behavior_mode not in (
+        WindowBehaviorMode.ABSENCE_ONLY,
+        WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+    ):
+        return False
+    if not proposed_is_open:
+        return False
+    if not active_control_enabled:
+        return False
+    if is_safety or safety_hold_active:
+        return False
+    if active_override_present:
+        return False
+    if night_contact_blocking:
+        return False
+    if lifecycle_is_night:
+        return False
+    if absence_active:
+        return False
+    if not cover_available or actual_position_ha is None:
+        return False
+    # "Clearly below open": the observed position must sit at least
+    # min_below_open_ha below the fully-open position.  A cover already at/near
+    # open does not qualify (no fighting minor deviations).
+    if actual_position_ha >= open_position_ha - min_below_open_ha:
+        return False
+    return True
 
 
 # Night-contact dispatch decisions that a real, fresh window open/close produced.
@@ -3317,6 +3413,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # CommandFilter blocks (BLOCKED_NO_TARGET_POSITION), and
             # decided_by="BehaviorMode:hold" prevents false learning outcomes and
             # signals the state machine to stay at current_state (see below).
+            _behavior_recovery_open = False
             if _window_behavior is not WindowBehaviorMode.FULLY_AUTOMATIC:
                 _is_absence_release = (
                     _window_behavior in (
@@ -3337,11 +3434,43 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         proposed_is_open=tier_decision.shading_state is ShadingState.OPEN,
                     )
                 )
+                # v1.1.5 position-based self-healing release: when the internal
+                # current_state has desynced from the physical position (e.g. an
+                # ABSENCE_CLOSED lost across a restart / v1.1.3->v1.1.4 upgrade,
+                # or an external close), the window can be stuck physically DOWN
+                # while the tier baseline wants OPEN — neither absence- nor
+                # lifecycle-release fires (both need a specific current_state).
+                # This narrow, strictly one-directional gate allows one OPEN
+                # retract to un-stick it; see _is_position_recovery_release for
+                # the full guard set (Safety/Manual/NightContact/Night/absence/
+                # cover-availability all keep it inert).
+                _is_position_recovery = _is_position_recovery_release(
+                    behavior_mode=_window_behavior,
+                    proposed_is_open=tier_decision.shading_state is ShadingState.OPEN,
+                    actual_position_ha=cover_position.actual_position,
+                    cover_available=cover_position.position_source == "actual",
+                    active_control_enabled=_exec.active_control_enabled,
+                    lifecycle_is_night=self._lifecycle_state is LifecycleState.NIGHT,
+                    is_safety=tier_decision.shading_state in (
+                        ShadingState.STORM_SAFE,
+                        ShadingState.WIND_SAFE,
+                        ShadingState.RAIN_SAFE,
+                    ),
+                    safety_hold_active=_rain_held,
+                    active_override_present=active_override is not None,
+                    night_contact_blocking=(
+                        _nc_hold.blocked_this_night
+                        or _nc_hold.catch_up_pending
+                        or _nc_hold.night_vent_active
+                    ),
+                    absence_active=absence_active,
+                )
                 _dispatch_allowed = _mode_dispatch_allowed(
                     _window_behavior,
                     tier_decision.shading_state,
                     is_absence_release=_is_absence_release,
                     is_lifecycle_release=_is_lifecycle_release,
+                    is_position_recovery=_is_position_recovery,
                 )
                 if not _dispatch_allowed:
                     tier_decision = replace(
@@ -3349,6 +3478,20 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         target_position=None,
                         decided_by="BehaviorMode:hold",
                     )
+                elif (
+                    _is_position_recovery
+                    and not _is_absence_release
+                    and not _is_lifecycle_release
+                ):
+                    # Recovery is the only reason this OPEN is allowed (no normal
+                    # absence-/lifecycle-release applied). Tag it distinctly so
+                    # the support export / timeline shows a position-based
+                    # recovery open, not a plain fallback dispatch.
+                    tier_decision = replace(
+                        tier_decision,
+                        decided_by="BehaviorMode:recovery_open",
+                    )
+                    _behavior_recovery_open = True
 
             # Override lifecycle: Safety beats override → clear it.
             # Otherwise, run override detection (position delta comparison).
@@ -4197,6 +4340,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 manual_override_expires_at=_mo_expires_at,
                 manual_override_remaining_min=_mo_remaining_min,
                 manual_override_release_reason=_override_release_reason,
+                behavior_mode_recovery_open=_behavior_recovery_open,
                 cover_available=(
                     _exec_snapshot.available if _exec_snapshot is not None else None
                 ),
@@ -4692,6 +4836,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 manual_override_expires_at=s.manual_override_expires_at,
                 manual_override_remaining_min=s.manual_override_remaining_min,
                 manual_override_release_reason=s.manual_override_release_reason,
+                behavior_mode_recovery_open=s.behavior_mode_recovery_open,
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---

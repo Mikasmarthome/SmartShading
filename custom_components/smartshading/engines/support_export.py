@@ -250,6 +250,11 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 } if diag is not None else {
                     "active": False, "scope": None, "expires_at": None,
                     "remaining_min": None, "release_reason": None}
+                # Position-based self-healing recovery open (v1.1.5): true when a
+                # stuck-down ABSENCE_ONLY / A&S window was released this cycle.
+                prov["recovery_open_active"] = bool(
+                    getattr(diag, "behavior_mode_recovery_open", False)
+                ) if diag is not None else False
             return prov
         return _per_window(_b)
 

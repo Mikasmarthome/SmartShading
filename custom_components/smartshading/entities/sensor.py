@@ -289,6 +289,11 @@ def _recommendation_attributes(
         "manual_override_expires_at": diag.manual_override_expires_at,
         "manual_override_remaining_min": diag.manual_override_remaining_min,
         "manual_override_release_reason": diag.manual_override_release_reason,
+        # Position-based self-healing recovery open (v1.1.5). True when an
+        # ABSENCE_ONLY / ABSENCE_AND_SCHEDULE window that was stuck physically
+        # down after a current_state desync was released with a one-directional
+        # OPEN this cycle (decided_by == "BehaviorMode:recovery_open").
+        "behavior_mode_recovery_open": diag.behavior_mode_recovery_open,
     })
     return attrs
 

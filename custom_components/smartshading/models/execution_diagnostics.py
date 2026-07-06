@@ -441,3 +441,11 @@ class WindowExecutionDiagnostics:
     other lifecycle change), "safety" (Tier 1 Safety took over), or None (no
     release happened this cycle — either still active or already inactive
     before this cycle)."""
+
+    behavior_mode_recovery_open: bool = False
+    """v1.1.5: True when the position-based self-healing recovery released this
+    ABSENCE_ONLY / ABSENCE_AND_SCHEDULE window with a one-directional OPEN
+    because it was stuck physically down after a current_state desync (e.g. an
+    ABSENCE_CLOSED lost across a restart/upgrade). When True the cycle's
+    decided_by is "BehaviorMode:recovery_open". See _is_position_recovery_release
+    in coordinator.py for the full guard set. Never activates shading."""

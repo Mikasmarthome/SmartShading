@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Afwezigheidspositie (overschrijft de zonestandaard)",
+          "night_position": "Nachtpositie (overschrijft de zonestandaard)",
           "window_behavior_mode": "Automatische zonweringsmodus",
           "light_shade_position": "Positie lichte schaduw (overschrijft de zonestandaard)",
           "normal_shade_position": "Positie normale schaduw (overschrijft de zonestandaard)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Laat leeg om de standaard afwezigheidspositie van de zone te erven. Stel een waarde in om deze alleen voor dit venster te overschrijven.",
+          "night_position": "Laat leeg om de standaard nachtpositie van de zone te erven. Stel een waarde in om deze alleen voor dit venster te overschrijven.",
           "window_behavior_mode": "Volledig automatisch: zon, comfort, afwezigheid en schema actief. Afwezigheid en schema: afwezigheidsregeling, nacht- en ochtendschema actief; geen zonne-, warmte- of verblindingsbescherming. Alleen afwezigheid: alleen afwezigheidsregeling. Automatisering uitgeschakeld: geen automatische zonwering. Veiligheidsbeveiligingen (storm/wind) blijven altijd actief.",
           "light_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor lichte schaduw alleen voor dit venster te overschrijven.",
           "normal_shade_position": "Laat leeg om de zonestandaard te gebruiken. Stel een waarde in om de doelpositie voor normale schaduw alleen voor dit venster te overschrijven.",

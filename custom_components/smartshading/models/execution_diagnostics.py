@@ -449,3 +449,36 @@ class WindowExecutionDiagnostics:
     ABSENCE_CLOSED lost across a restart/upgrade). When True the cycle's
     decided_by is "BehaviorMode:recovery_open". See _is_position_recovery_release
     in coordinator.py for the full guard set. Never activates shading."""
+
+    selected_solar_source: str | None = None
+    """Which solar input was authoritative this cycle, from
+    engines/solar_source.py's classify_solar_source(): "measured_sensor" (a
+    configured, valid, fresh sensor reading), "weather_estimate" (fallback
+    derived from cloud cover), or "unavailable" (no usable source). None when
+    the no-sun fast path skipped solar classification entirely this cycle."""
+
+    solar_source_quality: str | None = None
+    """Quality label paired with selected_solar_source (e.g. "high"/"low"/
+    "none" from solar_source.py's QUALITY_* constants). None when solar
+    classification did not run this cycle."""
+
+    measured_solar_wm2: float | None = None
+    """The measured solar sensor's raw reading this cycle in W/m², regardless of
+    whether it was selected as authoritative. None when no sensor is configured
+    or solar classification did not run this cycle."""
+
+    estimated_solar_wm2: float | None = None
+    """The weather/cloud-cover-derived solar estimate in W/m², always computed
+    so diagnostics can show the value that was (or was not) used, regardless of
+    whether it was selected as authoritative. None when solar classification
+    did not run this cycle."""
+
+    solar_cloud_applied: bool | None = None
+    """True when the cloud-cover-derived estimate (not the measured sensor) was
+    the value actually used this cycle. Never true when a measured sensor value
+    was authoritative. None when solar classification did not run this cycle."""
+
+    solar_fallback_reason: str | None = None
+    """Why the measured sensor was not used as authoritative this cycle (e.g.
+    "not_configured", "stale", "implausible"), or None when the measured sensor
+    was authoritative or solar classification did not run this cycle."""

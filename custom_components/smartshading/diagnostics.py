@@ -122,6 +122,7 @@ _FALLBACK: dict = {
     "unmatched_snapshots_count": 0,
     "trust_computed":            False,
     "trust_summary":             None,
+    "save_failures":             0,
 }
 
 
@@ -132,8 +133,9 @@ def build_forecast_diagnostics(runtime_data: Any) -> dict:
     ----------
     runtime_data:
         Duck-typed ConfigEntry.runtime_data.  Expected attributes:
-          .forecast_store   ForecastLearningStore | None
-          .forecast_cancel  tuple[Callable, Callable] | None
+          .forecast_store    ForecastLearningStore | None
+          .forecast_cancel   tuple[Callable, Callable] | None
+          .forecast_adapter  ForecastPersistenceAdapter | None
         Missing attributes silently produce the safe fallback values.
 
     Returns
@@ -148,16 +150,19 @@ def build_forecast_diagnostics(runtime_data: Any) -> dict:
           unmatched_snapshots_count int
           trust_computed            bool
           trust_summary             dict | None
+          save_failures             int  (F7-follow-up)
     """
     try:
-        store  = getattr(runtime_data, "forecast_store",  None)
-        cancel = getattr(runtime_data, "forecast_cancel", None)
+        store   = getattr(runtime_data, "forecast_store",   None)
+        cancel  = getattr(runtime_data, "forecast_cancel",  None)
+        adapter = getattr(runtime_data, "forecast_adapter", None)
 
         active          = cancel is not None
         store_available = store is not None
+        save_failures   = getattr(adapter, "save_failures", 0)
 
         if not store_available:
-            return {**_FALLBACK, "active": active}
+            return {**_FALLBACK, "active": active, "save_failures": save_failures}
 
         forecast_snapshots_count  = len(store.forecast_snapshots)
         reality_snapshots_count   = len(store.reality_snapshots)
@@ -188,6 +193,7 @@ def build_forecast_diagnostics(runtime_data: Any) -> dict:
             "unmatched_snapshots_count": unmatched_snapshots_count,
             "trust_computed":            trust_computed,
             "trust_summary":             trust_summary_out,
+            "save_failures":             save_failures,
         }
 
     except Exception:

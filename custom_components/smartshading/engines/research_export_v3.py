@@ -92,6 +92,36 @@ def _num(v):
     return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
 
+def _decision_time_context(dt, now) -> dict:
+    """F24: UTC weekday/hour/minute + age_days for one decision timestamp.
+
+    Pure day-of-week/time-of-day/age derivation from a timestamp already
+    present in the export (decision_timestamp_utc) — exposes no new raw data,
+    just makes existing-timestamp patterns (time-of-day, day-of-week, record
+    age) analyzable without external post-processing.  UTC only, matching the
+    HA-free/no-timezone-plumbing contract of this module (see module docstring).
+    """
+    out = {"decision_weekday": None, "decision_hour": None,
+           "decision_minute": None, "decision_age_days": None}
+    try:
+        if dt is None:
+            return out
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.astimezone(timezone.utc)
+        out["decision_weekday"] = dt.weekday()  # 0=Monday .. 6=Sunday
+        out["decision_hour"] = dt.hour
+        out["decision_minute"] = dt.minute
+        if now is not None:
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
+            out["decision_age_days"] = round((now.astimezone(timezone.utc) - dt).total_seconds()
+                                              / 86400.0, 1)
+    except Exception:
+        return out
+    return out
+
+
 def _safe(fn, errors, name, default=None):
     try:
         return fn()
@@ -148,9 +178,13 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
     accounting = {"examined": 0, "excluded": {}}
 
     def _records():
-        recs = _project_store_records(store, pz, accounting)
+        recs = _project_store_records(store, pz, accounting, now=now)
         # deterministic order: by timestamp then decision_ref.
         recs.sort(key=lambda r: (r.get("decision_timestamp_utc") or "", r.get("decision_ref") or ""))
+        # F24: stable chronological ordinal — lets a consumer place records in
+        # relative sequence even when timestamps coincide or are coarse.
+        for _i, _r in enumerate(recs):
+            _r["sample_index"] = _i
         return recs
 
     research_records = _safe(_records, errors, "research_records", default=[])
@@ -256,6 +290,10 @@ def _history_metadata(eligible_records, serialized_count, *, store_scope) -> dic
         "store_scope": store_scope,
         "oldest_record_utc": stamps[0] if stamps else None,
         "newest_record_utc": stamps[-1] if stamps else None,
+        # F24: same values under the period_*_utc naming the task requested —
+        # explicit aliases, not a second computation, so they can never drift.
+        "period_start_utc": stamps[0] if stamps else None,
+        "period_end_utc": stamps[-1] if stamps else None,
         "records_total_available": total,
         "records_exported": serialized_count,
         "truncated": serialized_count < total,
@@ -273,7 +311,7 @@ def _history_metadata(eligible_records, serialized_count, *, store_scope) -> dic
     }
 
 
-def _project_store_records(store, pz, accounting) -> list:
+def _project_store_records(store, pz, accounting, now=None) -> list:
     """Project a single learning store's persisted decisions into research records.
 
     Reusable across one store (single-zone export) or many (all-zones export).
@@ -286,11 +324,20 @@ def _project_store_records(store, pz, accounting) -> list:
     try:
         window_ids = list(store.window_ids())
     except Exception:
+        # F7: this store's decisions are unaccounted for by the caller-level
+        # accounting dict too — bump a dedicated reason so the failure itself
+        # is visible instead of silently lowering total_decisions_examined.
+        accounting["excluded"]["store_read_error"] = (
+            accounting["excluded"].get("store_read_error", 0) + 1)
         return recs
     for wid in window_ids:
         try:
             decs = store.get_decisions(wid)
         except Exception:
+            # F7: same accounting gap, per-window — the affected window's
+            # decisions previously vanished from the survivorship count entirely.
+            accounting["excluded"]["window_read_error"] = (
+                accounting["excluded"].get("window_read_error", 0) + 1)
             continue
         for d in decs or []:
             accounting["examined"] += 1
@@ -302,7 +349,7 @@ def _project_store_records(store, pz, accounting) -> list:
                 accounting["excluded"]["no_provenance"] = (
                     accounting["excluded"].get("no_provenance", 0) + 1)
                 continue
-            r = _project_decision(d, wid, pz)
+            r = _project_decision(d, wid, pz, now=now)
             if r is None:
                 accounting["excluded"]["not_projectable"] = (
                     accounting["excluded"].get("not_projectable", 0) + 1)
@@ -347,7 +394,7 @@ def build_research_export_all_zones(coordinators, *, now=None,
     for c in coords:
         store = getattr(c, "_learning_store", None)
         before = accounting["examined"]
-        recs = _safe(lambda: _project_store_records(store, pz, accounting), errors,
+        recs = _safe(lambda: _project_store_records(store, pz, accounting, now=now), errors,
                      "research_records", default=[])
         recs = recs if isinstance(recs, list) else []
         all_records.extend(recs)
@@ -362,6 +409,9 @@ def build_research_export_all_zones(coordinators, *, now=None,
         })
     all_records.sort(key=lambda r: (r.get("decision_timestamp_utc") or "",
                                     r.get("decision_ref") or ""))
+    # F24: stable chronological ordinal across the aggregated all-zones set.
+    for _i, _r in enumerate(all_records):
+        _r["sample_index"] = _i
     cap = min(MAX_RESEARCH_RECORDS_ALL_ZONES,
               MAX_RESEARCH_RECORDS_PER_ZONE * len(coords))
     capped, rec_trunc = cap_records(all_records, cap)
@@ -438,7 +488,7 @@ def _first_attr(obj, *names):
     return None
 
 
-def _project_decision(d, wid, pz) -> dict | None:
+def _project_decision(d, wid, pz, *, now=None) -> dict | None:
     summary = getattr(d, "summary", None)
     if summary is None:
         # Recent records keep full provenance (summary is only populated when a
@@ -534,10 +584,12 @@ def _project_decision(d, wid, pz) -> dict | None:
         attribution_status = "multi_source"
     else:
         attribution_status = "inconclusive"
+    _time_ctx = _decision_time_context(getattr(d, "decision_timestamp", None), now)
     return {
         "decision_ref": pz.ref(NS_DECISION, getattr(d, "decision_id", None)),
         "window_ref": pz.ref(NS_WINDOW, wid),
         "decision_timestamp_utc": _iso_s(getattr(d, "decision_timestamp", None)),
+        **_time_ctx,
         "shading_state": getattr(summary, "shading_state", None),
         "baseline_target_ha": base,
         "adapted_target_ha": adapted,

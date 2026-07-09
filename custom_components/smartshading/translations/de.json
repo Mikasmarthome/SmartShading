@@ -175,6 +175,7 @@
         "title": "Beschattungsverhalten",
         "data": {
           "absence_position": "Abwesenheitsposition (überschreibt Zonen-Standard)",
+          "night_position": "Nachtposition (überschreibt Zonen-Standard)",
           "window_behavior_mode": "Automatischer Beschattungsmodus",
           "light_shade_position": "Leichte Beschattungsposition (überschreibt Zonen-Standard)",
           "normal_shade_position": "Normale Beschattungsposition (überschreibt Zonen-Standard)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Leer lassen, um die Zonen-Standardposition zu übernehmen. Wert setzen, um sie nur für dieses Fenster zu überschreiben.",
+          "night_position": "Leer lassen, um die Zonen-Standardposition zu übernehmen. Wert setzen, um die Nachtposition nur für dieses Fenster zu überschreiben.",
           "window_behavior_mode": "Vollautomatisch: Sonne, Komfort, Abwesenheit und Zeitplan aktiv. Abwesenheit und Zeitplan: Abwesenheitssteuerung, Nacht- und Morgenzeitplan aktiv; keine Sonnen-, Wärme- oder Blendbeschattung. Nur Abwesenheit: nur Abwesenheitssteuerung aktiv. Automatik deaktiviert: keine automatische Beschattung. Sicherheitsschutz (Sturm/Wind) bleibt immer aktiv.",
           "light_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei leichter Beschattung nur für dieses Fenster zu überschreiben.",
           "normal_shade_position": "Leer lassen für den Zonen-Standard. Wert setzen, um die Zielposition bei normaler Beschattung nur für dieses Fenster zu überschreiben.",

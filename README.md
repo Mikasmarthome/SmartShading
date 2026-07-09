@@ -10,6 +10,7 @@
   <a href="https://github.com/Mikasmarthome/SmartShading/releases/latest"><img src="https://img.shields.io/badge/stable-v1.1.5-brightgreen.svg" alt="Stable release"/></a>
   <img src="https://img.shields.io/badge/status-stable-brightgreen.svg" alt="Stable"/>
   <img src="https://img.shields.io/badge/HA-2024.1%2B-blue.svg" alt="Home Assistant 2024.1+"/>
+  <a href="https://github.com/Mikasmarthome/SmartShading/actions/workflows/pytest.yml"><img src="https://github.com/Mikasmarthome/SmartShading/actions/workflows/pytest.yml/badge.svg" alt="Pytest"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/></a>
 </p>
 
@@ -83,6 +84,22 @@ Active Control lets SmartShading send cover commands automatically for a zone. I
 must be enabled explicitly per zone. While it is off, SmartShading still computes recommendations and
 diagnostics but does not move any cover. Enable it only when the covers in that zone are safe to operate
 automatically.
+
+### Behavior Modes
+
+Each window has its own **Behavior Mode** (set under **Shading behavior** when editing the window), which
+decides which situations may move that window's cover automatically. Safety conditions (wind, storm, rain)
+and a recognized manual override always take priority, regardless of the selected mode.
+
+| Behavior Mode | What it does |
+|---|---|
+| **Fully automatic** | Full control: safety, night/morning schedule, presence/absence, and the configured heat/glare/solar-gain/learning behavior all apply. |
+| **Absence and schedule** | Presence/absence handling and the night/morning schedule stay active, but daytime heat/glare/solar-gain shading is not applied. |
+| **Absence only** | Only presence/absence handling applies (the window closes for absence and releases when presence returns); the night/morning schedule and daytime comfort shading are not applied. |
+| **Automation disabled** | No automatic shading decisions for this window; only safety conditions and manual-override recognition still apply. |
+
+All position values reported for a window follow the same convention regardless of its Behavior Mode:
+`0 = closed`, `100 = open` (see [Position and tilt semantics](#position-and-tilt-semantics)).
 
 ## Recommendations
 
@@ -180,6 +197,8 @@ not exposed.
 | Entity | Type | Description |
 |--------|------|-------------|
 | Zone Summary | Sensor | Compact, machine-readable overview of the zone (active / recommendation-only / disabled / override / safety) with aggregate counts. |
+| Learning Progress | Sensor | 0–100% indicator of how much adaptation the zone's learning has reached so far. 0% means SmartShading is still collecting data; 100% means full confidence and adaptation strength — not a claim of perfect decisions. |
+| Shading Result | Sensor | Zone-level quality rating for past shading decisions (excellent/good/acceptable/poor), based on resolved outcomes. Shows "unknown" until enough outcomes have been collected. |
 | Learning Mode | Switch | Enables observation, learning, and adaptation for the zone. Default on. |
 | Active Control | Switch | Enables automatic cover commands for the zone. Default off. |
 
@@ -352,17 +371,64 @@ available, then reload the integration.
 default); the cover may be unavailable, or a manual override or safety state may take priority; shortly after
 a restart, a brief startup grace period and minimum action intervals apply.
 
+**Cover does not move although a recommendation exists** — check, in order:
+- Active Control is off for the zone (recommendation-only mode: SmartShading computes a target but never
+  dispatches it).
+- The cover entity is unavailable.
+- The Command Filter is holding the command back — the target may be within the configured position
+  tolerance of the current position, or the minimum action interval since the last command hasn't elapsed
+  yet.
+- A manual override or a night-contact hold is currently active for that window.
+- The global dispatch queue is briefly spacing this command out from another window's command (a short,
+  expected delay, not a stuck state).
+
+  A Support Export shows the exact reason for a held/skipped command (`command_blocked_reason` and related
+  fields), so you do not have to guess between these causes.
+
+**Cover stays closed / shutter stays down** — check, in order:
+- The window's **Behavior Mode** — some modes intentionally skip daytime shading (see
+  [Behavior Modes](#behavior-modes)).
+- **Active Control** is enabled for the zone.
+- Whether a **manual override** is currently held for that window.
+- The **night/morning schedule** — the window may still be inside its configured night interval.
+- The **absence** state — the zone may be in an absence position waiting for presence to return.
+- The window's **contact sensor** state, if configured — an open contact can hold a window at its current
+  position until it is confirmed closed again.
+- A Support Export or the Recommendation/State sensor attributes for that window show the current reason and
+  target position, so you can see exactly which of the above applies.
+
+**Cover moves unexpectedly** — check, in order:
+- A **safety condition** (wind, storm, or rain) — safety always takes priority and can move a cover even
+  when Active Control was just enabled.
+- The **night/morning schedule** — a scheduled transition may have just triggered.
+- An **absence return** — presence returning ends the absence position and releases the cover back to normal
+  behavior.
+- The window's **Behavior Mode** — confirm it matches what you expect for that window.
+- Whether a previous **manual override** has just expired, handing control back to SmartShading.
+- A Support Export shows the decision and reason for the specific cycle in question.
+
 **Active Control is disabled** — it is per zone and off by default; enable it on the zone's Active Control
 switch once you are confident the covers are safe to operate automatically.
 
 **Cover position looks inverted** — SmartShading uses the standard Home Assistant convention: `0 = closed`,
 `100 = open`. Check that your cover entity reports position the same way.
 
+**Physical position doesn't quite match the reported percentage** — SmartShading sends standard Home
+Assistant cover positions (`0 = closed`, `100 = open`); how accurately the physical cover reaches that
+position depends on the underlying cover integration's own calibration and position feedback (e.g. a
+time-based cover's runtime calibration, or a lack of real position feedback). SmartShading does not replace
+or perform your cover integration's own motor/runtime calibration — check that integration's setup if the
+physical position is consistently off.
+
 **Optional sensors are unavailable** — weather, solar, indoor temperature, and presence inputs are optional;
 if one is unavailable, SmartShading falls back to its normal logic and continues to produce recommendations.
 
 **Creating a Support Export** — press **Create Support Export** on the System Entry. The file is written
-under `config/www` and removed automatically after 24 hours.
+under `config/www` and removed automatically after 24 hours. For anything you cannot explain from the
+Recommendation/State sensor attributes alone, a Support Export is the better starting point — it bundles the
+relevant context in one place instead of raw sensor attributes, and is a better format to attach when
+[asking for help](#contributing). Review a Support Export yourself before sharing it, and avoid posting one
+publicly unless you have checked its contents first.
 
 **Debug logging** — turn on the **Debug logging** switch only while investigating an issue, and turn it off
 again afterwards.

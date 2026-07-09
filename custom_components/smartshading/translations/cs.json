@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Poloha při nepřítomnosti (přepíše výchozí hodnotu zóny)",
+          "night_position": "Noční poloha (přepíše výchozí hodnotu zóny)",
           "window_behavior_mode": "Automatický režim stínění",
           "light_shade_position": "Poloha lehkého stínění (přepíše výchozí hodnotu zóny)",
           "normal_shade_position": "Poloha normálního stínění (přepíše výchozí hodnotu zóny)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Ponechte prázdné pro zdědění výchozí polohy nepřítomnosti zóny. Zadejte hodnotu pro její přepsání pouze pro toto okno.",
+          "night_position": "Ponechte prázdné pro zdědění výchozí noční polohy zóny. Zadejte hodnotu pro její přepsání pouze pro toto okno.",
           "window_behavior_mode": "Plně automatický: slunce, komfort, nepřítomnost a plán aktivní. Nepřítomnost a plán: řízení podle nepřítomnosti, noční a ranní plán aktivní; bez slunečního, tepelného nebo protioslnivého stínění. Pouze nepřítomnost: pouze řízení podle nepřítomnosti. Automatizace vypnuta: žádné automatické stínění. Bezpečnostní ochrany (bouře/vítr) zůstávají vždy aktivní.",
           "light_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy lehkého stínění pouze pro toto okno.",
           "normal_shade_position": "Ponechte prázdné pro použití výchozí hodnoty zóny. Zadejte hodnotu pro přepsání cílové polohy normálního stínění pouze pro toto okno.",

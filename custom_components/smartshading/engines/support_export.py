@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from .diagnostics_privacy import (
     DEFAULT_FORBIDDEN_MARKERS,
@@ -87,6 +88,43 @@ def _iso_s(dt) -> str | None:
         return None
 
 
+def _iso_local(dt, tz: ZoneInfo | None) -> str | None:
+    """F24: ISO local-time (to seconds), else None.  Additive sibling to
+    _iso_s — UTC stays the source of truth everywhere; this is display-only.
+    """
+    if tz is None:
+        return None
+    try:
+        if dt is None:
+            return None
+        if isinstance(dt, str):
+            dt = datetime.fromisoformat(dt)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(tz).replace(microsecond=0).isoformat()
+    except Exception:
+        return None
+
+
+def _resolve_home_tz(coordinator) -> tuple[ZoneInfo | None, str | None, str]:
+    """F24: best-effort HA-configured timezone, duck-typed off coordinator.hass.
+
+    Never raises.  Returns (tz_or_None, tz_name_or_None, timezone_source) where
+    timezone_source documents provenance for the export reader — matches the
+    existing guarded getattr(c, "hass", ...) pattern already used elsewhere in
+    this module (e.g. the rain-sensor-availability check) rather than importing
+    homeassistant.util.dt, keeping this module HA-import-free.
+    """
+    tz_name = getattr(getattr(getattr(coordinator, "hass", None), "config", None),
+                       "time_zone", None)
+    if not isinstance(tz_name, str) or not tz_name:
+        return None, None, "unavailable"
+    try:
+        return ZoneInfo(tz_name), tz_name, "hass_config"
+    except Exception:
+        return None, tz_name, "invalid"
+
+
 def _safe(fn, errors, name, default=None):
     try:
         return fn()
@@ -127,6 +165,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
     entry_id = getattr(getattr(c, "config_entry", None), "entry_id", None)
     pz = Pseudonymizer(entry_id)
     errors: dict = {}
+    home_tz, home_tz_name, tz_source = _resolve_home_tz(c)
 
     def _wref(wid):
         return pz.ref(NS_WINDOW, wid)
@@ -274,6 +313,20 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 a.pop("adoption_id_internal", None)
         return tr
 
+    def _age_seconds(ts_map, wid):
+        """F24: seconds between `now` and a StateGuard-tracked timestamp for
+        this window, else None.  StateGuard already tracks _entered_at /
+        _last_action_at per window for its own throttling — reusing that
+        existing, already-populated data rather than adding new upstream
+        instrumentation."""
+        try:
+            ts = (ts_map or {}).get(wid)
+            if ts is None:
+                return None
+            return round((now - ts).total_seconds(), 1)
+        except Exception:
+            return None
+
     def _current_snapshot():
         """Per-window current state snapshot from execution diagnostics.
 
@@ -283,6 +336,9 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         re-evaluated.  Fields are None/not_available when data is absent.
         """
         diags = getattr(getattr(c, "data", None), "execution_diagnostics", None) or {}
+        _guard = getattr(c, "guard", None)
+        _entered_at = getattr(_guard, "_entered_at", None)
+        _last_action_at = getattr(_guard, "_last_action_at", None)
         windows_out = {}
         for wid in (getattr(c, "windows", {}) or {}):
             diag = diags.get(wid)
@@ -293,6 +349,10 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                     "window_ref": wref,
                     "data_available": False,
                     "reason": "no_execution_diagnostics",
+                    # F24: age is independent of execution_diagnostics — the
+                    # StateGuard tracking is not gated on this cycle's diag.
+                    "current_state_age_seconds": _age_seconds(_entered_at, wid),
+                    "last_dispatch_age_seconds": _age_seconds(_last_action_at, wid),
                 }
                 continue
             windows_out[wref] = {
@@ -311,6 +371,24 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 "command_allowed": getattr(diag, "command_allowed", None),
                 "command_blocked_reason": getattr(diag, "command_blocked_reason", None),
                 "last_command_status": getattr(diag, "last_command_status", None),
+                # Dispatch / hold (F4 audit follow-up): recovery-open already
+                # existed only under inputs.recovery_open_active — surfaced here
+                # too since current_snapshot is the natural first place a user
+                # looks for "what is SmartShading doing right now".
+                "dispatch_throttled": getattr(diag, "dispatch_throttled", None),
+                "throttle_wait_ms": getattr(diag, "throttle_wait_ms", None),
+                "night_hard_hold_applied": bool(getattr(diag, "night_hard_hold_applied", False)),
+                "behavior_mode_recovery_open": bool(
+                    getattr(diag, "behavior_mode_recovery_open", False)),
+                # Solar source (F5 audit follow-up): which input was
+                # authoritative this cycle and the measured/estimated values,
+                # so a support case can see whether a fallback was used and why.
+                "solar_source": getattr(diag, "selected_solar_source", None),
+                "solar_source_quality": getattr(diag, "solar_source_quality", None),
+                "measured_solar_wm2": getattr(diag, "measured_solar_wm2", None),
+                "estimated_solar_wm2": getattr(diag, "estimated_solar_wm2", None),
+                "solar_cloud_applied": getattr(diag, "solar_cloud_applied", None),
+                "solar_fallback_reason": getattr(diag, "solar_fallback_reason", None),
                 # Position
                 "actual_position_ha": getattr(diag, "actual_position_ha", None),
                 "target_position_ha": getattr(diag, "target_position_ha", None),
@@ -335,6 +413,11 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 # Hardware type (from window config — privacy-safe category, not entity id)
                 "hardware_type": (str(getattr(w, "hardware_type", None))
                                   .replace("CoverHardwareType.", "") if w else None),
+                # F24: "how long has this been the case" — answers e.g. "the
+                # window has been in night_vent for 3 minutes" without needing
+                # to cross-reference support_timeline.
+                "current_state_age_seconds": _age_seconds(_entered_at, wid),
+                "last_dispatch_age_seconds": _age_seconds(_last_action_at, wid),
             }
         return windows_out
 
@@ -441,6 +524,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
 
             evt = {
                 "ts": _iso_s(ts),
+                "local_ts": _iso_local(ts, home_tz),
                 "event_type": evt_type,
                 "window_ref": wref,
                 "shading_state": state,
@@ -495,6 +579,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             "decision_ref": pz.ref(NS_DECISION, r.get("decision_id")),
             "window_ref": _wref(r.get("window_id")),
             "decision_timestamp_utc": _iso_s(r.get("decision_timestamp_utc")),
+            "decision_timestamp_local": _iso_local(r.get("decision_timestamp_utc"), home_tz),
             "baseline_state": r.get("baseline_state"),
             "resolved_state": r.get("resolved_state"),
             "decided_by": r.get("decided_by"),
@@ -564,6 +649,9 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
     contract: dict = {
         "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
         "generated_at_utc": _iso_s(now),
+        "generated_at_local": _iso_local(now, home_tz),
+        "home_timezone": home_tz_name,
+        "timezone_source": tz_source,
         "integration_version": integration_version,
         "export_scope": "entry_zone",
         "pseudonymization": _safe(_meta, errors, "pseudonymization"),
@@ -693,9 +781,16 @@ def build_support_export_all_zones(coordinators, *, now=None,
                 sensors_any[k] = True
         if z.get("section_errors"):
             degraded = True
+    # F24: reuse the already-computed per-zone timezone context (first zone —
+    # a single HA instance has one configured timezone) instead of resolving
+    # it again at this level.
+    _first_zone = zones[0] if zones and isinstance(zones[0], dict) else {}
     contract = {
         "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
         "generated_at_utc": _iso_s(now),
+        "generated_at_local": _first_zone.get("generated_at_local"),
+        "home_timezone": _first_zone.get("home_timezone"),
+        "timezone_source": _first_zone.get("timezone_source"),
         "integration_version": integration_version,
         "export_scope": "system_all_zones",
         "overall_status": ("degraded" if degraded else "ok"),

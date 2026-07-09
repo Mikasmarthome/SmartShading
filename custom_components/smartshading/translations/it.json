@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Posizione di assenza (sostituisce il valore predefinito della zona)",
+          "night_position": "Posizione notturna (sostituisce il valore predefinito della zona)",
           "window_behavior_mode": "Modalità di ombreggiatura automatica",
           "light_shade_position": "Posizione ombra leggera (sostituisce il valore predefinito della zona)",
           "normal_shade_position": "Posizione ombra normale (sostituisce il valore predefinito della zona)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Lascia vuoto per ereditare la posizione di assenza predefinita della zona. Imposta un valore per sostituirla solo per questa finestra.",
+          "night_position": "Lascia vuoto per ereditare la posizione notturna predefinita della zona. Imposta un valore per sostituirla solo per questa finestra.",
           "window_behavior_mode": "Completamente automatico: sole, comfort, assenza e programmazione attivi. Assenza e programma: controllo per assenza, programma notturno e mattutino attivi; nessuna ombreggiatura solare, termica o antiabbagliamento. Solo assenza: solo controllo per assenza. Automazione disattivata: nessuna ombreggiatura automatica. Le protezioni di sicurezza (tempesta/vento) restano sempre attive.",
           "light_shade_position": "Lascia vuoto per usare il valore predefinito della zona. Imposta un valore per sostituire la posizione target di ombra leggera solo per questa finestra.",
           "normal_shade_position": "Lascia vuoto per usare il valore predefinito della zona. Imposta un valore per sostituire la posizione target di ombra normale solo per questa finestra.",

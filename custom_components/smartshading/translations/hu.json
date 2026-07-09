@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Távolléti pozíció (felülírja a zóna alapértelmezését)",
+          "night_position": "Éjszakai pozíció (felülírja a zóna alapértelmezését)",
           "window_behavior_mode": "Automatikus árnyékolási mód",
           "light_shade_position": "Enyhe árnyékolás pozíciója (felülírja a zóna alapértelmezését)",
           "normal_shade_position": "Normál árnyékolás pozíciója (felülírja a zóna alapértelmezését)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Hagyja üresen a zóna alapértelmezett távolléti pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél az ablaknál.",
+          "night_position": "Hagyja üresen a zóna alapértelmezett éjszakai pozíciójának örökléséhez. Adjon meg értéket a felülírásához csak ennél az ablaknál.",
           "window_behavior_mode": "Teljesen automatikus: nap, komfort, távollét és ütemezés aktív. Távollét és ütemezés: távollétvezérlés, éjszakai és reggeli ütemezés aktív; nincs napfény-, hő- vagy tükröződésvédelmi árnyékolás. Csak távollét: csak távollét-vezérlés. Automatizálás letiltva: nincs automatikus árnyékolás. A biztonsági védelmek (vihar/szél) mindig aktívak maradnak.",
           "light_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket az enyhe árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",
           "normal_shade_position": "Hagyja üresen a zóna alapértelmezésének használatához. Adjon meg értéket a normál árnyékolás cél pozíciójának felülírásához csak ennél az ablaknál.",

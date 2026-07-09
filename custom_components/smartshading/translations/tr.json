@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Yokluk konumu (bölge varsayılanını geçersiz kılar)",
+          "night_position": "Gece konumu (bölge varsayılanını geçersiz kılar)",
           "window_behavior_mode": "Otomatik gölgeleme modu",
           "light_shade_position": "Hafif gölgeleme konumu (bölge varsayılanını geçersiz kılar)",
           "normal_shade_position": "Normal gölgeleme konumu (bölge varsayılanını geçersiz kılar)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Bölgenin varsayılan yokluk konumunu devralmak için boş bırakın. Yalnızca bu pencere için geçersiz kılmak üzere bir değer girin.",
+          "night_position": "Bölgenin varsayılan gece konumunu devralmak için boş bırakın. Yalnızca bu pencere için geçersiz kılmak üzere bir değer girin.",
           "window_behavior_mode": "Tamamen otomatik: güneş, konfor, yokluk ve zamanlama etkin. Yokluk ve program: yokluk denetimi, gece ve sabah programı etkin; güneş, ısı veya parıltı koruması yok. Yalnızca yokluk: yalnızca yokluk denetimi. Otomasyon devre dışı: otomatik gölgeleme yok. Güvenlik korumaları (fırtına/rüzgâr) her zaman etkin kalır.",
           "light_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için hafif gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",
           "normal_shade_position": "Bölge varsayılanını kullanmak için boş bırakın. Yalnızca bu pencere için normal gölgeleme hedef konumunu geçersiz kılmak üzere bir değer girin.",

@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Frånvaroposition (åsidosätter zonens standard)",
+          "night_position": "Nattposition (åsidosätter zonens standard)",
           "window_behavior_mode": "Automatiskt solskyddsläge",
           "light_shade_position": "Position för lätt skugga (åsidosätter zonens standard)",
           "normal_shade_position": "Position för normal skugga (åsidosätter zonens standard)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Lämna tomt för att ärva zonens standardfrånvaroposition. Ange ett värde för att åsidosätta den endast för det här fönstret.",
+          "night_position": "Lämna tomt för att ärva zonens standardnattposition. Ange ett värde för att åsidosätta den endast för det här fönstret.",
           "window_behavior_mode": "Helautomatiskt: sol, komfort, frånvaro och schema aktiva. Frånvaro och schema: frånvarostyrning, natt- och morgonschema aktiva; ingen sol-, värme- eller bländningsskuggning. Endast frånvaro: endast frånvarostyrning. Automatisering inaktiverad: ingen automatisk solskugga. Säkerhetsskydd (storm/vind) förblir alltid aktiva.",
           "light_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för lätt skugga endast för det här fönstret.",
           "normal_shade_position": "Lämna tomt för att använda zonens standard. Ange ett värde för att åsidosätta målpositionen för normal skugga endast för det här fönstret.",

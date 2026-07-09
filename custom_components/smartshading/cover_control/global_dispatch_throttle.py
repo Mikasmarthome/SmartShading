@@ -44,8 +44,9 @@ desired behaviour for Somfy RTS and similar RF-based systems.
 Safety behavior
 ---------------
 Safety commands (STORM_SAFE / WIND_SAFE) acquire the lock and wait for the
-throttle exactly like non-safety commands — the 1.0 s minimum is always
-enforced.  Safety's queue priority means it is exempt from stale-intent
+throttle exactly like non-safety commands — the minimum interval
+(DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS) is always enforced.  Safety's queue
+priority means it is exempt from stale-intent
 cancellation (it always dispatches even if the generation changed), but it
 never bypasses the timing gate.
 
@@ -66,10 +67,10 @@ from datetime import datetime, timedelta
 from typing import Callable
 
 
-DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS: float = 1.0
+DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS: float = 1.5
 """Default minimum time between cover service calls (seconds).
 
-Chosen for Somfy RTS / ESP-Somfy reliability: 1.0 seconds gives a single-
+Chosen for Somfy RTS / ESP-Somfy reliability: 1.5 seconds gives a single-
 threaded RF gateway enough time to complete one transmission before the next
 command arrives.  Deliberately conservative — reliability over throughput.
 Coordinator cycles are 5 minutes apart, so any intra-cycle burst is at most

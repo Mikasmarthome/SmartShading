@@ -37,7 +37,7 @@ def should_allow_lifecycle_release(
     Fires whenever the current lifecycle is no longer NIGHT and the window is
     still in a state established by the night schedule.
 
-    Two eligible states:
+    Three eligible states:
 
     NIGHT_CLOSED — state-based release (no prev=NIGHT requirement):
       The window was closed to night_position by NightEvaluator and is still
@@ -47,6 +47,19 @@ def should_allow_lifecycle_release(
       prev was never NIGHT in the current session (coordinator initialises to
       DAY), as well as the NightHardHold interference path where the transition
       cycle had proposed_is_open=False and the release opportunity was missed.
+
+    NIGHT_VENT — state-based release (F25): a window vented by night-contact
+      Option B (NightContactVent) is, like NIGHT_CLOSED, a state established by
+      the night schedule — mirrors NIGHT_CLOSED exactly.  Without this, a
+      window still carrying NIGHT_VENT as its current_state at the NIGHT→
+      MORNING/DAY transition had no dedicated release path: it relied solely on
+      the generic position-based recovery-open safety net
+      (_is_position_recovery_release), which only fires when the observed
+      position is >= 20 HA below fully open — a window vented to a position
+      close to open (e.g. configured window_open_night_position near 100)
+      would never satisfy that threshold and could remain stuck at the vent
+      position indefinitely.  This mirrors the NIGHT_CLOSED branch precisely,
+      using the same lifecycle-left-NIGHT condition.
 
     MANUAL_OVERRIDE — transition-based (prev=NIGHT required):
       The user moved the cover during the night and the override was just
@@ -66,8 +79,10 @@ def should_allow_lifecycle_release(
     # Current lifecycle must not be NIGHT (all paths share this guard).
     if new is LifecycleState.NIGHT:
         return False
-    # NIGHT_CLOSED: state-based — fires whenever lifecycle has left NIGHT.
-    if current_shading_state is ShadingState.NIGHT_CLOSED:
+    # NIGHT_CLOSED / NIGHT_VENT: state-based — fires whenever lifecycle has
+    # left NIGHT.  Both are night-schedule-established states; a window must
+    # not remain stuck in either once morning/day becomes active (F25).
+    if current_shading_state in (ShadingState.NIGHT_CLOSED, ShadingState.NIGHT_VENT):
         return True
     # MANUAL_OVERRIDE: transition-based — requires a live NIGHT→MORNING/DAY edge
     # to avoid releasing daytime overrides after a coordinator restart.

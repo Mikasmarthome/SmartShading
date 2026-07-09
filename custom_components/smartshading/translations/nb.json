@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Fraværsposisjon (overstyrer sonens standard)",
+          "night_position": "Nattposisjon (overstyrer sonens standard)",
           "window_behavior_mode": "Automatisk solskjermingsmodus",
           "light_shade_position": "Posisjon for lett skjerming (overstyrer sonens standard)",
           "normal_shade_position": "Posisjon for normal skjerming (overstyrer sonens standard)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "La stå tom for å arve sonens standard fraværsposisjon. Angi en verdi for å overstyre den bare for dette vinduet.",
+          "night_position": "La stå tom for å arve sonens standard nattposisjon. Angi en verdi for å overstyre den bare for dette vinduet.",
           "window_behavior_mode": "Helautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, natt- og morgentidsplan aktive; ingen sol-, varme- eller blendingsbeskyttelse. Bare fravær: bare fraværsstyring. Automatisering deaktivert: ingen automatisk solskjerming. Sikkerhetsbeskyttelser (storm/vind) forblir alltid aktive.",
           "light_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for lett skjerming bare for dette vinduet.",
           "normal_shade_position": "La stå tom for å bruke sonens standard. Angi en verdi for å overstyre målposisjonen for normal skjerming bare for dette vinduet.",

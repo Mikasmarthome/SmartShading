@@ -25,10 +25,13 @@ Coordinator call sequence per window, per cycle:
 """
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta
 
 from ..models.manual_override import ManualOverride
 from ..state_machine.states import ShadingState
+
+_LOGGER = logging.getLogger(__name__)
 
 _WARMUP_CYCLES_REQUIRED = 1
 
@@ -89,7 +92,15 @@ class OverrideDetector:
         for entry in raw or []:
             try:
                 ov = ManualOverride.from_dict(entry)
-            except Exception:
+            except Exception as exc:
+                # F7: a dropped entry here means a pre-restart manual override is
+                # NOT restored — SmartShading may then re-assert an automatic
+                # position over what the user had deliberately set.  Behavior is
+                # unchanged (still skipped); this makes the loss visible.
+                _LOGGER.warning(
+                    "OverrideDetector: could not restore an override entry "
+                    "(%s: %s) — treating as not overridden", type(exc).__name__, exc,
+                )
                 continue
             if now >= ov.expires_at:
                 continue  # stale — do not resurrect

@@ -72,11 +72,14 @@ Storage format (within learning persistence key smartshading_learning_{id})
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
 from ..cover_control.position_semantics import to_ha_position
+
+_LOGGER = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Configuration constants
@@ -460,8 +463,15 @@ class TargetPositionAdapter:
                 wa.normal = _deserialize_intensity(window_data.get("normal"))
                 wa.strong = _deserialize_intensity(window_data.get("strong"))
                 adapter._windows[str(window_id)] = wa
-            except Exception:
-                pass  # Corrupt window entry — skip silently
+            except Exception as exc:
+                # F7: window's learned target-position adaptation resets to
+                # defaults — logged so a persistent bug is distinguishable from
+                # a genuinely corrupt/legacy entry.
+                _LOGGER.warning(
+                    "TargetPositionAdapter: could not restore window=%s "
+                    "(%s: %s) — learned adaptation reset to defaults",
+                    window_id, type(exc).__name__, exc,
+                )
         return adapter
 
 
@@ -496,7 +506,13 @@ def _deserialize_intensity(data: Any) -> ShadeIntensityAdaptation:
             sample_count=int(data.get("sample_count", 0)),
             last_updated=last_updated,
         )
-    except Exception:
+    except Exception as exc:
+        # F7: one intensity tier's learned state resets to zero-confidence
+        # baseline — logged so this is distinguishable from legitimate absence.
+        _LOGGER.warning(
+            "TargetPositionAdapter: could not deserialize intensity data "
+            "(%s: %s) — using zero-confidence baseline", type(exc).__name__, exc,
+        )
         return ShadeIntensityAdaptation()
 
 

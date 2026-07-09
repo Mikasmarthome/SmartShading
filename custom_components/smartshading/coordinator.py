@@ -455,11 +455,12 @@ class _WeatherInputs:
     outdoor_temperature: float | None
     solar_radiation: float | None
     solar_radiation_age_s: float | None             # seconds since the solar sensor last updated
-    cloud_cover: float | None
-    wind_speed: float | None
-    wind_gust: float | None                         # Step 7: from optional gust sensor
-    weather_condition: str | None                   # raw HA state string (for WindowObservation)
-    weather_condition_enum: WeatherCondition | None  # Step 7: parsed enum for Tier 1 evaluators
+    solar_radiation_unit: str | None = None          # F20: sensor's unit_of_measurement, if any
+    cloud_cover: float | None = None
+    wind_speed: float | None = None
+    wind_gust: float | None = None                   # Step 7: from optional gust sensor
+    weather_condition: str | None = None             # raw HA state string (for WindowObservation)
+    weather_condition_enum: WeatherCondition | None = None  # Step 7: parsed enum for Tier 1 evaluators
 
 
 @dataclass
@@ -565,6 +566,15 @@ class _WindowComputeState:
     manual_override_release_reason: str | None = None
     # v1.1.5 position-based self-healing recovery open (ABSENCE_ONLY / A&S).
     behavior_mode_recovery_open: bool = False
+    # Authoritative solar source this cycle (engines/solar_source.py) — carried
+    # from the loop-local _solar_sel for diagnostics/support-export visibility.
+    # None when the no-sun fast path skipped solar classification this cycle.
+    selected_solar_source: str | None = None
+    solar_source_quality: str | None = None
+    measured_solar_wm2: float | None = None
+    estimated_solar_wm2: float | None = None
+    solar_cloud_applied: bool | None = None
+    solar_fallback_reason: str | None = None
     # Night Hard Hold: True when the hard-hold gate overrode the tier decision
     # to keep the cover at night_position instead of dispatching an OPEN command.
     night_hard_hold_applied: bool = False
@@ -668,7 +678,9 @@ def _mode_dispatch_allowed(
     if behavior_mode is WindowBehaviorMode.FULLY_AUTOMATIC:
         return True
     return (
-        shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
+        shading_state in (
+            ShadingState.STORM_SAFE, ShadingState.WIND_SAFE, ShadingState.RAIN_SAFE,
+        )
         or shading_state is ShadingState.MANUAL_OVERRIDE
         or (
             behavior_mode in (
@@ -905,6 +917,53 @@ def _apply_window_behavior_mode(
             ),
         )
     return wdi
+
+
+def _dispatch_order_key(
+    *,
+    is_safety: bool,
+    zone_id: str,
+    window_id: str,
+    zone_order: dict[str, int],
+    window_order_in_zone: dict[str, int],
+) -> tuple[int, int, int]:
+    """Sort key for zone-ordered dispatch batching (F18).
+
+    Purely a visual/RF-batching sequencing aid for the Pass 2 dispatch loop —
+    it never changes the global serial dispatch or the minimum inter-dispatch
+    interval, both of which still apply to every command regardless of order.
+
+    Safety commands always sort first (key (0, 0, 0)), so this reordering can
+    only ever move a safety dispatch EARLIER in the cycle relative to today's
+    plain config-insertion order, never later. Non-safety commands sort by
+    stable zone order, then by stable window-within-zone order, so a group
+    dispatch reads as "all of zone A, then all of zone B" instead of an
+    interleaved order. Pure function so the ordering rule is unit-testable.
+    """
+    if is_safety:
+        return (0, 0, 0)
+    zone_idx = zone_order.get(zone_id, len(zone_order))
+    window_idx = window_order_in_zone.get(window_id, 0)
+    return (1, zone_idx, window_idx)
+
+
+def _build_zone_dispatch_order(
+    zones: dict[str, object],
+    windows: dict[str, "WindowConfig"],
+) -> tuple[dict[str, int], dict[str, int]]:
+    """Build the stable (zone_order, window_order_in_zone) maps _dispatch_order_key
+    needs, reusing the same zone/window config order already used for entity
+    setup (see entities/sensor.py's per-zone loop) rather than inventing a new
+    ordering concept."""
+    zone_order = {zone_id: idx for idx, zone_id in enumerate(zones.keys())}
+    window_order_in_zone: dict[str, int] = {}
+    zone_window_counters: dict[str, int] = {}
+    for window_id, window in windows.items():
+        zid = window.zone_id
+        idx = zone_window_counters.get(zid, 0)
+        window_order_in_zone[window_id] = idx
+        zone_window_counters[zid] = idx + 1
+    return zone_order, window_order_in_zone
 
 
 class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
@@ -1474,8 +1533,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             try:
                 await self._save_learning_snapshot(dt_util.utcnow())
             except Exception:
-                _LOGGER.warning("Learning: flush failed (non-fatal)")
-                break
+                # F7-follow-up: a raised exception must not defeat the intended
+                # 3-attempt shutdown-flush guarantee — continue to the next
+                # attempt (bounded by range(3)) instead of aborting after 1.
+                _LOGGER.warning(
+                    "Learning: flush attempt %d/3 failed (non-fatal)", _attempt + 1)
+                continue
             if not self._learning_dirty:
                 break  # saved_generation == dirty_generation → nothing left
 
@@ -1940,6 +2003,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         """Read indoor temperature as average of all configured sensors.
         Returns None when no sensors are configured or all readings are invalid.
         Never raises: missing, unknown, unavailable, or non-numeric → skipped.
+        F20: each sensor's own unit_of_measurement is checked; a °F reading is
+        normalized to °C before being averaged in with the rest.
         """
         if not self._indoor_temperature_sensor_ids:
             return None
@@ -1950,7 +2015,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 continue
             value = WeatherEngine.parse_numeric_state(state.state)
             if value is not None:
-                readings.append(value)
+                unit = state.attributes.get("unit_of_measurement")
+                readings.append(WeatherEngine.normalize_temperature_c(value, unit))
         if not readings:
             return None
         return sum(readings) / len(readings)
@@ -2097,6 +2163,67 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         return None
 
+    def _sensor_unit(self, sensor_entity_id: str | None) -> str | None:
+        """F20: unit_of_measurement for a dedicated sensor entity, if readable.
+        None for a missing entity/attribute — never raises."""
+        if sensor_entity_id is None:
+            return None
+        state = self.hass.states.get(sensor_entity_id)
+        if state is None:
+            return None
+        unit = state.attributes.get("unit_of_measurement")
+        return unit if isinstance(unit, str) else None
+
+    def _read_normalized_temperature_c(
+        self, sensor_entity_id: str | None, weather_attribute: str | None
+    ) -> float | None:
+        """F20: same dedicated-sensor > weather-attribute > None fallback as
+        _read_value, but converts a dedicated sensor's °F reading to °C using
+        THAT sensor's own unit_of_measurement. The weather-entity attribute
+        fallback is intentionally left unconverted (unlike a sensor entity, a
+        weather entity does not expose a comparably reliable per-attribute
+        unit here) — existing behavior for that path is unchanged."""
+        if sensor_entity_id is not None:
+            state = self.hass.states.get(sensor_entity_id)
+            if state is not None:
+                value = WeatherEngine.parse_numeric_state(state.state)
+                if value is not None:
+                    unit = state.attributes.get("unit_of_measurement")
+                    return WeatherEngine.normalize_temperature_c(value, unit)
+
+        if weather_attribute is not None and self._weather_entity_id is not None:
+            weather_state = self.hass.states.get(self._weather_entity_id)
+            if weather_state is not None:
+                value = WeatherEngine.parse_numeric_state(weather_state.attributes.get(weather_attribute))
+                if value is not None:
+                    return value
+
+        return None
+
+    def _read_normalized_wind_speed_ms(
+        self, sensor_entity_id: str | None, weather_attribute: str | None
+    ) -> float | None:
+        """F20: mirrors _read_normalized_temperature_c for wind speed — a
+        dedicated sensor's km/h or mph reading is converted to m/s using its
+        own unit_of_measurement; the weather-entity attribute fallback is
+        unchanged."""
+        if sensor_entity_id is not None:
+            state = self.hass.states.get(sensor_entity_id)
+            if state is not None:
+                value = WeatherEngine.parse_numeric_state(state.state)
+                if value is not None:
+                    unit = state.attributes.get("unit_of_measurement")
+                    return WeatherEngine.normalize_wind_speed_ms(value, unit)
+
+        if weather_attribute is not None and self._weather_entity_id is not None:
+            weather_state = self.hass.states.get(self._weather_entity_id)
+            if weather_state is not None:
+                value = WeatherEngine.parse_numeric_state(weather_state.attributes.get(weather_attribute))
+                if value is not None:
+                    return value
+
+        return None
+
     def _read_weather_inputs(self) -> _WeatherInputs:
         weather_condition: str | None = None
         if self._weather_entity_id is not None:
@@ -2118,12 +2245,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     solar_age_s = None
 
         return _WeatherInputs(
-            outdoor_temperature=self._read_value(self._outdoor_temperature_sensor_id, "temperature"),
+            outdoor_temperature=self._read_normalized_temperature_c(
+                self._outdoor_temperature_sensor_id, "temperature"),
             solar_radiation=self._read_value(self._solar_radiation_sensor_id, None),
             solar_radiation_age_s=solar_age_s,
+            solar_radiation_unit=self._sensor_unit(self._solar_radiation_sensor_id),
             cloud_cover=self._read_value(self._cloud_cover_sensor_id, "cloud_coverage"),
-            wind_speed=self._read_value(self._wind_speed_sensor_id, "wind_speed"),
-            wind_gust=self._read_value(self._wind_gust_sensor_id, "wind_gust_speed"),
+            wind_speed=self._read_normalized_wind_speed_ms(
+                self._wind_speed_sensor_id, "wind_speed"),
+            wind_gust=self._read_normalized_wind_speed_ms(
+                self._wind_gust_sensor_id, "wind_gust_speed"),
             weather_condition=weather_condition,
             weather_condition_enum=WeatherEngine.parse_weather_condition(weather_condition),
         )
@@ -2318,6 +2449,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             _LOGGER.debug("Learning: P4c store restore skipped (non-fatal)")
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
+                # F7: this catch can abort partway through P2-P10 reconciliation,
+                # leaving learning state partially restored.  Without this counter
+                # storage_diagnostics()["learning_store_restore_failures"] stayed at
+                # 0 for this failure mode (only the owner-mismatch branch above
+                # incremented it), making a partial restore indistinguishable from
+                # a clean one in Support Export.
+                self._restore_failures += 1
             # Write a schema-valid storage file immediately on first setup so
             # /config/.storage/smartshading_learning_<id> is visible right away,
             # even before any learning data has been collected.  Also performs the
@@ -2733,6 +2871,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 measured_age_s=weather_inputs.solar_radiation_age_s,
                 estimated_wm2=_solar_estimate,
                 cloud_cover_pct=weather_inputs.cloud_cover,
+                measured_unit=weather_inputs.solar_radiation_unit,
             )
             effective_radiation = _solar_sel.effective_radiation_wm2
             _solar_source = "sensor" if _solar_sel.source == SOURCE_MEASURED else "estimate"
@@ -4341,6 +4480,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 manual_override_remaining_min=_mo_remaining_min,
                 manual_override_release_reason=_override_release_reason,
                 behavior_mode_recovery_open=_behavior_recovery_open,
+                selected_solar_source=_solar_sel.source,
+                solar_source_quality=_solar_sel.quality,
+                measured_solar_wm2=_solar_sel.measured_wm2,
+                estimated_solar_wm2=_solar_sel.estimated_wm2,
+                solar_cloud_applied=_solar_sel.cloud_applied,
+                solar_fallback_reason=_solar_sel.fallback_reason,
                 cover_available=(
                     _exec_snapshot.available if _exec_snapshot is not None else None
                 ),
@@ -4469,9 +4614,33 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # If _on_presence_change fires during dispatch (between awaits), it
         # increments _dispatch_generation and stale intents self-cancel.
         _this_dispatch_gen = self._dispatch_generation
+
+        # Zone-ordered dispatch sequencing (visual/RF-batching only — the
+        # global serial dispatch + throttle below are unchanged and still
+        # apply to every command in this order). Without this, the plain
+        # dict order of _window_states is whatever order windows were added
+        # in config_flow, which can freely interleave zones. Safety commands
+        # are exempt from the zone/window sort (_dispatch_order_key) and
+        # always sort first — this can only ever move a safety dispatch
+        # earlier in the cycle, never later, so it is never visually delayed
+        # relative to today's plain config-insertion order.
+        _zone_order, _window_order_in_zone = _build_zone_dispatch_order(
+            self.zones, self.windows
+        )
+        _ordered_window_states = sorted(
+            _window_states.items(),
+            key=lambda item: _dispatch_order_key(
+                is_safety=item[1].is_safety,
+                zone_id=item[1].window.zone_id,
+                window_id=item[0],
+                zone_order=_zone_order,
+                window_order_in_zone=_window_order_in_zone,
+            ),
+        )
+
         # For harmonized windows, the filter result is replaced with a new one
         # carrying the group's harmonized target_position_ha before plan building.
-        for window_id, s in _window_states.items():
+        for window_id, s in _ordered_window_states:
             harm = _harmonization[window_id]
             _exec_filter_for_dispatch = s.exec_filter_result
 
@@ -4543,8 +4712,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         #
                         # While holding the lock:
                         #   1. Throttle: ALL intents (including safety) sleep until
-                        #      ≥1.0 s have elapsed since the previous SENT command.
-                        #      Safety has queue priority but not a timing exemption.
+                        #      the configured minimum interval
+                        #      (DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS) has
+                        #      elapsed since the previous SENT command.  Safety has
+                        #      queue priority but not a timing exemption.
                         #   2. Stale-intent guard: non-safety only.  Safety always
                         #      dispatches even if the generation changed.
                         #
@@ -4602,7 +4773,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             # Update throttle clock whenever async_call was started.
                             # SENT:   confirmed dispatch — always update.
                             # FAILED: async_call was invoked (but raised) — the call
-                            #   starts the global 1.0 s interval regardless of outcome.
+                            #   starts the global minimum-interval window regardless
+                            #   of outcome.
                             # NOT_ATTEMPTED / BLOCKED: no async_call — do not update.
                             if _intent_result.status in (
                                 ExecutionStatus.SENT, ExecutionStatus.FAILED
@@ -4615,6 +4787,20 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         _intent.cover_entity_id,
                                         _intent.target_position_ha,
                                         _intent.is_safety,
+                                    )
+                                # F7-follow-up: a FAILED dispatch was previously only
+                                # visible via ExecutionResult (diagnostics export) or
+                                # the debug-gated line above, which is identical for
+                                # SENT and FAILED.  Always log FAILED at warning so a
+                                # cover command failure is visible in the HA log even
+                                # without debug logging enabled.
+                                if _intent_result.status == ExecutionStatus.FAILED:
+                                    _LOGGER.warning(
+                                        "SmartShading: cover dispatch FAILED entity=%s "
+                                        "error=%s (%s)",
+                                        _intent_result.entity_id,
+                                        _intent_result.error,
+                                        _intent_result.failure_exception_type,
                                     )
                         _exec_results.append(_intent_result)
                 _exec_plan_result = build_execution_plan_result(window_id, _exec_results)
@@ -4837,6 +5023,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 manual_override_remaining_min=s.manual_override_remaining_min,
                 manual_override_release_reason=s.manual_override_release_reason,
                 behavior_mode_recovery_open=s.behavior_mode_recovery_open,
+                selected_solar_source=s.selected_solar_source,
+                solar_source_quality=s.solar_source_quality,
+                measured_solar_wm2=s.measured_solar_wm2,
+                estimated_solar_wm2=s.estimated_solar_wm2,
+                solar_cloud_applied=s.solar_cloud_applied,
+                solar_fallback_reason=s.solar_fallback_reason,
             )
 
             # --- P2 Decision Provenance: build dispatch provenance + record ---
@@ -6478,6 +6670,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             if self._adaptive_profiles.get(window_id) else "very_low"))
             mp_active = bool(_mp.get("target_adaptation_active", False))
         except Exception:
+            # F7: fallback is fail-open (mp_active=False lets adoption proceed) —
+            # kept as-is (no behavior change), logged so a persistent failure here
+            # is distinguishable from a genuine "no manual preference" reading.
+            _LOGGER.warning(
+                "Learning: manual-preference check failed for adoption gating "
+                "window=%s (non-fatal, treated as no-preference)", window_id)
             mp_active = False
 
         elig = evaluate_adoption_eligibility(AdoptionEligibilityInput(
@@ -7687,6 +7885,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _mp_diag = self._target_position_adapter.get_adaptation_diagnostics(wid, _conf_level)
             mp_active = bool(_mp_diag.get("target_adaptation_active", False))
         except Exception:
+            # F7: same fail-open fallback as the adoption-gating site above —
+            # behavior unchanged, now logged for diagnosability.
+            _LOGGER.warning(
+                "Learning: manual-preference check failed for shadow gating "
+                "window=%s (non-fatal, treated as no-preference)", wid)
             mp_active = False
 
         shadow_eligible = derive_eligibility(self._contribution_models.get(wid), gen)[0]
@@ -8128,10 +8331,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             sources.append(SOURCE_ADAPTIVE_SOLAR)
         fm = s.forecast_modifier
         fm_delta = None
-        fm_trust = None
+        # F8: trust_score is populated by compute_forecast_strategy_modifier even
+        # on its below-threshold no-op branch (reason="trust_below_threshold") —
+        # capture it regardless of `applied` so research_export_v3.py's
+        # forecast_not_applied_reason can distinguish "low_trust" from
+        # "forecast_unavailable" from live data.  `applied`-gated fields
+        # (fm_delta, the AdaptationStep/sources entry) are unchanged.
+        fm_trust = getattr(fm, "trust_score", None) if fm is not None else None
         if fm is not None and getattr(fm, "applied", False):
             fm_delta = getattr(fm, "threshold_delta_wm2", None)
-            fm_trust = getattr(fm, "trust_score", None)
             steps.append(AdaptationStep(
                 source=SOURCE_FORECAST_MODIFIER, applied=True,
                 input_thresholds={"delta_wm2": fm_delta}, confidence=fm_trust,

@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Fraværsposition (tilsidesætter zonens standard)",
+          "night_position": "Natposition (tilsidesætter zonens standard)",
           "window_behavior_mode": "Automatisk afskærmningstilstand",
           "light_shade_position": "Position for let afskærmning (tilsidesætter zonens standard)",
           "normal_shade_position": "Position for normal afskærmning (tilsidesætter zonens standard)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Lad stå tom for at arve zonens standardfraværsposition. Angiv en værdi for at tilsidesætte den kun for dette vindue.",
+          "night_position": "Lad stå tom for at arve zonens standardnatposition. Angiv en værdi for at tilsidesætte den kun for dette vindue.",
           "window_behavior_mode": "Fuldautomatisk: sol, komfort, fravær og tidsplan aktive. Fravær og tidsplan: fraværsstyring, nat- og morgentidsplan aktive; ingen sol-, varme- eller blændingsbeskyttelse. Kun fravær: kun fraværsstyring. Automatisering deaktiveret: ingen automatisk afskærmning. Sikkerhedsbeskyttelser (storm/vind) forbliver altid aktive.",
           "light_shade_position": "Lad stå tom for at bruge zonens standard. Angiv en værdi for at tilsidesætte målpositionen for let afskærmning kun for dette vindue.",
           "normal_shade_position": "Lad stå tom for at bruge zonens standard. Angiv en værdi for at tilsidesætte målpositionen for normal afskærmning kun for dette vindue.",

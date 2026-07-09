@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Poissaolosijainti (ohittaa vyöhykkeen oletuksen)",
+          "night_position": "Yösijainti (ohittaa vyöhykkeen oletuksen)",
           "window_behavior_mode": "Automaattinen varjostustila",
           "light_shade_position": "Kevyen varjostuksen sijainti (ohittaa vyöhykkeen oletuksen)",
           "normal_shade_position": "Normaalin varjostuksen sijainti (ohittaa vyöhykkeen oletuksen)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletuspoissaolosijainnin. Anna arvo ohittaaksesi sen vain tälle ikkunalle.",
+          "night_position": "Jätä tyhjäksi periäksesi vyöhykkeen oletusyösijainnin. Anna arvo ohittaaksesi sen vain tälle ikkunalle.",
           "window_behavior_mode": "Täysin automaattinen: aurinko, mukavuus, poissaolo ja aikataulu aktiivisia. Poissaolo ja aikataulu: poissaolo-ohjaus, yö- ja aamuaikataulu aktiivisia; ei aurinko-, lämpö- tai häikäisysuojavarjostusta. Vain poissaolo: vain poissaolo-ohjaus. Automaatio poistettu käytöstä: ei automaattista varjostusta. Turvasuojaukset (myrsky/tuuli) pysyvät aina aktiivisina.",
           "light_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi kevyen varjostuksen tavoitesijainnin vain tälle ikkunalle.",
           "normal_shade_position": "Jätä tyhjäksi käyttääksesi vyöhykkeen oletusta. Anna arvo ohittaaksesi normaalin varjostuksen tavoitesijainnin vain tälle ikkunalle.",

@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Posició d'absència (substitueix el valor per defecte de la zona)",
+          "night_position": "Posició nocturna (substitueix el valor per defecte de la zona)",
           "window_behavior_mode": "Mode d'ombreig automàtic",
           "light_shade_position": "Posició d'ombra lleugera (substitueix el valor per defecte de la zona)",
           "normal_shade_position": "Posició d'ombra normal (substitueix el valor per defecte de la zona)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Deixa-ho buit per heretar la posició d'absència per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra.",
+          "night_position": "Deixa-ho buit per heretar la posició nocturna per defecte de la zona. Defineix un valor per substituir-la només en aquesta finestra.",
           "window_behavior_mode": "Totalment automàtic: sol, confort, absència i horari actius. Absència i horari: control per absència, horari de nit i matí actius; sense ombra solar, tèrmica o antireflex. Només absència: només control per absència. Automatització desactivada: sense ombreig automàtic. Les proteccions de seguretat (tempesta/vent) sempre romanen actives.",
           "light_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra lleugera només en aquesta finestra.",
           "normal_shade_position": "Deixa-ho buit per utilitzar el valor per defecte de la zona. Defineix un valor per substituir la posició objectiu d'ombra normal només en aquesta finestra.",

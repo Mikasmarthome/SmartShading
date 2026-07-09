@@ -38,12 +38,21 @@ FB_NOT_CONFIGURED = "sensor_not_configured"
 FB_UNAVAILABLE = "sensor_unavailable"     # None / unknown / unavailable / non-numeric
 FB_IMPLAUSIBLE = "sensor_implausible"     # outside [0, MAX_PLAUSIBLE_SOLAR_WM2]
 FB_STALE = "sensor_stale"                 # last update older than SOLAR_SENSOR_MAX_AGE_S
+FB_UNIT_MISMATCH = "sensor_unit_mismatch"  # F20: unit_of_measurement is not W/m² (e.g. lux)
 
 # A global-horizontal solar-radiation reading above this is physically
 # implausible (clear-sky peak is ~1000 W/m²; allow head-room for edge devices).
 MAX_PLAUSIBLE_SOLAR_WM2 = 1500.0
 # A measured solar reading older than this is treated as stale → fallback.
 SOLAR_SENSOR_MAX_AGE_S = 1800  # 30 minutes
+
+# F20: illuminance units (lux family) a user could plausibly miswire into the
+# solar-radiation sensor slot — visually a "brightness" sensor like W/m², but
+# a different physical quantity entirely.  No safe automatic conversion
+# exists, so a reading in one of these units is rejected (FB_UNIT_MISMATCH)
+# rather than trusted as W/m².  A missing/unrecognized unit is NOT rejected
+# here — it is trusted exactly like before this check existed.
+_NON_SOLAR_IRRADIANCE_UNITS = frozenset({"lx", "lux", "klx", "klux"})
 
 
 @dataclass(frozen=True)
@@ -90,6 +99,7 @@ def classify_solar_source(
     measured_age_s: float | None,
     estimated_wm2: object,
     cloud_cover_pct: object,
+    measured_unit: object = None,
     max_plausible_wm2: float = MAX_PLAUSIBLE_SOLAR_WM2,
     max_age_s: float = SOLAR_SENSOR_MAX_AGE_S,
 ) -> SolarSourceResult:
@@ -101,6 +111,11 @@ def classify_solar_source(
     treated as not-stale; the caller supplies it from HA state.last_updated).
     estimated_wm2 is the weather/cloud-derived fallback estimate (already
     cloud-folded by the WeatherEngine).
+    measured_unit (F20) is the sensor's raw unit_of_measurement string, or
+    None when unavailable/not supplied — a value reported in an illuminance
+    unit (lux family) is rejected as FB_UNIT_MISMATCH rather than trusted as
+    W/m²; a missing/unrecognized unit is trusted exactly as before this
+    parameter existed.
     """
     # Determine measured validity and, if invalid, the precise reason.
     reject: str | None = None
@@ -108,6 +123,8 @@ def classify_solar_source(
         reject = FB_NOT_CONFIGURED
     elif not _finite(measured_wm2):
         reject = FB_UNAVAILABLE
+    elif isinstance(measured_unit, str) and measured_unit.strip().lower() in _NON_SOLAR_IRRADIANCE_UNITS:
+        reject = FB_UNIT_MISMATCH
     elif measured_wm2 < 0.0 or measured_wm2 > max_plausible_wm2:  # type: ignore[operator]
         reject = FB_IMPLAUSIBLE
     elif measured_age_s is not None and _finite(measured_age_s) and measured_age_s > max_age_s:

@@ -411,14 +411,15 @@ class ForecastLearningStore:
             for snap_id, raw_snap in section.items():
                 try:
                     snapshots[snap_id] = _snapshot_from_dict(raw_snap)
-                except Exception:
+                except Exception as exc:
                     _log.warning(
-                        "ForecastLearningStore: skipping corrupt forecast snapshot %r",
-                        snap_id,
+                        "ForecastLearningStore: skipping corrupt forecast snapshot %r "
+                        "(%s: %s)", snap_id, type(exc).__name__, exc,
                     )
-        except Exception:
+        except Exception as exc:
             _log.warning(
-                "ForecastLearningStore: forecast_snapshots section unreadable — skipping"
+                "ForecastLearningStore: forecast_snapshots section unreadable — skipping "
+                "(%s: %s)", type(exc).__name__, exc,
             )
 
         # --- RealitySnapshots ---
@@ -430,14 +431,15 @@ class ForecastLearningStore:
             for real_id, raw_real in section.items():
                 try:
                     realities[real_id] = _reality_from_dict(raw_real)
-                except Exception:
+                except Exception as exc:
                     _log.warning(
-                        "ForecastLearningStore: skipping corrupt reality snapshot %r",
-                        real_id,
+                        "ForecastLearningStore: skipping corrupt reality snapshot %r "
+                        "(%s: %s)", real_id, type(exc).__name__, exc,
                     )
-        except Exception:
+        except Exception as exc:
             _log.warning(
-                "ForecastLearningStore: reality_snapshots section unreadable — skipping"
+                "ForecastLearningStore: reality_snapshots section unreadable — skipping "
+                "(%s: %s)", type(exc).__name__, exc,
             )
 
         # --- ForecastRecords ---
@@ -449,14 +451,15 @@ class ForecastLearningStore:
             for rec_id, raw_rec in section.items():
                 try:
                     records[rec_id] = _record_from_dict(raw_rec)
-                except Exception:
+                except Exception as exc:
                     _log.warning(
-                        "ForecastLearningStore: skipping corrupt forecast record %r",
-                        rec_id,
+                        "ForecastLearningStore: skipping corrupt forecast record %r "
+                        "(%s: %s)", rec_id, type(exc).__name__, exc,
                     )
-        except Exception:
+        except Exception as exc:
             _log.warning(
-                "ForecastLearningStore: forecast_records section unreadable — skipping"
+                "ForecastLearningStore: forecast_records section unreadable — skipping "
+                "(%s: %s)", type(exc).__name__, exc,
             )
 
         return cls(

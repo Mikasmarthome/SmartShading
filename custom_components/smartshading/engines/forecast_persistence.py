@@ -134,6 +134,15 @@ class ForecastPersistenceAdapter:
         self._restore_rejected: bool = False
         self._provider_changed: bool = False
         self._restore_diagnostics: dict = {}
+        # F7-follow-up: analogous to LearningPersistenceAdapter's _save_failures —
+        # a running count so a persistently-failing forecast save is visible in
+        # diagnostics instead of only as repeated identical log lines.
+        self._save_failures: int = 0
+
+    @property
+    def save_failures(self) -> int:
+        """Count of async_save calls that raised, since this adapter was created."""
+        return self._save_failures
 
     @property
     def provider_changed(self) -> bool:
@@ -194,10 +203,10 @@ class ForecastPersistenceAdapter:
         """
         try:
             raw = await self._store.async_load()
-        except Exception:
+        except Exception as exc:
             _log.error(
                 "ForecastPersistenceAdapter: failed to load from storage — "
-                "starting with empty store"
+                "starting with empty store (%s: %s)", type(exc).__name__, exc,
             )
             return ForecastLearningStore.empty()
 
@@ -304,7 +313,9 @@ class ForecastPersistenceAdapter:
 
         try:
             await self._store.async_save(payload)
-        except Exception:
+        except Exception as exc:
+            self._save_failures += 1
             _log.error(
-                "ForecastPersistenceAdapter: failed to save to storage"
+                "ForecastPersistenceAdapter: failed to save to storage (%s: %s)",
+                type(exc).__name__, exc,
             )

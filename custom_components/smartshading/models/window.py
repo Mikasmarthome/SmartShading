@@ -130,6 +130,15 @@ class WindowConfig:
     # None → coordinator uses DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA (100 = fully open).
     window_open_night_position_ha: int | None = None
 
+    # F23: per-window night-close position override (HA convention: 0=closed,
+    # 100=open).  None = use the resolved lifecycle night position (the
+    # existing weekday/weekend-aware default that already applies uniformly
+    # to this window today — night position has no zone-level tier, unlike
+    # absence_position, so this overrides that resolved value directly, not
+    # a zone default).  Set to override the night-close target for this
+    # specific window only; the lifecycle-wide value is unaffected.
+    night_position: int | None = None
+
     @property
     def contact_entity_ids(self) -> list[str]:
         """Normalised list of configured contact entity ids (legacy + multi).

@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Absence position (overrides zone default)",
+          "night_position": "Night position (overrides zone default)",
           "window_behavior_mode": "Automatic shading mode",
           "light_shade_position": "Light shade position (overrides zone default)",
           "normal_shade_position": "Normal shade position (overrides zone default)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Leave empty to inherit the zone's default absence position. Set a value to override it for this window only.",
+          "night_position": "Leave empty to use the zone default night position. Set a value to override the night position only for this window.",
           "window_behavior_mode": "Fully automatic: sun, comfort, absence, and schedule active. Absence and schedule: absence control, night, and morning schedule active; no solar, heat, or glare shading. Absence only: absence control only. Automation disabled: no automatic shading. Safety guards (storm/wind) always remain active.",
           "light_shade_position": "Leave empty to use the zone default. Set a value to override the light shade target position for this window only.",
           "normal_shade_position": "Leave empty to use the zone default. Set a value to override the normal shade target position for this window only.",

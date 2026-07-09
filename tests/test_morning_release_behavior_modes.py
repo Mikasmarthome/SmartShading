@@ -108,11 +108,21 @@ import custom_components.smartshading.coordinator as _coord_mod  # noqa: E402
 from custom_components.smartshading.engines.lifecycle_guard import (  # noqa: E402
     should_allow_lifecycle_release,
 )
-from custom_components.smartshading.models.lifecycle import LifecycleState  # noqa: E402
-from custom_components.smartshading.models.window import WindowBehaviorMode  # noqa: E402
+from custom_components.smartshading.models.lifecycle import (  # noqa: E402
+    LifecycleState, NightDayLifecycleConfig,
+)
+from custom_components.smartshading.models.window import WindowBehaviorMode, WindowConfig  # noqa: E402
+from custom_components.smartshading.models.zone import ZoneConfig  # noqa: E402
+from custom_components.smartshading.models.config import GlobalDefaults, ShadePositionDefaults  # noqa: E402
+from custom_components.smartshading.models.comfort import ComfortConfig  # noqa: E402
+from custom_components.smartshading.models.window_decision_input import (  # noqa: E402
+    build_window_decision_input,
+)
+from custom_components.smartshading.evaluators.night_evaluator import NightEvaluator  # noqa: E402
 from custom_components.smartshading.state_machine.states import ShadingState  # noqa: E402
 
 _mode_dispatch_allowed = _coord_mod._mode_dispatch_allowed
+_apply_window_behavior_mode = _coord_mod._apply_window_behavior_mode
 
 
 # ---------------------------------------------------------------------------
@@ -333,6 +343,120 @@ class TestMR04_AbsenceAndScheduleMorningReleasePostRestart:
 
 
 # ===========================================================================
+# F25  ABSENCE_AND_SCHEDULE: morning release out of NIGHT_VENT (Option B)
+# ===========================================================================
+#
+# Field motivation: a window vented by night-contact Option B (NightContactVent,
+# current_state=NIGHT_VENT) had NO dedicated release path — only NIGHT_CLOSED
+# was eligible.  It relied entirely on the generic position-based recovery-open
+# safety net (_is_position_recovery_release), which only fires when the
+# observed position is >= 20 HA below fully open.  A window vented to a
+# position close to open (window_open_night_position configured near 100)
+# would never cross that threshold and could remain stuck at the vent
+# position indefinitely after the NIGHT->MORNING/DAY transition.
+
+class TestF25_AbsenceAndScheduleMorningReleaseFromNightVent:
+
+    def test_night_to_morning_night_vent_lifecycle_release_true(self):
+        """Live transition: prev=NIGHT, new=MORNING, state=NIGHT_VENT -> release True."""
+        assert _lifecycle_release(
+            prev=LifecycleState.NIGHT,
+            new=LifecycleState.MORNING,
+            current_state=ShadingState.NIGHT_VENT,
+        ) is True
+
+    def test_night_to_day_night_vent_lifecycle_release_true(self):
+        """NIGHT->DAY (no MORNING phase) also releases a vented window."""
+        assert _lifecycle_release(
+            prev=LifecycleState.NIGHT,
+            new=LifecycleState.DAY,
+            current_state=ShadingState.NIGHT_VENT,
+        ) is True
+
+    def test_post_restart_night_vent_releases(self):
+        """Post-restart (prev never NIGHT this session) still releases NIGHT_VENT,
+        mirroring the NIGHT_CLOSED post-restart path (MR-04)."""
+        assert _lifecycle_release(
+            prev=LifecycleState.DAY,
+            new=LifecycleState.MORNING,
+            current_state=ShadingState.NIGHT_VENT,
+        ) is True
+
+    def test_dispatch_allowed_with_night_vent_lifecycle_release(self):
+        """Full pipeline: OPEN + is_lifecycle_release=True (from NIGHT_VENT) -> allowed."""
+        lc_release = _lifecycle_release(
+            prev=LifecycleState.NIGHT,
+            new=LifecycleState.MORNING,
+            current_state=ShadingState.NIGHT_VENT,
+        )
+        assert lc_release is True
+        assert _dispatch_allowed(
+            WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+            ShadingState.OPEN,
+            is_lifecycle_release=lc_release,
+        ) is True
+
+    def test_release_blocked_when_new_is_night_for_night_vent(self):
+        """new=NIGHT must never release a currently-venting window (still night)."""
+        assert _lifecycle_release(
+            prev=LifecycleState.DAY,
+            new=LifecycleState.NIGHT,
+            current_state=ShadingState.NIGHT_VENT,
+        ) is False
+
+    def test_active_override_blocks_night_vent_release(self):
+        """An active manual override still takes precedence over the release,
+        exactly as for NIGHT_CLOSED — existing architecture, unchanged."""
+        assert should_allow_lifecycle_release(
+            prev=LifecycleState.NIGHT,
+            new=LifecycleState.MORNING,
+            current_shading_state=ShadingState.NIGHT_VENT,
+            active_override=object(),
+            proposed_is_open=True,
+        ) is False
+
+    def test_not_open_proposal_does_not_release_night_vent(self):
+        """proposed_is_open=False (e.g. Solar/Heat/Glare wants shading this
+        cycle instead) must not force a release out of NIGHT_VENT."""
+        assert should_allow_lifecycle_release(
+            prev=LifecycleState.NIGHT,
+            new=LifecycleState.MORNING,
+            current_shading_state=ShadingState.NIGHT_VENT,
+            active_override=None,
+            proposed_is_open=False,
+        ) is False
+
+    def test_fully_automatic_night_vent_release_unrestricted(self):
+        """FULLY_AUTOMATIC is not subject to behavior mode suppression at all —
+        it was never affected by this gap (regression guard)."""
+        assert _dispatch_allowed(
+            WindowBehaviorMode.FULLY_AUTOMATIC,
+            ShadingState.OPEN,
+            is_lifecycle_release=False,
+        ) is True
+
+    def test_night_vent_itself_still_dispatchable_unaffected(self):
+        """The pre-existing NIGHT_VENT initiation allowance (Option B venting
+        itself, MR-01) is untouched by this fix."""
+        assert _dispatch_allowed(
+            WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+            ShadingState.NIGHT_VENT,
+        ) is True
+
+    def test_other_states_not_affected_by_night_vent_addition(self):
+        """Sanity: adding NIGHT_VENT as a release-eligible current_state must
+        not accidentally make unrelated states (e.g. NORMAL_SHADE, OPEN as a
+        current_state) eligible too."""
+        for state in (ShadingState.NORMAL_SHADE, ShadingState.OPEN,
+                      ShadingState.STRONG_SHADE, ShadingState.LIGHT_SHADE):
+            assert _lifecycle_release(
+                prev=LifecycleState.NIGHT,
+                new=LifecycleState.MORNING,
+                current_state=state,
+            ) is False
+
+
+# ===========================================================================
 # MR-05  ABSENCE_AND_SCHEDULE: absence release allowed
 # ===========================================================================
 
@@ -469,3 +593,189 @@ class TestMR08_FullyAutomaticUnrestricted:
             ShadingState.OPEN,
             is_lifecycle_release=lc_release,
         ) is True
+
+
+# ===========================================================================
+# F23  Per-window night_position override — behavior-mode end-to-end gating
+#
+# Confirms the override cannot create a "backdoor" to normal night control
+# for ABSENCE_ONLY / DISABLED_AUTOMATIC — these modes already force
+# lifecycle_state=DAY in _apply_window_behavior_mode BEFORE NightEvaluator
+# ever runs, independent of whether effective_behavior.night_position was
+# resolved from the lifecycle default or a window override.
+# ===========================================================================
+
+def _night_wdi(window, *, lifecycle_state=LifecycleState.NIGHT):
+    zone = ZoneConfig(id="z1", name="Zone")
+    defaults = GlobalDefaults(night_shading_enabled=True)
+    lifecycle_config = NightDayLifecycleConfig(id="default", night_position=0, night_enabled=True)
+    return build_window_decision_input(
+        window=window, zone=zone, global_defaults=defaults,
+        shade_position_defaults=ShadePositionDefaults(),
+        lifecycle_config=lifecycle_config, lifecycle_state=lifecycle_state,
+        absence_active=False, current_shading_state=ShadingState.OPEN,
+        outdoor_temp_c=None, indoor_temp_c=None, exposure=None,
+        is_in_solar_sector=False,
+    )
+
+
+def _window_with_night_override(behavior_mode):
+    return WindowConfig(
+        id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+        cover_group_id="cg1", behavior_mode=behavior_mode, night_position=20,
+    )
+
+
+class TestF23NightPositionOverrideBehaviorModeGating:
+
+    def test_fully_automatic_uses_effective_night_position(self):
+        """FULLY_AUTOMATIC: no masking at all — NightEvaluator sees the
+        window override and produces NIGHT_CLOSED at the overridden position."""
+        window = _window_with_night_override(WindowBehaviorMode.FULLY_AUTOMATIC)
+        wdi = _night_wdi(window)
+        # FULLY_AUTOMATIC skips _apply_window_behavior_mode masking entirely
+        # (coordinator.py: only non-FULLY_AUTOMATIC modes are masked).
+        decision = NightEvaluator().evaluate(wdi)
+        assert decision is not None
+        assert decision.shading_state == ShadingState.NIGHT_CLOSED
+        from custom_components.smartshading.models.window_decision_input import _ha_to_internal
+        assert decision.target_position == _ha_to_internal(20)
+
+    def test_absence_and_schedule_uses_effective_night_position(self):
+        """ABSENCE_AND_SCHEDULE: masking preserves lifecycle/night — the
+        override still reaches NightEvaluator."""
+        window = _window_with_night_override(WindowBehaviorMode.ABSENCE_AND_SCHEDULE)
+        wdi = _night_wdi(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.ABSENCE_AND_SCHEDULE)
+        decision = NightEvaluator().evaluate(masked)
+        assert decision is not None
+        assert decision.shading_state == ShadingState.NIGHT_CLOSED
+
+    def test_absence_only_gains_no_new_night_control_despite_override(self):
+        """ABSENCE_ONLY: forces lifecycle_state=DAY regardless of the window
+        override being set — NightEvaluator must still return None (no new
+        normal night control introduced by F23)."""
+        window = _window_with_night_override(WindowBehaviorMode.ABSENCE_ONLY)
+        wdi = _night_wdi(window)  # built with lifecycle_state=NIGHT
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.ABSENCE_ONLY)
+        assert masked.lifecycle_state is LifecycleState.DAY  # forced, pre-existing behavior
+        decision = NightEvaluator().evaluate(masked)
+        assert decision is None
+
+    def test_disabled_automatic_gains_no_new_night_control_despite_override(self):
+        """DISABLED_AUTOMATIC: same DAY-forcing guard, same result."""
+        window = _window_with_night_override(WindowBehaviorMode.DISABLED_AUTOMATIC)
+        wdi = _night_wdi(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.DISABLED_AUTOMATIC)
+        assert masked.lifecycle_state is LifecycleState.DAY
+        decision = NightEvaluator().evaluate(masked)
+        assert decision is None
+
+    def test_absence_only_night_evaluator_none_without_override_too(self):
+        """Regression baseline: ABSENCE_ONLY already returned None from
+        NightEvaluator before F23 (no window override set) — confirms F23
+        did not change this pre-existing gate at all."""
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.ABSENCE_ONLY,
+        )
+        assert window.night_position is None
+        wdi = _night_wdi(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.ABSENCE_ONLY)
+        assert NightEvaluator().evaluate(masked) is None
+
+
+# ===========================================================================
+# F8  _apply_window_behavior_mode: direct Heat/Solar/Glare masking assertions
+#
+# Prior coverage (test_p2_behavior_mode_helper_is_pure) only proves
+# FULLY_AUTOMATIC is a pure pass-through; the actual field-nulling for the
+# three restricted modes had no direct assertion.  These tests close that
+# F8 gap: ABSENCE_AND_SCHEDULE/ABSENCE_ONLY/DISABLED_AUTOMATIC must not gain
+# any new Solar/Heat/Glare intelligence via adoption/experiment/strategy —
+# masking must reliably null those fields regardless of what an adopted
+# comfort-tier position injection left in effective_behavior.
+# ===========================================================================
+
+def _day_wdi_with_comfort(window):
+    """A DAY-lifecycle WDI with heat+glare comfort enabled and a real solar
+    exposure — the exact shape needed to prove Heat/Solar/Glare get masked
+    (there must be something real to suppress for the assertion to mean
+    anything, mirroring test_wind_below_threshold_lets_adapted_solar_target_
+    through's "control case" principle from test_tier_orchestrator.py)."""
+    zone = ZoneConfig(id="z1", name="Zone")
+    defaults = GlobalDefaults(absence_position=30, absence_shading_enabled=True)
+    lifecycle_config = NightDayLifecycleConfig(id="default")
+    comfort = ComfortConfig(heat_protection_enabled=True, glare_protection_enabled=True)
+    return build_window_decision_input(
+        window=window, zone=zone, global_defaults=defaults,
+        shade_position_defaults=ShadePositionDefaults(),
+        lifecycle_config=lifecycle_config, lifecycle_state=LifecycleState.DAY,
+        absence_active=False, current_shading_state=ShadingState.OPEN,
+        outdoor_temp_c=32.0, indoor_temp_c=29.0, exposure=None,
+        is_in_solar_sector=True, comfort_config=comfort,
+    )
+
+
+class TestF8BehaviorModeMaskingNullsHeatSolarGlare:
+
+    def test_absence_and_schedule_masks_heat_solar_glare(self):
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+        )
+        wdi = _day_wdi_with_comfort(window)
+        assert wdi.effective_behavior.heat_outdoor_threshold_c is not None  # sanity: real before masking
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.ABSENCE_AND_SCHEDULE)
+        assert masked.effective_behavior.heat_outdoor_threshold_c is None
+        assert masked.effective_behavior.heat_indoor_threshold_c is None
+        assert masked.effective_behavior.solar_gain_suppresses_shading is True
+        assert masked.effective_behavior.glare_protection_enabled is False
+        # Lifecycle/absence are explicitly KEPT for this mode (unlike the other two).
+        assert masked.lifecycle_state is LifecycleState.DAY  # unchanged from input
+        assert masked.effective_behavior.absence_position is not None
+
+    def test_absence_only_masks_heat_solar_glare(self):
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.ABSENCE_ONLY,
+        )
+        wdi = _day_wdi_with_comfort(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.ABSENCE_ONLY)
+        assert masked.effective_behavior.heat_outdoor_threshold_c is None
+        assert masked.effective_behavior.heat_indoor_threshold_c is None
+        assert masked.effective_behavior.solar_gain_suppresses_shading is True
+        assert masked.effective_behavior.glare_protection_enabled is False
+        assert masked.lifecycle_state is LifecycleState.DAY
+        # Absence floor is explicitly KEPT for this mode.
+        assert masked.effective_behavior.absence_position is not None
+
+    def test_disabled_automatic_masks_heat_solar_glare_and_absence(self):
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.DISABLED_AUTOMATIC,
+        )
+        wdi = _day_wdi_with_comfort(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.DISABLED_AUTOMATIC)
+        assert masked.effective_behavior.heat_outdoor_threshold_c is None
+        assert masked.effective_behavior.heat_indoor_threshold_c is None
+        assert masked.effective_behavior.solar_gain_suppresses_shading is True
+        assert masked.effective_behavior.glare_protection_enabled is False
+        assert masked.lifecycle_state is LifecycleState.DAY
+        # Only DISABLED_AUTOMATIC additionally nulls the absence floor —
+        # nothing beyond Safety/Manual Override may reach this mode.
+        assert masked.effective_behavior.absence_position is None
+
+    def test_fully_automatic_keeps_heat_solar_glare_untouched(self):
+        """Regression: FULLY_AUTOMATIC must not be affected by this masking
+        at all — the comfort fields set up by _day_wdi_with_comfort survive
+        unchanged (companion to the existing pure-passthrough test)."""
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.FULLY_AUTOMATIC,
+        )
+        wdi = _day_wdi_with_comfort(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.FULLY_AUTOMATIC)
+        assert masked is wdi  # pure pass-through, no replace() at all
+        assert masked.effective_behavior.heat_outdoor_threshold_c is not None
+        assert masked.effective_behavior.glare_protection_enabled is True

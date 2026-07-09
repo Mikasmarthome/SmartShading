@@ -9,6 +9,7 @@ Contains:
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
@@ -20,6 +21,8 @@ from ..state_machine.guards import HysteresisConfig
 from ..state_machine.states import ShadingState
 from .exposure_engine import WindowExposure
 from .learning_store import LearningStore
+
+_LOGGER = logging.getLogger(__name__)
 
 # ARCHITECTURE.md §4.3 "Hysterese-Beispiele" - entry/exit thresholds in W/m².
 HYSTERESIS_THRESHOLDS: dict[ShadingState, HysteresisConfig] = {
@@ -281,15 +284,24 @@ def compute_learning_diagnostics(
         ]
         transition_count_24h = sum(1 for r in transitions if r.timestamp >= cutoff_24h)
         transition_count_7d = sum(1 for r in transitions if r.timestamp >= cutoff_7d)
-    except Exception:
-        pass
+    except Exception as exc:
+        # F7: debug-level (this runs every cycle per window) — a persistent
+        # failure here previously left transition counts at 0, indistinguishable
+        # from "genuinely no transitions yet."
+        _LOGGER.debug(
+            "compute_learning_diagnostics: get_transitions failed for window=%s "
+            "(%s: %s)", window_id, type(exc).__name__, exc,
+        )
 
     try:
         overrides = store.get_overrides(window_id)
         override_count_24h = sum(1 for r in overrides if r.timestamp >= cutoff_24h)
         override_count_7d = sum(1 for r in overrides if r.timestamp >= cutoff_7d)
-    except Exception:
-        pass
+    except Exception as exc:
+        _LOGGER.debug(
+            "compute_learning_diagnostics: get_overrides failed for window=%s "
+            "(%s: %s)", window_id, type(exc).__name__, exc,
+        )
 
     try:
         learning_data_available = bool(
@@ -297,8 +309,11 @@ def compute_learning_diagnostics(
             or overrides
             or store.get_snapshots(window_id, limit=1)
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        _LOGGER.debug(
+            "compute_learning_diagnostics: get_snapshots failed for window=%s "
+            "(%s: %s)", window_id, type(exc).__name__, exc,
+        )
 
     return {
         "last_5_transitions": last_5_transitions,

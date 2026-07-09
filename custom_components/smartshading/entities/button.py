@@ -142,6 +142,44 @@ def _build_research_notification_message(filepath_str: str, locale: str = "en") 
     )
 
 
+def _build_export_failure_message(export_label: str, locale: str = "en") -> str:
+    if locale == "de":
+        return (
+            f"SmartShading {export_label} ist fehlgeschlagen.\n\n"
+            f"Es wurde keine Datei erstellt. Details stehen im Home-Assistant-Log."
+        )
+    return (
+        f"SmartShading {export_label} failed.\n\n"
+        f"No file was created. See the Home Assistant log for details."
+    )
+
+
+def _notify_export_failure(
+    hass: HomeAssistant, *, notification_id_prefix: str, export_label_de: str,
+    export_label_en: str, now: datetime,
+) -> None:
+    """Best-effort error notification for a failed export button press.
+
+    F7-follow-up: previously a build/write failure returned silently — the
+    user saw nothing unless they checked the HA log.  This reuses the same
+    persistent-notification mechanism already used for the success case, so
+    a failure is now visible in the UI too.  Never raises."""
+    from homeassistant.components.persistent_notification import (
+        async_create as pn_async_create,
+    )
+    try:
+        locale = _notification_locale(hass)
+        label = export_label_de if locale == "de" else export_label_en
+        pn_async_create(
+            hass,
+            message=_build_export_failure_message(label, locale=locale),
+            title=f"SmartShading — {label}",
+            notification_id=f"{notification_id_prefix}_failed_{now.strftime('%Y%m%dT%H%M%S')}",
+        )
+    except Exception:
+        pass  # best-effort — the log line at the call site is the fallback signal
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
@@ -311,8 +349,15 @@ class SmartShadingExportButton(ButtonEntity):
             from ..const import integration_version
             export_data = build_support_export_all_zones(
                 coordinators, now=now, integration_version=integration_version())
-        except Exception:
-            _LOGGER.error("SmartShading: support export: failed to build export data")
+        except Exception as exc:
+            _LOGGER.error(
+                "SmartShading: support export: failed to build export data (%s: %s)",
+                type(exc).__name__, exc,
+            )
+            _notify_export_failure(
+                self._hass, notification_id_prefix=_NOTIFICATION_ID_PREFIX,
+                export_label_de="Support-Export", export_label_en="Support Export", now=now,
+            )
             return
 
         filename = _export_filename(now, self._entry.entry_id)
@@ -326,9 +371,14 @@ class SmartShadingExportButton(ButtonEntity):
             await self._hass.async_add_executor_job(
                 _write_export_file, www_dir, filepath, export_data
             )
-        except Exception:
+        except Exception as exc:
             _LOGGER.error(
-                "SmartShading: learning export: failed to write file %s", filepath
+                "SmartShading: learning export: failed to write file %s (%s: %s)",
+                filepath, type(exc).__name__, exc,
+            )
+            _notify_export_failure(
+                self._hass, notification_id_prefix=_NOTIFICATION_ID_PREFIX,
+                export_label_de="Support-Export", export_label_en="Support Export", now=now,
             )
             return
 
@@ -347,8 +397,11 @@ class SmartShadingExportButton(ButtonEntity):
                 title=title,
                 notification_id=notification_id,
             )
-        except Exception:
-            _LOGGER.warning("SmartShading: learning export: failed to create notification")
+        except Exception as exc:
+            _LOGGER.warning(
+                "SmartShading: learning export: failed to create notification (%s: %s)",
+                type(exc).__name__, exc,
+            )
 
         _LOGGER.info(
             "SmartShading: support export written to %s (%d zone(s))",
@@ -359,8 +412,11 @@ class SmartShadingExportButton(ButtonEntity):
         from ..engines.export_retention import cleanup_old_exports
         try:
             await self._hass.async_add_executor_job(cleanup_old_exports, www_dir)
-        except Exception:
-            _LOGGER.warning("SmartShading: support export: retention cleanup failed")
+        except Exception as exc:
+            _LOGGER.warning(
+                "SmartShading: support export: retention cleanup failed (%s: %s)",
+                type(exc).__name__, exc,
+            )
 
         from ..const import DATA_DEBUG_LOGGING, DOMAIN as _DOMAIN
         if self._hass.data.get(_DOMAIN, {}).get(DATA_DEBUG_LOGGING, False):
@@ -425,8 +481,15 @@ class SmartShadingResearchExportButton(ButtonEntity):
             from ..const import integration_version
             export_data = build_research_export_all_zones(
                 coordinators, now=now, integration_version=integration_version())
-        except Exception:
-            _LOGGER.error("SmartShading: research export: failed to build export data")
+        except Exception as exc:
+            _LOGGER.error(
+                "SmartShading: research export: failed to build export data (%s: %s)",
+                type(exc).__name__, exc,
+            )
+            _notify_export_failure(
+                self._hass, notification_id_prefix=_RESEARCH_NOTIFICATION_ID_PREFIX,
+                export_label_de="Research-Export", export_label_en="Research Export", now=now,
+            )
             return
 
         filename = _research_export_filename(now)
@@ -439,9 +502,14 @@ class SmartShadingResearchExportButton(ButtonEntity):
             await self._hass.async_add_executor_job(
                 _write_export_file, www_dir, filepath, export_data
             )
-        except Exception:
+        except Exception as exc:
             _LOGGER.error(
-                "SmartShading: research export: failed to write file %s", filepath
+                "SmartShading: research export: failed to write file %s (%s: %s)",
+                filepath, type(exc).__name__, exc,
+            )
+            _notify_export_failure(
+                self._hass, notification_id_prefix=_RESEARCH_NOTIFICATION_ID_PREFIX,
+                export_label_de="Research-Export", export_label_en="Research Export", now=now,
             )
             return
 
@@ -460,8 +528,11 @@ class SmartShadingResearchExportButton(ButtonEntity):
                 title=title,
                 notification_id=notification_id,
             )
-        except Exception:
-            _LOGGER.warning("SmartShading: research export: failed to create notification")
+        except Exception as exc:
+            _LOGGER.warning(
+                "SmartShading: research export: failed to create notification (%s: %s)",
+                type(exc).__name__, exc,
+            )
 
         _LOGGER.info(
             "SmartShading: research export written to %s (%d zone(s))",
@@ -471,5 +542,8 @@ class SmartShadingResearchExportButton(ButtonEntity):
 
         try:
             await self._hass.async_add_executor_job(cleanup_old_exports, www_dir)
-        except Exception:
-            _LOGGER.warning("SmartShading: research export: retention cleanup failed")
+        except Exception as exc:
+            _LOGGER.warning(
+                "SmartShading: research export: retention cleanup failed (%s: %s)",
+                type(exc).__name__, exc,
+            )

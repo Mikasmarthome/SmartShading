@@ -248,7 +248,9 @@ def _build_window_section(
                 if not shading_learning_eligible:
                     exclusion_reason = "behavior_mode_not_fully_automatic"
         except Exception:
-            pass
+            _LOGGER.warning(
+                "SmartShading: zone_learning_export: behavior-mode section "
+                "failed for window")
 
     result = {
         "window_ref": window_ref,

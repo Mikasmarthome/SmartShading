@@ -185,6 +185,15 @@ def build_window_decision_input(
     absence_position_ha: int = ConfigResolver.resolve(
         window, zone, global_defaults, "absence_position"
     )
+    # F23: per-window night-close position override.  Night position has no
+    # zone-level tier (unlike absence_position), so this is a direct
+    # window-only override of the resolved lifecycle value, not a
+    # ConfigResolver Window>Zone>Global chain.
+    night_position_ha: int = (
+        window.night_position
+        if window.night_position is not None
+        else lifecycle_config.night_position
+    )
 
     # --- Solar gain suppression (preventive shading opt-out for winter sun) --
     # When solar gain is enabled and the outdoor temperature is cold enough,
@@ -221,7 +230,7 @@ def build_window_decision_input(
         override_detection_tolerance=override_detection_tolerance,
         override_break_on_lifecycle=override_break_on_lifecycle,
         night_position=(
-            _ha_to_internal(lifecycle_config.night_position)
+            _ha_to_internal(night_position_ha)
             if night_shading_enabled
             else None
         ),

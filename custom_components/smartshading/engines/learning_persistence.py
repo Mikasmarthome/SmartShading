@@ -606,8 +606,11 @@ def serialize_learning_store(
     if target_adapter is not None:
         try:
             result["target_adaptations"] = target_adapter.to_storage_dict()
-        except Exception:
-            _LOGGER.warning("Learning: failed to serialize target adaptations (non-fatal)")
+        except Exception as exc:
+            _LOGGER.warning(
+                "Learning: failed to serialize target adaptations (non-fatal) (%s: %s)",
+                type(exc).__name__, exc,
+            )
 
     return result
 
@@ -852,8 +855,8 @@ def deserialize_into_learning_store(
     for i, d in enumerate(_pending_unique):
         try:
             pending_outcomes.append(PendingOutcome.from_dict(d))
-        except Exception:
-            _LOGGER.warning("Learning: skipping malformed pending outcome #%d", i)
+        except Exception as _exc:
+            _LOGGER.warning("Learning: skipping malformed pending outcome #%d (%s: %s)", i, type(_exc).__name__, _exc)
     _protected_ids: set[str] = {po.decision_id for po in pending_outcomes if po.decision_id}
 
     windows: dict = data.get("windows", {})
@@ -868,9 +871,10 @@ def deserialize_into_learning_store(
         for i, d in enumerate(raw_transitions):
             try:
                 transitions.append(_deserialize_transition(window_id, d))
-            except Exception:
+            except Exception as _exc:
                 _LOGGER.warning(
-                    "Learning: skipping malformed transition #%d for %s", i, window_id
+                    "Learning: skipping malformed transition #%d for %s (%s: %s)",
+                    i, window_id, type(_exc).__name__, _exc,
                 )
         transitions = prune_by_age_and_count(
             transitions, config.transitions_max_age_days, config.transitions_max_per_window, now
@@ -884,9 +888,10 @@ def deserialize_into_learning_store(
         for i, d in enumerate(raw_overrides):
             try:
                 overrides.append(_deserialize_override(window_id, d))
-            except Exception:
+            except Exception as _exc:
                 _LOGGER.warning(
-                    "Learning: skipping malformed override #%d for %s", i, window_id
+                    "Learning: skipping malformed override #%d for %s (%s: %s)",
+                    i, window_id, type(_exc).__name__, _exc,
                 )
         overrides = prune_by_age_and_count(
             overrides, config.overrides_max_age_days, config.overrides_max_per_window, now
@@ -900,9 +905,10 @@ def deserialize_into_learning_store(
         for i, d in enumerate(raw_snapshots):
             try:
                 snapshots.append(_deserialize_snapshot(window_id, d))
-            except Exception:
+            except Exception as _exc:
                 _LOGGER.warning(
-                    "Learning: skipping malformed snapshot #%d for %s", i, window_id
+                    "Learning: skipping malformed snapshot #%d for %s (%s: %s)",
+                    i, window_id, type(_exc).__name__, _exc,
                 )
         snapshots = prune_by_age_and_count(
             snapshots, config.snapshots_max_age_days, config.snapshots_max_per_window, now
@@ -921,9 +927,10 @@ def deserialize_into_learning_store(
         for i, d in enumerate(_out_res.valid_records):
             try:
                 outcomes.append(_deserialize_outcome(window_id, d))
-            except Exception:
+            except Exception as _exc:
                 _LOGGER.warning(
-                    "Learning: skipping malformed outcome #%d for %s", i, window_id
+                    "Learning: skipping malformed outcome #%d for %s (%s: %s)",
+                    i, window_id, type(_exc).__name__, _exc,
                 )
         outcomes = prune_by_age_and_count(
             outcomes, config.outcomes_max_age_days, config.outcomes_max_per_window, now
@@ -943,9 +950,10 @@ def deserialize_into_learning_store(
         for i, d in enumerate(_dec_res.valid_records):
             try:
                 decisions.append(_deserialize_decision(window_id, d))
-            except Exception:
+            except Exception as _exc:
                 _LOGGER.warning(
-                    "Learning: skipping malformed decision #%d for %s", i, window_id
+                    "Learning: skipping malformed decision #%d for %s (%s: %s)",
+                    i, window_id, type(_exc).__name__, _exc,
                 )
         # Belt-and-suspenders retention on restore (disk may predate config change).
         decisions = classify_and_prune_decisions(decisions, now, _protected_ids)
@@ -974,8 +982,8 @@ def deserialize_into_learning_store(
     for zid, raw_model in _tm_res.valid_records:
         try:
             thermal_models[zid] = ThermalResponseModel.from_dict(raw_model)
-        except Exception:
-            _LOGGER.warning("Learning: skipping malformed thermal model for %s", zid)
+        except Exception as _exc:
+            _LOGGER.warning("Learning: skipping malformed thermal model for %s (%s: %s)", zid, type(_exc).__name__, _exc)
     thermal_observations: dict = {}
     _to_agg = validate_records([], now=now)
     for zid, raw_list in (data.get("thermal_observations") or {}).items():
@@ -986,8 +994,8 @@ def deserialize_into_learning_store(
         for i, raw in enumerate(_to_res.valid_records):
             try:
                 obs_list.append(ThermalResponseObservation.from_dict(raw))
-            except Exception:
-                _LOGGER.warning("Learning: skipping malformed thermal obs #%d for %s", i, zid)
+            except Exception as _exc:
+                _LOGGER.warning("Learning: skipping malformed thermal obs #%d for %s (%s: %s)", i, zid, type(_exc).__name__, _exc)
         if obs_list:
             thermal_observations[zid] = obs_list
     _sv["thermal_observations"] = _to_agg
@@ -1000,8 +1008,8 @@ def deserialize_into_learning_store(
     for wid, raw_model in _cm_res.valid_records:
         try:
             contribution_models[wid] = WindowContributionModel.from_dict(raw_model)
-        except Exception:
-            _LOGGER.warning("Learning: skipping malformed contribution model for %s", wid)
+        except Exception as _exc:
+            _LOGGER.warning("Learning: skipping malformed contribution model for %s (%s: %s)", wid, type(_exc).__name__, _exc)
     contribution_evidence: dict = {}
     _ce_agg = validate_records([], now=now)
     for wid, raw_list in (data.get("window_contribution_evidence") or {}).items():
@@ -1013,8 +1021,8 @@ def deserialize_into_learning_store(
         for i, raw in enumerate(_ce_res.valid_records):
             try:
                 ev_list.append(WindowContributionEvidence.from_dict(raw))
-            except Exception:
-                _LOGGER.warning("Learning: skipping malformed contribution evidence #%d for %s", i, wid)
+            except Exception as _exc:
+                _LOGGER.warning("Learning: skipping malformed contribution evidence #%d for %s (%s: %s)", i, wid, type(_exc).__name__, _exc)
         if ev_list:
             contribution_evidence[wid] = ev_list
     _sv["window_contribution_evidence"] = _ce_agg
@@ -1040,8 +1048,8 @@ def deserialize_into_learning_store(
     for i, raw in enumerate(_sv["shadow_proposals"].valid_records):
         try:
             shadow_proposals.append(ShadowProposal.from_dict(raw))
-        except Exception:
-            _LOGGER.warning("Learning: skipping malformed shadow proposal #%d", i)
+        except Exception as _exc:
+            _LOGGER.warning("Learning: skipping malformed shadow proposal #%d (%s: %s)", i, type(_exc).__name__, _exc)
 
     # --- P7 bounded experiments (additive, optional) ---
     _sv["position_experiments"] = validate_records(
@@ -1051,8 +1059,8 @@ def deserialize_into_learning_store(
     for i, raw in enumerate(_sv["position_experiments"].valid_records):
         try:
             bounded_experiments.append(BoundedExperiment.from_dict(raw))
-        except Exception:
-            _LOGGER.warning("Learning: skipping malformed bounded experiment #%d", i)
+        except Exception as _exc:
+            _LOGGER.warning("Learning: skipping malformed bounded experiment #%d (%s: %s)", i, type(_exc).__name__, _exc)
 
     # --- P8 persistent adoptions (additive, optional) ---
     _sv["position_adoptions"] = validate_records(
@@ -1062,8 +1070,8 @@ def deserialize_into_learning_store(
     for i, raw in enumerate(_sv["position_adoptions"].valid_records):
         try:
             persistent_adoptions.append(PersistentTargetAdoption.from_dict(raw))
-        except Exception:
-            _LOGGER.warning("Learning: skipping malformed persistent adoption #%d", i)
+        except Exception as _exc:
+            _LOGGER.warning("Learning: skipping malformed persistent adoption #%d (%s: %s)", i, type(_exc).__name__, _exc)
 
     # --- P9B strategy experiments + adoptions (additive, optional) ---
     _sv["strategy_experiments"] = validate_records(
@@ -1073,8 +1081,8 @@ def deserialize_into_learning_store(
     for i, raw in enumerate(_sv["strategy_experiments"].valid_records):
         try:
             strategy_experiments.append(BoundedStrategyExperiment.from_dict(raw))
-        except Exception:
-            _LOGGER.warning("Learning: skipping malformed strategy experiment #%d", i)
+        except Exception as _exc:
+            _LOGGER.warning("Learning: skipping malformed strategy experiment #%d (%s: %s)", i, type(_exc).__name__, _exc)
     _sv["strategy_adoptions"] = validate_records(
         data.get("persistent_strategy_adoptions", []), now=now, id_key="adoption_id",
         timestamp_fields=("created_at", "updated_at"), reject_negative_counts=True)
@@ -1082,8 +1090,8 @@ def deserialize_into_learning_store(
     for i, raw in enumerate(_sv["strategy_adoptions"].valid_records):
         try:
             persistent_strategy_adoptions.append(PersistentStrategyAdoption.from_dict(raw))
-        except Exception:
-            _LOGGER.warning("Learning: skipping malformed strategy adoption #%d", i)
+        except Exception as _exc:
+            _LOGGER.warning("Learning: skipping malformed strategy adoption #%d (%s: %s)", i, type(_exc).__name__, _exc)
 
     # --- P10 shadow provenance tombstones (additive, optional) ---
     from ..models.shadow_tombstone import ShadowTombstone
@@ -1094,8 +1102,8 @@ def deserialize_into_learning_store(
     for i, raw in enumerate(_sv["position_tombstones"].valid_records):
         try:
             shadow_tombstones.append(ShadowTombstone.from_dict(raw))
-        except Exception:
-            _LOGGER.warning("Learning: skipping malformed shadow tombstone #%d", i)
+        except Exception as _exc:
+            _LOGGER.warning("Learning: skipping malformed shadow tombstone #%d (%s: %s)", i, type(_exc).__name__, _exc)
 
     restore_diagnostics = merge_section_diagnostics(_sv)
 
@@ -1225,9 +1233,10 @@ class LearningPersistenceAdapter:
         self._migration_dirty = False
         try:
             data = await self._store.async_load()
-        except Exception:
+        except Exception as exc:
             _LOGGER.warning(
-                "Learning: failed to read storage — starting with empty store"
+                "Learning: failed to read storage — starting with empty store (%s: %s)",
+                type(exc).__name__, exc,
             )
             return target_adapter
         if data is None:
@@ -1260,9 +1269,10 @@ class LearningPersistenceAdapter:
         except ValueError as exc:
             _LOGGER.warning("Learning: %s — starting with empty store", exc)
             return target_adapter
-        except Exception:
+        except Exception as exc:
             _LOGGER.warning(
-                "Learning: failed to deserialize storage — starting with empty store"
+                "Learning: failed to deserialize storage — starting with empty store "
+                "(%s: %s)", type(exc).__name__, exc,
             )
             return target_adapter
 
@@ -1271,8 +1281,11 @@ class LearningPersistenceAdapter:
             try:
                 target_adapter = TargetPositionAdapter.from_storage_dict(raw_ta)
                 _LOGGER.debug("Learning: restored target adaptation data")
-            except Exception:
-                _LOGGER.warning("Learning: failed to restore target adaptations (non-fatal)")
+            except Exception as exc:
+                _LOGGER.warning(
+                    "Learning: failed to restore target adaptations (non-fatal) (%s: %s)",
+                    type(exc).__name__, exc,
+                )
 
         return target_adapter
 
@@ -1335,7 +1348,10 @@ class LearningPersistenceAdapter:
                 research_daily_buckets=research_daily_buckets,
             )
             await self._store.async_save(data)
-        except Exception:
-            _LOGGER.warning("Learning: failed to persist learning data (non-fatal)")
+        except Exception as exc:
+            _LOGGER.warning(
+                "Learning: failed to persist learning data (non-fatal) (%s: %s)",
+                type(exc).__name__, exc,
+            )
             return False
         return True

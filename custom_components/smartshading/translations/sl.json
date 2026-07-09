@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Položaj ob odsotnosti (preglasi privzeto vrednost območja)",
+          "night_position": "Nočni položaj (preglasi privzeto vrednost območja)",
           "window_behavior_mode": "Samodejni način senčenja",
           "light_shade_position": "Položaj rahlega senčenja (preglasi privzeto vrednost območja)",
           "normal_shade_position": "Položaj normalnega senčenja (preglasi privzeto vrednost območja)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Pustite prazno za prevzem privzetega položaja odsotnosti območja. Vnesite vrednost, da ga preglasite samo za to okno.",
+          "night_position": "Pustite prazno za prevzem privzetega nočnega položaja območja. Vnesite vrednost, da ga preglasite samo za to okno.",
           "window_behavior_mode": "Popolnoma samodejno: sonce, udobje, odsotnost in urnik aktivni. Odsotnost in urnik: nadzor odsotnosti, nočni in jutranji urnik aktivni; brez sončnega, toplotnega ali protisijajnega senčenja. Samo odsotnost: samo nadzor odsotnosti. Avtomatizacija onemogočena: brez samodejnega senčenja. Varnostne zaščite (nevihta/veter) ostanejo vedno aktivne.",
           "light_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja rahlega senčenja samo za to okno.",
           "normal_shade_position": "Pustite prazno za uporabo privzete vrednosti območja. Vnesite vrednost za preglasitev ciljnega položaja normalnega senčenja samo za to okno.",

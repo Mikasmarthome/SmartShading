@@ -167,3 +167,55 @@ class WeatherEngine:
             return float(text)
         except ValueError:
             return None
+
+    @staticmethod
+    def normalize_temperature_c(value: float, unit: object) -> float:
+        """Normalize an already-parsed numeric temperature reading to °C.
+
+        F20: a dedicated sensor's `unit_of_measurement` reflects whatever unit
+        it is CURRENTLY reporting in (e.g. °F on a US-locale Home Assistant
+        instance) — Home Assistant does not silently normalize this for a
+        custom integration reading `state.state` directly. Only Fahrenheit is
+        converted; a missing/unrecognized unit is trusted as already °C,
+        matching the behavior every existing (mostly °C) installation already
+        relies on — this must never regress a working setup that has no
+        `unit_of_measurement` set at all.
+        """
+        if isinstance(unit, str) and unit.strip().lower() in ("°f", "f", "fahrenheit"):
+            return (value - 32.0) * 5.0 / 9.0
+        return value
+
+    @staticmethod
+    def normalize_wind_speed_ms(value: float, unit: object) -> float:
+        """Normalize an already-parsed numeric wind-speed reading to m/s.
+
+        F20: km/h and mph are converted; a missing/unrecognized unit
+        (including m/s itself) is trusted as already m/s, matching every
+        existing installation's current behavior.
+        """
+        if isinstance(unit, str):
+            normalized_unit = unit.strip().lower()
+            if normalized_unit in ("km/h", "kmh", "kph"):
+                return value / 3.6
+            if normalized_unit in ("mph", "mi/h"):
+                return value * 0.44704
+        return value
+
+    #: Illuminance units (lux family) that must never be silently treated as
+    #: solar irradiance (W/m²) — visually similar "brightness" sensors are a
+    #: realistic misconfiguration, and there is no safe automatic lux→W/m²
+    #: estimate (see engines/solar_source.py FB_UNIT_MISMATCH).
+    _NON_SOLAR_IRRADIANCE_UNITS = frozenset({"lx", "lux", "klx", "klux"})
+
+    @staticmethod
+    def is_plausible_solar_unit(unit: object) -> bool:
+        """False only for a unit clearly NOT solar irradiance (lux family).
+
+        True for "w/m²", "w/m2", or a missing/unrecognized unit — deliberately
+        permissive by default so an existing sensor with no explicit
+        `unit_of_measurement` (the common case today) keeps working exactly
+        as before. This is a unit-family sanity check, not a conversion.
+        """
+        if isinstance(unit, str) and unit.strip().lower() in WeatherEngine._NON_SOLAR_IRRADIANCE_UNITS:
+            return False
+        return True

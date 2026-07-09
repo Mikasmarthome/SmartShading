@@ -115,6 +115,8 @@ _recovery = _coord_mod._is_position_recovery_release
 _mode_dispatch_allowed = _coord_mod._mode_dispatch_allowed
 _MIN_BELOW = _coord_mod._RECOVERY_MIN_BELOW_OPEN_HA
 _OPEN_HA = _coord_mod._OPEN_POSITION_HA
+_dispatch_order_key = _coord_mod._dispatch_order_key
+_build_zone_dispatch_order = _coord_mod._build_zone_dispatch_order
 
 
 def _base_kwargs(**overrides):
@@ -303,6 +305,33 @@ class TestExistingPathsUnchanged:
             is_absence_release=False, is_lifecycle_release=False,
         ) is True
 
+    def test_wind_safe_allowed_for_absence_only(self):
+        assert _mode_dispatch_allowed(
+            WindowBehaviorMode.ABSENCE_ONLY, ShadingState.WIND_SAFE,
+            is_absence_release=False, is_lifecycle_release=False,
+        ) is True
+
+    def test_rain_safe_allowed_for_absence_only(self):
+        # Audit finding F1: RAIN_SAFE must bypass BehaviorMode-Hold exactly like
+        # STORM_SAFE/WIND_SAFE — a restricted mode must never suppress a rain
+        # safety dispatch.
+        assert _mode_dispatch_allowed(
+            WindowBehaviorMode.ABSENCE_ONLY, ShadingState.RAIN_SAFE,
+            is_absence_release=False, is_lifecycle_release=False,
+        ) is True
+
+    def test_rain_safe_allowed_for_absence_and_schedule(self):
+        assert _mode_dispatch_allowed(
+            WindowBehaviorMode.ABSENCE_AND_SCHEDULE, ShadingState.RAIN_SAFE,
+            is_absence_release=False, is_lifecycle_release=False,
+        ) is True
+
+    def test_rain_safe_allowed_for_disabled_automatic(self):
+        assert _mode_dispatch_allowed(
+            WindowBehaviorMode.DISABLED_AUTOMATIC, ShadingState.RAIN_SAFE,
+            is_absence_release=False, is_lifecycle_release=False,
+        ) is True
+
 
 # ===========================================================================
 # 8. Global dispatch integration (v1.1.5 audit follow-up, Finding F1):
@@ -472,3 +501,107 @@ class TestRecoveryOpenRespectsGlobalDispatchThrottle:
         assert _recovery(**_base_kwargs(is_safety=True)) is False
         assert _recovery(**_base_kwargs(active_override_present=True)) is False
         assert _recovery(**_base_kwargs(night_contact_blocking=True)) is False
+
+
+# ===========================================================================
+# 9. Zone-ordered dispatch sequencing (F18): _dispatch_order_key /
+# _build_zone_dispatch_order. Pure functions, unit-testable without a real
+# coordinator cycle.
+# ===========================================================================
+
+class TestBuildZoneDispatchOrder:
+    def test_zone_order_follows_zones_dict_order(self):
+        zones = {"z_b": object(), "z_a": object()}
+        windows = {}
+        zone_order, _ = _build_zone_dispatch_order(zones, windows)
+        assert zone_order == {"z_b": 0, "z_a": 1}
+
+    def test_window_order_within_zone_follows_windows_dict_order(self):
+        zones = {"z1": object()}
+        windows = {
+            "w2": types.SimpleNamespace(zone_id="z1"),
+            "w1": types.SimpleNamespace(zone_id="z1"),
+            "w3": types.SimpleNamespace(zone_id="z1"),
+        }
+        _, window_order = _build_zone_dispatch_order(zones, windows)
+        assert window_order == {"w2": 0, "w1": 1, "w3": 2}
+
+    def test_window_order_resets_per_zone(self):
+        zones = {"z1": object(), "z2": object()}
+        windows = {
+            "a1": types.SimpleNamespace(zone_id="z1"),
+            "b1": types.SimpleNamespace(zone_id="z2"),
+            "a2": types.SimpleNamespace(zone_id="z1"),
+            "b2": types.SimpleNamespace(zone_id="z2"),
+        }
+        _, window_order = _build_zone_dispatch_order(zones, windows)
+        assert window_order == {"a1": 0, "b1": 0, "a2": 1, "b2": 1}
+
+
+class TestDispatchOrderKey:
+    def test_safety_always_sorts_first(self):
+        key = _dispatch_order_key(
+            is_safety=True, zone_id="z9", window_id="w9",
+            zone_order={}, window_order_in_zone={},
+        )
+        assert key == (0, 0, 0)
+
+    def test_non_safety_sorts_by_zone_then_window(self):
+        zone_order = {"z1": 0, "z2": 1}
+        window_order_in_zone = {"w1": 0, "w2": 1}
+        key_a = _dispatch_order_key(
+            is_safety=False, zone_id="z1", window_id="w1",
+            zone_order=zone_order, window_order_in_zone=window_order_in_zone,
+        )
+        key_b = _dispatch_order_key(
+            is_safety=False, zone_id="z2", window_id="w2",
+            zone_order=zone_order, window_order_in_zone=window_order_in_zone,
+        )
+        assert key_a < key_b
+
+    def test_unknown_zone_sorts_after_known_zones(self):
+        zone_order = {"z1": 0, "z2": 1}
+        key = _dispatch_order_key(
+            is_safety=False, zone_id="z_unknown", window_id="w1",
+            zone_order=zone_order, window_order_in_zone={},
+        )
+        assert key == (1, 2, 0)
+
+    def test_full_sort_groups_interleaved_windows_by_zone_and_pulls_safety_first(self):
+        # Simulates the real Pass-2 scenario: config-insertion order interleaves
+        # zones (cellar -> living room -> cellar -> bedroom -> cellar), plus one
+        # safety window buried in the middle. After sorting: the safety window
+        # comes first, then each zone's windows appear together, in stable
+        # config order within the zone.
+        zones = {"cellar": object(), "living_room": object(), "bedroom": object()}
+        windows = {
+            "cellar_1": types.SimpleNamespace(zone_id="cellar"),
+            "living_room_1": types.SimpleNamespace(zone_id="living_room"),
+            "cellar_2": types.SimpleNamespace(zone_id="cellar"),
+            "bedroom_1": types.SimpleNamespace(zone_id="bedroom"),
+            "cellar_3": types.SimpleNamespace(zone_id="cellar"),
+        }
+        zone_order, window_order_in_zone = _build_zone_dispatch_order(zones, windows)
+
+        # Original (unsorted, config-insertion) order, matching _window_states'
+        # plain dict iteration today — cellar_3 is the safety candidate.
+        items = [
+            ("cellar_1", False), ("living_room_1", False), ("cellar_2", False),
+            ("bedroom_1", False), ("cellar_3", True),
+        ]
+        ordered = sorted(
+            items,
+            key=lambda item: _dispatch_order_key(
+                is_safety=item[1],
+                zone_id=windows[item[0]].zone_id,
+                window_id=item[0],
+                zone_order=zone_order,
+                window_order_in_zone=window_order_in_zone,
+            ),
+        )
+        ordered_ids = [window_id for window_id, _ in ordered]
+        # Safety pulled to the front; the rest grouped strictly by zone order
+        # (cellar, living_room, bedroom), preserving within-zone config order.
+        assert ordered_ids == [
+            "cellar_3", "cellar_1", "cellar_2", "living_room_1", "bedroom_1",
+        ]

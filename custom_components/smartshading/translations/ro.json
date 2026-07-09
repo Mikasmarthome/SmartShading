@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Poziție de absență (suprascrie valoarea implicită a zonei)",
+          "night_position": "Poziție nocturnă (suprascrie valoarea implicită a zonei)",
           "window_behavior_mode": "Mod de umbrire automată",
           "light_shade_position": "Poziție de umbrire ușoară (suprascrie valoarea implicită a zonei)",
           "normal_shade_position": "Poziție de umbrire normală (suprascrie valoarea implicită a zonei)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Lăsați gol pentru a moșteni poziția de absență implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră.",
+          "night_position": "Lăsați gol pentru a moșteni poziția nocturnă implicită a zonei. Setați o valoare pentru a o suprascrie doar pentru această fereastră.",
           "window_behavior_mode": "Complet automat: soare, confort, absență și program active. Absență și program: control prin absență, program de noapte și dimineață active; fără umbrire solară, termică sau anti-strălucire. Doar absență: doar control prin absență. Automatizare dezactivată: fără umbrire automată. Protecțiile de siguranță (furtună/vânt) rămân întotdeauna active.",
           "light_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire ușoară doar pentru această fereastră.",
           "normal_shade_position": "Lăsați gol pentru a folosi valoarea implicită a zonei. Setați o valoare pentru a suprascrie poziția-țintă de umbrire normală doar pentru această fereastră.",

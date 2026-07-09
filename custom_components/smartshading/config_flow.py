@@ -1719,12 +1719,14 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             return self.async_abort(reason="window_not_found")
         if user_input is not None:
             raw_abs = user_input.get(CONF_ABSENCE_POSITION)
+            raw_night = user_input.get(CONF_NIGHT_POSITION)
             raw_light = user_input.get(CONF_LIGHT_SHADE_POSITION)
             raw_normal = user_input.get(CONF_NORMAL_SHADE_POSITION)
             raw_strong = user_input.get(CONF_STRONG_SHADE_POSITION)
             return self._merge_save_window({
                 "behavior_mode": user_input.get(CONF_WINDOW_BEHAVIOR_MODE, WindowBehaviorMode.FULLY_AUTOMATIC.value),
                 "absence_position": int(raw_abs) if raw_abs is not None else None,
+                "night_position": int(raw_night) if raw_night is not None else None,
                 "light_shade_position": int(raw_light) if raw_light is not None else None,
                 "normal_shade_position": int(raw_normal) if raw_normal is not None else None,
                 "strong_shade_position": int(raw_strong) if raw_strong is not None else None,
@@ -1736,6 +1738,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 SelectSelectorConfig(options=WINDOW_BEHAVIOR_MODE_OPTIONS, mode=SelectSelectorMode.LIST, translation_key="window_behavior_mode")
             ),
             vol.Optional(CONF_ABSENCE_POSITION, description={"suggested_value": window.get("absence_position")}): _pos_selector,
+            vol.Optional(CONF_NIGHT_POSITION, description={"suggested_value": window.get("night_position")}): _pos_selector,
             vol.Optional(CONF_LIGHT_SHADE_POSITION, description={"suggested_value": window.get("light_shade_position")}): _pos_selector,
             vol.Optional(CONF_NORMAL_SHADE_POSITION, description={"suggested_value": window.get("normal_shade_position")}): _pos_selector,
             vol.Optional(CONF_STRONG_SHADE_POSITION, description={"suggested_value": window.get("strong_shade_position")}): _pos_selector,

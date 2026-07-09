@@ -170,18 +170,18 @@ class TestGlobalSerialDispatchThrottle:
         gsd = GlobalSerialDispatch(mono_clock=mono)
         t0 = self._utc()
         gsd.record_dispatch(t0)
-        # 0.5 s after: remaining wait = 1.0s interval - 0.5s elapsed = 0.5s
+        # 0.5 s after: remaining wait = 1.5s interval - 0.5s elapsed = 1.0s
         mono.advance(0.5)
         wait = gsd.time_until_next_allowed()
         assert wait > timedelta(0)
-        assert wait < timedelta(seconds=1.0)
+        assert wait < timedelta(seconds=1.5)
 
     def test_no_wait_after_interval_elapsed(self):
         mono = _FakeMono(0.0)
         gsd = GlobalSerialDispatch(mono_clock=mono)
         t0 = self._utc()
         gsd.record_dispatch(t0)
-        mono.advance(1.0)
+        mono.advance(1.5)
         wait = gsd.time_until_next_allowed()
         assert wait == timedelta(0)
 
@@ -415,8 +415,8 @@ class TestInitGlobalDispatch:
 
 
 class TestMinimumInterval:
-    def test_default_interval_is_one_point_zero_seconds(self):
-        assert DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS == 1.0
+    def test_default_interval_is_one_point_five_seconds(self):
+        assert DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS == 1.5
 
     def test_global_serial_dispatch_default_interval(self):
         gsd = GlobalSerialDispatch()

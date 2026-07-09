@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "离开位置（覆盖区域默认值）",
+          "night_position": "夜间位置（覆盖区域默认值）",
           "window_behavior_mode": "自动遮阳模式",
           "light_shade_position": "轻度遮阳位置（覆盖区域默认值）",
           "normal_shade_position": "正常遮阳位置（覆盖区域默认值）",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "留空以继承区域的默认离开位置。设置一个值以仅为该窗户覆盖它。",
+          "night_position": "留空以继承区域的默认夜间位置。设置一个值以仅为该窗户覆盖它。",
           "window_behavior_mode": "全自动：太阳、舒适度、离开和计划均启用。离家与时间计划：离家控制、夜间及晨间时间计划启用；无太阳、热量或眩光遮阳。仅离开：仅离开控制。自动化已禁用：无自动遮阳。安全保护（暴风/大风）始终保持启用。",
           "light_shade_position": "留空以使用区域默认值。设置一个值以仅为该窗户覆盖轻度遮阳目标位置。",
           "normal_shade_position": "留空以使用区域默认值。设置一个值以仅为该窗户覆盖正常遮阳目标位置。",

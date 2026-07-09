@@ -175,6 +175,7 @@
         "title": "Shading behaviour",
         "data": {
           "absence_position": "Posição de ausência (substitui o valor predefinido da zona)",
+          "night_position": "Posição noturna (substitui o valor predefinido da zona)",
           "window_behavior_mode": "Modo de sombreamento automático",
           "light_shade_position": "Posição de sombra ligeira (substitui o valor predefinido da zona)",
           "normal_shade_position": "Posição de sombra normal (substitui o valor predefinido da zona)",
@@ -182,6 +183,7 @@
         },
         "data_description": {
           "absence_position": "Deixe vazio para herdar a posição de ausência predefinida da zona. Defina um valor para a substituir apenas nesta janela.",
+          "night_position": "Deixe vazio para herdar a posição noturna predefinida da zona. Defina um valor para a substituir apenas nesta janela.",
           "window_behavior_mode": "Totalmente automático: sol, conforto, ausência e agenda ativos. Ausência e horário: controlo por ausência, horário noturno e matinal ativos; sem sombreamento solar, térmico ou antissolamento. Apenas ausência: apenas controlo por ausência. Automação desativada: sem sombreamento automático. As proteções de segurança (tempestade/vento) permanecem sempre ativas.",
           "light_shade_position": "Deixe vazio para usar o valor predefinido da zona. Defina um valor para substituir a posição-alvo de sombra ligeira apenas nesta janela.",
           "normal_shade_position": "Deixe vazio para usar o valor predefinido da zona. Defina um valor para substituir a posição-alvo de sombra normal apenas nesta janela.",

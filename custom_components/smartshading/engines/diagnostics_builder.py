@@ -11,10 +11,13 @@ entity ids, NO exact historical timestamps.
 """
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 
 from .diagnostics_privacy import enforce_depth, is_json_safe, truncate_strings
 from ..models.runtime_mode import derive_authority
+
+_LOGGER = logging.getLogger(__name__)
 
 DIAGNOSTICS_SCHEMA_VERSION: int = 1
 
@@ -65,7 +68,16 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         for zid in zones:
             try:
                 cfg = eff(zid) if eff else None
-            except Exception:
+            except Exception as exc:
+                # F7: this per-zone failure is invisible to _safe()'s errors dict
+                # (it's caught here, inside _matrix, before _safe ever sees an
+                # exception) — the zone's row silently degrades to
+                # learning/active=False. Logged so it's distinguishable from a
+                # genuine all-disabled zone.
+                _LOGGER.debug(
+                    "diagnostics_builder: effective_zone_execution failed for "
+                    "zone (%s: %s)", type(exc).__name__, exc,
+                )
                 cfg = None
             learning = bool(getattr(cfg, "learning_enabled", False))
             active = bool(getattr(cfg, "active_control_enabled", False))
@@ -248,7 +260,12 @@ def _call(c, name):
         return None
     try:
         return fn()
-    except Exception:
+    except Exception as exc:
+        # F7: previously indistinguishable from "getter not implemented" (the
+        # fn is None branch above) — logged so a real coordinator-getter bug
+        # is diagnosable instead of silently looking like a missing feature.
+        _LOGGER.debug(
+            "diagnostics_builder: %s() failed (%s: %s)", name, type(exc).__name__, exc)
         return None
 
 

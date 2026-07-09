@@ -4837,6 +4837,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 now,
                                 _sent_cap.has_reliable_position_feedback,
                             )
+                            # Settle-window guard: covers without reliable position
+                            # feedback (e.g. Somfy RTS) may still expose a numeric
+                            # current_position HA attribute (optimistic tracking on
+                            # the bridge/integration side) that lags behind
+                            # SmartShading's own just-sent command by more than the
+                            # single-cycle own-command guard in OverrideDetector.tick()
+                            # can cover — that stale reading would otherwise look like
+                            # a manual override on the very next cycle. Reuse the
+                            # existing one-shot suppression (already used after
+                            # Active-Control-enable and lifecycle-clear) to give the
+                            # cover one extra cycle to report a caught-up position
+                            # before override detection resumes. Reliable-feedback
+                            # covers are unaffected — their position reading is
+                            # trustworthy immediately.
+                            if not _sent_cap.has_reliable_position_feedback:
+                                self._override_detector.suppress_next_override_tick(window_id)
 
             _last_exec_result = (
                 _exec_plan_result.results[0]

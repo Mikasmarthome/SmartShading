@@ -9,8 +9,7 @@
   <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg" alt="HACS Custom"/></a>
   <a href="https://github.com/Mikasmarthome/SmartShading/releases/latest"><img src="https://img.shields.io/badge/stable-v1.1.7-brightgreen.svg" alt="Stable release"/></a>
   <img src="https://img.shields.io/badge/status-stable-brightgreen.svg" alt="Stable"/>
-  <img src="https://img.shields.io/badge/HA-2024.1%2B-blue.svg" alt="Home Assistant 2024.1+"/>
-  <a href="https://github.com/Mikasmarthome/SmartShading/actions/workflows/pytest.yml"><img src="https://github.com/Mikasmarthome/SmartShading/actions/workflows/pytest.yml/badge.svg" alt="Pytest"/></a>
+  <img src="https://img.shields.io/badge/HA-2024.1%2B-brightgreen.svg" alt="Home Assistant 2024.1+"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/></a>
 </p>
 

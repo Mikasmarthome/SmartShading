@@ -70,6 +70,20 @@ v1.1.2 second follow-up — confirmed-exit carve-out for Fallback/Open:
   comfort proposal shortly afterwards (e.g. the sun re-entering the sector at
   a boundary) is itself held against the fresh OPEN position, preventing an
   immediate open -> shade -> open flap in the other direction.
+
+F27 field fix — protective shade after fallback open must not be held:
+  Real-world report: a window opened via the daytime OPEN fallback (nothing
+  fired that cycle) and, at the next cycle, GlareEvaluator/HeatEvaluator/
+  SolarEvaluator correctly detected exposure and proposed a lower (more
+  shaded) target — but the hold blocked it for up to 60 minutes because the
+  fallback open is itself a NON_PRIORITY_DECIDERS member (point 2 above), so
+  it looked like an ordinary comfort-to-comfort switch. Unlike the removed
+  STRONG_SHADE bypass, this carve-out is narrow: it only fires when the LAST
+  dispatch was specifically the fallback open (never a genuine comfort tier),
+  the PROPOSED decider is one of Solar/Heat/Glare, and the proposed target is
+  strictly lower (more shade) than the fallback's target. It never applies
+  between Solar/Heat/Glare proposals themselves, and never for an opening
+  move — those keep being held exactly as before.
 """
 from __future__ import annotations
 
@@ -169,6 +183,10 @@ class ComfortMovementHold:
             for a Fallback/Open proposal on a window confirmed OUT of its
             solar sector this cycle (see module docstring), never for Solar/
             Heat/Glare comfort proposals or STRONG_SHADE,
+          - the proposal is not a protective move directly after a fallback
+            open (F27: last dispatch was "TierOrchestrator:fallback" and
+            this proposal is Solar/Heat/Glare wanting a strictly lower, more
+            shaded target — see module docstring),
           - less than `hold_minutes` have elapsed since the last dispatch.
         """
         if proposed_decided_by not in NON_PRIORITY_DECIDERS:
@@ -180,6 +198,14 @@ class ComfortMovementHold:
         if is_strong_escalation:
             return False
         if is_confirmed_exit:
+            return False
+        if (
+            self.last_decided_by == "TierOrchestrator:fallback"
+            and proposed_decided_by in ("GlareEvaluator", "HeatEvaluator", "SolarEvaluator")
+            and proposed_target_ha is not None
+            and self.last_target_ha is not None
+            and proposed_target_ha < self.last_target_ha
+        ):
             return False
         if self.last_dispatch_at is None:
             return False

@@ -84,6 +84,30 @@ F27 field fix — protective shade after fallback open must not be held:
   strictly lower (more shade) than the fallback's target. It never applies
   between Solar/Heat/Glare proposals themselves, and never for an opening
   move — those keep being held exactly as before.
+
+F29 field fix — exit-debounce / confirmed release for Fallback/Open:
+  Real-world report: HeatEvaluator (and, by the same shape, Solar/Glare)
+  reads its outdoor/indoor temperature and solar-exposure inputs fresh every
+  cycle with no smoothing or hysteresis (see evaluators/heat_evaluator.py).
+  A single free cycle where none of Tier 4/5 fires — a threshold-hovering
+  reading, not a genuine, durable clearing of heat/glare/solar protection —
+  let "TierOrchestrator:fallback" dispatch a full OPEN, only for the very
+  next cycle to re-trigger HeatEvaluator and shade back down: a visible
+  open-then-close flap five minutes apart. The F27 bypass above is correct
+  and unrelated (it concerns a comfort re-target AFTER an open has already
+  been dispatched); this fix addresses whether the fallback-open should have
+  dispatched at all on a single outlier cycle.
+  `should_delay_fallback_open()` tracks, per window, how many CONSECUTIVE
+  cycles in a row have proposed "TierOrchestrator:fallback" (regardless of
+  whether the resulting command actually dispatched). A fallback proposal is
+  held back until it has been proposed for `FALLBACK_OPEN_RELEASE_CYCLES`
+  (2) consecutive cycles in a row; any other decider — Safety, Night, Night
+  Contact, Absence, Manual Override, or a genuine Solar/Heat/Glare
+  protective decision — resets the counter to zero immediately, since only
+  a fallback proposal itself is ever delayed here. A confirmed, geometric
+  solar-sector exit (`is_confirmed_exit`, same hysteresis-free fact used by
+  the F27/v1.1.2 carve-outs above) skips the debounce, exactly like it
+  already skips the movement-stability hold itself.
 """
 from __future__ import annotations
 
@@ -121,6 +145,12 @@ NON_PRIORITY_DECIDERS: frozenset[str] = frozenset({
 #: and durably change.
 COMFORT_MOVEMENT_MIN_HOLD_MINUTES: float = 60.0
 
+#: Number of consecutive "TierOrchestrator:fallback" cycles required before
+#: a fallback OPEN proposal is actually allowed to dispatch (F29 field fix).
+#: A single free cycle is treated as a possible threshold-hovering outlier,
+#: not a confirmed, durable clearing of heat/glare/solar protection.
+FALLBACK_OPEN_RELEASE_CYCLES: int = 2
+
 
 @dataclass
 class ComfortMovementHold:
@@ -152,6 +182,10 @@ class ComfortMovementHold:
     last_decided_by: str | None = None
     last_target_ha: int | None = None
     last_dispatch_at: datetime | None = None
+    #: Consecutive "TierOrchestrator:fallback" cycles observed so far this
+    #: run (F29 exit-debounce). Runtime-only, resets to 0 on HA restart —
+    #: same non-persistence as every other field on this class.
+    pending_fallback_open_release_count: int = 0
 
     def should_hold(
         self,
@@ -211,6 +245,43 @@ class ComfortMovementHold:
             return False
         elapsed = now - self.last_dispatch_at
         return elapsed < timedelta(minutes=hold_minutes)
+
+    def should_delay_fallback_open(
+        self,
+        *,
+        proposed_decided_by: str,
+        is_confirmed_exit: bool = False,
+        required_consecutive_cycles: int = FALLBACK_OPEN_RELEASE_CYCLES,
+    ) -> bool:
+        """True when this cycle's "TierOrchestrator:fallback" OPEN proposal
+        must be held back (F29 exit-debounce / confirmed release).
+
+        Updates the internal consecutive-fallback-cycle counter as a side
+        effect — call exactly once per window per cycle, passing the SAME
+        `proposed_decided_by` used for `should_hold()` this cycle:
+
+          - Any decider OTHER than "TierOrchestrator:fallback" — Safety,
+            Night, Night Contact, Absence, Manual Override, or a genuine
+            Solar/Heat/Glare protective decision — resets the counter to
+            zero and returns False immediately. This gate only ever delays
+            the fallback-open proposal itself; every other decision path is
+            untouched.
+          - `is_confirmed_exit=True` (the same hysteresis-free geometric
+            solar-sector-exit fact used by should_hold()) also resets the
+            counter and returns False: a confirmed sector exit is trusted
+            immediately, exactly like it already skips the movement
+            stability hold.
+          - Otherwise the counter increments, and this cycle's proposal is
+            held back (returns True) until it has been observed for
+            `required_consecutive_cycles` consecutive cycles in a row —
+            i.e. a single free cycle is treated as a possible
+            threshold-hovering outlier, never as a confirmed release.
+        """
+        if proposed_decided_by != "TierOrchestrator:fallback" or is_confirmed_exit:
+            self.pending_fallback_open_release_count = 0
+            return False
+        self.pending_fallback_open_release_count += 1
+        return self.pending_fallback_open_release_count < required_consecutive_cycles
 
     def age_minutes(self, now: datetime) -> float | None:
         """Minutes since the last recorded dispatch, or None if never dispatched."""

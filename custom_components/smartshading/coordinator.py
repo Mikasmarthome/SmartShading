@@ -4277,6 +4277,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if _exec_target_internal is not None and _exec_cap is not None
                 else None
             )
+            # Shared geometric, hysteresis-free fact for both carve-outs
+            # below: a Fallback/Open proposal on a window confirmed OUT of
+            # its solar sector this cycle (not exposure-threshold noise).
+            _is_fallback_confirmed_exit = (
+                tier_decision.decided_by == "TierOrchestrator:fallback"
+                and not _effective_in_solar_sector
+            )
             _comfort_hold_held = _comfort_hold.should_hold(
                 proposed_decided_by=tier_decision.decided_by,
                 proposed_target_ha=_comfort_target_ha,
@@ -4288,20 +4295,25 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 # late-but-stable strong escalation is preferred over
                 # frequent, unstable movement.
                 is_strong_escalation=False,
-                # v1.1.2 second follow-up: a Fallback/Open proposal on a
-                # window confirmed OUT of its solar sector this cycle is a
-                # geometric, hysteresis-free end-reason (not exposure-
-                # threshold noise), so it may open even within the hold
+                # v1.1.2 second follow-up: may open even within the hold
                 # window. Never applied to Solar/Heat/Glare comfort
                 # proposals or STRONG_SHADE — see module docstring.
-                is_confirmed_exit=(
-                    tier_decision.decided_by == "TierOrchestrator:fallback"
-                    and not _effective_in_solar_sector
-                ),
+                is_confirmed_exit=_is_fallback_confirmed_exit,
                 now=now,
             )
             _comfort_hold_last_dispatch_age_min = _comfort_hold.age_minutes(now)
             _comfort_hold_remaining_min = _comfort_hold.hold_remaining_minutes(now)
+            # F29 field fix: hold back a Fallback/Open proposal until it has
+            # been confirmed for FALLBACK_OPEN_RELEASE_CYCLES consecutive
+            # cycles, avoiding a visible open-then-close flap when heat/
+            # glare/solar protection clears for only a single outlier cycle.
+            # Updates the window's consecutive-fallback-cycle counter as a
+            # side effect — must run every cycle regardless of dispatch
+            # capability, same as should_hold() above.
+            _fallback_open_release_pending = _comfort_hold.should_delay_fallback_open(
+                proposed_decided_by=tier_decision.decided_by,
+                is_confirmed_exit=_is_fallback_confirmed_exit,
+            )
 
             if _exec_entity_id is not None and _exec_cap is not None and _exec_snapshot is not None:
                 _guard_action_allowed = (
@@ -4319,6 +4331,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     execution_capability=ExecutionCapability(),
                     invert_position=_exec_cap.invert_position,
                     comfort_hold_allowed=not _comfort_hold_held,
+                    fallback_release_allowed=not _fallback_open_release_pending,
                 )
 
             # Cover group + hardware settings — resolved once and shared between

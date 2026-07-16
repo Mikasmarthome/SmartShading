@@ -51,6 +51,7 @@ import pytest
 
 from custom_components.smartshading.cover_control.command_filter import (
     BLOCKED_COMFORT_POSITION_HOLD,
+    BLOCKED_FALLBACK_RELEASE_PENDING,
     BLOCKED_SAME_POSITION,
     CommandFilter,
     ExecutionCapability,
@@ -58,6 +59,7 @@ from custom_components.smartshading.cover_control.command_filter import (
 )
 from custom_components.smartshading.engines.comfort_movement_hold import (
     COMFORT_MOVEMENT_MIN_HOLD_MINUTES,
+    FALLBACK_OPEN_RELEASE_CYCLES,
     NON_PRIORITY_DECIDERS,
     ComfortMovementHold,
 )
@@ -96,6 +98,11 @@ class TestConstants:
             "NightContactCatchUp", "NightContactBlock",
         ):
             assert decider not in NON_PRIORITY_DECIDERS
+
+    def test_fallback_open_release_requires_two_consecutive_cycles(self):
+        # F29 field fix: a single free cycle is a possible threshold-hovering
+        # outlier, not a confirmed release.
+        assert FALLBACK_OPEN_RELEASE_CYCLES == 2
 
 
 # ---------------------------------------------------------------------------
@@ -1075,3 +1082,309 @@ class TestCombinedPipelineAbsorbsBoundaryStraddlingOscillation:
         )
         assert result.allowed is True
         assert result.blocked_reason is None
+
+
+# ---------------------------------------------------------------------------
+# F29 field fix — exit-debounce / confirmed release for Fallback/Open.
+#
+# Real-world report: HeatEvaluator (and, by the same shape, Solar/Glare) has
+# no temporal smoothing of its inputs — a single free cycle where nothing in
+# Tier 4/5 fired (a threshold-hovering reading, not a genuine, durable
+# clearing of protection) let "TierOrchestrator:fallback" dispatch a full
+# OPEN, only for the very next cycle to re-trigger HeatEvaluator and shade
+# back down: a visible open-then-close flap five minutes apart. This is
+# UNRELATED to and does not touch the F27 fix above (F27 concerns a comfort
+# re-target AFTER an open has already been dispatched).
+# ---------------------------------------------------------------------------
+
+class TestFallbackOpenReleaseDebounce:
+    """Unit tests for ComfortMovementHold.should_delay_fallback_open()."""
+
+    def test_single_fallback_cycle_is_delayed(self):
+        h = _hold()
+        delayed = h.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        assert delayed is True
+        assert h.pending_fallback_open_release_count == 1
+
+    def test_second_consecutive_fallback_cycle_is_allowed(self):
+        h = _hold()
+        h.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        delayed = h.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        assert delayed is False
+        assert h.pending_fallback_open_release_count == 2
+
+    def test_third_and_later_consecutive_cycles_remain_allowed(self):
+        h = _hold()
+        for _ in range(4):
+            delayed = h.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        assert delayed is False
+
+    def test_counter_resets_on_heat_evaluator(self):
+        h = _hold()
+        h.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        assert h.pending_fallback_open_release_count == 1
+        delayed = h.should_delay_fallback_open(proposed_decided_by="HeatEvaluator")
+        assert delayed is False
+        assert h.pending_fallback_open_release_count == 0
+        # A fresh fallback cycle right after a real Heat decision must start
+        # the debounce over, not be treated as already-confirmed.
+        delayed_again = h.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        assert delayed_again is True
+        assert h.pending_fallback_open_release_count == 1
+
+    def test_counter_resets_on_glare_evaluator(self):
+        h = _hold()
+        h.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        delayed = h.should_delay_fallback_open(proposed_decided_by="GlareEvaluator")
+        assert delayed is False
+        assert h.pending_fallback_open_release_count == 0
+
+    def test_counter_resets_on_solar_evaluator(self):
+        h = _hold()
+        h.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        delayed = h.should_delay_fallback_open(proposed_decided_by="SolarEvaluator")
+        assert delayed is False
+        assert h.pending_fallback_open_release_count == 0
+
+    def test_safety_and_other_priority_deciders_never_delayed_and_reset_counter(self):
+        # None of these are "TierOrchestrator:fallback", so the gate never
+        # delays them and always resets the counter — this debounce touches
+        # only the fallback-open proposal itself.
+        for decider in (
+            "StormSafeEvaluator", "WindSafeEvaluator", "ManualOverrideEvaluator",
+            "NightEvaluator", "AbsenceEvaluator", "NightContactVent",
+            "NightContactReturnToNight",
+        ):
+            h = _hold()
+            h.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+            delayed = h.should_delay_fallback_open(proposed_decided_by=decider)
+            assert delayed is False, decider
+            assert h.pending_fallback_open_release_count == 0, decider
+
+    def test_confirmed_exit_skips_the_debounce_immediately(self):
+        # Same hysteresis-free geometric fact used by should_hold()'s
+        # is_confirmed_exit carve-out: a confirmed sector exit is trusted on
+        # the first cycle, no debounce needed.
+        h = _hold()
+        delayed = h.should_delay_fallback_open(
+            proposed_decided_by="TierOrchestrator:fallback",
+            is_confirmed_exit=True,
+        )
+        assert delayed is False
+        assert h.pending_fallback_open_release_count == 0
+
+
+class TestFallbackOpenReleasePipelineIntegration:
+    """End-to-end: real StateGuard + CommandFilter + ComfortMovementHold,
+    reproducing the F29 field report (fallback-open outlier -> Heat re-close
+    5 minutes later) and confirming the debounce absorbs it without a
+    visible dispatch, while a genuine two-cycle release still opens, and the
+    F27 protective-shade-after-open bypass keeps working unmodified."""
+
+    @staticmethod
+    def _fallback_release_allowed(hold, *, now, is_confirmed_exit=False):
+        return not hold.should_delay_fallback_open(
+            proposed_decided_by="TierOrchestrator:fallback",
+            is_confirmed_exit=is_confirmed_exit,
+        )
+
+    def test_single_outlier_cycle_produces_no_visible_dispatch(self):
+        from custom_components.smartshading.state_machine.guards import StateGuard
+        from custom_components.smartshading.state_machine.states import ShadingState
+
+        guard = StateGuard()
+        hold = ComfortMovementHold()
+        cmd_filter = CommandFilter()
+        exec_cap = ExecutionCapability()
+        window_id = "win_f29_single_outlier"
+
+        # Baseline: window is currently shaded via HeatEvaluator at HA 30.
+        t0 = _T0
+        hold.record_dispatch(decided_by="HeatEvaluator", target_ha=30, now=t0)
+        guard.record_action_sent(window_id, t0)
+
+        # 5 minutes later: a single free cycle, fallback proposes OPEN/100.
+        t1 = t0 + timedelta(minutes=5)
+        fallback_release_allowed = self._fallback_release_allowed(hold, now=t1)
+        state_guard_allowed = guard.can_send_action(window_id, ShadingState.OPEN, t1)
+        result = cmd_filter.evaluate(
+            target_position_internal=0,   # internal OPEN
+            current_position_internal=70,  # HA 30 shaded -> internal 70
+            execution_mode=ExecutionMode.AUTOMATIC,
+            is_safety=False,
+            is_manual_override=False,
+            is_cover_available=True,
+            state_guard_allowed=state_guard_allowed,
+            execution_capability=exec_cap,
+            fallback_release_allowed=fallback_release_allowed,
+        )
+        assert result.allowed is False
+        assert result.blocked_reason == BLOCKED_FALLBACK_RELEASE_PENDING
+
+    def test_two_consecutive_free_cycles_allow_the_open_dispatch(self):
+        from custom_components.smartshading.state_machine.guards import StateGuard
+        from custom_components.smartshading.state_machine.states import ShadingState
+
+        guard = StateGuard()
+        hold = ComfortMovementHold()
+        cmd_filter = CommandFilter()
+        exec_cap = ExecutionCapability()
+        window_id = "win_f29_genuine_release"
+
+        t0 = _T0
+        hold.record_dispatch(decided_by="HeatEvaluator", target_ha=30, now=t0)
+        guard.record_action_sent(window_id, t0)
+
+        # Cycle 1 (t0+5min): free cycle, held back — matches the test above.
+        t1 = t0 + timedelta(minutes=5)
+        assert self._fallback_release_allowed(hold, now=t1) is False
+
+        # Cycle 2 (t0+10min): second consecutive free cycle, now allowed.
+        t2 = t0 + timedelta(minutes=10)
+        fallback_release_allowed = self._fallback_release_allowed(hold, now=t2)
+        assert fallback_release_allowed is True
+        state_guard_allowed = guard.can_send_action(window_id, ShadingState.OPEN, t2)
+        result = cmd_filter.evaluate(
+            target_position_internal=0,
+            current_position_internal=70,
+            execution_mode=ExecutionMode.AUTOMATIC,
+            is_safety=False,
+            is_manual_override=False,
+            is_cover_available=True,
+            state_guard_allowed=state_guard_allowed,
+            execution_capability=exec_cap,
+            fallback_release_allowed=fallback_release_allowed,
+        )
+        assert result.allowed is True
+        assert result.blocked_reason is None
+        guard.record_action_sent(window_id, t2)
+        hold.record_dispatch(decided_by="TierOrchestrator:fallback", target_ha=100, now=t2)
+
+    def test_heat_between_two_fallback_cycles_resets_the_debounce(self):
+        # Cycle 1: free (held). Cycle 2: HeatEvaluator wins again (resets
+        # counter). Cycle 3: free again — must be held, NOT immediately
+        # allowed, exactly matching the F29 field report shape.
+        hold = ComfortMovementHold()
+        hold.record_dispatch(decided_by="HeatEvaluator", target_ha=30, now=_T0)
+
+        cycle1_delayed = hold.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        assert cycle1_delayed is True
+
+        cycle2_delayed = hold.should_delay_fallback_open(proposed_decided_by="HeatEvaluator")
+        assert cycle2_delayed is False  # not a fallback proposal, gate is a no-op
+        assert hold.pending_fallback_open_release_count == 0
+
+        cycle3_delayed = hold.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        assert cycle3_delayed is True
+
+    def test_f27_protective_shade_after_genuine_release_still_bypasses_hold(self):
+        # After a genuine two-cycle fallback release dispatches OPEN, a
+        # subsequent real HeatEvaluator protective re-target must still be
+        # let through immediately by should_hold()'s F27 bypass — the F29
+        # debounce only gates the fallback-open proposal itself and must not
+        # interfere with should_hold()'s own, separate decision.
+        hold = ComfortMovementHold()
+        t0 = _T0
+        hold.record_dispatch(decided_by="HeatEvaluator", target_ha=30, now=t0)
+
+        hold.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        t1 = t0 + timedelta(minutes=5)
+        released = not hold.should_delay_fallback_open(proposed_decided_by="TierOrchestrator:fallback")
+        assert released is True
+        hold.record_dispatch(decided_by="TierOrchestrator:fallback", target_ha=100, now=t1)
+
+        t2 = t1 + timedelta(minutes=5)
+        held = hold.should_hold(
+            proposed_decided_by="HeatEvaluator",
+            proposed_target_ha=30,
+            is_strong_escalation=False,
+            now=t2,
+        )
+        assert held is False  # F27 bypass: protective move after fallback-open is never held
+
+    def test_f29_field_report_reproduction_no_visible_open_close_flap(self):
+        # Full 3-cycle reproduction of the real field report: window shaded
+        # at HA 30 via HeatEvaluator, one free/outlier cycle where nothing
+        # fired (fallback proposes OPEN), then HeatEvaluator re-activates
+        # the very next cycle. Drives the real StateGuard + CommandFilter +
+        # ComfortMovementHold pipeline and tracks the assumed cover position
+        # across all three cycles: it must never move, i.e. no visible
+        # open-then-close flap.
+        from custom_components.smartshading.state_machine.guards import StateGuard
+        from custom_components.smartshading.state_machine.states import ShadingState
+
+        guard = StateGuard()
+        hold = ComfortMovementHold()
+        cmd_filter = CommandFilter()
+        exec_cap = ExecutionCapability()
+        window_id = "win_f29_field_report"
+
+        current_position = 70  # internal convention: HA 30 shaded -> internal 70
+        dispatched_positions: list[int] = []
+
+        # Cycle 0 (t0): baseline, HeatEvaluator holds HA 30 (internal 70).
+        t0 = _T0
+        hold.record_dispatch(decided_by="HeatEvaluator", target_ha=30, now=t0)
+        guard.record_action_sent(window_id, t0)
+
+        # Cycle 1 (t0+5min): single free/outlier cycle — fallback proposes
+        # OPEN (internal 0).
+        t1 = t0 + timedelta(minutes=5)
+        fallback_release_allowed_1 = not hold.should_delay_fallback_open(
+            proposed_decided_by="TierOrchestrator:fallback",
+        )
+        result1 = cmd_filter.evaluate(
+            target_position_internal=0,
+            current_position_internal=current_position,
+            execution_mode=ExecutionMode.AUTOMATIC,
+            is_safety=False,
+            is_manual_override=False,
+            is_cover_available=True,
+            state_guard_allowed=guard.can_send_action(window_id, ShadingState.OPEN, t1),
+            execution_capability=exec_cap,
+            fallback_release_allowed=fallback_release_allowed_1,
+        )
+        assert result1.allowed is False
+        assert result1.blocked_reason == BLOCKED_FALLBACK_RELEASE_PENDING
+        if result1.allowed:
+            dispatched_positions.append(0)
+            current_position = 0
+            guard.record_action_sent(window_id, t1)
+            hold.record_dispatch(decided_by="TierOrchestrator:fallback", target_ha=100, now=t1)
+
+        # Cycle 2 (t0+10min): HeatEvaluator re-activates, proposes HA 30
+        # (internal 70) again — same position, resets the fallback counter.
+        t2 = t0 + timedelta(minutes=10)
+        fallback_release_allowed_2 = not hold.should_delay_fallback_open(
+            proposed_decided_by="HeatEvaluator",
+        )
+        comfort_hold_allowed_2 = not hold.should_hold(
+            proposed_decided_by="HeatEvaluator",
+            proposed_target_ha=30,
+            is_strong_escalation=False,
+            now=t2,
+        )
+        result2 = cmd_filter.evaluate(
+            target_position_internal=70,
+            current_position_internal=current_position,
+            execution_mode=ExecutionMode.AUTOMATIC,
+            is_safety=False,
+            is_manual_override=False,
+            is_cover_available=True,
+            state_guard_allowed=guard.can_send_action(window_id, ShadingState.NORMAL_SHADE, t2),
+            execution_capability=exec_cap,
+            comfort_hold_allowed=comfort_hold_allowed_2,
+            fallback_release_allowed=fallback_release_allowed_2,
+        )
+        # Position never moved, so this is a natural same-position no-op —
+        # either way, nothing dispatches and the window never visibly moved.
+        if result2.allowed:
+            dispatched_positions.append(70)
+            current_position = 70
+            guard.record_action_sent(window_id, t2)
+            hold.record_dispatch(decided_by="HeatEvaluator", target_ha=30, now=t2)
+
+        # No visible open-then-close flap: zero real dispatches across the
+        # whole 3-cycle sequence, and the assumed position never left HA 30.
+        assert dispatched_positions == []
+        assert current_position == 70

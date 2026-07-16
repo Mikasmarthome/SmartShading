@@ -24,8 +24,9 @@ BLOCKING ORDER (evaluated top-to-bottom; first match wins)
 4. StateGuard action interval      → blocked, unless is_safety=True
 5. Target position within tolerance → blocked, unless is_safety=True
 6. Comfort Movement Stability Hold  → blocked, unless is_safety=True (v1.1.1)
-7. No target position              → blocked ("no_target_position")
-8. Otherwise                       → allowed
+7. Fallback/Open release pending   → blocked, unless is_safety=True (F29)
+8. No target position              → blocked ("no_target_position")
+9. Otherwise                       → allowed
 
 SAFETY BYPASS SEMANTICS
 -----------------------
@@ -74,6 +75,13 @@ BLOCKED_SAME_POSITION: str = "same_position"
 #: Stability Hold window of a previous comfort dispatch — suppressed to avoid
 #: rapid back-and-forth movement (v1.1.1 field fix). See engines/comfort_movement_hold.py.
 BLOCKED_COMFORT_POSITION_HOLD: str = "comfort_position_hold"
+
+#: A "TierOrchestrator:fallback" OPEN proposal that has not yet been
+#: confirmed for enough consecutive cycles — suppressed to avoid a visible
+#: open-then-close flap when heat/glare/solar protection clears for only a
+#: single outlier cycle (F29 field fix). See
+#: engines/comfort_movement_hold.py should_delay_fallback_open().
+BLOCKED_FALLBACK_RELEASE_PENDING: str = "fallback_release_pending"
 
 #: No concrete target position is available for this decision.
 BLOCKED_NO_TARGET_POSITION: str = "no_target_position"
@@ -225,6 +233,7 @@ class CommandFilter:
         invert_position: bool = False,
         target_tilt_ha: int | None = None,
         comfort_hold_allowed: bool = True,
+        fallback_release_allowed: bool = True,
     ) -> CommandFilterResult:
         """Evaluate all blocking conditions and return a CommandFilterResult.
 
@@ -264,6 +273,12 @@ class CommandFilter:
             hold window of a previous comfort dispatch (v1.1.1 field fix).
             Default True preserves prior behavior for every non-comfort
             decision path. Does not bypass is_safety.
+        fallback_release_allowed:
+            False when the coordinator's ComfortMovementHold determined this
+            "TierOrchestrator:fallback" OPEN proposal has not yet been
+            confirmed for enough consecutive cycles (F29 field fix). Default
+            True preserves prior behavior for every non-fallback decision
+            path. Does not bypass is_safety.
 
         Returns
         -------
@@ -365,7 +380,17 @@ class CommandFilter:
             return _blocked(BLOCKED_COMFORT_POSITION_HOLD)
 
         # ------------------------------------------------------------------
-        # Blocking check 7: No target position available.
+        # Blocking check 7: Fallback/Open release pending (F29 field fix).
+        # A "TierOrchestrator:fallback" OPEN proposal is held back until it
+        # has been confirmed for enough consecutive cycles, avoiding a
+        # visible open-then-close flap when protection clears for only a
+        # single outlier cycle. Safety bypasses, same as comfort hold above.
+        # ------------------------------------------------------------------
+        if not fallback_release_allowed and not is_safety:
+            return _blocked(BLOCKED_FALLBACK_RELEASE_PENDING)
+
+        # ------------------------------------------------------------------
+        # Blocking check 8: No target position available.
         # ------------------------------------------------------------------
         if target_position_internal is None:
             return _blocked(BLOCKED_NO_TARGET_POSITION)

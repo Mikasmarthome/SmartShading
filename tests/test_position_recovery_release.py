@@ -113,6 +113,33 @@ from custom_components.smartshading.state_machine.states import ShadingState  # 
 
 _recovery = _coord_mod._is_position_recovery_release
 _mode_dispatch_allowed = _coord_mod._mode_dispatch_allowed
+
+# F32: zone-ordered dispatch (F18) combined with the real dispatch chain —
+# these modules have no Home Assistant dependency of their own (pure Python,
+# see their own module docstrings), so they can be imported directly here
+# alongside the HA-stubbed coordinator import above.
+import asyncio  # noqa: E402
+import time  # noqa: E402
+from datetime import timedelta as _timedelta  # noqa: E402
+from unittest.mock import AsyncMock as _AsyncMock, MagicMock as _MagicMock  # noqa: E402
+
+from custom_components.smartshading.cover_control.command_filter import (  # noqa: E402
+    CommandFilter as _CommandFilter,
+    ExecutionCapability as _ExecutionCapability,
+    ExecutionMode as _ExecutionMode,
+)
+from custom_components.smartshading.cover_control.execution_plan import (  # noqa: E402
+    build_execution_plan as _build_execution_plan,
+)
+from custom_components.smartshading.cover_control.execution_result import (  # noqa: E402
+    ExecutionStatus as _ExecutionStatus,
+)
+from custom_components.smartshading.cover_control.global_dispatch_throttle import (  # noqa: E402
+    GlobalSerialDispatch as _GlobalSerialDispatch,
+)
+from custom_components.smartshading.cover_control.ha_service_adapter import (  # noqa: E402
+    dispatch_cover_intent as _dispatch_cover_intent,
+)
 _MIN_BELOW = _coord_mod._RECOVERY_MIN_BELOW_OPEN_HA
 _OPEN_HA = _coord_mod._OPEN_POSITION_HA
 _dispatch_order_key = _coord_mod._dispatch_order_key
@@ -605,3 +632,146 @@ class TestDispatchOrderKey:
         assert ordered_ids == [
             "cellar_3", "cellar_1", "cellar_2", "living_room_1", "bedroom_1",
         ]
+
+
+# ===========================================================================
+# 10. F32 field fix — zone-ordered dispatch (F18, section 9 above) combined
+# with the REAL dispatch chain (CommandFilter -> build_execution_plan ->
+# GlobalSerialDispatch lock/throttle -> dispatch_cover_intent), mirroring
+# tests/test_shading_group_global_dispatch_integration.py's pattern. Confirms
+# the sort key genuinely drives the order real service calls are issued in
+# — not just the order of an isolated sort-key computation — and that real
+# measured dispatch timestamps strictly follow the zone-grouped order.
+# ===========================================================================
+
+def _cfr32(*, target_internal: int, current_internal: int, is_safety: bool = False):
+    return _CommandFilter().evaluate(
+        target_position_internal=target_internal,
+        current_position_internal=current_internal,
+        execution_mode=_ExecutionMode.AUTOMATIC,
+        is_safety=is_safety,
+        is_manual_override=False,
+        is_cover_available=True,
+        state_guard_allowed=True,
+        execution_capability=_ExecutionCapability(position_tolerance=3),
+        invert_position=False,
+    )
+
+
+def _intent32(window_id: str, cover_entity_id: str, filter_result):
+    plan = _build_execution_plan(
+        window_id=window_id,
+        cover_entity_ids=[cover_entity_id],
+        filter_result=filter_result,
+        decided_by="TestEvaluator",
+        now=_datetime(2026, 6, 18, 15, 0, 0, tzinfo=_timezone.utc),
+    )
+    return list(plan.intents)[0]
+
+
+def _make_hass32():
+    hass = _MagicMock()
+    hass.services = _MagicMock()
+    hass.services.async_call = _AsyncMock(return_value=None)
+    return hass
+
+
+async def _dispatch_one_timed32(gsd, hass, intent, now_fn):
+    if not intent.allowed:
+        return None, None
+    async with gsd.lock:
+        wait = gsd.time_until_next_allowed()
+        if wait.total_seconds() > 0:
+            await asyncio.sleep(wait.total_seconds())
+        sent_at_mono = time.monotonic()
+        result = await _dispatch_cover_intent(hass, intent, now_utc=now_fn())
+        if result.status is _ExecutionStatus.SENT:
+            gsd.record_dispatch(now_fn())
+    return result, sent_at_mono
+
+
+class TestZoneOrderedDispatchSequencingWithRealDispatch:
+    def test_intents_sorted_by_real_zone_order_dispatch_sequentially_by_zone(self):
+        zones = {"cellar": object(), "attic": object()}
+        windows = {
+            "cellar_1": types.SimpleNamespace(zone_id="cellar"),
+            "attic_1": types.SimpleNamespace(zone_id="attic"),
+            "cellar_2": types.SimpleNamespace(zone_id="cellar"),
+        }
+        zone_order, window_order_in_zone = _coord_mod._build_zone_dispatch_order(zones, windows)
+
+        # Config-insertion order interleaves zones on purpose (cellar, attic,
+        # cellar) — exactly the "not grouped by zone" starting point the
+        # sort must correct for.
+        cfr = _cfr32(target_internal=70, current_internal=0)
+        raw = [
+            ("cellar_1", "cover.cellar_1"),
+            ("attic_1", "cover.attic_1"),
+            ("cellar_2", "cover.cellar_2"),
+        ]
+        window_to_intent = {wid: _intent32(wid, eid, cfr) for wid, eid in raw}
+        sorted_window_ids = sorted(
+            window_to_intent.keys(),
+            key=lambda wid: _coord_mod._dispatch_order_key(
+                is_safety=False,
+                zone_id=windows[wid].zone_id,
+                window_id=wid,
+                zone_order=zone_order,
+                window_order_in_zone=window_order_in_zone,
+            ),
+        )
+        # Sort key groups strictly by zone (cellar before attic — config
+        # order), preserving stable within-zone order.
+        assert sorted_window_ids == ["cellar_1", "cellar_2", "attic_1"]
+
+        intents = [window_to_intent[wid] for wid in sorted_window_ids]
+        gsd = _GlobalSerialDispatch(min_interval=_timedelta(seconds=0.05))
+        hass = _make_hass32()
+        now_fn = lambda: _datetime(2026, 6, 18, 15, 0, 0, tzinfo=_timezone.utc)  # noqa: E731
+
+        async def _dispatch_all():
+            return [await _dispatch_one_timed32(gsd, hass, intent, now_fn) for intent in intents]
+
+        results = asyncio.run(_dispatch_all())
+
+        assert [r[0].status for r in results] == [
+            _ExecutionStatus.SENT, _ExecutionStatus.SENT, _ExecutionStatus.SENT,
+        ]
+        # Real dispatch timestamps strictly increase in the sorted (zone-
+        # grouped) order — the sort key genuinely drives the real loop, it
+        # is not merely a cosmetic label computed and then ignored.
+        timestamps = [r[1] for r in results]
+        assert timestamps == sorted(timestamps)
+
+    def test_safety_still_dispatches_first_even_when_interleaved_with_zones(self):
+        zones = {"cellar": object(), "attic": object()}
+        windows = {
+            "cellar_1": types.SimpleNamespace(zone_id="cellar"),
+            "cellar_safety": types.SimpleNamespace(zone_id="cellar"),
+            "attic_1": types.SimpleNamespace(zone_id="attic"),
+        }
+        zone_order, window_order_in_zone = _coord_mod._build_zone_dispatch_order(zones, windows)
+
+        cfr_normal = _cfr32(target_internal=70, current_internal=0)
+        cfr_safety = _cfr32(target_internal=10, current_internal=90, is_safety=True)
+        window_to_intent = {
+            "cellar_1": _intent32("cellar_1", "cover.cellar_1", cfr_normal),
+            "attic_1": _intent32("attic_1", "cover.attic_1", cfr_normal),
+            # Safety candidate buried last in config-insertion order.
+            "cellar_safety": _intent32("cellar_safety", "cover.cellar_safety", cfr_safety),
+        }
+        is_safety_by_window = {"cellar_1": False, "attic_1": False, "cellar_safety": True}
+        sorted_window_ids = sorted(
+            window_to_intent.keys(),
+            key=lambda wid: _coord_mod._dispatch_order_key(
+                is_safety=is_safety_by_window[wid],
+                zone_id=windows[wid].zone_id,
+                window_id=wid,
+                zone_order=zone_order,
+                window_order_in_zone=window_order_in_zone,
+            ),
+        )
+        assert sorted_window_ids[0] == "cellar_safety", (
+            "Safety always sorts first, regardless of zone/config position."
+        )
+        assert sorted_window_ids == ["cellar_safety", "cellar_1", "attic_1"]

@@ -25,6 +25,7 @@ MagicMock hass with services.async_call).
 from __future__ import annotations
 
 import asyncio
+import time
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -123,6 +124,37 @@ async def _dispatch_all(gsd, hass, intents, now_fn=None):
     out = []
     for intent in intents:
         out.append(await _dispatch_one_intent(gsd, hass, intent, now_fn))
+    return out
+
+
+async def _dispatch_one_intent_timed(gsd, hass, intent, now_fn):
+    """Same mirror as _dispatch_one_intent, but additionally records the REAL
+    monotonic timestamp at which dispatch_cover_intent() was actually invoked
+    — so tests can assert on genuine measured wall-clock spacing between
+    service calls (F32), not just the throttle's own internal bookkeeping."""
+    if not intent.allowed:
+        return (
+            build_blocked_result(intent, reason=f"command blocked: {intent.blocked_reason}"),
+            False, None,
+        )
+    async with gsd.lock:
+        wait = gsd.time_until_next_allowed()
+        throttled = wait.total_seconds() > 0
+        if throttled:
+            await asyncio.sleep(wait.total_seconds())
+        sent_at_mono = time.monotonic()
+        result = await dispatch_cover_intent(hass, intent, now_utc=now_fn())
+        if result.status is ExecutionStatus.SENT:
+            gsd.record_dispatch(now_fn())
+    return result, throttled, sent_at_mono
+
+
+async def _dispatch_all_timed(gsd, hass, intents, now_fn=None):
+    if now_fn is None:
+        now_fn = lambda: _NOW  # noqa: E731
+    out = []
+    for intent in intents:
+        out.append(await _dispatch_one_intent_timed(gsd, hass, intent, now_fn))
     return out
 
 
@@ -327,3 +359,71 @@ class TestSafetyAcrossHarmonizedWindowsStillSequenced:
             "safety dispatch must still respect the global minimum interval."
         )
         assert hass.services.async_call.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# E. F32 field fix — real measured wall-clock spacing at the PRODUCTION
+#    default interval (2.0s, raised from 1.5s), and deterministic
+#    zone-ordered dispatch sequencing (F18) combined with the real dispatch
+#    chain. Closes the F32 audit's confirmed test gap: every prior test in
+#    this file (and in test_phase_9g8_global_dispatch_throttle.py /
+#    test_v10_sequential_dispatch.py) only asserts the throttle's own
+#    `throttled: bool` return value or a short custom min_interval — never a
+#    REAL measured timestamp delta between two dispatch_cover_intent() calls
+#    at the actual production default.
+# ---------------------------------------------------------------------------
+
+class TestRealTimestampSpacingAtProductionDefault:
+    def test_two_covers_same_zone_real_calls_spaced_at_least_two_seconds(self):
+        # Both windows harmonized into the same shading_group/zone (as in the
+        # F32 field report: two east-facing dining-room covers, same zone,
+        # same GlareEvaluator target this cycle).
+        cfr_a = _cfr(target_internal=70, current_internal=0)
+        cfr_b = _cfr(target_internal=70, current_internal=0)
+        intents = (
+            _intents_for_window("win_a", ["cover.win_a"], cfr_a)
+            + _intents_for_window("win_b", ["cover.win_b"], cfr_b)
+        )
+
+        gsd = GlobalSerialDispatch()  # production default — no override
+        hass = _make_hass()
+        results = asyncio.run(_dispatch_all_timed(gsd, hass, intents))
+
+        assert [r[0].status for r in results] == [ExecutionStatus.SENT, ExecutionStatus.SENT]
+        t0, t1 = results[0][2], results[1][2]
+        assert t1 - t0 >= 1.95, (
+            "Two same-zone, same-cycle covers must produce real "
+            "dispatch_cover_intent() calls spaced by the production default "
+            "(2.0s), not just a throttled=True flag."
+        )
+
+    def test_two_covers_different_zones_real_calls_spaced_at_least_two_seconds(self):
+        # Same mechanism, but the two windows conceptually belong to
+        # different zones — GlobalSerialDispatch is zone-agnostic by design
+        # (see global_dispatch_throttle.py module docstring), so the real
+        # measured gap must be identical to the same-zone case.
+        cfr_a = _cfr(target_internal=70, current_internal=0)
+        cfr_b = _cfr(target_internal=70, current_internal=0)
+        intents = (
+            _intents_for_window("win_zone_a", ["cover.zone_a"], cfr_a)
+            + _intents_for_window("win_zone_b", ["cover.zone_b"], cfr_b)
+        )
+
+        gsd = GlobalSerialDispatch()  # production default — no override
+        hass = _make_hass()
+        results = asyncio.run(_dispatch_all_timed(gsd, hass, intents))
+
+        assert [r[0].status for r in results] == [ExecutionStatus.SENT, ExecutionStatus.SENT]
+        t0, t1 = results[0][2], results[1][2]
+        assert t1 - t0 >= 1.95, (
+            "Two different-zone, same-cycle covers must still be globally "
+            "serialized with real spacing >= the production default (2.0s) "
+            "— the throttle/lock is shared across zone coordinators."
+        )
+
+# Zone-ordered dispatch sequencing (F18) combined with this file's real
+# dispatch chain is tested in test_position_recovery_release.py instead of
+# here, since that combination needs coordinator.py's _dispatch_order_key /
+# _build_zone_dispatch_order, which (unlike everything else in this file)
+# pulls in real Home Assistant imports — this file is deliberately kept
+# HA-import-free (see module docstring).

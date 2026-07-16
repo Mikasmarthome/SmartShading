@@ -4,7 +4,7 @@ Tests the GlobalDispatchThrottle class and its integration into the
 coordinator dispatch loop:
 
   - Unit tests for GlobalDispatchThrottle (time_until_next_allowed, record_dispatch)
-  - Default interval: 1.5 seconds (DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS)
+  - Default interval: 2.0 seconds (DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS)
   - First dispatch: no wait
   - Subsequent dispatch within interval: wait required
   - Interval elapsed: no wait
@@ -330,8 +330,10 @@ class TestRecordDispatchRules:
 # ---------------------------------------------------------------------------
 
 class TestDefaultInterval:
-    def test_constant_is_one_point_five_seconds(self):
-        assert DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS == 1.5
+    def test_constant_is_two_seconds(self):
+        # F32 field fix: raised from 1.5s to 2.0s after a same-second RF
+        # collision report (ESP Somfy / RTS bridge).
+        assert DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS == 2.0
 
     def test_default_throttle_uses_constant(self):
         t = GlobalDispatchThrottle()

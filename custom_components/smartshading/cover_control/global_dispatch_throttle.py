@@ -67,12 +67,13 @@ from datetime import datetime, timedelta
 from typing import Callable
 
 
-DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS: float = 1.5
+DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS: float = 2.0
 """Default minimum time between cover service calls (seconds).
 
-Chosen for Somfy RTS / ESP-Somfy reliability: 1.5 seconds gives a single-
+Chosen for Somfy RTS / ESP-Somfy reliability: 2.0 seconds gives a single-
 threaded RF gateway enough time to complete one transmission before the next
-command arrives.  Deliberately conservative — reliability over throughput.
+command arrives (F32 field fix — raised from 1.5s after a same-second RF
+collision report).  Deliberately conservative — reliability over throughput.
 Coordinator cycles are 5 minutes apart, so any intra-cycle burst is at most
 a handful of covers, and the total additional wait is a few seconds.
 """

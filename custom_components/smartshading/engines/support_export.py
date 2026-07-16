@@ -276,9 +276,22 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 prov["comfort_hold"] = {
                     "last_dispatch_age_min": getattr(diag, "comfort_hold_last_dispatch_age_min", None),
                     "remaining_min": getattr(diag, "comfort_hold_remaining_min", None),
+                    # F31a/F29: raw ComfortMovementHold + exit-debounce state,
+                    # for explaining a held/blocked cycle without a research
+                    # export.
+                    "last_decided_by": getattr(diag, "comfort_hold_last_decided_by", None),
+                    "last_target_ha": getattr(diag, "comfort_hold_last_target_ha", None),
+                    "pending_fallback_open_release_count": getattr(
+                        diag, "comfort_hold_pending_fallback_open_release_count", None),
+                    "fallback_release_allowed": getattr(
+                        diag, "comfort_hold_fallback_release_allowed", None),
                 } if diag is not None else {
                     "last_dispatch_age_min": None,
-                    "remaining_min": None}
+                    "remaining_min": None,
+                    "last_decided_by": None,
+                    "last_target_ha": None,
+                    "pending_fallback_open_release_count": None,
+                    "fallback_release_allowed": None}
                 # Manual Override daytime/night duration scope (v1.1.3).
                 prov["manual_override"] = {
                     "active": bool(getattr(diag, "manual_override_active", False)),
@@ -286,9 +299,12 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                     "expires_at": _iso_s(getattr(diag, "manual_override_expires_at", None)),
                     "remaining_min": getattr(diag, "manual_override_remaining_min", None),
                     "release_reason": getattr(diag, "manual_override_release_reason", None),
+                    # F31a: the HA position the override is holding.
+                    "override_position_ha": getattr(diag, "manual_override_position", None),
                 } if diag is not None else {
                     "active": False, "scope": None, "expires_at": None,
-                    "remaining_min": None, "release_reason": None}
+                    "remaining_min": None, "release_reason": None,
+                    "override_position_ha": None}
                 # Position-based self-healing recovery open (v1.1.5): true when a
                 # stuck-down ABSENCE_ONLY / A&S window was released this cycle.
                 prov["recovery_open_active"] = bool(
@@ -468,9 +484,25 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                         "final_dispatched_target_ha": (
                             pe.get("target_ha")
                             if pe.get("event_type") == "dispatch_sent" else None),
-                        "recommendation_position_ha": (
-                            pe.get("target_ha")
-                            if pe.get("event_type") != "dispatch_sent" else None),
+                        # F31a: the real resolved/held target regardless of
+                        # command_sent — fixed at the source in
+                        # _record_support_event (no longer a static
+                        # config-baseline fallback for blocked/
+                        # manual_override events).
+                        "resolved_target_position_ha": pe.get("target_ha"),
+                    },
+                    # F31a: real post-throttle dispatch timestamp + throttle
+                    # context, carried through from _record_support_event.
+                    "dispatch_sent_at_utc": pe.get("dispatch_sent_at_utc"),
+                    "dispatch_context": {
+                        "global_wait_required": pe.get("global_wait_required"),
+                        "planned_global_interval_wait_ms": pe.get(
+                            "planned_global_interval_wait_ms"),
+                        "actual_global_interval_wait_ms": pe.get(
+                            "actual_global_interval_wait_ms"),
+                        "global_wait_overrun_ms": pe.get("global_wait_overrun_ms"),
+                        "required_global_interval_ms": pe.get(
+                            "required_global_interval_ms"),
                     },
                 })
         # Sort newest-first so non-critical fill-up keeps the most recent records.
@@ -489,7 +521,12 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             command_sent = no_disp.get("command_sent")
             primary = no_disp.get("primary_reason") or ""
             tc = r.get("target_chain") or {}
+            # F31a: prefer the real resolved/held target over the static
+            # config-baseline recommendation — the baseline is only used as
+            # a last-resort fallback for older/malformed records that
+            # predate this field.
             target_ha = (tc.get("final_dispatched_target_ha")
+                         or tc.get("resolved_target_position_ha")
                          or tc.get("recommendation_position_ha"))
 
             # Suppress same-position noise before classifying anything else.
@@ -522,6 +559,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             else:
                 evt_type = "no_change"
 
+            _ctx = r.get("dispatch_context") or {}
             evt = {
                 "ts": _iso_s(ts),
                 "local_ts": _iso_local(ts, home_tz),
@@ -533,6 +571,20 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 "target_ha": target_ha,
                 "is_recommendation_only": (evt_type == "recommendation_only"),
                 "is_critical": evt_type in _CRITICAL_EVENT_TYPES,
+                # F31a: real post-throttle dispatch timestamp — distinct from
+                # "ts" above, which is the shared per-cycle decision time.
+                # None when nothing was actually dispatched this event.
+                "dispatch_sent_at_utc": _iso_s(r.get("dispatch_sent_at_utc")),
+                # F31a: throttle context already computed by the coordinator
+                # (F32 global serial dispatch), surfaced here for the first
+                # time instead of only in recent_dispatches.
+                "global_wait_required": _ctx.get("global_wait_required"),
+                "planned_global_interval_wait_ms": _ctx.get(
+                    "planned_global_interval_wait_ms"),
+                "actual_global_interval_wait_ms": _ctx.get(
+                    "actual_global_interval_wait_ms"),
+                "global_wait_overrun_ms": _ctx.get("global_wait_overrun_ms"),
+                "required_global_interval_ms": _ctx.get("required_global_interval_ms"),
             }
             if evt["is_critical"]:
                 critical_evts.append(evt)

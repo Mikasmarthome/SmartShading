@@ -559,11 +559,21 @@ class _WindowComputeState:
     # comfort dispatch has ever been recorded for this window.
     comfort_hold_last_dispatch_age_min: float | None = None
     comfort_hold_remaining_min: float | None = None
+    # F31a: raw ComfortMovementHold / F29 exit-debounce state, for support-export
+    # diagnostics beyond the derived ages/minutes above.
+    comfort_hold_last_decided_by: str | None = None
+    comfort_hold_last_target_ha: int | None = None
+    comfort_hold_pending_fallback_open_release_count: int | None = None
+    comfort_hold_fallback_release_allowed: bool | None = None
     # Manual Override diagnostics (v1.1.3): daytime-vs-night duration scope.
     manual_override_scope: str | None = None
     manual_override_expires_at: "datetime | None" = None
     manual_override_remaining_min: float | None = None
     manual_override_release_reason: str | None = None
+    # F31a: internal-convention position the active override is holding
+    # (converted to HA convention at WindowExecutionDiagnostics construction,
+    # once invert_position/exec_cap is known).
+    manual_override_position_internal: int | None = None
     # v1.1.5 position-based self-healing recovery open (ABSENCE_ONLY / A&S).
     behavior_mode_recovery_open: bool = False
     # Authoritative solar source this cycle (engines/solar_source.py) — carried
@@ -3992,12 +4002,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _mo_scope: str | None = None
             _mo_expires_at: datetime | None = None
             _mo_remaining_min: float | None = None
+            _mo_position_internal: int | None = None
             if current_override is not None:
                 _mo_scope = current_override.scope
                 _mo_expires_at = current_override.expires_at
                 _mo_remaining_min = max(
                     0.0, (current_override.expires_at - now).total_seconds() / 60,
                 )
+                # F31a: the position the override is holding (internal
+                # convention) — converted to HA convention at
+                # WindowExecutionDiagnostics construction.
+                _mo_position_internal = current_override.override_position
 
             # Phase 9C: detect "started" and "renewed" from tick() outcome.
             # Safety path clears the override — no started/renewed possible there.
@@ -4314,6 +4329,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 proposed_decided_by=tier_decision.decided_by,
                 is_confirmed_exit=_is_fallback_confirmed_exit,
             )
+            # F31a: raw ComfortMovementHold / F29 state for support-export
+            # diagnostics, beyond the derived ages/minutes above.
+            _comfort_hold_last_decided_by = _comfort_hold.last_decided_by
+            _comfort_hold_last_target_ha = _comfort_hold.last_target_ha
+            _comfort_hold_pending_fallback_open_release_count = (
+                _comfort_hold.pending_fallback_open_release_count
+            )
+            _comfort_hold_fallback_release_allowed = (
+                (not _fallback_open_release_pending)
+                if tier_decision.decided_by == "TierOrchestrator:fallback"
+                else None
+            )
 
             if _exec_entity_id is not None and _exec_cap is not None and _exec_snapshot is not None:
                 _guard_action_allowed = (
@@ -4492,6 +4519,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 manual_override_expires_at=_mo_expires_at,
                 manual_override_remaining_min=_mo_remaining_min,
                 manual_override_release_reason=_override_release_reason,
+                manual_override_position_internal=_mo_position_internal,
                 behavior_mode_recovery_open=_behavior_recovery_open,
                 selected_solar_source=_solar_sel.source,
                 solar_source_quality=_solar_sel.quality,
@@ -4512,6 +4540,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 measured_solar_may_be_locally_shaded=_measured_solar_underrepresentation_flag,
                 comfort_hold_last_dispatch_age_min=_comfort_hold_last_dispatch_age_min,
                 comfort_hold_remaining_min=_comfort_hold_remaining_min,
+                comfort_hold_last_decided_by=_comfort_hold_last_decided_by,
+                comfort_hold_last_target_ha=_comfort_hold_last_target_ha,
+                comfort_hold_pending_fallback_open_release_count=(
+                    _comfort_hold_pending_fallback_open_release_count
+                ),
+                comfort_hold_fallback_release_allowed=_comfort_hold_fallback_release_allowed,
                 night_hard_hold_applied=_night_hard_hold_applied,
                 contact_sensor_configured=_cs_configured,
                 contact_sensor_count=_cs_agg.total,
@@ -5046,11 +5080,26 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 measured_solar_may_be_locally_shaded=s.measured_solar_may_be_locally_shaded,
                 comfort_hold_last_dispatch_age_min=s.comfort_hold_last_dispatch_age_min,
                 comfort_hold_remaining_min=s.comfort_hold_remaining_min,
+                comfort_hold_last_decided_by=s.comfort_hold_last_decided_by,
+                comfort_hold_last_target_ha=s.comfort_hold_last_target_ha,
+                comfort_hold_pending_fallback_open_release_count=(
+                    s.comfort_hold_pending_fallback_open_release_count
+                ),
+                comfort_hold_fallback_release_allowed=s.comfort_hold_fallback_release_allowed,
                 manual_override_active=s.is_override_active,
                 manual_override_scope=s.manual_override_scope,
                 manual_override_expires_at=s.manual_override_expires_at,
                 manual_override_remaining_min=s.manual_override_remaining_min,
                 manual_override_release_reason=s.manual_override_release_reason,
+                manual_override_position=(
+                    to_ha_position(
+                        s.manual_override_position_internal,
+                        invert=s.exec_cap.invert_position,
+                    )
+                    if s.manual_override_position_internal is not None
+                    and s.exec_cap is not None
+                    else None
+                ),
                 behavior_mode_recovery_open=s.behavior_mode_recovery_open,
                 selected_solar_source=s.selected_solar_source,
                 solar_source_quality=s.solar_source_quality,
@@ -5129,7 +5178,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 except Exception:
                     _LOGGER.debug("Diagnostics: decision-trace capture skipped (non-fatal)")
                 try:
-                    self._record_support_event(window_id, s, _dispatch_prov, now)
+                    self._record_support_event(
+                        window_id, s, _dispatch_prov, now,
+                        last_exec_result=_last_exec_result, disp_ctx=_disp_ctx)
                 except Exception:
                     _LOGGER.debug("Diagnostics: support event capture skipped (non-fatal)")
                 try:
@@ -5419,10 +5470,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 primary = dispatch_prov.dispatch_filter_reason or "not_recorded"
             if dispatch_prov.dispatch_filter_reason and dispatch_prov.dispatch_filter_reason != primary:
                 contributing.append(dispatch_prov.dispatch_filter_reason)
+        # F31a: real post-throttle dispatch timestamp, distinct from the
+        # shared per-cycle decision_timestamp_utc above. None when nothing
+        # was actually dispatched this cycle (blocked/no-op).
+        _real_sent_at = getattr(exec_result, "sent_at_utc", None) if command_sent else None
         rec = {
             "decision_id": decision_id,
             "window_id": window_id,
             "decision_timestamp_utc": now.isoformat() if now is not None else None,
+            "dispatch_sent_at_utc": _real_sent_at.isoformat() if _real_sent_at is not None else None,
             "baseline_state": _sv(getattr(s, "baseline_state", None)),
             "resolved_state": _sv(getattr(s, "new_state", None)),
             "decided_by": decided_by,
@@ -5463,7 +5519,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         return {zid: {"records": list(ring), "count": len(ring)}
                 for zid, ring in self._decision_trace.items()}
 
-    def _record_support_event(self, window_id: str, s, dispatch_prov, now) -> None:
+    def _record_support_event(
+        self, window_id: str, s, dispatch_prov, now, *,
+        last_exec_result=None, disp_ctx=None,
+    ) -> None:
         """P4c: record a compact critical support event into the persisted history."""
         filt = getattr(s, "exec_filter_result", None)
         command_sent = bool(getattr(dispatch_prov, "dispatch_succeeded", False))
@@ -5527,10 +5586,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if evt_type not in _CRITICAL_SE:
             return
 
-        if command_sent and filt is not None:
-            target_ha = getattr(filt, "target_position_ha", None)
-        else:
-            target_ha = getattr(s, "normal_cfg_ha_for_prov", None)
+        # F31a fix: the real decided/held target (CommandFilterResult is
+        # populated identically on every return path — allowed or blocked)
+        # is available regardless of command_sent. Previously this fell
+        # back to normal_cfg_ha_for_prov (a static configured baseline,
+        # unrelated to the actual target) whenever the command was blocked
+        # — e.g. by manual_override or comfort_position_hold — which made
+        # blocked/manual_override timeline events show a misleading target.
+        target_ha = getattr(filt, "target_position_ha", None) if filt is not None else None
+
+        # F31a: real post-throttle dispatch timestamp, distinct from the
+        # shared per-cycle "ts" below. None when nothing was actually
+        # dispatched this cycle.
+        _real_sent_at = (
+            getattr(last_exec_result, "sent_at_utc", None) if command_sent else None
+        )
+        _ctx = disp_ctx if isinstance(disp_ctx, dict) else {}
 
         self._support_critical_events.append({
             "ts": now.isoformat(),
@@ -5541,6 +5612,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "target_ha": target_ha,
             "reason": primary,
             "is_recommendation_only": (evt_type == "recommendation_only"),
+            "dispatch_sent_at_utc": (
+                _real_sent_at.isoformat() if _real_sent_at is not None else None
+            ),
+            "global_wait_required": _ctx.get("global_wait_required"),
+            "planned_global_interval_wait_ms": _ctx.get("planned_global_interval_wait_ms"),
+            "actual_global_interval_wait_ms": _ctx.get("actual_global_interval_wait_ms"),
+            "global_wait_overrun_ms": _ctx.get("global_wait_overrun_ms"),
+            "required_global_interval_ms": _ctx.get("required_global_interval_ms"),
         })
         if len(self._support_critical_events) > 500:
             self._support_critical_events = self._support_critical_events[-500:]

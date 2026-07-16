@@ -416,6 +416,27 @@ class WindowExecutionDiagnostics:
     currently held (no prior comfort dispatch, or the hold window has elapsed).
     See engines/comfort_movement_hold.py."""
 
+    comfort_hold_last_decided_by: str | None = None
+    """F31a: the decider (e.g. "SolarEvaluator", "TierOrchestrator:fallback") of
+    the last confirmed dispatch this hold is tracking. None when no dispatch has
+    ever been recorded. Raw ComfortMovementHold state, surfaced so a held/blocked
+    cycle is explainable without a research export."""
+
+    comfort_hold_last_target_ha: int | None = None
+    """F31a: the HA target position of the last confirmed dispatch this hold is
+    tracking. None when no dispatch has ever been recorded."""
+
+    comfort_hold_pending_fallback_open_release_count: int | None = None
+    """F29/F31a: consecutive "TierOrchestrator:fallback" cycles observed so far
+    toward FALLBACK_OPEN_RELEASE_CYCLES (exit-debounce). 0 when no fallback
+    proposal is currently pending. See engines/comfort_movement_hold.py
+    should_delay_fallback_open()."""
+
+    comfort_hold_fallback_release_allowed: bool | None = None
+    """F29/F31a: whether this cycle's "TierOrchestrator:fallback" OPEN proposal
+    (if any) was allowed to dispatch, or held back by the exit-debounce. None
+    when the proposal this cycle was not a fallback/open at all."""
+
     manual_override_active: bool = False
     """v1.1.3: True when a manual override is currently active for this window
     (OverrideDetector.get() returned non-None this cycle)."""
@@ -441,6 +462,11 @@ class WindowExecutionDiagnostics:
     other lifecycle change), "safety" (Tier 1 Safety took over), or None (no
     release happened this cycle — either still active or already inactive
     before this cycle)."""
+
+    manual_override_position: int | None = None
+    """F31a: HA position (0=closed, 100=open) the active override is holding —
+    the position the user set the cover to, distinct from expiry/scope/release
+    timing. None when no override is active."""
 
     behavior_mode_recovery_open: bool = False
     """v1.1.5: True when the position-based self-healing recovery released this

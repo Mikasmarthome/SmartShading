@@ -60,10 +60,20 @@ class OverrideDetector:
     # ------------------------------------------------------------------
 
     def get(self, window_id: str, now: datetime) -> ManualOverride | None:
-        """Return the active override for window_id, clearing it if expired."""
+        """Return the active override for window_id, clearing it if expired.
+
+        F30 field fix: a natural timeout clear also suppresses the next
+        override-detection tick (see suppress_next_override_tick()) — the
+        cover is still physically at the override position at this instant,
+        and without this the very next tick() would immediately reinterpret
+        that unmoved position as a brand-new override, before the
+        now-unblocked automatic decision has had any real chance to
+        dispatch and move the cover.
+        """
         existing = self._active_overrides.get(window_id)
         if existing is not None and now >= existing.expires_at:
             del self._active_overrides[window_id]
+            self.suppress_next_override_tick(window_id)
             return None
         return existing
 
@@ -103,6 +113,14 @@ class OverrideDetector:
                 )
                 continue
             if now >= ov.expires_at:
+                # F30 field fix: a stale, already-expired persisted override is
+                # dropped here without ever reaching _active_overrides — the
+                # cover is presumably still at that old position, so also
+                # suppress the first post-restart detection tick for this
+                # window, same reasoning as the live natural-timeout clear
+                # above. Belt-and-suspenders alongside the per-window warmup
+                # guard in tick(), which already skips the very first tick.
+                self.suppress_next_override_tick(ov.window_id)
                 continue  # stale — do not resurrect
             self._active_overrides[ov.window_id] = ov
             restored.append(ov)
@@ -157,10 +175,15 @@ class OverrideDetector:
         self._warmup_counters[window_id] = cycle_count + 1
 
         # Expiry check (also done in get(), but kept here for test isolation).
+        # F30 field fix: same reasoning as get() — suppress this same call's
+        # own detection below (consumed a few lines down), since the cover
+        # has not had any chance to move away from the just-expired override
+        # position yet.
         existing = self._active_overrides.get(window_id)
         if existing is not None and now >= existing.expires_at:
             del self._active_overrides[window_id]
             existing = None
+            self.suppress_next_override_tick(window_id)
 
         # Warmup guard: no detection in the first N cycles after HA start.
         if cycle_count < _WARMUP_CYCLES_REQUIRED:

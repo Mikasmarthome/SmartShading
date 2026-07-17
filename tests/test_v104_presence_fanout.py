@@ -821,7 +821,8 @@ class TestLifecycleBoundaryTimer:
             return (lambda: None)
 
         with patch.object(sys.modules["homeassistant.helpers.event"], "async_track_point_in_time", create=True, side_effect=_track), \
-             patch.object(_coord_module_ref.dt_util, "now", return_value=_local(2026, 6, 30, 5, 0)):
+             patch.object(_coord_module_ref.dt_util, "now", return_value=_local(2026, 6, 30, 5, 0)), \
+             patch.object(_coord_module_ref.dt_util, "utcnow", return_value=_local(2026, 6, 30, 6, 35)):
             coord.async_setup_lifecycle_boundary_timer(entry)
             before = coord.hass.async_create_task.call_count
             captured["cb"](_local(2026, 6, 30, 6, 35))  # boundary fires

@@ -29,7 +29,7 @@
       },
       "lifecycle": {
         "title": "Zeitplan-Einstellungen",
-        "description": "Wähle, wie SmartShading Nacht und Morgen erkennt. \"Beides\" löst aus, sobald eine der beiden Bedingungen – Uhrzeit oder Sonnenhöhe – zuerst erfüllt ist.",
+        "description": "Wähle, wie SmartShading Nacht und Morgen erkennt. \"Frühester Auslöser\" löst aus, sobald entweder die eingestellte Uhrzeit oder die Sonnenbedingung erreicht ist – keine Kombination oder Zeitfenster-Begrenzung.",
         "data": {
           "night_trigger": "Nacht-Auslöser",
           "morning_trigger": "Morgen-Auslöser",
@@ -290,7 +290,7 @@
       },
       "lifecycle": {
         "title": "Zeitplan-Einstellungen",
-        "description": "Wähle, wie SmartShading Nacht und Morgen erkennt. \"Beides\" löst aus, sobald eine der beiden Bedingungen – Uhrzeit oder Sonnenhöhe – zuerst erfüllt ist.",
+        "description": "Wähle, wie SmartShading Nacht und Morgen erkennt. \"Frühester Auslöser\" löst aus, sobald entweder die eingestellte Uhrzeit oder die Sonnenbedingung erreicht ist – keine Kombination oder Zeitfenster-Begrenzung.",
         "data": {
           "night_trigger": "Nacht-Auslöser",
           "morning_trigger": "Morgen-Auslöser",
@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading ist bereits eingerichtet.",
       "system_already_exists": "SmartShading-System-Eintrag existiert bereits."
+    },
+    "create_entry": {
+      "default": "Zone erstellt. Weitere Einstellungen wie Zeitplan, Nachtverhalten und erweiterte Optionen findest du später über das Zahnrad in den Zoneneinstellungen."
     }
   },
   "selector": {
@@ -442,7 +445,7 @@
       "options": {
         "fixed_time": "Feste Uhrzeit",
         "sun_elevation": "Sonnenhöhe",
-        "both": "Beides",
+        "both": "Frühester Auslöser",
         "disabled": "Deaktiviert"
       }
     },

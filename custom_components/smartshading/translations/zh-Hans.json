@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading 已配置。",
       "system_already_exists": "SmartShading 系统条目已存在。"
+    },
+    "create_entry": {
+      "default": "区域已创建。您可以稍后通过区域设置中的齿轮图标调整计划、夜间行为和高级选项。"
     }
   },
   "selector": {

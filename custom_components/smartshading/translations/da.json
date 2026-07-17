@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading er allerede konfigureret.",
       "system_already_exists": "SmartShading-systemposten findes allerede."
+    },
+    "create_entry": {
+      "default": "Zone oprettet. Du kan justere tidsplan, natadfærd og avancerede indstillinger senere fra zoneindstillingerne via tandhjulsikonet."
     }
   },
   "selector": {

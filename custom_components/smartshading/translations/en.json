@@ -29,7 +29,7 @@
       },
       "lifecycle": {
         "title": "Schedule settings",
-        "description": "Select how SmartShading detects night and morning. \"Both\" triggers on whichever condition — time or sun elevation — is met first.",
+        "description": "Select how SmartShading detects night and morning. \"Earliest trigger\" fires as soon as either the configured time or the sun condition is reached — it does not combine or clamp them into a time window.",
         "data": {
           "night_trigger": "Night trigger",
           "morning_trigger": "Morning trigger",
@@ -290,7 +290,7 @@
       },
       "lifecycle": {
         "title": "Schedule settings",
-        "description": "Select how SmartShading detects night and morning. \"Both\" triggers on whichever condition — time or sun elevation — is met first.",
+        "description": "Select how SmartShading detects night and morning. \"Earliest trigger\" fires as soon as either the configured time or the sun condition is reached — it does not combine or clamp them into a time window.",
         "data": {
           "night_trigger": "Night trigger",
           "morning_trigger": "Morning trigger",
@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading is already configured.",
       "system_already_exists": "SmartShading System entry already exists."
+    },
+    "create_entry": {
+      "default": "Zone created. You can adjust schedule, night behavior, and advanced options later from the zone settings using the gear icon."
     }
   },
   "selector": {
@@ -442,7 +445,7 @@
       "options": {
         "fixed_time": "Fixed time",
         "sun_elevation": "Sun elevation",
-        "both": "Both",
+        "both": "Earliest trigger",
         "disabled": "Disabled"
       }
     },

@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading este deja configurat.",
       "system_already_exists": "Intrarea de Sistem SmartShading există deja."
+    },
+    "create_entry": {
+      "default": "Zonă creată. Poți ajusta ulterior programul, comportamentul nocturn și opțiunile avansate din setările zonei, folosind pictograma roată dințată."
     }
   },
   "selector": {

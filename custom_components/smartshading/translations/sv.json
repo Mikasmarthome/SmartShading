@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading är redan konfigurerat.",
       "system_already_exists": "SmartShading-systemposten finns redan."
+    },
+    "create_entry": {
+      "default": "Zon skapad. Du kan senare justera schema, nattbeteende och avancerade alternativ från zoninställningarna via kugghjulsikonen."
     }
   },
   "selector": {

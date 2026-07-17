@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "O SmartShading já está configurado.",
       "system_already_exists": "A entrada de Sistema do SmartShading já existe."
+    },
+    "create_entry": {
+      "default": "Zona criada. Pode ajustar mais tarde o horário, o comportamento noturno e as opções avançadas nas definições da zona através do ícone de engrenagem."
     }
   },
   "selector": {

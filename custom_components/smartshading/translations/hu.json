@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "A SmartShading már konfigurálva van.",
       "system_already_exists": "A SmartShading rendszerbejegyzés már létezik."
+    },
+    "create_entry": {
+      "default": "A zóna létrejött. Az ütemezést, az éjszakai viselkedést és a speciális beállításokat később a zóna beállításaiban, a fogaskerék ikon segítségével módosíthatod."
     }
   },
   "selector": {

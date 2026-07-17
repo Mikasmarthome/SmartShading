@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading on jo määritetty.",
       "system_already_exists": "SmartShading-järjestelmämerkintä on jo olemassa."
+    },
+    "create_entry": {
+      "default": "Alue luotu. Voit myöhemmin muokata aikataulua, yökäyttäytymistä ja lisäasetuksia alueen asetuksista hammasratas-kuvakkeen kautta."
     }
   },
   "selector": {

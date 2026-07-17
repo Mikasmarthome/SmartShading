@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading zaten yapılandırılmış.",
       "system_already_exists": "SmartShading Sistem girişi zaten mevcut."
+    },
+    "create_entry": {
+      "default": "Bölge oluşturuldu. Programı, gece davranışını ve gelişmiş seçenekleri daha sonra dişli simgesi aracılığıyla bölge ayarlarından düzenleyebilirsiniz."
     }
   },
   "selector": {

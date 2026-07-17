@@ -305,6 +305,12 @@ Every controllable shading element belongs to a zone, and there is one Zone Entr
 needs only your covers, the window configuration, and Home Assistant's own sun and location data. Optional
 sensors (weather, solar radiation, indoor temperature, presence) improve decisions but are not required.
 
+### After setup: advanced zone settings
+
+The initial setup covers the basic zone configuration. After creating a zone, open the zone's settings via
+the gear icon to adjust schedule, night behavior, and other advanced options — see [Configuration](#configuration)
+below for the full list.
+
 ## Configuration
 
 SmartShading is configured through the Home Assistant UI (config flow). After the initial setup you can

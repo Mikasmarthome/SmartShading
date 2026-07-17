@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading je že konfiguriran.",
       "system_already_exists": "Sistemski vnos SmartShading že obstaja."
+    },
+    "create_entry": {
+      "default": "Cona ustvarjena. Urnik, nočno vedenje in napredne možnosti lahko pozneje prilagodite v nastavitvah cone prek ikone zobnika."
     }
   },
   "selector": {

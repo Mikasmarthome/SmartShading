@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading jest już skonfigurowany.",
       "system_already_exists": "Wpis systemowy SmartShading już istnieje."
+    },
+    "create_entry": {
+      "default": "Strefa utworzona. Harmonogram, zachowanie nocne i opcje zaawansowane możesz później dostosować w ustawieniach strefy za pomocą ikony koła zębatego."
     }
   },
   "selector": {

@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading уже налаштовано.",
       "system_already_exists": "Системний запис SmartShading уже існує."
+    },
+    "create_entry": {
+      "default": "Зону створено. Пізніше ви можете налаштувати розклад, нічну поведінку та розширені параметри в налаштуваннях зони за допомогою значка шестерні."
     }
   },
   "selector": {

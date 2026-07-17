@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading er allerede konfigurert.",
       "system_already_exists": "SmartShading-systemoppføringen finnes allerede."
+    },
+    "create_entry": {
+      "default": "Sone opprettet. Du kan justere tidsplan, nattoppførsel og avanserte innstillinger senere fra soneinnstillingene via tannhjulsikonet."
     }
   },
   "selector": {

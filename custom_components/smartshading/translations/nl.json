@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading is al geconfigureerd.",
       "system_already_exists": "SmartShading-systeeminvoer bestaat al."
+    },
+    "create_entry": {
+      "default": "Zone aangemaakt. Je kunt later schema, nachtgedrag en geavanceerde opties aanpassen via de zone-instellingen met het tandwielpictogram."
     }
   },
   "selector": {

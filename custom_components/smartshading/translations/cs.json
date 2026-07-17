@@ -406,6 +406,9 @@
     "abort": {
       "single_instance_allowed": "SmartShading je již nakonfigurován.",
       "system_already_exists": "Systémová položka SmartShading již existuje."
+    },
+    "create_entry": {
+      "default": "Zóna byla vytvořena. Rozvrh, noční chování a pokročilé možnosti můžete později upravit v nastavení zóny pomocí ikony ozubeného kola."
     }
   },
   "selector": {

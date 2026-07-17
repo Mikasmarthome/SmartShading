@@ -59,7 +59,9 @@
           "weekend_night_position": "Natposition i weekenden (lør–søn)",
           "weekend_morning_fixed_time": "Morgentidspunkt i weekenden (lør–søn)",
           "weekend_morning_position": "Morgenposition i weekenden (lør–søn)",
-          "active_months": "Aktive måneder (avanceret)"
+          "active_months": "Aktive måneder (avanceret)",
+          "night_sun_event": "Nattens solbegivenhed (valgfri)",
+          "morning_sun_event": "Morgenens solbegivenhed (valgfri)"
         },
         "data_description": {
           "night_position": "Afskærmningens position i natfasen (0 = lukket, 100 = åben).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Afskærmningens position ved starten af morgenfasen på hverdage (0 = lukket, 100 = åben).",
           "weekend_night_position": "Afskærmningens position i natfasen i weekenden (0 = lukket, 100 = åben).",
           "weekend_morning_position": "Afskærmningens position ved starten af morgenfasen i weekenden (0 = lukket, 100 = åben).",
-          "active_months": "Lad stå tomt for at anvende denne tidsplan hver måned. Vælg bestemte måneder for at begrænse den — f.eks. september til marts for en vinterplan."
+          "active_months": "Lad stå tomt for at anvende denne tidsplan hver måned. Vælg bestemte måneder for at begrænse den — f.eks. september til marts for en vinterplan.",
+          "night_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed nattetidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
+          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Nattidspunkt i weekenden (lør–søn)",
           "weekend_night_position": "Natposition i weekenden (lør–søn)",
           "weekend_morning_fixed_time": "Morgentidspunkt i weekenden (lør–søn)",
-          "weekend_morning_position": "Morgenposition i weekenden (lør–søn)"
+          "weekend_morning_position": "Morgenposition i weekenden (lør–søn)",
+          "night_sun_event": "Nattens solbegivenhed (valgfri)",
+          "morning_sun_event": "Morgenens solbegivenhed (valgfri)"
         },
         "data_description": {
           "night_position": "Afskærmningens position i natfasen (0 = lukket, 100 = åben).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Afskærmningens position i natfasen på hverdage (0 = lukket, 100 = åben).",
           "weekday_morning_position": "Afskærmningens position ved starten af morgenfasen på hverdage (0 = lukket, 100 = åben).",
           "weekend_night_position": "Afskærmningens position i natfasen i weekenden (0 = lukket, 100 = åben).",
-          "weekend_morning_position": "Afskærmningens position ved starten af morgenfasen i weekenden (0 = lukket, 100 = åben)."
+          "weekend_morning_position": "Afskærmningens position ved starten af morgenfasen i weekenden (0 = lukket, 100 = åben).",
+          "night_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed nattetidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
+          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Solhøjde",
         "both": "Begge",
         "disabled": "Deaktiveret"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Solopgang",
+        "sunset": "Solnedgang",
+        "dawn": "Daggry",
+        "dusk": "Skumring"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Solopgang",
+        "sunset": "Solnedgang",
+        "dawn": "Daggry",
+        "dusk": "Skumring"
       }
     },
     "lifecycle_schedule_mode": {

@@ -77,7 +77,12 @@ from .engines.comfort_movement_hold import (
 )
 from .engines.pending_outcome_queue import PendingOutcomeQueue
 from .models.pending_outcome import PendingOutcome
-from .engines.lifecycle_engine import LifecycleEngine, PresenceDebouncer, check_night_interval_active
+from .engines.lifecycle_engine import (
+    LifecycleEngine,
+    PresenceDebouncer,
+    SunEventTimes,
+    check_night_interval_active,
+)
 from .engines.lifecycle_guard import lifecycle_should_break_override, should_allow_lifecycle_release
 from .models.learning import OverrideRecord, StateTransitionRecord, WindowCycleSnapshot
 from .engines.override_detector import OverrideDetector
@@ -877,6 +882,31 @@ def _measured_solar_may_be_locally_shaded(
     if rain_status is _RainStatus.RAINING:
         return False
     return True
+
+
+def _read_local_datetime_attr(sun_state: Any, attr_name: str) -> datetime | None:
+    """Read one HA sun.sun `next_*` attribute and convert it to local time.
+
+    Never raises: a missing entity/attribute, an unparsable string, or an
+    unexpected type all resolve to None — lifecycle_engine's SUN_EVENT
+    resolution treats None as absent evidence and fails safe (the trigger
+    never fires from missing data), matching sun_elevation_deg's existing
+    None handling above.
+
+    HA's own sun platform stores these as real datetime objects, but a
+    string is also accepted (matches how test/other integrations may
+    populate hass.states) via dt_util.parse_datetime().
+    """
+    if sun_state is None:
+        return None
+    value = sun_state.attributes.get(attr_name)
+    if value is None:
+        return None
+    if isinstance(value, str):
+        value = dt_util.parse_datetime(value)
+    if not isinstance(value, datetime):
+        return None
+    return dt_util.as_local(value)
 
 
 def _apply_window_behavior_mode(
@@ -2489,6 +2519,21 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             except (KeyError, TypeError, ValueError):
                 _LOGGER.warning("sun.sun has no usable azimuth/elevation attributes yet")
 
+        # v1.2.0-beta.1 SUN_EVENT triggers: HA's sun.sun entity already
+        # exposes next_rising/next_setting/next_dawn/next_dusk (backed by
+        # astral internally) — no extra dependency needed. Converted to
+        # local time here (once, at the HA boundary) so lifecycle_engine
+        # itself stays HA-independent, exactly like sun_position above.
+        # Missing/unavailable/malformed attributes resolve to None per
+        # field, never raise — the engine's absent-evidence fail-safe
+        # handles a None the same way it already does for sun_elevation_deg.
+        _sun_event_times = SunEventTimes(
+            next_sunrise=_read_local_datetime_attr(sun_state, "next_rising"),
+            next_sunset=_read_local_datetime_attr(sun_state, "next_setting"),
+            next_dawn=_read_local_datetime_attr(sun_state, "next_dawn"),
+            next_dusk=_read_local_datetime_attr(sun_state, "next_dusk"),
+        )
+
         weather_inputs = self._read_weather_inputs()
 
         # Comfort Engine round (2026-06-17): read indoor temperature once per
@@ -2550,7 +2595,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         _prev_lifecycle_state = self._lifecycle_state
         _sun_elevation = sun_position.elevation if sun_position is not None else None
         self._lifecycle_state = self.lifecycle_engine.get_lifecycle_state(
-            local_now, _sun_elevation, self._lifecycle_config, self._lifecycle_state
+            local_now, _sun_elevation, self._lifecycle_config, self._lifecycle_state,
+            _sun_event_times,
         )
 
         # Night Hard Hold: pre-computed once per cycle for O(1) per-window check.
@@ -2567,6 +2613,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     local_now,
                     sun_position.elevation if sun_position is not None else None,
                     self._lifecycle_config,
+                    _sun_event_times,
                 )
             )
         )

@@ -59,7 +59,9 @@
           "weekend_night_position": "Poziție de noapte în weekend (sâm–dum)",
           "weekend_morning_fixed_time": "Ora de dimineață în weekend (sâm–dum)",
           "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)",
-          "active_months": "Luni active (avansat)"
+          "active_months": "Luni active (avansat)",
+          "night_sun_event": "Eveniment solar nocturn (opțional)",
+          "morning_sun_event": "Eveniment solar matinal (opțional)"
         },
         "data_description": {
           "night_position": "Poziția umbrarului în faza de noapte (0 = închis, 100 = deschis).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Poziția umbrarului la începutul fazei de dimineață în zilele lucrătoare (0 = închis, 100 = deschis).",
           "weekend_night_position": "Poziția umbrarului în faza de noapte în weekend (0 = închis, 100 = deschis).",
           "weekend_morning_position": "Poziția umbrarului la începutul fazei de dimineață în weekend (0 = închis, 100 = deschis).",
-          "active_months": "Lăsați necompletat pentru a aplica acest program în fiecare lună. Selectați anumite luni pentru a-l restricționa — de exemplu, din septembrie până în martie pentru un program de iarnă."
+          "active_months": "Lăsați necompletat pentru a aplica acest program în fiecare lună. Selectați anumite luni pentru a-l restricționa — de exemplu, din septembrie până în martie pentru un program de iarnă.",
+          "night_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de noapte de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Ora de noapte în weekend (sâm–dum)",
           "weekend_night_position": "Poziție de noapte în weekend (sâm–dum)",
           "weekend_morning_fixed_time": "Ora de dimineață în weekend (sâm–dum)",
-          "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)"
+          "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)",
+          "night_sun_event": "Eveniment solar nocturn (opțional)",
+          "morning_sun_event": "Eveniment solar matinal (opțional)"
         },
         "data_description": {
           "night_position": "Poziția umbrarului în faza de noapte (0 = închis, 100 = deschis).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Poziția umbrarului în faza de noapte în zilele lucrătoare (0 = închis, 100 = deschis).",
           "weekday_morning_position": "Poziția umbrarului la începutul fazei de dimineață în zilele lucrătoare (0 = închis, 100 = deschis).",
           "weekend_night_position": "Poziția umbrarului în faza de noapte în weekend (0 = închis, 100 = deschis).",
-          "weekend_morning_position": "Poziția umbrarului la începutul fazei de dimineață în weekend (0 = închis, 100 = deschis)."
+          "weekend_morning_position": "Poziția umbrarului la începutul fazei de dimineață în weekend (0 = închis, 100 = deschis).",
+          "night_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de noapte de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Înălțimea soarelui",
         "both": "Ambele",
         "disabled": "Dezactivat"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Răsărit",
+        "sunset": "Apus",
+        "dawn": "Zori",
+        "dusk": "Amurg"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Răsărit",
+        "sunset": "Apus",
+        "dawn": "Zori",
+        "dusk": "Amurg"
       }
     },
     "lifecycle_schedule_mode": {

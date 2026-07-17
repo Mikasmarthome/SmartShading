@@ -202,6 +202,15 @@ CONF_NIGHT_SUN_ELEVATION = "night_sun_elevation"
 CONF_MORNING_TRIGGER = "morning_trigger"
 CONF_MORNING_FIXED_TIME = "morning_fixed_time"
 CONF_MORNING_SUN_ELEVATION = "morning_sun_elevation"
+
+# Sun events (v1.2.0-beta.1): an OPTIONAL override on night_fixed_time /
+# morning_fixed_time (resolves an astronomical event into that same slot),
+# not a new value on CONF_NIGHT_TRIGGER/CONF_MORNING_TRIGGER above — those
+# stay at their original 4 options. Relevant whenever the trigger involves
+# a time comparison (FIXED_TIME or BOTH); harmless (unused) otherwise.
+CONF_NIGHT_SUN_EVENT = "night_sun_event"
+CONF_MORNING_SUN_EVENT = "morning_sun_event"
+
 CONF_PRESENCE_ENTITY_IDS = "presence_entity_ids"
 CONF_ABSENCE_DELAY_MIN = "absence_delay_min"
 CONF_ABSENCE_POSITION = "absence_position"
@@ -231,6 +240,11 @@ MORNING_ELEVATION_PRESETS: dict[str, float] = {
 # models.lifecycle.NightTrigger/MorningTrigger.value exactly, so the
 # Config Flow can convert directly via NightTrigger(value).
 LIFECYCLE_TRIGGER_OPTIONS: list[str] = ["disabled", "fixed_time", "sun_elevation", "both"]
+
+# SunEvent selector options (v1.2.0-beta.1) - values match models.lifecycle.SunEvent.value.
+# No DEFAULT_*_SUN_EVENT constant: night_sun_event/morning_sun_event default
+# to None (no override configured), not to a specific event.
+SUN_EVENT_OPTIONS: list[str] = ["sunrise", "sunset", "dawn", "dusk"]
 
 DEFAULT_NIGHT_TRIGGER = "fixed_time"
 DEFAULT_NIGHT_FIXED_TIME = "22:00:00"

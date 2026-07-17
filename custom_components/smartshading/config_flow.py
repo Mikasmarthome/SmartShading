@@ -53,7 +53,13 @@ from .config_entry_data import SmartShadingConfigEntryData, from_storage_dict, t
 from .models.comfort import ComfortConfig
 from .models.config import GlobalDefaults, ShadePositionDefaults
 from .models.cover_group import CoverGroup, CoverHardwareType, CoverSyncMode, cover_hardware_type_from_str
-from .models.lifecycle import LifecycleScheduleMode, MorningTrigger, NightDayLifecycleConfig, NightTrigger
+from .models.lifecycle import (
+    LifecycleScheduleMode,
+    MorningTrigger,
+    NightDayLifecycleConfig,
+    NightTrigger,
+    SunEvent,
+)
 from .models.window import WindowBehaviorMode, WindowConfig
 from .models.zone import ZoneConfig
 from .const import (
@@ -116,6 +122,9 @@ from .const import (
     DEFAULT_NIGHT_POSITION,
     DEFAULT_NIGHT_SUN_ELEVATION,
     DEFAULT_NIGHT_TRIGGER,
+    CONF_NIGHT_SUN_EVENT,
+    CONF_MORNING_SUN_EVENT,
+    SUN_EVENT_OPTIONS,
     DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C,
     CONF_GLARE_MIN_EXPOSURE_WM2,
     DEFAULT_GLARE_MIN_EXPOSURE_WM2,
@@ -272,10 +281,12 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._night_fixed_time: time = time.fromisoformat(DEFAULT_NIGHT_FIXED_TIME)
         self._night_sun_elevation: float = DEFAULT_NIGHT_SUN_ELEVATION
         self._night_position: int = DEFAULT_NIGHT_POSITION
+        self._night_sun_event: SunEvent | None = None  # None = use night_fixed_time as-is
         self._morning_trigger: MorningTrigger = MorningTrigger(DEFAULT_MORNING_TRIGGER)
         self._morning_fixed_time: time = time.fromisoformat(DEFAULT_MORNING_FIXED_TIME)
         self._morning_sun_elevation: float = DEFAULT_MORNING_SUN_ELEVATION
         self._morning_position: int = DEFAULT_MORNING_POSITION
+        self._morning_sun_event: SunEvent | None = None  # None = use morning_fixed_time as-is
         # Weekday/Weekend schedule mode
         self._schedule_mode: LifecycleScheduleMode = LifecycleScheduleMode.SAME_EVERY_DAY
         self._weekday_night_fixed_time: time = time.fromisoformat(DEFAULT_WEEKDAY_NIGHT_FIXED_TIME)
@@ -443,6 +454,16 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             MORNING_ELEVATION_PRESETS,
                             self._morning_sun_elevation,
                         )
+                # Sun event overrides (v1.2.0-beta.1): shared, not weekday/weekend-
+                # specific. Optional — an unselected field means "no override".
+                self._night_sun_event = (
+                    SunEvent(user_input[CONF_NIGHT_SUN_EVENT])
+                    if user_input.get(CONF_NIGHT_SUN_EVENT) else None
+                )
+                self._morning_sun_event = (
+                    SunEvent(user_input[CONF_MORNING_SUN_EVENT])
+                    if user_input.get(CONF_MORNING_SUN_EVENT) else None
+                )
                 # Parse weekday profile
                 self._weekday_night_fixed_time = _parse_time_input(
                     user_input.get(CONF_WEEKDAY_NIGHT_FIXED_TIME), DEFAULT_WEEKDAY_NIGHT_FIXED_TIME
@@ -494,6 +515,14 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         MORNING_ELEVATION_PRESETS,
                         self._morning_sun_elevation,
                     )
+                self._night_sun_event = (
+                    SunEvent(user_input[CONF_NIGHT_SUN_EVENT])
+                    if user_input.get(CONF_NIGHT_SUN_EVENT) else None
+                )
+                self._morning_sun_event = (
+                    SunEvent(user_input[CONF_MORNING_SUN_EVENT])
+                    if user_input.get(CONF_MORNING_SUN_EVENT) else None
+                )
                 self._night_position = int(user_input.get(CONF_NIGHT_POSITION, DEFAULT_NIGHT_POSITION))
                 self._morning_position = int(user_input.get(CONF_MORNING_POSITION, DEFAULT_MORNING_POSITION))
             return await self.async_step_presence()
@@ -519,6 +548,20 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         custom_elevation_selector = NumberSelector(
             NumberSelectorConfig(min=-90, max=90, step=0.5, mode=NumberSelectorMode.BOX)
         )
+        night_sun_event_selector = SelectSelector(
+            SelectSelectorConfig(
+                options=SUN_EVENT_OPTIONS,
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="night_sun_event",
+            )
+        )
+        morning_sun_event_selector = SelectSelector(
+            SelectSelectorConfig(
+                options=SUN_EVENT_OPTIONS,
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="morning_sun_event",
+            )
+        )
 
         if is_weekday_weekend:
             schema_dict: dict[Any, Any] = {}
@@ -532,6 +575,25 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 morning_preset_default = _elevation_to_preset(self._morning_sun_elevation, MORNING_ELEVATION_PRESETS)
                 schema_dict[vol.Required(CONF_MORNING_ELEVATION_PRESET, default=morning_preset_default)] = morning_preset_selector
                 schema_dict[vol.Optional(CONF_MORNING_SUN_ELEVATION, default=self._morning_sun_elevation)] = custom_elevation_selector
+            # Sun event overrides (v1.2.0-beta.1): shared, not weekday/weekend-
+            # specific — optional, shown whenever a time comparison is possible
+            # (FIXED_TIME or BOTH); "suggested_value" (not "default") so an
+            # unset override stays unset, matching CONF_ABSENCE_POSITION's
+            # established Optional-override pattern elsewhere in this file.
+            if self._night_trigger in {NightTrigger.FIXED_TIME, NightTrigger.BOTH}:
+                schema_dict[
+                    vol.Optional(
+                        CONF_NIGHT_SUN_EVENT,
+                        description={"suggested_value": self._night_sun_event.value if self._night_sun_event else None},
+                    )
+                ] = night_sun_event_selector
+            if self._morning_trigger in {MorningTrigger.FIXED_TIME, MorningTrigger.BOTH}:
+                schema_dict[
+                    vol.Optional(
+                        CONF_MORNING_SUN_EVENT,
+                        description={"suggested_value": self._morning_sun_event.value if self._morning_sun_event else None},
+                    )
+                ] = morning_sun_event_selector
             # Weekday section: per-day time + position
             if self._night_trigger in {NightTrigger.FIXED_TIME, NightTrigger.BOTH}:
                 schema_dict[
@@ -572,6 +634,13 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             night_preset_default = _elevation_to_preset(self._night_sun_elevation, NIGHT_ELEVATION_PRESETS)
             schema_dict[vol.Required(CONF_NIGHT_ELEVATION_PRESET, default=night_preset_default)] = night_preset_selector
             schema_dict[vol.Optional(CONF_NIGHT_SUN_ELEVATION, default=self._night_sun_elevation)] = custom_elevation_selector
+        if self._night_trigger in {NightTrigger.FIXED_TIME, NightTrigger.BOTH}:
+            schema_dict[
+                vol.Optional(
+                    CONF_NIGHT_SUN_EVENT,
+                    description={"suggested_value": self._night_sun_event.value if self._night_sun_event else None},
+                )
+            ] = night_sun_event_selector
         schema_dict[vol.Required(CONF_NIGHT_POSITION, default=self._night_position)] = position_selector
         if self._morning_trigger in {MorningTrigger.FIXED_TIME, MorningTrigger.BOTH}:
             schema_dict[vol.Required(CONF_MORNING_FIXED_TIME, default=DEFAULT_MORNING_FIXED_TIME)] = TimeSelector()
@@ -579,6 +648,13 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             morning_preset_default = _elevation_to_preset(self._morning_sun_elevation, MORNING_ELEVATION_PRESETS)
             schema_dict[vol.Required(CONF_MORNING_ELEVATION_PRESET, default=morning_preset_default)] = morning_preset_selector
             schema_dict[vol.Optional(CONF_MORNING_SUN_ELEVATION, default=self._morning_sun_elevation)] = custom_elevation_selector
+        if self._morning_trigger in {MorningTrigger.FIXED_TIME, MorningTrigger.BOTH}:
+            schema_dict[
+                vol.Optional(
+                    CONF_MORNING_SUN_EVENT,
+                    description={"suggested_value": self._morning_sun_event.value if self._morning_sun_event else None},
+                )
+            ] = morning_sun_event_selector
         schema_dict[vol.Required(CONF_MORNING_POSITION, default=self._morning_position)] = position_selector
         return self.async_show_form(step_id="lifecycle_detail", data_schema=vol.Schema(schema_dict))
 
@@ -858,6 +934,8 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             weekend_night_position=self._weekend_night_position,
             weekend_morning_fixed_time=self._weekend_morning_fixed_time,
             weekend_morning_position=self._weekend_morning_position,
+            night_sun_event=self._night_sun_event,
+            morning_sun_event=self._morning_sun_event,
         )
         entry_data = SmartShadingConfigEntryData(
             name=self._zone_name,
@@ -1072,6 +1150,13 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             # Empty selection = unrestricted (None), matching "no restriction" default.
             _raw_active_months = user_input.get(CONF_ACTIVE_MONTHS, stored_lc.get("active_months") or [])
             active_months = sorted(int(m) for m in _raw_active_months) if _raw_active_months else None
+            # Sun event overrides (v1.2.0-beta.1) — shared across both branches,
+            # same reasoning as active_months. Optional: absent/cleared -> None
+            # (no override — also correctly clears a stale override left over
+            # from a previous trigger selection that is no longer FIXED_TIME/
+            # BOTH, since the field then isn't rendered and can't be resubmitted).
+            night_sun_event_value = user_input.get(CONF_NIGHT_SUN_EVENT) or None
+            morning_sun_event_value = user_input.get(CONF_MORNING_SUN_EVENT) or None
 
             if is_weekday_weekend:
                 # Parse shared elevation fields (elevation thresholds do not vary by day of week)
@@ -1135,6 +1220,8 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     "weekend_morning_fixed_time": weekend_morning_time.isoformat(),
                     "weekend_morning_position": int(user_input.get(CONF_WEEKEND_MORNING_POSITION, stored_lc.get("weekend_morning_position", DEFAULT_MORNING_POSITION))),
                     "active_months": active_months,
+                    "night_sun_event": night_sun_event_value,
+                    "morning_sun_event": morning_sun_event_value,
                 }
                 return self._save_and_reload({"lifecycle_config": new_lc})
 
@@ -1181,6 +1268,8 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 "morning_sun_elevation_deg": morning_sun_elevation,
                 "morning_position": morning_position,
                 "active_months": active_months,
+                "night_sun_event": night_sun_event_value,
+                "morning_sun_event": morning_sun_event_value,
             }
             return self._save_and_reload({"lifecycle_config": new_lc})
 
@@ -1204,6 +1293,24 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         custom_elevation_selector = NumberSelector(
             NumberSelectorConfig(min=-90, max=90, step=0.5, mode=NumberSelectorMode.BOX)
         )
+        night_sun_event_selector = SelectSelector(
+            SelectSelectorConfig(
+                options=SUN_EVENT_OPTIONS,
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="night_sun_event",
+            )
+        )
+        morning_sun_event_selector = SelectSelector(
+            SelectSelectorConfig(
+                options=SUN_EVENT_OPTIONS,
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="morning_sun_event",
+            )
+        )
+        # No fallback default here — an unset stored value must stay None (no
+        # override configured), not silently pre-select "sunset"/"sunrise".
+        stored_night_sun_event = stored_lc.get("night_sun_event")
+        stored_morning_sun_event = stored_lc.get("morning_sun_event")
 
         # Show form
         if is_weekday_weekend:
@@ -1253,6 +1360,20 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             schema_dict[
                 vol.Required(CONF_WEEKEND_MORNING_POSITION, default=stored_lc.get("weekend_morning_position", DEFAULT_MORNING_POSITION))
             ] = position_selector
+            if pending_night in {NightTrigger.FIXED_TIME, NightTrigger.BOTH}:
+                schema_dict[
+                    vol.Optional(
+                        CONF_NIGHT_SUN_EVENT,
+                        description={"suggested_value": stored_night_sun_event},
+                    )
+                ] = night_sun_event_selector
+            if pending_morning in {MorningTrigger.FIXED_TIME, MorningTrigger.BOTH}:
+                schema_dict[
+                    vol.Optional(
+                        CONF_MORNING_SUN_EVENT,
+                        description={"suggested_value": stored_morning_sun_event},
+                    )
+                ] = morning_sun_event_selector
             schema_dict[
                 vol.Optional(CONF_ACTIVE_MONTHS, default=stored_lc.get("active_months") or [])
             ] = active_months_selector
@@ -1271,6 +1392,13 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 vol.Required(CONF_NIGHT_ELEVATION_PRESET, default=_elevation_to_preset(stored_night_elev, NIGHT_ELEVATION_PRESETS))
             ] = night_preset_selector
             schema_dict[vol.Optional(CONF_NIGHT_SUN_ELEVATION, default=stored_night_elev)] = custom_elevation_selector
+        if pending_night in {NightTrigger.FIXED_TIME, NightTrigger.BOTH}:
+            schema_dict[
+                vol.Optional(
+                    CONF_NIGHT_SUN_EVENT,
+                    description={"suggested_value": stored_night_sun_event},
+                )
+            ] = night_sun_event_selector
         schema_dict[vol.Required(CONF_NIGHT_POSITION, default=stored_night_pos)] = position_selector
         if pending_morning in {MorningTrigger.FIXED_TIME, MorningTrigger.BOTH}:
             schema_dict[vol.Required(CONF_MORNING_FIXED_TIME, default=stored_morning_time)] = TimeSelector()
@@ -1279,6 +1407,13 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 vol.Required(CONF_MORNING_ELEVATION_PRESET, default=_elevation_to_preset(stored_morning_elev, MORNING_ELEVATION_PRESETS))
             ] = morning_preset_selector
             schema_dict[vol.Optional(CONF_MORNING_SUN_ELEVATION, default=stored_morning_elev)] = custom_elevation_selector
+        if pending_morning in {MorningTrigger.FIXED_TIME, MorningTrigger.BOTH}:
+            schema_dict[
+                vol.Optional(
+                    CONF_MORNING_SUN_EVENT,
+                    description={"suggested_value": stored_morning_sun_event},
+                )
+            ] = morning_sun_event_selector
         schema_dict[vol.Required(CONF_MORNING_POSITION, default=stored_morning_pos)] = position_selector
         schema_dict[
             vol.Optional(CONF_ACTIVE_MONTHS, default=stored_lc.get("active_months") or [])

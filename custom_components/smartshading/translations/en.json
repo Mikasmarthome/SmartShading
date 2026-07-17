@@ -59,7 +59,9 @@
           "weekend_night_position": "Weekend night position (Sat–Sun)",
           "weekend_morning_fixed_time": "Weekend morning time (Sat–Sun)",
           "weekend_morning_position": "Weekend morning position (Sat–Sun)",
-          "active_months": "Active months (advanced)"
+          "active_months": "Active months (advanced)",
+          "night_sun_event": "Night sun event (optional)",
+          "morning_sun_event": "Morning sun event (optional)"
         },
         "data_description": {
           "night_position": "Cover position during the night phase (0 = closed, 100 = open).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Cover position at the start of the morning phase on weekdays (0 = closed, 100 = open).",
           "weekend_night_position": "Cover position during the night phase on weekends (0 = closed, 100 = open).",
           "weekend_morning_position": "Cover position at the start of the morning phase on weekends (0 = closed, 100 = open).",
-          "active_months": "Leave empty to apply this schedule in every month. Select specific months to restrict it — for example September through March for a winter schedule."
+          "active_months": "Leave empty to apply this schedule in every month. Select specific months to restrict it — for example September through March for a winter schedule.",
+          "night_sun_event": "Optional. If set, this astronomical event replaces the night time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Weekend night time (Sat–Sun)",
           "weekend_night_position": "Weekend night position (Sat–Sun)",
           "weekend_morning_fixed_time": "Weekend morning time (Sat–Sun)",
-          "weekend_morning_position": "Weekend morning position (Sat–Sun)"
+          "weekend_morning_position": "Weekend morning position (Sat–Sun)",
+          "night_sun_event": "Night sun event (optional)",
+          "morning_sun_event": "Morning sun event (optional)"
         },
         "data_description": {
           "night_position": "Cover position during the night phase (0 = closed, 100 = open).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Cover position during the night phase on weekdays (0 = closed, 100 = open).",
           "weekday_morning_position": "Cover position at the start of the morning phase on weekdays (0 = closed, 100 = open).",
           "weekend_night_position": "Cover position during the night phase on weekends (0 = closed, 100 = open).",
-          "weekend_morning_position": "Cover position at the start of the morning phase on weekends (0 = closed, 100 = open)."
+          "weekend_morning_position": "Cover position at the start of the morning phase on weekends (0 = closed, 100 = open).",
+          "night_sun_event": "Optional. If set, this astronomical event replaces the night time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Sun elevation",
         "both": "Earliest trigger",
         "disabled": "Disabled"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Sunrise",
+        "sunset": "Sunset",
+        "dawn": "Dawn",
+        "dusk": "Dusk"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Sunrise",
+        "sunset": "Sunset",
+        "dawn": "Dawn",
+        "dusk": "Dusk"
       }
     },
     "lifecycle_schedule_mode": {

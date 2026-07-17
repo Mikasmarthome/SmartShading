@@ -59,7 +59,9 @@
           "weekend_night_position": "Nattposition på helgen (lör–sön)",
           "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
           "weekend_morning_position": "Morgonposition på helgen (lör–sön)",
-          "active_months": "Aktiva månader (avancerat)"
+          "active_months": "Aktiva månader (avancerat)",
+          "night_sun_event": "Nattens solhändelse (valfri)",
+          "morning_sun_event": "Morgonens solhändelse (valfri)"
         },
         "data_description": {
           "night_position": "Solskyddets position under nattfasen (0 = stängt, 100 = öppet).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Solskyddets position vid morgonfasens början på vardagar (0 = stängt, 100 = öppet).",
           "weekend_night_position": "Solskyddets position under nattfasen på helgen (0 = stängt, 100 = öppet).",
           "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet).",
-          "active_months": "Lämna tomt för att tillämpa detta schema varje månad. Välj specifika månader för att begränsa det — till exempel september till mars för ett vinterschema."
+          "active_months": "Lämna tomt för att tillämpa detta schema varje månad. Välj specifika månader för att begränsa det — till exempel september till mars för ett vinterschema.",
+          "night_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse natt-tiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse morgontiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Nattid på helgen (lör–sön)",
           "weekend_night_position": "Nattposition på helgen (lör–sön)",
           "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
-          "weekend_morning_position": "Morgonposition på helgen (lör–sön)"
+          "weekend_morning_position": "Morgonposition på helgen (lör–sön)",
+          "night_sun_event": "Nattens solhändelse (valfri)",
+          "morning_sun_event": "Morgonens solhändelse (valfri)"
         },
         "data_description": {
           "night_position": "Solskyddets position under nattfasen (0 = stängt, 100 = öppet).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Solskyddets position under nattfasen på vardagar (0 = stängt, 100 = öppet).",
           "weekday_morning_position": "Solskyddets position vid morgonfasens början på vardagar (0 = stängt, 100 = öppet).",
           "weekend_night_position": "Solskyddets position under nattfasen på helgen (0 = stängt, 100 = öppet).",
-          "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet)."
+          "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet).",
+          "night_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse natt-tiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse morgontiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Solhöjd",
         "both": "Båda",
         "disabled": "Inaktiverad"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Soluppgång",
+        "sunset": "Solnedgång",
+        "dawn": "Gryning",
+        "dusk": "Skymning"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Soluppgång",
+        "sunset": "Solnedgång",
+        "dawn": "Gryning",
+        "dusk": "Skymning"
       }
     },
     "lifecycle_schedule_mode": {

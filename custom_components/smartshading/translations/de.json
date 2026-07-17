@@ -59,7 +59,9 @@
           "weekend_night_position": "Nachtposition Wochenende (Sa–So)",
           "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
           "weekend_morning_position": "Morgenposition Wochenende (Sa–So)",
-          "active_months": "Aktive Monate (erweitert)"
+          "active_months": "Aktive Monate (erweitert)",
+          "night_sun_event": "Nächtliches Sonnenereignis (optional)",
+          "morning_sun_event": "Morgendliches Sonnenereignis (optional)"
         },
         "data_description": {
           "night_position": "Behangsposition in der Nachtphase (0 = geschlossen, 100 = offen).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Behangsposition zu Beginn der Morgenphase an Wochentagen (0 = geschlossen, 100 = offen).",
           "weekend_night_position": "Behangsposition in der Nachtphase am Wochenende (0 = geschlossen, 100 = offen).",
           "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen).",
-          "active_months": "Leer lassen, um diesen Zeitplan in jedem Monat anzuwenden. Wähle bestimmte Monate aus, um ihn einzuschränken — zum Beispiel September bis März für einen Winter-Zeitplan."
+          "active_months": "Leer lassen, um diesen Zeitplan in jedem Monat anzuwenden. Wähle bestimmte Monate aus, um ihn einzuschränken — zum Beispiel September bis März für einen Winter-Zeitplan.",
+          "night_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Nachtzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
+          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Nacht-Uhrzeit Wochenende (Sa–So)",
           "weekend_night_position": "Nachtposition Wochenende (Sa–So)",
           "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
-          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)"
+          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)",
+          "night_sun_event": "Nächtliches Sonnenereignis (optional)",
+          "morning_sun_event": "Morgendliches Sonnenereignis (optional)"
         },
         "data_description": {
           "night_position": "Behangsposition in der Nachtphase (0 = geschlossen, 100 = offen).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Behangsposition in der Nachtphase an Wochentagen (0 = geschlossen, 100 = offen).",
           "weekday_morning_position": "Behangsposition zu Beginn der Morgenphase an Wochentagen (0 = geschlossen, 100 = offen).",
           "weekend_night_position": "Behangsposition in der Nachtphase am Wochenende (0 = geschlossen, 100 = offen).",
-          "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen)."
+          "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen).",
+          "night_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Nachtzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
+          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Sonnenhöhe",
         "both": "Frühester Auslöser",
         "disabled": "Deaktiviert"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Sonnenaufgang",
+        "sunset": "Sonnenuntergang",
+        "dawn": "Morgendämmerung",
+        "dusk": "Abenddämmerung"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Sonnenaufgang",
+        "sunset": "Sonnenuntergang",
+        "dawn": "Morgendämmerung",
+        "dusk": "Abenddämmerung"
       }
     },
     "lifecycle_schedule_mode": {

@@ -59,7 +59,9 @@
           "weekend_night_position": "Position de nuit le week-end (sam–dim)",
           "weekend_morning_fixed_time": "Heure du matin le week-end (sam–dim)",
           "weekend_morning_position": "Position du matin le week-end (sam–dim)",
-          "active_months": "Mois actifs (avancé)"
+          "active_months": "Mois actifs (avancé)",
+          "night_sun_event": "Événement solaire nocturne (optionnel)",
+          "morning_sun_event": "Événement solaire matinal (optionnel)"
         },
         "data_description": {
           "night_position": "Position du volet pendant la phase de nuit (0 = fermé, 100 = ouvert).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Position du volet au début de la phase du matin en semaine (0 = fermé, 100 = ouvert).",
           "weekend_night_position": "Position du volet pendant la phase de nuit le week-end (0 = fermé, 100 = ouvert).",
           "weekend_morning_position": "Position du volet au début de la phase du matin le week-end (0 = fermé, 100 = ouvert).",
-          "active_months": "Laissez vide pour appliquer ce programme chaque mois. Sélectionnez des mois spécifiques pour le restreindre — par exemple de septembre à mars pour un programme d'hiver."
+          "active_months": "Laissez vide pour appliquer ce programme chaque mois. Sélectionnez des mois spécifiques pour le restreindre — par exemple de septembre à mars pour un programme d'hiver.",
+          "night_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure de nuit ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
+          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Heure de nuit le week-end (sam–dim)",
           "weekend_night_position": "Position de nuit le week-end (sam–dim)",
           "weekend_morning_fixed_time": "Heure du matin le week-end (sam–dim)",
-          "weekend_morning_position": "Position du matin le week-end (sam–dim)"
+          "weekend_morning_position": "Position du matin le week-end (sam–dim)",
+          "night_sun_event": "Événement solaire nocturne (optionnel)",
+          "morning_sun_event": "Événement solaire matinal (optionnel)"
         },
         "data_description": {
           "night_position": "Position du volet pendant la phase de nuit (0 = fermé, 100 = ouvert).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Position du volet pendant la phase de nuit en semaine (0 = fermé, 100 = ouvert).",
           "weekday_morning_position": "Position du volet au début de la phase du matin en semaine (0 = fermé, 100 = ouvert).",
           "weekend_night_position": "Position du volet pendant la phase de nuit le week-end (0 = fermé, 100 = ouvert).",
-          "weekend_morning_position": "Position du volet au début de la phase du matin le week-end (0 = fermé, 100 = ouvert)."
+          "weekend_morning_position": "Position du volet au début de la phase du matin le week-end (0 = fermé, 100 = ouvert).",
+          "night_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure de nuit ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
+          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Élévation solaire",
         "both": "Les deux",
         "disabled": "Désactivé"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Lever du soleil",
+        "sunset": "Coucher du soleil",
+        "dawn": "Aube",
+        "dusk": "Crépuscule"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Lever du soleil",
+        "sunset": "Coucher du soleil",
+        "dawn": "Aube",
+        "dusk": "Crépuscule"
       }
     },
     "lifecycle_schedule_mode": {

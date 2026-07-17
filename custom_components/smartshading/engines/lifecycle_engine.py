@@ -32,6 +32,45 @@ and a NIGHT state carried over from the last active month releases to DAY
 on the next cycle instead of waiting for a morning trigger that may never
 fire while the schedule is inactive.
 
+Sun events (v1.2.0-beta.1)
+---------------------------
+NightDayLifecycleConfig.night_sun_event / morning_sun_event (v1.2.0-beta.1)
+is an OVERRIDE, not a 5th trigger type: None (default) leaves
+night_fixed_time/morning_fixed_time exactly as entered — pre-beta behavior,
+byte-for-byte. Set to a SunEvent.{SUNRISE,SUNSET,DAWN,DUSK}, it resolves
+that event (via the coordinator-supplied SunEventTimes — HA's sun.sun
+`next_rising`/`next_setting`/`next_dawn`/`next_dusk` attributes, already
+converted to local time) directly into the SAME night_fixed_time /
+morning_fixed_time slot every trigger type already compares against.
+
+This is a deliberate architectural choice over adding a SUN_EVENT trigger
+value: NightTrigger/MorningTrigger stay at their original 4 values
+(DISABLED/SUN_ELEVATION/FIXED_TIME/BOTH) — _check_night_trigger(),
+_check_morning_trigger(), _is_night_carryover(), and _evaluate_trigger()
+need ZERO sun-event-specific branches, because a resolved sun event is
+indistinguishable from a resolved fixed time by the time those functions
+see it. It also means BOTH (elevation OR time) automatically gets "elevation
+OR sun event" for free — a trigger-value-based design would need a 5th/6th
+enum value to express that combination; this override-based design doesn't,
+by construction. Sun events are shared across weekday/weekend profiles for
+the same reason sun-elevation thresholds are: a physical property of the
+sky, not a social schedule.
+
+_resolve_sun_event_time() recovers "did today's occurrence of this event
+already happen" from HA's `next_*` attribute (which always points to the
+NEXT/future occurrence — once today's has passed, it points to tomorrow's
+instead) via a simple date comparison, with no extra per-cycle state:
+  - next_event.date() == now.date():  event still pending today, use its
+    time as-is.
+  - next_event.date() != now.date():  today's occurrence already fired
+    earlier today (that's why "next" now points elsewhere) -> return
+    time.min (00:00) so _time_threshold_met() reports it as met for the
+    rest of the day, exactly like an already-passed FIXED_TIME.
+  - next_event is None (sun.sun unavailable/missing attribute): resolves
+    to None -> _time_threshold_met() returns False -> fail-safe, the
+    trigger never fires from absent data, same philosophy as
+    SUN_ELEVATION's absent-evidence handling.
+
 The evaluation always uses the LOCAL date embedded in `now`.  The coordinator
 passes a HA-localised datetime for this reason.  Do NOT convert to UTC here.
 
@@ -65,6 +104,7 @@ from ..models.lifecycle import (
     MorningTrigger,
     NightDayLifecycleConfig,
     NightTrigger,
+    SunEvent,
 )
 
 # Fallback times used when a fixed_time field is None but the trigger expects one.
@@ -85,6 +125,54 @@ def _time_threshold_met(now: datetime, fixed_time: time | None) -> bool:
     if fixed_time is None:
         return False
     return now.time() >= fixed_time
+
+
+class SunEventTimes(NamedTuple):
+    """HA's sun.sun `next_*` attributes, already converted to local time by
+    the coordinator (this module stays HA-independent — see module
+    docstring). Any field may be None (sun.sun unavailable, or the specific
+    attribute missing) — resolution then fails safe (see
+    _resolve_sun_event_time)."""
+
+    next_sunrise: datetime | None = None
+    next_sunset: datetime | None = None
+    next_dawn: datetime | None = None
+    next_dusk: datetime | None = None
+
+
+def _resolve_sun_event_time(now: datetime, next_event_local: datetime | None) -> time | None:
+    """Resolve a HA sun.sun `next_*` attribute to today's local trigger time.
+
+    See "Sun events" in the module docstring for the full reasoning. None
+    passes through unresolved (fail-safe — the trigger never fires from
+    absent data).
+    """
+    if next_event_local is None:
+        return None
+    if next_event_local.date() != now.date():
+        return time.min  # already happened earlier today -> met for the rest of the day
+    return next_event_local.time()
+
+
+def _resolve_configured_sun_event_time(
+    now: datetime,
+    event: SunEvent | None,
+    sun_event_times: SunEventTimes | None,
+) -> time | None:
+    """Resolve whichever SunEvent night_sun_event/morning_sun_event is set
+    to. `event` is None whenever no override is configured — the caller
+    (_active_profile) only invokes this when config.night_sun_event /
+    morning_sun_event is not None, but the None-safety here is kept
+    explicit rather than relying on that caller discipline."""
+    if event is None or sun_event_times is None:
+        return None
+    next_event_local = {
+        SunEvent.SUNRISE: sun_event_times.next_sunrise,
+        SunEvent.SUNSET: sun_event_times.next_sunset,
+        SunEvent.DAWN: sun_event_times.next_dawn,
+        SunEvent.DUSK: sun_event_times.next_dusk,
+    }[event]
+    return _resolve_sun_event_time(now, next_event_local)
 
 
 class _ScheduleProfile(NamedTuple):
@@ -112,7 +200,11 @@ def _is_month_active(now: datetime, config: NightDayLifecycleConfig) -> bool:
     return now.month in config.active_months
 
 
-def _active_profile(now: datetime, config: NightDayLifecycleConfig) -> _ScheduleProfile:
+def _active_profile(
+    now: datetime,
+    config: NightDayLifecycleConfig,
+    sun_event_times: SunEventTimes | None = None,
+) -> _ScheduleProfile:
     """Return the night/morning times and positions active for this cycle.
 
     SAME_EVERY_DAY: use the shared fields every day.
@@ -122,9 +214,15 @@ def _active_profile(now: datetime, config: NightDayLifecycleConfig) -> _Schedule
     night_fixed_time / morning_fixed_time when not explicitly set (None).
     This ensures a sensible default for zones upgraded from SAME_EVERY_DAY
     without explicitly configuring both weekday and weekend values.
+
+    night_sun_event / morning_sun_event (v1.2.0-beta.1), when set, override
+    night_fixed_time / morning_fixed_time with the resolved event time as a
+    final step below, regardless of which branch selected the profile —
+    sun events are shared across weekday/weekend, not part of the
+    weekday/weekend split itself.
     """
     if config.schedule_mode is LifecycleScheduleMode.WEEKDAY_WEEKEND and _is_weekend(now):
-        return _ScheduleProfile(
+        profile = _ScheduleProfile(
             night_fixed_time=(
                 config.weekend_night_fixed_time
                 if config.weekend_night_fixed_time is not None
@@ -138,9 +236,9 @@ def _active_profile(now: datetime, config: NightDayLifecycleConfig) -> _Schedule
             ),
             morning_position=config.weekend_morning_position,
         )
-    if config.schedule_mode is LifecycleScheduleMode.WEEKDAY_WEEKEND:
+    elif config.schedule_mode is LifecycleScheduleMode.WEEKDAY_WEEKEND:
         # Weekday profile
-        return _ScheduleProfile(
+        profile = _ScheduleProfile(
             night_fixed_time=(
                 config.weekday_night_fixed_time
                 if config.weekday_night_fixed_time is not None
@@ -154,13 +252,28 @@ def _active_profile(now: datetime, config: NightDayLifecycleConfig) -> _Schedule
             ),
             morning_position=config.weekday_morning_position,
         )
-    # SAME_EVERY_DAY
-    return _ScheduleProfile(
-        night_fixed_time=config.night_fixed_time,
-        night_position=config.night_position,
-        morning_fixed_time=config.morning_fixed_time,
-        morning_position=config.morning_position,
-    )
+    else:
+        # SAME_EVERY_DAY
+        profile = _ScheduleProfile(
+            night_fixed_time=config.night_fixed_time,
+            night_position=config.night_position,
+            morning_fixed_time=config.morning_fixed_time,
+            morning_position=config.morning_position,
+        )
+
+    if config.night_sun_event is not None:
+        profile = profile._replace(
+            night_fixed_time=_resolve_configured_sun_event_time(
+                now, config.night_sun_event, sun_event_times
+            )
+        )
+    if config.morning_sun_event is not None:
+        profile = profile._replace(
+            morning_fixed_time=_resolve_configured_sun_event_time(
+                now, config.morning_sun_event, sun_event_times
+            )
+        )
+    return profile
 
 
 def _is_night_carryover(
@@ -221,6 +334,7 @@ def check_night_interval_active(
     now: datetime,
     sun_elevation_deg: float | None,
     config: NightDayLifecycleConfig,
+    sun_event_times: SunEventTimes | None = None,
 ) -> bool:
     """Return True when the configured night interval is currently active.
 
@@ -238,10 +352,14 @@ def check_night_interval_active(
       is created from absent data.
     - BOTH triggers use only the FIXED_TIME part when elevation is absent.
     None is passed through; the trigger functions handle it per type.
+
+    sun_event_times (v1.2.0-beta.1) is only consulted when
+    config.night_sun_event is set; omitting it (default None) preserves
+    prior behavior for every config without a sun-event override.
     """
     if not config.night_enabled or not _is_month_active(now, config):
         return False
-    profile = _active_profile(now, config)
+    profile = _active_profile(now, config, sun_event_times)
     if LifecycleEngine._check_night_trigger(now, sun_elevation_deg, config, profile):
         return True
     return _is_night_carryover(now, sun_elevation_deg, config, profile)
@@ -265,8 +383,9 @@ class LifecycleEngine:
         sun_elevation_deg: float | None,
         config: NightDayLifecycleConfig,
         previous_lifecycle_state: LifecycleState = LifecycleState.DAY,
+        sun_event_times: SunEventTimes | None = None,
     ) -> LifecycleState:
-        profile = _active_profile(now, config)
+        profile = _active_profile(now, config, sun_event_times)
         month_active = _is_month_active(now, config)
         is_night = (
             config.night_enabled
@@ -305,9 +424,14 @@ class LifecycleEngine:
 
         return LifecycleState.DAY
 
-    def active_profile(self, now: datetime, config: NightDayLifecycleConfig) -> _ScheduleProfile:
+    def active_profile(
+        self,
+        now: datetime,
+        config: NightDayLifecycleConfig,
+        sun_event_times: SunEventTimes | None = None,
+    ) -> _ScheduleProfile:
         """Return the schedule profile active for the current local datetime."""
-        return _active_profile(now, config)
+        return _active_profile(now, config, sun_event_times)
 
     @staticmethod
     def _check_night_trigger(
@@ -341,7 +465,14 @@ class LifecycleEngine:
 def _evaluate_trigger(trigger: NightTrigger | MorningTrigger, elevation_met: bool, time_met: bool) -> bool:
     """ARCHITECTURE.md §5.6 trigger semantics:
     DISABLED -> never fires, SUN_ELEVATION -> elevation only,
-    FIXED_TIME -> time only, BOTH -> either condition (OR)."""
+    FIXED_TIME -> time only, BOTH -> either condition (OR).
+
+    Unchanged since before v1.2.0-beta.1 — a configured sun-event override
+    (night_sun_event/morning_sun_event) is resolved into `time_met` upstream
+    by _active_profile() before this function ever runs, so FIXED_TIME and
+    BOTH transparently pick up a resolved sun event the exact same way they
+    already pick up a resolved fixed time. No branch here needs to know
+    whether time_met came from a fixed_time or a sun event."""
     if trigger is NightTrigger.DISABLED or trigger is MorningTrigger.DISABLED:
         return False
     if trigger is NightTrigger.SUN_ELEVATION or trigger is MorningTrigger.SUN_ELEVATION:

@@ -59,7 +59,9 @@
           "weekend_night_position": "Posição de noite ao fim de semana (sáb–dom)",
           "weekend_morning_fixed_time": "Hora da manhã ao fim de semana (sáb–dom)",
           "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)",
-          "active_months": "Meses ativos (avançado)"
+          "active_months": "Meses ativos (avançado)",
+          "night_sun_event": "Evento solar noturno (opcional)",
+          "morning_sun_event": "Evento solar matinal (opcional)"
         },
         "data_description": {
           "night_position": "Posição do estore durante a fase noturna (0 = fechado, 100 = aberto).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Posição do estore no início da fase matinal em dias úteis (0 = fechado, 100 = aberto).",
           "weekend_night_position": "Posição do estore durante a fase noturna ao fim de semana (0 = fechado, 100 = aberto).",
           "weekend_morning_position": "Posição do estore no início da fase matinal ao fim de semana (0 = fechado, 100 = aberto).",
-          "active_months": "Deixe em branco para aplicar este horário todos os meses. Selecione meses específicos para restringi-lo — por exemplo, de setembro a março para um horário de inverno."
+          "active_months": "Deixe em branco para aplicar este horário todos os meses. Selecione meses específicos para restringi-lo — por exemplo, de setembro a março para um horário de inverno.",
+          "night_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário noturno acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Hora da noite ao fim de semana (sáb–dom)",
           "weekend_night_position": "Posição de noite ao fim de semana (sáb–dom)",
           "weekend_morning_fixed_time": "Hora da manhã ao fim de semana (sáb–dom)",
-          "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)"
+          "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)",
+          "night_sun_event": "Evento solar noturno (opcional)",
+          "morning_sun_event": "Evento solar matinal (opcional)"
         },
         "data_description": {
           "night_position": "Posição do estore durante a fase noturna (0 = fechado, 100 = aberto).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Posição do estore durante a fase noturna em dias úteis (0 = fechado, 100 = aberto).",
           "weekday_morning_position": "Posição do estore no início da fase matinal em dias úteis (0 = fechado, 100 = aberto).",
           "weekend_night_position": "Posição do estore durante a fase noturna ao fim de semana (0 = fechado, 100 = aberto).",
-          "weekend_morning_position": "Posição do estore no início da fase matinal ao fim de semana (0 = fechado, 100 = aberto)."
+          "weekend_morning_position": "Posição do estore no início da fase matinal ao fim de semana (0 = fechado, 100 = aberto).",
+          "night_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário noturno acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Elevação solar",
         "both": "Ambos",
         "disabled": "Desativado"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Nascer do sol",
+        "sunset": "Pôr do sol",
+        "dawn": "Amanhecer",
+        "dusk": "Anoitecer"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Nascer do sol",
+        "sunset": "Pôr do sol",
+        "dawn": "Amanhecer",
+        "dusk": "Anoitecer"
       }
     },
     "lifecycle_schedule_mode": {

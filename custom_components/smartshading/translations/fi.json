@@ -59,7 +59,9 @@
           "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)",
           "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
           "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)",
-          "active_months": "Aktiiviset kuukaudet (lisäasetus)"
+          "active_months": "Aktiiviset kuukaudet (lisäasetus)",
+          "night_sun_event": "Yön aurinkotapahtuma (valinnainen)",
+          "morning_sun_event": "Aamun aurinkotapahtuma (valinnainen)"
         },
         "data_description": {
           "night_position": "Varjostimen sijainti yövaiheessa (0 = suljettu, 100 = avoin).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Varjostimen sijainti aamuvaiheen alussa arkisin (0 = suljettu, 100 = avoin).",
           "weekend_night_position": "Varjostimen sijainti yövaiheessa viikonloppuisin (0 = suljettu, 100 = avoin).",
           "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin).",
-          "active_months": "Jätä tyhjäksi, jos tätä aikataulua käytetään joka kuukausi. Valitse tietyt kuukaudet rajoittaaksesi sitä — esimerkiksi syyskuusta maaliskuuhun talviaikataululle."
+          "active_months": "Jätä tyhjäksi, jos tätä aikataulua käytetään joka kuukausi. Valitse tietyt kuukaudet rajoittaaksesi sitä — esimerkiksi syyskuusta maaliskuuhun talviaikataululle.",
+          "night_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan yöajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Yön aika viikonloppuisin (la–su)",
           "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)",
           "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
-          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)"
+          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)",
+          "night_sun_event": "Yön aurinkotapahtuma (valinnainen)",
+          "morning_sun_event": "Aamun aurinkotapahtuma (valinnainen)"
         },
         "data_description": {
           "night_position": "Varjostimen sijainti yövaiheessa (0 = suljettu, 100 = avoin).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Varjostimen sijainti yövaiheessa arkisin (0 = suljettu, 100 = avoin).",
           "weekday_morning_position": "Varjostimen sijainti aamuvaiheen alussa arkisin (0 = suljettu, 100 = avoin).",
           "weekend_night_position": "Varjostimen sijainti yövaiheessa viikonloppuisin (0 = suljettu, 100 = avoin).",
-          "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin)."
+          "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin).",
+          "night_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan yöajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Auringon korkeus",
         "both": "Molemmat",
         "disabled": "Poistettu käytöstä"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Auringonnousu",
+        "sunset": "Auringonlasku",
+        "dawn": "Aamuhämärä",
+        "dusk": "Iltahämärä"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Auringonnousu",
+        "sunset": "Auringonlasku",
+        "dawn": "Aamuhämärä",
+        "dusk": "Iltahämärä"
       }
     },
     "lifecycle_schedule_mode": {

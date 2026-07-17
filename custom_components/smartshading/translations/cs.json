@@ -59,7 +59,9 @@
           "weekend_night_position": "Noční poloha o víkendu (so–ne)",
           "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
           "weekend_morning_position": "Ranní poloha o víkendu (so–ne)",
-          "active_months": "Aktivní měsíce (pokročilé)"
+          "active_months": "Aktivní měsíce (pokročilé)",
+          "night_sun_event": "Noční sluneční událost (volitelné)",
+          "morning_sun_event": "Ranní sluneční událost (volitelné)"
         },
         "data_description": {
           "night_position": "Poloha stínění během noční fáze (0 = zavřeno, 100 = otevřeno).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Poloha stínění na začátku ranní fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
           "weekend_night_position": "Poloha stínění během noční fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
           "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
-          "active_months": "Ponechte prázdné, pokud se má tento plán použít v každém měsíci. Vyberte konkrétní měsíce pro jeho omezení — například září až březen pro zimní plán."
+          "active_months": "Ponechte prázdné, pokud se má tento plán použít v každém měsíci. Vyberte konkrétní měsíce pro jeho omezení — například září až březen pro zimní plán.",
+          "night_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený noční čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
+          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Čas noci o víkendu (so–ne)",
           "weekend_night_position": "Noční poloha o víkendu (so–ne)",
           "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
-          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)"
+          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)",
+          "night_sun_event": "Noční sluneční událost (volitelné)",
+          "morning_sun_event": "Ranní sluneční událost (volitelné)"
         },
         "data_description": {
           "night_position": "Poloha stínění během noční fáze (0 = zavřeno, 100 = otevřeno).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Poloha stínění během noční fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
           "weekday_morning_position": "Poloha stínění na začátku ranní fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
           "weekend_night_position": "Poloha stínění během noční fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
-          "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno)."
+          "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
+          "night_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený noční čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
+          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Výška slunce",
         "both": "Obojí",
         "disabled": "Vypnuto"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Východ slunce",
+        "sunset": "Západ slunce",
+        "dawn": "Svítání",
+        "dusk": "Soumrak"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Východ slunce",
+        "sunset": "Západ slunce",
+        "dawn": "Svítání",
+        "dusk": "Soumrak"
       }
     },
     "lifecycle_schedule_mode": {

@@ -59,7 +59,9 @@
           "weekend_night_position": "Nattposisjon i helgen (lør–søn)",
           "weekend_morning_fixed_time": "Morgentid i helgen (lør–søn)",
           "weekend_morning_position": "Morgenposisjon i helgen (lør–søn)",
-          "active_months": "Aktive måneder (avansert)"
+          "active_months": "Aktive måneder (avansert)",
+          "night_sun_event": "Nattens solhendelse (valgfri)",
+          "morning_sun_event": "Morgenens solhendelse (valgfri)"
         },
         "data_description": {
           "night_position": "Solskjermingens posisjon i nattfasen (0 = lukket, 100 = åpen).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Solskjermingens posisjon ved starten av morgenfasen på hverdager (0 = lukket, 100 = åpen).",
           "weekend_night_position": "Solskjermingens posisjon i nattfasen i helgen (0 = lukket, 100 = åpen).",
           "weekend_morning_position": "Solskjermingens posisjon ved starten av morgenfasen i helgen (0 = lukket, 100 = åpen).",
-          "active_months": "La stå tomt for å bruke denne tidsplanen hver måned. Velg bestemte måneder for å begrense den — for eksempel september til mars for en vintertidsplan."
+          "active_months": "La stå tomt for å bruke denne tidsplanen hver måned. Velg bestemte måneder for å begrense den — for eksempel september til mars for en vintertidsplan.",
+          "night_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen nattetidspunktet ovenfor. Demring og skumring bruker borgerlig skumring (solen ved -6°).",
+          "morning_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen morgentidspunktet ovenfor. Demring og skumring bruker borgerlig skumring (solen ved -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Nattid i helgen (lør–søn)",
           "weekend_night_position": "Nattposisjon i helgen (lør–søn)",
           "weekend_morning_fixed_time": "Morgentid i helgen (lør–søn)",
-          "weekend_morning_position": "Morgenposisjon i helgen (lør–søn)"
+          "weekend_morning_position": "Morgenposisjon i helgen (lør–søn)",
+          "night_sun_event": "Nattens solhendelse (valgfri)",
+          "morning_sun_event": "Morgenens solhendelse (valgfri)"
         },
         "data_description": {
           "night_position": "Solskjermingens posisjon i nattfasen (0 = lukket, 100 = åpen).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Solskjermingens posisjon i nattfasen på hverdager (0 = lukket, 100 = åpen).",
           "weekday_morning_position": "Solskjermingens posisjon ved starten av morgenfasen på hverdager (0 = lukket, 100 = åpen).",
           "weekend_night_position": "Solskjermingens posisjon i nattfasen i helgen (0 = lukket, 100 = åpen).",
-          "weekend_morning_position": "Solskjermingens posisjon ved starten av morgenfasen i helgen (0 = lukket, 100 = åpen)."
+          "weekend_morning_position": "Solskjermingens posisjon ved starten av morgenfasen i helgen (0 = lukket, 100 = åpen).",
+          "night_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen nattetidspunktet ovenfor. Demring og skumring bruker borgerlig skumring (solen ved -6°).",
+          "morning_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen morgentidspunktet ovenfor. Demring og skumring bruker borgerlig skumring (solen ved -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Solhøyde",
         "both": "Begge",
         "disabled": "Deaktivert"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Soloppgang",
+        "sunset": "Solnedgang",
+        "dawn": "Demring",
+        "dusk": "Skumring"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Soloppgang",
+        "sunset": "Solnedgang",
+        "dawn": "Demring",
+        "dusk": "Skumring"
       }
     },
     "lifecycle_schedule_mode": {

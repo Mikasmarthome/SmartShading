@@ -59,7 +59,9 @@
           "weekend_night_position": "Nachtpositie in het weekend (za–zo)",
           "weekend_morning_fixed_time": "Ochtendtijd in het weekend (za–zo)",
           "weekend_morning_position": "Ochtendpositie in het weekend (za–zo)",
-          "active_months": "Actieve maanden (geavanceerd)"
+          "active_months": "Actieve maanden (geavanceerd)",
+          "night_sun_event": "Nachtelijke zonsgebeurtenis (optioneel)",
+          "morning_sun_event": "Ochtendlijke zonsgebeurtenis (optioneel)"
         },
         "data_description": {
           "night_position": "Positie van de zonwering tijdens de nachtfase (0 = dicht, 100 = open).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Positie van de zonwering aan het begin van de ochtendfase doordeweeks (0 = dicht, 100 = open).",
           "weekend_night_position": "Positie van de zonwering tijdens de nachtfase in het weekend (0 = dicht, 100 = open).",
           "weekend_morning_position": "Positie van de zonwering aan het begin van de ochtendfase in het weekend (0 = dicht, 100 = open).",
-          "active_months": "Laat leeg om dit schema elke maand toe te passen. Selecteer specifieke maanden om het te beperken — bijvoorbeeld september tot en met maart voor een winterschema."
+          "active_months": "Laat leeg om dit schema elke maand toe te passen. Selecteer specifieke maanden om het te beperken — bijvoorbeeld september tot en met maart voor een winterschema.",
+          "night_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande nachttijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
+          "morning_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande ochtendtijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Nachttijd in het weekend (za–zo)",
           "weekend_night_position": "Nachtpositie in het weekend (za–zo)",
           "weekend_morning_fixed_time": "Ochtendtijd in het weekend (za–zo)",
-          "weekend_morning_position": "Ochtendpositie in het weekend (za–zo)"
+          "weekend_morning_position": "Ochtendpositie in het weekend (za–zo)",
+          "night_sun_event": "Nachtelijke zonsgebeurtenis (optioneel)",
+          "morning_sun_event": "Ochtendlijke zonsgebeurtenis (optioneel)"
         },
         "data_description": {
           "night_position": "Positie van de zonwering tijdens de nachtfase (0 = dicht, 100 = open).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Positie van de zonwering tijdens de nachtfase doordeweeks (0 = dicht, 100 = open).",
           "weekday_morning_position": "Positie van de zonwering aan het begin van de ochtendfase doordeweeks (0 = dicht, 100 = open).",
           "weekend_night_position": "Positie van de zonwering tijdens de nachtfase in het weekend (0 = dicht, 100 = open).",
-          "weekend_morning_position": "Positie van de zonwering aan het begin van de ochtendfase in het weekend (0 = dicht, 100 = open)."
+          "weekend_morning_position": "Positie van de zonwering aan het begin van de ochtendfase in het weekend (0 = dicht, 100 = open).",
+          "night_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande nachttijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
+          "morning_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande ochtendtijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Zonshoogte",
         "both": "Beide",
         "disabled": "Uitgeschakeld"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Zonsopkomst",
+        "sunset": "Zonsondergang",
+        "dawn": "Ochtendschemering",
+        "dusk": "Avondschemering"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Zonsopkomst",
+        "sunset": "Zonsondergang",
+        "dawn": "Ochtendschemering",
+        "dusk": "Avondschemering"
       }
     },
     "lifecycle_schedule_mode": {

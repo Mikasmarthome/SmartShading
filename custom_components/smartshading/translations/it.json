@@ -59,7 +59,9 @@
           "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)",
           "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
           "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)",
-          "active_months": "Mesi attivi (avanzato)"
+          "active_months": "Mesi attivi (avanzato)",
+          "night_sun_event": "Evento solare notturno (opzionale)",
+          "morning_sun_event": "Evento solare mattutino (opzionale)"
         },
         "data_description": {
           "night_position": "Posizione della tapparella durante la fase notturna (0 = chiusa, 100 = aperta).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Posizione della tapparella all'inizio della fase mattutina nei giorni feriali (0 = chiusa, 100 = aperta).",
           "weekend_night_position": "Posizione della tapparella durante la fase notturna nel fine settimana (0 = chiusa, 100 = aperta).",
           "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta).",
-          "active_months": "Lascia vuoto per applicare questa pianificazione ogni mese. Seleziona mesi specifici per limitarla — ad esempio da settembre a marzo per una pianificazione invernale."
+          "active_months": "Lascia vuoto per applicare questa pianificazione ogni mese. Seleziona mesi specifici per limitarla — ad esempio da settembre a marzo per una pianificazione invernale.",
+          "night_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario notturno sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Ora notturna nel fine settimana (sab–dom)",
           "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)",
           "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
-          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)"
+          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)",
+          "night_sun_event": "Evento solare notturno (opzionale)",
+          "morning_sun_event": "Evento solare mattutino (opzionale)"
         },
         "data_description": {
           "night_position": "Posizione della tapparella durante la fase notturna (0 = chiusa, 100 = aperta).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Posizione della tapparella durante la fase notturna nei giorni feriali (0 = chiusa, 100 = aperta).",
           "weekday_morning_position": "Posizione della tapparella all'inizio della fase mattutina nei giorni feriali (0 = chiusa, 100 = aperta).",
           "weekend_night_position": "Posizione della tapparella durante la fase notturna nel fine settimana (0 = chiusa, 100 = aperta).",
-          "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta)."
+          "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta).",
+          "night_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario notturno sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Elevazione solare",
         "both": "Entrambi",
         "disabled": "Disattivato"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Alba",
+        "sunset": "Tramonto",
+        "dawn": "Alba civile",
+        "dusk": "Crepuscolo civile"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Alba",
+        "sunset": "Tramonto",
+        "dawn": "Alba civile",
+        "dusk": "Crepuscolo civile"
       }
     },
     "lifecycle_schedule_mode": {

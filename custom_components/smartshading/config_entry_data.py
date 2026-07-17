@@ -21,7 +21,13 @@ from .models.cover_group import (
     cover_hardware_type_from_str,
     cover_sync_mode_from_str,
 )
-from .models.lifecycle import LifecycleScheduleMode, MorningTrigger, NightDayLifecycleConfig, NightTrigger
+from .models.lifecycle import (
+    LifecycleScheduleMode,
+    MorningTrigger,
+    NightDayLifecycleConfig,
+    NightTrigger,
+    SunEvent,
+)
 from .models.obstruction import ObstructionZone
 from .models.window import WindowBehaviorMode, WindowConfig
 from .models.zone import ZoneConfig
@@ -136,6 +142,18 @@ def _time_from_storage(value: Any) -> time | None:
         return None
 
 
+def _sun_event_from_storage(value: Any) -> SunEvent | None:
+    """Never raises: missing, None, or an unrecognized value -> None (v1.2.0-
+    beta.1's "no override" default — falls back to night_fixed_time /
+    morning_fixed_time as entered, the safest possible fallback)."""
+    if not isinstance(value, str):
+        return None
+    try:
+        return SunEvent(value)
+    except ValueError:
+        return None
+
+
 def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
     """Convert to a plain, JSON-serializable dict for ConfigEntry.data.
 
@@ -195,6 +213,14 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             "weekend_morning_delay_min": lifecycle.weekend_morning_delay_min,
             # Active months (v1.2.0-beta.1): None = unrestricted (all months).
             "active_months": lifecycle.active_months,
+            # Sun events (v1.2.0-beta.1): only consulted when the matching
+            # trigger is SUN_EVENT.
+            "night_sun_event": (
+                lifecycle.night_sun_event.value if lifecycle.night_sun_event is not None else None
+            ),
+            "morning_sun_event": (
+                lifecycle.morning_sun_event.value if lifecycle.morning_sun_event is not None else None
+            ),
         },
         "presence_entity_ids": data.presence_entity_ids,
         "absence_delay_min": data.absence_delay_min,
@@ -232,6 +258,8 @@ def _lifecycle_config_from_storage(raw: dict[str, Any] | None) -> NightDayLifecy
         )
     except ValueError:
         schedule_mode = LifecycleScheduleMode.SAME_EVERY_DAY
+    night_sun_event = _sun_event_from_storage(raw.get("night_sun_event"))
+    morning_sun_event = _sun_event_from_storage(raw.get("morning_sun_event"))
 
     defaults = NightDayLifecycleConfig(id=raw.get("id", "default"))
     return NightDayLifecycleConfig(
@@ -264,6 +292,11 @@ def _lifecycle_config_from_storage(raw: dict[str, Any] | None) -> NightDayLifecy
         weekend_morning_delay_min=raw.get("weekend_morning_delay_min", defaults.weekend_morning_delay_min),
         # Active months (v1.2.0-beta.1) — missing key (pre-beta configs) → None (unrestricted).
         active_months=raw.get("active_months", defaults.active_months),
+        # Sun events (v1.2.0-beta.1) — an override, not a trigger value; missing
+        # key or unrecognized value → None (no override — use fixed_time as-is),
+        # never raises.
+        night_sun_event=night_sun_event,
+        morning_sun_event=morning_sun_event,
     )
 
 

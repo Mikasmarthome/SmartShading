@@ -23,7 +23,13 @@ class LifecycleScheduleMode(Enum):
 
 
 class NightTrigger(Enum):
-    """ARCHITECTURE.md §3.4."""
+    """ARCHITECTURE.md §3.4.
+
+    Unchanged since before v1.2.0-beta.1 — still exactly these 4 values.
+    See NightDayLifecycleConfig.night_sun_event for how a SUN_EVENT resolves
+    into the SAME clock-time comparison FIXED_TIME/BOTH already use, without
+    needing a 5th trigger value here.
+    """
 
     DISABLED = "disabled"
     SUN_ELEVATION = "sun_elevation"
@@ -32,12 +38,30 @@ class NightTrigger(Enum):
 
 
 class MorningTrigger(Enum):
-    """ARCHITECTURE.md §3.4."""
+    """ARCHITECTURE.md §3.4. Unchanged since before v1.2.0-beta.1 — see NightTrigger."""
 
     DISABLED = "disabled"
     SUN_ELEVATION = "sun_elevation"
     FIXED_TIME = "fixed_time"
     BOTH = "both"
+
+
+class SunEvent(Enum):
+    """Selectable astronomical event for NightDayLifecycleConfig.night_sun_event /
+    morning_sun_event (v1.2.0-beta.1).
+
+    Resolved from HA's sun.sun entity attributes (next_rising, next_setting,
+    next_dawn, next_dusk) — HA's own sun integration already computes these
+    (backed by the astral library internally), so no extra dependency is
+    needed. HA defines dawn/dusk as civil twilight (sun at -6° elevation),
+    the same depression angle this integration already uses as its default
+    night_sun_elevation_deg for the pre-existing SUN_ELEVATION trigger.
+    """
+
+    SUNRISE = "sunrise"
+    SUNSET = "sunset"
+    DAWN = "dawn"
+    DUSK = "dusk"
 
 
 class LifecycleState(Enum):
@@ -76,6 +100,20 @@ class NightDayLifecycleConfig:
     night/morning triggers are only evaluated during the listed months;
     outside of them the schedule behaves as if both night_enabled and
     morning_enabled were False for that cycle (see LifecycleEngine).
+
+    night_sun_event / morning_sun_event (v1.2.0-beta.1) are an OVERRIDE on
+    top of night_fixed_time / morning_fixed_time, following the same
+    Optional-override pattern already used elsewhere in this codebase
+    (e.g. per-window night_position, absence_position): None (default)
+    means "use night_fixed_time/morning_fixed_time as entered" — the exact
+    pre-beta behavior, unconditionally. Set to a SunEvent, it resolves that
+    astronomical event into the SAME night_fixed_time/morning_fixed_time
+    slot every trigger type already compares against — so it applies
+    equally to FIXED_TIME (the astronomical event simply IS the clock time)
+    and to BOTH (elevation OR the resolved event, no separate trigger value
+    needed to express that combination). Irrelevant when night_trigger/
+    morning_trigger is DISABLED or SUN_ELEVATION (no time comparison happens
+    there), but harmless if set anyway.
     """
 
     id: str
@@ -91,6 +129,12 @@ class NightDayLifecycleConfig:
     night_fixed_time: time | None = None
     night_position: int = 0
     night_tilt: int | None = None
+    # Sun event override (v1.2.0-beta.1): None = use night_fixed_time as-is
+    # (pre-beta behavior). Set = resolve this event into night_fixed_time's
+    # slot instead. Shared (not weekday/weekend-specific) — an astronomical
+    # event is a physical property of the sky, not a social schedule, same
+    # reasoning already applied to night_sun_elevation_deg above.
+    night_sun_event: SunEvent | None = None
 
     # Morning mode — shared
     morning_enabled: bool = True
@@ -99,6 +143,8 @@ class NightDayLifecycleConfig:
     morning_fixed_time: time | None = None
     morning_position: int = 100
     morning_tilt: int | None = None
+    # Sun event override (v1.2.0-beta.1): None = use morning_fixed_time as-is.
+    morning_sun_event: SunEvent | None = None
 
     # Weekday schedule (used when schedule_mode is WEEKDAY_WEEKEND)
     weekday_night_fixed_time: time | None = None   # default same as night_fixed_time

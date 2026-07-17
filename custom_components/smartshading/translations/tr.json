@@ -59,7 +59,9 @@
           "weekend_night_position": "Hafta sonu gece konumu (Cmt–Paz)",
           "weekend_morning_fixed_time": "Hafta sonu sabah saati (Cmt–Paz)",
           "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)",
-          "active_months": "Aktif aylar (gelişmiş)"
+          "active_months": "Aktif aylar (gelişmiş)",
+          "night_sun_event": "Gece güneş olayı (isteğe bağlı)",
+          "morning_sun_event": "Sabah güneş olayı (isteğe bağlı)"
         },
         "data_description": {
           "night_position": "Gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Hafta içi sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
           "weekend_night_position": "Hafta sonu gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
           "weekend_morning_position": "Hafta sonu sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
-          "active_months": "Bu programin her ay uygulanmasi icin bos birakin. Kisitlamak icin belirli aylari secin — ornegin kis programi icin Eylul'den Mart'a kadar."
+          "active_months": "Bu programin her ay uygulanmasi icin bos birakin. Kisitlamak icin belirli aylari secin — ornegin kis programi icin Eylul'den Mart'a kadar.",
+          "night_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki gece saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
+          "morning_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki sabah saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Hafta sonu gece saati (Cmt–Paz)",
           "weekend_night_position": "Hafta sonu gece konumu (Cmt–Paz)",
           "weekend_morning_fixed_time": "Hafta sonu sabah saati (Cmt–Paz)",
-          "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)"
+          "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)",
+          "night_sun_event": "Gece güneş olayı (isteğe bağlı)",
+          "morning_sun_event": "Sabah güneş olayı (isteğe bağlı)"
         },
         "data_description": {
           "night_position": "Gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Hafta içi gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
           "weekday_morning_position": "Hafta içi sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
           "weekend_night_position": "Hafta sonu gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
-          "weekend_morning_position": "Hafta sonu sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık)."
+          "weekend_morning_position": "Hafta sonu sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "night_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki gece saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
+          "morning_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki sabah saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Güneş yüksekliği",
         "both": "Her ikisi",
         "disabled": "Devre dışı"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Gün doğumu",
+        "sunset": "Gün batımı",
+        "dawn": "Tan",
+        "dusk": "Alacakaranlık"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Gün doğumu",
+        "sunset": "Gün batımı",
+        "dawn": "Tan",
+        "dusk": "Alacakaranlık"
       }
     },
     "lifecycle_schedule_mode": {

@@ -59,7 +59,9 @@
           "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)",
           "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
           "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)",
-          "active_months": "Aktivni meseci (napredno)"
+          "active_months": "Aktivni meseci (napredno)",
+          "night_sun_event": "Nočni sončni dogodek (neobvezno)",
+          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)"
         },
         "data_description": {
           "night_position": "Položaj senčila med nočno fazo (0 = zaprto, 100 = odprto).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Položaj senčila na začetku jutranje faze ob delavnikih (0 = zaprto, 100 = odprto).",
           "weekend_night_position": "Položaj senčila med nočno fazo ob vikendih (0 = zaprto, 100 = odprto).",
           "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto).",
-          "active_months": "Pustite prazno, če naj ta urnik velja vsak mesec. Izberite določene mesece za omejitev — na primer od septembra do marca za zimski urnik."
+          "active_months": "Pustite prazno, če naj ta urnik velja vsak mesec. Izberite določene mesece za omejitev — na primer od septembra do marca za zimski urnik.",
+          "night_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji nočni čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
+          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Čas noči ob vikendih (sob–ned)",
           "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)",
           "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
-          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)"
+          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)",
+          "night_sun_event": "Nočni sončni dogodek (neobvezno)",
+          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)"
         },
         "data_description": {
           "night_position": "Položaj senčila med nočno fazo (0 = zaprto, 100 = odprto).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Položaj senčila med nočno fazo ob delavnikih (0 = zaprto, 100 = odprto).",
           "weekday_morning_position": "Položaj senčila na začetku jutranje faze ob delavnikih (0 = zaprto, 100 = odprto).",
           "weekend_night_position": "Položaj senčila med nočno fazo ob vikendih (0 = zaprto, 100 = odprto).",
-          "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto)."
+          "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto).",
+          "night_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji nočni čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
+          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Višina sonca",
         "both": "Oboje",
         "disabled": "Onemogočeno"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Sončni vzhod",
+        "sunset": "Sončni zahod",
+        "dawn": "Zora",
+        "dusk": "Mrak"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Sončni vzhod",
+        "sunset": "Sončni zahod",
+        "dawn": "Zora",
+        "dusk": "Mrak"
       }
     },
     "lifecycle_schedule_mode": {

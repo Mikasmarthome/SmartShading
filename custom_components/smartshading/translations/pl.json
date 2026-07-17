@@ -59,7 +59,9 @@
           "weekend_night_position": "Pozycja nocna w weekend (sob–niedz)",
           "weekend_morning_fixed_time": "Czas poranka w weekend (sob–niedz)",
           "weekend_morning_position": "Pozycja poranna w weekend (sob–niedz)",
-          "active_months": "Aktywne miesiące (zaawansowane)"
+          "active_months": "Aktywne miesiące (zaawansowane)",
+          "night_sun_event": "Nocne zdarzenie słoneczne (opcjonalne)",
+          "morning_sun_event": "Poranne zdarzenie słoneczne (opcjonalne)"
         },
         "data_description": {
           "night_position": "Pozycja osłony w fazie nocnej (0 = zamknięta, 100 = otwarta).",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "Pozycja osłony na początku fazy porannej w dni robocze (0 = zamknięta, 100 = otwarta).",
           "weekend_night_position": "Pozycja osłony w fazie nocnej w weekend (0 = zamknięta, 100 = otwarta).",
           "weekend_morning_position": "Pozycja osłony na początku fazy porannej w weekend (0 = zamknięta, 100 = otwarta).",
-          "active_months": "Pozostaw puste, aby ten harmonogram obowiązywał w każdym miesiącu. Wybierz konkretne miesiące, aby go ograniczyć — na przykład od września do marca dla harmonogramu zimowego."
+          "active_months": "Pozostaw puste, aby ten harmonogram obowiązywał w każdym miesiącu. Wybierz konkretne miesiące, aby go ograniczyć — na przykład od września do marca dla harmonogramu zimowego.",
+          "night_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas nocny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
+          "morning_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas poranny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°)."
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "Czas nocy w weekend (sob–niedz)",
           "weekend_night_position": "Pozycja nocna w weekend (sob–niedz)",
           "weekend_morning_fixed_time": "Czas poranka w weekend (sob–niedz)",
-          "weekend_morning_position": "Pozycja poranna w weekend (sob–niedz)"
+          "weekend_morning_position": "Pozycja poranna w weekend (sob–niedz)",
+          "night_sun_event": "Nocne zdarzenie słoneczne (opcjonalne)",
+          "morning_sun_event": "Poranne zdarzenie słoneczne (opcjonalne)"
         },
         "data_description": {
           "night_position": "Pozycja osłony w fazie nocnej (0 = zamknięta, 100 = otwarta).",
@@ -329,7 +335,9 @@
           "weekday_night_position": "Pozycja osłony w fazie nocnej w dni robocze (0 = zamknięta, 100 = otwarta).",
           "weekday_morning_position": "Pozycja osłony na początku fazy porannej w dni robocze (0 = zamknięta, 100 = otwarta).",
           "weekend_night_position": "Pozycja osłony w fazie nocnej w weekend (0 = zamknięta, 100 = otwarta).",
-          "weekend_morning_position": "Pozycja osłony na początku fazy porannej w weekend (0 = zamknięta, 100 = otwarta)."
+          "weekend_morning_position": "Pozycja osłony na początku fazy porannej w weekend (0 = zamknięta, 100 = otwarta).",
+          "night_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas nocny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
+          "morning_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas poranny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°)."
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "Wysokość słońca",
         "both": "Oba",
         "disabled": "Wyłączone"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "Wschód słońca",
+        "sunset": "Zachód słońca",
+        "dawn": "Świt",
+        "dusk": "Zmierzch"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "Wschód słońca",
+        "sunset": "Zachód słońca",
+        "dawn": "Świt",
+        "dusk": "Zmierzch"
       }
     },
     "lifecycle_schedule_mode": {

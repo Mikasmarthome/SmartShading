@@ -59,7 +59,9 @@
           "weekend_night_position": "周末夜间位置（周六至周日）",
           "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
           "weekend_morning_position": "周末早晨位置（周六至周日）",
-          "active_months": "活跃月份（高级）"
+          "active_months": "活跃月份（高级）",
+          "night_sun_event": "夜间太阳事件（可选）",
+          "morning_sun_event": "早晨太阳事件（可选）"
         },
         "data_description": {
           "night_position": "夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
@@ -68,7 +70,9 @@
           "weekday_morning_position": "工作日早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
           "weekend_night_position": "周末夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
           "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。"
+          "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。",
+          "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。"
         }
       },
       "presence": {
@@ -321,7 +325,9 @@
           "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
           "weekend_night_position": "周末夜间位置（周六至周日）",
           "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
-          "weekend_morning_position": "周末早晨位置（周六至周日）"
+          "weekend_morning_position": "周末早晨位置（周六至周日）",
+          "night_sun_event": "夜间太阳事件（可选）",
+          "morning_sun_event": "早晨太阳事件（可选）"
         },
         "data_description": {
           "night_position": "夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
@@ -329,7 +335,9 @@
           "weekday_night_position": "工作日夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
           "weekday_morning_position": "工作日早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
           "weekend_night_position": "周末夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。"
+          "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。"
         }
       },
       "presence": {
@@ -449,6 +457,22 @@
         "sun_elevation": "太阳高度",
         "both": "两者",
         "disabled": "已禁用"
+      }
+    },
+    "night_sun_event": {
+      "options": {
+        "sunrise": "日出",
+        "sunset": "日落",
+        "dawn": "曙光",
+        "dusk": "暮光"
+      }
+    },
+    "morning_sun_event": {
+      "options": {
+        "sunrise": "日出",
+        "sunset": "日落",
+        "dawn": "曙光",
+        "dusk": "暮光"
       }
     },
     "lifecycle_schedule_mode": {

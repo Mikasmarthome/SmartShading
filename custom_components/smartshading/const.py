@@ -298,6 +298,10 @@ DEFAULT_MORNING_POSITION = 100
 # Weekday/Weekend schedule mode (v1.0)
 CONF_SCHEDULE_MODE = "schedule_mode"
 
+# Active months (v1.2.0-beta.1): restricts the schedule to a subset of
+# calendar months (1-12). Empty/unset selection in the UI = unrestricted.
+CONF_ACTIVE_MONTHS = "active_months"
+
 # Weekday schedule (Mon–Fri)
 CONF_WEEKDAY_NIGHT_FIXED_TIME = "weekday_night_fixed_time"
 CONF_WEEKDAY_NIGHT_POSITION = "weekday_night_position"

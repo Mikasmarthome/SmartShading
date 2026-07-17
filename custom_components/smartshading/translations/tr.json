@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Hafta sonu gece saati (Cmt–Paz)",
           "weekend_night_position": "Hafta sonu gece konumu (Cmt–Paz)",
           "weekend_morning_fixed_time": "Hafta sonu sabah saati (Cmt–Paz)",
-          "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)"
+          "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)",
+          "active_months": "Aktif aylar (gelişmiş)"
         },
         "data_description": {
           "night_position": "Gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Hafta içi gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
           "weekday_morning_position": "Hafta içi sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
           "weekend_night_position": "Hafta sonu gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
-          "weekend_morning_position": "Hafta sonu sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık)."
+          "weekend_morning_position": "Hafta sonu sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
+          "active_months": "Bu programin her ay uygulanmasi icin bos birakin. Kisitlamak icin belirli aylari secin — ornegin kis programi icin Eylul'den Mart'a kadar."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Her gün aynı",
         "weekday_weekend": "Hafta içi / Hafta sonu"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "Ocak",
+        "2": "Şubat",
+        "3": "Mart",
+        "4": "Nisan",
+        "5": "Mayıs",
+        "6": "Haziran",
+        "7": "Temmuz",
+        "8": "Ağustos",
+        "9": "Eylül",
+        "10": "Ekim",
+        "11": "Kasım",
+        "12": "Aralık"
       }
     },
     "window_behavior_mode": {

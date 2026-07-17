@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
           "weekend_night_position": "周末夜间位置（周六至周日）",
           "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
-          "weekend_morning_position": "周末早晨位置（周六至周日）"
+          "weekend_morning_position": "周末早晨位置（周六至周日）",
+          "active_months": "活跃月份（高级）"
         },
         "data_description": {
           "night_position": "夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
@@ -66,7 +67,8 @@
           "weekday_night_position": "工作日夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
           "weekday_morning_position": "工作日早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
           "weekend_night_position": "周末夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。"
+          "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
+          "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。"
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "每天相同",
         "weekday_weekend": "工作日 / 周末"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "一月",
+        "2": "二月",
+        "3": "三月",
+        "4": "四月",
+        "5": "五月",
+        "6": "六月",
+        "7": "七月",
+        "8": "八月",
+        "9": "九月",
+        "10": "十月",
+        "11": "十一月",
+        "12": "十二月"
       }
     },
     "window_behavior_mode": {

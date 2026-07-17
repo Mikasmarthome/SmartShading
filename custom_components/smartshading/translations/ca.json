@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
           "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)",
           "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
-          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)"
+          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)",
+          "active_months": "Mesos actius (avançat)"
         },
         "data_description": {
           "night_position": "Posició de la persiana durant la fase nocturna (0 = tancada, 100 = oberta).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Posició de la persiana durant la fase nocturna entre setmana (0 = tancada, 100 = oberta).",
           "weekday_morning_position": "Posició de la persiana a l'inici de la fase matinal entre setmana (0 = tancada, 100 = oberta).",
           "weekend_night_position": "Posició de la persiana durant la fase nocturna el cap de setmana (0 = tancada, 100 = oberta).",
-          "weekend_morning_position": "Posició de la persiana a l'inici de la fase matinal el cap de setmana (0 = tancada, 100 = oberta)."
+          "weekend_morning_position": "Posició de la persiana a l'inici de la fase matinal el cap de setmana (0 = tancada, 100 = oberta).",
+          "active_months": "Deixeu-ho buit per aplicar aquest horari cada mes. Seleccioneu mesos concrets per restringir-lo — per exemple, de setembre a març per a un horari d'hivern."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Igual cada dia",
         "weekday_weekend": "Entre setmana / Cap de setmana"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "gener",
+        "2": "febrer",
+        "3": "març",
+        "4": "abril",
+        "5": "maig",
+        "6": "juny",
+        "7": "juliol",
+        "8": "agost",
+        "9": "setembre",
+        "10": "octubre",
+        "11": "novembre",
+        "12": "desembre"
       }
     },
     "window_behavior_mode": {

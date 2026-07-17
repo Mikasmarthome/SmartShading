@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Čas noci o víkendu (so–ne)",
           "weekend_night_position": "Noční poloha o víkendu (so–ne)",
           "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
-          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)"
+          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)",
+          "active_months": "Aktivní měsíce (pokročilé)"
         },
         "data_description": {
           "night_position": "Poloha stínění během noční fáze (0 = zavřeno, 100 = otevřeno).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Poloha stínění během noční fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
           "weekday_morning_position": "Poloha stínění na začátku ranní fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
           "weekend_night_position": "Poloha stínění během noční fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
-          "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno)."
+          "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
+          "active_months": "Ponechte prázdné, pokud se má tento plán použít v každém měsíci. Vyberte konkrétní měsíce pro jeho omezení — například září až březen pro zimní plán."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Stejně každý den",
         "weekday_weekend": "Pracovní den / Víkend"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "leden",
+        "2": "únor",
+        "3": "březen",
+        "4": "duben",
+        "5": "květen",
+        "6": "červen",
+        "7": "červenec",
+        "8": "srpen",
+        "9": "září",
+        "10": "říjen",
+        "11": "listopad",
+        "12": "prosinec"
       }
     },
     "window_behavior_mode": {

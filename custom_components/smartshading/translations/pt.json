@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Hora da noite ao fim de semana (sáb–dom)",
           "weekend_night_position": "Posição de noite ao fim de semana (sáb–dom)",
           "weekend_morning_fixed_time": "Hora da manhã ao fim de semana (sáb–dom)",
-          "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)"
+          "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)",
+          "active_months": "Meses ativos (avançado)"
         },
         "data_description": {
           "night_position": "Posição do estore durante a fase noturna (0 = fechado, 100 = aberto).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Posição do estore durante a fase noturna em dias úteis (0 = fechado, 100 = aberto).",
           "weekday_morning_position": "Posição do estore no início da fase matinal em dias úteis (0 = fechado, 100 = aberto).",
           "weekend_night_position": "Posição do estore durante a fase noturna ao fim de semana (0 = fechado, 100 = aberto).",
-          "weekend_morning_position": "Posição do estore no início da fase matinal ao fim de semana (0 = fechado, 100 = aberto)."
+          "weekend_morning_position": "Posição do estore no início da fase matinal ao fim de semana (0 = fechado, 100 = aberto).",
+          "active_months": "Deixe em branco para aplicar este horário todos os meses. Selecione meses específicos para restringi-lo — por exemplo, de setembro a março para um horário de inverno."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Igual todos os dias",
         "weekday_weekend": "Dias úteis / Fim de semana"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "janeiro",
+        "2": "fevereiro",
+        "3": "março",
+        "4": "abril",
+        "5": "maio",
+        "6": "junho",
+        "7": "julho",
+        "8": "agosto",
+        "9": "setembro",
+        "10": "outubro",
+        "11": "novembro",
+        "12": "dezembro"
       }
     },
     "window_behavior_mode": {

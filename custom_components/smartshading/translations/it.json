@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Ora notturna nel fine settimana (sab–dom)",
           "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)",
           "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
-          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)"
+          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)",
+          "active_months": "Mesi attivi (avanzato)"
         },
         "data_description": {
           "night_position": "Posizione della tapparella durante la fase notturna (0 = chiusa, 100 = aperta).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Posizione della tapparella durante la fase notturna nei giorni feriali (0 = chiusa, 100 = aperta).",
           "weekday_morning_position": "Posizione della tapparella all'inizio della fase mattutina nei giorni feriali (0 = chiusa, 100 = aperta).",
           "weekend_night_position": "Posizione della tapparella durante la fase notturna nel fine settimana (0 = chiusa, 100 = aperta).",
-          "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta)."
+          "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta).",
+          "active_months": "Lascia vuoto per applicare questa pianificazione ogni mese. Seleziona mesi specifici per limitarla — ad esempio da settembre a marzo per una pianificazione invernale."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Uguale ogni giorno",
         "weekday_weekend": "Settimana / Fine settimana"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "gennaio",
+        "2": "febbraio",
+        "3": "marzo",
+        "4": "aprile",
+        "5": "maggio",
+        "6": "giugno",
+        "7": "luglio",
+        "8": "agosto",
+        "9": "settembre",
+        "10": "ottobre",
+        "11": "novembre",
+        "12": "dicembre"
       }
     },
     "window_behavior_mode": {

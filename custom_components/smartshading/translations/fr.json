@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Heure de nuit le week-end (sam–dim)",
           "weekend_night_position": "Position de nuit le week-end (sam–dim)",
           "weekend_morning_fixed_time": "Heure du matin le week-end (sam–dim)",
-          "weekend_morning_position": "Position du matin le week-end (sam–dim)"
+          "weekend_morning_position": "Position du matin le week-end (sam–dim)",
+          "active_months": "Mois actifs (avancé)"
         },
         "data_description": {
           "night_position": "Position du volet pendant la phase de nuit (0 = fermé, 100 = ouvert).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Position du volet pendant la phase de nuit en semaine (0 = fermé, 100 = ouvert).",
           "weekday_morning_position": "Position du volet au début de la phase du matin en semaine (0 = fermé, 100 = ouvert).",
           "weekend_night_position": "Position du volet pendant la phase de nuit le week-end (0 = fermé, 100 = ouvert).",
-          "weekend_morning_position": "Position du volet au début de la phase du matin le week-end (0 = fermé, 100 = ouvert)."
+          "weekend_morning_position": "Position du volet au début de la phase du matin le week-end (0 = fermé, 100 = ouvert).",
+          "active_months": "Laissez vide pour appliquer ce programme chaque mois. Sélectionnez des mois spécifiques pour le restreindre — par exemple de septembre à mars pour un programme d'hiver."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Identique chaque jour",
         "weekday_weekend": "Semaine / Week-end"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "janvier",
+        "2": "février",
+        "3": "mars",
+        "4": "avril",
+        "5": "mai",
+        "6": "juin",
+        "7": "juillet",
+        "8": "août",
+        "9": "septembre",
+        "10": "octobre",
+        "11": "novembre",
+        "12": "décembre"
       }
     },
     "window_behavior_mode": {

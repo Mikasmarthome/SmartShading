@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Nachttijd in het weekend (za–zo)",
           "weekend_night_position": "Nachtpositie in het weekend (za–zo)",
           "weekend_morning_fixed_time": "Ochtendtijd in het weekend (za–zo)",
-          "weekend_morning_position": "Ochtendpositie in het weekend (za–zo)"
+          "weekend_morning_position": "Ochtendpositie in het weekend (za–zo)",
+          "active_months": "Actieve maanden (geavanceerd)"
         },
         "data_description": {
           "night_position": "Positie van de zonwering tijdens de nachtfase (0 = dicht, 100 = open).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Positie van de zonwering tijdens de nachtfase doordeweeks (0 = dicht, 100 = open).",
           "weekday_morning_position": "Positie van de zonwering aan het begin van de ochtendfase doordeweeks (0 = dicht, 100 = open).",
           "weekend_night_position": "Positie van de zonwering tijdens de nachtfase in het weekend (0 = dicht, 100 = open).",
-          "weekend_morning_position": "Positie van de zonwering aan het begin van de ochtendfase in het weekend (0 = dicht, 100 = open)."
+          "weekend_morning_position": "Positie van de zonwering aan het begin van de ochtendfase in het weekend (0 = dicht, 100 = open).",
+          "active_months": "Laat leeg om dit schema elke maand toe te passen. Selecteer specifieke maanden om het te beperken — bijvoorbeeld september tot en met maart voor een winterschema."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Elke dag hetzelfde",
         "weekday_weekend": "Doordeweeks / Weekend"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "januari",
+        "2": "februari",
+        "3": "maart",
+        "4": "april",
+        "5": "mei",
+        "6": "juni",
+        "7": "juli",
+        "8": "augustus",
+        "9": "september",
+        "10": "oktober",
+        "11": "november",
+        "12": "december"
       }
     },
     "window_behavior_mode": {

@@ -69,6 +69,13 @@ class NightDayLifecycleConfig:
     (night_trigger, night_sun_elevation_deg, morning_trigger,
     morning_sun_elevation_deg) in WEEKDAY_WEEKEND mode — only the fixed_time
     and position fields differ between weekday and weekend profiles.
+
+    active_months restricts the whole schedule to a subset of calendar
+    months (1-12). None (the default) means unrestricted — every month —
+    which is byte-for-byte the pre-v1.2.0-beta.1 behavior. When set, the
+    night/morning triggers are only evaluated during the listed months;
+    outside of them the schedule behaves as if both night_enabled and
+    morning_enabled were False for that cycle (see LifecycleEngine).
     """
 
     id: str
@@ -108,3 +115,7 @@ class NightDayLifecycleConfig:
     # Legacy field — retained for storage round-trip compatibility.
     weekday_enabled: bool = False
     weekend_morning_delay_min: int = 60
+
+    # Active months (v1.2.0-beta.1): restricts the schedule to a subset of
+    # calendar months. None = unrestricted (all months), matching prior behavior.
+    active_months: list[int] | None = None

@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Čas noči ob vikendih (sob–ned)",
           "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)",
           "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
-          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)"
+          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)",
+          "active_months": "Aktivni meseci (napredno)"
         },
         "data_description": {
           "night_position": "Položaj senčila med nočno fazo (0 = zaprto, 100 = odprto).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Položaj senčila med nočno fazo ob delavnikih (0 = zaprto, 100 = odprto).",
           "weekday_morning_position": "Položaj senčila na začetku jutranje faze ob delavnikih (0 = zaprto, 100 = odprto).",
           "weekend_night_position": "Položaj senčila med nočno fazo ob vikendih (0 = zaprto, 100 = odprto).",
-          "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto)."
+          "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto).",
+          "active_months": "Pustite prazno, če naj ta urnik velja vsak mesec. Izberite določene mesece za omejitev — na primer od septembra do marca za zimski urnik."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Enako vsak dan",
         "weekday_weekend": "Delavnik / Vikend"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "januar",
+        "2": "februar",
+        "3": "marec",
+        "4": "april",
+        "5": "maj",
+        "6": "junij",
+        "7": "julij",
+        "8": "avgust",
+        "9": "september",
+        "10": "oktober",
+        "11": "november",
+        "12": "december"
       }
     },
     "window_behavior_mode": {

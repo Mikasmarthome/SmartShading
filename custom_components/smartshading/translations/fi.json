@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Yön aika viikonloppuisin (la–su)",
           "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)",
           "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
-          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)"
+          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)",
+          "active_months": "Aktiiviset kuukaudet (lisäasetus)"
         },
         "data_description": {
           "night_position": "Varjostimen sijainti yövaiheessa (0 = suljettu, 100 = avoin).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Varjostimen sijainti yövaiheessa arkisin (0 = suljettu, 100 = avoin).",
           "weekday_morning_position": "Varjostimen sijainti aamuvaiheen alussa arkisin (0 = suljettu, 100 = avoin).",
           "weekend_night_position": "Varjostimen sijainti yövaiheessa viikonloppuisin (0 = suljettu, 100 = avoin).",
-          "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin)."
+          "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin).",
+          "active_months": "Jätä tyhjäksi, jos tätä aikataulua käytetään joka kuukausi. Valitse tietyt kuukaudet rajoittaaksesi sitä — esimerkiksi syyskuusta maaliskuuhun talviaikataululle."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Sama joka päivä",
         "weekday_weekend": "Arki / Viikonloppu"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "tammikuu",
+        "2": "helmikuu",
+        "3": "maaliskuu",
+        "4": "huhtikuu",
+        "5": "toukokuu",
+        "6": "kesäkuu",
+        "7": "heinäkuu",
+        "8": "elokuu",
+        "9": "syyskuu",
+        "10": "lokakuu",
+        "11": "marraskuu",
+        "12": "joulukuu"
       }
     },
     "window_behavior_mode": {

@@ -21,6 +21,17 @@ The active profile affects:
 Sun-elevation thresholds are shared across both profiles because elevation
 is a physical property of the sky, not a social schedule.
 
+Active months
+-------------
+NightDayLifecycleConfig.active_months (v1.2.0-beta.1), when set, restricts
+night/morning trigger evaluation to the listed calendar months (1-12).
+None (default) is unrestricted — every month, unchanged from prior versions.
+Outside the active months the schedule behaves as if night_enabled and
+morning_enabled were both False for that cycle: no new NIGHT is entered,
+and a NIGHT state carried over from the last active month releases to DAY
+on the next cycle instead of waiting for a morning trigger that may never
+fire while the schedule is inactive.
+
 The evaluation always uses the LOCAL date embedded in `now`.  The coordinator
 passes a HA-localised datetime for this reason.  Do NOT convert to UTC here.
 
@@ -88,6 +99,17 @@ class _ScheduleProfile(NamedTuple):
 def _is_weekend(now: datetime) -> bool:
     """Return True for Saturday (5) and Sunday (6) in local time."""
     return now.weekday() >= 5
+
+
+def _is_month_active(now: datetime, config: NightDayLifecycleConfig) -> bool:
+    """True when the schedule is active in `now`'s calendar month.
+
+    config.active_months is None -> unrestricted, always True (default,
+    matches pre-v1.2.0-beta.1 behavior for every existing config).
+    """
+    if config.active_months is None:
+        return True
+    return now.month in config.active_months
 
 
 def _active_profile(now: datetime, config: NightDayLifecycleConfig) -> _ScheduleProfile:
@@ -217,7 +239,7 @@ def check_night_interval_active(
     - BOTH triggers use only the FIXED_TIME part when elevation is absent.
     None is passed through; the trigger functions handle it per type.
     """
-    if not config.night_enabled:
+    if not config.night_enabled or not _is_month_active(now, config):
         return False
     profile = _active_profile(now, config)
     if LifecycleEngine._check_night_trigger(now, sun_elevation_deg, config, profile):
@@ -245,8 +267,11 @@ class LifecycleEngine:
         previous_lifecycle_state: LifecycleState = LifecycleState.DAY,
     ) -> LifecycleState:
         profile = _active_profile(now, config)
-        is_night = config.night_enabled and self._check_night_trigger(
-            now, sun_elevation_deg, config, profile
+        month_active = _is_month_active(now, config)
+        is_night = (
+            config.night_enabled
+            and month_active
+            and self._check_night_trigger(now, sun_elevation_deg, config, profile)
         )
         if is_night:
             return LifecycleState.NIGHT
@@ -257,15 +282,21 @@ class LifecycleEngine:
         # carryover so night is correctly maintained after a restart.
         if (
             config.night_enabled
+            and month_active
             and previous_lifecycle_state is LifecycleState.DAY
             and _is_night_carryover(now, sun_elevation_deg, config, profile)
         ):
             return LifecycleState.NIGHT
 
         if previous_lifecycle_state is LifecycleState.NIGHT:
-            # When morning trigger is disabled, skip the MORNING transition event
-            # and go directly to DAY so we don't get stuck in NIGHT indefinitely.
-            if not config.morning_enabled or config.morning_trigger is MorningTrigger.DISABLED:
+            # When morning trigger is disabled, or the schedule just rolled
+            # out of its active months, skip the MORNING transition event and
+            # go directly to DAY so we don't get stuck in NIGHT indefinitely.
+            if (
+                not config.morning_enabled
+                or config.morning_trigger is MorningTrigger.DISABLED
+                or not month_active
+            ):
                 return LifecycleState.DAY
             is_morning_threshold_met = self._check_morning_trigger(
                 now, sun_elevation_deg, config, profile

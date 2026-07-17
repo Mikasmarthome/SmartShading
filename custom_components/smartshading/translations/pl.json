@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Czas nocy w weekend (sob–niedz)",
           "weekend_night_position": "Pozycja nocna w weekend (sob–niedz)",
           "weekend_morning_fixed_time": "Czas poranka w weekend (sob–niedz)",
-          "weekend_morning_position": "Pozycja poranna w weekend (sob–niedz)"
+          "weekend_morning_position": "Pozycja poranna w weekend (sob–niedz)",
+          "active_months": "Aktywne miesiące (zaawansowane)"
         },
         "data_description": {
           "night_position": "Pozycja osłony w fazie nocnej (0 = zamknięta, 100 = otwarta).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Pozycja osłony w fazie nocnej w dni robocze (0 = zamknięta, 100 = otwarta).",
           "weekday_morning_position": "Pozycja osłony na początku fazy porannej w dni robocze (0 = zamknięta, 100 = otwarta).",
           "weekend_night_position": "Pozycja osłony w fazie nocnej w weekend (0 = zamknięta, 100 = otwarta).",
-          "weekend_morning_position": "Pozycja osłony na początku fazy porannej w weekend (0 = zamknięta, 100 = otwarta)."
+          "weekend_morning_position": "Pozycja osłony na początku fazy porannej w weekend (0 = zamknięta, 100 = otwarta).",
+          "active_months": "Pozostaw puste, aby ten harmonogram obowiązywał w każdym miesiącu. Wybierz konkretne miesiące, aby go ograniczyć — na przykład od września do marca dla harmonogramu zimowego."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Tak samo każdego dnia",
         "weekday_weekend": "Dni robocze / Weekend"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "styczeń",
+        "2": "luty",
+        "3": "marzec",
+        "4": "kwiecień",
+        "5": "maj",
+        "6": "czerwiec",
+        "7": "lipiec",
+        "8": "sierpień",
+        "9": "wrzesień",
+        "10": "październik",
+        "11": "listopad",
+        "12": "grudzień"
       }
     },
     "window_behavior_mode": {

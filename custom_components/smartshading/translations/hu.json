@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Éjszakai időpont hétvégén (szo–vas)",
           "weekend_night_position": "Éjszakai pozíció hétvégén (szo–vas)",
           "weekend_morning_fixed_time": "Reggeli időpont hétvégén (szo–vas)",
-          "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)"
+          "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)",
+          "active_months": "Aktív hónapok (speciális)"
         },
         "data_description": {
           "night_position": "Az árnyékoló pozíciója az éjszakai fázisban (0 = zárva, 100 = nyitva).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétköznap (0 = zárva, 100 = nyitva).",
           "weekday_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétköznap (0 = zárva, 100 = nyitva).",
           "weekend_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétvégén (0 = zárva, 100 = nyitva).",
-          "weekend_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétvégén (0 = zárva, 100 = nyitva)."
+          "weekend_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétvégén (0 = zárva, 100 = nyitva).",
+          "active_months": "Hagyja üresen, ha ezt az ütemezést minden hónapban alkalmazni szeretné. Válasszon konkrét hónapokat a korlátozásához — például szeptembertől márciusig egy téli ütemezéshez."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Minden nap ugyanaz",
         "weekday_weekend": "Hétköznap / Hétvége"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "január",
+        "2": "február",
+        "3": "március",
+        "4": "április",
+        "5": "május",
+        "6": "június",
+        "7": "július",
+        "8": "augusztus",
+        "9": "szeptember",
+        "10": "október",
+        "11": "november",
+        "12": "december"
       }
     },
     "window_behavior_mode": {

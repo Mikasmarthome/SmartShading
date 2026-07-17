@@ -193,6 +193,8 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             # Legacy fields (retained for storage round-trip compatibility)
             "weekday_enabled": lifecycle.weekday_enabled,
             "weekend_morning_delay_min": lifecycle.weekend_morning_delay_min,
+            # Active months (v1.2.0-beta.1): None = unrestricted (all months).
+            "active_months": lifecycle.active_months,
         },
         "presence_entity_ids": data.presence_entity_ids,
         "absence_delay_min": data.absence_delay_min,
@@ -260,6 +262,8 @@ def _lifecycle_config_from_storage(raw: dict[str, Any] | None) -> NightDayLifecy
         # Legacy fields
         weekday_enabled=raw.get("weekday_enabled", defaults.weekday_enabled),
         weekend_morning_delay_min=raw.get("weekend_morning_delay_min", defaults.weekend_morning_delay_min),
+        # Active months (v1.2.0-beta.1) — missing key (pre-beta configs) → None (unrestricted).
+        active_months=raw.get("active_months", defaults.active_months),
     )
 
 

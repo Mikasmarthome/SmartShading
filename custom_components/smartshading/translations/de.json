@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Nacht-Uhrzeit Wochenende (Sa–So)",
           "weekend_night_position": "Nachtposition Wochenende (Sa–So)",
           "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
-          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)"
+          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)",
+          "active_months": "Aktive Monate (erweitert)"
         },
         "data_description": {
           "night_position": "Behangsposition in der Nachtphase (0 = geschlossen, 100 = offen).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Behangsposition in der Nachtphase an Wochentagen (0 = geschlossen, 100 = offen).",
           "weekday_morning_position": "Behangsposition zu Beginn der Morgenphase an Wochentagen (0 = geschlossen, 100 = offen).",
           "weekend_night_position": "Behangsposition in der Nachtphase am Wochenende (0 = geschlossen, 100 = offen).",
-          "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen)."
+          "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen).",
+          "active_months": "Leer lassen, um diesen Zeitplan in jedem Monat anzuwenden. Wähle bestimmte Monate aus, um ihn einzuschränken — zum Beispiel September bis März für einen Winter-Zeitplan."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Gleich jeden Tag",
         "weekday_weekend": "Wochentag / Wochenende"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "Januar",
+        "2": "Februar",
+        "3": "März",
+        "4": "April",
+        "5": "Mai",
+        "6": "Juni",
+        "7": "Juli",
+        "8": "August",
+        "9": "September",
+        "10": "Oktober",
+        "11": "November",
+        "12": "Dezember"
       }
     },
     "window_behavior_mode": {

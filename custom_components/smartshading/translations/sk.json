@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Čas noci cez víkend (so–ne)",
           "weekend_night_position": "Nočná poloha cez víkend (so–ne)",
           "weekend_morning_fixed_time": "Čas rána cez víkend (so–ne)",
-          "weekend_morning_position": "Ranná poloha cez víkend (so–ne)"
+          "weekend_morning_position": "Ranná poloha cez víkend (so–ne)",
+          "active_months": "Aktívne mesiace (rozšírené)"
         },
         "data_description": {
           "night_position": "Poloha tienenia počas nočnej fázy (0 = zatvorené, 100 = otvorené).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Poloha tienenia počas nočnej fázy v pracovné dni (0 = zatvorené, 100 = otvorené).",
           "weekday_morning_position": "Poloha tienenia na začiatku rannej fázy v pracovné dni (0 = zatvorené, 100 = otvorené).",
           "weekend_night_position": "Poloha tienenia počas nočnej fázy cez víkend (0 = zatvorené, 100 = otvorené).",
-          "weekend_morning_position": "Poloha tienenia na začiatku rannej fázy cez víkend (0 = zatvorené, 100 = otvorené)."
+          "weekend_morning_position": "Poloha tienenia na začiatku rannej fázy cez víkend (0 = zatvorené, 100 = otvorené).",
+          "active_months": "Ponechajte prázdne, ak sa má tento plán použiť každý mesiac. Vyberte konkrétne mesiace na jeho obmedzenie — napríklad september až marec pre zimný plán."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Rovnako každý deň",
         "weekday_weekend": "Pracovný deň / Víkend"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "január",
+        "2": "február",
+        "3": "marec",
+        "4": "apríl",
+        "5": "máj",
+        "6": "jún",
+        "7": "júl",
+        "8": "august",
+        "9": "september",
+        "10": "október",
+        "11": "november",
+        "12": "december"
       }
     },
     "window_behavior_mode": {

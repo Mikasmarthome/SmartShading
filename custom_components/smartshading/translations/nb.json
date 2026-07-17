@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Nattid i helgen (lør–søn)",
           "weekend_night_position": "Nattposisjon i helgen (lør–søn)",
           "weekend_morning_fixed_time": "Morgentid i helgen (lør–søn)",
-          "weekend_morning_position": "Morgenposisjon i helgen (lør–søn)"
+          "weekend_morning_position": "Morgenposisjon i helgen (lør–søn)",
+          "active_months": "Aktive måneder (avansert)"
         },
         "data_description": {
           "night_position": "Solskjermingens posisjon i nattfasen (0 = lukket, 100 = åpen).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Solskjermingens posisjon i nattfasen på hverdager (0 = lukket, 100 = åpen).",
           "weekday_morning_position": "Solskjermingens posisjon ved starten av morgenfasen på hverdager (0 = lukket, 100 = åpen).",
           "weekend_night_position": "Solskjermingens posisjon i nattfasen i helgen (0 = lukket, 100 = åpen).",
-          "weekend_morning_position": "Solskjermingens posisjon ved starten av morgenfasen i helgen (0 = lukket, 100 = åpen)."
+          "weekend_morning_position": "Solskjermingens posisjon ved starten av morgenfasen i helgen (0 = lukket, 100 = åpen).",
+          "active_months": "La stå tomt for å bruke denne tidsplanen hver måned. Velg bestemte måneder for å begrense den — for eksempel september til mars for en vintertidsplan."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Likt hver dag",
         "weekday_weekend": "Hverdag / Helg"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "januar",
+        "2": "februar",
+        "3": "mars",
+        "4": "april",
+        "5": "mai",
+        "6": "juni",
+        "7": "juli",
+        "8": "august",
+        "9": "september",
+        "10": "oktober",
+        "11": "november",
+        "12": "desember"
       }
     },
     "window_behavior_mode": {

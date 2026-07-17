@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Nattid på helgen (lör–sön)",
           "weekend_night_position": "Nattposition på helgen (lör–sön)",
           "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
-          "weekend_morning_position": "Morgonposition på helgen (lör–sön)"
+          "weekend_morning_position": "Morgonposition på helgen (lör–sön)",
+          "active_months": "Aktiva månader (avancerat)"
         },
         "data_description": {
           "night_position": "Solskyddets position under nattfasen (0 = stängt, 100 = öppet).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Solskyddets position under nattfasen på vardagar (0 = stängt, 100 = öppet).",
           "weekday_morning_position": "Solskyddets position vid morgonfasens början på vardagar (0 = stängt, 100 = öppet).",
           "weekend_night_position": "Solskyddets position under nattfasen på helgen (0 = stängt, 100 = öppet).",
-          "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet)."
+          "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet).",
+          "active_months": "Lämna tomt för att tillämpa detta schema varje månad. Välj specifika månader för att begränsa det — till exempel september till mars för ett vinterschema."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Lika varje dag",
         "weekday_weekend": "Vardag / Helg"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "januari",
+        "2": "februari",
+        "3": "mars",
+        "4": "april",
+        "5": "maj",
+        "6": "juni",
+        "7": "juli",
+        "8": "augusti",
+        "9": "september",
+        "10": "oktober",
+        "11": "november",
+        "12": "december"
       }
     },
     "window_behavior_mode": {

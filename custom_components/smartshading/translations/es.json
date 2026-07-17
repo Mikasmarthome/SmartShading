@@ -58,7 +58,8 @@
           "weekend_night_fixed_time": "Hora de noche en fin de semana (sáb–dom)",
           "weekend_night_position": "Posición de noche en fin de semana (sáb–dom)",
           "weekend_morning_fixed_time": "Hora de mañana en fin de semana (sáb–dom)",
-          "weekend_morning_position": "Posición de mañana en fin de semana (sáb–dom)"
+          "weekend_morning_position": "Posición de mañana en fin de semana (sáb–dom)",
+          "active_months": "Meses activos (avanzado)"
         },
         "data_description": {
           "night_position": "Posición de la persiana durante la fase nocturna (0 = cerrada, 100 = abierta).",
@@ -66,7 +67,8 @@
           "weekday_night_position": "Posición de la persiana durante la fase nocturna entre semana (0 = cerrada, 100 = abierta).",
           "weekday_morning_position": "Posición de la persiana al inicio de la fase matinal entre semana (0 = cerrada, 100 = abierta).",
           "weekend_night_position": "Posición de la persiana durante la fase nocturna en fin de semana (0 = cerrada, 100 = abierta).",
-          "weekend_morning_position": "Posición de la persiana al inicio de la fase matinal en fin de semana (0 = cerrada, 100 = abierta)."
+          "weekend_morning_position": "Posición de la persiana al inicio de la fase matinal en fin de semana (0 = cerrada, 100 = abierta).",
+          "active_months": "Déjelo vacío para aplicar este horario todos los meses. Seleccione meses concretos para restringirlo — por ejemplo, de septiembre a marzo para un horario de invierno."
         }
       },
       "presence": {
@@ -453,6 +455,22 @@
       "options": {
         "same_every_day": "Igual cada día",
         "weekday_weekend": "Entre semana / Fin de semana"
+      }
+    },
+    "active_months": {
+      "options": {
+        "1": "enero",
+        "2": "febrero",
+        "3": "marzo",
+        "4": "abril",
+        "5": "mayo",
+        "6": "junio",
+        "7": "julio",
+        "8": "agosto",
+        "9": "septiembre",
+        "10": "octubre",
+        "11": "noviembre",
+        "12": "diciembre"
       }
     },
     "window_behavior_mode": {

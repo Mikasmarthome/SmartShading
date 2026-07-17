@@ -125,6 +125,7 @@ from .const import (
     DEFAULT_WEEKEND_MORNING_FIXED_TIME,
     DEFAULT_WEEKEND_NIGHT_FIXED_TIME,
     CONF_SCHEDULE_MODE,
+    CONF_ACTIVE_MONTHS,
     CONF_WEEKDAY_NIGHT_FIXED_TIME,
     CONF_WEEKDAY_NIGHT_POSITION,
     CONF_WEEKDAY_MORNING_FIXED_TIME,
@@ -1057,8 +1058,21 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         position_selector = NumberSelector(
             NumberSelectorConfig(min=0, max=100, step=1, mode=NumberSelectorMode.SLIDER, unit_of_measurement="%")
         )
+        active_months_selector = SelectSelector(
+            SelectSelectorConfig(
+                options=[str(m) for m in range(1, 13)],
+                multiple=True,
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="active_months",
+            )
+        )
 
         if user_input is not None:
+            # Shared across both branches — active_months does not vary by day of week.
+            # Empty selection = unrestricted (None), matching "no restriction" default.
+            _raw_active_months = user_input.get(CONF_ACTIVE_MONTHS, stored_lc.get("active_months") or [])
+            active_months = sorted(int(m) for m in _raw_active_months) if _raw_active_months else None
+
             if is_weekday_weekend:
                 # Parse shared elevation fields (elevation thresholds do not vary by day of week)
                 if pending_night in {NightTrigger.SUN_ELEVATION, NightTrigger.BOTH}:
@@ -1120,6 +1134,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     "weekend_night_position": int(user_input.get(CONF_WEEKEND_NIGHT_POSITION, stored_lc.get("weekend_night_position", DEFAULT_NIGHT_POSITION))),
                     "weekend_morning_fixed_time": weekend_morning_time.isoformat(),
                     "weekend_morning_position": int(user_input.get(CONF_WEEKEND_MORNING_POSITION, stored_lc.get("weekend_morning_position", DEFAULT_MORNING_POSITION))),
+                    "active_months": active_months,
                 }
                 return self._save_and_reload({"lifecycle_config": new_lc})
 
@@ -1165,6 +1180,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 "morning_fixed_time": morning_fixed_time.isoformat(),
                 "morning_sun_elevation_deg": morning_sun_elevation,
                 "morning_position": morning_position,
+                "active_months": active_months,
             }
             return self._save_and_reload({"lifecycle_config": new_lc})
 
@@ -1237,6 +1253,9 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             schema_dict[
                 vol.Required(CONF_WEEKEND_MORNING_POSITION, default=stored_lc.get("weekend_morning_position", DEFAULT_MORNING_POSITION))
             ] = position_selector
+            schema_dict[
+                vol.Optional(CONF_ACTIVE_MONTHS, default=stored_lc.get("active_months") or [])
+            ] = active_months_selector
             return self.async_show_form(step_id="lifecycle_detail", data_schema=vol.Schema(schema_dict))
 
         # SAME_EVERY_DAY form
@@ -1261,6 +1280,9 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             ] = morning_preset_selector
             schema_dict[vol.Optional(CONF_MORNING_SUN_ELEVATION, default=stored_morning_elev)] = custom_elevation_selector
         schema_dict[vol.Required(CONF_MORNING_POSITION, default=stored_morning_pos)] = position_selector
+        schema_dict[
+            vol.Optional(CONF_ACTIVE_MONTHS, default=stored_lc.get("active_months") or [])
+        ] = active_months_selector
         return self.async_show_form(step_id="lifecycle_detail", data_schema=vol.Schema(schema_dict))
 
     # -- Presence --

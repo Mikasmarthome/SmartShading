@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Utetemperatursensor",
           "cloud_cover_sensor_id": "Skydekkesensor (0–100 %)",
           "wind_speed_sensor_id": "Vindhastighetssensor (m/s) — bruk vindkast for markiser/screens hvis tilgjengelig",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Jevn ut sensoravlesninger (EMA)",
+          "ema_alpha": "EMA-utjevningsfaktor (0,05–1,0) — lavere = jevnere, høyere = mer responsiv"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Utetemperatursensor",
           "cloud_cover_sensor_id": "Skydekkesensor (0–100 %)",
           "wind_speed_sensor_id": "Vindhastighetssensor (m/s) — bruk vindkast for markiser/screens hvis tilgjengelig",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Jevn ut sensoravlesninger (EMA)",
+          "ema_alpha": "EMA-utjevningsfaktor (0,05–1,0) — lavere = jevnere, høyere = mer responsiv"
         }
       },
       "lifecycle": {

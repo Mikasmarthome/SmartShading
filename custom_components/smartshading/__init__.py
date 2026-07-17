@@ -262,6 +262,8 @@ async def _async_setup_zone_entry(
         absence_delay_min=entry_data.absence_delay_min,
         indoor_temperature_sensor_ids=entry_data.indoor_temperature_sensor_ids,
         comfort_config=entry_data.comfort_config,
+        ema_enabled=entry_data.ema_enabled,
+        ema_alpha=entry_data.ema_alpha,
         global_serial_dispatch=serial_dispatch,
     )
     # Inject the ForecastLearningStore so the ForecastStrategyModifier can access

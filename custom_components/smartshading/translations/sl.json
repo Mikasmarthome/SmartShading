@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Senzor zunanje temperature",
           "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
           "wind_speed_sensor_id": "Senzor hitrosti vetra (m/s) — za tende/screene uporabite sunke vetra, če so na voljo",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Glajenje odčitkov senzorjev (EMA)",
+          "ema_alpha": "Faktor glajenja EMA (0,05–1,0) — nižje = bolj gladko, višje = bolj odzivno"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Senzor zunanje temperature",
           "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
           "wind_speed_sensor_id": "Senzor hitrosti vetra (m/s) — za tende/screene uporabite sunke vetra, če so na voljo",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Glajenje odčitkov senzorjev (EMA)",
+          "ema_alpha": "Faktor glajenja EMA (0,05–1,0) — nižje = bolj gladko, višje = bolj odzivno"
         }
       },
       "lifecycle": {

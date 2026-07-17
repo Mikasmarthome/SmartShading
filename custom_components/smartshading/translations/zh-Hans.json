@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "室外温度传感器",
           "cloud_cover_sensor_id": "云量传感器（0–100 %）",
           "wind_speed_sensor_id": "风速传感器（m/s）— 如有可用，遮阳篷/卷帘请使用阵风",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "平滑传感器读数（EMA）",
+          "ema_alpha": "EMA 平滑系数（0.05–1.0）— 越低越平滑，越高越灵敏"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "室外温度传感器",
           "cloud_cover_sensor_id": "云量传感器（0–100 %）",
           "wind_speed_sensor_id": "风速传感器（m/s）— 如有可用，遮阳篷/卷帘请使用阵风",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "平滑传感器读数（EMA）",
+          "ema_alpha": "EMA 平滑系数（0.05–1.0）— 越低越平滑，越高越灵敏"
         }
       },
       "lifecycle": {

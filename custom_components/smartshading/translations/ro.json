@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Senzor de temperatură exterioară",
           "cloud_cover_sensor_id": "Senzor de nebulozitate (0–100 %)",
           "wind_speed_sensor_id": "Senzor de viteză a vântului (m/s) — folosiți rafalele de vânt pentru copertine/screenuri dacă sunt disponibile",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Netezeste citirile senzorilor (EMA)",
+          "ema_alpha": "Factor de netezire EMA (0,05–1,0) — mai mic = mai neted, mai mare = mai reactiv"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Senzor de temperatură exterioară",
           "cloud_cover_sensor_id": "Senzor de nebulozitate (0–100 %)",
           "wind_speed_sensor_id": "Senzor de viteză a vântului (m/s) — folosiți rafalele de vânt pentru copertine/screenuri dacă sunt disponibile",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Netezeste citirile senzorilor (EMA)",
+          "ema_alpha": "Factor de netezire EMA (0,05–1,0) — mai mic = mai neted, mai mare = mai reactiv"
         }
       },
       "lifecycle": {

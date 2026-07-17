@@ -185,6 +185,19 @@ CONF_CLOUD_COVER_SENSOR_ID = "cloud_cover_sensor_id"
 CONF_WIND_SPEED_SENSOR_ID = "wind_speed_sensor_id"
 CONF_RAIN_SENSOR_ID = "rain_sensor_id"
 
+# EMA sensor smoothing (v1.2.0-beta.1, T4): optional, house-wide (same scope
+# as the weather/solar sensors above). Disabled by default so every existing
+# config keeps byte-for-byte pre-T4 behavior until a user opts in. Alpha
+# range keeps the smoothing meaningful (near-0 would be indistinguishable
+# from "frozen"; 1.0 disables smoothing entirely via ema_update()'s own
+# "alpha=1 -> latest sample" identity, so the upper bound is inclusive).
+CONF_EMA_ENABLED = "ema_enabled"
+CONF_EMA_ALPHA = "ema_alpha"
+DEFAULT_EMA_ENABLED = False
+DEFAULT_EMA_ALPHA = 0.3
+EMA_ALPHA_MIN = 0.05
+EMA_ALPHA_MAX = 1.0
+
 # Rain protection per-window config keys (stored in ConfigEntry.data per window).
 CONF_RAIN_PROTECTION_ENABLED = "rain_protection_enabled"
 CONF_RAIN_SAFE_POSITION = "rain_safe_position"

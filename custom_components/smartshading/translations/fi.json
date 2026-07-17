@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Ulkolämpötila-anturi",
           "cloud_cover_sensor_id": "Pilvisyysanturi (0–100 %)",
           "wind_speed_sensor_id": "Tuulennopeusanturi (m/s) — käytä tuulenpuuskia markiiseille/screeneille, jos saatavilla",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Tasoita anturilukemia (EMA)",
+          "ema_alpha": "EMA-tasoituskerroin (0,05–1,0) — pienempi = tasaisempi, suurempi = reagoivampi"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Ulkolämpötila-anturi",
           "cloud_cover_sensor_id": "Pilvisyysanturi (0–100 %)",
           "wind_speed_sensor_id": "Tuulennopeusanturi (m/s) — käytä tuulenpuuskia markiiseille/screeneille, jos saatavilla",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Tasoita anturilukemia (EMA)",
+          "ema_alpha": "EMA-tasoituskerroin (0,05–1,0) — pienempi = tasaisempi, suurempi = reagoivampi"
         }
       },
       "lifecycle": {

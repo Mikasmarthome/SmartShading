@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Датчик наружной температуры",
           "cloud_cover_sensor_id": "Датчик облачности (0–100 %)",
           "wind_speed_sensor_id": "Датчик скорости ветра (м/с) — для маркиз/screen используйте порывы ветра, если доступно",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Сглаживать показания датчиков (EMA)",
+          "ema_alpha": "Коэффициент сглаживания EMA (0,05–1,0) — ниже = более плавно, выше = более отзывчиво"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Датчик наружной температуры",
           "cloud_cover_sensor_id": "Датчик облачности (0–100 %)",
           "wind_speed_sensor_id": "Датчик скорости ветра (м/с) — для маркиз/screen используйте порывы ветра, если доступно",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Сглаживать показания датчиков (EMA)",
+          "ema_alpha": "Коэффициент сглаживания EMA (0,05–1,0) — ниже = более плавно, выше = более отзывчиво"
         }
       },
       "lifecycle": {

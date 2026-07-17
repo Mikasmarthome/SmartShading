@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Sensore di temperatura esterna",
           "cloud_cover_sensor_id": "Sensore di nuvolosità (0–100 %)",
           "wind_speed_sensor_id": "Sensore di velocità del vento (m/s) — usa le raffiche per tende da sole/screen se disponibili",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Attenua le letture dei sensori (EMA)",
+          "ema_alpha": "Fattore di attenuazione EMA (0,05–1,0) — più basso = più fluido, più alto = più reattivo"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Sensore di temperatura esterna",
           "cloud_cover_sensor_id": "Sensore di nuvolosità (0–100 %)",
           "wind_speed_sensor_id": "Sensore di velocità del vento (m/s) — usa le raffiche per tende da sole/screen se disponibili",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Attenua le letture dei sensori (EMA)",
+          "ema_alpha": "Fattore di attenuazione EMA (0,05–1,0) — più basso = più fluido, più alto = più reattivo"
         }
       },
       "lifecycle": {

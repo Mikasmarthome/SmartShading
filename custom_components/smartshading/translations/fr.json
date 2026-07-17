@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Capteur de température extérieure",
           "cloud_cover_sensor_id": "Capteur de nébulosité (0–100 %)",
           "wind_speed_sensor_id": "Capteur de vitesse du vent (m/s) — utilisez les rafales pour les stores bannes/screens si disponible",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Lisser les valeurs des capteurs (EMA)",
+          "ema_alpha": "Facteur de lissage EMA (0,05–1,0) — plus bas = plus lisse, plus haut = plus réactif"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Capteur de température extérieure",
           "cloud_cover_sensor_id": "Capteur de nébulosité (0–100 %)",
           "wind_speed_sensor_id": "Capteur de vitesse du vent (m/s) — utilisez les rafales pour les stores bannes/screens si disponible",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Lisser les valeurs des capteurs (EMA)",
+          "ema_alpha": "Facteur de lissage EMA (0,05–1,0) — plus bas = plus lisse, plus haut = plus réactif"
         }
       },
       "lifecycle": {

@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Czujnik temperatury zewnętrznej",
           "cloud_cover_sensor_id": "Czujnik zachmurzenia (0–100 %)",
           "wind_speed_sensor_id": "Czujnik prędkości wiatru (m/s) — w przypadku markiz/rolet zewnętrznych użyj porywów wiatru, jeśli są dostępne",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Wygładzaj odczyty czujników (EMA)",
+          "ema_alpha": "Współczynnik wygładzania EMA (0,05–1,0) — niższy = gładszy, wyższy = bardziej responsywny"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Czujnik temperatury zewnętrznej",
           "cloud_cover_sensor_id": "Czujnik zachmurzenia (0–100 %)",
           "wind_speed_sensor_id": "Czujnik prędkości wiatru (m/s) — w przypadku markiz/rolet zewnętrznych użyj porywów wiatru, jeśli są dostępne",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Wygładzaj odczyty czujników (EMA)",
+          "ema_alpha": "Współczynnik wygładzania EMA (0,05–1,0) — niższy = gładszy, wyższy = bardziej responsywny"
         }
       },
       "lifecycle": {

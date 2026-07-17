@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Αισθητήρας εξωτερικής θερμοκρασίας",
           "cloud_cover_sensor_id": "Αισθητήρας νεφοκάλυψης (0–100 %)",
           "wind_speed_sensor_id": "Αισθητήρας ταχύτητας ανέμου (m/s) — για τέντες/screens χρησιμοποιήστε τις ριπές ανέμου, αν είναι διαθέσιμες",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Εξομάλυνση τιμών αισθητήρων (EMA)",
+          "ema_alpha": "Συντελεστής εξομάλυνσης EMA (0,05–1,0) — χαμηλότερος = πιο ομαλό, υψηλότερος = πιο άμεση απόκριση"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Αισθητήρας εξωτερικής θερμοκρασίας",
           "cloud_cover_sensor_id": "Αισθητήρας νεφοκάλυψης (0–100 %)",
           "wind_speed_sensor_id": "Αισθητήρας ταχύτητας ανέμου (m/s) — για τέντες/screens χρησιμοποιήστε τις ριπές ανέμου, αν είναι διαθέσιμες",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Εξομάλυνση τιμών αισθητήρων (EMA)",
+          "ema_alpha": "Συντελεστής εξομάλυνσης EMA (0,05–1,0) — χαμηλότερος = πιο ομαλό, υψηλότερος = πιο άμεση απόκριση"
         }
       },
       "lifecycle": {

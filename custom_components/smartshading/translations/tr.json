@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Dış mekân sıcaklık sensörü",
           "cloud_cover_sensor_id": "Bulutluluk sensörü (0–100 %)",
           "wind_speed_sensor_id": "Rüzgâr hızı sensörü (m/s) — tente/screenler için varsa rüzgâr hamlesini kullanın",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Sensör okumalarını yumuşat (EMA)",
+          "ema_alpha": "EMA yumuşatma katsayısı (0,05–1,0) — düşük = daha yumuşak, yüksek = daha duyarlı"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Dış mekân sıcaklık sensörü",
           "cloud_cover_sensor_id": "Bulutluluk sensörü (0–100 %)",
           "wind_speed_sensor_id": "Rüzgâr hızı sensörü (m/s) — tente/screenler için varsa rüzgâr hamlesini kullanın",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Sensör okumalarını yumuşat (EMA)",
+          "ema_alpha": "EMA yumuşatma katsayısı (0,05–1,0) — düşük = daha yumuşak, yüksek = daha duyarlı"
         }
       },
       "lifecycle": {

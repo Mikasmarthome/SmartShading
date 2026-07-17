@@ -24,7 +24,9 @@
           "outdoor_temperature_sensor_id": "Buitentemperatuursensor",
           "cloud_cover_sensor_id": "Bewolkingssensor (0–100 %)",
           "wind_speed_sensor_id": "Windsnelheidssensor (m/s) — gebruik windstoten voor zonneschermen/screens indien beschikbaar",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Sensorwaarden afvlakken (EMA)",
+          "ema_alpha": "EMA-afvlakkingsfactor (0,05–1,0) — lager = vlakker, hoger = responsiever"
         }
       },
       "lifecycle": {
@@ -301,7 +303,9 @@
           "outdoor_temperature_sensor_id": "Buitentemperatuursensor",
           "cloud_cover_sensor_id": "Bewolkingssensor (0–100 %)",
           "wind_speed_sensor_id": "Windsnelheidssensor (m/s) — gebruik windstoten voor zonneschermen/screens indien beschikbaar",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "ema_enabled": "Sensorwaarden afvlakken (EMA)",
+          "ema_alpha": "EMA-afvlakkingsfactor (0,05–1,0) — lager = vlakker, hoger = responsiever"
         }
       },
       "lifecycle": {

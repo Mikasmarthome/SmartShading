@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import time
 from collections import deque
 from collections.abc import Callable
@@ -40,7 +41,12 @@ from .cover_control.cover_capabilities import CoverCapability
 from .cover_control.cover_controller import CoverController
 from .engines.comfort_engine import ComfortEngine
 from .engines.exposure_engine import ExposureEngine
-from .engines.solar_source import SOURCE_MEASURED, classify_solar_source
+from .engines.solar_source import (
+    MAX_PLAUSIBLE_SOLAR_WM2,
+    SOLAR_SENSOR_MAX_AGE_S,
+    SOURCE_MEASURED,
+    classify_solar_source,
+)
 from .engines.learning_persistence import (
     LearningPersistenceAdapter,
     LearningPersistenceConfig,
@@ -84,6 +90,7 @@ from .engines.lifecycle_engine import (
     check_night_interval_active,
 )
 from .engines.lifecycle_guard import lifecycle_should_break_override, should_allow_lifecycle_release
+from .engines.ema_engine import EmaSmoother
 from .models.learning import OverrideRecord, StateTransitionRecord, WindowCycleSnapshot
 from .engines.override_detector import OverrideDetector
 from .engines.observability_evaluator import (
@@ -1037,6 +1044,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         absence_delay_min: int = 30,
         indoor_temperature_sensor_ids: list[str] | None = None,
         comfort_config: ComfortConfig | None = None,
+        ema_enabled: bool = False,
+        ema_alpha: float = 0.3,
         global_serial_dispatch: GlobalSerialDispatch | None = None,
     ) -> None:
         super().__init__(
@@ -1065,6 +1074,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._wind_speed_sensor_id = wind_speed_sensor_id
         self._wind_gust_sensor_id = wind_gust_sensor_id
         self._rain_sensor_id = rain_sensor_id
+        # EMA sensor smoothing (v1.2.0-beta.1, T4): one EmaSmoother instance
+        # for this Coordinator's whole lifetime, mirroring PresenceDebouncer
+        # below — in-memory only, not persisted (see engines/ema_engine.py
+        # module docstring "Persistence"). Applied exclusively inside
+        # _read_weather_inputs()/_read_indoor_temperature(); no other method
+        # touches it, so every downstream engine stays unaware EMA exists.
+        self._ema_enabled = ema_enabled
+        self._ema_alpha = ema_alpha
+        self._ema_smoother = EmaSmoother()
         self._storm_protection_enabled = storm_protection_enabled
         self._wind_protection_enabled = wind_protection_enabled
         self._wind_threshold_ms = wind_threshold_ms
@@ -2039,15 +2057,78 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 return False  # at least one person definitively home → not uncertain
         return any_uncertain
 
+    def _solar_reading_ema_eligible(
+        self, value: float | None, unit: str | None, age_s: float | None
+    ) -> bool:
+        """T4 pre-push review fix: a raw solar reading must pass the SAME
+        range/staleness/unit-family criteria classify_solar_source()
+        (engines/solar_source.py) independently applies before it is allowed
+        to update the EMA state at all.
+
+        Why this exists: EMA runs here, once per cycle, BEFORE the per-window
+        loop where classify_solar_source() does its own plausibility check.
+        Without this gate, a single implausible spike (e.g. a sensor glitch
+        reporting 50000 W/m² while the EMA was tracking ~300) would still get
+        damped into the EMA average (e.g. 300 -> ~15000 at alpha=0.3) even
+        though classify_solar_source() correctly rejects and falls back to
+        the weather estimate FOR THAT CYCLE — the visible symptom is hidden,
+        but the EMA's internal state stays corrupted for many subsequent
+        cycles until enough real samples pull it back down. Same reasoning
+        for a stale (but numerically plausible) reading: it must not keep
+        "refreshing" the EMA once classify_solar_source() would consider it
+        too old to trust.
+
+        This reuses solar_source.py's own public thresholds (no duplicated
+        magic numbers) rather than calling classify_solar_source() itself —
+        that function is not callable yet at this point in the cycle (it
+        needs sun_geometry/cloud estimate computed per-window, later in the
+        loop). Only the two numeric comparisons are duplicated, not any
+        source-selection logic; classify_solar_source() still runs its own
+        independent check afterwards on the (now EMA'd) measured value for
+        ITS purpose (deciding measured vs. estimate) — this is intentional,
+        not circular: the check here gates EMA's internal state, the check
+        there gates which source THIS cycle's decision uses.
+
+        NaN/Infinity are already rejected by ema_update() itself and don't
+        need duplicating here, but are included for a fully self-contained,
+        directly-testable predicate.
+        """
+        if value is None or not math.isfinite(value):
+            return False
+        if not WeatherEngine.is_plausible_solar_unit(unit):
+            return False
+        if value < 0.0 or value > MAX_PLAUSIBLE_SOLAR_WM2:
+            return False
+        if age_s is not None and math.isfinite(age_s) and age_s > SOLAR_SENSOR_MAX_AGE_S:
+            return False
+        return True
+
+    def _apply_ema(self, channel: str, raw_value: float | None) -> float | None:
+        """EMA (v1.2.0-beta.1, T4) — the ONLY place any sensor value is
+        smoothed; see engines/ema_engine.py module docstring for the full
+        architecture (single insertion point, which channels are/aren't
+        smoothed, and why). Disabled (default): `raw_value` passes through
+        unchanged, exactly pre-T4 behavior — and any previously-accumulated
+        per-channel state is cleared, so a later re-enable always reseeds
+        from a fresh reading instead of resuming a stale value."""
+        if not self._ema_enabled:
+            self._ema_smoother.reset(channel)
+            return raw_value
+        return self._ema_smoother.update(channel, raw_value, self._ema_alpha)
+
     def _read_indoor_temperature(self) -> float | None:
         """Read indoor temperature as average of all configured sensors.
         Returns None when no sensors are configured or all readings are invalid.
         Never raises: missing, unknown, unavailable, or non-numeric → skipped.
         F20: each sensor's own unit_of_measurement is checked; a °F reading is
         normalized to °C before being averaged in with the rest.
+
+        EMA (v1.2.0-beta.1, T4): the cross-sensor average computed here is
+        itself the "raw" value smoothed — see _apply_ema(). Disabled by
+        default; unchanged pre-T4 behavior when so.
         """
         if not self._indoor_temperature_sensor_ids:
-            return None
+            return self._apply_ema("indoor_temperature", None)
         readings: list[float] = []
         for sensor_id in self._indoor_temperature_sensor_ids:
             state = self.hass.states.get(sensor_id)
@@ -2057,9 +2138,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if value is not None:
                 unit = state.attributes.get("unit_of_measurement")
                 readings.append(WeatherEngine.normalize_temperature_c(value, unit))
-        if not readings:
-            return None
-        return sum(readings) / len(readings)
+        raw = (sum(readings) / len(readings)) if readings else None
+        return self._apply_ema("indoor_temperature", raw)
 
     def _read_indoor_temperature_for_zone(self, zone_id: str | None) -> float | None:
         """Indoor temperature used for a zone's export/diagnostics provenance.
@@ -2284,17 +2364,59 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 except Exception:
                     solar_age_s = None
 
+        # EMA (v1.2.0-beta.1, T4 — corrected post pre-push review): applied
+        # here, once, to each raw numeric reading — the single insertion
+        # point (see _apply_ema() and engines/ema_engine.py).
+        #
+        # solar_radiation is gated by _solar_reading_ema_eligible() FIRST —
+        # an out-of-range/stale/unit-mismatched raw reading skips _apply_ema()
+        # entirely (passed through raw instead) rather than being allowed to
+        # corrupt the running EMA state before classify_solar_source() ever
+        # runs its own independent check. See that method's docstring below
+        # for the full "why".
+        #
+        # wind_speed/wind_gust are deliberately NOT smoothed: both feed
+        # Tier-1 safety/storm protection (WindowDecisionInput.wind_speed_ms/
+        # wind_gust_ms), where damping a genuine gust spike risks delaying a
+        # protective reaction. No established immediate-rise/gradual-fall
+        # semantics exist yet to smooth these safely, so T4 scopes them out
+        # entirely rather than inventing unproven safety-path complexity —
+        # raw values pass through exactly as before T4.
+        #
+        # solar_radiation_age_s (staleness metadata), solar_radiation_unit,
+        # and weather_condition/weather_condition_enum (categorical) are
+        # deliberately never smoothed — see module docstring "Architecture"
+        # in engines/ema_engine.py.
+        _raw_solar = self._read_value(self._solar_radiation_sensor_id, None)
+        _solar_unit = self._sensor_unit(self._solar_radiation_sensor_id)
+        if self._solar_reading_ema_eligible(_raw_solar, _solar_unit, solar_age_s):
+            _solar_value = self._apply_ema("solar_radiation", _raw_solar)
+        else:
+            # Ineligible (invalid/out-of-range/stale) reading: pass the RAW
+            # value through unsmoothed so classify_solar_source() sees and
+            # correctly rejects/falls back on it this cycle, exactly like
+            # pre-T4 — never substitute a stale cached EMA average for a
+            # genuinely bad current reading (that would make an implausible
+            # live reading look like a valid one to the source selector).
+            # The EMA channel's own internal state is left untouched (not
+            # updated, not reset) — _apply_ema() is not called at all here —
+            # so the next eligible sample resumes blending from where the
+            # last valid one left off.
+            _solar_value = _raw_solar
         return _WeatherInputs(
-            outdoor_temperature=self._read_normalized_temperature_c(
-                self._outdoor_temperature_sensor_id, "temperature"),
-            solar_radiation=self._read_value(self._solar_radiation_sensor_id, None),
+            outdoor_temperature=self._apply_ema(
+                "outdoor_temperature",
+                self._read_normalized_temperature_c(self._outdoor_temperature_sensor_id, "temperature"),
+            ),
+            solar_radiation=_solar_value,
             solar_radiation_age_s=solar_age_s,
-            solar_radiation_unit=self._sensor_unit(self._solar_radiation_sensor_id),
-            cloud_cover=self._read_value(self._cloud_cover_sensor_id, "cloud_coverage"),
-            wind_speed=self._read_normalized_wind_speed_ms(
-                self._wind_speed_sensor_id, "wind_speed"),
-            wind_gust=self._read_normalized_wind_speed_ms(
-                self._wind_gust_sensor_id, "wind_gust_speed"),
+            solar_radiation_unit=_solar_unit,
+            cloud_cover=self._apply_ema(
+                "cloud_cover",
+                self._read_value(self._cloud_cover_sensor_id, "cloud_coverage"),
+            ),
+            wind_speed=self._read_normalized_wind_speed_ms(self._wind_speed_sensor_id, "wind_speed"),
+            wind_gust=self._read_normalized_wind_speed_ms(self._wind_gust_sensor_id, "wind_gust_speed"),
             weather_condition=weather_condition,
             weather_condition_enum=WeatherEngine.parse_weather_condition(weather_condition),
         )

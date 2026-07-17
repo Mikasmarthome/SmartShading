@@ -12,7 +12,8 @@
           "behavior": "Comportement d'ombrage",
           "add_window": "Ajouter une fenêtre",
           "edit_window": "Modifier une fenêtre",
-          "remove_window": "Supprimer une fenêtre"
+          "remove_window": "Supprimer une fenêtre",
+          "lifecycle_profiles": "Profils de planning"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Oui, supprimer cette fenêtre"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Profils de planning",
+        "description": "Gérez des plannings nommés et choisissez celui actuellement actif.",
+        "menu_options": {
+          "add_lifecycle_profile": "Ajouter un profil",
+          "edit_lifecycle_profile": "Modifier le profil",
+          "remove_lifecycle_profile": "Supprimer le profil",
+          "select_active_lifecycle_profile": "Sélectionner le profil actif"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Ajouter un profil de planning",
+        "description": "Crée un nouveau planning nommé. Il se comporte exactement comme les paramètres de planning principaux, mais ne s'applique qu'une fois sélectionné comme profil actif.",
+        "data": {
+          "profile_display_name": "Nom du profil",
+          "night_trigger": "Déclencheur de nuit",
+          "morning_trigger": "Déclencheur du matin",
+          "night_fixed_time": "Heure de nuit",
+          "night_sun_elevation": "Élévation nocturne personnalisée (°) — utilisée uniquement si Personnalisée est sélectionné",
+          "morning_fixed_time": "Heure du matin",
+          "morning_sun_elevation": "Élévation matinale personnalisée (°) — utilisée uniquement si Personnalisée est sélectionné",
+          "night_position": "Position de nuit",
+          "morning_position": "Position du matin",
+          "active_months": "Mois actifs (avancé)",
+          "night_sun_event": "Événement solaire nocturne (optionnel)",
+          "morning_sun_event": "Événement solaire matinal (optionnel)",
+          "night_not_before": "Nuit : déclencheur au plus tôt (optionnel)",
+          "night_not_after": "Nuit : déclencheur au plus tard (optionnel)",
+          "morning_not_before": "Matin : déclencheur au plus tôt (optionnel)",
+          "morning_not_after": "Matin : déclencheur au plus tard (optionnel)",
+          "schedule_mode": "Mode d'horaire",
+          "weekday_night_fixed_time": "Heure de nuit en semaine (lun–ven)",
+          "weekday_night_position": "Position de nuit en semaine (lun–ven)",
+          "weekday_morning_fixed_time": "Heure du matin en semaine (lun–ven)",
+          "weekday_morning_position": "Position du matin en semaine (lun–ven)",
+          "weekend_night_fixed_time": "Heure de nuit le week-end (sam–dim)",
+          "weekend_night_position": "Position de nuit le week-end (sam–dim)",
+          "weekend_morning_fixed_time": "Heure du matin le week-end (sam–dim)",
+          "weekend_morning_position": "Position du matin le week-end (sam–dim)"
+        },
+        "data_description": {
+          "active_months": "Laissez vide pour appliquer ce programme chaque mois. Sélectionnez des mois spécifiques pour le restreindre — par exemple de septembre à mars pour un programme d'hiver.",
+          "night_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure de nuit ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
+          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
+          "night_not_before": "Optionnel. Si le déclencheur nocturne résolu survenait plus tôt que cette heure, il est reporté à cette heure.",
+          "night_not_after": "Optionnel. Si le déclencheur nocturne résolu survenait plus tard que cette heure, il est avancé à cette heure.",
+          "morning_not_before": "Optionnel. Si le déclencheur matinal résolu survenait plus tôt que cette heure, il est reporté à cette heure.",
+          "morning_not_after": "Optionnel. Si le déclencheur matinal résolu survenait plus tard que cette heure, il est avancé à cette heure.",
+          "schedule_mode": "« Identique chaque jour » utilise un seul horaire pour toute la semaine. « Semaine / Week-end » permet de définir des heures et positions différentes pour lun–ven et sam–dim."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Modifier le profil de planning",
+        "description": "Sélectionnez le profil à modifier.",
+        "data": {
+          "profile_id": "Profil"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Modifier le profil de planning",
+        "description": "Mettre à jour le planning de ce profil.",
+        "data": {
+          "profile_display_name": "Nom du profil",
+          "night_trigger": "Déclencheur de nuit",
+          "morning_trigger": "Déclencheur du matin",
+          "night_fixed_time": "Heure de nuit",
+          "night_sun_elevation": "Élévation nocturne personnalisée (°) — utilisée uniquement si Personnalisée est sélectionné",
+          "morning_fixed_time": "Heure du matin",
+          "morning_sun_elevation": "Élévation matinale personnalisée (°) — utilisée uniquement si Personnalisée est sélectionné",
+          "night_position": "Position de nuit",
+          "morning_position": "Position du matin",
+          "active_months": "Mois actifs (avancé)",
+          "night_sun_event": "Événement solaire nocturne (optionnel)",
+          "morning_sun_event": "Événement solaire matinal (optionnel)",
+          "night_not_before": "Nuit : déclencheur au plus tôt (optionnel)",
+          "night_not_after": "Nuit : déclencheur au plus tard (optionnel)",
+          "morning_not_before": "Matin : déclencheur au plus tôt (optionnel)",
+          "morning_not_after": "Matin : déclencheur au plus tard (optionnel)",
+          "schedule_mode": "Mode d'horaire",
+          "weekday_night_fixed_time": "Heure de nuit en semaine (lun–ven)",
+          "weekday_night_position": "Position de nuit en semaine (lun–ven)",
+          "weekday_morning_fixed_time": "Heure du matin en semaine (lun–ven)",
+          "weekday_morning_position": "Position du matin en semaine (lun–ven)",
+          "weekend_night_fixed_time": "Heure de nuit le week-end (sam–dim)",
+          "weekend_night_position": "Position de nuit le week-end (sam–dim)",
+          "weekend_morning_fixed_time": "Heure du matin le week-end (sam–dim)",
+          "weekend_morning_position": "Position du matin le week-end (sam–dim)"
+        },
+        "data_description": {
+          "active_months": "Laissez vide pour appliquer ce programme chaque mois. Sélectionnez des mois spécifiques pour le restreindre — par exemple de septembre à mars pour un programme d'hiver.",
+          "night_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure de nuit ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
+          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
+          "night_not_before": "Optionnel. Si le déclencheur nocturne résolu survenait plus tôt que cette heure, il est reporté à cette heure.",
+          "night_not_after": "Optionnel. Si le déclencheur nocturne résolu survenait plus tard que cette heure, il est avancé à cette heure.",
+          "morning_not_before": "Optionnel. Si le déclencheur matinal résolu survenait plus tôt que cette heure, il est reporté à cette heure.",
+          "morning_not_after": "Optionnel. Si le déclencheur matinal résolu survenait plus tard que cette heure, il est avancé à cette heure.",
+          "schedule_mode": "« Identique chaque jour » utilise un seul horaire pour toute la semaine. « Semaine / Week-end » permet de définir des heures et positions différentes pour lun–ven et sam–dim."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Supprimer le profil de planning",
+        "description": "Sélectionnez le profil à supprimer. Cette action est irréversible.",
+        "data": {
+          "profile_id": "Profil à supprimer"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Confirmer la suppression",
+        "description": "Supprimer le profil « {profile_name} » ? Cette action est irréversible. S'il s'agit du profil actif, le planning par défaut sera utilisé à nouveau.",
+        "data": {
+          "remove_confirmed": "Oui, supprimer ce profil"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Sélectionner le profil actif",
+        "description": "Choisissez quel profil de planning est actif. « Par défaut » utilise le planning configuré dans les paramètres de planning.",
+        "data": {
+          "active_lifecycle_profile_id": "Profil actif"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard."
     },
     "abort": {
-      "no_options_for_system_entry": "L'entrée Système de SmartShading n'a aucune option configurable."
+      "no_options_for_system_entry": "L'entrée Système de SmartShading n'a aucune option configurable.",
+      "no_lifecycle_profiles": "Aucun profil de planning n'a encore été créé. Ajoutez-en un d'abord.",
+      "lifecycle_profile_not_found": "Ce profil de planning est introuvable. Il a peut-être été supprimé."
     }
   },
   "config": {

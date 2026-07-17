@@ -12,7 +12,8 @@
           "behavior": "Árnyékolási viselkedés",
           "add_window": "Ablak hozzáadása",
           "edit_window": "Ablak szerkesztése",
-          "remove_window": "Ablak eltávolítása"
+          "remove_window": "Ablak eltávolítása",
+          "lifecycle_profiles": "Ütemezési profilok"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Igen, távolítsa el ezt az ablakot"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Ütemezési profilok",
+        "description": "Kezelje a névvel ellátott ütemezéseket, és válassza ki, melyik aktív.",
+        "menu_options": {
+          "add_lifecycle_profile": "Profil hozzáadása",
+          "edit_lifecycle_profile": "Profil szerkesztése",
+          "remove_lifecycle_profile": "Profil eltávolítása",
+          "select_active_lifecycle_profile": "Aktív profil kiválasztása"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Ütemezési profil hozzáadása",
+        "description": "Új, névvel ellátott ütemezést hoz létre. Pontosan úgy működik, mint a fő ütemezési beállítások, de csak akkor lép érvénybe, ha aktív profilként van kiválasztva.",
+        "data": {
+          "profile_display_name": "Profil neve",
+          "night_trigger": "Éjszakai kioldó",
+          "morning_trigger": "Reggeli kioldó",
+          "night_fixed_time": "Éjszakai időpont",
+          "night_sun_elevation": "Egyéni éjszakai magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
+          "morning_fixed_time": "Reggeli időpont",
+          "morning_sun_elevation": "Egyéni reggeli magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
+          "night_position": "Éjszakai pozíció",
+          "morning_position": "Reggeli pozíció",
+          "active_months": "Aktív hónapok (speciális)",
+          "night_sun_event": "Éjszakai napesemény (opcionális)",
+          "morning_sun_event": "Reggeli napesemény (opcionális)",
+          "night_not_before": "Éjszaka: legkorábbi kiváltás (opcionális)",
+          "night_not_after": "Éjszaka: legkésőbbi kiváltás (opcionális)",
+          "morning_not_before": "Reggel: legkorábbi kiváltás (opcionális)",
+          "morning_not_after": "Reggel: legkésőbbi kiváltás (opcionális)",
+          "schedule_mode": "Ütemezési mód",
+          "weekday_night_fixed_time": "Éjszakai időpont hétköznap (hét–pén)",
+          "weekday_night_position": "Éjszakai pozíció hétköznap (hét–pén)",
+          "weekday_morning_fixed_time": "Reggeli időpont hétköznap (hét–pén)",
+          "weekday_morning_position": "Reggeli pozíció hétköznap (hét–pén)",
+          "weekend_night_fixed_time": "Éjszakai időpont hétvégén (szo–vas)",
+          "weekend_night_position": "Éjszakai pozíció hétvégén (szo–vas)",
+          "weekend_morning_fixed_time": "Reggeli időpont hétvégén (szo–vas)",
+          "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)"
+        },
+        "data_description": {
+          "active_months": "Hagyja üresen, ha ezt az ütemezést minden hónapban alkalmazni szeretné. Válasszon konkrét hónapokat a korlátozásához — például szeptembertől márciusig egy téli ütemezéshez.",
+          "night_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti éjszakai időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
+          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
+          "night_not_before": "Opcionális. Ha a feloldott éjszakai kiváltás ennél az időpontnál korábban történne, ehelyett erre az időpontra tolódik.",
+          "night_not_after": "Opcionális. Ha a feloldott éjszakai kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb.",
+          "morning_not_before": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál korábban történne, ehelyett erre az időpontra tolódik.",
+          "morning_not_after": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb.",
+          "schedule_mode": "A „Minden nap ugyanaz” egyetlen ütemezést használ az egész hétre. A „Hétköznap / Hétvége” lehetővé teszi különböző időpontok és pozíciók beállítását hét–pén és szo–vas esetén."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Ütemezési profil szerkesztése",
+        "description": "Válassza ki a szerkesztendő profilt.",
+        "data": {
+          "profile_id": "Profil"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Ütemezési profil szerkesztése",
+        "description": "Frissítse ennek a profilnak az ütemezését.",
+        "data": {
+          "profile_display_name": "Profil neve",
+          "night_trigger": "Éjszakai kioldó",
+          "morning_trigger": "Reggeli kioldó",
+          "night_fixed_time": "Éjszakai időpont",
+          "night_sun_elevation": "Egyéni éjszakai magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
+          "morning_fixed_time": "Reggeli időpont",
+          "morning_sun_elevation": "Egyéni reggeli magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
+          "night_position": "Éjszakai pozíció",
+          "morning_position": "Reggeli pozíció",
+          "active_months": "Aktív hónapok (speciális)",
+          "night_sun_event": "Éjszakai napesemény (opcionális)",
+          "morning_sun_event": "Reggeli napesemény (opcionális)",
+          "night_not_before": "Éjszaka: legkorábbi kiváltás (opcionális)",
+          "night_not_after": "Éjszaka: legkésőbbi kiváltás (opcionális)",
+          "morning_not_before": "Reggel: legkorábbi kiváltás (opcionális)",
+          "morning_not_after": "Reggel: legkésőbbi kiváltás (opcionális)",
+          "schedule_mode": "Ütemezési mód",
+          "weekday_night_fixed_time": "Éjszakai időpont hétköznap (hét–pén)",
+          "weekday_night_position": "Éjszakai pozíció hétköznap (hét–pén)",
+          "weekday_morning_fixed_time": "Reggeli időpont hétköznap (hét–pén)",
+          "weekday_morning_position": "Reggeli pozíció hétköznap (hét–pén)",
+          "weekend_night_fixed_time": "Éjszakai időpont hétvégén (szo–vas)",
+          "weekend_night_position": "Éjszakai pozíció hétvégén (szo–vas)",
+          "weekend_morning_fixed_time": "Reggeli időpont hétvégén (szo–vas)",
+          "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)"
+        },
+        "data_description": {
+          "active_months": "Hagyja üresen, ha ezt az ütemezést minden hónapban alkalmazni szeretné. Válasszon konkrét hónapokat a korlátozásához — például szeptembertől márciusig egy téli ütemezéshez.",
+          "night_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti éjszakai időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
+          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
+          "night_not_before": "Opcionális. Ha a feloldott éjszakai kiváltás ennél az időpontnál korábban történne, ehelyett erre az időpontra tolódik.",
+          "night_not_after": "Opcionális. Ha a feloldott éjszakai kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb.",
+          "morning_not_before": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál korábban történne, ehelyett erre az időpontra tolódik.",
+          "morning_not_after": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb.",
+          "schedule_mode": "A „Minden nap ugyanaz” egyetlen ütemezést használ az egész hétre. A „Hétköznap / Hétvége” lehetővé teszi különböző időpontok és pozíciók beállítását hét–pén és szo–vas esetén."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Ütemezési profil eltávolítása",
+        "description": "Válassza ki az eltávolítandó profilt. Ez nem vonható vissza.",
+        "data": {
+          "profile_id": "Eltávolítandó profil"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Eltávolítás megerősítése",
+        "description": "Eltávolítja a(z) „{profile_name}” profilt? Ez nem vonható vissza. Ha ez az aktív profil, ismét az alapértelmezett ütemezés lép érvénybe.",
+        "data": {
+          "remove_confirmed": "Igen, távolítsa el ezt a profilt"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Aktív profil kiválasztása",
+        "description": "Válassza ki, melyik ütemezési profil aktív. Az „Alapértelmezett” az ütemezési beállításokban megadott ütemezést használja.",
+        "data": {
+          "active_lifecycle_profile_id": "Aktív profil"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél."
     },
     "abort": {
-      "no_options_for_system_entry": "A SmartShading rendszerbejegyzésnek nincsenek konfigurálható beállításai."
+      "no_options_for_system_entry": "A SmartShading rendszerbejegyzésnek nincsenek konfigurálható beállításai.",
+      "no_lifecycle_profiles": "Még nem hozott létre ütemezési profilt. Először adjon hozzá egyet.",
+      "lifecycle_profile_not_found": "Ez az ütemezési profil nem található. Lehet, hogy eltávolították."
     }
   },
   "config": {

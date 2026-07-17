@@ -1042,6 +1042,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         override_detection_tolerance: int = 10,
         override_break_on_lifecycle: bool = True,
         lifecycle_config: NightDayLifecycleConfig | None = None,
+        lifecycle_profile_source: str = "legacy",
+        lifecycle_profile_count: int = 0,
+        active_lifecycle_profile_id: str | None = None,
         presence_entity_ids: list[str] | None = None,
         absence_delay_min: int = 30,
         presence_policy: PresencePolicy = PresencePolicy.ANY_HOME,
@@ -1294,6 +1297,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._lifecycle_config: NightDayLifecycleConfig = lifecycle_config or NightDayLifecycleConfig(
             id="default"
         )
+        # Lifecycle profiles (v1.2.0-beta.1, T6): diagnostics-only metadata
+        # about WHICH source resolved self._lifecycle_config above (see
+        # engines/lifecycle_resolver.py, called once in __init__.py before
+        # this Coordinator is constructed). Never read by any decision
+        # logic — self._lifecycle_config is the only thing that matters to
+        # LifecycleEngine/_active_profile()/_evaluate_trigger().
+        self._lifecycle_profile_source: str = lifecycle_profile_source
+        self._lifecycle_profile_count: int = lifecycle_profile_count
+        self._active_lifecycle_profile_id: str | None = active_lifecycle_profile_id
         self._lifecycle_state: LifecycleState = LifecycleState.DAY
         self._presence_entity_ids: list[str] = presence_entity_ids or []
         self._absence_delay_min: int = absence_delay_min

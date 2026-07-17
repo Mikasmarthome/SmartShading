@@ -12,7 +12,8 @@
           "behavior": "Varjostuskäyttäytyminen",
           "add_window": "Lisää ikkuna",
           "edit_window": "Muokkaa ikkunaa",
-          "remove_window": "Poista ikkuna"
+          "remove_window": "Poista ikkuna",
+          "lifecycle_profiles": "Aikatauluprofiilit"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Kyllä, poista tämä ikkuna"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Aikatauluprofiilit",
+        "description": "Hallitse nimettyjä aikatauluja ja valitse, mikä on aktiivinen.",
+        "menu_options": {
+          "add_lifecycle_profile": "Lisää profiili",
+          "edit_lifecycle_profile": "Muokkaa profiilia",
+          "remove_lifecycle_profile": "Poista profiili",
+          "select_active_lifecycle_profile": "Valitse aktiivinen profiili"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Lisää aikatauluprofiili",
+        "description": "Luo uuden nimetyn aikataulun. Se toimii täysin samoin kuin pääaikatauluasetukset, mutta vaikuttaa vasta, kun se valitaan aktiiviseksi profiiliksi.",
+        "data": {
+          "profile_display_name": "Profiilin nimi",
+          "night_trigger": "Yön laukaisin",
+          "morning_trigger": "Aamun laukaisin",
+          "night_fixed_time": "Yön aika",
+          "night_sun_elevation": "Mukautettu yön korkeus (°) — käytetään vain, kun Mukautettu on valittu",
+          "morning_fixed_time": "Aamun aika",
+          "morning_sun_elevation": "Mukautettu aamun korkeus (°) — käytetään vain, kun Mukautettu on valittu",
+          "night_position": "Yön sijainti",
+          "morning_position": "Aamun sijainti",
+          "active_months": "Aktiiviset kuukaudet (lisäasetus)",
+          "night_sun_event": "Yön aurinkotapahtuma (valinnainen)",
+          "morning_sun_event": "Aamun aurinkotapahtuma (valinnainen)",
+          "night_not_before": "Yö: aikaisin laukaisu (valinnainen)",
+          "night_not_after": "Yö: myöhäisin laukaisu (valinnainen)",
+          "morning_not_before": "Aamu: aikaisin laukaisu (valinnainen)",
+          "morning_not_after": "Aamu: myöhäisin laukaisu (valinnainen)",
+          "schedule_mode": "Aikataulutila",
+          "weekday_night_fixed_time": "Yön aika arkisin (ma–pe)",
+          "weekday_night_position": "Yön sijainti arkisin (ma–pe)",
+          "weekday_morning_fixed_time": "Aamun aika arkisin (ma–pe)",
+          "weekday_morning_position": "Aamun sijainti arkisin (ma–pe)",
+          "weekend_night_fixed_time": "Yön aika viikonloppuisin (la–su)",
+          "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)",
+          "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
+          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)"
+        },
+        "data_description": {
+          "active_months": "Jätä tyhjäksi, jos tätä aikataulua käytetään joka kuukausi. Valitse tietyt kuukaudet rajoittaaksesi sitä — esimerkiksi syyskuusta maaliskuuhun talviaikataululle.",
+          "night_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan yöajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "night_not_before": "Valinnainen. Jos ratkaistu yölaukaisu tapahtuisi tätä aikaa aiemmin, se siirretään tähän aikaan.",
+          "night_not_after": "Valinnainen. Jos ratkaistu yölaukaisu tapahtuisi tätä aikaa myöhemmin, se aikaistetaan tähän aikaan.",
+          "morning_not_before": "Valinnainen. Jos ratkaistu aamulaukaisu tapahtuisi tätä aikaa aiemmin, se siirretään tähän aikaan.",
+          "morning_not_after": "Valinnainen. Jos ratkaistu aamulaukaisu tapahtuisi tätä aikaa myöhemmin, se aikaistetaan tähän aikaan.",
+          "schedule_mode": "”Sama joka päivä” käyttää yhtä aikataulua koko viikolle. ”Arki / Viikonloppu” antaa asettaa eri ajat ja sijainnit ma–pe ja la–su."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Muokkaa aikatauluprofiilia",
+        "description": "Valitse muokattava profiili.",
+        "data": {
+          "profile_id": "Profiili"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Muokkaa aikatauluprofiilia",
+        "description": "Päivitä tämän profiilin aikataulu.",
+        "data": {
+          "profile_display_name": "Profiilin nimi",
+          "night_trigger": "Yön laukaisin",
+          "morning_trigger": "Aamun laukaisin",
+          "night_fixed_time": "Yön aika",
+          "night_sun_elevation": "Mukautettu yön korkeus (°) — käytetään vain, kun Mukautettu on valittu",
+          "morning_fixed_time": "Aamun aika",
+          "morning_sun_elevation": "Mukautettu aamun korkeus (°) — käytetään vain, kun Mukautettu on valittu",
+          "night_position": "Yön sijainti",
+          "morning_position": "Aamun sijainti",
+          "active_months": "Aktiiviset kuukaudet (lisäasetus)",
+          "night_sun_event": "Yön aurinkotapahtuma (valinnainen)",
+          "morning_sun_event": "Aamun aurinkotapahtuma (valinnainen)",
+          "night_not_before": "Yö: aikaisin laukaisu (valinnainen)",
+          "night_not_after": "Yö: myöhäisin laukaisu (valinnainen)",
+          "morning_not_before": "Aamu: aikaisin laukaisu (valinnainen)",
+          "morning_not_after": "Aamu: myöhäisin laukaisu (valinnainen)",
+          "schedule_mode": "Aikataulutila",
+          "weekday_night_fixed_time": "Yön aika arkisin (ma–pe)",
+          "weekday_night_position": "Yön sijainti arkisin (ma–pe)",
+          "weekday_morning_fixed_time": "Aamun aika arkisin (ma–pe)",
+          "weekday_morning_position": "Aamun sijainti arkisin (ma–pe)",
+          "weekend_night_fixed_time": "Yön aika viikonloppuisin (la–su)",
+          "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)",
+          "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
+          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)"
+        },
+        "data_description": {
+          "active_months": "Jätä tyhjäksi, jos tätä aikataulua käytetään joka kuukausi. Valitse tietyt kuukaudet rajoittaaksesi sitä — esimerkiksi syyskuusta maaliskuuhun talviaikataululle.",
+          "night_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan yöajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "night_not_before": "Valinnainen. Jos ratkaistu yölaukaisu tapahtuisi tätä aikaa aiemmin, se siirretään tähän aikaan.",
+          "night_not_after": "Valinnainen. Jos ratkaistu yölaukaisu tapahtuisi tätä aikaa myöhemmin, se aikaistetaan tähän aikaan.",
+          "morning_not_before": "Valinnainen. Jos ratkaistu aamulaukaisu tapahtuisi tätä aikaa aiemmin, se siirretään tähän aikaan.",
+          "morning_not_after": "Valinnainen. Jos ratkaistu aamulaukaisu tapahtuisi tätä aikaa myöhemmin, se aikaistetaan tähän aikaan.",
+          "schedule_mode": "”Sama joka päivä” käyttää yhtä aikataulua koko viikolle. ”Arki / Viikonloppu” antaa asettaa eri ajat ja sijainnit ma–pe ja la–su."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Poista aikatauluprofiili",
+        "description": "Valitse poistettava profiili. Tätä ei voi perua.",
+        "data": {
+          "profile_id": "Poistettava profiili"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Vahvista poisto",
+        "description": "Poistetaanko profiili \"{profile_name}\"? Tätä ei voi perua. Jos tämä on aktiivinen profiili, oletusaikataulu otetaan taas käyttöön.",
+        "data": {
+          "remove_confirmed": "Kyllä, poista tämä profiili"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Valitse aktiivinen profiili",
+        "description": "Valitse, mikä aikatauluprofiili on aktiivinen. \"Oletus\" käyttää aikatauluasetuksissa määritettyä aikataulua.",
+        "data": {
+          "active_lifecycle_profile_id": "Aktiivinen profiili"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading-järjestelmämerkinnällä ei ole määritettäviä asetuksia."
+      "no_options_for_system_entry": "SmartShading-järjestelmämerkinnällä ei ole määritettäviä asetuksia.",
+      "no_lifecycle_profiles": "Aikatauluprofiileja ei ole vielä luotu. Lisää ensin yksi.",
+      "lifecycle_profile_not_found": "Tätä aikatauluprofiilia ei löytynyt. Se on saatettu poistaa."
     }
   },
   "config": {

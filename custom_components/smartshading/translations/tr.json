@@ -12,7 +12,8 @@
           "behavior": "Gölgeleme davranışı",
           "add_window": "Pencere ekle",
           "edit_window": "Pencereyi düzenle",
-          "remove_window": "Pencereyi kaldır"
+          "remove_window": "Pencereyi kaldır",
+          "lifecycle_profiles": "Zamanlama profilleri"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Evet, bu pencereyi kaldır"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Zamanlama profilleri",
+        "description": "Adlandırılmış zamanlamaları yönetin ve hangisinin etkin olduğunu seçin.",
+        "menu_options": {
+          "add_lifecycle_profile": "Profil ekle",
+          "edit_lifecycle_profile": "Profili düzenle",
+          "remove_lifecycle_profile": "Profili kaldır",
+          "select_active_lifecycle_profile": "Etkin profili seç"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Zamanlama profili ekle",
+        "description": "Yeni adlandırılmış bir zamanlama oluşturur. Ana Zamanlama ayarlarıyla tamamen aynı şekilde çalışır, ancak yalnızca etkin profil olarak seçildiğinde uygulanır.",
+        "data": {
+          "profile_display_name": "Profil adı",
+          "night_trigger": "Gece tetikleyicisi",
+          "morning_trigger": "Sabah tetikleyicisi",
+          "night_fixed_time": "Gece saati",
+          "night_sun_elevation": "Özel gece yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
+          "morning_fixed_time": "Sabah saati",
+          "morning_sun_elevation": "Özel sabah yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
+          "night_position": "Gece konumu",
+          "morning_position": "Sabah konumu",
+          "active_months": "Aktif aylar (gelişmiş)",
+          "night_sun_event": "Gece güneş olayı (isteğe bağlı)",
+          "morning_sun_event": "Sabah güneş olayı (isteğe bağlı)",
+          "night_not_before": "Gece: en erken tetikleyici (isteğe bağlı)",
+          "night_not_after": "Gece: en geç tetikleyici (isteğe bağlı)",
+          "morning_not_before": "Sabah: en erken tetikleyici (isteğe bağlı)",
+          "morning_not_after": "Sabah: en geç tetikleyici (isteğe bağlı)",
+          "schedule_mode": "Zamanlama modu",
+          "weekday_night_fixed_time": "Hafta içi gece saati (Pzt–Cum)",
+          "weekday_night_position": "Hafta içi gece konumu (Pzt–Cum)",
+          "weekday_morning_fixed_time": "Hafta içi sabah saati (Pzt–Cum)",
+          "weekday_morning_position": "Hafta içi sabah konumu (Pzt–Cum)",
+          "weekend_night_fixed_time": "Hafta sonu gece saati (Cmt–Paz)",
+          "weekend_night_position": "Hafta sonu gece konumu (Cmt–Paz)",
+          "weekend_morning_fixed_time": "Hafta sonu sabah saati (Cmt–Paz)",
+          "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)"
+        },
+        "data_description": {
+          "active_months": "Bu programin her ay uygulanmasi icin bos birakin. Kisitlamak icin belirli aylari secin — ornegin kis programi icin Eylul'den Mart'a kadar.",
+          "night_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki gece saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
+          "morning_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki sabah saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
+          "night_not_before": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
+          "night_not_after": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
+          "morning_not_before": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
+          "morning_not_after": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
+          "schedule_mode": "„Her gün aynı“ tüm hafta için tek bir zamanlama kullanır. „Hafta içi / Hafta sonu“, Pzt–Cum ve Cmt–Paz için farklı saatler ve konumlar ayarlamanıza olanak tanır."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Zamanlama profilini düzenle",
+        "description": "Düzenlenecek profili seçin.",
+        "data": {
+          "profile_id": "Profil"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Zamanlama profilini düzenle",
+        "description": "Bu profilin zamanlamasını güncelleyin.",
+        "data": {
+          "profile_display_name": "Profil adı",
+          "night_trigger": "Gece tetikleyicisi",
+          "morning_trigger": "Sabah tetikleyicisi",
+          "night_fixed_time": "Gece saati",
+          "night_sun_elevation": "Özel gece yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
+          "morning_fixed_time": "Sabah saati",
+          "morning_sun_elevation": "Özel sabah yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
+          "night_position": "Gece konumu",
+          "morning_position": "Sabah konumu",
+          "active_months": "Aktif aylar (gelişmiş)",
+          "night_sun_event": "Gece güneş olayı (isteğe bağlı)",
+          "morning_sun_event": "Sabah güneş olayı (isteğe bağlı)",
+          "night_not_before": "Gece: en erken tetikleyici (isteğe bağlı)",
+          "night_not_after": "Gece: en geç tetikleyici (isteğe bağlı)",
+          "morning_not_before": "Sabah: en erken tetikleyici (isteğe bağlı)",
+          "morning_not_after": "Sabah: en geç tetikleyici (isteğe bağlı)",
+          "schedule_mode": "Zamanlama modu",
+          "weekday_night_fixed_time": "Hafta içi gece saati (Pzt–Cum)",
+          "weekday_night_position": "Hafta içi gece konumu (Pzt–Cum)",
+          "weekday_morning_fixed_time": "Hafta içi sabah saati (Pzt–Cum)",
+          "weekday_morning_position": "Hafta içi sabah konumu (Pzt–Cum)",
+          "weekend_night_fixed_time": "Hafta sonu gece saati (Cmt–Paz)",
+          "weekend_night_position": "Hafta sonu gece konumu (Cmt–Paz)",
+          "weekend_morning_fixed_time": "Hafta sonu sabah saati (Cmt–Paz)",
+          "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)"
+        },
+        "data_description": {
+          "active_months": "Bu programin her ay uygulanmasi icin bos birakin. Kisitlamak icin belirli aylari secin — ornegin kis programi icin Eylul'den Mart'a kadar.",
+          "night_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki gece saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
+          "morning_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki sabah saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
+          "night_not_before": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
+          "night_not_after": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
+          "morning_not_before": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
+          "morning_not_after": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
+          "schedule_mode": "„Her gün aynı“ tüm hafta için tek bir zamanlama kullanır. „Hafta içi / Hafta sonu“, Pzt–Cum ve Cmt–Paz için farklı saatler ve konumlar ayarlamanıza olanak tanır."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Zamanlama profilini kaldır",
+        "description": "Kaldırılacak profili seçin. Bu işlem geri alınamaz.",
+        "data": {
+          "profile_id": "Kaldırılacak profil"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Kaldırmayı onayla",
+        "description": "\"{profile_name}\" profili kaldırılsın mı? Bu işlem geri alınamaz. Bu etkin profilse, zamanlama varsayılana döner.",
+        "data": {
+          "remove_confirmed": "Evet, bu profili kaldır"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Etkin profili seç",
+        "description": "Hangi zamanlama profilinin etkin olduğunu seçin. \"Varsayılan\" Zamanlama ayarlarında yapılandırılan zamanlamayı kullanır.",
+        "data": {
+          "active_lifecycle_profile_id": "Etkin profil"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading Sistem girişinin yapılandırılabilir seçeneği yoktur."
+      "no_options_for_system_entry": "SmartShading Sistem girişinin yapılandırılabilir seçeneği yoktur.",
+      "no_lifecycle_profiles": "Henüz bir zamanlama profili oluşturulmadı. Önce bir tane ekleyin.",
+      "lifecycle_profile_not_found": "Bu zamanlama profili bulunamadı. Kaldırılmış olabilir."
     }
   },
   "config": {

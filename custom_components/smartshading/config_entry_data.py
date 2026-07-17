@@ -28,6 +28,7 @@ from .models.lifecycle import (
     NightTrigger,
     SunEvent,
 )
+from .models.lifecycle_profile import LifecycleProfile
 from .models.obstruction import ObstructionZone
 from .models.presence import PresencePolicy
 from .models.window import WindowBehaviorMode, WindowConfig
@@ -70,6 +71,12 @@ class SmartShadingConfigEntryData:
     lifecycle_config: NightDayLifecycleConfig = field(
         default_factory=lambda: NightDayLifecycleConfig(id="default")
     )
+    # Lifecycle profiles (v1.2.0-beta.1, T6): additive, optional. Empty dict
+    # (the default, and what every pre-T6 config has) means the profile
+    # system is not engaged at all — lifecycle_config above is used exactly
+    # as before, byte-for-byte. See engines/lifecycle_resolver.py.
+    lifecycle_profiles: dict[str, LifecycleProfile] = field(default_factory=dict)
+    active_lifecycle_profile_id: str | None = None
     presence_entity_ids: list[str] = field(default_factory=list)
     absence_delay_min: int = 30
     # Presence evaluation policy (v1.2.0-beta.1, T5). ANY_HOME reproduces
@@ -187,6 +194,61 @@ def _sun_event_from_storage(value: Any) -> SunEvent | None:
         return None
 
 
+def _lifecycle_config_to_storage_dict(lifecycle: NightDayLifecycleConfig) -> dict[str, Any]:
+    """Convert one NightDayLifecycleConfig to a plain, JSON-serializable
+    dict. Factored out (T6) so the exact same conversion is used for both
+    the legacy flat `lifecycle_config` key AND each stored profile's
+    `config` sub-dict — a T6 profile IS a NightDayLifecycleConfig (see
+    models/lifecycle_profile.py), so it round-trips through this identical
+    shape, letting _lifecycle_config_from_storage() (below) parse a
+    profile's config exactly like the legacy field, with the same
+    per-field safe-default guarantees."""
+    return {
+        "id": lifecycle.id,
+        "schedule_mode": lifecycle.schedule_mode.value,
+        "night_enabled": lifecycle.night_enabled,
+        "night_trigger": lifecycle.night_trigger.value,
+        "night_sun_elevation_deg": lifecycle.night_sun_elevation_deg,
+        "night_fixed_time": _time_to_storage(lifecycle.night_fixed_time),
+        "night_position": lifecycle.night_position,
+        "night_tilt": lifecycle.night_tilt,
+        "morning_enabled": lifecycle.morning_enabled,
+        "morning_trigger": lifecycle.morning_trigger.value,
+        "morning_sun_elevation_deg": lifecycle.morning_sun_elevation_deg,
+        "morning_fixed_time": _time_to_storage(lifecycle.morning_fixed_time),
+        "morning_position": lifecycle.morning_position,
+        "morning_tilt": lifecycle.morning_tilt,
+        # Weekday schedule fields
+        "weekday_night_fixed_time": _time_to_storage(lifecycle.weekday_night_fixed_time),
+        "weekday_night_position": lifecycle.weekday_night_position,
+        "weekday_morning_fixed_time": _time_to_storage(lifecycle.weekday_morning_fixed_time),
+        "weekday_morning_position": lifecycle.weekday_morning_position,
+        # Weekend schedule fields
+        "weekend_night_fixed_time": _time_to_storage(lifecycle.weekend_night_fixed_time),
+        "weekend_night_position": lifecycle.weekend_night_position,
+        "weekend_morning_fixed_time": _time_to_storage(lifecycle.weekend_morning_fixed_time),
+        "weekend_morning_position": lifecycle.weekend_morning_position,
+        # Legacy fields (retained for storage round-trip compatibility)
+        "weekday_enabled": lifecycle.weekday_enabled,
+        "weekend_morning_delay_min": lifecycle.weekend_morning_delay_min,
+        # Active months (v1.2.0-beta.1): None = unrestricted (all months).
+        "active_months": lifecycle.active_months,
+        # Sun events (v1.2.0-beta.1): only consulted when the matching
+        # trigger is SUN_EVENT.
+        "night_sun_event": (
+            lifecycle.night_sun_event.value if lifecycle.night_sun_event is not None else None
+        ),
+        "morning_sun_event": (
+            lifecycle.morning_sun_event.value if lifecycle.morning_sun_event is not None else None
+        ),
+        # Schedule clamp (v1.2.0-beta.1, T3): None = no restriction.
+        "night_not_before": _time_to_storage(lifecycle.night_not_before),
+        "night_not_after": _time_to_storage(lifecycle.night_not_after),
+        "morning_not_before": _time_to_storage(lifecycle.morning_not_before),
+        "morning_not_after": _time_to_storage(lifecycle.morning_not_after),
+    }
+
+
 def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
     """Convert to a plain, JSON-serializable dict for ConfigEntry.data.
 
@@ -218,50 +280,19 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
         "rain_sensor_id": data.rain_sensor_id,
         "ema_enabled": data.ema_enabled,
         "ema_alpha": data.ema_alpha,
-        "lifecycle_config": {
-            "id": lifecycle.id,
-            "schedule_mode": lifecycle.schedule_mode.value,
-            "night_enabled": lifecycle.night_enabled,
-            "night_trigger": lifecycle.night_trigger.value,
-            "night_sun_elevation_deg": lifecycle.night_sun_elevation_deg,
-            "night_fixed_time": _time_to_storage(lifecycle.night_fixed_time),
-            "night_position": lifecycle.night_position,
-            "night_tilt": lifecycle.night_tilt,
-            "morning_enabled": lifecycle.morning_enabled,
-            "morning_trigger": lifecycle.morning_trigger.value,
-            "morning_sun_elevation_deg": lifecycle.morning_sun_elevation_deg,
-            "morning_fixed_time": _time_to_storage(lifecycle.morning_fixed_time),
-            "morning_position": lifecycle.morning_position,
-            "morning_tilt": lifecycle.morning_tilt,
-            # Weekday schedule fields
-            "weekday_night_fixed_time": _time_to_storage(lifecycle.weekday_night_fixed_time),
-            "weekday_night_position": lifecycle.weekday_night_position,
-            "weekday_morning_fixed_time": _time_to_storage(lifecycle.weekday_morning_fixed_time),
-            "weekday_morning_position": lifecycle.weekday_morning_position,
-            # Weekend schedule fields
-            "weekend_night_fixed_time": _time_to_storage(lifecycle.weekend_night_fixed_time),
-            "weekend_night_position": lifecycle.weekend_night_position,
-            "weekend_morning_fixed_time": _time_to_storage(lifecycle.weekend_morning_fixed_time),
-            "weekend_morning_position": lifecycle.weekend_morning_position,
-            # Legacy fields (retained for storage round-trip compatibility)
-            "weekday_enabled": lifecycle.weekday_enabled,
-            "weekend_morning_delay_min": lifecycle.weekend_morning_delay_min,
-            # Active months (v1.2.0-beta.1): None = unrestricted (all months).
-            "active_months": lifecycle.active_months,
-            # Sun events (v1.2.0-beta.1): only consulted when the matching
-            # trigger is SUN_EVENT.
-            "night_sun_event": (
-                lifecycle.night_sun_event.value if lifecycle.night_sun_event is not None else None
-            ),
-            "morning_sun_event": (
-                lifecycle.morning_sun_event.value if lifecycle.morning_sun_event is not None else None
-            ),
-            # Schedule clamp (v1.2.0-beta.1, T3): None = no restriction.
-            "night_not_before": _time_to_storage(lifecycle.night_not_before),
-            "night_not_after": _time_to_storage(lifecycle.night_not_after),
-            "morning_not_before": _time_to_storage(lifecycle.morning_not_before),
-            "morning_not_after": _time_to_storage(lifecycle.morning_not_after),
+        "lifecycle_config": _lifecycle_config_to_storage_dict(lifecycle),
+        # Lifecycle profiles (v1.2.0-beta.1, T6): empty dict = profile system
+        # not engaged (every pre-T6 config). Each profile's config uses the
+        # identical _lifecycle_config_to_storage_dict() shape as the legacy
+        # field above.
+        "lifecycle_profiles": {
+            profile_id: {
+                "display_name": profile.display_name,
+                "config": _lifecycle_config_to_storage_dict(profile.config),
+            }
+            for profile_id, profile in data.lifecycle_profiles.items()
         },
+        "active_lifecycle_profile_id": data.active_lifecycle_profile_id,
         "presence_entity_ids": data.presence_entity_ids,
         "absence_delay_min": data.absence_delay_min,
         "presence_policy": data.presence_policy.value,
@@ -346,6 +377,44 @@ def _lifecycle_config_from_storage(raw: dict[str, Any] | None) -> NightDayLifecy
         morning_not_before=_time_from_storage(raw.get("morning_not_before")),
         morning_not_after=_time_from_storage(raw.get("morning_not_after")),
     )
+
+
+def _lifecycle_profiles_from_storage(raw: Any) -> dict[str, LifecycleProfile]:
+    """Never raises: missing/non-dict `lifecycle_profiles` -> empty dict
+    (profile system not engaged, byte-for-byte pre-T6 behavior — see
+    engines/lifecycle_resolver.py). A malformed INDIVIDUAL profile entry
+    (not a dict, or missing "config") is skipped rather than aborting the
+    whole dict or the whole ConfigEntry load — one damaged profile must
+    never take down every other profile or the legacy fallback path.
+    Each profile's own NightDayLifecycleConfig is parsed via the exact same
+    _lifecycle_config_from_storage() used for the legacy flat field, so
+    every individual field already has its own safe-default guarantee.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    profiles: dict[str, LifecycleProfile] = {}
+    for profile_id, entry in raw.items():
+        if not isinstance(profile_id, str) or not isinstance(entry, dict):
+            continue
+        config_raw = entry.get("config")
+        if not isinstance(config_raw, dict):
+            continue
+        display_name = entry.get("display_name")
+        if not isinstance(display_name, str) or not display_name:
+            display_name = profile_id
+        profiles[profile_id] = LifecycleProfile(
+            profile_id=profile_id,
+            display_name=display_name,
+            config=_lifecycle_config_from_storage(config_raw),
+        )
+    return profiles
+
+
+def _active_lifecycle_profile_id_from_storage(raw: Any) -> str | None:
+    """Never raises: anything other than a non-empty string -> None (falls
+    back to the legacy config via resolve_lifecycle_config() — an unknown
+    or malformed stored ID is handled centrally there, not here)."""
+    return raw if isinstance(raw, str) and raw else None
 
 
 def _read_indoor_sensor_ids(raw: dict[str, Any]) -> list[str]:
@@ -434,6 +503,10 @@ def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
         ema_enabled=bool(raw.get("ema_enabled", False)),
         ema_alpha=_ema_alpha_from_storage(raw.get("ema_alpha")),
         lifecycle_config=_lifecycle_config_from_storage(raw.get("lifecycle_config")),
+        lifecycle_profiles=_lifecycle_profiles_from_storage(raw.get("lifecycle_profiles")),
+        active_lifecycle_profile_id=_active_lifecycle_profile_id_from_storage(
+            raw.get("active_lifecycle_profile_id")
+        ),
         presence_entity_ids=raw.get("presence_entity_ids", []),
         absence_delay_min=raw.get("absence_delay_min", 30),
         presence_policy=_presence_policy_from_storage(raw.get("presence_policy")),

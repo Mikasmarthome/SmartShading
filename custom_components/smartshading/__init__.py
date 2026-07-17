@@ -26,6 +26,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .config_entry_data import from_storage_dict
+from .engines.lifecycle_resolver import resolve_lifecycle_config
 from .const import (
     CONF_DEBUG_LOGGING,
     CONF_ENTRY_TYPE,
@@ -242,6 +243,21 @@ async def _async_setup_zone_entry(
     hass.data[DOMAIN].setdefault(DATA_DEBUG_LOGGING, False)
 
     # ------------------------------------------------------------------
+    # Lifecycle profile resolution (v1.2.0-beta.1, T6): resolved ONCE here,
+    # before the Coordinator is constructed — see engines/lifecycle_resolver.py.
+    # The Coordinator's existing lifecycle_config= parameter (unchanged since
+    # before T6) receives whichever plain NightDayLifecycleConfig this
+    # resolves to; the Coordinator itself never sees lifecycle_profiles or
+    # active_lifecycle_profile_id as config sources, only as diagnostics
+    # metadata (passed separately below).
+    # ------------------------------------------------------------------
+    resolved_lifecycle = resolve_lifecycle_config(
+        legacy_config=entry_data.lifecycle_config,
+        profiles=entry_data.lifecycle_profiles,
+        active_profile_id=entry_data.active_lifecycle_profile_id,
+    )
+
+    # ------------------------------------------------------------------
     # Coordinator setup
     # ------------------------------------------------------------------
     coordinator = SmartShadingCoordinator(
@@ -257,7 +273,10 @@ async def _async_setup_zone_entry(
         cloud_cover_sensor_id=entry_data.cloud_cover_sensor_id,
         wind_speed_sensor_id=entry_data.wind_speed_sensor_id,
         rain_sensor_id=entry_data.rain_sensor_id,
-        lifecycle_config=entry_data.lifecycle_config,
+        lifecycle_config=resolved_lifecycle.config,
+        lifecycle_profile_source=resolved_lifecycle.source,
+        lifecycle_profile_count=resolved_lifecycle.profile_count,
+        active_lifecycle_profile_id=resolved_lifecycle.active_profile_id,
         presence_entity_ids=entry_data.presence_entity_ids,
         absence_delay_min=entry_data.absence_delay_min,
         presence_policy=entry_data.presence_policy,

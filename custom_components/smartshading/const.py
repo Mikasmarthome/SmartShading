@@ -234,6 +234,17 @@ CONF_NIGHT_NOT_AFTER = "night_not_after"
 CONF_MORNING_NOT_BEFORE = "morning_not_before"
 CONF_MORNING_NOT_AFTER = "morning_not_after"
 
+# Lifecycle profiles (v1.2.0-beta.1, T6): OptionsFlow-only CRUD, additive.
+# See engines/lifecycle_resolver.py and models/lifecycle_profile.py.
+CONF_ACTIVE_LIFECYCLE_PROFILE_ID = "active_lifecycle_profile_id"
+CONF_PROFILE_ID = "profile_id"
+CONF_PROFILE_DISPLAY_NAME = "profile_display_name"
+# Sentinel value for "no active profile" (use the legacy flat config) in the
+# active-profile SelectSelector — never a real profile_id (those are uuid4
+# hex strings, which never equal this literal).
+LEGACY_PROFILE_SENTINEL = "__legacy__"
+PROFILE_DISPLAY_NAME_MAX_LEN = 60
+
 CONF_PRESENCE_ENTITY_IDS = "presence_entity_ids"
 CONF_ABSENCE_DELAY_MIN = "absence_delay_min"
 CONF_ABSENCE_POSITION = "absence_position"

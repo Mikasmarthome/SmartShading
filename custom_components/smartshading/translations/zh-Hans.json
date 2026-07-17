@@ -12,7 +12,8 @@
           "behavior": "遮阳行为",
           "add_window": "添加窗户",
           "edit_window": "编辑窗户",
-          "remove_window": "移除窗户"
+          "remove_window": "移除窗户",
+          "lifecycle_profiles": "生命周期配置文件"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "是，移除该窗户"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "生命周期配置文件",
+        "description": "管理已命名的日程配置文件，并选择当前激活的配置文件。",
+        "menu_options": {
+          "add_lifecycle_profile": "添加配置文件",
+          "edit_lifecycle_profile": "编辑配置文件",
+          "remove_lifecycle_profile": "删除配置文件",
+          "select_active_lifecycle_profile": "选择激活的配置文件"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "添加日程配置文件",
+        "description": "创建一个新的命名日程。其行为与主日程设置完全相同，但仅在被选为激活配置文件后才会生效。",
+        "data": {
+          "profile_display_name": "配置文件名称",
+          "night_trigger": "夜间触发",
+          "morning_trigger": "早晨触发",
+          "night_fixed_time": "夜间时间",
+          "night_sun_elevation": "自定义夜间高度（°）— 仅在选择“自定义”时使用",
+          "morning_fixed_time": "早晨时间",
+          "morning_sun_elevation": "自定义早晨高度（°）— 仅在选择“自定义”时使用",
+          "night_position": "夜间位置",
+          "morning_position": "早晨位置",
+          "active_months": "活跃月份（高级）",
+          "night_sun_event": "夜间太阳事件（可选）",
+          "morning_sun_event": "早晨太阳事件（可选）",
+          "night_not_before": "夜间：最早触发时间（可选）",
+          "night_not_after": "夜间：最晚触发时间（可选）",
+          "morning_not_before": "早晨：最早触发时间（可选）",
+          "morning_not_after": "早晨：最晚触发时间（可选）",
+          "schedule_mode": "计划模式",
+          "weekday_night_fixed_time": "工作日夜间时间（周一至周五）",
+          "weekday_night_position": "工作日夜间位置（周一至周五）",
+          "weekday_morning_fixed_time": "工作日早晨时间（周一至周五）",
+          "weekday_morning_position": "工作日早晨位置（周一至周五）",
+          "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
+          "weekend_night_position": "周末夜间位置（周六至周日）",
+          "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
+          "weekend_morning_position": "周末早晨位置（周六至周日）"
+        },
+        "data_description": {
+          "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。",
+          "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "night_not_before": "可选。若解析后的夜间触发时间早于此时间，将推迟到此时间。",
+          "night_not_after": "可选。若解析后的夜间触发时间晚于此时间，将提前到此时间。",
+          "morning_not_before": "可选。若解析后的早晨触发时间早于此时间，将推迟到此时间。",
+          "morning_not_after": "可选。若解析后的早晨触发时间晚于此时间，将提前到此时间。",
+          "schedule_mode": "“每天相同”对整周使用一个计划。“工作日 / 周末”可让您为周一至周五和周六至周日设置不同的时间和位置。"
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "编辑日程配置文件",
+        "description": "选择要编辑的配置文件。",
+        "data": {
+          "profile_id": "配置文件"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "编辑日程配置文件",
+        "description": "更新此配置文件的日程。",
+        "data": {
+          "profile_display_name": "配置文件名称",
+          "night_trigger": "夜间触发",
+          "morning_trigger": "早晨触发",
+          "night_fixed_time": "夜间时间",
+          "night_sun_elevation": "自定义夜间高度（°）— 仅在选择“自定义”时使用",
+          "morning_fixed_time": "早晨时间",
+          "morning_sun_elevation": "自定义早晨高度（°）— 仅在选择“自定义”时使用",
+          "night_position": "夜间位置",
+          "morning_position": "早晨位置",
+          "active_months": "活跃月份（高级）",
+          "night_sun_event": "夜间太阳事件（可选）",
+          "morning_sun_event": "早晨太阳事件（可选）",
+          "night_not_before": "夜间：最早触发时间（可选）",
+          "night_not_after": "夜间：最晚触发时间（可选）",
+          "morning_not_before": "早晨：最早触发时间（可选）",
+          "morning_not_after": "早晨：最晚触发时间（可选）",
+          "schedule_mode": "计划模式",
+          "weekday_night_fixed_time": "工作日夜间时间（周一至周五）",
+          "weekday_night_position": "工作日夜间位置（周一至周五）",
+          "weekday_morning_fixed_time": "工作日早晨时间（周一至周五）",
+          "weekday_morning_position": "工作日早晨位置（周一至周五）",
+          "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
+          "weekend_night_position": "周末夜间位置（周六至周日）",
+          "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
+          "weekend_morning_position": "周末早晨位置（周六至周日）"
+        },
+        "data_description": {
+          "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。",
+          "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "night_not_before": "可选。若解析后的夜间触发时间早于此时间，将推迟到此时间。",
+          "night_not_after": "可选。若解析后的夜间触发时间晚于此时间，将提前到此时间。",
+          "morning_not_before": "可选。若解析后的早晨触发时间早于此时间，将推迟到此时间。",
+          "morning_not_after": "可选。若解析后的早晨触发时间晚于此时间，将提前到此时间。",
+          "schedule_mode": "“每天相同”对整周使用一个计划。“工作日 / 周末”可让您为周一至周五和周六至周日设置不同的时间和位置。"
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "删除日程配置文件",
+        "description": "选择要删除的配置文件。此操作无法撤销。",
+        "data": {
+          "profile_id": "要删除的配置文件"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "确认删除",
+        "description": "删除配置文件“{profile_name}”？此操作无法撤销。如果这是当前激活的配置文件，日程将恢复为默认设置。",
+        "data": {
+          "remove_confirmed": "是，删除此配置文件"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "选择激活的配置文件",
+        "description": "选择哪个日程配置文件处于激活状态。“默认”使用日程设置中配置的日程。",
+        "data": {
+          "active_lifecycle_profile_id": "激活的配置文件"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。"
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading 系统条目没有可配置的选项。"
+      "no_options_for_system_entry": "SmartShading 系统条目没有可配置的选项。",
+      "no_lifecycle_profiles": "尚未创建任何日程配置文件。请先添加一个。",
+      "lifecycle_profile_not_found": "未找到此日程配置文件。它可能已被删除。"
     }
   },
   "config": {

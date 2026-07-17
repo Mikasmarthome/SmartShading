@@ -12,7 +12,8 @@
           "behavior": "Solskyddsbeteende",
           "add_window": "Lägg till fönster",
           "edit_window": "Redigera fönster",
-          "remove_window": "Ta bort fönster"
+          "remove_window": "Ta bort fönster",
+          "lifecycle_profiles": "Schemaprofiler"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Ja, ta bort det här fönstret"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Schemaprofiler",
+        "description": "Hantera namngivna scheman och välj vilket som är aktivt.",
+        "menu_options": {
+          "add_lifecycle_profile": "Lägg till profil",
+          "edit_lifecycle_profile": "Redigera profil",
+          "remove_lifecycle_profile": "Ta bort profil",
+          "select_active_lifecycle_profile": "Välj aktiv profil"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Lägg till schemaprofil",
+        "description": "Skapar ett nytt namngivet schema. Det fungerar precis som huvudschemainställningarna, men gäller först när det väljs som aktiv profil.",
+        "data": {
+          "profile_display_name": "Profilnamn",
+          "night_trigger": "Nattutlösare",
+          "morning_trigger": "Morgonutlösare",
+          "night_fixed_time": "Nattid",
+          "night_sun_elevation": "Anpassad natthöjd (°) — används endast när Anpassad är vald",
+          "morning_fixed_time": "Morgontid",
+          "morning_sun_elevation": "Anpassad morgonhöjd (°) — används endast när Anpassad är vald",
+          "night_position": "Nattposition",
+          "morning_position": "Morgonposition",
+          "active_months": "Aktiva månader (avancerat)",
+          "night_sun_event": "Nattens solhändelse (valfri)",
+          "morning_sun_event": "Morgonens solhändelse (valfri)",
+          "night_not_before": "Natt: tidigaste utlösare (valfri)",
+          "night_not_after": "Natt: senaste utlösare (valfri)",
+          "morning_not_before": "Morgon: tidigaste utlösare (valfri)",
+          "morning_not_after": "Morgon: senaste utlösare (valfri)",
+          "schedule_mode": "Schemaläge",
+          "weekday_night_fixed_time": "Nattid på vardagar (mån–fre)",
+          "weekday_night_position": "Nattposition på vardagar (mån–fre)",
+          "weekday_morning_fixed_time": "Morgontid på vardagar (mån–fre)",
+          "weekday_morning_position": "Morgonposition på vardagar (mån–fre)",
+          "weekend_night_fixed_time": "Nattid på helgen (lör–sön)",
+          "weekend_night_position": "Nattposition på helgen (lör–sön)",
+          "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
+          "weekend_morning_position": "Morgonposition på helgen (lör–sön)"
+        },
+        "data_description": {
+          "active_months": "Lämna tomt för att tillämpa detta schema varje månad. Välj specifika månader för att begränsa det — till exempel september till mars för ett vinterschema.",
+          "night_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse natt-tiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse morgontiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "night_not_before": "Valfritt. Om den beräknade nattutlösaren skulle inträffa tidigare än denna tid skjuts den upp till denna tid istället.",
+          "night_not_after": "Valfritt. Om den beräknade nattutlösaren skulle inträffa senare än denna tid tidigareläggs den till denna tid istället.",
+          "morning_not_before": "Valfritt. Om den beräknade morgonutlösaren skulle inträffa tidigare än denna tid skjuts den upp till denna tid istället.",
+          "morning_not_after": "Valfritt. Om den beräknade morgonutlösaren skulle inträffa senare än denna tid tidigareläggs den till denna tid istället.",
+          "schedule_mode": "\"Lika varje dag\" använder ett schema för hela veckan. \"Vardag / Helg\" låter dig ange olika tider och positioner för mån–fre och lör–sön."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Redigera schemaprofil",
+        "description": "Välj vilken profil som ska redigeras.",
+        "data": {
+          "profile_id": "Profil"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Redigera schemaprofil",
+        "description": "Uppdatera schemat för denna profil.",
+        "data": {
+          "profile_display_name": "Profilnamn",
+          "night_trigger": "Nattutlösare",
+          "morning_trigger": "Morgonutlösare",
+          "night_fixed_time": "Nattid",
+          "night_sun_elevation": "Anpassad natthöjd (°) — används endast när Anpassad är vald",
+          "morning_fixed_time": "Morgontid",
+          "morning_sun_elevation": "Anpassad morgonhöjd (°) — används endast när Anpassad är vald",
+          "night_position": "Nattposition",
+          "morning_position": "Morgonposition",
+          "active_months": "Aktiva månader (avancerat)",
+          "night_sun_event": "Nattens solhändelse (valfri)",
+          "morning_sun_event": "Morgonens solhändelse (valfri)",
+          "night_not_before": "Natt: tidigaste utlösare (valfri)",
+          "night_not_after": "Natt: senaste utlösare (valfri)",
+          "morning_not_before": "Morgon: tidigaste utlösare (valfri)",
+          "morning_not_after": "Morgon: senaste utlösare (valfri)",
+          "schedule_mode": "Schemaläge",
+          "weekday_night_fixed_time": "Nattid på vardagar (mån–fre)",
+          "weekday_night_position": "Nattposition på vardagar (mån–fre)",
+          "weekday_morning_fixed_time": "Morgontid på vardagar (mån–fre)",
+          "weekday_morning_position": "Morgonposition på vardagar (mån–fre)",
+          "weekend_night_fixed_time": "Nattid på helgen (lör–sön)",
+          "weekend_night_position": "Nattposition på helgen (lör–sön)",
+          "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
+          "weekend_morning_position": "Morgonposition på helgen (lör–sön)"
+        },
+        "data_description": {
+          "active_months": "Lämna tomt för att tillämpa detta schema varje månad. Välj specifika månader för att begränsa det — till exempel september till mars för ett vinterschema.",
+          "night_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse natt-tiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse morgontiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "night_not_before": "Valfritt. Om den beräknade nattutlösaren skulle inträffa tidigare än denna tid skjuts den upp till denna tid istället.",
+          "night_not_after": "Valfritt. Om den beräknade nattutlösaren skulle inträffa senare än denna tid tidigareläggs den till denna tid istället.",
+          "morning_not_before": "Valfritt. Om den beräknade morgonutlösaren skulle inträffa tidigare än denna tid skjuts den upp till denna tid istället.",
+          "morning_not_after": "Valfritt. Om den beräknade morgonutlösaren skulle inträffa senare än denna tid tidigareläggs den till denna tid istället.",
+          "schedule_mode": "\"Lika varje dag\" använder ett schema för hela veckan. \"Vardag / Helg\" låter dig ange olika tider och positioner för mån–fre och lör–sön."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Ta bort schemaprofil",
+        "description": "Välj profilen som ska tas bort. Detta kan inte ångras.",
+        "data": {
+          "profile_id": "Profil att ta bort"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Bekräfta borttagning",
+        "description": "Ta bort profilen \"{profile_name}\"? Detta kan inte ångras. Om detta är den aktiva profilen används standardschemat igen.",
+        "data": {
+          "remove_confirmed": "Ja, ta bort denna profil"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Välj aktiv profil",
+        "description": "Välj vilken schemaprofil som är aktiv. \"Standard\" använder schemat från schemainställningarna.",
+        "data": {
+          "active_lifecycle_profile_id": "Aktiv profil"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading-systemposten har inga konfigurerbara alternativ."
+      "no_options_for_system_entry": "SmartShading-systemposten har inga konfigurerbara alternativ.",
+      "no_lifecycle_profiles": "Inga schemaprofiler har skapats än. Lägg till en först.",
+      "lifecycle_profile_not_found": "Denna schemaprofil kunde inte hittas. Den kan ha tagits bort."
     }
   },
   "config": {

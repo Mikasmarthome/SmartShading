@@ -12,7 +12,8 @@
           "behavior": "Afskærmningsadfærd",
           "add_window": "Tilføj vindue",
           "edit_window": "Rediger vindue",
-          "remove_window": "Fjern vindue"
+          "remove_window": "Fjern vindue",
+          "lifecycle_profiles": "Skemaprofiler"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Ja, fjern dette vindue"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Skemaprofiler",
+        "description": "Administrer navngivne skemaer, og vælg hvilket der er aktivt.",
+        "menu_options": {
+          "add_lifecycle_profile": "Tilføj profil",
+          "edit_lifecycle_profile": "Rediger profil",
+          "remove_lifecycle_profile": "Fjern profil",
+          "select_active_lifecycle_profile": "Vælg aktiv profil"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Tilføj skemaprofil",
+        "description": "Opretter et nyt navngivet skema. Det fungerer præcis som hovedskemaindstillingerne, men gælder først, når det vælges som aktiv profil.",
+        "data": {
+          "profile_display_name": "Profilnavn",
+          "night_trigger": "Natudløser",
+          "morning_trigger": "Morgenudløser",
+          "night_fixed_time": "Nattidspunkt",
+          "night_sun_elevation": "Tilpasset nathøjde (°) — bruges kun, når Tilpasset er valgt",
+          "morning_fixed_time": "Morgentidspunkt",
+          "morning_sun_elevation": "Tilpasset morgenhøjde (°) — bruges kun, når Tilpasset er valgt",
+          "night_position": "Natposition",
+          "morning_position": "Morgenposition",
+          "active_months": "Aktive måneder (avanceret)",
+          "night_sun_event": "Nattens solbegivenhed (valgfri)",
+          "morning_sun_event": "Morgenens solbegivenhed (valgfri)",
+          "night_not_before": "Nat: tidligste udløser (valgfri)",
+          "night_not_after": "Nat: seneste udløser (valgfri)",
+          "morning_not_before": "Morgen: tidligste udløser (valgfri)",
+          "morning_not_after": "Morgen: seneste udløser (valgfri)",
+          "schedule_mode": "Tidsplantilstand",
+          "weekday_night_fixed_time": "Nattidspunkt på hverdage (man–fre)",
+          "weekday_night_position": "Natposition på hverdage (man–fre)",
+          "weekday_morning_fixed_time": "Morgentidspunkt på hverdage (man–fre)",
+          "weekday_morning_position": "Morgenposition på hverdage (man–fre)",
+          "weekend_night_fixed_time": "Nattidspunkt i weekenden (lør–søn)",
+          "weekend_night_position": "Natposition i weekenden (lør–søn)",
+          "weekend_morning_fixed_time": "Morgentidspunkt i weekenden (lør–søn)",
+          "weekend_morning_position": "Morgenposition i weekenden (lør–søn)"
+        },
+        "data_description": {
+          "active_months": "Lad stå tomt for at anvende denne tidsplan hver måned. Vælg bestemte måneder for at begrænse den — f.eks. september til marts for en vinterplan.",
+          "night_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed nattetidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
+          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
+          "night_not_before": "Valgfrit. Hvis den beregnede natudløser ville indtræffe tidligere end dette tidspunkt, udskydes den til dette tidspunkt i stedet.",
+          "night_not_after": "Valgfrit. Hvis den beregnede natudløser ville indtræffe senere end dette tidspunkt, fremrükkes den til dette tidspunkt i stedet.",
+          "morning_not_before": "Valgfrit. Hvis den beregnede morgenudløser ville indtræffe tidligere end dette tidspunkt, udskydes den til dette tidspunkt i stedet.",
+          "morning_not_after": "Valgfrit. Hvis den beregnede morgenudløser ville indtræffe senere end dette tidspunkt, fremrükkes den til dette tidspunkt i stedet.",
+          "schedule_mode": "\"Ens hver dag\" bruger én tidsplan for hele ugen. \"Hverdag / Weekend\" lader dig angive forskellige tidspunkter og positioner for man–fre og lør–søn."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Rediger skemaprofil",
+        "description": "Vælg hvilken profil der skal redigeres.",
+        "data": {
+          "profile_id": "Profil"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Rediger skemaprofil",
+        "description": "Opdater denne profils skema.",
+        "data": {
+          "profile_display_name": "Profilnavn",
+          "night_trigger": "Natudløser",
+          "morning_trigger": "Morgenudløser",
+          "night_fixed_time": "Nattidspunkt",
+          "night_sun_elevation": "Tilpasset nathøjde (°) — bruges kun, når Tilpasset er valgt",
+          "morning_fixed_time": "Morgentidspunkt",
+          "morning_sun_elevation": "Tilpasset morgenhøjde (°) — bruges kun, når Tilpasset er valgt",
+          "night_position": "Natposition",
+          "morning_position": "Morgenposition",
+          "active_months": "Aktive måneder (avanceret)",
+          "night_sun_event": "Nattens solbegivenhed (valgfri)",
+          "morning_sun_event": "Morgenens solbegivenhed (valgfri)",
+          "night_not_before": "Nat: tidligste udløser (valgfri)",
+          "night_not_after": "Nat: seneste udløser (valgfri)",
+          "morning_not_before": "Morgen: tidligste udløser (valgfri)",
+          "morning_not_after": "Morgen: seneste udløser (valgfri)",
+          "schedule_mode": "Tidsplantilstand",
+          "weekday_night_fixed_time": "Nattidspunkt på hverdage (man–fre)",
+          "weekday_night_position": "Natposition på hverdage (man–fre)",
+          "weekday_morning_fixed_time": "Morgentidspunkt på hverdage (man–fre)",
+          "weekday_morning_position": "Morgenposition på hverdage (man–fre)",
+          "weekend_night_fixed_time": "Nattidspunkt i weekenden (lør–søn)",
+          "weekend_night_position": "Natposition i weekenden (lør–søn)",
+          "weekend_morning_fixed_time": "Morgentidspunkt i weekenden (lør–søn)",
+          "weekend_morning_position": "Morgenposition i weekenden (lør–søn)"
+        },
+        "data_description": {
+          "active_months": "Lad stå tomt for at anvende denne tidsplan hver måned. Vælg bestemte måneder for at begrænse den — f.eks. september til marts for en vinterplan.",
+          "night_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed nattetidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
+          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
+          "night_not_before": "Valgfrit. Hvis den beregnede natudløser ville indtræffe tidligere end dette tidspunkt, udskydes den til dette tidspunkt i stedet.",
+          "night_not_after": "Valgfrit. Hvis den beregnede natudløser ville indtræffe senere end dette tidspunkt, fremrükkes den til dette tidspunkt i stedet.",
+          "morning_not_before": "Valgfrit. Hvis den beregnede morgenudløser ville indtræffe tidligere end dette tidspunkt, udskydes den til dette tidspunkt i stedet.",
+          "morning_not_after": "Valgfrit. Hvis den beregnede morgenudløser ville indtræffe senere end dette tidspunkt, fremrükkes den til dette tidspunkt i stedet.",
+          "schedule_mode": "\"Ens hver dag\" bruger én tidsplan for hele ugen. \"Hverdag / Weekend\" lader dig angive forskellige tidspunkter og positioner for man–fre og lør–søn."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Fjern skemaprofil",
+        "description": "Vælg profilen der skal fjernes. Dette kan ikke fortrydes.",
+        "data": {
+          "profile_id": "Profil der skal fjernes"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Bekræft fjernelse",
+        "description": "Fjern profilen \"{profile_name}\"? Dette kan ikke fortrydes. Hvis dette er den aktive profil, bruges standardskemaet igen.",
+        "data": {
+          "remove_confirmed": "Ja, fjern denne profil"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Vælg aktiv profil",
+        "description": "Vælg hvilken skemaprofil der er aktiv. \"Standard\" bruger skemaet fra skemaindstillingerne.",
+        "data": {
+          "active_lifecycle_profile_id": "Aktiv profil"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "Tidligste morgenudløser må ikke være senere end seneste."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading-systemposten har ingen konfigurerbare indstillinger."
+      "no_options_for_system_entry": "SmartShading-systemposten har ingen konfigurerbare indstillinger.",
+      "no_lifecycle_profiles": "Der er endnu ikke oprettet nogen skemaprofiler. Tilføj en først.",
+      "lifecycle_profile_not_found": "Denne skemaprofil blev ikke fundet. Den er muligvis blevet fjernet."
     }
   },
   "config": {

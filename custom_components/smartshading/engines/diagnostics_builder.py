@@ -208,6 +208,29 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
             "absence_active": getattr(c, "_cycle_absence_active", None),
         }
 
+    def _lifecycle_profile_summary():
+        # PUBLIC: profile system state + resolution provenance only — NO
+        # profile display names (free text a user could set to anything,
+        # e.g. an address), no full profile contents/schedules, and (T6
+        # pre-push review correction) no raw profile_id either: even though
+        # it is a generated uuid4 hex rather than personally identifying, it
+        # is internal technical context with no concrete diagnostic value on
+        # its own (a support reader can't act on an opaque id), and for the
+        # "fallback" case it would echo back a STALE/unknown id from
+        # corrupted storage — actively confusing rather than useful.
+        # active_profile_selected (a plain bool) already answers everything
+        # a diagnostics reader needs: "is a specific profile in effect right
+        # now, or is this the legacy config".
+        source = getattr(c, "_lifecycle_profile_source", "legacy")
+        count = getattr(c, "_lifecycle_profile_count", 0)
+        active_id = getattr(c, "_active_lifecycle_profile_id", None)
+        return {
+            "enabled": count > 0,
+            "profile_count": count,
+            "active_profile_selected": active_id is not None,
+            "source": source,  # "legacy" | "stored" | "fallback"
+        }
+
     def _learning_authority_summary():
         # PUBLIC: learning-authority counts + blocking-reason histogram (no ids).
         from .learning_trace_builder import build_learning_authority
@@ -249,6 +272,7 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         "system": _safe(_system, errors, "system"),
         "inputs_summary": _safe(_inputs_summary, errors, "inputs"),
         "presence_summary": _safe(_presence_summary, errors, "presence"),
+        "lifecycle_profile_summary": _safe(_lifecycle_profile_summary, errors, "lifecycle_profile"),
         "learning_authority_summary": _safe(
             _learning_authority_summary, errors, "learning_authority"),
         "decisions": _safe(_decisions, errors, "decisions"),

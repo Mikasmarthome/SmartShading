@@ -12,7 +12,8 @@
           "behavior": "Shading behavior",
           "add_window": "Add window",
           "edit_window": "Edit window",
-          "remove_window": "Remove window"
+          "remove_window": "Remove window",
+          "lifecycle_profiles": "Lifecycle profiles"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Yes, remove this window"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Lifecycle profiles",
+        "description": "Manage named lifecycle schedules and choose which one is currently active.",
+        "menu_options": {
+          "add_lifecycle_profile": "Add profile",
+          "edit_lifecycle_profile": "Edit profile",
+          "remove_lifecycle_profile": "Remove profile",
+          "select_active_lifecycle_profile": "Select active profile"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Add lifecycle profile",
+        "description": "Create a new named schedule. It behaves exactly like the main Schedule settings, but only applies once selected as the active profile.",
+        "data": {
+          "profile_display_name": "Profile name",
+          "night_trigger": "Night trigger",
+          "morning_trigger": "Morning trigger",
+          "night_fixed_time": "Night time",
+          "night_sun_elevation": "Custom night elevation (°) — only used when Custom is selected",
+          "morning_fixed_time": "Morning time",
+          "morning_sun_elevation": "Custom morning elevation (°) — only used when Custom is selected",
+          "night_position": "Night position",
+          "morning_position": "Morning position",
+          "active_months": "Active months (advanced)",
+          "night_sun_event": "Night sun event (optional)",
+          "morning_sun_event": "Morning sun event (optional)",
+          "night_not_before": "Night earliest trigger (optional)",
+          "night_not_after": "Night latest trigger (optional)",
+          "morning_not_before": "Morning earliest trigger (optional)",
+          "morning_not_after": "Morning latest trigger (optional)",
+          "schedule_mode": "Schedule mode",
+          "weekday_night_fixed_time": "Weekday night time (Mon–Fri)",
+          "weekday_night_position": "Weekday night position (Mon–Fri)",
+          "weekday_morning_fixed_time": "Weekday morning time (Mon–Fri)",
+          "weekday_morning_position": "Weekday morning position (Mon–Fri)",
+          "weekend_night_fixed_time": "Weekend night time (Sat–Sun)",
+          "weekend_night_position": "Weekend night position (Sat–Sun)",
+          "weekend_morning_fixed_time": "Weekend morning time (Sat–Sun)",
+          "weekend_morning_position": "Weekend morning position (Sat–Sun)"
+        },
+        "data_description": {
+          "active_months": "Leave empty to apply this schedule in every month. Select specific months to restrict it — for example September through March for a winter schedule.",
+          "night_sun_event": "Optional. If set, this astronomical event replaces the night time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "night_not_before": "Optional. If the resolved night trigger would occur earlier than this, it is delayed to this time instead.",
+          "night_not_after": "Optional. If the resolved night trigger would occur later than this, it is brought forward to this time instead.",
+          "morning_not_before": "Optional. If the resolved morning trigger would occur earlier than this, it is delayed to this time instead.",
+          "morning_not_after": "Optional. If the resolved morning trigger would occur later than this, it is brought forward to this time instead.",
+          "schedule_mode": "\"Same every day\" uses one schedule for the whole week. \"Weekday / Weekend\" lets you set different times and positions for Mon–Fri versus Sat–Sun."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Edit lifecycle profile",
+        "description": "Select which profile to edit.",
+        "data": {
+          "profile_id": "Profile"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Edit lifecycle profile",
+        "description": "Update this profile's schedule.",
+        "data": {
+          "profile_display_name": "Profile name",
+          "night_trigger": "Night trigger",
+          "morning_trigger": "Morning trigger",
+          "night_fixed_time": "Night time",
+          "night_sun_elevation": "Custom night elevation (°) — only used when Custom is selected",
+          "morning_fixed_time": "Morning time",
+          "morning_sun_elevation": "Custom morning elevation (°) — only used when Custom is selected",
+          "night_position": "Night position",
+          "morning_position": "Morning position",
+          "active_months": "Active months (advanced)",
+          "night_sun_event": "Night sun event (optional)",
+          "morning_sun_event": "Morning sun event (optional)",
+          "night_not_before": "Night earliest trigger (optional)",
+          "night_not_after": "Night latest trigger (optional)",
+          "morning_not_before": "Morning earliest trigger (optional)",
+          "morning_not_after": "Morning latest trigger (optional)",
+          "schedule_mode": "Schedule mode",
+          "weekday_night_fixed_time": "Weekday night time (Mon–Fri)",
+          "weekday_night_position": "Weekday night position (Mon–Fri)",
+          "weekday_morning_fixed_time": "Weekday morning time (Mon–Fri)",
+          "weekday_morning_position": "Weekday morning position (Mon–Fri)",
+          "weekend_night_fixed_time": "Weekend night time (Sat–Sun)",
+          "weekend_night_position": "Weekend night position (Sat–Sun)",
+          "weekend_morning_fixed_time": "Weekend morning time (Sat–Sun)",
+          "weekend_morning_position": "Weekend morning position (Sat–Sun)"
+        },
+        "data_description": {
+          "active_months": "Leave empty to apply this schedule in every month. Select specific months to restrict it — for example September through March for a winter schedule.",
+          "night_sun_event": "Optional. If set, this astronomical event replaces the night time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "night_not_before": "Optional. If the resolved night trigger would occur earlier than this, it is delayed to this time instead.",
+          "night_not_after": "Optional. If the resolved night trigger would occur later than this, it is brought forward to this time instead.",
+          "morning_not_before": "Optional. If the resolved morning trigger would occur earlier than this, it is delayed to this time instead.",
+          "morning_not_after": "Optional. If the resolved morning trigger would occur later than this, it is brought forward to this time instead.",
+          "schedule_mode": "\"Same every day\" uses one schedule for the whole week. \"Weekday / Weekend\" lets you set different times and positions for Mon–Fri versus Sat–Sun."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Remove lifecycle profile",
+        "description": "Select the profile to remove. This cannot be undone.",
+        "data": {
+          "profile_id": "Profile to remove"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Confirm removal",
+        "description": "Remove profile \"{profile_name}\"? This cannot be undone. If this is the active profile, the schedule falls back to the legacy default.",
+        "data": {
+          "remove_confirmed": "Yes, remove this profile"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Select active profile",
+        "description": "Choose which lifecycle profile is active. \"Legacy default\" uses the schedule configured in Schedule settings.",
+        "data": {
+          "active_lifecycle_profile_id": "Active profile"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger."
     },
     "abort": {
-      "no_options_for_system_entry": "The SmartShading System entry has no configurable options."
+      "no_options_for_system_entry": "The SmartShading System entry has no configurable options.",
+      "no_lifecycle_profiles": "No lifecycle profiles have been created yet. Add one first.",
+      "lifecycle_profile_not_found": "This lifecycle profile could not be found. It may have been removed."
     }
   },
   "config": {

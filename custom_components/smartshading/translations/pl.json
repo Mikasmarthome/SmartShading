@@ -12,7 +12,8 @@
           "behavior": "Zachowanie zacieniania",
           "add_window": "Dodaj okno",
           "edit_window": "Edytuj okno",
-          "remove_window": "Usuń okno"
+          "remove_window": "Usuń okno",
+          "lifecycle_profiles": "Profile harmonogramu"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Tak, usuń to okno"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Profile harmonogramu",
+        "description": "Zarządzaj nazwanymi harmonogramami i wybierz, który jest aktywny.",
+        "menu_options": {
+          "add_lifecycle_profile": "Dodaj profil",
+          "edit_lifecycle_profile": "Edytuj profil",
+          "remove_lifecycle_profile": "Usuń profil",
+          "select_active_lifecycle_profile": "Wybierz aktywny profil"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Dodaj profil harmonogramu",
+        "description": "Tworzy nowy nazwany harmonogram. Działa dokładnie tak jak główne ustawienia harmonogramu, ale obowiązuje dopiero po wybraniu jako aktywny profil.",
+        "data": {
+          "profile_display_name": "Nazwa profilu",
+          "night_trigger": "Wyzwalacz nocy",
+          "morning_trigger": "Wyzwalacz poranka",
+          "night_fixed_time": "Czas nocy",
+          "night_sun_elevation": "Niestandardowa wysokość nocna (°) — używana tylko, gdy wybrano Niestandardowa",
+          "morning_fixed_time": "Czas poranka",
+          "morning_sun_elevation": "Niestandardowa wysokość poranna (°) — używana tylko, gdy wybrano Niestandardowa",
+          "night_position": "Pozycja nocna",
+          "morning_position": "Pozycja poranna",
+          "active_months": "Aktywne miesiące (zaawansowane)",
+          "night_sun_event": "Nocne zdarzenie słoneczne (opcjonalne)",
+          "morning_sun_event": "Poranne zdarzenie słoneczne (opcjonalne)",
+          "night_not_before": "Noc: najwcześniejszy wyzwalacz (opcjonalnie)",
+          "night_not_after": "Noc: najpóźniejszy wyzwalacz (opcjonalnie)",
+          "morning_not_before": "Rano: najwcześniejszy wyzwalacz (opcjonalnie)",
+          "morning_not_after": "Rano: najpóźniejszy wyzwalacz (opcjonalnie)",
+          "schedule_mode": "Tryb harmonogramu",
+          "weekday_night_fixed_time": "Czas nocy w dni robocze (pon–pt)",
+          "weekday_night_position": "Pozycja nocna w dni robocze (pon–pt)",
+          "weekday_morning_fixed_time": "Czas poranka w dni robocze (pon–pt)",
+          "weekday_morning_position": "Pozycja poranna w dni robocze (pon–pt)",
+          "weekend_night_fixed_time": "Czas nocy w weekend (sob–niedz)",
+          "weekend_night_position": "Pozycja nocna w weekend (sob–niedz)",
+          "weekend_morning_fixed_time": "Czas poranka w weekend (sob–niedz)",
+          "weekend_morning_position": "Pozycja poranna w weekend (sob–niedz)"
+        },
+        "data_description": {
+          "active_months": "Pozostaw puste, aby ten harmonogram obowiązywał w każdym miesiącu. Wybierz konkretne miesiące, aby go ograniczyć — na przykład od września do marca dla harmonogramu zimowego.",
+          "night_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas nocny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
+          "morning_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas poranny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
+          "night_not_before": "Opcjonalne. Jeśli rozwiązany wyzwalacz nocny wypadałby wcześniej niż ta godzina, zostanie opóźniony do tej godziny.",
+          "night_not_after": "Opcjonalne. Jeśli rozwiązany wyzwalacz nocny wypadałby później niż ta godzina, zostanie przesunięty na tę godzinę.",
+          "morning_not_before": "Opcjonalne. Jeśli rozwiązany wyzwalacz poranny wypadałby wcześniej niż ta godzina, zostanie opóźniony do tej godziny.",
+          "morning_not_after": "Opcjonalne. Jeśli rozwiązany wyzwalacz poranny wypadałby później niż ta godzina, zostanie przesunięty na tę godzinę.",
+          "schedule_mode": "„Tak samo każdego dnia” używa jednego harmonogramu dla całego tygodnia. „Dni robocze / Weekend” pozwala ustawić różne godziny i pozycje dla pon–pt oraz sob–niedz."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Edytuj profil harmonogramu",
+        "description": "Wybierz profil do edycji.",
+        "data": {
+          "profile_id": "Profil"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Edytuj profil harmonogramu",
+        "description": "Zaktualizuj harmonogram tego profilu.",
+        "data": {
+          "profile_display_name": "Nazwa profilu",
+          "night_trigger": "Wyzwalacz nocy",
+          "morning_trigger": "Wyzwalacz poranka",
+          "night_fixed_time": "Czas nocy",
+          "night_sun_elevation": "Niestandardowa wysokość nocna (°) — używana tylko, gdy wybrano Niestandardowa",
+          "morning_fixed_time": "Czas poranka",
+          "morning_sun_elevation": "Niestandardowa wysokość poranna (°) — używana tylko, gdy wybrano Niestandardowa",
+          "night_position": "Pozycja nocna",
+          "morning_position": "Pozycja poranna",
+          "active_months": "Aktywne miesiące (zaawansowane)",
+          "night_sun_event": "Nocne zdarzenie słoneczne (opcjonalne)",
+          "morning_sun_event": "Poranne zdarzenie słoneczne (opcjonalne)",
+          "night_not_before": "Noc: najwcześniejszy wyzwalacz (opcjonalnie)",
+          "night_not_after": "Noc: najpóźniejszy wyzwalacz (opcjonalnie)",
+          "morning_not_before": "Rano: najwcześniejszy wyzwalacz (opcjonalnie)",
+          "morning_not_after": "Rano: najpóźniejszy wyzwalacz (opcjonalnie)",
+          "schedule_mode": "Tryb harmonogramu",
+          "weekday_night_fixed_time": "Czas nocy w dni robocze (pon–pt)",
+          "weekday_night_position": "Pozycja nocna w dni robocze (pon–pt)",
+          "weekday_morning_fixed_time": "Czas poranka w dni robocze (pon–pt)",
+          "weekday_morning_position": "Pozycja poranna w dni robocze (pon–pt)",
+          "weekend_night_fixed_time": "Czas nocy w weekend (sob–niedz)",
+          "weekend_night_position": "Pozycja nocna w weekend (sob–niedz)",
+          "weekend_morning_fixed_time": "Czas poranka w weekend (sob–niedz)",
+          "weekend_morning_position": "Pozycja poranna w weekend (sob–niedz)"
+        },
+        "data_description": {
+          "active_months": "Pozostaw puste, aby ten harmonogram obowiązywał w każdym miesiącu. Wybierz konkretne miesiące, aby go ograniczyć — na przykład od września do marca dla harmonogramu zimowego.",
+          "night_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas nocny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
+          "morning_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas poranny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
+          "night_not_before": "Opcjonalne. Jeśli rozwiązany wyzwalacz nocny wypadałby wcześniej niż ta godzina, zostanie opóźniony do tej godziny.",
+          "night_not_after": "Opcjonalne. Jeśli rozwiązany wyzwalacz nocny wypadałby później niż ta godzina, zostanie przesunięty na tę godzinę.",
+          "morning_not_before": "Opcjonalne. Jeśli rozwiązany wyzwalacz poranny wypadałby wcześniej niż ta godzina, zostanie opóźniony do tej godziny.",
+          "morning_not_after": "Opcjonalne. Jeśli rozwiązany wyzwalacz poranny wypadałby później niż ta godzina, zostanie przesunięty na tę godzinę.",
+          "schedule_mode": "„Tak samo każdego dnia” używa jednego harmonogramu dla całego tygodnia. „Dni robocze / Weekend” pozwala ustawić różne godziny i pozycje dla pon–pt oraz sob–niedz."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Usuń profil harmonogramu",
+        "description": "Wybierz profil do usunięcia. Tej operacji nie można cofnąć.",
+        "data": {
+          "profile_id": "Profil do usunięcia"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Potwierdź usunięcie",
+        "description": "Usunąć profil „{profile_name}”? Tej operacji nie można cofnąć. Jeśli jest to aktywny profil, zostanie przywrócony domyślny harmonogram.",
+        "data": {
+          "remove_confirmed": "Tak, usuń ten profil"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Wybierz aktywny profil",
+        "description": "Wybierz, który profil harmonogramu jest aktywny. „Domyślny” używa harmonogramu z ustawień harmonogramu.",
+        "data": {
+          "active_lifecycle_profile_id": "Aktywny profil"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy."
     },
     "abort": {
-      "no_options_for_system_entry": "Wpis systemowy SmartShading nie ma konfigurowalnych opcji."
+      "no_options_for_system_entry": "Wpis systemowy SmartShading nie ma konfigurowalnych opcji.",
+      "no_lifecycle_profiles": "Nie utworzono jeszcze żadnego profilu harmonogramu. Najpierw dodaj jeden.",
+      "lifecycle_profile_not_found": "Nie znaleziono tego profilu harmonogramu. Mógł zostać usunięty."
     }
   },
   "config": {

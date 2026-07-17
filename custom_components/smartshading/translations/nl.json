@@ -12,7 +12,8 @@
           "behavior": "Zonweringsgedrag",
           "add_window": "Venster toevoegen",
           "edit_window": "Venster bewerken",
-          "remove_window": "Venster verwijderen"
+          "remove_window": "Venster verwijderen",
+          "lifecycle_profiles": "Schemaprofielen"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Ja, verwijder dit venster"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Schemaprofielen",
+        "description": "Beheer benoemde schema's en kies welk profiel actief is.",
+        "menu_options": {
+          "add_lifecycle_profile": "Profiel toevoegen",
+          "edit_lifecycle_profile": "Profiel bewerken",
+          "remove_lifecycle_profile": "Profiel verwijderen",
+          "select_active_lifecycle_profile": "Actief profiel selecteren"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Schemaprofiel toevoegen",
+        "description": "Maakt een nieuw benoemd schema aan. Het werkt precies zoals de hoofdschema-instellingen, maar geldt pas zodra het als actief profiel is geselecteerd.",
+        "data": {
+          "profile_display_name": "Profielnaam",
+          "night_trigger": "Nachttrigger",
+          "morning_trigger": "Ochtendtrigger",
+          "night_fixed_time": "Nachttijd",
+          "night_sun_elevation": "Aangepaste nachthoogte (°) — alleen gebruikt wanneer Aangepast is geselecteerd",
+          "morning_fixed_time": "Ochtendtijd",
+          "morning_sun_elevation": "Aangepaste ochtendhoogte (°) — alleen gebruikt wanneer Aangepast is geselecteerd",
+          "night_position": "Nachtpositie",
+          "morning_position": "Ochtendpositie",
+          "active_months": "Actieve maanden (geavanceerd)",
+          "night_sun_event": "Nachtelijke zonsgebeurtenis (optioneel)",
+          "morning_sun_event": "Ochtendlijke zonsgebeurtenis (optioneel)",
+          "night_not_before": "Nacht: vroegste trigger (optioneel)",
+          "night_not_after": "Nacht: laatste trigger (optioneel)",
+          "morning_not_before": "Ochtend: vroegste trigger (optioneel)",
+          "morning_not_after": "Ochtend: laatste trigger (optioneel)",
+          "schedule_mode": "Schemamodus",
+          "weekday_night_fixed_time": "Nachttijd doordeweeks (ma–vr)",
+          "weekday_night_position": "Nachtpositie doordeweeks (ma–vr)",
+          "weekday_morning_fixed_time": "Ochtendtijd doordeweeks (ma–vr)",
+          "weekday_morning_position": "Ochtendpositie doordeweeks (ma–vr)",
+          "weekend_night_fixed_time": "Nachttijd in het weekend (za–zo)",
+          "weekend_night_position": "Nachtpositie in het weekend (za–zo)",
+          "weekend_morning_fixed_time": "Ochtendtijd in het weekend (za–zo)",
+          "weekend_morning_position": "Ochtendpositie in het weekend (za–zo)"
+        },
+        "data_description": {
+          "active_months": "Laat leeg om dit schema elke maand toe te passen. Selecteer specifieke maanden om het te beperken — bijvoorbeeld september tot en met maart voor een winterschema.",
+          "night_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande nachttijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
+          "morning_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande ochtendtijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
+          "night_not_before": "Optioneel. Als de opgeloste nachttrigger eerder dan dit tijdstip zou vallen, wordt deze in plaats daarvan uitgesteld tot dit tijdstip.",
+          "night_not_after": "Optioneel. Als de opgeloste nachttrigger later dan dit tijdstip zou vallen, wordt deze in plaats daarvan vervroegd naar dit tijdstip.",
+          "morning_not_before": "Optioneel. Als de opgeloste ochtendtrigger eerder dan dit tijdstip zou vallen, wordt deze in plaats daarvan uitgesteld tot dit tijdstip.",
+          "morning_not_after": "Optioneel. Als de opgeloste ochtendtrigger later dan dit tijdstip zou vallen, wordt deze in plaats daarvan vervroegd naar dit tijdstip.",
+          "schedule_mode": "\"Elke dag hetzelfde\" gebruikt één schema voor de hele week. \"Doordeweeks / Weekend\" laat je verschillende tijden en posities instellen voor ma–vr en za–zo."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Schemaprofiel bewerken",
+        "description": "Selecteer welk profiel u wilt bewerken.",
+        "data": {
+          "profile_id": "Profiel"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Schemaprofiel bewerken",
+        "description": "Werk het schema van dit profiel bij.",
+        "data": {
+          "profile_display_name": "Profielnaam",
+          "night_trigger": "Nachttrigger",
+          "morning_trigger": "Ochtendtrigger",
+          "night_fixed_time": "Nachttijd",
+          "night_sun_elevation": "Aangepaste nachthoogte (°) — alleen gebruikt wanneer Aangepast is geselecteerd",
+          "morning_fixed_time": "Ochtendtijd",
+          "morning_sun_elevation": "Aangepaste ochtendhoogte (°) — alleen gebruikt wanneer Aangepast is geselecteerd",
+          "night_position": "Nachtpositie",
+          "morning_position": "Ochtendpositie",
+          "active_months": "Actieve maanden (geavanceerd)",
+          "night_sun_event": "Nachtelijke zonsgebeurtenis (optioneel)",
+          "morning_sun_event": "Ochtendlijke zonsgebeurtenis (optioneel)",
+          "night_not_before": "Nacht: vroegste trigger (optioneel)",
+          "night_not_after": "Nacht: laatste trigger (optioneel)",
+          "morning_not_before": "Ochtend: vroegste trigger (optioneel)",
+          "morning_not_after": "Ochtend: laatste trigger (optioneel)",
+          "schedule_mode": "Schemamodus",
+          "weekday_night_fixed_time": "Nachttijd doordeweeks (ma–vr)",
+          "weekday_night_position": "Nachtpositie doordeweeks (ma–vr)",
+          "weekday_morning_fixed_time": "Ochtendtijd doordeweeks (ma–vr)",
+          "weekday_morning_position": "Ochtendpositie doordeweeks (ma–vr)",
+          "weekend_night_fixed_time": "Nachttijd in het weekend (za–zo)",
+          "weekend_night_position": "Nachtpositie in het weekend (za–zo)",
+          "weekend_morning_fixed_time": "Ochtendtijd in het weekend (za–zo)",
+          "weekend_morning_position": "Ochtendpositie in het weekend (za–zo)"
+        },
+        "data_description": {
+          "active_months": "Laat leeg om dit schema elke maand toe te passen. Selecteer specifieke maanden om het te beperken — bijvoorbeeld september tot en met maart voor een winterschema.",
+          "night_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande nachttijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
+          "morning_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande ochtendtijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
+          "night_not_before": "Optioneel. Als de opgeloste nachttrigger eerder dan dit tijdstip zou vallen, wordt deze in plaats daarvan uitgesteld tot dit tijdstip.",
+          "night_not_after": "Optioneel. Als de opgeloste nachttrigger later dan dit tijdstip zou vallen, wordt deze in plaats daarvan vervroegd naar dit tijdstip.",
+          "morning_not_before": "Optioneel. Als de opgeloste ochtendtrigger eerder dan dit tijdstip zou vallen, wordt deze in plaats daarvan uitgesteld tot dit tijdstip.",
+          "morning_not_after": "Optioneel. Als de opgeloste ochtendtrigger later dan dit tijdstip zou vallen, wordt deze in plaats daarvan vervroegd naar dit tijdstip.",
+          "schedule_mode": "\"Elke dag hetzelfde\" gebruikt één schema voor de hele week. \"Doordeweeks / Weekend\" laat je verschillende tijden en posities instellen voor ma–vr en za–zo."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Schemaprofiel verwijderen",
+        "description": "Selecteer het te verwijderen profiel. Dit kan niet ongedaan worden gemaakt.",
+        "data": {
+          "profile_id": "Te verwijderen profiel"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Verwijderen bevestigen",
+        "description": "Profiel \"{profile_name}\" verwijderen? Dit kan niet ongedaan worden gemaakt. Als dit het actieve profiel is, wordt het standaardschema weer gebruikt.",
+        "data": {
+          "remove_confirmed": "Ja, verwijder dit profiel"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Actief profiel selecteren",
+        "description": "Kies welk schemaprofiel actief is. \"Standaard\" gebruikt het schema uit de schema-instellingen.",
+        "data": {
+          "active_lifecycle_profile_id": "Actief profiel"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste."
     },
     "abort": {
-      "no_options_for_system_entry": "De SmartShading-systeeminvoer heeft geen configureerbare opties."
+      "no_options_for_system_entry": "De SmartShading-systeeminvoer heeft geen configureerbare opties.",
+      "no_lifecycle_profiles": "Er zijn nog geen schemaprofielen aangemaakt. Voeg er eerst een toe.",
+      "lifecycle_profile_not_found": "Dit schemaprofiel is niet gevonden. Het is mogelijk verwijderd."
     }
   },
   "config": {

@@ -12,7 +12,8 @@
           "behavior": "Comportament de umbrire",
           "add_window": "Adăugați fereastră",
           "edit_window": "Editați fereastra",
-          "remove_window": "Eliminați fereastra"
+          "remove_window": "Eliminați fereastra",
+          "lifecycle_profiles": "Profiluri de program"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Da, eliminați această fereastră"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Profiluri de program",
+        "description": "Gestionați programe denumite și alegeți care este activ.",
+        "menu_options": {
+          "add_lifecycle_profile": "Adaugă profil",
+          "edit_lifecycle_profile": "Editează profilul",
+          "remove_lifecycle_profile": "Elimină profilul",
+          "select_active_lifecycle_profile": "Selectează profilul activ"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Adaugă profil de program",
+        "description": "Creează un nou program denumit. Se comportă exact ca setările principale de program, dar se aplică doar când este selectat ca profil activ.",
+        "data": {
+          "profile_display_name": "Numele profilului",
+          "night_trigger": "Declanșator de noapte",
+          "morning_trigger": "Declanșator de dimineață",
+          "night_fixed_time": "Ora de noapte",
+          "night_sun_elevation": "Înălțime de noapte personalizată (°) — folosită doar când este selectat Personalizat",
+          "morning_fixed_time": "Ora de dimineață",
+          "morning_sun_elevation": "Înălțime de dimineață personalizată (°) — folosită doar când este selectat Personalizat",
+          "night_position": "Poziție de noapte",
+          "morning_position": "Poziție de dimineață",
+          "active_months": "Luni active (avansat)",
+          "night_sun_event": "Eveniment solar nocturn (opțional)",
+          "morning_sun_event": "Eveniment solar matinal (opțional)",
+          "night_not_before": "Noapte: declanșator cel mai devreme (opțional)",
+          "night_not_after": "Noapte: declanșator cel mai târziu (opțional)",
+          "morning_not_before": "Dimineață: declanșator cel mai devreme (opțional)",
+          "morning_not_after": "Dimineață: declanșator cel mai târziu (opțional)",
+          "schedule_mode": "Mod de program",
+          "weekday_night_fixed_time": "Ora de noapte în zilele lucrătoare (lun–vin)",
+          "weekday_night_position": "Poziție de noapte în zilele lucrătoare (lun–vin)",
+          "weekday_morning_fixed_time": "Ora de dimineață în zilele lucrătoare (lun–vin)",
+          "weekday_morning_position": "Poziție de dimineață în zilele lucrătoare (lun–vin)",
+          "weekend_night_fixed_time": "Ora de noapte în weekend (sâm–dum)",
+          "weekend_night_position": "Poziție de noapte în weekend (sâm–dum)",
+          "weekend_morning_fixed_time": "Ora de dimineață în weekend (sâm–dum)",
+          "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)"
+        },
+        "data_description": {
+          "active_months": "Lăsați necompletat pentru a aplica acest program în fiecare lună. Selectați anumite luni pentru a-l restricționa — de exemplu, din septembrie până în martie pentru un program de iarnă.",
+          "night_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de noapte de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "night_not_before": "Opțional. Dacă declanșatorul de noapte rezolvat ar surveni mai devreme decât această oră, este amânat până la această oră.",
+          "night_not_after": "Opțional. Dacă declanșatorul de noapte rezolvat ar surveni mai târziu decât această oră, este devansat la această oră.",
+          "morning_not_before": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai devreme decât această oră, este amânat până la această oră.",
+          "morning_not_after": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai târziu decât această oră, este devansat la această oră.",
+          "schedule_mode": "„La fel în fiecare zi” folosește un singur program pentru toată săptămâna. „Zi lucrătoare / Weekend” vă permite să setați ore și poziții diferite pentru lun–vin și sâm–dum."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Editează profilul de program",
+        "description": "Selectați profilul de editat.",
+        "data": {
+          "profile_id": "Profil"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Editează profilul de program",
+        "description": "Actualizați programul acestui profil.",
+        "data": {
+          "profile_display_name": "Numele profilului",
+          "night_trigger": "Declanșator de noapte",
+          "morning_trigger": "Declanșator de dimineață",
+          "night_fixed_time": "Ora de noapte",
+          "night_sun_elevation": "Înălțime de noapte personalizată (°) — folosită doar când este selectat Personalizat",
+          "morning_fixed_time": "Ora de dimineață",
+          "morning_sun_elevation": "Înălțime de dimineață personalizată (°) — folosită doar când este selectat Personalizat",
+          "night_position": "Poziție de noapte",
+          "morning_position": "Poziție de dimineață",
+          "active_months": "Luni active (avansat)",
+          "night_sun_event": "Eveniment solar nocturn (opțional)",
+          "morning_sun_event": "Eveniment solar matinal (opțional)",
+          "night_not_before": "Noapte: declanșator cel mai devreme (opțional)",
+          "night_not_after": "Noapte: declanșator cel mai târziu (opțional)",
+          "morning_not_before": "Dimineață: declanșator cel mai devreme (opțional)",
+          "morning_not_after": "Dimineață: declanșator cel mai târziu (opțional)",
+          "schedule_mode": "Mod de program",
+          "weekday_night_fixed_time": "Ora de noapte în zilele lucrătoare (lun–vin)",
+          "weekday_night_position": "Poziție de noapte în zilele lucrătoare (lun–vin)",
+          "weekday_morning_fixed_time": "Ora de dimineață în zilele lucrătoare (lun–vin)",
+          "weekday_morning_position": "Poziție de dimineață în zilele lucrătoare (lun–vin)",
+          "weekend_night_fixed_time": "Ora de noapte în weekend (sâm–dum)",
+          "weekend_night_position": "Poziție de noapte în weekend (sâm–dum)",
+          "weekend_morning_fixed_time": "Ora de dimineață în weekend (sâm–dum)",
+          "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)"
+        },
+        "data_description": {
+          "active_months": "Lăsați necompletat pentru a aplica acest program în fiecare lună. Selectați anumite luni pentru a-l restricționa — de exemplu, din septembrie până în martie pentru un program de iarnă.",
+          "night_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de noapte de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "night_not_before": "Opțional. Dacă declanșatorul de noapte rezolvat ar surveni mai devreme decât această oră, este amânat până la această oră.",
+          "night_not_after": "Opțional. Dacă declanșatorul de noapte rezolvat ar surveni mai târziu decât această oră, este devansat la această oră.",
+          "morning_not_before": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai devreme decât această oră, este amânat până la această oră.",
+          "morning_not_after": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai târziu decât această oră, este devansat la această oră.",
+          "schedule_mode": "„La fel în fiecare zi” folosește un singur program pentru toată săptămâna. „Zi lucrătoare / Weekend” vă permite să setați ore și poziții diferite pentru lun–vin și sâm–dum."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Elimină profilul de program",
+        "description": "Selectați profilul de eliminat. Această acțiune nu poate fi anulată.",
+        "data": {
+          "profile_id": "Profil de eliminat"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Confirmă eliminarea",
+        "description": "Eliminați profilul „{profile_name}”? Această acțiune nu poate fi anulată. Dacă este profilul activ, se va reveni la programul implicit.",
+        "data": {
+          "remove_confirmed": "Da, elimină acest profil"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Selectează profilul activ",
+        "description": "Alegeți care profil de program este activ. „Implicit” folosește programul configurat în setările de program.",
+        "data": {
+          "active_lifecycle_profile_id": "Profil activ"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu."
     },
     "abort": {
-      "no_options_for_system_entry": "Intrarea de Sistem SmartShading nu are opțiuni configurabile."
+      "no_options_for_system_entry": "Intrarea de Sistem SmartShading nu are opțiuni configurabile.",
+      "no_lifecycle_profiles": "Nu a fost creat încă niciun profil de program. Adăugați unul mai întâi.",
+      "lifecycle_profile_not_found": "Acest profil de program nu a putut fi găsit. Este posibil să fi fost eliminat."
     }
   },
   "config": {

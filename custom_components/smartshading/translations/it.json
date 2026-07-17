@@ -12,7 +12,8 @@
           "behavior": "Comportamento di ombreggiatura",
           "add_window": "Aggiungi finestra",
           "edit_window": "Modifica finestra",
-          "remove_window": "Rimuovi finestra"
+          "remove_window": "Rimuovi finestra",
+          "lifecycle_profiles": "Profili di programmazione"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Sì, rimuovi questa finestra"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Profili di programmazione",
+        "description": "Gestisci programmazioni denominate e scegli quale è attualmente attiva.",
+        "menu_options": {
+          "add_lifecycle_profile": "Aggiungi profilo",
+          "edit_lifecycle_profile": "Modifica profilo",
+          "remove_lifecycle_profile": "Rimuovi profilo",
+          "select_active_lifecycle_profile": "Seleziona profilo attivo"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Aggiungi profilo di programmazione",
+        "description": "Crea una nuova programmazione denominata. Si comporta esattamente come le impostazioni di programmazione principali, ma si applica solo se selezionata come profilo attivo.",
+        "data": {
+          "profile_display_name": "Nome profilo",
+          "night_trigger": "Trigger notturno",
+          "morning_trigger": "Trigger mattutino",
+          "night_fixed_time": "Ora notturna",
+          "night_sun_elevation": "Elevazione notturna personalizzata (°) — usata solo quando è selezionato Personalizzata",
+          "morning_fixed_time": "Ora mattutina",
+          "morning_sun_elevation": "Elevazione mattutina personalizzata (°) — usata solo quando è selezionato Personalizzata",
+          "night_position": "Posizione notturna",
+          "morning_position": "Posizione mattutina",
+          "active_months": "Mesi attivi (avanzato)",
+          "night_sun_event": "Evento solare notturno (opzionale)",
+          "morning_sun_event": "Evento solare mattutino (opzionale)",
+          "night_not_before": "Notte: attivazione più presto (opzionale)",
+          "night_not_after": "Notte: attivazione più tardi (opzionale)",
+          "morning_not_before": "Mattina: attivazione più presto (opzionale)",
+          "morning_not_after": "Mattina: attivazione più tardi (opzionale)",
+          "schedule_mode": "Modalità di programmazione",
+          "weekday_night_fixed_time": "Ora notturna nei giorni feriali (lun–ven)",
+          "weekday_night_position": "Posizione notturna nei giorni feriali (lun–ven)",
+          "weekday_morning_fixed_time": "Ora mattutina nei giorni feriali (lun–ven)",
+          "weekday_morning_position": "Posizione mattutina nei giorni feriali (lun–ven)",
+          "weekend_night_fixed_time": "Ora notturna nel fine settimana (sab–dom)",
+          "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)",
+          "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
+          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)"
+        },
+        "data_description": {
+          "active_months": "Lascia vuoto per applicare questa pianificazione ogni mese. Seleziona mesi specifici per limitarla — ad esempio da settembre a marzo per una pianificazione invernale.",
+          "night_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario notturno sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "night_not_before": "Opzionale. Se l'attivazione notturna risolta avvenisse prima di quest'ora, viene posticipata a quest'ora.",
+          "night_not_after": "Opzionale. Se l'attivazione notturna risolta avvenisse dopo quest'ora, viene anticipata a quest'ora.",
+          "morning_not_before": "Opzionale. Se l'attivazione mattutina risolta avvenisse prima di quest'ora, viene posticipata a quest'ora.",
+          "morning_not_after": "Opzionale. Se l'attivazione mattutina risolta avvenisse dopo quest'ora, viene anticipata a quest'ora.",
+          "schedule_mode": "«Uguale ogni giorno» usa un'unica programmazione per tutta la settimana. «Settimana / Fine settimana» consente orari e posizioni diverse per lun–ven e sab–dom."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Modifica profilo di programmazione",
+        "description": "Seleziona il profilo da modificare.",
+        "data": {
+          "profile_id": "Profilo"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Modifica profilo di programmazione",
+        "description": "Aggiorna la programmazione di questo profilo.",
+        "data": {
+          "profile_display_name": "Nome profilo",
+          "night_trigger": "Trigger notturno",
+          "morning_trigger": "Trigger mattutino",
+          "night_fixed_time": "Ora notturna",
+          "night_sun_elevation": "Elevazione notturna personalizzata (°) — usata solo quando è selezionato Personalizzata",
+          "morning_fixed_time": "Ora mattutina",
+          "morning_sun_elevation": "Elevazione mattutina personalizzata (°) — usata solo quando è selezionato Personalizzata",
+          "night_position": "Posizione notturna",
+          "morning_position": "Posizione mattutina",
+          "active_months": "Mesi attivi (avanzato)",
+          "night_sun_event": "Evento solare notturno (opzionale)",
+          "morning_sun_event": "Evento solare mattutino (opzionale)",
+          "night_not_before": "Notte: attivazione più presto (opzionale)",
+          "night_not_after": "Notte: attivazione più tardi (opzionale)",
+          "morning_not_before": "Mattina: attivazione più presto (opzionale)",
+          "morning_not_after": "Mattina: attivazione più tardi (opzionale)",
+          "schedule_mode": "Modalità di programmazione",
+          "weekday_night_fixed_time": "Ora notturna nei giorni feriali (lun–ven)",
+          "weekday_night_position": "Posizione notturna nei giorni feriali (lun–ven)",
+          "weekday_morning_fixed_time": "Ora mattutina nei giorni feriali (lun–ven)",
+          "weekday_morning_position": "Posizione mattutina nei giorni feriali (lun–ven)",
+          "weekend_night_fixed_time": "Ora notturna nel fine settimana (sab–dom)",
+          "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)",
+          "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
+          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)"
+        },
+        "data_description": {
+          "active_months": "Lascia vuoto per applicare questa pianificazione ogni mese. Seleziona mesi specifici per limitarla — ad esempio da settembre a marzo per una pianificazione invernale.",
+          "night_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario notturno sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "night_not_before": "Opzionale. Se l'attivazione notturna risolta avvenisse prima di quest'ora, viene posticipata a quest'ora.",
+          "night_not_after": "Opzionale. Se l'attivazione notturna risolta avvenisse dopo quest'ora, viene anticipata a quest'ora.",
+          "morning_not_before": "Opzionale. Se l'attivazione mattutina risolta avvenisse prima di quest'ora, viene posticipata a quest'ora.",
+          "morning_not_after": "Opzionale. Se l'attivazione mattutina risolta avvenisse dopo quest'ora, viene anticipata a quest'ora.",
+          "schedule_mode": "«Uguale ogni giorno» usa un'unica programmazione per tutta la settimana. «Settimana / Fine settimana» consente orari e posizioni diverse per lun–ven e sab–dom."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Rimuovi profilo di programmazione",
+        "description": "Seleziona il profilo da rimuovere. L'operazione non può essere annullata.",
+        "data": {
+          "profile_id": "Profilo da rimuovere"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Conferma rimozione",
+        "description": "Rimuovere il profilo \"{profile_name}\"? L'operazione non può essere annullata. Se è il profilo attivo, verrà ripristinata la programmazione predefinita.",
+        "data": {
+          "remove_confirmed": "Sì, rimuovi questo profilo"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Seleziona profilo attivo",
+        "description": "Scegli quale profilo di programmazione è attivo. \"Predefinito\" usa la programmazione configurata nelle impostazioni di programmazione.",
+        "data": {
+          "active_lifecycle_profile_id": "Profilo attivo"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "L'attivazione mattutina più presto non deve essere successiva a quella più tardi."
     },
     "abort": {
-      "no_options_for_system_entry": "La voce Sistema di SmartShading non ha opzioni configurabili."
+      "no_options_for_system_entry": "La voce Sistema di SmartShading non ha opzioni configurabili.",
+      "no_lifecycle_profiles": "Non è ancora stato creato alcun profilo di programmazione. Aggiungine uno prima.",
+      "lifecycle_profile_not_found": "Questo profilo di programmazione non è stato trovato. Potrebbe essere stato rimosso."
     }
   },
   "config": {

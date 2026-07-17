@@ -12,7 +12,8 @@
           "behavior": "Comportamento de sombreamento",
           "add_window": "Adicionar janela",
           "edit_window": "Editar janela",
-          "remove_window": "Remover janela"
+          "remove_window": "Remover janela",
+          "lifecycle_profiles": "Perfis de horário"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Sim, remover esta janela"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Perfis de horário",
+        "description": "Gerencie horários nomeados e escolha qual está ativo.",
+        "menu_options": {
+          "add_lifecycle_profile": "Adicionar perfil",
+          "edit_lifecycle_profile": "Editar perfil",
+          "remove_lifecycle_profile": "Remover perfil",
+          "select_active_lifecycle_profile": "Selecionar perfil ativo"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Adicionar perfil de horário",
+        "description": "Cria um novo horário nomeado. Funciona exatamente como as definições de horário principais, mas só se aplica quando selecionado como perfil ativo.",
+        "data": {
+          "profile_display_name": "Nome do perfil",
+          "night_trigger": "Acionador de noite",
+          "morning_trigger": "Acionador de manhã",
+          "night_fixed_time": "Hora da noite",
+          "night_sun_elevation": "Elevação noturna personalizada (°) — usada apenas quando Personalizada está selecionada",
+          "morning_fixed_time": "Hora da manhã",
+          "morning_sun_elevation": "Elevação matinal personalizada (°) — usada apenas quando Personalizada está selecionada",
+          "night_position": "Posição de noite",
+          "morning_position": "Posição de manhã",
+          "active_months": "Meses ativos (avançado)",
+          "night_sun_event": "Evento solar noturno (opcional)",
+          "morning_sun_event": "Evento solar matinal (opcional)",
+          "night_not_before": "Noite: gatilho mais cedo (opcional)",
+          "night_not_after": "Noite: gatilho mais tarde (opcional)",
+          "morning_not_before": "Manhã: gatilho mais cedo (opcional)",
+          "morning_not_after": "Manhã: gatilho mais tarde (opcional)",
+          "schedule_mode": "Modo de agenda",
+          "weekday_night_fixed_time": "Hora da noite em dias úteis (seg–sex)",
+          "weekday_night_position": "Posição de noite em dias úteis (seg–sex)",
+          "weekday_morning_fixed_time": "Hora da manhã em dias úteis (seg–sex)",
+          "weekday_morning_position": "Posição de manhã em dias úteis (seg–sex)",
+          "weekend_night_fixed_time": "Hora da noite ao fim de semana (sáb–dom)",
+          "weekend_night_position": "Posição de noite ao fim de semana (sáb–dom)",
+          "weekend_morning_fixed_time": "Hora da manhã ao fim de semana (sáb–dom)",
+          "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)"
+        },
+        "data_description": {
+          "active_months": "Deixe em branco para aplicar este horário todos os meses. Selecione meses específicos para restringi-lo — por exemplo, de setembro a março para um horário de inverno.",
+          "night_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário noturno acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "night_not_before": "Opcional. Se o gatilho noturno resolvido ocorresse antes deste horário, ele é adiado para este horário.",
+          "night_not_after": "Opcional. Se o gatilho noturno resolvido ocorresse depois deste horário, ele é antecipado para este horário.",
+          "morning_not_before": "Opcional. Se o gatilho matinal resolvido ocorresse antes deste horário, ele é adiado para este horário.",
+          "morning_not_after": "Opcional. Se o gatilho matinal resolvido ocorresse depois deste horário, ele é antecipado para este horário.",
+          "schedule_mode": "«Igual todos os dias» usa uma única agenda para toda a semana. «Dias úteis / Fim de semana» permite definir horas e posições diferentes para seg–sex e sáb–dom."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Editar perfil de horário",
+        "description": "Selecione qual perfil editar.",
+        "data": {
+          "profile_id": "Perfil"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Editar perfil de horário",
+        "description": "Atualize o horário deste perfil.",
+        "data": {
+          "profile_display_name": "Nome do perfil",
+          "night_trigger": "Acionador de noite",
+          "morning_trigger": "Acionador de manhã",
+          "night_fixed_time": "Hora da noite",
+          "night_sun_elevation": "Elevação noturna personalizada (°) — usada apenas quando Personalizada está selecionada",
+          "morning_fixed_time": "Hora da manhã",
+          "morning_sun_elevation": "Elevação matinal personalizada (°) — usada apenas quando Personalizada está selecionada",
+          "night_position": "Posição de noite",
+          "morning_position": "Posição de manhã",
+          "active_months": "Meses ativos (avançado)",
+          "night_sun_event": "Evento solar noturno (opcional)",
+          "morning_sun_event": "Evento solar matinal (opcional)",
+          "night_not_before": "Noite: gatilho mais cedo (opcional)",
+          "night_not_after": "Noite: gatilho mais tarde (opcional)",
+          "morning_not_before": "Manhã: gatilho mais cedo (opcional)",
+          "morning_not_after": "Manhã: gatilho mais tarde (opcional)",
+          "schedule_mode": "Modo de agenda",
+          "weekday_night_fixed_time": "Hora da noite em dias úteis (seg–sex)",
+          "weekday_night_position": "Posição de noite em dias úteis (seg–sex)",
+          "weekday_morning_fixed_time": "Hora da manhã em dias úteis (seg–sex)",
+          "weekday_morning_position": "Posição de manhã em dias úteis (seg–sex)",
+          "weekend_night_fixed_time": "Hora da noite ao fim de semana (sáb–dom)",
+          "weekend_night_position": "Posição de noite ao fim de semana (sáb–dom)",
+          "weekend_morning_fixed_time": "Hora da manhã ao fim de semana (sáb–dom)",
+          "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)"
+        },
+        "data_description": {
+          "active_months": "Deixe em branco para aplicar este horário todos os meses. Selecione meses específicos para restringi-lo — por exemplo, de setembro a março para um horário de inverno.",
+          "night_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário noturno acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "night_not_before": "Opcional. Se o gatilho noturno resolvido ocorresse antes deste horário, ele é adiado para este horário.",
+          "night_not_after": "Opcional. Se o gatilho noturno resolvido ocorresse depois deste horário, ele é antecipado para este horário.",
+          "morning_not_before": "Opcional. Se o gatilho matinal resolvido ocorresse antes deste horário, ele é adiado para este horário.",
+          "morning_not_after": "Opcional. Se o gatilho matinal resolvido ocorresse depois deste horário, ele é antecipado para este horário.",
+          "schedule_mode": "«Igual todos os dias» usa uma única agenda para toda a semana. «Dias úteis / Fim de semana» permite definir horas e posições diferentes para seg–sex e sáb–dom."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Remover perfil de horário",
+        "description": "Selecione o perfil a remover. Esta ação não pode ser desfeita.",
+        "data": {
+          "profile_id": "Perfil a remover"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Confirmar remoção",
+        "description": "Remover o perfil \"{profile_name}\"? Esta ação não pode ser desfeita. Se for o perfil ativo, o horário padrão volta a ser usado.",
+        "data": {
+          "remove_confirmed": "Sim, remover este perfil"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Selecionar perfil ativo",
+        "description": "Escolha qual perfil de horário está ativo. \"Padrão\" usa o horário configurado nas definições de horário.",
+        "data": {
+          "active_lifecycle_profile_id": "Perfil ativo"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "O gatilho matinal mais cedo não pode ser posterior ao mais tarde."
     },
     "abort": {
-      "no_options_for_system_entry": "A entrada de Sistema do SmartShading não tem opções configuráveis."
+      "no_options_for_system_entry": "A entrada de Sistema do SmartShading não tem opções configuráveis.",
+      "no_lifecycle_profiles": "Ainda não foi criado nenhum perfil de horário. Adicione um primeiro.",
+      "lifecycle_profile_not_found": "Este perfil de horário não foi encontrado. Pode ter sido removido."
     }
   },
   "config": {

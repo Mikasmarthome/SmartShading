@@ -12,7 +12,8 @@
           "behavior": "Beschattungsverhalten",
           "add_window": "Fenster hinzufügen",
           "edit_window": "Fenster bearbeiten",
-          "remove_window": "Fenster entfernen"
+          "remove_window": "Fenster entfernen",
+          "lifecycle_profiles": "Zeitplan-Profile"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Ja, dieses Fenster entfernen"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Zeitplan-Profile",
+        "description": "Benannte Zeitplan-Profile verwalten und das aktive Profil auswählen.",
+        "menu_options": {
+          "add_lifecycle_profile": "Profil hinzufügen",
+          "edit_lifecycle_profile": "Profil bearbeiten",
+          "remove_lifecycle_profile": "Profil entfernen",
+          "select_active_lifecycle_profile": "Aktives Profil auswählen"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Zeitplan-Profil hinzufügen",
+        "description": "Erstellt einen neuen benannten Zeitplan. Er verhält sich genau wie die Zeitplan-Einstellungen, wirkt sich aber erst aus, wenn er als aktives Profil ausgewählt ist.",
+        "data": {
+          "profile_display_name": "Profilname",
+          "night_trigger": "Nacht-Auslöser",
+          "morning_trigger": "Morgen-Auslöser",
+          "night_fixed_time": "Nacht-Uhrzeit",
+          "night_sun_elevation": "Eigener Nacht-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
+          "morning_fixed_time": "Morgen-Uhrzeit",
+          "morning_sun_elevation": "Eigener Morgen-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
+          "night_position": "Nachtposition",
+          "morning_position": "Morgenposition",
+          "active_months": "Aktive Monate (erweitert)",
+          "night_sun_event": "Nächtliches Sonnenereignis (optional)",
+          "morning_sun_event": "Morgendliches Sonnenereignis (optional)",
+          "night_not_before": "Nacht: frühester Auslöser (optional)",
+          "night_not_after": "Nacht: spätester Auslöser (optional)",
+          "morning_not_before": "Morgen: frühester Auslöser (optional)",
+          "morning_not_after": "Morgen: spätester Auslöser (optional)",
+          "schedule_mode": "Zeitplan-Modus",
+          "weekday_night_fixed_time": "Nacht-Uhrzeit Wochentag (Mo–Fr)",
+          "weekday_night_position": "Nachtposition Wochentag (Mo–Fr)",
+          "weekday_morning_fixed_time": "Morgen-Uhrzeit Wochentag (Mo–Fr)",
+          "weekday_morning_position": "Morgenposition Wochentag (Mo–Fr)",
+          "weekend_night_fixed_time": "Nacht-Uhrzeit Wochenende (Sa–So)",
+          "weekend_night_position": "Nachtposition Wochenende (Sa–So)",
+          "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
+          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)"
+        },
+        "data_description": {
+          "active_months": "Leer lassen, um diesen Zeitplan in jedem Monat anzuwenden. Wähle bestimmte Monate aus, um ihn einzuschränken — zum Beispiel September bis März für einen Winter-Zeitplan.",
+          "night_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Nachtzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
+          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
+          "night_not_before": "Optional. Würde der aufgelöste nächtliche Auslöser früher als diese Zeit liegen, wird er stattdessen auf diese Zeit verschoben.",
+          "night_not_after": "Optional. Würde der aufgelöste nächtliche Auslöser später als diese Zeit liegen, wird er stattdessen auf diese Zeit vorgezogen.",
+          "morning_not_before": "Optional. Würde der aufgelöste morgendliche Auslöser früher als diese Zeit liegen, wird er stattdessen auf diese Zeit verschoben.",
+          "morning_not_after": "Optional. Würde der aufgelöste morgendliche Auslöser später als diese Zeit liegen, wird er stattdessen auf diese Zeit vorgezogen.",
+          "schedule_mode": "\"Gleich jeden Tag\" verwendet einen Zeitplan für die gesamte Woche. \"Wochentag / Wochenende\" ermöglicht unterschiedliche Uhrzeiten und Positionen für Mo–Fr und Sa–So."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Zeitplan-Profil bearbeiten",
+        "description": "Wähle, welches Profil bearbeitet werden soll.",
+        "data": {
+          "profile_id": "Profil"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Zeitplan-Profil bearbeiten",
+        "description": "Aktualisiere den Zeitplan dieses Profils.",
+        "data": {
+          "profile_display_name": "Profilname",
+          "night_trigger": "Nacht-Auslöser",
+          "morning_trigger": "Morgen-Auslöser",
+          "night_fixed_time": "Nacht-Uhrzeit",
+          "night_sun_elevation": "Eigener Nacht-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
+          "morning_fixed_time": "Morgen-Uhrzeit",
+          "morning_sun_elevation": "Eigener Morgen-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
+          "night_position": "Nachtposition",
+          "morning_position": "Morgenposition",
+          "active_months": "Aktive Monate (erweitert)",
+          "night_sun_event": "Nächtliches Sonnenereignis (optional)",
+          "morning_sun_event": "Morgendliches Sonnenereignis (optional)",
+          "night_not_before": "Nacht: frühester Auslöser (optional)",
+          "night_not_after": "Nacht: spätester Auslöser (optional)",
+          "morning_not_before": "Morgen: frühester Auslöser (optional)",
+          "morning_not_after": "Morgen: spätester Auslöser (optional)",
+          "schedule_mode": "Zeitplan-Modus",
+          "weekday_night_fixed_time": "Nacht-Uhrzeit Wochentag (Mo–Fr)",
+          "weekday_night_position": "Nachtposition Wochentag (Mo–Fr)",
+          "weekday_morning_fixed_time": "Morgen-Uhrzeit Wochentag (Mo–Fr)",
+          "weekday_morning_position": "Morgenposition Wochentag (Mo–Fr)",
+          "weekend_night_fixed_time": "Nacht-Uhrzeit Wochenende (Sa–So)",
+          "weekend_night_position": "Nachtposition Wochenende (Sa–So)",
+          "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
+          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)"
+        },
+        "data_description": {
+          "active_months": "Leer lassen, um diesen Zeitplan in jedem Monat anzuwenden. Wähle bestimmte Monate aus, um ihn einzuschränken — zum Beispiel September bis März für einen Winter-Zeitplan.",
+          "night_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Nachtzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
+          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
+          "night_not_before": "Optional. Würde der aufgelöste nächtliche Auslöser früher als diese Zeit liegen, wird er stattdessen auf diese Zeit verschoben.",
+          "night_not_after": "Optional. Würde der aufgelöste nächtliche Auslöser später als diese Zeit liegen, wird er stattdessen auf diese Zeit vorgezogen.",
+          "morning_not_before": "Optional. Würde der aufgelöste morgendliche Auslöser früher als diese Zeit liegen, wird er stattdessen auf diese Zeit verschoben.",
+          "morning_not_after": "Optional. Würde der aufgelöste morgendliche Auslöser später als diese Zeit liegen, wird er stattdessen auf diese Zeit vorgezogen.",
+          "schedule_mode": "\"Gleich jeden Tag\" verwendet einen Zeitplan für die gesamte Woche. \"Wochentag / Wochenende\" ermöglicht unterschiedliche Uhrzeiten und Positionen für Mo–Fr und Sa–So."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Zeitplan-Profil entfernen",
+        "description": "Wähle das zu entfernende Profil. Dies kann nicht rückgängig gemacht werden.",
+        "data": {
+          "profile_id": "Zu entfernendes Profil"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Entfernen bestätigen",
+        "description": "Profil „{profile_name}“ entfernen? Dies kann nicht rückgängig gemacht werden. Falls dies das aktive Profil ist, greift wieder der Standard-Zeitplan.",
+        "data": {
+          "remove_confirmed": "Ja, dieses Profil entfernen"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Aktives Profil auswählen",
+        "description": "Wähle, welches Zeitplan-Profil aktiv ist. „Standard“ verwendet den in den Zeitplan-Einstellungen konfigurierten Zeitplan.",
+        "data": {
+          "active_lifecycle_profile_id": "Aktives Profil"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste."
     },
     "abort": {
-      "no_options_for_system_entry": "Der SmartShading-System-Eintrag hat keine konfigurierbaren Optionen."
+      "no_options_for_system_entry": "Der SmartShading-System-Eintrag hat keine konfigurierbaren Optionen.",
+      "no_lifecycle_profiles": "Es wurden noch keine Zeitplan-Profile erstellt. Bitte zuerst eines hinzufügen.",
+      "lifecycle_profile_not_found": "Dieses Zeitplan-Profil wurde nicht gefunden. Es wurde möglicherweise entfernt."
     }
   },
   "config": {

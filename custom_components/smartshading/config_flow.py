@@ -49,11 +49,18 @@ from homeassistant.helpers.selector import (
     TimeSelector,
 )
 
-from .config_entry_data import SmartShadingConfigEntryData, from_storage_dict, to_storage_dict
+from .config_entry_data import (
+    SmartShadingConfigEntryData,
+    _lifecycle_config_from_storage,
+    _lifecycle_config_to_storage_dict,
+    from_storage_dict,
+    to_storage_dict,
+)
 from .models.comfort import ComfortConfig
 from .models.config import GlobalDefaults, ShadePositionDefaults
 from .models.cover_group import CoverGroup, CoverHardwareType, CoverSyncMode, cover_hardware_type_from_str
 from .models.presence import PresencePolicy
+from .models.lifecycle_profile import LifecycleProfile
 from .models.lifecycle import (
     LifecycleScheduleMode,
     MorningTrigger,
@@ -139,6 +146,11 @@ from .const import (
     CONF_PRESENCE_POLICY,
     DEFAULT_PRESENCE_POLICY,
     PRESENCE_POLICY_OPTIONS,
+    CONF_ACTIVE_LIFECYCLE_PROFILE_ID,
+    CONF_PROFILE_ID,
+    CONF_PROFILE_DISPLAY_NAME,
+    LEGACY_PROFILE_SENTINEL,
+    PROFILE_DISPLAY_NAME_MAX_LEN,
     DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C,
     CONF_GLARE_MIN_EXPOSURE_WM2,
     DEFAULT_GLARE_MIN_EXPOSURE_WM2,
@@ -226,6 +238,200 @@ def _optional_time_to_storage(value: time | None) -> str | None:
     """Inverse of _parse_optional_time_input: None stays None (no clamp
     bound), a time serializes to its ISO string for JSON storage."""
     return value.isoformat() if value is not None else None
+
+
+def _build_lifecycle_profile_schema_dict(stored: dict[str, Any]) -> dict[Any, Any]:
+    """Schema fields shared by add/edit lifecycle-profile forms (v1.2.0-beta.1,
+    T6, extended post pre-push review to reach full parity with the legacy
+    lifecycle flow). `stored` is a plain dict — either {} for "add", or
+    {"display_name": ..., **_lifecycle_config_to_storage_dict(profile.config)}
+    for "edit" — so both callers build the identical schema shape.
+
+    Field coverage matches EXACTLY what the legacy async_step_lifecycle /
+    async_step_lifecycle_detail (OptionsFlow) steps expose for the flat
+    lifecycle_config — not literally every NightDayLifecycleConfig field.
+    night_tilt/morning_tilt/weekday_enabled/weekend_morning_delay_min are
+    legacy/unused fields the EXISTING lifecycle UI never exposes either
+    (verified: no CONF_NIGHT_TILT etc. anywhere in this file) — a profile
+    correctly inherits their dataclass defaults exactly like the legacy
+    config already does, not a T6-specific gap.
+
+    Unlike the legacy flow's two-step trigger-selection-then-conditional-
+    detail split (async_step_lifecycle -> async_step_lifecycle_detail,
+    which only renders the fields relevant to the chosen trigger/schedule
+    mode), this single form always shows every field, including both the
+    SAME_EVERY_DAY set (night/morning fixed time+position) AND the
+    WEEKDAY_WEEKEND set (weekday/weekend fixed time+position) together,
+    with `schedule_mode` selecting which set actually governs evaluation.
+    This is a deliberate presentation simplification (one profile form
+    instead of a second add/edit sub-step) — NOT a functional gap: every
+    field NightDayLifecycleConfig actually uses for either schedule mode is
+    editable, exactly satisfying "vollständige Lifecycle-Konfiguration pro
+    Profil". A future ticket could split this into a conditional two-step
+    form for UX polish without any storage-shape change.
+    """
+    trigger_selector = SelectSelector(
+        SelectSelectorConfig(options=LIFECYCLE_TRIGGER_OPTIONS, mode=SelectSelectorMode.DROPDOWN, translation_key="lifecycle_trigger")
+    )
+    schedule_mode_selector = SelectSelector(
+        SelectSelectorConfig(options=LIFECYCLE_SCHEDULE_MODE_OPTIONS, mode=SelectSelectorMode.LIST, translation_key="lifecycle_schedule_mode")
+    )
+    elevation_selector = NumberSelector(NumberSelectorConfig(min=-90, max=90, step=0.5, mode=NumberSelectorMode.BOX))
+    position_selector = NumberSelector(
+        NumberSelectorConfig(min=0, max=100, step=1, mode=NumberSelectorMode.SLIDER, unit_of_measurement="%")
+    )
+    night_sun_event_selector = SelectSelector(
+        SelectSelectorConfig(options=SUN_EVENT_OPTIONS, mode=SelectSelectorMode.DROPDOWN, translation_key="night_sun_event")
+    )
+    morning_sun_event_selector = SelectSelector(
+        SelectSelectorConfig(options=SUN_EVENT_OPTIONS, mode=SelectSelectorMode.DROPDOWN, translation_key="morning_sun_event")
+    )
+    months_selector = SelectSelector(
+        SelectSelectorConfig(
+            options=[str(m) for m in range(1, 13)], multiple=True,
+            mode=SelectSelectorMode.DROPDOWN, translation_key="active_months",
+        )
+    )
+    return {
+        vol.Required(CONF_PROFILE_DISPLAY_NAME, default=stored.get("display_name", "")): str,
+        vol.Required(
+            CONF_SCHEDULE_MODE, default=stored.get("schedule_mode", LifecycleScheduleMode.SAME_EVERY_DAY.value)
+        ): schedule_mode_selector,
+        vol.Required(CONF_NIGHT_TRIGGER, default=stored.get("night_trigger", DEFAULT_NIGHT_TRIGGER)): trigger_selector,
+        vol.Optional(CONF_NIGHT_FIXED_TIME, description={"suggested_value": stored.get("night_fixed_time")}): TimeSelector(),
+        vol.Optional(
+            CONF_NIGHT_SUN_ELEVATION, default=stored.get("night_sun_elevation_deg", DEFAULT_NIGHT_SUN_ELEVATION)
+        ): elevation_selector,
+        vol.Required(CONF_NIGHT_POSITION, default=stored.get("night_position", DEFAULT_NIGHT_POSITION)): position_selector,
+        vol.Optional(CONF_NIGHT_SUN_EVENT, description={"suggested_value": stored.get("night_sun_event")}): night_sun_event_selector,
+        vol.Optional(CONF_NIGHT_NOT_BEFORE, description={"suggested_value": stored.get("night_not_before")}): TimeSelector(),
+        vol.Optional(CONF_NIGHT_NOT_AFTER, description={"suggested_value": stored.get("night_not_after")}): TimeSelector(),
+        vol.Required(CONF_MORNING_TRIGGER, default=stored.get("morning_trigger", DEFAULT_MORNING_TRIGGER)): trigger_selector,
+        vol.Optional(CONF_MORNING_FIXED_TIME, description={"suggested_value": stored.get("morning_fixed_time")}): TimeSelector(),
+        vol.Optional(
+            CONF_MORNING_SUN_ELEVATION, default=stored.get("morning_sun_elevation_deg", DEFAULT_MORNING_SUN_ELEVATION)
+        ): elevation_selector,
+        vol.Required(CONF_MORNING_POSITION, default=stored.get("morning_position", DEFAULT_MORNING_POSITION)): position_selector,
+        vol.Optional(
+            CONF_MORNING_SUN_EVENT, description={"suggested_value": stored.get("morning_sun_event")}
+        ): morning_sun_event_selector,
+        vol.Optional(CONF_MORNING_NOT_BEFORE, description={"suggested_value": stored.get("morning_not_before")}): TimeSelector(),
+        vol.Optional(CONF_MORNING_NOT_AFTER, description={"suggested_value": stored.get("morning_not_after")}): TimeSelector(),
+        # WEEKDAY_WEEKEND field set — only governs evaluation when
+        # schedule_mode above is "weekday_weekend" (see _active_profile()),
+        # but always editable here (see docstring "presentation simplification").
+        vol.Optional(
+            CONF_WEEKDAY_NIGHT_FIXED_TIME, description={"suggested_value": stored.get("weekday_night_fixed_time")}
+        ): TimeSelector(),
+        vol.Optional(
+            CONF_WEEKDAY_NIGHT_POSITION, default=stored.get("weekday_night_position", DEFAULT_NIGHT_POSITION)
+        ): position_selector,
+        vol.Optional(
+            CONF_WEEKDAY_MORNING_FIXED_TIME, description={"suggested_value": stored.get("weekday_morning_fixed_time")}
+        ): TimeSelector(),
+        vol.Optional(
+            CONF_WEEKDAY_MORNING_POSITION, default=stored.get("weekday_morning_position", DEFAULT_MORNING_POSITION)
+        ): position_selector,
+        vol.Optional(
+            CONF_WEEKEND_NIGHT_FIXED_TIME, description={"suggested_value": stored.get("weekend_night_fixed_time")}
+        ): TimeSelector(),
+        vol.Optional(
+            CONF_WEEKEND_NIGHT_POSITION, default=stored.get("weekend_night_position", DEFAULT_NIGHT_POSITION)
+        ): position_selector,
+        vol.Optional(
+            CONF_WEEKEND_MORNING_FIXED_TIME, description={"suggested_value": stored.get("weekend_morning_fixed_time")}
+        ): TimeSelector(),
+        vol.Optional(
+            CONF_WEEKEND_MORNING_POSITION, default=stored.get("weekend_morning_position", DEFAULT_MORNING_POSITION)
+        ): position_selector,
+        vol.Optional(
+            CONF_ACTIVE_MONTHS, default=[str(m) for m in (stored.get("active_months") or [])]
+        ): months_selector,
+    }
+
+
+def _parse_lifecycle_profile_input(
+    user_input: dict[str, Any], profile_id: str
+) -> tuple[str, NightDayLifecycleConfig, dict[str, str]]:
+    """Parse a submitted add/edit lifecycle-profile form into
+    (display_name, NightDayLifecycleConfig, errors). Never raises — every
+    enum/time field uses the same safe-parse helpers already established
+    for the legacy lifecycle_detail step (_parse_optional_time_input,
+    try/except ValueError with a safe default). errors is non-empty only
+    for the same not_before > not_after clamp-window check T3 already
+    enforces (reuses its exact error keys, since the meaning is identical)."""
+    display_name = (user_input.get(CONF_PROFILE_DISPLAY_NAME) or "").strip()[:PROFILE_DISPLAY_NAME_MAX_LEN]
+    if not display_name:
+        display_name = profile_id
+
+    try:
+        night_trigger = NightTrigger(user_input.get(CONF_NIGHT_TRIGGER, DEFAULT_NIGHT_TRIGGER))
+    except ValueError:
+        night_trigger = NightTrigger(DEFAULT_NIGHT_TRIGGER)
+    try:
+        morning_trigger = MorningTrigger(user_input.get(CONF_MORNING_TRIGGER, DEFAULT_MORNING_TRIGGER))
+    except ValueError:
+        morning_trigger = MorningTrigger(DEFAULT_MORNING_TRIGGER)
+    try:
+        schedule_mode = LifecycleScheduleMode(
+            user_input.get(CONF_SCHEDULE_MODE, LifecycleScheduleMode.SAME_EVERY_DAY.value)
+        )
+    except ValueError:
+        schedule_mode = LifecycleScheduleMode.SAME_EVERY_DAY
+
+    _raw_active_months = user_input.get(CONF_ACTIVE_MONTHS) or []
+    active_months = sorted({int(m) for m in _raw_active_months}) if _raw_active_months else None
+
+    _night_sun_event_raw = user_input.get(CONF_NIGHT_SUN_EVENT)
+    _morning_sun_event_raw = user_input.get(CONF_MORNING_SUN_EVENT)
+    try:
+        night_sun_event = SunEvent(_night_sun_event_raw) if _night_sun_event_raw else None
+    except ValueError:
+        night_sun_event = None
+    try:
+        morning_sun_event = SunEvent(_morning_sun_event_raw) if _morning_sun_event_raw else None
+    except ValueError:
+        morning_sun_event = None
+
+    night_not_before = _parse_optional_time_input(user_input.get(CONF_NIGHT_NOT_BEFORE))
+    night_not_after = _parse_optional_time_input(user_input.get(CONF_NIGHT_NOT_AFTER))
+    morning_not_before = _parse_optional_time_input(user_input.get(CONF_MORNING_NOT_BEFORE))
+    morning_not_after = _parse_optional_time_input(user_input.get(CONF_MORNING_NOT_AFTER))
+
+    errors: dict[str, str] = {}
+    if night_not_before is not None and night_not_after is not None and night_not_before > night_not_after:
+        errors["base"] = "night_clamp_window_invalid"
+    elif morning_not_before is not None and morning_not_after is not None and morning_not_before > morning_not_after:
+        errors["base"] = "morning_clamp_window_invalid"
+
+    config = NightDayLifecycleConfig(
+        id=profile_id,
+        schedule_mode=schedule_mode,
+        night_trigger=night_trigger,
+        night_sun_elevation_deg=float(user_input.get(CONF_NIGHT_SUN_ELEVATION, DEFAULT_NIGHT_SUN_ELEVATION)),
+        night_fixed_time=_parse_optional_time_input(user_input.get(CONF_NIGHT_FIXED_TIME)),
+        night_position=int(user_input.get(CONF_NIGHT_POSITION, DEFAULT_NIGHT_POSITION)),
+        morning_trigger=morning_trigger,
+        morning_sun_elevation_deg=float(user_input.get(CONF_MORNING_SUN_ELEVATION, DEFAULT_MORNING_SUN_ELEVATION)),
+        morning_fixed_time=_parse_optional_time_input(user_input.get(CONF_MORNING_FIXED_TIME)),
+        morning_position=int(user_input.get(CONF_MORNING_POSITION, DEFAULT_MORNING_POSITION)),
+        active_months=active_months,
+        night_sun_event=night_sun_event,
+        morning_sun_event=morning_sun_event,
+        night_not_before=night_not_before,
+        night_not_after=night_not_after,
+        morning_not_before=morning_not_before,
+        morning_not_after=morning_not_after,
+        weekday_night_fixed_time=_parse_optional_time_input(user_input.get(CONF_WEEKDAY_NIGHT_FIXED_TIME)),
+        weekday_night_position=int(user_input.get(CONF_WEEKDAY_NIGHT_POSITION, DEFAULT_NIGHT_POSITION)),
+        weekday_morning_fixed_time=_parse_optional_time_input(user_input.get(CONF_WEEKDAY_MORNING_FIXED_TIME)),
+        weekday_morning_position=int(user_input.get(CONF_WEEKDAY_MORNING_POSITION, DEFAULT_MORNING_POSITION)),
+        weekend_night_fixed_time=_parse_optional_time_input(user_input.get(CONF_WEEKEND_NIGHT_FIXED_TIME)),
+        weekend_night_position=int(user_input.get(CONF_WEEKEND_NIGHT_POSITION, DEFAULT_NIGHT_POSITION)),
+        weekend_morning_fixed_time=_parse_optional_time_input(user_input.get(CONF_WEEKEND_MORNING_FIXED_TIME)),
+        weekend_morning_position=int(user_input.get(CONF_WEEKEND_MORNING_POSITION, DEFAULT_MORNING_POSITION)),
+    )
+    return display_name, config, errors
 
 
 def _parse_time_input(value: Any, fallback: str) -> time:
@@ -1059,6 +1265,8 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         self._add_cover_groups: list[CoverGroup] = []
         # Edit/Remove Window flow state
         self._edit_window_id: str | None = None
+        # Lifecycle profile flow state (v1.2.0-beta.1, T6)
+        self._edit_profile_id: str | None = None
 
     # -- Init: section menu (zone entries only) --
 
@@ -1069,7 +1277,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             return self.async_abort(reason="no_options_for_system_entry")
         return self.async_show_menu(
             step_id="init",
-            menu_options=["weather", "lifecycle", "presence", "comfort", "behavior", "add_window", "edit_window", "remove_window"],
+            menu_options=["weather", "lifecycle", "presence", "comfort", "behavior", "add_window", "edit_window", "remove_window", "lifecycle_profiles"],
         )
 
     # -- Weather / sensor entities --
@@ -1649,6 +1857,175 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             }
         )
         return self.async_show_form(step_id="presence", data_schema=schema)
+
+    # -- Lifecycle profiles (v1.2.0-beta.1, T6) --
+    #
+    # OptionsFlow-only CRUD (no initial-ConfigFlow exposure — a brand-new
+    # zone has no profiles yet, and the legacy setup flow is intentionally
+    # left unchanged, matching "kein automatischer Rewrite" / minimal
+    # initial-setup surface). No select entity, no automatic switching —
+    # purely manual list/add/edit/remove/select-active, matching the T6
+    # audit's chosen scope. Mirrors the existing add/edit/remove_window
+    # picker+confirm pattern already established in this class.
+
+    async def async_step_lifecycle_profiles(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        stored_profiles = self._config_entry.data.get("lifecycle_profiles") or {}
+        return self.async_show_menu(
+            step_id="lifecycle_profiles",
+            menu_options=[
+                "add_lifecycle_profile",
+                "edit_lifecycle_profile",
+                "remove_lifecycle_profile",
+                "select_active_lifecycle_profile",
+            ],
+            description_placeholders={"profile_count": str(len(stored_profiles))},
+        )
+
+    async def async_step_add_lifecycle_profile(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            profile_id = f"profile_{uuid.uuid4().hex}"
+            display_name, config, errors = _parse_lifecycle_profile_input(user_input, profile_id)
+            if not errors:
+                stored_profiles = dict(self._config_entry.data.get("lifecycle_profiles") or {})
+                stored_profiles[profile_id] = {
+                    "display_name": display_name,
+                    "config": _lifecycle_config_to_storage_dict(config),
+                }
+                return self._save_and_reload({"lifecycle_profiles": stored_profiles})
+
+        schema = vol.Schema(_build_lifecycle_profile_schema_dict({}))
+        return self.async_show_form(step_id="add_lifecycle_profile", data_schema=schema, errors=errors)
+
+    async def async_step_edit_lifecycle_profile(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        stored_profiles = self._config_entry.data.get("lifecycle_profiles") or {}
+        if not stored_profiles:
+            return self.async_abort(reason="no_lifecycle_profiles")
+        if user_input is not None:
+            self._edit_profile_id = user_input[CONF_PROFILE_ID]
+            return await self.async_step_edit_lifecycle_profile_detail()
+
+        options = [
+            {"value": pid, "label": p.get("display_name", pid)}
+            for pid, p in stored_profiles.items()
+        ]
+        schema = vol.Schema({
+            vol.Required(CONF_PROFILE_ID): SelectSelector(
+                SelectSelectorConfig(options=options, mode=SelectSelectorMode.DROPDOWN)
+            ),
+        })
+        return self.async_show_form(step_id="edit_lifecycle_profile", data_schema=schema)
+
+    async def async_step_edit_lifecycle_profile_detail(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        stored_profiles = dict(self._config_entry.data.get("lifecycle_profiles") or {})
+        profile_id = self._edit_profile_id
+        stored_profile = stored_profiles.get(profile_id) if profile_id else None
+        if stored_profile is None:
+            return self.async_abort(reason="lifecycle_profile_not_found")
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            display_name, config, errors = _parse_lifecycle_profile_input(user_input, profile_id)
+            if not errors:
+                stored_profiles[profile_id] = {
+                    "display_name": display_name,
+                    "config": _lifecycle_config_to_storage_dict(config),
+                }
+                return self._save_and_reload({"lifecycle_profiles": stored_profiles})
+
+        stored_flat = {
+            "display_name": stored_profile.get("display_name", profile_id),
+            **(stored_profile.get("config") or {}),
+        }
+        schema = vol.Schema(_build_lifecycle_profile_schema_dict(stored_flat))
+        return self.async_show_form(
+            step_id="edit_lifecycle_profile_detail", data_schema=schema, errors=errors
+        )
+
+    async def async_step_remove_lifecycle_profile(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        stored_profiles = self._config_entry.data.get("lifecycle_profiles") or {}
+        if not stored_profiles:
+            return self.async_abort(reason="no_lifecycle_profiles")
+        if user_input is not None:
+            self._edit_profile_id = user_input[CONF_PROFILE_ID]
+            return await self.async_step_remove_lifecycle_profile_confirm()
+
+        options = [
+            {"value": pid, "label": p.get("display_name", pid)}
+            for pid, p in stored_profiles.items()
+        ]
+        schema = vol.Schema({
+            vol.Required(CONF_PROFILE_ID): SelectSelector(
+                SelectSelectorConfig(options=options, mode=SelectSelectorMode.DROPDOWN)
+            ),
+        })
+        return self.async_show_form(step_id="remove_lifecycle_profile", data_schema=schema)
+
+    async def async_step_remove_lifecycle_profile_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        profile_id = self._edit_profile_id
+        stored_profiles = dict(self._config_entry.data.get("lifecycle_profiles") or {})
+        profile = stored_profiles.get(profile_id) if profile_id else None
+        if profile is None:
+            return self.async_abort(reason="lifecycle_profile_not_found")
+
+        if user_input is not None:
+            if user_input.get(CONF_REMOVE_CONFIRMED):
+                stored_profiles.pop(profile_id, None)
+                updates: dict[str, Any] = {"lifecycle_profiles": stored_profiles}
+                # Deleting the ACTIVE profile must deterministically fall back
+                # to the legacy config. resolve_lifecycle_config() already
+                # handles any active_lifecycle_profile_id that no longer
+                # exists in `profiles` (falls back safely) — clearing it here
+                # too just keeps stored data internally consistent (no
+                # dangling reference), it is not required for correctness.
+                if self._config_entry.data.get(CONF_ACTIVE_LIFECYCLE_PROFILE_ID) == profile_id:
+                    updates[CONF_ACTIVE_LIFECYCLE_PROFILE_ID] = None
+                return self._save_and_reload(updates)
+            # User declined: close flow without changes, preserve options.
+            return self.async_create_entry(data={**self._config_entry.options})
+
+        schema = vol.Schema({
+            vol.Required(CONF_REMOVE_CONFIRMED, default=False): BooleanSelector(),
+        })
+        return self.async_show_form(
+            step_id="remove_lifecycle_profile_confirm",
+            data_schema=schema,
+            description_placeholders={"profile_name": profile.get("display_name", profile_id)},
+        )
+
+    async def async_step_select_active_lifecycle_profile(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        stored_profiles = self._config_entry.data.get("lifecycle_profiles") or {}
+        current_active = self._config_entry.data.get(CONF_ACTIVE_LIFECYCLE_PROFILE_ID)
+
+        if user_input is not None:
+            selected = user_input[CONF_ACTIVE_LIFECYCLE_PROFILE_ID]
+            new_active = None if selected == LEGACY_PROFILE_SENTINEL else selected
+            return self._save_and_reload({CONF_ACTIVE_LIFECYCLE_PROFILE_ID: new_active})
+
+        options = [{"value": LEGACY_PROFILE_SENTINEL, "label": "Legacy default"}] + [
+            {"value": pid, "label": p.get("display_name", pid)} for pid, p in stored_profiles.items()
+        ]
+        default_value = current_active if current_active in stored_profiles else LEGACY_PROFILE_SENTINEL
+        schema = vol.Schema({
+            vol.Required(CONF_ACTIVE_LIFECYCLE_PROFILE_ID, default=default_value): SelectSelector(
+                SelectSelectorConfig(options=options, mode=SelectSelectorMode.DROPDOWN)
+            ),
+        })
+        return self.async_show_form(step_id="select_active_lifecycle_profile", data_schema=schema)
 
     # -- Comfort settings --
 

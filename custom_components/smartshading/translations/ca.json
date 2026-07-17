@@ -12,7 +12,8 @@
           "behavior": "Comportament d'ombreig",
           "add_window": "Afegeix una finestra",
           "edit_window": "Edita la finestra",
-          "remove_window": "Elimina la finestra"
+          "remove_window": "Elimina la finestra",
+          "lifecycle_profiles": "Perfils d'horari"
         }
       },
       "weather": {
@@ -271,6 +272,126 @@
         "data": {
           "remove_confirmed": "Sí, elimina aquesta finestra"
         }
+      },
+      "lifecycle_profiles": {
+        "title": "Perfils d'horari",
+        "description": "Gestiona horaris amb nom i tria quin està actiu.",
+        "menu_options": {
+          "add_lifecycle_profile": "Afegeix un perfil",
+          "edit_lifecycle_profile": "Edita el perfil",
+          "remove_lifecycle_profile": "Elimina el perfil",
+          "select_active_lifecycle_profile": "Selecciona el perfil actiu"
+        }
+      },
+      "add_lifecycle_profile": {
+        "title": "Afegeix un perfil d'horari",
+        "description": "Crea un nou horari amb nom. Es comporta exactament com la configuració principal d'horari, però només s'aplica quan se selecciona com a perfil actiu.",
+        "data": {
+          "profile_display_name": "Nom del perfil",
+          "night_trigger": "Activador de nit",
+          "morning_trigger": "Activador de matí",
+          "night_fixed_time": "Hora de nit",
+          "night_sun_elevation": "Elevació nocturna personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
+          "morning_fixed_time": "Hora de matí",
+          "morning_sun_elevation": "Elevació matinal personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
+          "night_position": "Posició de nit",
+          "morning_position": "Posició de matí",
+          "active_months": "Mesos actius (avançat)",
+          "night_sun_event": "Esdeveniment solar nocturn (opcional)",
+          "morning_sun_event": "Esdeveniment solar matinal (opcional)",
+          "night_not_before": "Nit: activador més aviat (opcional)",
+          "night_not_after": "Nit: activador més tard (opcional)",
+          "morning_not_before": "Matí: activador més aviat (opcional)",
+          "morning_not_after": "Matí: activador més tard (opcional)",
+          "schedule_mode": "Mode d'horari",
+          "weekday_night_fixed_time": "Hora de nit entre setmana (dl–dv)",
+          "weekday_night_position": "Posició de nit entre setmana (dl–dv)",
+          "weekday_morning_fixed_time": "Hora de matí entre setmana (dl–dv)",
+          "weekday_morning_position": "Posició de matí entre setmana (dl–dv)",
+          "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
+          "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)",
+          "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
+          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)"
+        },
+        "data_description": {
+          "active_months": "Deixeu-ho buit per aplicar aquest horari cada mes. Seleccioneu mesos concrets per restringir-lo — per exemple, de setembre a març per a un horari d'hivern.",
+          "night_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora nocturna anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
+          "morning_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora matinal anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
+          "night_not_before": "Opcional. Si l'activador nocturn resolt es produís abans d'aquesta hora, s'ajorna fins a aquesta hora.",
+          "night_not_after": "Opcional. Si l'activador nocturn resolt es produís després d'aquesta hora, s'avança a aquesta hora.",
+          "morning_not_before": "Opcional. Si l'activador matinal resolt es produís abans d'aquesta hora, s'ajorna fins a aquesta hora.",
+          "morning_not_after": "Opcional. Si l'activador matinal resolt es produís després d'aquesta hora, s'avança a aquesta hora.",
+          "schedule_mode": "«Igual cada dia» fa servir un únic horari per a tota la setmana. «Entre setmana / Cap de setmana» permet definir hores i posicions diferents per a dl–dv i ds–dg."
+        }
+      },
+      "edit_lifecycle_profile": {
+        "title": "Edita el perfil d'horari",
+        "description": "Selecciona quin perfil vols editar.",
+        "data": {
+          "profile_id": "Perfil"
+        }
+      },
+      "edit_lifecycle_profile_detail": {
+        "title": "Edita el perfil d'horari",
+        "description": "Actualitza l'horari d'aquest perfil.",
+        "data": {
+          "profile_display_name": "Nom del perfil",
+          "night_trigger": "Activador de nit",
+          "morning_trigger": "Activador de matí",
+          "night_fixed_time": "Hora de nit",
+          "night_sun_elevation": "Elevació nocturna personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
+          "morning_fixed_time": "Hora de matí",
+          "morning_sun_elevation": "Elevació matinal personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
+          "night_position": "Posició de nit",
+          "morning_position": "Posició de matí",
+          "active_months": "Mesos actius (avançat)",
+          "night_sun_event": "Esdeveniment solar nocturn (opcional)",
+          "morning_sun_event": "Esdeveniment solar matinal (opcional)",
+          "night_not_before": "Nit: activador més aviat (opcional)",
+          "night_not_after": "Nit: activador més tard (opcional)",
+          "morning_not_before": "Matí: activador més aviat (opcional)",
+          "morning_not_after": "Matí: activador més tard (opcional)",
+          "schedule_mode": "Mode d'horari",
+          "weekday_night_fixed_time": "Hora de nit entre setmana (dl–dv)",
+          "weekday_night_position": "Posició de nit entre setmana (dl–dv)",
+          "weekday_morning_fixed_time": "Hora de matí entre setmana (dl–dv)",
+          "weekday_morning_position": "Posició de matí entre setmana (dl–dv)",
+          "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
+          "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)",
+          "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
+          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)"
+        },
+        "data_description": {
+          "active_months": "Deixeu-ho buit per aplicar aquest horari cada mes. Seleccioneu mesos concrets per restringir-lo — per exemple, de setembre a març per a un horari d'hivern.",
+          "night_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora nocturna anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
+          "morning_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora matinal anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
+          "night_not_before": "Opcional. Si l'activador nocturn resolt es produís abans d'aquesta hora, s'ajorna fins a aquesta hora.",
+          "night_not_after": "Opcional. Si l'activador nocturn resolt es produís després d'aquesta hora, s'avança a aquesta hora.",
+          "morning_not_before": "Opcional. Si l'activador matinal resolt es produís abans d'aquesta hora, s'ajorna fins a aquesta hora.",
+          "morning_not_after": "Opcional. Si l'activador matinal resolt es produís després d'aquesta hora, s'avança a aquesta hora.",
+          "schedule_mode": "«Igual cada dia» fa servir un únic horari per a tota la setmana. «Entre setmana / Cap de setmana» permet definir hores i posicions diferents per a dl–dv i ds–dg."
+        }
+      },
+      "remove_lifecycle_profile": {
+        "title": "Elimina el perfil d'horari",
+        "description": "Selecciona el perfil a eliminar. Aquesta acció no es pot desfer.",
+        "data": {
+          "profile_id": "Perfil a eliminar"
+        }
+      },
+      "remove_lifecycle_profile_confirm": {
+        "title": "Confirma l'eliminació",
+        "description": "Vols eliminar el perfil «{profile_name}»? Aquesta acció no es pot desfer. Si és el perfil actiu, es tornarà a utilitzar l'horari per defecte.",
+        "data": {
+          "remove_confirmed": "Sí, elimina aquest perfil"
+        }
+      },
+      "select_active_lifecycle_profile": {
+        "title": "Selecciona el perfil actiu",
+        "description": "Tria quin perfil d'horari està actiu. «Per defecte» utilitza l'horari configurat als ajustos d'horari.",
+        "data": {
+          "active_lifecycle_profile_id": "Perfil actiu"
+        }
       }
     },
     "error": {
@@ -284,7 +405,9 @@
       "morning_clamp_window_invalid": "L'activador matinal més aviat no pot ser posterior al més tard."
     },
     "abort": {
-      "no_options_for_system_entry": "L'entrada de Sistema de SmartShading no té opcions configurables."
+      "no_options_for_system_entry": "L'entrada de Sistema de SmartShading no té opcions configurables.",
+      "no_lifecycle_profiles": "Encara no s'ha creat cap perfil d'horari. Afegeix-ne un primer.",
+      "lifecycle_profile_not_found": "No s'ha trobat aquest perfil d'horari. És possible que s'hagi eliminat."
     }
   },
   "config": {

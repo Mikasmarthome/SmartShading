@@ -61,7 +61,11 @@
           "weekend_morning_position": "Ochtendpositie in het weekend (za–zo)",
           "active_months": "Actieve maanden (geavanceerd)",
           "night_sun_event": "Nachtelijke zonsgebeurtenis (optioneel)",
-          "morning_sun_event": "Ochtendlijke zonsgebeurtenis (optioneel)"
+          "morning_sun_event": "Ochtendlijke zonsgebeurtenis (optioneel)",
+          "night_not_before": "Nacht: vroegste trigger (optioneel)",
+          "night_not_after": "Nacht: laatste trigger (optioneel)",
+          "morning_not_before": "Ochtend: vroegste trigger (optioneel)",
+          "morning_not_after": "Ochtend: laatste trigger (optioneel)"
         },
         "data_description": {
           "night_position": "Positie van de zonwering tijdens de nachtfase (0 = dicht, 100 = open).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Positie van de zonwering aan het begin van de ochtendfase in het weekend (0 = dicht, 100 = open).",
           "active_months": "Laat leeg om dit schema elke maand toe te passen. Selecteer specifieke maanden om het te beperken — bijvoorbeeld september tot en met maart voor een winterschema.",
           "night_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande nachttijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
-          "morning_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande ochtendtijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°)."
+          "morning_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande ochtendtijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
+          "night_not_before": "Optioneel. Als de opgeloste nachttrigger eerder dan dit tijdstip zou vallen, wordt deze in plaats daarvan uitgesteld tot dit tijdstip.",
+          "night_not_after": "Optioneel. Als de opgeloste nachttrigger later dan dit tijdstip zou vallen, wordt deze in plaats daarvan vervroegd naar dit tijdstip.",
+          "morning_not_before": "Optioneel. Als de opgeloste ochtendtrigger eerder dan dit tijdstip zou vallen, wordt deze in plaats daarvan uitgesteld tot dit tijdstip.",
+          "morning_not_after": "Optioneel. Als de opgeloste ochtendtrigger later dan dit tijdstip zou vallen, wordt deze in plaats daarvan vervroegd naar dit tijdstip."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
+      "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste."
     },
     "abort": {
       "no_options_for_system_entry": "De SmartShading-systeeminvoer heeft geen configureerbare opties."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
+      "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste."
     },
     "abort": {
       "single_instance_allowed": "SmartShading is al geconfigureerd.",

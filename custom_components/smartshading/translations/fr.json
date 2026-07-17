@@ -61,7 +61,11 @@
           "weekend_morning_position": "Position du matin le week-end (sam–dim)",
           "active_months": "Mois actifs (avancé)",
           "night_sun_event": "Événement solaire nocturne (optionnel)",
-          "morning_sun_event": "Événement solaire matinal (optionnel)"
+          "morning_sun_event": "Événement solaire matinal (optionnel)",
+          "night_not_before": "Nuit : déclencheur au plus tôt (optionnel)",
+          "night_not_after": "Nuit : déclencheur au plus tard (optionnel)",
+          "morning_not_before": "Matin : déclencheur au plus tôt (optionnel)",
+          "morning_not_after": "Matin : déclencheur au plus tard (optionnel)"
         },
         "data_description": {
           "night_position": "Position du volet pendant la phase de nuit (0 = fermé, 100 = ouvert).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Position du volet au début de la phase du matin le week-end (0 = fermé, 100 = ouvert).",
           "active_months": "Laissez vide pour appliquer ce programme chaque mois. Sélectionnez des mois spécifiques pour le restreindre — par exemple de septembre à mars pour un programme d'hiver.",
           "night_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure de nuit ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
-          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°)."
+          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
+          "night_not_before": "Optionnel. Si le déclencheur nocturne résolu survenait plus tôt que cette heure, il est reporté à cette heure.",
+          "night_not_after": "Optionnel. Si le déclencheur nocturne résolu survenait plus tard que cette heure, il est avancé à cette heure.",
+          "morning_not_before": "Optionnel. Si le déclencheur matinal résolu survenait plus tôt que cette heure, il est reporté à cette heure.",
+          "morning_not_after": "Optionnel. Si le déclencheur matinal résolu survenait plus tard que cette heure, il est avancé à cette heure."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Le déclencheur nocturne au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
+      "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard."
     },
     "abort": {
       "no_options_for_system_entry": "L'entrée Système de SmartShading n'a aucune option configurable."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Le déclencheur nocturne au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
+      "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard."
     },
     "abort": {
       "single_instance_allowed": "SmartShading est déjà configuré.",

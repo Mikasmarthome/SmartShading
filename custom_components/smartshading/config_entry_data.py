@@ -221,6 +221,11 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             "morning_sun_event": (
                 lifecycle.morning_sun_event.value if lifecycle.morning_sun_event is not None else None
             ),
+            # Schedule clamp (v1.2.0-beta.1, T3): None = no restriction.
+            "night_not_before": _time_to_storage(lifecycle.night_not_before),
+            "night_not_after": _time_to_storage(lifecycle.night_not_after),
+            "morning_not_before": _time_to_storage(lifecycle.morning_not_before),
+            "morning_not_after": _time_to_storage(lifecycle.morning_not_after),
         },
         "presence_entity_ids": data.presence_entity_ids,
         "absence_delay_min": data.absence_delay_min,
@@ -297,6 +302,13 @@ def _lifecycle_config_from_storage(raw: dict[str, Any] | None) -> NightDayLifecy
         # never raises.
         night_sun_event=night_sun_event,
         morning_sun_event=morning_sun_event,
+        # Schedule clamp (v1.2.0-beta.1, T3) — missing key or malformed stored
+        # time -> None (no restriction), same _time_from_storage fallback
+        # already used for every other stored time field, never raises.
+        night_not_before=_time_from_storage(raw.get("night_not_before")),
+        night_not_after=_time_from_storage(raw.get("night_not_after")),
+        morning_not_before=_time_from_storage(raw.get("morning_not_before")),
+        morning_not_after=_time_from_storage(raw.get("morning_not_after")),
     )
 
 

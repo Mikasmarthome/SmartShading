@@ -61,7 +61,11 @@
           "weekend_morning_position": "Θέση πρωιού το Σαββατοκύριακο (Σαβ–Κυρ)",
           "active_months": "Ενεργοί μήνες (σύνθετο)",
           "night_sun_event": "Νυχτερινό ηλιακό συμβάν (προαιρετικό)",
-          "morning_sun_event": "Πρωινό ηλιακό συμβάν (προαιρετικό)"
+          "morning_sun_event": "Πρωινό ηλιακό συμβάν (προαιρετικό)",
+          "night_not_before": "Νύχτα: νωρίτερη ενεργοποίηση (προαιρετικό)",
+          "night_not_after": "Νύχτα: αργότερη ενεργοποίηση (προαιρετικό)",
+          "morning_not_before": "Πρωί: νωρίτερη ενεργοποίηση (προαιρετικό)",
+          "morning_not_after": "Πρωί: αργότερη ενεργοποίηση (προαιρετικό)"
         },
         "data_description": {
           "night_position": "Θέση του σκιάστρου κατά τη νυχτερινή φάση (0 = κλειστό, 100 = ανοιχτό).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Θέση του σκιάστρου στην αρχή της πρωινής φάσης το Σαββατοκύριακο (0 = κλειστό, 100 = ανοιχτό).",
           "active_months": "Αφήστε το κενό για να ισχύει αυτό το πρόγραμμα κάθε μήνα. Επιλέξτε συγκεκριμένους μήνες για να το περιορίσετε — π.χ. από Σεπτέμβριο έως Μάρτιο για χειμερινό πρόγραμμα.",
           "night_sun_event": "Προαιρετικό. Αν οριστεί, αυτό το αστρονομικό συμβάν αντικαθιστά την παραπάνω ώρα νύχτας. Η αυγή και το σούρουπο χρησιμοποιούν το αστικό λυκόφως (ήλιος στις -6°).",
-          "morning_sun_event": "Προαιρετικό. Αν οριστεί, αυτό το αστρονομικό συμβάν αντικαθιστά την παραπάνω ώρα πρωινού. Η αυγή και το σούρουπο χρησιμοποιούν το αστικό λυκόφως (ήλιος στις -6°)."
+          "morning_sun_event": "Προαιρετικό. Αν οριστεί, αυτό το αστρονομικό συμβάν αντικαθιστά την παραπάνω ώρα πρωινού. Η αυγή και το σούρουπο χρησιμοποιούν το αστικό λυκόφως (ήλιος στις -6°).",
+          "night_not_before": "Προαιρετικό. Αν η υπολογισμένη νυχτερινή ενεργοποίηση συνέβαινε νωρίτερα από αυτήν την ώρα, μετατίθεται σε αυτήν την ώρα.",
+          "night_not_after": "Προαιρετικό. Αν η υπολογισμένη νυχτερινή ενεργοποίηση συνέβαινε αργότερα από αυτήν την ώρα, προωθείται σε αυτήν την ώρα.",
+          "morning_not_before": "Προαιρετικό. Αν η υπολογισμένη πρωινή ενεργοποίηση συνέβαινε νωρίτερα από αυτήν την ώρα, μετατίθεται σε αυτήν την ώρα.",
+          "morning_not_after": "Προαιρετικό. Αν η υπολογισμένη πρωινή ενεργοποίηση συνέβαινε αργότερα από αυτήν την ώρα, προωθείται σε αυτήν την ώρα."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Η νωρίτερη νυχτερινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη.",
+      "morning_clamp_window_invalid": "Η νωρίτερη πρωινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη."
     },
     "abort": {
       "no_options_for_system_entry": "Η καταχώριση Συστήματος του SmartShading δεν έχει διαμορφώσιμες επιλογές."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Η νωρίτερη νυχτερινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη.",
+      "morning_clamp_window_invalid": "Η νωρίτερη πρωινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη."
     },
     "abort": {
       "single_instance_allowed": "Το SmartShading έχει ήδη διαμορφωθεί.",

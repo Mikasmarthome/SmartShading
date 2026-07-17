@@ -61,7 +61,11 @@
           "weekend_morning_position": "Pozycja poranna w weekend (sob–niedz)",
           "active_months": "Aktywne miesiące (zaawansowane)",
           "night_sun_event": "Nocne zdarzenie słoneczne (opcjonalne)",
-          "morning_sun_event": "Poranne zdarzenie słoneczne (opcjonalne)"
+          "morning_sun_event": "Poranne zdarzenie słoneczne (opcjonalne)",
+          "night_not_before": "Noc: najwcześniejszy wyzwalacz (opcjonalnie)",
+          "night_not_after": "Noc: najpóźniejszy wyzwalacz (opcjonalnie)",
+          "morning_not_before": "Rano: najwcześniejszy wyzwalacz (opcjonalnie)",
+          "morning_not_after": "Rano: najpóźniejszy wyzwalacz (opcjonalnie)"
         },
         "data_description": {
           "night_position": "Pozycja osłony w fazie nocnej (0 = zamknięta, 100 = otwarta).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Pozycja osłony na początku fazy porannej w weekend (0 = zamknięta, 100 = otwarta).",
           "active_months": "Pozostaw puste, aby ten harmonogram obowiązywał w każdym miesiącu. Wybierz konkretne miesiące, aby go ograniczyć — na przykład od września do marca dla harmonogramu zimowego.",
           "night_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas nocny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
-          "morning_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas poranny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°)."
+          "morning_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas poranny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
+          "night_not_before": "Opcjonalne. Jeśli rozwiązany wyzwalacz nocny wypadałby wcześniej niż ta godzina, zostanie opóźniony do tej godziny.",
+          "night_not_after": "Opcjonalne. Jeśli rozwiązany wyzwalacz nocny wypadałby później niż ta godzina, zostanie przesunięty na tę godzinę.",
+          "morning_not_before": "Opcjonalne. Jeśli rozwiązany wyzwalacz poranny wypadałby wcześniej niż ta godzina, zostanie opóźniony do tej godziny.",
+          "morning_not_after": "Opcjonalne. Jeśli rozwiązany wyzwalacz poranny wypadałby później niż ta godzina, zostanie przesunięty na tę godzinę."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
+      "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy."
     },
     "abort": {
       "no_options_for_system_entry": "Wpis systemowy SmartShading nie ma konfigurowalnych opcji."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
+      "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy."
     },
     "abort": {
       "single_instance_allowed": "SmartShading jest już skonfigurowany.",

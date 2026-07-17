@@ -61,7 +61,11 @@
           "weekend_morning_position": "Ранкове положення у вихідні (сб–нд)",
           "active_months": "Активні місяці (розширено)",
           "night_sun_event": "Нічна сонячна подія (необов'язково)",
-          "morning_sun_event": "Ранкова сонячна подія (необов'язково)"
+          "morning_sun_event": "Ранкова сонячна подія (необов'язково)",
+          "night_not_before": "Ніч: найраніший тригер (необов'язково)",
+          "night_not_after": "Ніч: найпізніший тригер (необов'язково)",
+          "morning_not_before": "Ранок: найраніший тригер (необов'язково)",
+          "morning_not_after": "Ранок: найпізніший тригер (необов'язково)"
         },
         "data_description": {
           "night_position": "Положення штори в нічній фазі (0 = закрито, 100 = відкрито).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Положення штори на початку ранкової фази у вихідні (0 = закрито, 100 = відкрито).",
           "active_months": "Залиште порожнім, щоб цей розклад застосовувався щомісяця. Виберіть конкретні місяці, щоб обмежити його — наприклад, з вересня по березень для зимового розкладу.",
           "night_sun_event": "Необов'язково. Якщо встановлено, ця астрономічна подія замінює вказаний вище нічний час. Світанок і сутінки використовують цивільні сутінки (сонце на -6°).",
-          "morning_sun_event": "Необов'язково. Якщо встановлено, ця астрономічна подія замінює вказаний вище ранковий час. Світанок і сутінки використовують цивільні сутінки (сонце на -6°)."
+          "morning_sun_event": "Необов'язково. Якщо встановлено, ця астрономічна подія замінює вказаний вище ранковий час. Світанок і сутінки використовують цивільні сутінки (сонце на -6°).",
+          "night_not_before": "Необов'язково. Якщо розв'язаний нічний тригер настав би раніше цього часу, він відкладається до цього часу.",
+          "night_not_after": "Необов'язково. Якщо розв'язаний нічний тригер настав би пізніше цього часу, він переноситься на цей час.",
+          "morning_not_before": "Необов'язково. Якщо розв'язаний ранковий тригер настав би раніше цього часу, він відкладається до цього часу.",
+          "morning_not_after": "Необов'язково. Якщо розв'язаний ранковий тригер настав би пізніше цього часу, він переноситься на цей час."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Найраніший нічний тригер не повинен бути пізнішим за найпізніший.",
+      "morning_clamp_window_invalid": "Найраніший ранковий тригер не повинен бути пізнішим за найпізніший."
     },
     "abort": {
       "no_options_for_system_entry": "Системний запис SmartShading не має налаштовуваних параметрів."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Найраніший нічний тригер не повинен бути пізнішим за найпізніший.",
+      "morning_clamp_window_invalid": "Найраніший ранковий тригер не повинен бути пізнішим за найпізніший."
     },
     "abort": {
       "single_instance_allowed": "SmartShading уже налаштовано.",

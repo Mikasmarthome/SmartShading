@@ -61,7 +61,11 @@
           "weekend_morning_position": "Weekend morning position (Sat–Sun)",
           "active_months": "Active months (advanced)",
           "night_sun_event": "Night sun event (optional)",
-          "morning_sun_event": "Morning sun event (optional)"
+          "morning_sun_event": "Morning sun event (optional)",
+          "night_not_before": "Night earliest trigger (optional)",
+          "night_not_after": "Night latest trigger (optional)",
+          "morning_not_before": "Morning earliest trigger (optional)",
+          "morning_not_after": "Morning latest trigger (optional)"
         },
         "data_description": {
           "night_position": "Cover position during the night phase (0 = closed, 100 = open).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Cover position at the start of the morning phase on weekends (0 = closed, 100 = open).",
           "active_months": "Leave empty to apply this schedule in every month. Select specific months to restrict it — for example September through March for a winter schedule.",
           "night_sun_event": "Optional. If set, this astronomical event replaces the night time above. Dawn and dusk use civil twilight (sun at -6°).",
-          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°)."
+          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "night_not_before": "Optional. If the resolved night trigger would occur earlier than this, it is delayed to this time instead.",
+          "night_not_after": "Optional. If the resolved night trigger would occur later than this, it is brought forward to this time instead.",
+          "morning_not_before": "Optional. If the resolved morning trigger would occur earlier than this, it is delayed to this time instead.",
+          "morning_not_after": "Optional. If the resolved morning trigger would occur later than this, it is brought forward to this time instead."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Night earliest trigger must not be later than night latest trigger.",
+      "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger."
     },
     "abort": {
       "no_options_for_system_entry": "The SmartShading System entry has no configurable options."
@@ -411,7 +421,9 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Night earliest trigger must not be later than night latest trigger.",
+      "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger."
     },
     "abort": {
       "single_instance_allowed": "SmartShading is already configured.",

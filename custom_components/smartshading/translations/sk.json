@@ -61,7 +61,11 @@
           "weekend_morning_position": "Ranná poloha cez víkend (so–ne)",
           "active_months": "Aktívne mesiace (rozšírené)",
           "night_sun_event": "Nočná slnečná udalosť (voliteľné)",
-          "morning_sun_event": "Ranná slnečná udalosť (voliteľné)"
+          "morning_sun_event": "Ranná slnečná udalosť (voliteľné)",
+          "night_not_before": "Noc: najskoršie spustenie (voliteľné)",
+          "night_not_after": "Noc: najneskôršie spustenie (voliteľné)",
+          "morning_not_before": "Ráno: najskoršie spustenie (voliteľné)",
+          "morning_not_after": "Ráno: najneskôršie spustenie (voliteľné)"
         },
         "data_description": {
           "night_position": "Poloha tienenia počas nočnej fázy (0 = zatvorené, 100 = otvorené).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Poloha tienenia na začiatku rannej fázy cez víkend (0 = zatvorené, 100 = otvorené).",
           "active_months": "Ponechajte prázdne, ak sa má tento plán použiť každý mesiac. Vyberte konkrétne mesiace na jeho obmedzenie — napríklad september až marec pre zimný plán.",
           "night_sun_event": "Voliteľné. Ak je nastavené, táto astronomická udalosť nahradí vyššie uvedený nočný čas. Svitanie a súmrak používajú občiansky súmrak (slnko na -6°).",
-          "morning_sun_event": "Voliteľné. Ak je nastavené, táto astronomická udalosť nahradí vyššie uvedený ranný čas. Svitanie a súmrak používajú občiansky súmrak (slnko na -6°)."
+          "morning_sun_event": "Voliteľné. Ak je nastavené, táto astronomická udalosť nahradí vyššie uvedený ranný čas. Svitanie a súmrak používajú občiansky súmrak (slnko na -6°).",
+          "night_not_before": "Voliteľné. Ak by vypočítané nočné spustenie nastalo skôr než tento čas, namísto toho sa odloží na tento čas.",
+          "night_not_after": "Voliteľné. Ak by vypočítané nočné spustenie nastalo neskôr než tento čas, namísto toho sa posunie na tento čas.",
+          "morning_not_before": "Voliteľné. Ak by vypočítané ranné spustenie nastalo skôr než tento čas, namísto toho sa odloží na tento čas.",
+          "morning_not_after": "Voliteľné. Ak by vypočítané ranné spustenie nastalo neskôr než tento čas, namísto toho sa posunie na tento čas."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Najskoršie nočné spustenie nesmie byť neskôr než najneskôršie.",
+      "morning_clamp_window_invalid": "Najskoršie ranné spustenie nesmie byť neskôr než najneskôršie."
     },
     "abort": {
       "no_options_for_system_entry": "Systémová položka SmartShading nemá žiadne konfigurovateľné možnosti."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Najskoršie nočné spustenie nesmie byť neskôr než najneskôršie.",
+      "morning_clamp_window_invalid": "Najskoršie ranné spustenie nesmie byť neskôr než najneskôršie."
     },
     "abort": {
       "single_instance_allowed": "SmartShading je už nakonfigurovaný.",

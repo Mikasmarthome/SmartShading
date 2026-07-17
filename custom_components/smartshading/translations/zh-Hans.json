@@ -61,7 +61,11 @@
           "weekend_morning_position": "周末早晨位置（周六至周日）",
           "active_months": "活跃月份（高级）",
           "night_sun_event": "夜间太阳事件（可选）",
-          "morning_sun_event": "早晨太阳事件（可选）"
+          "morning_sun_event": "早晨太阳事件（可选）",
+          "night_not_before": "夜间：最早触发时间（可选）",
+          "night_not_after": "夜间：最晚触发时间（可选）",
+          "morning_not_before": "早晨：最早触发时间（可选）",
+          "morning_not_after": "早晨：最晚触发时间（可选）"
         },
         "data_description": {
           "night_position": "夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
           "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。",
           "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
-          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。"
+          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "night_not_before": "可选。若解析后的夜间触发时间早于此时间，将推迟到此时间。",
+          "night_not_after": "可选。若解析后的夜间触发时间晚于此时间，将提前到此时间。",
+          "morning_not_before": "可选。若解析后的早晨触发时间早于此时间，将推迟到此时间。",
+          "morning_not_after": "可选。若解析后的早晨触发时间晚于此时间，将提前到此时间。"
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
+      "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。"
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading 系统条目没有可配置的选项。"
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
+      "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。"
     },
     "abort": {
       "single_instance_allowed": "SmartShading 已配置。",

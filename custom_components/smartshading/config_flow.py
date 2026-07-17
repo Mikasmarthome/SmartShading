@@ -125,6 +125,10 @@ from .const import (
     CONF_NIGHT_SUN_EVENT,
     CONF_MORNING_SUN_EVENT,
     SUN_EVENT_OPTIONS,
+    CONF_NIGHT_NOT_BEFORE,
+    CONF_NIGHT_NOT_AFTER,
+    CONF_MORNING_NOT_BEFORE,
+    CONF_MORNING_NOT_AFTER,
     DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C,
     CONF_GLARE_MIN_EXPOSURE_WM2,
     DEFAULT_GLARE_MIN_EXPOSURE_WM2,
@@ -192,6 +196,26 @@ def _first_zone_entry_data(hass: Any) -> dict[str, Any] | None:
         if entry.data.get(CONF_ENTRY_TYPE) != ENTRY_TYPE_SYSTEM:
             return entry.data
     return None
+
+
+def _parse_optional_time_input(value: Any) -> time | None:
+    """TimeSelector submits a "HH:MM:SS" string, or is simply absent from
+    user_input when left empty (it's an Optional field). Used for the T3
+    schedule-clamp not_before/not_after fields, where "unset" is a valid,
+    meaningful value (no restriction) - unlike _parse_time_input's Required
+    fields, there is no fallback default to fall back to. Never raises."""
+    if not isinstance(value, str):
+        return None
+    try:
+        return time.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _optional_time_to_storage(value: time | None) -> str | None:
+    """Inverse of _parse_optional_time_input: None stays None (no clamp
+    bound), a time serializes to its ISO string for JSON storage."""
+    return value.isoformat() if value is not None else None
 
 
 def _parse_time_input(value: Any, fallback: str) -> time:
@@ -1145,6 +1169,8 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             )
         )
 
+        errors: dict[str, str] = {}
+
         if user_input is not None:
             # Shared across both branches — active_months does not vary by day of week.
             # Empty selection = unrestricted (None), matching "no restriction" default.
@@ -1157,8 +1183,27 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             # BOTH, since the field then isn't rendered and can't be resubmitted).
             night_sun_event_value = user_input.get(CONF_NIGHT_SUN_EVENT) or None
             morning_sun_event_value = user_input.get(CONF_MORNING_SUN_EVENT) or None
+            # Schedule clamp (v1.2.0-beta.1, T3) — shared across both branches,
+            # same reasoning as active_months/sun events. Optional: absent/
+            # cleared -> None (no restriction).
+            night_not_before = _parse_optional_time_input(user_input.get(CONF_NIGHT_NOT_BEFORE))
+            night_not_after = _parse_optional_time_input(user_input.get(CONF_NIGHT_NOT_AFTER))
+            morning_not_before = _parse_optional_time_input(user_input.get(CONF_MORNING_NOT_BEFORE))
+            morning_not_after = _parse_optional_time_input(user_input.get(CONF_MORNING_NOT_AFTER))
+            if (
+                night_not_before is not None
+                and night_not_after is not None
+                and night_not_before > night_not_after
+            ):
+                errors["base"] = "night_clamp_window_invalid"
+            elif (
+                morning_not_before is not None
+                and morning_not_after is not None
+                and morning_not_before > morning_not_after
+            ):
+                errors["base"] = "morning_clamp_window_invalid"
 
-            if is_weekday_weekend:
+            if not errors and is_weekday_weekend:
                 # Parse shared elevation fields (elevation thresholds do not vary by day of week)
                 if pending_night in {NightTrigger.SUN_ELEVATION, NightTrigger.BOTH}:
                     if CONF_NIGHT_ELEVATION_PRESET in user_input:
@@ -1222,56 +1267,65 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     "active_months": active_months,
                     "night_sun_event": night_sun_event_value,
                     "morning_sun_event": morning_sun_event_value,
+                    "night_not_before": _optional_time_to_storage(night_not_before),
+                    "night_not_after": _optional_time_to_storage(night_not_after),
+                    "morning_not_before": _optional_time_to_storage(morning_not_before),
+                    "morning_not_after": _optional_time_to_storage(morning_not_after),
                 }
                 return self._save_and_reload({"lifecycle_config": new_lc})
 
             # SAME_EVERY_DAY save path
-            night_fixed_time = _parse_time_input(
-                user_input.get(CONF_NIGHT_FIXED_TIME),
-                stored_lc.get("night_fixed_time", DEFAULT_NIGHT_FIXED_TIME),
-            )
-            if CONF_NIGHT_ELEVATION_PRESET in user_input:
-                night_sun_elevation = _resolve_elevation(
-                    user_input,
-                    CONF_NIGHT_ELEVATION_PRESET,
-                    CONF_NIGHT_SUN_ELEVATION,
-                    NIGHT_ELEVATION_PRESETS,
-                    stored_lc.get("night_sun_elevation_deg", DEFAULT_NIGHT_SUN_ELEVATION),
+            if not errors and not is_weekday_weekend:
+                night_fixed_time = _parse_time_input(
+                    user_input.get(CONF_NIGHT_FIXED_TIME),
+                    stored_lc.get("night_fixed_time", DEFAULT_NIGHT_FIXED_TIME),
                 )
-            else:
-                night_sun_elevation = stored_lc.get("night_sun_elevation_deg", DEFAULT_NIGHT_SUN_ELEVATION)
-            morning_fixed_time = _parse_time_input(
-                user_input.get(CONF_MORNING_FIXED_TIME),
-                stored_lc.get("morning_fixed_time", DEFAULT_MORNING_FIXED_TIME),
-            )
-            if CONF_MORNING_ELEVATION_PRESET in user_input:
-                morning_sun_elevation = _resolve_elevation(
-                    user_input,
-                    CONF_MORNING_ELEVATION_PRESET,
-                    CONF_MORNING_SUN_ELEVATION,
-                    MORNING_ELEVATION_PRESETS,
-                    stored_lc.get("morning_sun_elevation_deg", DEFAULT_MORNING_SUN_ELEVATION),
+                if CONF_NIGHT_ELEVATION_PRESET in user_input:
+                    night_sun_elevation = _resolve_elevation(
+                        user_input,
+                        CONF_NIGHT_ELEVATION_PRESET,
+                        CONF_NIGHT_SUN_ELEVATION,
+                        NIGHT_ELEVATION_PRESETS,
+                        stored_lc.get("night_sun_elevation_deg", DEFAULT_NIGHT_SUN_ELEVATION),
+                    )
+                else:
+                    night_sun_elevation = stored_lc.get("night_sun_elevation_deg", DEFAULT_NIGHT_SUN_ELEVATION)
+                morning_fixed_time = _parse_time_input(
+                    user_input.get(CONF_MORNING_FIXED_TIME),
+                    stored_lc.get("morning_fixed_time", DEFAULT_MORNING_FIXED_TIME),
                 )
-            else:
-                morning_sun_elevation = stored_lc.get("morning_sun_elevation_deg", DEFAULT_MORNING_SUN_ELEVATION)
-            night_position = int(user_input.get(CONF_NIGHT_POSITION, stored_lc.get("night_position", DEFAULT_NIGHT_POSITION)))
-            morning_position = int(user_input.get(CONF_MORNING_POSITION, stored_lc.get("morning_position", DEFAULT_MORNING_POSITION)))
-            new_lc = {
-                **stored_lc,
-                "schedule_mode": active_schedule_mode.value,
-                "night_trigger": pending_night.value,
-                "night_fixed_time": night_fixed_time.isoformat(),
-                "night_sun_elevation_deg": night_sun_elevation,
-                "night_position": night_position,
-                "morning_trigger": pending_morning.value,
-                "morning_fixed_time": morning_fixed_time.isoformat(),
-                "morning_sun_elevation_deg": morning_sun_elevation,
-                "morning_position": morning_position,
-                "active_months": active_months,
-                "night_sun_event": night_sun_event_value,
-                "morning_sun_event": morning_sun_event_value,
-            }
-            return self._save_and_reload({"lifecycle_config": new_lc})
+                if CONF_MORNING_ELEVATION_PRESET in user_input:
+                    morning_sun_elevation = _resolve_elevation(
+                        user_input,
+                        CONF_MORNING_ELEVATION_PRESET,
+                        CONF_MORNING_SUN_ELEVATION,
+                        MORNING_ELEVATION_PRESETS,
+                        stored_lc.get("morning_sun_elevation_deg", DEFAULT_MORNING_SUN_ELEVATION),
+                    )
+                else:
+                    morning_sun_elevation = stored_lc.get("morning_sun_elevation_deg", DEFAULT_MORNING_SUN_ELEVATION)
+                night_position = int(user_input.get(CONF_NIGHT_POSITION, stored_lc.get("night_position", DEFAULT_NIGHT_POSITION)))
+                morning_position = int(user_input.get(CONF_MORNING_POSITION, stored_lc.get("morning_position", DEFAULT_MORNING_POSITION)))
+                new_lc = {
+                    **stored_lc,
+                    "schedule_mode": active_schedule_mode.value,
+                    "night_trigger": pending_night.value,
+                    "night_fixed_time": night_fixed_time.isoformat(),
+                    "night_sun_elevation_deg": night_sun_elevation,
+                    "night_position": night_position,
+                    "morning_trigger": pending_morning.value,
+                    "morning_fixed_time": morning_fixed_time.isoformat(),
+                    "morning_sun_elevation_deg": morning_sun_elevation,
+                    "morning_position": morning_position,
+                    "active_months": active_months,
+                    "night_sun_event": night_sun_event_value,
+                    "morning_sun_event": morning_sun_event_value,
+                    "night_not_before": _optional_time_to_storage(night_not_before),
+                    "night_not_after": _optional_time_to_storage(night_not_after),
+                    "morning_not_before": _optional_time_to_storage(morning_not_before),
+                    "morning_not_after": _optional_time_to_storage(morning_not_after),
+                }
+                return self._save_and_reload({"lifecycle_config": new_lc})
 
         # Build elevation selectors — shared between WEEKDAY_WEEKEND and SAME_EVERY_DAY branches.
         stored_night_elev = stored_lc.get("night_sun_elevation_deg", DEFAULT_NIGHT_SUN_ELEVATION)
@@ -1311,6 +1365,27 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         # override configured), not silently pre-select "sunset"/"sunrise".
         stored_night_sun_event = stored_lc.get("night_sun_event")
         stored_morning_sun_event = stored_lc.get("morning_sun_event")
+
+        # Schedule clamp (v1.2.0-beta.1, T3). Reaching this schema-building
+        # code with user_input is not None only happens on a validation-error
+        # redisplay (the save paths above return before falling through) —
+        # in that case, re-suggest what the user just typed (even if that's
+        # "cleared") rather than reverting to the stored value, so a rejected
+        # inverse window stays visible on the form for the user to fix.
+        if user_input is not None:
+            stored_night_not_before = user_input.get(CONF_NIGHT_NOT_BEFORE)
+            stored_night_not_after = user_input.get(CONF_NIGHT_NOT_AFTER)
+            stored_morning_not_before = user_input.get(CONF_MORNING_NOT_BEFORE)
+            stored_morning_not_after = user_input.get(CONF_MORNING_NOT_AFTER)
+        else:
+            stored_night_not_before = stored_lc.get("night_not_before")
+            stored_night_not_after = stored_lc.get("night_not_after")
+            stored_morning_not_before = stored_lc.get("morning_not_before")
+            stored_morning_not_after = stored_lc.get("morning_not_after")
+        night_not_before_selector = TimeSelector()
+        night_not_after_selector = TimeSelector()
+        morning_not_before_selector = TimeSelector()
+        morning_not_after_selector = TimeSelector()
 
         # Show form
         if is_weekday_weekend:
@@ -1374,10 +1449,29 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                         description={"suggested_value": stored_morning_sun_event},
                     )
                 ] = morning_sun_event_selector
+            # Schedule clamp (v1.2.0-beta.1, T3): shared, not weekday/weekend-
+            # specific — same visibility condition as the sun event override
+            # above (only meaningful once a time comparison happens).
+            if pending_night in {NightTrigger.FIXED_TIME, NightTrigger.BOTH}:
+                schema_dict[
+                    vol.Optional(CONF_NIGHT_NOT_BEFORE, description={"suggested_value": stored_night_not_before})
+                ] = night_not_before_selector
+                schema_dict[
+                    vol.Optional(CONF_NIGHT_NOT_AFTER, description={"suggested_value": stored_night_not_after})
+                ] = night_not_after_selector
+            if pending_morning in {MorningTrigger.FIXED_TIME, MorningTrigger.BOTH}:
+                schema_dict[
+                    vol.Optional(CONF_MORNING_NOT_BEFORE, description={"suggested_value": stored_morning_not_before})
+                ] = morning_not_before_selector
+                schema_dict[
+                    vol.Optional(CONF_MORNING_NOT_AFTER, description={"suggested_value": stored_morning_not_after})
+                ] = morning_not_after_selector
             schema_dict[
                 vol.Optional(CONF_ACTIVE_MONTHS, default=stored_lc.get("active_months") or [])
             ] = active_months_selector
-            return self.async_show_form(step_id="lifecycle_detail", data_schema=vol.Schema(schema_dict))
+            return self.async_show_form(
+                step_id="lifecycle_detail", data_schema=vol.Schema(schema_dict), errors=errors
+            )
 
         # SAME_EVERY_DAY form
         stored_night_time = stored_lc.get("night_fixed_time", DEFAULT_NIGHT_FIXED_TIME)
@@ -1415,10 +1509,29 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 )
             ] = morning_sun_event_selector
         schema_dict[vol.Required(CONF_MORNING_POSITION, default=stored_morning_pos)] = position_selector
+        # Schedule clamp (v1.2.0-beta.1, T3): only meaningful once a time
+        # comparison happens (FIXED_TIME or BOTH — sun_event overrides also
+        # only apply then), same as the sun event override condition above.
+        if pending_night in {NightTrigger.FIXED_TIME, NightTrigger.BOTH}:
+            schema_dict[
+                vol.Optional(CONF_NIGHT_NOT_BEFORE, description={"suggested_value": stored_night_not_before})
+            ] = night_not_before_selector
+            schema_dict[
+                vol.Optional(CONF_NIGHT_NOT_AFTER, description={"suggested_value": stored_night_not_after})
+            ] = night_not_after_selector
+        if pending_morning in {MorningTrigger.FIXED_TIME, MorningTrigger.BOTH}:
+            schema_dict[
+                vol.Optional(CONF_MORNING_NOT_BEFORE, description={"suggested_value": stored_morning_not_before})
+            ] = morning_not_before_selector
+            schema_dict[
+                vol.Optional(CONF_MORNING_NOT_AFTER, description={"suggested_value": stored_morning_not_after})
+            ] = morning_not_after_selector
         schema_dict[
             vol.Optional(CONF_ACTIVE_MONTHS, default=stored_lc.get("active_months") or [])
         ] = active_months_selector
-        return self.async_show_form(step_id="lifecycle_detail", data_schema=vol.Schema(schema_dict))
+        return self.async_show_form(
+            step_id="lifecycle_detail", data_schema=vol.Schema(schema_dict), errors=errors
+        )
 
     # -- Presence --
 

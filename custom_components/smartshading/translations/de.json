@@ -61,7 +61,11 @@
           "weekend_morning_position": "Morgenposition Wochenende (Sa–So)",
           "active_months": "Aktive Monate (erweitert)",
           "night_sun_event": "Nächtliches Sonnenereignis (optional)",
-          "morning_sun_event": "Morgendliches Sonnenereignis (optional)"
+          "morning_sun_event": "Morgendliches Sonnenereignis (optional)",
+          "night_not_before": "Nacht: frühester Auslöser (optional)",
+          "night_not_after": "Nacht: spätester Auslöser (optional)",
+          "morning_not_before": "Morgen: frühester Auslöser (optional)",
+          "morning_not_after": "Morgen: spätester Auslöser (optional)"
         },
         "data_description": {
           "night_position": "Behangsposition in der Nachtphase (0 = geschlossen, 100 = offen).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen).",
           "active_months": "Leer lassen, um diesen Zeitplan in jedem Monat anzuwenden. Wähle bestimmte Monate aus, um ihn einzuschränken — zum Beispiel September bis März für einen Winter-Zeitplan.",
           "night_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Nachtzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
-          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°)."
+          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
+          "night_not_before": "Optional. Würde der aufgelöste nächtliche Auslöser früher als diese Zeit liegen, wird er stattdessen auf diese Zeit verschoben.",
+          "night_not_after": "Optional. Würde der aufgelöste nächtliche Auslöser später als diese Zeit liegen, wird er stattdessen auf diese Zeit vorgezogen.",
+          "morning_not_before": "Optional. Würde der aufgelöste morgendliche Auslöser früher als diese Zeit liegen, wird er stattdessen auf diese Zeit verschoben.",
+          "morning_not_after": "Optional. Würde der aufgelöste morgendliche Auslöser später als diese Zeit liegen, wird er stattdessen auf diese Zeit vorgezogen."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "night_lift_requires_night_block": "Option B (Lüftungsposition) erfordert, dass Option A (Nachtfahrt blockieren) aktiviert ist.",
       "contact_sensor_required_for_block": "Für Option A muss ein Kontaktsensor ausgewählt sein.",
       "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein.",
-      "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben."
+      "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben.",
+      "night_clamp_window_invalid": "Der früheste nächtliche Auslöser darf nicht später sein als der späteste.",
+      "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste."
     },
     "abort": {
       "no_options_for_system_entry": "Der SmartShading-System-Eintrag hat keine konfigurierbaren Optionen."
@@ -411,7 +421,9 @@
       "night_lift_requires_night_block": "Option B (Lüftungsposition) erfordert, dass Option A (Nachtfahrt blockieren) aktiviert ist.",
       "contact_sensor_required_for_block": "Für Option A muss ein Kontaktsensor ausgewählt sein.",
       "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein.",
-      "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben."
+      "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben.",
+      "night_clamp_window_invalid": "Der früheste nächtliche Auslöser darf nicht später sein als der späteste.",
+      "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste."
     },
     "abort": {
       "single_instance_allowed": "SmartShading ist bereits eingerichtet.",

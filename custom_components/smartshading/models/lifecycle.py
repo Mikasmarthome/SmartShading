@@ -114,6 +114,23 @@ class NightDayLifecycleConfig:
     needed to express that combination). Irrelevant when night_trigger/
     morning_trigger is DISABLED or SUN_ELEVATION (no time comparison happens
     there), but harmless if set anyway.
+
+    night_not_before / night_not_after / morning_not_before / morning_not_after
+    (v1.2.0-beta.1, T3) clamp the FINAL resolved trigger time — whichever of
+    night_fixed_time or a resolved night_sun_event produced it — to an
+    optional [earliest, latest] window. None (default, both fields) means no
+    restriction: byte-for-byte pre-T3 behavior. Only *_not_before set clamps
+    an earlier time up to it; only *_not_after set clamps a later time down
+    to it; both set clamps to the [not_before, not_after] window, including
+    the not_before == not_after edge case (a fixed effective trigger time).
+    Applied by engines.lifecycle_engine.clamp_time() as the last step inside
+    _active_profile(), after sun-event resolution — so _evaluate_trigger()
+    never needs to know a clamp happened, exactly like the sun-event override
+    above needs no dedicated branch there. A not_before > not_after window is
+    an invalid configuration: the OptionsFlow rejects and never stores it, but
+    if raw storage is ever corrupted to hold one anyway, clamp_time() treats
+    it as "no clamp" rather than guessing an interpretation — see its
+    docstring for the full contract.
     """
 
     id: str
@@ -135,6 +152,10 @@ class NightDayLifecycleConfig:
     # event is a physical property of the sky, not a social schedule, same
     # reasoning already applied to night_sun_elevation_deg above.
     night_sun_event: SunEvent | None = None
+    # Schedule clamp (v1.2.0-beta.1, T3): optional earliest/latest bounds on
+    # the final resolved night trigger time. None = no restriction (default).
+    night_not_before: time | None = None
+    night_not_after: time | None = None
 
     # Morning mode — shared
     morning_enabled: bool = True
@@ -145,6 +166,10 @@ class NightDayLifecycleConfig:
     morning_tilt: int | None = None
     # Sun event override (v1.2.0-beta.1): None = use morning_fixed_time as-is.
     morning_sun_event: SunEvent | None = None
+    # Schedule clamp (v1.2.0-beta.1, T3): optional earliest/latest bounds on
+    # the final resolved morning trigger time. None = no restriction (default).
+    morning_not_before: time | None = None
+    morning_not_after: time | None = None
 
     # Weekday schedule (used when schedule_mode is WEEKDAY_WEEKEND)
     weekday_night_fixed_time: time | None = None   # default same as night_fixed_time

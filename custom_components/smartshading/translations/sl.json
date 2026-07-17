@@ -61,7 +61,11 @@
           "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)",
           "active_months": "Aktivni meseci (napredno)",
           "night_sun_event": "Nočni sončni dogodek (neobvezno)",
-          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)"
+          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)",
+          "night_not_before": "Noč: najzgodnejši sprožilec (neobvezno)",
+          "night_not_after": "Noč: najkasnejši sprožilec (neobvezno)",
+          "morning_not_before": "Jutro: najzgodnejši sprožilec (neobvezno)",
+          "morning_not_after": "Jutro: najkasnejši sprožilec (neobvezno)"
         },
         "data_description": {
           "night_position": "Položaj senčila med nočno fazo (0 = zaprto, 100 = odprto).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto).",
           "active_months": "Pustite prazno, če naj ta urnik velja vsak mesec. Izberite določene mesece za omejitev — na primer od septembra do marca za zimski urnik.",
           "night_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji nočni čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
-          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°)."
+          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
+          "night_not_before": "Neobvezno. Če bi razrešeni nočni sprožilec nastopil prej kot ob tem času, se namesto tega zamakne na ta čas.",
+          "night_not_after": "Neobvezno. Če bi razrešeni nočni sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas.",
+          "morning_not_before": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil prej kot ob tem času, se namesto tega zamakne na ta čas.",
+          "morning_not_after": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
+      "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega."
     },
     "abort": {
       "no_options_for_system_entry": "Sistemski vnos SmartShading nima nastavljivih možnosti."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
+      "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega."
     },
     "abort": {
       "single_instance_allowed": "SmartShading je že konfiguriran.",

@@ -61,7 +61,11 @@
           "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)",
           "active_months": "Aktif aylar (gelişmiş)",
           "night_sun_event": "Gece güneş olayı (isteğe bağlı)",
-          "morning_sun_event": "Sabah güneş olayı (isteğe bağlı)"
+          "morning_sun_event": "Sabah güneş olayı (isteğe bağlı)",
+          "night_not_before": "Gece: en erken tetikleyici (isteğe bağlı)",
+          "night_not_after": "Gece: en geç tetikleyici (isteğe bağlı)",
+          "morning_not_before": "Sabah: en erken tetikleyici (isteğe bağlı)",
+          "morning_not_after": "Sabah: en geç tetikleyici (isteğe bağlı)"
         },
         "data_description": {
           "night_position": "Gece fazında gölgeliğin konumu (0 = kapalı, 100 = açık).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Hafta sonu sabah fazının başında gölgeliğin konumu (0 = kapalı, 100 = açık).",
           "active_months": "Bu programin her ay uygulanmasi icin bos birakin. Kisitlamak icin belirli aylari secin — ornegin kis programi icin Eylul'den Mart'a kadar.",
           "night_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki gece saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
-          "morning_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki sabah saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda)."
+          "morning_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki sabah saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
+          "night_not_before": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
+          "night_not_after": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
+          "morning_not_before": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
+          "morning_not_after": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "En erken gece tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
+      "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading Sistem girişinin yapılandırılabilir seçeneği yoktur."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "En erken gece tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
+      "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz."
     },
     "abort": {
       "single_instance_allowed": "SmartShading zaten yapılandırılmış.",

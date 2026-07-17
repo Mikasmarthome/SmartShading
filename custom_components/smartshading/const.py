@@ -211,6 +211,16 @@ CONF_MORNING_SUN_ELEVATION = "morning_sun_elevation"
 CONF_NIGHT_SUN_EVENT = "night_sun_event"
 CONF_MORNING_SUN_EVENT = "morning_sun_event"
 
+# Schedule clamp (v1.2.0-beta.1): optional earliest/latest bounds applied to
+# the final resolved night/morning trigger time (fixed_time OR a resolved
+# sun_event override - the clamp does not care which one produced it). None
+# (default, both) = no restriction, byte-for-byte pre-T3 behavior. Options-
+# flow-only - see engines/lifecycle_engine.clamp_time() for the pure helper.
+CONF_NIGHT_NOT_BEFORE = "night_not_before"
+CONF_NIGHT_NOT_AFTER = "night_not_after"
+CONF_MORNING_NOT_BEFORE = "morning_not_before"
+CONF_MORNING_NOT_AFTER = "morning_not_after"
+
 CONF_PRESENCE_ENTITY_IDS = "presence_entity_ids"
 CONF_ABSENCE_DELAY_MIN = "absence_delay_min"
 CONF_ABSENCE_POSITION = "absence_position"

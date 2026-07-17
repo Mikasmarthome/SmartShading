@@ -61,7 +61,11 @@
           "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)",
           "active_months": "Aktív hónapok (speciális)",
           "night_sun_event": "Éjszakai napesemény (opcionális)",
-          "morning_sun_event": "Reggeli napesemény (opcionális)"
+          "morning_sun_event": "Reggeli napesemény (opcionális)",
+          "night_not_before": "Éjszaka: legkorábbi kiváltás (opcionális)",
+          "night_not_after": "Éjszaka: legkésőbbi kiváltás (opcionális)",
+          "morning_not_before": "Reggel: legkorábbi kiváltás (opcionális)",
+          "morning_not_after": "Reggel: legkésőbbi kiváltás (opcionális)"
         },
         "data_description": {
           "night_position": "Az árnyékoló pozíciója az éjszakai fázisban (0 = zárva, 100 = nyitva).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétvégén (0 = zárva, 100 = nyitva).",
           "active_months": "Hagyja üresen, ha ezt az ütemezést minden hónapban alkalmazni szeretné. Válasszon konkrét hónapokat a korlátozásához — például szeptembertől márciusig egy téli ütemezéshez.",
           "night_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti éjszakai időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
-          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on)."
+          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
+          "night_not_before": "Opcionális. Ha a feloldott éjszakai kiváltás ennél az időpontnál korábban történne, ehelyett erre az időpontra tolódik.",
+          "night_not_after": "Opcionális. Ha a feloldott éjszakai kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb.",
+          "morning_not_before": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál korábban történne, ehelyett erre az időpontra tolódik.",
+          "morning_not_after": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",
+      "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél."
     },
     "abort": {
       "no_options_for_system_entry": "A SmartShading rendszerbejegyzésnek nincsenek konfigurálható beállításai."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",
+      "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél."
     },
     "abort": {
       "single_instance_allowed": "A SmartShading már konfigurálva van.",

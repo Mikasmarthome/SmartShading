@@ -61,7 +61,11 @@
           "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)",
           "active_months": "Luni active (avansat)",
           "night_sun_event": "Eveniment solar nocturn (opțional)",
-          "morning_sun_event": "Eveniment solar matinal (opțional)"
+          "morning_sun_event": "Eveniment solar matinal (opțional)",
+          "night_not_before": "Noapte: declanșator cel mai devreme (opțional)",
+          "night_not_after": "Noapte: declanșator cel mai târziu (opțional)",
+          "morning_not_before": "Dimineață: declanșator cel mai devreme (opțional)",
+          "morning_not_after": "Dimineață: declanșator cel mai târziu (opțional)"
         },
         "data_description": {
           "night_position": "Poziția umbrarului în faza de noapte (0 = închis, 100 = deschis).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Poziția umbrarului la începutul fazei de dimineață în weekend (0 = închis, 100 = deschis).",
           "active_months": "Lăsați necompletat pentru a aplica acest program în fiecare lună. Selectați anumite luni pentru a-l restricționa — de exemplu, din septembrie până în martie pentru un program de iarnă.",
           "night_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de noapte de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
-          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°)."
+          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "night_not_before": "Opțional. Dacă declanșatorul de noapte rezolvat ar surveni mai devreme decât această oră, este amânat până la această oră.",
+          "night_not_after": "Opțional. Dacă declanșatorul de noapte rezolvat ar surveni mai târziu decât această oră, este devansat la această oră.",
+          "morning_not_before": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai devreme decât această oră, este amânat până la această oră.",
+          "morning_not_after": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai târziu decât această oră, este devansat la această oră."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Declanșatorul de noapte cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
+      "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu."
     },
     "abort": {
       "no_options_for_system_entry": "Intrarea de Sistem SmartShading nu are opțiuni configurabile."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Declanșatorul de noapte cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
+      "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu."
     },
     "abort": {
       "single_instance_allowed": "SmartShading este deja configurat.",

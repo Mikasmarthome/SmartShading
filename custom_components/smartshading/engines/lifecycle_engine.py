@@ -74,6 +74,38 @@ instead) via a simple date comparison, with no extra per-cycle state:
 The evaluation always uses the LOCAL date embedded in `now`.  The coordinator
 passes a HA-localised datetime for this reason.  Do NOT convert to UTC here.
 
+Schedule clamp (v1.2.0-beta.1, T3)
+-----------------------------------
+NightDayLifecycleConfig.night_not_before/night_not_after and
+morning_not_before/morning_not_after optionally bound the FINAL resolved
+night/morning trigger time — whichever of night_fixed_time or a resolved
+night_sun_event produced it (see "Sun events" above; the clamp does not
+care which one it is). clamp_time() is applied inside _active_profile() as
+the very last step, after sun-event resolution, on the already-selected
+weekday/weekend-or-shared profile. _evaluate_trigger() needs no clamp-aware
+branch, for exactly the same reason it needs no sun-event branch: by the
+time it runs, profile.night_fixed_time/morning_fixed_time already IS the
+final clamped value, indistinguishable from an unclamped fixed time. BOTH
+therefore automatically compares against the clamped time on its time side,
+with zero extra code.
+
+clamp_time(resolved_time, not_before, not_after) semantics:
+  - resolved_time is None (no fixed_time, no sun event, or absent sun data)
+    -> None. A missing base value never produces a synthetic clamp result.
+  - both bounds None -> resolved_time unchanged.
+  - only not_before set -> max(resolved_time, not_before).
+  - only not_after set -> min(resolved_time, not_after).
+  - both set, not_before <= not_after -> resolved_time clamped into
+    [not_before, not_after]. not_before == not_after is allowed and
+    collapses the trigger to that single fixed time every cycle.
+  - both set, not_before > not_after (an invalid window that should never
+    reach here — the OptionsFlow validates and refuses to store one, see
+    config_flow.py) -> resolved_time returned UNCLAMPED. This is a
+    deliberate fail-safe for corrupted/hand-edited storage: silently picking
+    one bound over the other would guess at user intent, and clamping to an
+    empty range would produce no reachable trigger time at all. "No clamp"
+    is the only outcome that cannot itself introduce a new bug.
+
 Night carryover after restart
 -----------------------------
 When HA restarts between midnight and the morning trigger time, the previous
@@ -175,6 +207,21 @@ def _resolve_configured_sun_event_time(
     return _resolve_sun_event_time(now, next_event_local)
 
 
+def clamp_time(resolved_time: time | None, not_before: time | None, not_after: time | None) -> time | None:
+    """Clamp an already-resolved trigger time into an optional [not_before,
+    not_after] window. See "Schedule clamp" in the module docstring for the
+    full semantics and the not_before > not_after fail-safe rationale."""
+    if resolved_time is None:
+        return None
+    if not_before is not None and not_after is not None and not_before > not_after:
+        return resolved_time
+    if not_before is not None and resolved_time < not_before:
+        resolved_time = not_before
+    if not_after is not None and resolved_time > not_after:
+        resolved_time = not_after
+    return resolved_time
+
+
 class _ScheduleProfile(NamedTuple):
     """Active fixed-time and position values for the current cycle."""
 
@@ -273,6 +320,18 @@ def _active_profile(
                 now, config.morning_sun_event, sun_event_times
             )
         )
+
+    # Schedule clamp (v1.2.0-beta.1, T3): applied last, on the fully resolved
+    # time regardless of whether it came from a fixed_time or a sun_event
+    # override above. See "Schedule clamp" in the module docstring.
+    profile = profile._replace(
+        night_fixed_time=clamp_time(
+            profile.night_fixed_time, config.night_not_before, config.night_not_after
+        ),
+        morning_fixed_time=clamp_time(
+            profile.morning_fixed_time, config.morning_not_before, config.morning_not_after
+        ),
+    )
     return profile
 
 

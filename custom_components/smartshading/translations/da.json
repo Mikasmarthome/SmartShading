@@ -61,7 +61,11 @@
           "weekend_morning_position": "Morgenposition i weekenden (lør–søn)",
           "active_months": "Aktive måneder (avanceret)",
           "night_sun_event": "Nattens solbegivenhed (valgfri)",
-          "morning_sun_event": "Morgenens solbegivenhed (valgfri)"
+          "morning_sun_event": "Morgenens solbegivenhed (valgfri)",
+          "night_not_before": "Nat: tidligste udløser (valgfri)",
+          "night_not_after": "Nat: seneste udløser (valgfri)",
+          "morning_not_before": "Morgen: tidligste udløser (valgfri)",
+          "morning_not_after": "Morgen: seneste udløser (valgfri)"
         },
         "data_description": {
           "night_position": "Afskærmningens position i natfasen (0 = lukket, 100 = åben).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Afskærmningens position ved starten af morgenfasen i weekenden (0 = lukket, 100 = åben).",
           "active_months": "Lad stå tomt for at anvende denne tidsplan hver måned. Vælg bestemte måneder for at begrænse den — f.eks. september til marts for en vinterplan.",
           "night_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed nattetidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
-          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°)."
+          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
+          "night_not_before": "Valgfrit. Hvis den beregnede natudløser ville indtræffe tidligere end dette tidspunkt, udskydes den til dette tidspunkt i stedet.",
+          "night_not_after": "Valgfrit. Hvis den beregnede natudløser ville indtræffe senere end dette tidspunkt, fremrükkes den til dette tidspunkt i stedet.",
+          "morning_not_before": "Valgfrit. Hvis den beregnede morgenudløser ville indtræffe tidligere end dette tidspunkt, udskydes den til dette tidspunkt i stedet.",
+          "morning_not_after": "Valgfrit. Hvis den beregnede morgenudløser ville indtræffe senere end dette tidspunkt, fremrükkes den til dette tidspunkt i stedet."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Tidligste natudløser må ikke være senere end seneste.",
+      "morning_clamp_window_invalid": "Tidligste morgenudløser må ikke være senere end seneste."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-systemposten har ingen konfigurerbare indstillinger."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Tidligste natudløser må ikke være senere end seneste.",
+      "morning_clamp_window_invalid": "Tidligste morgenudløser må ikke være senere end seneste."
     },
     "abort": {
       "single_instance_allowed": "SmartShading er allerede konfigureret.",

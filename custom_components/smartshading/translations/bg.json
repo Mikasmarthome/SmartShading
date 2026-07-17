@@ -61,7 +61,11 @@
           "weekend_morning_position": "Сутрешна позиция през уикенда (съб–нед)",
           "active_months": "Активни месеци (разширено)",
           "night_sun_event": "Нощно слънчево събитие (по избор)",
-          "morning_sun_event": "Сутрешно слънчево събитие (по избор)"
+          "morning_sun_event": "Сутрешно слънчево събитие (по избор)",
+          "night_not_before": "Нощ: най-ранен тригер (по избор)",
+          "night_not_after": "Нощ: най-късен тригер (по избор)",
+          "morning_not_before": "Сутрин: най-ранен тригер (по избор)",
+          "morning_not_after": "Сутрин: най-късен тригер (по избор)"
         },
         "data_description": {
           "night_position": "Позиция на щората през нощната фаза (0 = затворена, 100 = отворена).",
@@ -72,7 +76,11 @@
           "weekend_morning_position": "Позиция на щората в началото на сутрешната фаза през уикенда (0 = затворена, 100 = отворена).",
           "active_months": "Оставете празно, за да прилагате този график всеки месец. Изберете конкретни месеци, за да го ограничите — например от септември до март за зимен график.",
           "night_sun_event": "По избор. Ако е зададено, това астрономическо събитие заменя посочения по-горе час за нощ. Зазоряването и здрачаването използват гражданския здрач (слънце на -6°).",
-          "morning_sun_event": "По избор. Ако е зададено, това астрономическо събитие заменя посочения по-горе час за сутрин. Зазоряването и здрачаването използват гражданския здрач (слънце на -6°)."
+          "morning_sun_event": "По избор. Ако е зададено, това астрономическо събитие заменя посочения по-горе час за сутрин. Зазоряването и здрачаването използват гражданския здрач (слънце на -6°).",
+          "night_not_before": "По избор. Ако определеният нощен тригер настъпи по-рано от този час, той се отлага до този час.",
+          "night_not_after": "По избор. Ако определеният нощен тригер настъпи по-късно от този час, той се премества на този час.",
+          "morning_not_before": "По избор. Ако определеният сутрешен тригер настъпи по-рано от този час, той се отлага до този час.",
+          "morning_not_after": "По избор. Ако определеният сутрешен тригер настъпи по-късно от този час, той се премества на този час."
         }
       },
       "presence": {
@@ -267,7 +275,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Най-ранният нощен тригер не трябва да бъде по-късен от най-късния.",
+      "morning_clamp_window_invalid": "Най-ранният сутрешен тригер не трябва да бъде по-късен от най-късния."
     },
     "abort": {
       "no_options_for_system_entry": "Системният запис на SmartShading няма конфигурируеми опции."
@@ -411,7 +421,9 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m²."
+      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "night_clamp_window_invalid": "Най-ранният нощен тригер не трябва да бъде по-късен от най-късния.",
+      "morning_clamp_window_invalid": "Най-ранният сутрешен тригер не трябва да бъде по-късен от най-късния."
     },
     "abort": {
       "single_instance_allowed": "SmartShading вече е конфигуриран.",

@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Entitete prisotnosti",
           "absence_delay_min": "Zakasnitev odsotnosti",
-          "absence_position": "Položaj ob odsotnosti"
+          "absence_position": "Položaj ob odsotnosti",
+          "presence_policy": "Pravilnik za ocenjevanje prisotnosti"
         },
         "data_description": {
-          "absence_position": "Položaj senčila, ko je območje nezasedeno, razen če velja močnejša zaščitna odločitev (0 = popolnoma zaprto, 100 = popolnoma odprto). Velja za vsa okna v tem območju."
+          "absence_position": "Položaj senčila, ko je območje nezasedeno, razen če velja močnejša zaščitna odločitev (0 = popolnoma zaprto, 100 = popolnoma odprto). Velja za vsa okna v tem območju.",
+          "presence_policy": "Nadzoruje, kako se več entitet prisotnosti združi v en signal. Nekdo doma (privzeto): prisotnost, takoj ko je doma ena izbrana oseba. Vsi doma: prisotnost samo, ko so doma vse izbrane osebe. Obrnjeno: obrne pomen \"nekdo doma\" — prisotnost šele, ko je potrjeno, da je nekdo odsoten."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Entitete prisotnosti",
           "absence_delay_min": "Zakasnitev odsotnosti",
-          "absence_position": "Položaj ob odsotnosti"
+          "absence_position": "Položaj ob odsotnosti",
+          "presence_policy": "Pravilnik za ocenjevanje prisotnosti"
         },
         "data_description": {
-          "absence_position": "Položaj senčila, ko je območje nezasedeno, razen če velja močnejša zaščitna odločitev (0 = popolnoma zaprto, 100 = popolnoma odprto). Velja za vsa okna v tem območju."
+          "absence_position": "Položaj senčila, ko je območje nezasedeno, razen če velja močnejša zaščitna odločitev (0 = popolnoma zaprto, 100 = popolnoma odprto). Velja za vsa okna v tem območju.",
+          "presence_policy": "Nadzoruje, kako se več entitet prisotnosti združi v en signal. Nekdo doma (privzeto): prisotnost, takoj ko je doma ena izbrana oseba. Vsi doma: prisotnost samo, ko so doma vse izbrane osebe. Obrnjeno: obrne pomen \"nekdo doma\" — prisotnost šele, ko je potrjeno, da je nekdo odsoten."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Tenda",
         "generic": "Drugo senčilo"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Nekdo doma",
+        "all_home": "Vsi doma",
+        "inverted_any_home": "Obrnjeno (nekdo doma = odsoten)"
       }
     }
   },

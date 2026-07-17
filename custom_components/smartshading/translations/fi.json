@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Läsnäoloentiteetit",
           "absence_delay_min": "Poissaoloviive",
-          "absence_position": "Poissaolosijainti"
+          "absence_position": "Poissaolosijainti",
+          "presence_policy": "Läsnäolon arviointikäytäntö"
         },
         "data_description": {
-          "absence_position": "Varjostimen sijainti, kun vyöhyke on tyhjä, ellei vahvempi suojauspäätös ole voimassa (0 = täysin suljettu, 100 = täysin avoin). Koskee kaikkia tämän vyöhykkeen ikkunoita."
+          "absence_position": "Varjostimen sijainti, kun vyöhyke on tyhjä, ellei vahvempi suojauspäätös ole voimassa (0 = täysin suljettu, 100 = täysin avoin). Koskee kaikkia tämän vyöhykkeen ikkunoita.",
+          "presence_policy": "Määrittää, miten useat läsnäoloentiteetit yhdistetään yhdeksi signaaliksi. Joku kotona (oletus): läsnä heti kun yksi valituista henkilöistä on kotona. Kaikki kotona: läsnä vain, kun kaikki valitut henkilöt ovat kotona. Käänteinen: kääntää merkityksen \"joku kotona\" — läsnä vasta, kun jonkun on vahvistettu olevan poissa."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Läsnäoloentiteetit",
           "absence_delay_min": "Poissaoloviive",
-          "absence_position": "Poissaolosijainti"
+          "absence_position": "Poissaolosijainti",
+          "presence_policy": "Läsnäolon arviointikäytäntö"
         },
         "data_description": {
-          "absence_position": "Varjostimen sijainti, kun vyöhyke on tyhjä, ellei vahvempi suojauspäätös ole voimassa (0 = täysin suljettu, 100 = täysin avoin). Koskee kaikkia tämän vyöhykkeen ikkunoita."
+          "absence_position": "Varjostimen sijainti, kun vyöhyke on tyhjä, ellei vahvempi suojauspäätös ole voimassa (0 = täysin suljettu, 100 = täysin avoin). Koskee kaikkia tämän vyöhykkeen ikkunoita.",
+          "presence_policy": "Määrittää, miten useat läsnäoloentiteetit yhdistetään yhdeksi signaaliksi. Joku kotona (oletus): läsnä heti kun yksi valituista henkilöistä on kotona. Kaikki kotona: läsnä vain, kun kaikki valitut henkilöt ovat kotona. Käänteinen: kääntää merkityksen \"joku kotona\" — läsnä vasta, kun jonkun on vahvistettu olevan poissa."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Markiisi",
         "generic": "Muu varjostin"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Joku kotona",
+        "all_home": "Kaikki kotona",
+        "inverted_any_home": "Käänteinen (joku kotona = poissa)"
       }
     }
   },

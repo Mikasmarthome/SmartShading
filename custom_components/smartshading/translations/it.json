@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Entità di presenza",
           "absence_delay_min": "Ritardo di assenza",
-          "absence_position": "Posizione di assenza"
+          "absence_position": "Posizione di assenza",
+          "presence_policy": "Criterio di valutazione della presenza"
         },
         "data_description": {
-          "absence_position": "Posizione della tapparella quando la zona è non occupata, salvo che si applichi una decisione di protezione più forte (0 = completamente chiusa, 100 = completamente aperta). Si applica a tutte le finestre di questa zona."
+          "absence_position": "Posizione della tapparella quando la zona è non occupata, salvo che si applichi una decisione di protezione più forte (0 = completamente chiusa, 100 = completamente aperta). Si applica a tutte le finestre di questa zona.",
+          "presence_policy": "Determina come vengono combinate più entità di presenza in un unico segnale. Qualcuno a casa (predefinito): presente non appena una persona selezionata è a casa. Tutti a casa: presente solo quando tutte le persone selezionate sono a casa. Invertito: inverte il significato di \"qualcuno a casa\" — presente solo quando è confermato che qualcuno è assente."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Entità di presenza",
           "absence_delay_min": "Ritardo di assenza",
-          "absence_position": "Posizione di assenza"
+          "absence_position": "Posizione di assenza",
+          "presence_policy": "Criterio di valutazione della presenza"
         },
         "data_description": {
-          "absence_position": "Posizione della tapparella quando la zona è non occupata, salvo che si applichi una decisione di protezione più forte (0 = completamente chiusa, 100 = completamente aperta). Si applica a tutte le finestre di questa zona."
+          "absence_position": "Posizione della tapparella quando la zona è non occupata, salvo che si applichi una decisione di protezione più forte (0 = completamente chiusa, 100 = completamente aperta). Si applica a tutte le finestre di questa zona.",
+          "presence_policy": "Determina come vengono combinate più entità di presenza in un unico segnale. Qualcuno a casa (predefinito): presente non appena una persona selezionata è a casa. Tutti a casa: presente solo quando tutte le persone selezionate sono a casa. Invertito: inverte il significato di \"qualcuno a casa\" — presente solo quando è confermato che qualcuno è assente."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Tenda da sole",
         "generic": "Altra tapparella"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Qualcuno a casa",
+        "all_home": "Tutti a casa",
+        "inverted_any_home": "Invertito (qualcuno a casa = assente)"
       }
     }
   },

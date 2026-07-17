@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Entitats de presència",
           "absence_delay_min": "Retard d'absència",
-          "absence_position": "Posició d'absència"
+          "absence_position": "Posició d'absència",
+          "presence_policy": "Política d'avaluació de presència"
         },
         "data_description": {
-          "absence_position": "Posició de la persiana mentre la zona està desocupada, llevat que s'apliqui una decisió de protecció més forta (0 = totalment tancada, 100 = totalment oberta). S'aplica a totes les finestres d'aquesta zona."
+          "absence_position": "Posició de la persiana mentre la zona està desocupada, llevat que s'apliqui una decisió de protecció més forta (0 = totalment tancada, 100 = totalment oberta). S'aplica a totes les finestres d'aquesta zona.",
+          "presence_policy": "Controla com es combinen diverses entitats de presència en un sol senyal. Algú a casa (per defecte): present tan bon punt una persona seleccionada és a casa. Tothom a casa: present només quan totes les persones seleccionades són a casa. Invertit: inverteix el significat d'\"algú a casa\" — present només quan es confirma que algú és absent."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Entitats de presència",
           "absence_delay_min": "Retard d'absència",
-          "absence_position": "Posició d'absència"
+          "absence_position": "Posició d'absència",
+          "presence_policy": "Política d'avaluació de presència"
         },
         "data_description": {
-          "absence_position": "Posició de la persiana mentre la zona està desocupada, llevat que s'apliqui una decisió de protecció més forta (0 = totalment tancada, 100 = totalment oberta). S'aplica a totes les finestres d'aquesta zona."
+          "absence_position": "Posició de la persiana mentre la zona està desocupada, llevat que s'apliqui una decisió de protecció més forta (0 = totalment tancada, 100 = totalment oberta). S'aplica a totes les finestres d'aquesta zona.",
+          "presence_policy": "Controla com es combinen diverses entitats de presència en un sol senyal. Algú a casa (per defecte): present tan bon punt una persona seleccionada és a casa. Tothom a casa: present només quan totes les persones seleccionades són a casa. Invertit: inverteix el significat d'\"algú a casa\" — present només quan es confirma que algú és absent."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Tendal",
         "generic": "Una altra persiana"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Algú a casa",
+        "all_home": "Tothom a casa",
+        "inverted_any_home": "Invertit (algú a casa = absent)"
       }
     }
   },

@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Presence entities",
           "absence_delay_min": "Absence delay",
-          "absence_position": "Absence position"
+          "absence_position": "Absence position",
+          "presence_policy": "Presence evaluation policy"
         },
         "data_description": {
-          "absence_position": "Cover position while the zone is unoccupied, unless a stronger protection decision applies (0 = fully closed, 100 = fully open). Applies to all windows in this zone."
+          "absence_position": "Cover position while the zone is unoccupied, unless a stronger protection decision applies (0 = fully closed, 100 = fully open). Applies to all windows in this zone.",
+          "presence_policy": "Controls how multiple presence entities are combined into one signal. Anyone home (default): present as soon as one selected person is home. Everyone home: present only when all selected people are home. Inverted: reverses the meaning of \"anyone home\" — present only once someone is confirmed away."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Presence entities",
           "absence_delay_min": "Absence delay",
-          "absence_position": "Absence position"
+          "absence_position": "Absence position",
+          "presence_policy": "Presence evaluation policy"
         },
         "data_description": {
-          "absence_position": "Cover position while the zone is unoccupied, unless a stronger protection decision applies (0 = fully closed, 100 = fully open). Applies to all windows in this zone."
+          "absence_position": "Cover position while the zone is unoccupied, unless a stronger protection decision applies (0 = fully closed, 100 = fully open). Applies to all windows in this zone.",
+          "presence_policy": "Controls how multiple presence entities are combined into one signal. Anyone home (default): present as soon as one selected person is home. Everyone home: present only when all selected people are home. Inverted: reverses the meaning of \"anyone home\" — present only once someone is confirmed away."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Awning",
         "generic": "Other cover"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Anyone home",
+        "all_home": "Everyone home",
+        "inverted_any_home": "Inverted (anyone home = away)"
       }
     }
   },

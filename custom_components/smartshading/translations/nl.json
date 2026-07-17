@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Aanwezigheidsentiteiten",
           "absence_delay_min": "Afwezigheidsvertraging",
-          "absence_position": "Afwezigheidspositie"
+          "absence_position": "Afwezigheidspositie",
+          "presence_policy": "Aanwezigheidsbeoordelingsbeleid"
         },
         "data_description": {
-          "absence_position": "Positie van de zonwering terwijl de zone onbezet is, tenzij een sterkere beschermingsbeslissing geldt (0 = volledig dicht, 100 = volledig open). Geldt voor alle vensters in deze zone."
+          "absence_position": "Positie van de zonwering terwijl de zone onbezet is, tenzij een sterkere beschermingsbeslissing geldt (0 = volledig dicht, 100 = volledig open). Geldt voor alle vensters in deze zone.",
+          "presence_policy": "Bepaalt hoe meerdere aanwezigheidsentiteiten tot één signaal worden gecombineerd. Iemand thuis (standaard): aanwezig zodra een geselecteerde persoon thuis is. Iedereen thuis: alleen aanwezig als alle geselecteerde personen thuis zijn. Omgekeerd: keert de betekenis van \"iemand thuis\" om — pas aanwezig zodra iemand bevestigd afwezig is."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Aanwezigheidsentiteiten",
           "absence_delay_min": "Afwezigheidsvertraging",
-          "absence_position": "Afwezigheidspositie"
+          "absence_position": "Afwezigheidspositie",
+          "presence_policy": "Aanwezigheidsbeoordelingsbeleid"
         },
         "data_description": {
-          "absence_position": "Positie van de zonwering terwijl de zone onbezet is, tenzij een sterkere beschermingsbeslissing geldt (0 = volledig dicht, 100 = volledig open). Geldt voor alle vensters in deze zone."
+          "absence_position": "Positie van de zonwering terwijl de zone onbezet is, tenzij een sterkere beschermingsbeslissing geldt (0 = volledig dicht, 100 = volledig open). Geldt voor alle vensters in deze zone.",
+          "presence_policy": "Bepaalt hoe meerdere aanwezigheidsentiteiten tot één signaal worden gecombineerd. Iemand thuis (standaard): aanwezig zodra een geselecteerde persoon thuis is. Iedereen thuis: alleen aanwezig als alle geselecteerde personen thuis zijn. Omgekeerd: keert de betekenis van \"iemand thuis\" om — pas aanwezig zodra iemand bevestigd afwezig is."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Zonnescherm",
         "generic": "Andere zonwering"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Iemand thuis",
+        "all_home": "Iedereen thuis",
+        "inverted_any_home": "Omgekeerd (iemand thuis = afwezig)"
       }
     }
   },

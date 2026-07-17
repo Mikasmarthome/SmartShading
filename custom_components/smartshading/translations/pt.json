@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Entidades de presença",
           "absence_delay_min": "Atraso de ausência",
-          "absence_position": "Posição de ausência"
+          "absence_position": "Posição de ausência",
+          "presence_policy": "Política de avaliação de presença"
         },
         "data_description": {
-          "absence_position": "Posição do estore enquanto a zona está desocupada, exceto se for aplicada uma decisão de proteção mais forte (0 = totalmente fechado, 100 = totalmente aberto). Aplica-se a todas as janelas desta zona."
+          "absence_position": "Posição do estore enquanto a zona está desocupada, exceto se for aplicada uma decisão de proteção mais forte (0 = totalmente fechado, 100 = totalmente aberto). Aplica-se a todas as janelas desta zona.",
+          "presence_policy": "Controla como várias entidades de presença são combinadas num único sinal. Alguém em casa (padrão): presente assim que uma pessoa selecionada está em casa. Todos em casa: presente apenas quando todas as pessoas selecionadas estão em casa. Invertido: inverte o significado de \"alguém em casa\" — presente apenas quando se confirma que alguém está ausente."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Entidades de presença",
           "absence_delay_min": "Atraso de ausência",
-          "absence_position": "Posição de ausência"
+          "absence_position": "Posição de ausência",
+          "presence_policy": "Política de avaliação de presença"
         },
         "data_description": {
-          "absence_position": "Posição do estore enquanto a zona está desocupada, exceto se for aplicada uma decisão de proteção mais forte (0 = totalmente fechado, 100 = totalmente aberto). Aplica-se a todas as janelas desta zona."
+          "absence_position": "Posição do estore enquanto a zona está desocupada, exceto se for aplicada uma decisão de proteção mais forte (0 = totalmente fechado, 100 = totalmente aberto). Aplica-se a todas as janelas desta zona.",
+          "presence_policy": "Controla como várias entidades de presença são combinadas num único sinal. Alguém em casa (padrão): presente assim que uma pessoa selecionada está em casa. Todos em casa: presente apenas quando todas as pessoas selecionadas estão em casa. Invertido: inverte o significado de \"alguém em casa\" — presente apenas quando se confirma que alguém está ausente."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Tela",
         "awning": "Toldo",
         "generic": "Outro estore"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Alguém em casa",
+        "all_home": "Todos em casa",
+        "inverted_any_home": "Invertido (alguém em casa = ausente)"
       }
     }
   },

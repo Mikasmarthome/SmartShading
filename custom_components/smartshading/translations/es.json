@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Entidades de presencia",
           "absence_delay_min": "Retardo de ausencia",
-          "absence_position": "Posición de ausencia"
+          "absence_position": "Posición de ausencia",
+          "presence_policy": "Política de evaluación de presencia"
         },
         "data_description": {
-          "absence_position": "Posición de la persiana mientras la zona está desocupada, salvo que aplique una decisión de protección más fuerte (0 = totalmente cerrada, 100 = totalmente abierta). Se aplica a todas las ventanas de esta zona."
+          "absence_position": "Posición de la persiana mientras la zona está desocupada, salvo que aplique una decisión de protección más fuerte (0 = totalmente cerrada, 100 = totalmente abierta). Se aplica a todas las ventanas de esta zona.",
+          "presence_policy": "Controla cómo se combinan varias entidades de presencia en una sola señal. Alguien en casa (predeterminado): presente en cuanto una persona seleccionada está en casa. Todos en casa: presente solo cuando todas las personas seleccionadas están en casa. Invertido: invierte el significado de «alguien en casa» — presente solo cuando se confirma que alguien está ausente."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Entidades de presencia",
           "absence_delay_min": "Retardo de ausencia",
-          "absence_position": "Posición de ausencia"
+          "absence_position": "Posición de ausencia",
+          "presence_policy": "Política de evaluación de presencia"
         },
         "data_description": {
-          "absence_position": "Posición de la persiana mientras la zona está desocupada, salvo que aplique una decisión de protección más fuerte (0 = totalmente cerrada, 100 = totalmente abierta). Se aplica a todas las ventanas de esta zona."
+          "absence_position": "Posición de la persiana mientras la zona está desocupada, salvo que aplique una decisión de protección más fuerte (0 = totalmente cerrada, 100 = totalmente abierta). Se aplica a todas las ventanas de esta zona.",
+          "presence_policy": "Controla cómo se combinan varias entidades de presencia en una sola señal. Alguien en casa (predeterminado): presente en cuanto una persona seleccionada está en casa. Todos en casa: presente solo cuando todas las personas seleccionadas están en casa. Invertido: invierte el significado de «alguien en casa» — presente solo cuando se confirma que alguien está ausente."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Pantalla",
         "awning": "Toldo",
         "generic": "Otra persiana"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Alguien en casa",
+        "all_home": "Todos en casa",
+        "inverted_any_home": "Invertido (alguien en casa = ausente)"
       }
     }
   },

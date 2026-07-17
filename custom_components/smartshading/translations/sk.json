@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Entity prítomnosti",
           "absence_delay_min": "Oneskorenie neprítomnosti",
-          "absence_position": "Poloha pri neprítomnosti"
+          "absence_position": "Poloha pri neprítomnosti",
+          "presence_policy": "Zásada vyhodnotenia prítomnosti"
         },
         "data_description": {
-          "absence_position": "Poloha tienenia, keď je zóna neobsadená, pokiaľ neplatí silnejšie ochranné rozhodnutie (0 = úplne zatvorené, 100 = úplne otvorené). Platí pre všetky okná v tejto zóne."
+          "absence_position": "Poloha tienenia, keď je zóna neobsadená, pokiaľ neplatí silnejšie ochranné rozhodnutie (0 = úplne zatvorené, 100 = úplne otvorené). Platí pre všetky okná v tejto zóne.",
+          "presence_policy": "Určuje, ako sa viacero entít prítomnosti kombinuje do jedného signálu. Niekto doma (predvolené): prítomnosť, hneď ako je doma jedna vybraná osoba. Všetci doma: prítomnosť iba vtedy, keď sú doma všetky vybrané osoby. Invertované: obracia význam „niekto doma“ — prítomnosť až po potvrdení, že niekto je preč."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Entity prítomnosti",
           "absence_delay_min": "Oneskorenie neprítomnosti",
-          "absence_position": "Poloha pri neprítomnosti"
+          "absence_position": "Poloha pri neprítomnosti",
+          "presence_policy": "Zásada vyhodnotenia prítomnosti"
         },
         "data_description": {
-          "absence_position": "Poloha tienenia, keď je zóna neobsadená, pokiaľ neplatí silnejšie ochranné rozhodnutie (0 = úplne zatvorené, 100 = úplne otvorené). Platí pre všetky okná v tejto zóne."
+          "absence_position": "Poloha tienenia, keď je zóna neobsadená, pokiaľ neplatí silnejšie ochranné rozhodnutie (0 = úplne zatvorené, 100 = úplne otvorené). Platí pre všetky okná v tejto zóne.",
+          "presence_policy": "Určuje, ako sa viacero entít prítomnosti kombinuje do jedného signálu. Niekto doma (predvolené): prítomnosť, hneď ako je doma jedna vybraná osoba. Všetci doma: prítomnosť iba vtedy, keď sú doma všetky vybrané osoby. Invertované: obracia význam „niekto doma“ — prítomnosť až po potvrdení, že niekto je preč."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Markíza",
         "generic": "Iné tienenie"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Niekto doma",
+        "all_home": "Všetci doma",
+        "inverted_any_home": "Invertované (niekto doma = preč)"
       }
     }
   },

@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Tilstedeværelsesentiteter",
           "absence_delay_min": "Fraværsforsinkelse",
-          "absence_position": "Fraværsposition"
+          "absence_position": "Fraværsposition",
+          "presence_policy": "Politik for tilstedeværelsesevaluering"
         },
         "data_description": {
-          "absence_position": "Afskærmningens position, mens zonen er ubenyttet, medmindre en stærkere beskyttelsesbeslutning gælder (0 = helt lukket, 100 = helt åben). Gælder for alle vinduer i denne zone."
+          "absence_position": "Afskærmningens position, mens zonen er ubenyttet, medmindre en stærkere beskyttelsesbeslutning gælder (0 = helt lukket, 100 = helt åben). Gælder for alle vinduer i denne zone.",
+          "presence_policy": "Styrer, hvordan flere tilstedeværelsesenheder kombineres til ét signal. Nogen hjemme (standard): til stede så snart én valgt person er hjemme. Alle hjemme: kun til stede når alle valgte personer er hjemme. Inverteret: vender betydningen af \"nogen hjemme\" om — til stede først, når nogen er bekræftet væk."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Tilstedeværelsesentiteter",
           "absence_delay_min": "Fraværsforsinkelse",
-          "absence_position": "Fraværsposition"
+          "absence_position": "Fraværsposition",
+          "presence_policy": "Politik for tilstedeværelsesevaluering"
         },
         "data_description": {
-          "absence_position": "Afskærmningens position, mens zonen er ubenyttet, medmindre en stærkere beskyttelsesbeslutning gælder (0 = helt lukket, 100 = helt åben). Gælder for alle vinduer i denne zone."
+          "absence_position": "Afskærmningens position, mens zonen er ubenyttet, medmindre en stærkere beskyttelsesbeslutning gælder (0 = helt lukket, 100 = helt åben). Gælder for alle vinduer i denne zone.",
+          "presence_policy": "Styrer, hvordan flere tilstedeværelsesenheder kombineres til ét signal. Nogen hjemme (standard): til stede så snart én valgt person er hjemme. Alle hjemme: kun til stede når alle valgte personer er hjemme. Inverteret: vender betydningen af \"nogen hjemme\" om — til stede først, når nogen er bekræftet væk."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Markise",
         "generic": "Anden afskærmning"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Nogen hjemme",
+        "all_home": "Alle hjemme",
+        "inverted_any_home": "Inverteret (nogen hjemme = væk)"
       }
     }
   },

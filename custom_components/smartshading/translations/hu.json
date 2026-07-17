@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Jelenlét-entitások",
           "absence_delay_min": "Távollét késleltetése",
-          "absence_position": "Távolléti pozíció"
+          "absence_position": "Távolléti pozíció",
+          "presence_policy": "Jelenlét-értékelési szabály"
         },
         "data_description": {
-          "absence_position": "Az árnyékoló pozíciója, amíg a zóna üres, hacsak nem érvényes erősebb védelmi döntés (0 = teljesen zárva, 100 = teljesen nyitva). A zóna összes ablakára vonatkozik."
+          "absence_position": "Az árnyékoló pozíciója, amíg a zóna üres, hacsak nem érvényes erősebb védelmi döntés (0 = teljesen zárva, 100 = teljesen nyitva). A zóna összes ablakára vonatkozik.",
+          "presence_policy": "Meghatározza, hogyan kombinálódik több jelenlét-entitás egyetlen jelzéssé. Valaki otthon (alapértelmezett): jelenlét, amint egy kiválasztott személy otthon van. Mindenki otthon: jelenlét csak akkor, ha minden kiválasztott személy otthon van. Fordított: megfordítja a „valaki otthon“ jelentését — jelenlét csak akkor, ha megerősítést nyer, hogy valaki távol van."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Jelenlét-entitások",
           "absence_delay_min": "Távollét késleltetése",
-          "absence_position": "Távolléti pozíció"
+          "absence_position": "Távolléti pozíció",
+          "presence_policy": "Jelenlét-értékelési szabály"
         },
         "data_description": {
-          "absence_position": "Az árnyékoló pozíciója, amíg a zóna üres, hacsak nem érvényes erősebb védelmi döntés (0 = teljesen zárva, 100 = teljesen nyitva). A zóna összes ablakára vonatkozik."
+          "absence_position": "Az árnyékoló pozíciója, amíg a zóna üres, hacsak nem érvényes erősebb védelmi döntés (0 = teljesen zárva, 100 = teljesen nyitva). A zóna összes ablakára vonatkozik.",
+          "presence_policy": "Meghatározza, hogyan kombinálódik több jelenlét-entitás egyetlen jelzéssé. Valaki otthon (alapértelmezett): jelenlét, amint egy kiválasztott személy otthon van. Mindenki otthon: jelenlét csak akkor, ha minden kiválasztott személy otthon van. Fordított: megfordítja a „valaki otthon“ jelentését — jelenlét csak akkor, ha megerősítést nyer, hogy valaki távol van."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Napellenző",
         "generic": "Egyéb árnyékoló"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Valaki otthon",
+        "all_home": "Mindenki otthon",
+        "inverted_any_home": "Fordított (valaki otthon = távol)"
       }
     }
   },

@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "在场实体",
           "absence_delay_min": "离开延迟",
-          "absence_position": "离开位置"
+          "absence_position": "离开位置",
+          "presence_policy": "在家状态评估策略"
         },
         "data_description": {
-          "absence_position": "区域无人时遮阳帘的位置，除非有更强的保护决策适用（0 = 完全关闭，100 = 完全打开）。适用于该区域的所有窗户。"
+          "absence_position": "区域无人时遮阳帘的位置，除非有更强的保护决策适用（0 = 完全关闭，100 = 完全打开）。适用于该区域的所有窗户。",
+          "presence_policy": "控制多个在家状态实体如何合并为一个信号。有人在家（默认）：只要所选人员中有一人在家即视为在家。所有人在家：仅当所选人员全部在家时才视为在家。反转：反转“有人在家”的含义——仅当确认有人离开时才视为在家。"
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "在场实体",
           "absence_delay_min": "离开延迟",
-          "absence_position": "离开位置"
+          "absence_position": "离开位置",
+          "presence_policy": "在家状态评估策略"
         },
         "data_description": {
-          "absence_position": "区域无人时遮阳帘的位置，除非有更强的保护决策适用（0 = 完全关闭，100 = 完全打开）。适用于该区域的所有窗户。"
+          "absence_position": "区域无人时遮阳帘的位置，除非有更强的保护决策适用（0 = 完全关闭，100 = 完全打开）。适用于该区域的所有窗户。",
+          "presence_policy": "控制多个在家状态实体如何合并为一个信号。有人在家（默认）：只要所选人员中有一人在家即视为在家。所有人在家：仅当所选人员全部在家时才视为在家。反转：反转“有人在家”的含义——仅当确认有人离开时才视为在家。"
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "卷帘式遮阳",
         "awning": "遮阳篷",
         "generic": "其他遮阳帘"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "有人在家",
+        "all_home": "所有人在家",
+        "inverted_any_home": "反转（有人在家=离开）"
       }
     }
   },

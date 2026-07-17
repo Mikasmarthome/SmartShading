@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Entités de présence",
           "absence_delay_min": "Délai d'absence",
-          "absence_position": "Position d'absence"
+          "absence_position": "Position d'absence",
+          "presence_policy": "Politique d'évaluation de présence"
         },
         "data_description": {
-          "absence_position": "Position du volet lorsque la zone est inoccupée, sauf si une décision de protection plus forte s'applique (0 = entièrement fermé, 100 = entièrement ouvert). S'applique à toutes les fenêtres de cette zone."
+          "absence_position": "Position du volet lorsque la zone est inoccupée, sauf si une décision de protection plus forte s'applique (0 = entièrement fermé, 100 = entièrement ouvert). S'applique à toutes les fenêtres de cette zone.",
+          "presence_policy": "Détermine comment plusieurs entités de présence sont combinées en un seul signal. Quelqu'un à la maison (par défaut) : présent dès qu'une personne sélectionnée est à la maison. Tout le monde à la maison : présent uniquement si toutes les personnes sélectionnées sont à la maison. Inversé : inverse la signification de « quelqu'un à la maison » — présent seulement une fois qu'une personne est confirmée absente."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Entités de présence",
           "absence_delay_min": "Délai d'absence",
-          "absence_position": "Position d'absence"
+          "absence_position": "Position d'absence",
+          "presence_policy": "Politique d'évaluation de présence"
         },
         "data_description": {
-          "absence_position": "Position du volet lorsque la zone est inoccupée, sauf si une décision de protection plus forte s'applique (0 = entièrement fermé, 100 = entièrement ouvert). S'applique à toutes les fenêtres de cette zone."
+          "absence_position": "Position du volet lorsque la zone est inoccupée, sauf si une décision de protection plus forte s'applique (0 = entièrement fermé, 100 = entièrement ouvert). S'applique à toutes les fenêtres de cette zone.",
+          "presence_policy": "Détermine comment plusieurs entités de présence sont combinées en un seul signal. Quelqu'un à la maison (par défaut) : présent dès qu'une personne sélectionnée est à la maison. Tout le monde à la maison : présent uniquement si toutes les personnes sélectionnées sont à la maison. Inversé : inverse la signification de « quelqu'un à la maison » — présent seulement une fois qu'une personne est confirmée absente."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Store banne",
         "generic": "Autre volet"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Quelqu'un à la maison",
+        "all_home": "Tout le monde à la maison",
+        "inverted_any_home": "Inversé (quelqu'un à la maison = absent)"
       }
     }
   },

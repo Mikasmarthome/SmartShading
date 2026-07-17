@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Tilstedeværelsesentiteter",
           "absence_delay_min": "Fraværsforsinkelse",
-          "absence_position": "Fraværsposisjon"
+          "absence_position": "Fraværsposisjon",
+          "presence_policy": "Policy for tilstedeværelsesevaluering"
         },
         "data_description": {
-          "absence_position": "Solskjermingens posisjon mens sonen er ubebodd, med mindre en sterkere beskyttelsesbeslutning gjelder (0 = helt lukket, 100 = helt åpen). Gjelder alle vinduer i denne sonen."
+          "absence_position": "Solskjermingens posisjon mens sonen er ubebodd, med mindre en sterkere beskyttelsesbeslutning gjelder (0 = helt lukket, 100 = helt åpen). Gjelder alle vinduer i denne sonen.",
+          "presence_policy": "Styrer hvordan flere tilstedeværelsesenheter kombineres til ett signal. Noen hjemme (standard): til stede så snart én valgt person er hjemme. Alle hjemme: til stede bare når alle valgte personer er hjemme. Invertert: snur betydningen av \"noen hjemme\" — til stede først når noen er bekreftet borte."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Tilstedeværelsesentiteter",
           "absence_delay_min": "Fraværsforsinkelse",
-          "absence_position": "Fraværsposisjon"
+          "absence_position": "Fraværsposisjon",
+          "presence_policy": "Policy for tilstedeværelsesevaluering"
         },
         "data_description": {
-          "absence_position": "Solskjermingens posisjon mens sonen er ubebodd, med mindre en sterkere beskyttelsesbeslutning gjelder (0 = helt lukket, 100 = helt åpen). Gjelder alle vinduer i denne sonen."
+          "absence_position": "Solskjermingens posisjon mens sonen er ubebodd, med mindre en sterkere beskyttelsesbeslutning gjelder (0 = helt lukket, 100 = helt åpen). Gjelder alle vinduer i denne sonen.",
+          "presence_policy": "Styrer hvordan flere tilstedeværelsesenheter kombineres til ett signal. Noen hjemme (standard): til stede så snart én valgt person er hjemme. Alle hjemme: til stede bare når alle valgte personer er hjemme. Invertert: snur betydningen av \"noen hjemme\" — til stede først når noen er bekreftet borte."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Markise",
         "generic": "Annen solskjerming"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Noen hjemme",
+        "all_home": "Alle hjemme",
+        "inverted_any_home": "Invertert (noen hjemme = borte)"
       }
     }
   },

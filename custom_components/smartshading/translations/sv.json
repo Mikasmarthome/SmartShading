@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Närvaroentiteter",
           "absence_delay_min": "Frånvarofördröjning",
-          "absence_position": "Frånvaroposition"
+          "absence_position": "Frånvaroposition",
+          "presence_policy": "Policy för närvarobedömning"
         },
         "data_description": {
-          "absence_position": "Solskyddets position när zonen är obebodd, om inte ett starkare skyddsbeslut gäller (0 = helt stängt, 100 = helt öppet). Gäller alla fönster i den här zonen."
+          "absence_position": "Solskyddets position när zonen är obebodd, om inte ett starkare skyddsbeslut gäller (0 = helt stängt, 100 = helt öppet). Gäller alla fönster i den här zonen.",
+          "presence_policy": "Styr hur flera närvaroentiteter kombineras till en signal. Någon hemma (standard): närvarande så snart en vald person är hemma. Alla hemma: närvarande endast när alla valda personer är hemma. Inverterad: vänder på betydelsen av \"någon hemma\" — närvarande först när någon bekräftats vara borta."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Närvaroentiteter",
           "absence_delay_min": "Frånvarofördröjning",
-          "absence_position": "Frånvaroposition"
+          "absence_position": "Frånvaroposition",
+          "presence_policy": "Policy för närvarobedömning"
         },
         "data_description": {
-          "absence_position": "Solskyddets position när zonen är obebodd, om inte ett starkare skyddsbeslut gäller (0 = helt stängt, 100 = helt öppet). Gäller alla fönster i den här zonen."
+          "absence_position": "Solskyddets position när zonen är obebodd, om inte ett starkare skyddsbeslut gäller (0 = helt stängt, 100 = helt öppet). Gäller alla fönster i den här zonen.",
+          "presence_policy": "Styr hur flera närvaroentiteter kombineras till en signal. Någon hemma (standard): närvarande så snart en vald person är hemma. Alla hemma: närvarande endast när alla valda personer är hemma. Inverterad: vänder på betydelsen av \"någon hemma\" — närvarande först när någon bekräftats vara borta."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Markis",
         "generic": "Annat solskydd"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Någon hemma",
+        "all_home": "Alla hemma",
+        "inverted_any_home": "Inverterad (någon hemma = borta)"
       }
     }
   },

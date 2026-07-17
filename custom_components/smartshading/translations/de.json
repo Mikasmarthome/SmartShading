@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Anwesenheits-Entitäten",
           "absence_delay_min": "Abwesenheitsverzögerung",
-          "absence_position": "Abwesenheitsposition"
+          "absence_position": "Abwesenheitsposition",
+          "presence_policy": "Presence-Auswertungsrichtlinie"
         },
         "data_description": {
-          "absence_position": "Position der Beschattung bei Abwesenheit, sofern keine stärkere Schutzentscheidung greift (0 = vollständig geschlossen, 100 = vollständig geöffnet). Gilt für alle Fenster dieser Zone."
+          "absence_position": "Position der Beschattung bei Abwesenheit, sofern keine stärkere Schutzentscheidung greift (0 = vollständig geschlossen, 100 = vollständig geöffnet). Gilt für alle Fenster dieser Zone.",
+          "presence_policy": "Legt fest, wie mehrere Presence-Entities zu einem Signal zusammengeführt werden. Jemand zuhause (Standard): anwesend, sobald eine ausgewählte Person zuhause ist. Alle zuhause: anwesend nur, wenn alle ausgewählten Personen zuhause sind. Invertiert: kehrt die Bedeutung von „jemand zuhause“ um — anwesend erst, wenn jemand nachweislich abwesend ist."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Anwesenheits-Entitäten",
           "absence_delay_min": "Abwesenheitsverzögerung",
-          "absence_position": "Abwesenheitsposition"
+          "absence_position": "Abwesenheitsposition",
+          "presence_policy": "Presence-Auswertungsrichtlinie"
         },
         "data_description": {
-          "absence_position": "Position der Beschattung bei Abwesenheit, sofern keine stärkere Schutzentscheidung greift (0 = vollständig geschlossen, 100 = vollständig geöffnet). Gilt für alle Fenster dieser Zone."
+          "absence_position": "Position der Beschattung bei Abwesenheit, sofern keine stärkere Schutzentscheidung greift (0 = vollständig geschlossen, 100 = vollständig geöffnet). Gilt für alle Fenster dieser Zone.",
+          "presence_policy": "Legt fest, wie mehrere Presence-Entities zu einem Signal zusammengeführt werden. Jemand zuhause (Standard): anwesend, sobald eine ausgewählte Person zuhause ist. Alle zuhause: anwesend nur, wenn alle ausgewählten Personen zuhause sind. Invertiert: kehrt die Bedeutung von „jemand zuhause“ um — anwesend erst, wenn jemand nachweislich abwesend ist."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Markise",
         "generic": "Sonstiges Cover"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Jemand zuhause",
+        "all_home": "Alle zuhause",
+        "inverted_any_home": "Invertiert (jemand zuhause = abwesend)"
       }
     }
   },

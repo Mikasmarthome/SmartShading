@@ -238,6 +238,13 @@ CONF_PRESENCE_ENTITY_IDS = "presence_entity_ids"
 CONF_ABSENCE_DELAY_MIN = "absence_delay_min"
 CONF_ABSENCE_POSITION = "absence_position"
 
+# Presence evaluation policy (v1.2.0-beta.1, T5): how the selected presence
+# entities are aggregated into one house-wide signal. ANY_HOME is the legacy
+# default (byte-for-byte pre-T5 behavior) — see models/presence.py.
+CONF_PRESENCE_POLICY = "presence_policy"
+DEFAULT_PRESENCE_POLICY = "any_home"
+PRESENCE_POLICY_OPTIONS: list[str] = ["any_home", "all_home", "inverted_any_home"]
+
 # Sun-elevation presets (2026-06-17 UX round): user-friendly labels that map to
 # the same elevation floats the Lifecycle Engine already uses internally. The
 # preset string is a Config Flow UI construct only - it is never stored in

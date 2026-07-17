@@ -260,6 +260,7 @@ async def _async_setup_zone_entry(
         lifecycle_config=entry_data.lifecycle_config,
         presence_entity_ids=entry_data.presence_entity_ids,
         absence_delay_min=entry_data.absence_delay_min,
+        presence_policy=entry_data.presence_policy,
         indoor_temperature_sensor_ids=entry_data.indoor_temperature_sensor_ids,
         comfort_config=entry_data.comfort_config,
         ema_enabled=entry_data.ema_enabled,

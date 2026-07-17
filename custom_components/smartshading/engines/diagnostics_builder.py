@@ -196,6 +196,18 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
                 "ema_enabled": bool(getattr(c, "_ema_enabled", False)),
                 "ema_alpha": getattr(c, "_ema_alpha", 0.3)}
 
+    def _presence_summary():
+        # PUBLIC: policy/config + aggregate status only — no entity ids, no
+        # person names, matching this contract's privacy-first discipline.
+        policy = getattr(c, "_presence_policy", None)
+        reading = getattr(c, "_cycle_presence_reading", None)
+        return {
+            "policy": policy.value if policy is not None else None,
+            "entity_count": len(getattr(c, "_presence_entity_ids", None) or []),
+            "raw_status": reading.value if reading is not None else None,
+            "absence_active": getattr(c, "_cycle_absence_active", None),
+        }
+
     def _learning_authority_summary():
         # PUBLIC: learning-authority counts + blocking-reason histogram (no ids).
         from .learning_trace_builder import build_learning_authority
@@ -236,6 +248,7 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         "integration_version": integration_version,
         "system": _safe(_system, errors, "system"),
         "inputs_summary": _safe(_inputs_summary, errors, "inputs"),
+        "presence_summary": _safe(_presence_summary, errors, "presence"),
         "learning_authority_summary": _safe(
             _learning_authority_summary, errors, "learning_authority"),
         "decisions": _safe(_decisions, errors, "decisions"),

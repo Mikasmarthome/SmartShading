@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Encje obecności",
           "absence_delay_min": "Opóźnienie nieobecności",
-          "absence_position": "Pozycja przy nieobecności"
+          "absence_position": "Pozycja przy nieobecności",
+          "presence_policy": "Zasada oceny obecności"
         },
         "data_description": {
-          "absence_position": "Pozycja osłony, gdy strefa jest niezajęta, chyba że obowiązuje silniejsza decyzja ochronna (0 = całkowicie zamknięta, 100 = całkowicie otwarta). Dotyczy wszystkich okien w tej strefie."
+          "absence_position": "Pozycja osłony, gdy strefa jest niezajęta, chyba że obowiązuje silniejsza decyzja ochronna (0 = całkowicie zamknięta, 100 = całkowicie otwarta). Dotyczy wszystkich okien w tej strefie.",
+          "presence_policy": "Określa, jak wiele encji obecności jest łączonych w jeden sygnał. Ktoś w domu (domyślnie): obecność, gdy tylko jedna wybrana osoba jest w domu. Wszyscy w domu: obecność tylko, gdy wszystkie wybrane osoby są w domu. Odwrócone: odwraca znaczenie \"ktoś w domu\" — obecność dopiero, gdy potwierdzono, że ktoś jest nieobecny."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Encje obecności",
           "absence_delay_min": "Opóźnienie nieobecności",
-          "absence_position": "Pozycja przy nieobecności"
+          "absence_position": "Pozycja przy nieobecności",
+          "presence_policy": "Zasada oceny obecności"
         },
         "data_description": {
-          "absence_position": "Pozycja osłony, gdy strefa jest niezajęta, chyba że obowiązuje silniejsza decyzja ochronna (0 = całkowicie zamknięta, 100 = całkowicie otwarta). Dotyczy wszystkich okien w tej strefie."
+          "absence_position": "Pozycja osłony, gdy strefa jest niezajęta, chyba że obowiązuje silniejsza decyzja ochronna (0 = całkowicie zamknięta, 100 = całkowicie otwarta). Dotyczy wszystkich okien w tej strefie.",
+          "presence_policy": "Określa, jak wiele encji obecności jest łączonych w jeden sygnał. Ktoś w domu (domyślnie): obecność, gdy tylko jedna wybrana osoba jest w domu. Wszyscy w domu: obecność tylko, gdy wszystkie wybrane osoby są w domu. Odwrócone: odwraca znaczenie \"ktoś w domu\" — obecność dopiero, gdy potwierdzono, że ktoś jest nieobecny."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Roleta zewnętrzna",
         "awning": "Markiza",
         "generic": "Inna osłona"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Ktoś w domu",
+        "all_home": "Wszyscy w domu",
+        "inverted_any_home": "Odwrócone (ktoś w domu = nieobecny)"
       }
     }
   },

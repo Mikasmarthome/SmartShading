@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Entity přítomnosti",
           "absence_delay_min": "Zpoždění nepřítomnosti",
-          "absence_position": "Poloha při nepřítomnosti"
+          "absence_position": "Poloha při nepřítomnosti",
+          "presence_policy": "Zásada vyhodnocení přítomnosti"
         },
         "data_description": {
-          "absence_position": "Poloha stínění, když je zóna neobsazená, pokud neplatí silnější ochranné rozhodnutí (0 = zcela zavřeno, 100 = zcela otevřeno). Platí pro všechna okna v této zóně."
+          "absence_position": "Poloha stínění, když je zóna neobsazená, pokud neplatí silnější ochranné rozhodnutí (0 = zcela zavřeno, 100 = zcela otevřeno). Platí pro všechna okna v této zóně.",
+          "presence_policy": "Určuje, jak se více entit přítomnosti kombinuje do jednoho signálu. Někdo doma (výchozí): přítomnost, jakmile je doma jedna vybraná osoba. Všichni doma: přítomnost pouze, když jsou doma všechny vybrané osoby. Invertováno: obrací význam „nněkdo doma“ — přítomnost až po potvrzení, že je někdo pryč."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Entity přítomnosti",
           "absence_delay_min": "Zpoždění nepřítomnosti",
-          "absence_position": "Poloha při nepřítomnosti"
+          "absence_position": "Poloha při nepřítomnosti",
+          "presence_policy": "Zásada vyhodnocení přítomnosti"
         },
         "data_description": {
-          "absence_position": "Poloha stínění, když je zóna neobsazená, pokud neplatí silnější ochranné rozhodnutí (0 = zcela zavřeno, 100 = zcela otevřeno). Platí pro všechna okna v této zóně."
+          "absence_position": "Poloha stínění, když je zóna neobsazená, pokud neplatí silnější ochranné rozhodnutí (0 = zcela zavřeno, 100 = zcela otevřeno). Platí pro všechna okna v této zóně.",
+          "presence_policy": "Určuje, jak se více entit přítomnosti kombinuje do jednoho signálu. Někdo doma (výchozí): přítomnost, jakmile je doma jedna vybraná osoba. Všichni doma: přítomnost pouze, když jsou doma všechny vybrané osoby. Invertováno: obrací význam „nněkdo doma“ — přítomnost až po potvrzení, že je někdo pryč."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Markýza",
         "generic": "Jiné stínění"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Někdo doma",
+        "all_home": "Všichni doma",
+        "inverted_any_home": "Invertováno (někdo doma = pryč)"
       }
     }
   },

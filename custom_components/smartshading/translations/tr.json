@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Mevcudiyet varlıkları",
           "absence_delay_min": "Yokluk gecikmesi",
-          "absence_position": "Yokluk konumu"
+          "absence_position": "Yokluk konumu",
+          "presence_policy": "Bulunma değerlendirme politikası"
         },
         "data_description": {
-          "absence_position": "Daha güçlü bir koruma kararı geçerli olmadıkça, bölge boşken gölgeliğin konumu (0 = tamamen kapalı, 100 = tamamen açık). Bu bölgedeki tüm pencerelere uygulanır."
+          "absence_position": "Daha güçlü bir koruma kararı geçerli olmadıkça, bölge boşken gölgeliğin konumu (0 = tamamen kapalı, 100 = tamamen açık). Bu bölgedeki tüm pencerelere uygulanır.",
+          "presence_policy": "Birden fazla bulunma varlığının tek bir sinyalde nasıl birleştirileceğini belirler. Biri evde (varsayılan): seçilen kişilerden biri evde olur olmaz bulunuluyor sayılır. Herkes evde: yalnızca seçilen tüm kişiler evdeyken bulunuluyor sayılır. Ters çevrilmiş: \"biri evde\" anlamını tersine çevirir — yalnızca birinin dışarıda olduğu doğrulanınca bulunuluyor sayılır."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Mevcudiyet varlıkları",
           "absence_delay_min": "Yokluk gecikmesi",
-          "absence_position": "Yokluk konumu"
+          "absence_position": "Yokluk konumu",
+          "presence_policy": "Bulunma değerlendirme politikası"
         },
         "data_description": {
-          "absence_position": "Daha güçlü bir koruma kararı geçerli olmadıkça, bölge boşken gölgeliğin konumu (0 = tamamen kapalı, 100 = tamamen açık). Bu bölgedeki tüm pencerelere uygulanır."
+          "absence_position": "Daha güçlü bir koruma kararı geçerli olmadıkça, bölge boşken gölgeliğin konumu (0 = tamamen kapalı, 100 = tamamen açık). Bu bölgedeki tüm pencerelere uygulanır.",
+          "presence_policy": "Birden fazla bulunma varlığının tek bir sinyalde nasıl birleştirileceğini belirler. Biri evde (varsayılan): seçilen kişilerden biri evde olur olmaz bulunuluyor sayılır. Herkes evde: yalnızca seçilen tüm kişiler evdeyken bulunuluyor sayılır. Ters çevrilmiş: \"biri evde\" anlamını tersine çevirir — yalnızca birinin dışarıda olduğu doğrulanınca bulunuluyor sayılır."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Tente",
         "generic": "Diğer gölgelik"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Biri evde",
+        "all_home": "Herkes evde",
+        "inverted_any_home": "Ters çevrilmiş (biri evde = dışarıda)"
       }
     }
   },

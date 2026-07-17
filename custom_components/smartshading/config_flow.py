@@ -53,6 +53,7 @@ from .config_entry_data import SmartShadingConfigEntryData, from_storage_dict, t
 from .models.comfort import ComfortConfig
 from .models.config import GlobalDefaults, ShadePositionDefaults
 from .models.cover_group import CoverGroup, CoverHardwareType, CoverSyncMode, cover_hardware_type_from_str
+from .models.presence import PresencePolicy
 from .models.lifecycle import (
     LifecycleScheduleMode,
     MorningTrigger,
@@ -135,6 +136,9 @@ from .const import (
     DEFAULT_EMA_ALPHA,
     EMA_ALPHA_MIN,
     EMA_ALPHA_MAX,
+    CONF_PRESENCE_POLICY,
+    DEFAULT_PRESENCE_POLICY,
+    PRESENCE_POLICY_OPTIONS,
     DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C,
     CONF_GLARE_MIN_EXPOSURE_WM2,
     DEFAULT_GLARE_MIN_EXPOSURE_WM2,
@@ -332,6 +336,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._presence_entity_ids: list[str] = []
         self._absence_delay_min: int = DEFAULT_ABSENCE_DELAY_MIN
         self._absence_position: int | None = None
+        self._presence_policy: PresencePolicy = PresencePolicy(DEFAULT_PRESENCE_POLICY)
         # Stable zone ID for this setup run (UUID4, generated once — all windows
         # in this flow share the single zone, so the ID must not change between
         # async_step_cover_group() calls and _async_finish()).
@@ -706,6 +711,12 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._absence_delay_min = int(user_input[CONF_ABSENCE_DELAY_MIN])
             raw_pos = user_input.get(CONF_ABSENCE_POSITION)
             self._absence_position = int(raw_pos) if raw_pos is not None else None
+            try:
+                self._presence_policy = PresencePolicy(
+                    user_input.get(CONF_PRESENCE_POLICY, DEFAULT_PRESENCE_POLICY)
+                )
+            except ValueError:
+                self._presence_policy = PresencePolicy(DEFAULT_PRESENCE_POLICY)
             return await self.async_step_window()
 
         _prefill = _first_zone_entry_data(self.hass) or {}
@@ -715,6 +726,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             (z.get("absence_position") for z in _prefill.get("zones", []) if z.get("absence_position") is not None),
             DEFAULT_ABSENCE_POSITION,
         )
+        _prefill_policy = _prefill.get(CONF_PRESENCE_POLICY, DEFAULT_PRESENCE_POLICY)
 
         schema = vol.Schema(
             {
@@ -726,6 +738,13 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
                 vol.Optional(CONF_ABSENCE_POSITION, default=_prefill_pos): NumberSelector(
                     NumberSelectorConfig(min=0, max=100, step=1, mode=NumberSelectorMode.SLIDER, unit_of_measurement="%")
+                ),
+                vol.Required(CONF_PRESENCE_POLICY, default=_prefill_policy): SelectSelector(
+                    SelectSelectorConfig(
+                        options=PRESENCE_POLICY_OPTIONS,
+                        mode=SelectSelectorMode.DROPDOWN,
+                        translation_key="presence_policy",
+                    )
                 ),
             }
         )
@@ -991,6 +1010,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             lifecycle_config=lifecycle_config,
             presence_entity_ids=self._presence_entity_ids,
             absence_delay_min=self._absence_delay_min,
+            presence_policy=self._presence_policy,
             weather_entity_id=self._weather_entity_id,
             solar_radiation_sensor_id=self._solar_radiation_sensor_id,
             outdoor_temperature_sensor_id=self._outdoor_temperature_sensor_id,
@@ -1571,9 +1591,14 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         current = self._config_entry.data
 
         if user_input is not None:
+            try:
+                _policy = PresencePolicy(user_input.get(CONF_PRESENCE_POLICY, DEFAULT_PRESENCE_POLICY))
+            except ValueError:
+                _policy = PresencePolicy(DEFAULT_PRESENCE_POLICY)
             updates: dict[str, Any] = {
                 CONF_PRESENCE_ENTITY_IDS: user_input.get(CONF_PRESENCE_ENTITY_IDS, []),
                 CONF_ABSENCE_DELAY_MIN: int(user_input[CONF_ABSENCE_DELAY_MIN]),
+                CONF_PRESENCE_POLICY: _policy.value,
             }
             if CONF_ABSENCE_POSITION in user_input:
                 raw_pos = user_input[CONF_ABSENCE_POSITION]
@@ -1610,6 +1635,16 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     description={"suggested_value": current_absence_position},
                 ): NumberSelector(
                     NumberSelectorConfig(min=0, max=100, step=1, mode=NumberSelectorMode.SLIDER, unit_of_measurement="%")
+                ),
+                vol.Required(
+                    CONF_PRESENCE_POLICY,
+                    default=current.get(CONF_PRESENCE_POLICY, DEFAULT_PRESENCE_POLICY),
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=PRESENCE_POLICY_OPTIONS,
+                        mode=SelectSelectorMode.DROPDOWN,
+                        translation_key="presence_policy",
+                    )
                 ),
             }
         )

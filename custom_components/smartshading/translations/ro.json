@@ -91,10 +91,12 @@
         "data": {
           "presence_entity_ids": "Entități de prezență",
           "absence_delay_min": "Întârziere de absență",
-          "absence_position": "Poziție de absență"
+          "absence_position": "Poziție de absență",
+          "presence_policy": "Politică de evaluare a prezenței"
         },
         "data_description": {
-          "absence_position": "Poziția umbrarului cât timp zona este neocupată, cu excepția cazului în care se aplică o decizie de protecție mai puternică (0 = complet închis, 100 = complet deschis). Se aplică tuturor ferestrelor din această zonă."
+          "absence_position": "Poziția umbrarului cât timp zona este neocupată, cu excepția cazului în care se aplică o decizie de protecție mai puternică (0 = complet închis, 100 = complet deschis). Se aplică tuturor ferestrelor din această zonă.",
+          "presence_policy": "Controlează modul în care mai multe entități de prezență sunt combinate într-un singur semnal. Cineva acasă (implicit): prezent imediat ce o persoană selectată este acasă. Toți acasă: prezent doar când toate persoanele selectate sunt acasă. Inversat: inversează semnificația „cineva acasă” — prezent doar după ce se confirmă că cineva este plecat."
         }
       },
       "comfort": {
@@ -360,10 +362,12 @@
         "data": {
           "presence_entity_ids": "Entități de prezență",
           "absence_delay_min": "Întârziere de absență",
-          "absence_position": "Poziție de absență"
+          "absence_position": "Poziție de absență",
+          "presence_policy": "Politică de evaluare a prezenței"
         },
         "data_description": {
-          "absence_position": "Poziția umbrarului cât timp zona este neocupată, cu excepția cazului în care se aplică o decizie de protecție mai puternică (0 = complet închis, 100 = complet deschis). Se aplică tuturor ferestrelor din această zonă."
+          "absence_position": "Poziția umbrarului cât timp zona este neocupată, cu excepția cazului în care se aplică o decizie de protecție mai puternică (0 = complet închis, 100 = complet deschis). Se aplică tuturor ferestrelor din această zonă.",
+          "presence_policy": "Controlează modul în care mai multe entități de prezență sunt combinate într-un singur semnal. Cineva acasă (implicit): prezent imediat ce o persoană selectată este acasă. Toți acasă: prezent doar când toate persoanele selectate sunt acasă. Inversat: inversează semnificația „cineva acasă” — prezent doar după ce se confirmă că cineva este plecat."
         }
       },
       "window": {
@@ -528,6 +532,13 @@
         "exterior_screen": "Screen",
         "awning": "Copertină",
         "generic": "Alt umbrar"
+      }
+    },
+    "presence_policy": {
+      "options": {
+        "any_home": "Cineva acasă",
+        "all_home": "Toți acasă",
+        "inverted_any_home": "Inversat (cineva acasă = plecat)"
       }
     }
   },

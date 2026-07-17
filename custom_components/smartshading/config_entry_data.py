@@ -29,6 +29,7 @@ from .models.lifecycle import (
     SunEvent,
 )
 from .models.obstruction import ObstructionZone
+from .models.presence import PresencePolicy
 from .models.window import WindowBehaviorMode, WindowConfig
 from .models.zone import ZoneConfig
 from .models.zone_execution_config import ZoneExecutionConfig
@@ -71,6 +72,9 @@ class SmartShadingConfigEntryData:
     )
     presence_entity_ids: list[str] = field(default_factory=list)
     absence_delay_min: int = 30
+    # Presence evaluation policy (v1.2.0-beta.1, T5). ANY_HOME reproduces
+    # pre-T5 behavior exactly — see models/presence.py.
+    presence_policy: PresencePolicy = PresencePolicy.ANY_HOME
     # Comfort Engine (2026-06-17). Multiple indoor temperature sensors are
     # supported (v1.0); coordinator averages all valid readings. Empty list =
     # no sensor. Stored as a list; legacy single-sensor entries are migrated
@@ -146,6 +150,18 @@ def _time_from_storage(value: Any) -> time | None:
         return time.fromisoformat(value)
     except ValueError:
         return None
+
+
+def _presence_policy_from_storage(value: Any) -> PresencePolicy:
+    """Never raises: missing, non-string, or an unrecognized value ->
+    ANY_HOME (the legacy default — reproduces pre-T5 behavior exactly for
+    every existing config without a stored presence_policy key)."""
+    if not isinstance(value, str):
+        return PresencePolicy.ANY_HOME
+    try:
+        return PresencePolicy(value)
+    except ValueError:
+        return PresencePolicy.ANY_HOME
 
 
 def _ema_alpha_from_storage(value: Any) -> float:
@@ -248,6 +264,7 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
         },
         "presence_entity_ids": data.presence_entity_ids,
         "absence_delay_min": data.absence_delay_min,
+        "presence_policy": data.presence_policy.value,
         "indoor_temperature_sensor_ids": data.indoor_temperature_sensor_ids,
         "comfort_config": {
             "heat_protection_enabled": data.comfort_config.heat_protection_enabled,
@@ -419,6 +436,7 @@ def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
         lifecycle_config=_lifecycle_config_from_storage(raw.get("lifecycle_config")),
         presence_entity_ids=raw.get("presence_entity_ids", []),
         absence_delay_min=raw.get("absence_delay_min", 30),
+        presence_policy=_presence_policy_from_storage(raw.get("presence_policy")),
         indoor_temperature_sensor_ids=_read_indoor_sensor_ids(raw),
         comfort_config=_comfort_config_from_storage(raw.get("comfort_config")),
     )

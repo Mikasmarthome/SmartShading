@@ -91,6 +91,8 @@ from .engines.lifecycle_engine import (
 )
 from .engines.lifecycle_guard import lifecycle_should_break_override, should_allow_lifecycle_release
 from .engines.ema_engine import EmaSmoother
+from .engines.presence_engine import evaluate_presence_policy
+from .models.presence import PresencePolicy, PresenceReading
 from .models.learning import OverrideRecord, StateTransitionRecord, WindowCycleSnapshot
 from .engines.override_detector import OverrideDetector
 from .engines.observability_evaluator import (
@@ -1042,6 +1044,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         lifecycle_config: NightDayLifecycleConfig | None = None,
         presence_entity_ids: list[str] | None = None,
         absence_delay_min: int = 30,
+        presence_policy: PresencePolicy = PresencePolicy.ANY_HOME,
         indoor_temperature_sensor_ids: list[str] | None = None,
         comfort_config: ComfortConfig | None = None,
         ema_enabled: bool = False,
@@ -1294,7 +1297,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._lifecycle_state: LifecycleState = LifecycleState.DAY
         self._presence_entity_ids: list[str] = presence_entity_ids or []
         self._absence_delay_min: int = absence_delay_min
+        # Presence evaluation policy (v1.2.0-beta.1, T5): governs ONLY how
+        # _read_presence() aggregates presence_entity_ids into one boolean
+        # for the debouncer below — PresenceDebouncer itself stays
+        # policy-unaware, doing time-based debouncing only (see
+        # engines/presence_engine.py module docstring for the separation).
+        self._presence_policy: PresencePolicy = presence_policy
         self._presence_debouncer = PresenceDebouncer()
+        # Latest cycle's presence reading, for diagnostics only (never
+        # consumed by any decision logic — _read_presence()'s return value
+        # and the debouncer's own state are the actual control-flow inputs).
+        self._cycle_presence_reading: PresenceReading | None = None
+        self._cycle_absence_active: bool | None = None
         # Unsubscribe callbacks for presence state change listeners.
         # Populated by async_setup_presence_listeners(); cleared by teardown.
         self._unsub_presence_listeners: list[Callable[[], None]] = []
@@ -2004,29 +2018,37 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         return max(0, min(100, round(value)))
 
     def _read_presence(self) -> bool:
-        """Lifecycle Engine round, Aufgabe 3: True if at least one
-        configured `person.*` entity is "home". Never raises - a missing
-        entity or one in `unknown`/`unavailable` is simply skipped. If
-        none are configured, or none could be read at all, the safe
-        default is "present" (never falsely trigger absence from missing
-        data).
+        """Lifecycle Engine round, Aufgabe 3 (T5: policy-aware). True if the
+        configured presence_policy considers the house "present". Never
+        raises - a missing entity or one in `unknown`/`unavailable` never
+        determines the outcome by itself (see engines/presence_engine.py).
+
+        Delegates entity-state aggregation to evaluate_presence_policy()
+        (pure, policy-aware) and applies the ONE policy-independent safety
+        mapping here: PresenceReading.INDETERMINATE -> True (never falsely
+        trigger absence from missing/unreadable data) — exactly the pre-T5
+        safe default, now reproduced via ANY_HOME + this same mapping for
+        every existing config (self._presence_policy defaults to ANY_HOME).
+        Only a definitive ABSENT verdict returns False.
+
+        Stores the raw PresenceReading on self._cycle_presence_reading for
+        diagnostics only (see diagnostics_builder.py presence_summary) -
+        nothing downstream of this method reads that attribute.
         """
         if not self._presence_entity_ids:
+            self._cycle_presence_reading = PresenceReading.INDETERMINATE
             return True
 
-        any_usable_reading = False
-        for entity_id in self._presence_entity_ids:
-            state = self.hass.states.get(entity_id)
-            if state is None or state.state in ("unknown", "unavailable"):
-                continue
-            any_usable_reading = True
-            if state.state == "home":
-                return True
+        raw_states = [self._read_raw_presence_state(eid) for eid in self._presence_entity_ids]
+        reading = evaluate_presence_policy(raw_states, self._presence_policy)
+        self._cycle_presence_reading = reading
+        return reading is not PresenceReading.ABSENT
 
-        if not any_usable_reading:
-            return True  # nothing readable at all - safe default: present
-
-        return False  # every readable person reported a non-"home" state
+    def _read_raw_presence_state(self, entity_id: str) -> str | None:
+        """Raw HA state string for one presence entity, or None if the
+        entity is missing. Never raises."""
+        state = self.hass.states.get(entity_id)
+        return state.state if state is not None else None
 
     def _presence_uncertain(self) -> bool:
         """True when presence cannot be resolved clearly enough to actively open.
@@ -2044,6 +2066,35 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         also when no presence is configured at all (fallback open is intended).
         unknown is never treated as away — this only suppresses the open; it
         never forces a close.
+
+        T5 pre-push review: deliberately independent of self._presence_policy
+        — this method always asks its own, narrower question ("is anyone
+        LITERALLY confirmed 'home'"), never the configured policy's question.
+        _read_presence() (policy-aware) and this method (policy-independent)
+        can therefore disagree in their confidence, e.g.:
+          - INVERTED_ANY_HOME, entities=[not_home, unknown]: _read_presence()
+            resolves this via evaluate_presence_policy() to a DEFINITIVE
+            PRESENT (no entity is home, so the inverted policy declares
+            present) — while THIS method still reports True (uncertain),
+            since literally nobody is confirmed "home" and one entity is
+            indeterminate.
+          - ALL_HOME, entities=["home", "unknown"]: _read_presence() resolves
+            this to INDETERMINATE (unanimity cannot be confirmed — see
+            engines/presence_engine.py _evaluate_all_home()) — while THIS
+            method reports False (not uncertain), since one person IS
+            literally confirmed home.
+        Both are intentional, not a bug: this divergence never produces a
+        contradictory ACTION — both signals independently only ever lean
+        toward a more cautious/held decision (never toward forcing an open
+        or a close the other one disagrees with), so letting them reach
+        their own answers from the same raw entity states is safe. Unifying
+        them would require this method to become policy-aware too, which is
+        out of scope for T5 (see the T5 final report "scope boundary" for
+        the full reasoning) and was intentionally deferred rather than risk
+        a backward-compatibility change to this method's existing, narrower
+        contract. See tests/test_coordinator_presence_policy.py
+        TestPresenceUncertainDivergenceFromPolicy for a locked-in regression
+        test of both scenarios above.
         """
         if not self._presence_entity_ids:
             return False
@@ -2761,6 +2812,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         absence_active = self._presence_debouncer.is_absence_active(
             presence_present, now, self._absence_delay_min
         )
+        # Diagnostics-only (v1.2.0-beta.1, T5) — see diagnostics_builder.py
+        # presence_summary. Never read by any decision logic.
+        self._cycle_absence_active = absence_active
         # True when presence is configured but undeterminable this cycle (all
         # entities unknown/unavailable, e.g. just after a restart): the daytime
         # fallback must hold instead of opening fully (absence might be active).

@@ -19,7 +19,7 @@ from custom_components.smartshading.models.lifecycle import LifecycleState, Nigh
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.window_decision_input import build_window_decision_input
 from custom_components.smartshading.models.zone import ZoneConfig
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +130,17 @@ class TestNightEvaluatorNightPhase:
         result = evaluator.evaluate(wdi)
         assert result is not None
         assert result.decided_by == "NightEvaluator"
+
+    def test_category_is_lifecycle(
+        self, evaluator: NightEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """T7: NightEvaluator decisions must be tagged LIFECYCLE — this is the
+        category the Manual Override policy checks; a wrong tag here would
+        make Night decisions incorrectly bypass an active override."""
+        wdi = _wdi(window, zone, LifecycleState.NIGHT)
+        result = evaluator.evaluate(wdi)
+        assert result is not None
+        assert result.category is DecisionCategory.LIFECYCLE
 
     def test_target_tilt_is_none(
         self, evaluator: NightEvaluator, window: WindowConfig, zone: ZoneConfig

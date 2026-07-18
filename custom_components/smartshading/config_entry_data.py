@@ -29,7 +29,9 @@ from .models.lifecycle import (
     SunEvent,
 )
 from .models.lifecycle_profile import LifecycleProfile
+from .models.manual_override import OverrideDurationMode
 from .models.obstruction import ObstructionZone
+from .models.override_policy import OverridePolicyConfig
 from .models.presence import PresencePolicy
 from .models.window import WindowBehaviorMode, WindowConfig
 from .models.zone import ZoneConfig
@@ -88,6 +90,9 @@ class SmartShadingConfigEntryData:
     # transparently in from_storage_dict().
     indoor_temperature_sensor_ids: list[str] = field(default_factory=list)
     comfort_config: ComfortConfig = field(default_factory=ComfortConfig)
+    # Manual Override policy (v1.2.0-beta.1, T7). Every field defaults to
+    # exactly the pre-T7 legacy behavior — see models/override_policy.py.
+    override_policy: OverridePolicyConfig = field(default_factory=OverridePolicyConfig)
 
 
 def _time_to_storage(value: time | None) -> str | None:
@@ -306,6 +311,16 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             "solar_gain_max_outdoor_temp_c": data.comfort_config.solar_gain_max_outdoor_temp_c,
             "glare_min_exposure_wm2": data.comfort_config.glare_min_exposure_wm2,
         },
+        "override_policy": {
+            "duration_mode": data.override_policy.duration_mode.value,
+            "fixed_until": _time_to_storage(data.override_policy.fixed_until),
+            "allow_comfort_actions": data.override_policy.allow_comfort_actions,
+            "allow_protection_actions": data.override_policy.allow_protection_actions,
+            "duration_min": data.override_policy.duration_min,
+            "night_duration_min": data.override_policy.night_duration_min,
+            "detection_tolerance": data.override_policy.detection_tolerance,
+            "break_on_lifecycle": data.override_policy.break_on_lifecycle,
+        },
     }
 
 
@@ -478,6 +493,48 @@ def _comfort_config_from_storage(raw: dict[str, Any] | None) -> ComfortConfig:
     )
 
 
+def _override_policy_from_storage(raw: dict[str, Any] | None) -> OverridePolicyConfig:
+    """Backwards compatible: ConfigEntries without an override_policy key
+    (every pre-T7 config) fall back to full OverridePolicyConfig defaults —
+    duration_mode=legacy, allow_comfort_actions=False, allow_protection_
+    actions=False — reproducing pre-T7 behavior exactly. No migration, no
+    rewrite: invalid/unknown values fall back safely field-by-field, never
+    raising and never crashing the whole ConfigEntry."""
+    if not raw:
+        return OverridePolicyConfig()
+    try:
+        duration_mode = OverrideDurationMode(raw.get("duration_mode", OverrideDurationMode.LEGACY.value))
+    except ValueError:
+        duration_mode = OverrideDurationMode.LEGACY
+    fixed_until = _time_from_storage(raw.get("fixed_until"))
+    # A FIXED_TIME mode with no valid configured clock time is not
+    # actionable — fall back to legacy rather than crash or silently do
+    # nothing at runtime (deterministic, documented fallback per T7 review
+    # point 15).
+    if duration_mode is OverrideDurationMode.FIXED_TIME and fixed_until is None:
+        duration_mode = OverrideDurationMode.LEGACY
+    return OverridePolicyConfig(
+        duration_mode=duration_mode,
+        fixed_until=fixed_until,
+        allow_comfort_actions=bool(raw.get("allow_comfort_actions", False)),
+        allow_protection_actions=bool(raw.get("allow_protection_actions", False)),
+        duration_min=_safe_int(raw.get("duration_min"), 120),
+        night_duration_min=_safe_int(raw.get("night_duration_min"), 720),
+        detection_tolerance=_safe_int(raw.get("detection_tolerance"), 10),
+        break_on_lifecycle=bool(raw.get("break_on_lifecycle", True)),
+    )
+
+
+def _safe_int(value: Any, default: int) -> int:
+    """Never raises: missing/non-numeric stored value -> the given default."""
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+
 def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
     """Reconstruct typed dataclasses from a stored ConfigEntry.data dict."""
     return SmartShadingConfigEntryData(
@@ -512,4 +569,5 @@ def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
         presence_policy=_presence_policy_from_storage(raw.get("presence_policy")),
         indoor_temperature_sensor_ids=_read_indoor_sensor_ids(raw),
         comfort_config=_comfort_config_from_storage(raw.get("comfort_config")),
+        override_policy=_override_policy_from_storage(raw.get("override_policy")),
     )

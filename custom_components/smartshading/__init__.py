@@ -285,6 +285,14 @@ async def _async_setup_zone_entry(
         ema_enabled=entry_data.ema_enabled,
         ema_alpha=entry_data.ema_alpha,
         global_serial_dispatch=serial_dispatch,
+        override_duration_min=entry_data.override_policy.duration_min,
+        override_night_duration_min=entry_data.override_policy.night_duration_min,
+        override_detection_tolerance=entry_data.override_policy.detection_tolerance,
+        override_break_on_lifecycle=entry_data.override_policy.break_on_lifecycle,
+        override_duration_mode=entry_data.override_policy.duration_mode.value,
+        override_fixed_until=entry_data.override_policy.fixed_until,
+        override_allow_comfort_actions=entry_data.override_policy.allow_comfort_actions,
+        override_allow_protection_actions=entry_data.override_policy.allow_protection_actions,
     )
     # Inject the ForecastLearningStore so the ForecastStrategyModifier can access
     # trust data and current forecast snapshots starting from the first cycle.

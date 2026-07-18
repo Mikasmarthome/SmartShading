@@ -343,6 +343,21 @@ DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C = 12.0
 DEFAULT_GLARE_MIN_EXPOSURE_WM2 = 100.0
 GLARE_MIN_EXPOSURE_MAX_WM2 = 500.0
 
+# Manual Override policy (v1.2.0-beta.1, T7).
+CONF_OVERRIDE_DURATION_MODE = "override_duration_mode"
+CONF_OVERRIDE_FIXED_UNTIL = "override_fixed_until"
+CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS = "override_allow_comfort_actions"
+CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS = "override_allow_protection_actions"
+CONF_OVERRIDE_BREAK_ON_LIFECYCLE = "override_break_on_lifecycle"
+CONF_OVERRIDE_DURATION_MIN = "override_duration_min"
+CONF_OVERRIDE_NIGHT_DURATION_MIN = "override_night_duration_min"
+CONF_OVERRIDE_DETECTION_TOLERANCE = "override_detection_tolerance"
+DEFAULT_OVERRIDE_DURATION_MIN = 120
+DEFAULT_OVERRIDE_NIGHT_DURATION_MIN = 720
+DEFAULT_OVERRIDE_DETECTION_TOLERANCE = 10
+OVERRIDE_DURATION_MIN_MAX = 1440  # 24h, a generous sane upper bound
+OVERRIDE_DETECTION_TOLERANCE_MAX = 50
+
 # Schedule position defaults: night closes the cover (0), morning opens it (100).
 # HA position convention: 0=closed, 100=open.
 CONF_NIGHT_POSITION = "night_position"

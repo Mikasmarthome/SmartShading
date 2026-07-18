@@ -39,7 +39,7 @@ from custom_components.smartshading.models.manual_override import ManualOverride
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.window_decision_input import build_window_decision_input
 from custom_components.smartshading.models.zone import ZoneConfig
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 # Sentinel: all comfort goals disabled — used to isolate individual evaluators.
 _NO_COMFORT = ComfortConfig(
@@ -396,6 +396,17 @@ class TestTierOrchestratorFallback:
         wdi = _wdi(window, zone)
         result = orchestrator.evaluate_window(wdi)
         assert result.decided_by == "TierOrchestrator:fallback"
+
+    def test_fallback_category_is_comfort(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """T7: the daytime fallback OPEN (nothing needs protection/comfort
+        shading) is tagged COMFORT — gated by allow_comfort when an
+        override is active, same as SolarEvaluator's regular comfort
+        decisions."""
+        wdi = _wdi(window, zone)
+        result = orchestrator.evaluate_window(wdi)
+        assert result.category is DecisionCategory.COMFORT
 
     def test_fallback_target_position_is_zero(
         self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig

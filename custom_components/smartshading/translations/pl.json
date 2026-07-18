@@ -13,7 +13,8 @@
           "add_window": "Dodaj okno",
           "edit_window": "Edytuj okno",
           "remove_window": "Usuń okno",
-          "lifecycle_profiles": "Profile harmonogramu"
+          "lifecycle_profiles": "Profile harmonogramu",
+          "manual_override": "Ręczne zastąpienie"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Aktywny profil"
         }
+      },
+      "manual_override": {
+        "title": "Ręczne zastąpienie",
+        "description": "Określa zachowanie aktywnego ręcznego zastąpienia: jak długo trwa i czy działania komfortu lub ochrony mogą nadal być wykonywane, gdy jest aktywne.",
+        "data": {
+          "override_duration_mode": "Czas trwania zastąpienia",
+          "override_fixed_until": "Stała godzina zakończenia",
+          "override_allow_comfort_actions": "Zezwól na działania komfortu podczas zastąpienia",
+          "override_allow_protection_actions": "Zezwól na działania ochrony podczas zastąpienia",
+          "override_break_on_lifecycle": "Zakończ zastąpienie przy przejściu harmonogramu",
+          "override_duration_min": "Klasyczny czas trwania zastąpienia (minuty)",
+          "override_night_duration_min": "Nocny czas trwania zastąpienia (minuty)",
+          "override_detection_tolerance": "Tolerancja wykrywania"
+        },
+        "data_description": {
+          "override_duration_mode": "Klasyczny: trwa przez stały czas. Stała godzina: trwa do ustawionej godziny.",
+          "override_fixed_until": "Używane tylko, gdy czas trwania jest ustawiony na \"Stała godzina\". Jeśli godzina już minęła dzisiaj, zastąpienie kończy się o tej godzinie jutro.",
+          "override_allow_comfort_actions": "Jeśli włączone, zwykłe zacienianie komfortowe może nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
+          "override_allow_protection_actions": "Jeśli włączone, działania ochronne (nieobecność, upał, olśnienie) mogą nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
+          "override_break_on_lifecycle": "Jeśli włączone, każde przejście harmonogramu (np. dzień na noc) kończy aktywne zastąpienie.",
+          "override_duration_min": "Jak długo trwa dzienne zastąpienie, zanim SmartShading wznowi normalne sterowanie (klasyczny tryb czasu trwania).",
+          "override_night_duration_min": "Limit bezpieczeństwa dla nocnego zastąpienia. Rzeczywiste zwolnienie następuje przy porannym przejściu harmonogramu.",
+          "override_detection_tolerance": "Minimalna zmiana pozycji (w procentach), zanim ręczny ruch zostanie rozpoznany jako zastąpienie."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
-      "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy."
+      "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy.",
+      "override_fixed_until_required": "Podaj stałą godzinę zakończenia, gdy czas trwania jest ustawiony na \"Stała godzina\"."
     },
     "abort": {
       "no_options_for_system_entry": "Wpis systemowy SmartShading nie ma konfigurowalnych opcji.",
@@ -662,6 +688,12 @@
         "any_home": "Ktoś w domu",
         "all_home": "Wszyscy w domu",
         "inverted_any_home": "Odwrócone (ktoś w domu = nieobecny)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Klasyczny (stały czas)",
+        "fixed_time": "Stała godzina"
       }
     }
   },

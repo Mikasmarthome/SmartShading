@@ -148,6 +148,8 @@ def build_window_decision_input(
     override_duration_min: int = 240,
     override_detection_tolerance: int = 10,
     override_break_on_lifecycle: bool = True,
+    override_allow_comfort_actions: bool = False,
+    override_allow_protection_actions: bool = False,
     # Tier 3 extension: night contact behavior (v1.1.0)
     night_block_on_window_open: bool = False,
     night_lift_on_window_open: bool = False,
@@ -229,6 +231,8 @@ def build_window_decision_input(
         override_duration_min=override_duration_min,
         override_detection_tolerance=override_detection_tolerance,
         override_break_on_lifecycle=override_break_on_lifecycle,
+        override_allow_comfort_actions=override_allow_comfort_actions,
+        override_allow_protection_actions=override_allow_protection_actions,
         night_position=(
             _ha_to_internal(night_position_ha)
             if night_shading_enabled

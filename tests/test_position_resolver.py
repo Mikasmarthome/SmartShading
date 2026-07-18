@@ -18,19 +18,28 @@ import pytest
 
 from custom_components.smartshading.evaluators.position_resolver import PositionResolver
 from custom_components.smartshading.models.window_decision import WindowDecision
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 
 # ---------------------------------------------------------------------------
 # Helper factory — avoids repeating boilerplate in every test
 # ---------------------------------------------------------------------------
 
-def _decision(position: int | None, state: ShadingState, decided_by: str = "Test") -> WindowDecision:
+def _decision(
+    position: int | None,
+    state: ShadingState,
+    decided_by: str = "Test",
+    category: DecisionCategory = DecisionCategory.PROTECTION,
+) -> WindowDecision:
+    # PositionResolver is category-agnostic (pure position arbitration); the
+    # default category here is arbitrary and irrelevant to what these tests
+    # assert on.
     return WindowDecision(
         window_id="w1",
         shading_state=state,
         target_position=position,
         decided_by=decided_by,
+        category=category,
     )
 
 

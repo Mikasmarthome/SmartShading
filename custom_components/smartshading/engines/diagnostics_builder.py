@@ -231,6 +231,50 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
             "source": source,  # "legacy" | "stored" | "fallback"
         }
 
+    def _manual_override_summary():
+        # PUBLIC: policy configuration + aggregate counts only. No window/
+        # cover ids, no override positions, no per-window override details,
+        # no profile/person names. fixed_time_configured is a plain bool
+        # (not the configured clock time) — the exact value has no
+        # diagnostic use for support and is not needed to confirm the
+        # feature is wired correctly. nearest_expiry_remaining_min is a
+        # RELATIVE duration in minutes (never an absolute timestamp),
+        # rounded to 1 decimal place, clamped to >= 0.0 (never negative —
+        # an override whose expiry has technically already passed but has
+        # not yet been garbage-collected by the detector's own expiry check
+        # reports 0.0, not a negative value), and is entirely
+        # un-attributable to any specific window (only the minimum across
+        # all currently active overrides is reported, not a
+        # window_id -> value mapping). Uses OverrideDetector's own PUBLIC
+        # active_overrides_snapshot(now) API — which already excludes
+        # anything with expires_at <= now — never reaches into the
+        # detector's private per-window dict directly.
+        detector = getattr(c, "_override_detector", None)
+        active_count = 0
+        nearest_remaining_min = None
+        if detector is not None:
+            try:
+                snapshot = detector.active_overrides_snapshot(now)
+                active_count = len(snapshot)
+                if snapshot:
+                    remaining = [
+                        (datetime.fromisoformat(ov["expires_at"]) - now).total_seconds() / 60
+                        for ov in snapshot
+                    ]
+                    nearest_remaining_min = round(max(0.0, min(remaining)), 1)
+            except Exception:
+                active_count = 0
+                nearest_remaining_min = None
+        return {
+            "duration_mode": getattr(c, "_override_duration_mode", "legacy"),
+            "fixed_time_configured": getattr(c, "_override_fixed_until", None) is not None,
+            "allow_comfort": bool(getattr(c, "_override_allow_comfort_actions", False)),
+            "allow_protection": bool(getattr(c, "_override_allow_protection_actions", False)),
+            "break_on_lifecycle": bool(getattr(c, "_override_break_on_lifecycle", True)),
+            "active_override_count": active_count,
+            "nearest_expiry_remaining_min": nearest_remaining_min,
+        }
+
     def _learning_authority_summary():
         # PUBLIC: learning-authority counts + blocking-reason histogram (no ids).
         from .learning_trace_builder import build_learning_authority
@@ -273,6 +317,7 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         "inputs_summary": _safe(_inputs_summary, errors, "inputs"),
         "presence_summary": _safe(_presence_summary, errors, "presence"),
         "lifecycle_profile_summary": _safe(_lifecycle_profile_summary, errors, "lifecycle_profile"),
+        "manual_override_summary": _safe(_manual_override_summary, errors, "manual_override"),
         "learning_authority_summary": _safe(
             _learning_authority_summary, errors, "learning_authority"),
         "decisions": _safe(_decisions, errors, "decisions"),

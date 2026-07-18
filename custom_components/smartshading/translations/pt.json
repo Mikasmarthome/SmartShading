@@ -13,7 +13,8 @@
           "add_window": "Adicionar janela",
           "edit_window": "Editar janela",
           "remove_window": "Remover janela",
-          "lifecycle_profiles": "Perfis de horário"
+          "lifecycle_profiles": "Perfis de horário",
+          "manual_override": "Substituição manual"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Perfil ativo"
         }
+      },
+      "manual_override": {
+        "title": "Substituição manual",
+        "description": "Define o comportamento de uma substituição manual ativa: quanto tempo dura e se as ações de conforto ou proteção ainda podem ser executadas enquanto está ativa.",
+        "data": {
+          "override_duration_mode": "Duração da substituição",
+          "override_fixed_until": "Hora de término fixa",
+          "override_allow_comfort_actions": "Permitir ações de conforto durante a substituição",
+          "override_allow_protection_actions": "Permitir ações de proteção durante a substituição",
+          "override_break_on_lifecycle": "Encerrar substituição na transição de ciclo",
+          "override_duration_min": "Duração de substituição clássica (minutos)",
+          "override_night_duration_min": "Duração de substituição noturna (minutos)",
+          "override_detection_tolerance": "Tolerância de deteção"
+        },
+        "data_description": {
+          "override_duration_mode": "Clássico: mantém-se por uma duração fixa. Hora fixa: mantém-se até uma hora configurada.",
+          "override_fixed_until": "Usado apenas quando a duração está definida como \"Hora fixa\". Se a hora já passou hoje, a substituição termina a essa hora amanhã.",
+          "override_allow_comfort_actions": "Quando ativado, o sombreamento de conforto normal ainda pode ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
+          "override_allow_protection_actions": "Quando ativado, as ações de proteção (ausência, calor, encandeamento) ainda podem ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
+          "override_break_on_lifecycle": "Quando ativado, qualquer transição de ciclo (por exemplo, dia para noite) encerra uma substituição ativa.",
+          "override_duration_min": "Quanto tempo dura uma substituição diurna antes de o SmartShading retomar o controlo normal (modo de duração clássico).",
+          "override_night_duration_min": "Limite de segurança para uma substituição noturna. A libertação real ocorre na transição do ciclo matinal.",
+          "override_detection_tolerance": "Alteração mínima de posição (em percentagem) antes de um movimento manual ser reconhecido como substituição."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "O gatilho noturno mais cedo não pode ser posterior ao mais tarde.",
-      "morning_clamp_window_invalid": "O gatilho matinal mais cedo não pode ser posterior ao mais tarde."
+      "morning_clamp_window_invalid": "O gatilho matinal mais cedo não pode ser posterior ao mais tarde.",
+      "override_fixed_until_required": "Indique uma hora de término fixa quando a duração estiver definida como \"Hora fixa\"."
     },
     "abort": {
       "no_options_for_system_entry": "A entrada de Sistema do SmartShading não tem opções configuráveis.",
@@ -662,6 +688,12 @@
         "any_home": "Alguém em casa",
         "all_home": "Todos em casa",
         "inverted_any_home": "Invertido (alguém em casa = ausente)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Clássico (duração fixa)",
+        "fixed_time": "Hora fixa"
       }
     }
   },

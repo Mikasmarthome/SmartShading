@@ -13,7 +13,8 @@
           "add_window": "Lisää ikkuna",
           "edit_window": "Muokkaa ikkunaa",
           "remove_window": "Poista ikkuna",
-          "lifecycle_profiles": "Aikatauluprofiilit"
+          "lifecycle_profiles": "Aikatauluprofiilit",
+          "manual_override": "Manuaalinen ohitus"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Aktiivinen profiili"
         }
+      },
+      "manual_override": {
+        "title": "Manuaalinen ohitus",
+        "description": "Määrittää aktiivisen manuaalisen ohituksen käyttäytymisen: kuinka kauan se kestää ja voivatko mukavuus- tai suojaustoiminnot silti käydä sen ollessa aktiivinen.",
+        "data": {
+          "override_duration_mode": "Ohituksen kesto",
+          "override_fixed_until": "Kiinteä lopetusaika",
+          "override_allow_comfort_actions": "Salli mukavuustoiminnot ohituksen aikana",
+          "override_allow_protection_actions": "Salli suojaustoiminnot ohituksen aikana",
+          "override_break_on_lifecycle": "Lopeta ohitus aikataulusiirtymässä",
+          "override_duration_min": "Perinteinen ohituksen kesto (minuuttia)",
+          "override_night_duration_min": "Yön ohituksen kesto (minuuttia)",
+          "override_detection_tolerance": "Tunnistustoleranssi"
+        },
+        "data_description": {
+          "override_duration_mode": "Perinteinen: kestää kiinteän ajan. Kiinteä aika: kestää asetettuun kellonaikaan asti.",
+          "override_fixed_until": "Käytetään vain, kun kesto on asetettu \"Kiinteä aika\"-tilaan. Jos aika on jo ohi tänään, ohitus päättyy tähän aikaan huomenna.",
+          "override_allow_comfort_actions": "Kun käytössä, tavallinen mukavuusvarjostus voi silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
+          "override_allow_protection_actions": "Kun käytössä, suojaustoiminnot (poissaolo, kuumuus, häikäisy) voivat silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
+          "override_break_on_lifecycle": "Kun käytössä, mikä tahansa aikataulusiirtymä (esim. päivästä yöhön) lopettaa aktiivisen ohituksen.",
+          "override_duration_min": "Kuinka kauan päiväohitus kestää ennen kuin SmartShading jatkaa normaalia ohjausta (perinteinen kestomoodi).",
+          "override_night_duration_min": "Turvaraja yön ohitukselle. Todellinen vapautus tapahtuu aamun aikataulusiirtymässä.",
+          "override_detection_tolerance": "Pienin sallittu asennon muutos (prosentteina) ennen kuin manuaalinen liike tunnistetaan ohitukseksi."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "Aikaisin yölaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
-      "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin."
+      "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
+      "override_fixed_until_required": "Anna kiinteä lopetusaika, kun kesto on asetettu \"Kiinteä aika\"-tilaan."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-järjestelmämerkinnällä ei ole määritettäviä asetuksia.",
@@ -662,6 +688,12 @@
         "any_home": "Joku kotona",
         "all_home": "Kaikki kotona",
         "inverted_any_home": "Käänteinen (joku kotona = poissa)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Perinteinen (kiinteä kesto)",
+        "fixed_time": "Kiinteä aika"
       }
     }
   },

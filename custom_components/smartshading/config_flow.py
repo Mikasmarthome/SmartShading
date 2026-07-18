@@ -58,6 +58,7 @@ from .config_entry_data import (
 )
 from .models.comfort import ComfortConfig
 from .models.config import GlobalDefaults, ShadePositionDefaults
+from .models.manual_override import OverrideDurationMode
 from .models.cover_group import CoverGroup, CoverHardwareType, CoverSyncMode, cover_hardware_type_from_str
 from .models.presence import PresencePolicy
 from .models.lifecycle_profile import LifecycleProfile
@@ -104,6 +105,19 @@ from .const import (
     CONF_NIGHT_TRIGGER,
     CONF_NORMAL_SHADE_POSITION,
     CONF_OUTDOOR_TEMPERATURE_SENSOR_ID,
+    CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
+    CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS,
+    CONF_OVERRIDE_BREAK_ON_LIFECYCLE,
+    CONF_OVERRIDE_DETECTION_TOLERANCE,
+    CONF_OVERRIDE_DURATION_MIN,
+    CONF_OVERRIDE_DURATION_MODE,
+    CONF_OVERRIDE_FIXED_UNTIL,
+    CONF_OVERRIDE_NIGHT_DURATION_MIN,
+    DEFAULT_OVERRIDE_DETECTION_TOLERANCE,
+    DEFAULT_OVERRIDE_DURATION_MIN,
+    DEFAULT_OVERRIDE_NIGHT_DURATION_MIN,
+    OVERRIDE_DETECTION_TOLERANCE_MAX,
+    OVERRIDE_DURATION_MIN_MAX,
     CONF_PRESENCE_ENTITY_IDS,
     CONF_SOLAR_GAIN_ENABLED,
     CONF_SOLAR_RADIATION_SENSOR_ID,
@@ -218,6 +232,21 @@ def _first_zone_entry_data(hass: Any) -> dict[str, Any] | None:
         if entry.data.get(CONF_ENTRY_TYPE) != ENTRY_TYPE_SYSTEM:
             return entry.data
     return None
+
+
+def _safe_positive_int(value: Any, default: int, *, maximum: int) -> int:
+    """Never raises: missing/None/wrong-type/non-numeric -> default. A
+    numeric value outside [1, maximum] (including zero or negative) is
+    clamped into range rather than stored as-is or rejected — matches the
+    "safe default, never crash" discipline used throughout this module and
+    config_entry_data.py."""
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return default
+    try:
+        parsed = int(float(value))
+    except (TypeError, ValueError):
+        return default
+    return max(1, min(parsed, maximum))
 
 
 def _parse_optional_time_input(value: Any) -> time | None:
@@ -1277,7 +1306,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             return self.async_abort(reason="no_options_for_system_entry")
         return self.async_show_menu(
             step_id="init",
-            menu_options=["weather", "lifecycle", "presence", "comfort", "behavior", "add_window", "edit_window", "remove_window", "lifecycle_profiles"],
+            menu_options=["weather", "lifecycle", "presence", "comfort", "behavior", "add_window", "edit_window", "remove_window", "lifecycle_profiles", "manual_override"],
         )
 
     # -- Weather / sensor entities --
@@ -2102,6 +2131,129 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             }
         )
         return self.async_show_form(step_id="comfort", data_schema=schema, errors=errors)
+
+    # -- Manual Override policy (v1.2.0-beta.1, T7) --
+
+    async def async_step_manual_override(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        current = self._config_entry.data
+        stored = current.get("override_policy") or {}
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            try:
+                duration_mode = OverrideDurationMode(user_input.get(CONF_OVERRIDE_DURATION_MODE, OverrideDurationMode.LEGACY.value))
+            except ValueError:
+                duration_mode = OverrideDurationMode.LEGACY
+            fixed_until = _parse_optional_time_input(user_input.get(CONF_OVERRIDE_FIXED_UNTIL))
+            # Fixed-time mode requires a configured clock time — same
+            # deterministic-fallback rule as loading a malformed stored
+            # value (config_entry_data._override_policy_from_storage()).
+            if duration_mode is OverrideDurationMode.FIXED_TIME and fixed_until is None:
+                errors["base"] = "override_fixed_until_required"
+
+            # Server-side validation for the three numeric fields: NumberSelector
+            # constrains normal UI input, but a malformed/out-of-range/wrong-type
+            # value (e.g. a raw service call bypassing the selector) must never
+            # reach storage — same discipline as async_step_comfort()'s
+            # glare-min-exposure validation.
+            duration_min = _safe_positive_int(
+                user_input.get(CONF_OVERRIDE_DURATION_MIN), DEFAULT_OVERRIDE_DURATION_MIN,
+                maximum=OVERRIDE_DURATION_MIN_MAX,
+            )
+            night_duration_min = _safe_positive_int(
+                user_input.get(CONF_OVERRIDE_NIGHT_DURATION_MIN), DEFAULT_OVERRIDE_NIGHT_DURATION_MIN,
+                maximum=OVERRIDE_DURATION_MIN_MAX,
+            )
+            detection_tolerance = _safe_positive_int(
+                user_input.get(CONF_OVERRIDE_DETECTION_TOLERANCE), DEFAULT_OVERRIDE_DETECTION_TOLERANCE,
+                maximum=OVERRIDE_DETECTION_TOLERANCE_MAX,
+            )
+            if not errors:
+                new_policy = {
+                    "duration_mode": duration_mode.value,
+                    # T7 review point 13: fixed_until is deliberately preserved
+                    # regardless of the currently-selected duration_mode (not
+                    # cleared when switching to legacy) — this lets a user
+                    # switch Fixed Time -> Legacy -> Fixed Time without
+                    # re-entering the clock time. It has no functional effect
+                    # while duration_mode="legacy" (see
+                    # engines/override_detector.py: fixed_until is only ever
+                    # read when duration_mode="fixed_time").
+                    "fixed_until": fixed_until.isoformat() if fixed_until is not None else None,
+                    "allow_comfort_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS, False)),
+                    "allow_protection_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS, False)),
+                    "duration_min": duration_min,
+                    "night_duration_min": night_duration_min,
+                    "detection_tolerance": detection_tolerance,
+                    "break_on_lifecycle": bool(user_input.get(CONF_OVERRIDE_BREAK_ON_LIFECYCLE, True)),
+                }
+                return self._save_and_reload({"override_policy": new_policy})
+
+        duration_mode_selector = SelectSelector(
+            SelectSelectorConfig(
+                options=[m.value for m in OverrideDurationMode],
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="override_duration_mode",
+            )
+        )
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_OVERRIDE_DURATION_MODE,
+                    default=stored.get("duration_mode", OverrideDurationMode.LEGACY.value),
+                ): duration_mode_selector,
+                # Fixed-time-only field: shown unconditionally (no per-field
+                # conditional visibility in this Flow — matches the established
+                # pattern from the T6 lifecycle-profile form) but only used
+                # fachlich when duration_mode=fixed_time; ignored otherwise.
+                vol.Optional(
+                    CONF_OVERRIDE_FIXED_UNTIL,
+                    description={"suggested_value": stored.get("fixed_until")},
+                ): TimeSelector(),
+                vol.Required(
+                    CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
+                    default=stored.get("allow_comfort_actions", False),
+                ): BooleanSelector(),
+                vol.Required(
+                    CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS,
+                    default=stored.get("allow_protection_actions", False),
+                ): BooleanSelector(),
+                vol.Required(
+                    CONF_OVERRIDE_BREAK_ON_LIFECYCLE,
+                    default=stored.get("break_on_lifecycle", True),
+                ): BooleanSelector(),
+                vol.Required(
+                    CONF_OVERRIDE_DURATION_MIN,
+                    default=stored.get("duration_min", DEFAULT_OVERRIDE_DURATION_MIN),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=1, max=OVERRIDE_DURATION_MIN_MAX, step=1,
+                        mode=NumberSelectorMode.BOX, unit_of_measurement="min",
+                    )
+                ),
+                vol.Required(
+                    CONF_OVERRIDE_NIGHT_DURATION_MIN,
+                    default=stored.get("night_duration_min", DEFAULT_OVERRIDE_NIGHT_DURATION_MIN),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=1, max=OVERRIDE_DURATION_MIN_MAX, step=1,
+                        mode=NumberSelectorMode.BOX, unit_of_measurement="min",
+                    )
+                ),
+                vol.Required(
+                    CONF_OVERRIDE_DETECTION_TOLERANCE,
+                    default=stored.get("detection_tolerance", DEFAULT_OVERRIDE_DETECTION_TOLERANCE),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=1, max=OVERRIDE_DETECTION_TOLERANCE_MAX, step=1,
+                        mode=NumberSelectorMode.BOX,
+                    )
+                ),
+            }
+        )
+        return self.async_show_form(step_id="manual_override", data_schema=schema, errors=errors)
 
     # -- Behavior / shade-position defaults --
 

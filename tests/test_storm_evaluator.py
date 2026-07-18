@@ -19,7 +19,7 @@ from custom_components.smartshading.models.lifecycle import LifecycleState, Nigh
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.window_decision_input import build_window_decision_input
 from custom_components.smartshading.models.zone import ZoneConfig
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 
 # ---------------------------------------------------------------------------
@@ -233,6 +233,17 @@ class TestStormEvaluatorOutput:
         result = evaluator.evaluate(wdi)
         assert result is not None
         assert result.decided_by == "StormEvaluator"
+
+    def test_category_is_safety(
+        self, evaluator: StormEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """T7: Storm protection is tagged SAFETY — always allowed through an
+        active Manual Override (matches pre-T7 behavior: Tier 1 runs before
+        Tier 2 and is override-immune by evaluator order)."""
+        wdi = _wdi(window, zone, weather_condition=WeatherCondition.STORM)
+        result = evaluator.evaluate(wdi)
+        assert result is not None
+        assert result.category is DecisionCategory.SAFETY
 
     def test_window_id_matches(
         self, evaluator: StormEvaluator, window: WindowConfig, zone: ZoneConfig

@@ -13,7 +13,8 @@
           "add_window": "Fenster hinzufügen",
           "edit_window": "Fenster bearbeiten",
           "remove_window": "Fenster entfernen",
-          "lifecycle_profiles": "Zeitplan-Profile"
+          "lifecycle_profiles": "Zeitplan-Profile",
+          "manual_override": "Manueller Override"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Aktives Profil"
         }
+      },
+      "manual_override": {
+        "title": "Manueller Override",
+        "description": "Legt fest, wie ein aktiver manueller Override sich verhält: wie lange er dauert und ob Komfort- oder Schutzaktionen währenddessen weiterhin ausgeführt werden dürfen.",
+        "data": {
+          "override_duration_mode": "Override-Dauer",
+          "override_fixed_until": "Feste Endzeit",
+          "override_allow_comfort_actions": "Komfortaktionen während Override erlauben",
+          "override_allow_protection_actions": "Schutzaktionen während Override erlauben",
+          "override_break_on_lifecycle": "Override bei Zeitplan-Übergang beenden",
+          "override_duration_min": "Legacy-Override-Dauer (Minuten)",
+          "override_night_duration_min": "Nacht-Override-Dauer (Minuten)",
+          "override_detection_tolerance": "Erkennungstoleranz"
+        },
+        "data_description": {
+          "override_duration_mode": "Legacy: hält für eine feste Dauer. Feste Uhrzeit: hält bis zu einer konfigurierten Uhrzeit.",
+          "override_fixed_until": "Nur wirksam, wenn die Dauer auf \"Feste Uhrzeit\" gesetzt ist. Ist die Uhrzeit heute bereits vorbei, endet der Override morgen zu dieser Uhrzeit.",
+          "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktivem Override weiterhin ausgeführt werden. Der Override selbst bleibt aktiv.",
+          "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktivem Override weiterhin ausgeführt werden. Der Override selbst bleibt aktiv.",
+          "override_break_on_lifecycle": "Wenn aktiviert, beendet jeder Zeitplan-Übergang (z. B. Tag zu Nacht) einen aktiven Override.",
+          "override_duration_min": "Wie lange ein Tages-Override dauert, bevor SmartShading die normale Steuerung fortsetzt (Legacy-Dauermodus).",
+          "override_night_duration_min": "Sicherheitsnetz-Obergrenze für einen Nacht-Override. Die eigentliche Freigabe erfolgt beim morgendlichen Zeitplan-Übergang.",
+          "override_detection_tolerance": "Minimale Positionsänderung (in Prozent), bevor eine manuelle Bewegung als Override erkannt wird."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein.",
       "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben.",
       "night_clamp_window_invalid": "Der früheste nächtliche Auslöser darf nicht später sein als der späteste.",
-      "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste."
+      "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste.",
+      "override_fixed_until_required": "Bitte eine feste Endzeit angeben, wenn die Dauer auf \"Feste Uhrzeit\" gesetzt ist."
     },
     "abort": {
       "no_options_for_system_entry": "Der SmartShading-System-Eintrag hat keine konfigurierbaren Optionen.",
@@ -662,6 +688,12 @@
         "any_home": "Jemand zuhause",
         "all_home": "Alle zuhause",
         "inverted_any_home": "Invertiert (jemand zuhause = abwesend)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Legacy (feste Dauer)",
+        "fixed_time": "Feste Uhrzeit"
       }
     }
   },

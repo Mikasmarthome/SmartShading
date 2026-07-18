@@ -13,7 +13,8 @@
           "add_window": "Lägg till fönster",
           "edit_window": "Redigera fönster",
           "remove_window": "Ta bort fönster",
-          "lifecycle_profiles": "Schemaprofiler"
+          "lifecycle_profiles": "Schemaprofiler",
+          "manual_override": "Manuell åsidosättning"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Aktiv profil"
         }
+      },
+      "manual_override": {
+        "title": "Manuell åsidosättning",
+        "description": "Bestämmer beteendet för en aktiv manuell åsidosättning: hur länge den varar och om komfort- eller skyddsåtgärder fortfarande får köras medan den är aktiv.",
+        "data": {
+          "override_duration_mode": "Åsidosättningens varaktighet",
+          "override_fixed_until": "Fast sluttid",
+          "override_allow_comfort_actions": "Tillåt komfortåtgärder under åsidosättning",
+          "override_allow_protection_actions": "Tillåt skyddsåtgärder under åsidosättning",
+          "override_break_on_lifecycle": "Avsluta åsidosättning vid schemaövergång",
+          "override_duration_min": "Klassisk åsidosättningsvaraktighet (minuter)",
+          "override_night_duration_min": "Nattens åsidosättningsvaraktighet (minuter)",
+          "override_detection_tolerance": "Detekteringstolerans"
+        },
+        "data_description": {
+          "override_duration_mode": "Klassisk: varar en fast period. Fast tid: varar tills en inställd tidpunkt.",
+          "override_fixed_until": "Används endast när varaktighet är satt till \"Fast tid\". Om tiden redan har passerat idag avslutas åsidosättningen vid den tiden imorgon.",
+          "override_allow_comfort_actions": "När aktiverad kan vanlig komfortskuggning fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
+          "override_allow_protection_actions": "När aktiverad kan skyddsåtgärder (frånvaro, värme, bländning) fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
+          "override_break_on_lifecycle": "När aktiverad avslutar varje schemaövergång (t.ex. dag till natt) en aktiv åsidosättning.",
+          "override_duration_min": "Hur länge en dagåsidosättning varar innan SmartShading återupptar normal styrning (klassiskt varaktighetsläge).",
+          "override_night_duration_min": "Säkerhetsgräns för en nattåsidosättning. Den verkliga frigivningen sker vid den morgonens schemaövergång.",
+          "override_detection_tolerance": "Minsta positionsändring (i procent) innan en manuell rörelse känns igen som en åsidosättning."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "Tidigaste nattutlösaren får inte vara senare än senaste.",
-      "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste."
+      "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste.",
+      "override_fixed_until_required": "Ange en fast sluttid när varaktighet är satt till \"Fast tid\"."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-systemposten har inga konfigurerbara alternativ.",
@@ -662,6 +688,12 @@
         "any_home": "Någon hemma",
         "all_home": "Alla hemma",
         "inverted_any_home": "Inverterad (någon hemma = borta)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Klassisk (fast varaktighet)",
+        "fixed_time": "Fast tid"
       }
     }
   },

@@ -22,7 +22,7 @@ from __future__ import annotations
 from ..engines.weather_engine import DEFAULT_STORM_WIND_THRESHOLD_MS, STORM_CONDITIONS
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
-from ..state_machine.states import ShadingState
+from ..state_machine.states import DecisionCategory, ShadingState
 
 _STORM_SAFE_POSITION = 0  # internal convention: 0 = fully open / retracted
 
@@ -68,4 +68,5 @@ class StormEvaluator:
             shading_state=ShadingState.STORM_SAFE,
             target_position=_STORM_SAFE_POSITION,
             decided_by="StormEvaluator",
+            category=DecisionCategory.SAFETY,
         )

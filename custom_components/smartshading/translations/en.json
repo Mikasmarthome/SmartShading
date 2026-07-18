@@ -13,7 +13,8 @@
           "add_window": "Add window",
           "edit_window": "Edit window",
           "remove_window": "Remove window",
-          "lifecycle_profiles": "Lifecycle profiles"
+          "lifecycle_profiles": "Lifecycle profiles",
+          "manual_override": "Manual Override"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Active profile"
         }
+      },
+      "manual_override": {
+        "title": "Manual Override",
+        "description": "Configure how an active Manual Override behaves: how long it lasts, and whether Comfort or Protection actions may still run while it is active.",
+        "data": {
+          "override_duration_mode": "Override duration",
+          "override_fixed_until": "Fixed end time",
+          "override_allow_comfort_actions": "Allow comfort actions during override",
+          "override_allow_protection_actions": "Allow protection actions during override",
+          "override_break_on_lifecycle": "Break override on lifecycle transition",
+          "override_duration_min": "Legacy override duration (minutes)",
+          "override_night_duration_min": "Night override duration (minutes)",
+          "override_detection_tolerance": "Detection tolerance"
+        },
+        "data_description": {
+          "override_duration_mode": "Legacy: holds for a fixed duration. Fixed time: holds until a configured clock time.",
+          "override_fixed_until": "Only used when duration is set to \"Fixed time\". If already passed today, the override ends at this time tomorrow.",
+          "override_allow_comfort_actions": "When enabled, regular comfort shading may still run while an override is active. The override itself stays active.",
+          "override_allow_protection_actions": "When enabled, protection actions (absence, heat, glare) may still run while an override is active. The override itself stays active.",
+          "override_break_on_lifecycle": "When enabled, any schedule transition (e.g. day to night) ends an active override.",
+          "override_duration_min": "How long a daytime override lasts before SmartShading resumes normal control (legacy duration mode).",
+          "override_night_duration_min": "Safety-net cap for a night-time override. The real release is the morning schedule transition.",
+          "override_detection_tolerance": "Minimum position change (in percent) before a manual movement is recognized as an override."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "Night earliest trigger must not be later than night latest trigger.",
-      "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger."
+      "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger.",
+      "override_fixed_until_required": "Enter a fixed end time when duration is set to \"Fixed time\"."
     },
     "abort": {
       "no_options_for_system_entry": "The SmartShading System entry has no configurable options.",
@@ -662,6 +688,12 @@
         "any_home": "Anyone home",
         "all_home": "Everyone home",
         "inverted_any_home": "Inverted (anyone home = away)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Legacy (fixed duration)",
+        "fixed_time": "Fixed time"
       }
     }
   },

@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
-from ..state_machine.states import ShadingState
+from ..state_machine.states import DecisionCategory, ShadingState
 
 
 class HeatEvaluator:
@@ -114,4 +114,5 @@ class HeatEvaluator:
             shading_state=ShadingState.NORMAL_SHADE,
             target_position=b.normal_shade_position,
             decided_by="HeatEvaluator",
+            category=DecisionCategory.PROTECTION,
         )

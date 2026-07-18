@@ -22,7 +22,7 @@ from custom_components.smartshading.models.manual_override import ManualOverride
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.window_decision_input import build_window_decision_input
 from custom_components.smartshading.models.zone import ZoneConfig
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 _NOW = datetime(2026, 6, 17, 14, 0, tzinfo=timezone.utc)
 _OVERRIDE_POSITION = 40  # internal: 40 % shaded
@@ -169,6 +169,15 @@ class TestManualOverrideEvaluatorOutputFields:
         result = evaluator.evaluate(wdi)
         assert result is not None
         assert result.decided_by == "ManualOverrideEvaluator"
+
+    def test_category_is_hold(
+        self, evaluator: ManualOverrideEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """T7: the MANUAL_OVERRIDE decision itself is tagged HOLD."""
+        wdi = _wdi(window, zone, active_override=_make_override(window.id))
+        result = evaluator.evaluate(wdi)
+        assert result is not None
+        assert result.category is DecisionCategory.HOLD
 
     def test_window_id_matches(
         self, evaluator: ManualOverrideEvaluator, window: WindowConfig, zone: ZoneConfig

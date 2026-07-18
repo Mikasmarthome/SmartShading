@@ -13,7 +13,8 @@
           "add_window": "Venster toevoegen",
           "edit_window": "Venster bewerken",
           "remove_window": "Venster verwijderen",
-          "lifecycle_profiles": "Schemaprofielen"
+          "lifecycle_profiles": "Schemaprofielen",
+          "manual_override": "Handmatige overschrijving"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Actief profiel"
         }
+      },
+      "manual_override": {
+        "title": "Handmatige overschrijving",
+        "description": "Bepaalt het gedrag van een actieve handmatige overschrijving: hoe lang deze duurt en of comfort- of beschermingsacties nog mogen plaatsvinden terwijl deze actief is.",
+        "data": {
+          "override_duration_mode": "Duur van de overschrijving",
+          "override_fixed_until": "Vaste eindtijd",
+          "override_allow_comfort_actions": "Comfortacties toestaan tijdens overschrijving",
+          "override_allow_protection_actions": "Beschermingsacties toestaan tijdens overschrijving",
+          "override_break_on_lifecycle": "Overschrijving beëindigen bij schemaovergang",
+          "override_duration_min": "Klassieke overschrijvingsduur (minuten)",
+          "override_night_duration_min": "Nacht-overschrijvingsduur (minuten)",
+          "override_detection_tolerance": "Detectietolerantie"
+        },
+        "data_description": {
+          "override_duration_mode": "Klassiek: duurt een vaste periode. Vaste tijd: duurt tot een ingestelde kloktijd.",
+          "override_fixed_until": "Alleen gebruikt wanneer de duur is ingesteld op \"Vaste tijd\". Als de tijd vandaag al is verstreken, eindigt de overschrijving morgen op dat tijdstip.",
+          "override_allow_comfort_actions": "Indien ingeschakeld, kan de reguliere comfortbeschaduwing nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
+          "override_allow_protection_actions": "Indien ingeschakeld, kunnen beschermingsacties (afwezigheid, hitte, verblinding) nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
+          "override_break_on_lifecycle": "Indien ingeschakeld, beëindigt elke schemaovergang (bijv. dag naar nacht) een actieve overschrijving.",
+          "override_duration_min": "Hoe lang een dag-overschrijving duurt voordat SmartShading de normale besturing hervat (klassieke duurmodus).",
+          "override_night_duration_min": "Veiligheidslimiet voor een nacht-overschrijving. De echte vrijgave gebeurt bij de ochtendlijke schemaovergang.",
+          "override_detection_tolerance": "Minimale positieverandering (in procenten) voordat een handmatige beweging als overschrijving wordt herkend."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
-      "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste."
+      "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste.",
+      "override_fixed_until_required": "Voer een vaste eindtijd in wanneer de duur is ingesteld op \"Vaste tijd\"."
     },
     "abort": {
       "no_options_for_system_entry": "De SmartShading-systeeminvoer heeft geen configureerbare opties.",
@@ -662,6 +688,12 @@
         "any_home": "Iemand thuis",
         "all_home": "Iedereen thuis",
         "inverted_any_home": "Omgekeerd (iemand thuis = afwezig)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Klassiek (vaste duur)",
+        "fixed_time": "Vaste tijd"
       }
     }
   },

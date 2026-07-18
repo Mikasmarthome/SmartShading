@@ -13,7 +13,8 @@
           "add_window": "Ablak hozzáadása",
           "edit_window": "Ablak szerkesztése",
           "remove_window": "Ablak eltávolítása",
-          "lifecycle_profiles": "Ütemezési profilok"
+          "lifecycle_profiles": "Ütemezési profilok",
+          "manual_override": "Kézi felülbírálás"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Aktív profil"
         }
+      },
+      "manual_override": {
+        "title": "Kézi felülbírálás",
+        "description": "Meghatározza az aktív kézi felülbírálás viselkedését: mennyi ideig tart, és hogy a kényelmi vagy védelmi műveletek futhatnak-e még, amíg aktív.",
+        "data": {
+          "override_duration_mode": "Felülbírálás időtartama",
+          "override_fixed_until": "Rögzített befejezési idő",
+          "override_allow_comfort_actions": "Kényelmi műveletek engedélyezése felülbírálás alatt",
+          "override_allow_protection_actions": "Védelmi műveletek engedélyezése felülbírálás alatt",
+          "override_break_on_lifecycle": "Felülbírálás befejezése ütemezésváltáskor",
+          "override_duration_min": "Klasszikus felülbírálási időtartam (perc)",
+          "override_night_duration_min": "Éjszakai felülbírálási időtartam (perc)",
+          "override_detection_tolerance": "Érzékelési tolerancia"
+        },
+        "data_description": {
+          "override_duration_mode": "Klasszikus: rögzített ideig tart. Rögzített idő: egy beállított időpontig tart.",
+          "override_fixed_until": "Csak akkor használatos, ha az időtartam \"Rögzített idő\"-re van állítva. Ha az idő ma már elmúlt, a felülbírálás holnap ekkor ér véget.",
+          "override_allow_comfort_actions": "Ha engedélyezve van, a szokásos kényelmi árnyékolás továbbra is futhat aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
+          "override_allow_protection_actions": "Ha engedélyezve van, a védelmi műveletek (távollét, hőség, vakítás) továbbra is futhatnak aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
+          "override_break_on_lifecycle": "Ha engedélyezve van, bármely ütemezésváltás (pl. nappalból éjszakába) befejezi az aktív felülbírálást.",
+          "override_duration_min": "Meddig tart egy nappali felülbírálás, mielőtt a SmartShading folytatja a normál vezérlést (klasszikus időtartam mód).",
+          "override_night_duration_min": "Biztonsági korlát az éjszakai felülbírálásra. A valódi felszabadulás a reggeli ütemezésváltáskor történik.",
+          "override_detection_tolerance": "Minimális pozícióváltozás (százalékban), mielőtt egy kézi mozgást felülbírálásként ismer fel a rendszer."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",
-      "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél."
+      "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél.",
+      "override_fixed_until_required": "Adjon meg egy rögzített befejezési időt, ha az időtartam \"Rögzített idő\"-re van állítva."
     },
     "abort": {
       "no_options_for_system_entry": "A SmartShading rendszerbejegyzésnek nincsenek konfigurálható beállításai.",
@@ -662,6 +688,12 @@
         "any_home": "Valaki otthon",
         "all_home": "Mindenki otthon",
         "inverted_any_home": "Fordított (valaki otthon = távol)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Klasszikus (rögzített időtartam)",
+        "fixed_time": "Rögzített idő"
       }
     }
   },

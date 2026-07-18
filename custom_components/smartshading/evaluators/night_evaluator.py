@@ -16,7 +16,7 @@ from __future__ import annotations
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
 from ..models.lifecycle import LifecycleState
-from ..state_machine.states import ShadingState
+from ..state_machine.states import DecisionCategory, ShadingState
 
 
 class NightEvaluator:
@@ -44,4 +44,5 @@ class NightEvaluator:
             shading_state=ShadingState.NIGHT_CLOSED,
             target_position=night_position,
             decided_by="NightEvaluator",
+            category=DecisionCategory.LIFECYCLE,
         )

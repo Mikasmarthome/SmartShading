@@ -21,7 +21,7 @@ import time
 from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -121,7 +121,7 @@ from .evaluators.tier_orchestrator import TierOrchestrator
 from .models.window_decision import WindowDecision
 from .models.window_decision_input import build_window_decision_input
 from .state_machine.guards import StateGuard, StateGuardConfig
-from .state_machine.states import ShadingState
+from .state_machine.states import DecisionCategory, ShadingState
 from .state_machine.transitions import bypasses_guard
 import uuid
 
@@ -1041,6 +1041,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         override_night_duration_min: int = 720,
         override_detection_tolerance: int = 10,
         override_break_on_lifecycle: bool = True,
+        override_duration_mode: str = "legacy",
+        override_fixed_until: time | None = None,
+        override_allow_comfort_actions: bool = False,
+        override_allow_protection_actions: bool = False,
         lifecycle_config: NightDayLifecycleConfig | None = None,
         lifecycle_profile_source: str = "legacy",
         lifecycle_profile_count: int = 0,
@@ -1103,6 +1107,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._override_night_duration_min = override_night_duration_min
         self._override_detection_tolerance = override_detection_tolerance
         self._override_break_on_lifecycle = override_break_on_lifecycle
+        # T7 (v1.2.0-beta.1): fixed-time expiry mode and per-category allow
+        # switches while an override is active. All default to legacy/False —
+        # unchanged pre-T7 behavior unless explicitly configured.
+        self._override_duration_mode = override_duration_mode
+        self._override_fixed_until = override_fixed_until
+        self._override_allow_comfort_actions = override_allow_comfort_actions
+        self._override_allow_protection_actions = override_allow_protection_actions
 
         self.sun_engine = SunEngine()
         self.exposure_engine = ExposureEngine()
@@ -3315,6 +3326,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 ),
                 override_detection_tolerance=self._override_detection_tolerance,
                 override_break_on_lifecycle=self._override_break_on_lifecycle,
+                override_allow_comfort_actions=self._override_allow_comfort_actions,
+                override_allow_protection_actions=self._override_allow_protection_actions,
                 night_block_on_window_open=window.night_block_on_window_open,
                 night_lift_on_window_open=window.night_lift_on_window_open,
                 window_open_night_position=_vent_pos_internal,
@@ -3620,6 +3633,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     shading_state=ShadingState.STORM_SAFE,
                     target_position=_hw_safe_pos,
                     decided_by="StormSafeHold",
+                    category=DecisionCategory.SAFETY,
                 )
             elif _wind_held and not _eval_is_wind and tier_decision.shading_state is not ShadingState.STORM_SAFE:
                 # Wind hold active, not in any storm state.
@@ -3628,6 +3642,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     shading_state=ShadingState.WIND_SAFE,
                     target_position=_hw_safe_pos,
                     decided_by="WindSafeHold",
+                    category=DecisionCategory.SAFETY,
                 )
 
             # --- Rain Safe Position Correction + Release Hold ----------------------
@@ -3660,6 +3675,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     shading_state=ShadingState.RAIN_SAFE,
                     target_position=_rain_safe_internal,
                     decided_by="RainSafeHold",
+                    category=DecisionCategory.SAFETY,
                 )
 
             if self._debug_logging_enabled:
@@ -3696,6 +3712,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     shading_state=ShadingState.OPEN,
                     target_position=None,
                     decided_by="NightContactBlock",
+                    category=DecisionCategory.LIFECYCLE,
                 )
             elif _nc_action == _NightContactAction.CATCH_UP:
                 tier_decision = WindowDecision(
@@ -3703,6 +3720,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     shading_state=ShadingState.NIGHT_CLOSED,
                     target_position=wdi.effective_behavior.night_position,
                     decided_by="NightContactCatchUp",
+                    category=DecisionCategory.LIFECYCLE,
                 )
             elif _nc_action == _NightContactAction.HOLD_NIGHT_VENT:
                 tier_decision = WindowDecision(
@@ -3710,6 +3728,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     shading_state=ShadingState.NIGHT_VENT,
                     target_position=wdi.effective_behavior.window_open_night_position,
                     decided_by="NightContactVent",
+                    category=DecisionCategory.LIFECYCLE,
                 )
             elif _nc_action == _NightContactAction.RETURN_TO_NIGHT:
                 tier_decision = WindowDecision(
@@ -3717,6 +3736,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     shading_state=ShadingState.NIGHT_CLOSED,
                     target_position=wdi.effective_behavior.night_position,
                     decided_by="NightContactReturnToNight",
+                    category=DecisionCategory.LIFECYCLE,
                 )
 
             # --- Night Hard Hold ---------------------------------------------------
@@ -3759,6 +3779,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     shading_state=ShadingState.NIGHT_CLOSED,
                     target_position=_night_pos,
                     decided_by="NightHardHold",
+                    category=DecisionCategory.LIFECYCLE,
                 )
                 _night_hard_hold_applied = True
                 _LOGGER.debug(
@@ -4007,6 +4028,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     duration_min=_override_duration_for_scope,
                     scope=_override_scope,
                     now=now,
+                    # T7: fixed_time mode governs uniformly across day/night
+                    # scope (duration_min above is then unused by the
+                    # detector) — override_break_on_lifecycle is unaffected
+                    # and can still end the override earlier regardless of
+                    # duration_mode (handled independently above via
+                    # lifecycle_should_break_override()).
+                    duration_mode=self._override_duration_mode,
+                    fixed_until=self._override_fixed_until,
+                    # fixed_until is a LOCAL wall-clock time (what the user
+                    # configured in HA's own timezone) — must be evaluated
+                    # against local_now, not the UTC `now` above (see
+                    # OverrideDetector.tick()'s now_local docstring).
+                    now_local=local_now,
                 )
                 self._prev_observed_internal[window_id] = observed_internal
                 _observed_internal_stored = observed_internal is not None

@@ -17,7 +17,7 @@ from custom_components.smartshading.models.lifecycle import LifecycleState, Nigh
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.window_decision_input import build_window_decision_input
 from custom_components.smartshading.models.zone import ZoneConfig
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +91,17 @@ class TestRainEvaluatorOptIn:
         result = evaluator.evaluate(wdi)
         assert result is not None
         assert result.decided_by == "RainEvaluator"
+
+    def test_category_is_safety(self, evaluator, window, zone):
+        """T7: Rain protection is tagged SAFETY (Tier 1) — T7 must not
+        change RAIN_SAFE's existing override-interaction behavior (audit
+        found the coordinator's safety-clear() path only checks for
+        STORM_SAFE/WIND_SAFE, not RAIN_SAFE — documented separately, not
+        touched by this ticket)."""
+        wdi = _wdi(window, zone)
+        result = evaluator.evaluate(wdi)
+        assert result is not None
+        assert result.category is DecisionCategory.SAFETY
 
     def test_window_id_matches(self, evaluator, window, zone):
         wdi = _wdi(window, zone)

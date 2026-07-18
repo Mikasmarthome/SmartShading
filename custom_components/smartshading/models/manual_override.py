@@ -11,8 +11,24 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 
 from ..state_machine.states import ShadingState
+
+
+class OverrideDurationMode(Enum):
+    """How a Manual Override's expires_at is computed (v1.2.0-beta.1, T7).
+
+    LEGACY     — expires_at = started_at + a configured duration in minutes
+                 (the pre-T7, only behavior: daytime fixed duration, or a
+                 night safety-net cap whose real release is the Morning
+                 lifecycle transition). Default — unchanged behavior.
+    FIXED_TIME — expires_at is the next occurrence of a configured local
+                 clock time (see engines/override_fixed_time.py).
+    """
+
+    LEGACY = "legacy"
+    FIXED_TIME = "fixed_time"
 
 
 @dataclass(frozen=True)
@@ -48,6 +64,26 @@ class ManualOverride:
                               Defaults to "daytime" for entries persisted before
                               this field existed (the pre-v1.1.3 flat duration was
                               closer in spirit to the daytime policy).
+        duration_mode:         "legacy" or "fixed_time" (v1.2.0-beta.1, T7,
+                              OverrideDurationMode.value) — which policy produced
+                              this override's expires_at. Re-added after the
+                              original T7 pre-push review decided expires_at alone
+                              was sufficient (see engines/override_fixed_time.py's
+                              earlier history) — needed after all for
+                              OverrideDetector's post-expiry re-arm/baseline
+                              semantics (review point 4): only a fixed_time
+                              override's much longer, single-boundary expiry
+                              needs to distinguish "still the same stale
+                              deviation" from "a genuine new manual move" after
+                              natural expiry; legacy mode's existing, intentionally
+                              unchanged "several stale cycles later, a fresh
+                              (short) override is expected again" behavior (see
+                              tests/test_override_detector.py
+                              TestOverrideDetectorTimeoutSuppression) must not be
+                              altered, so the detector needs to know which policy
+                              produced the override that just expired. Defaults to
+                              "legacy" for entries persisted before this field
+                              existed.
     """
 
     window_id: str
@@ -58,6 +94,7 @@ class ManualOverride:
     overridden_state: ShadingState
     overridden_position: int | None
     scope: str = "daytime"
+    duration_mode: str = "legacy"
 
     def to_dict(self) -> dict:
         """JSON-safe serialization for restart-safe persistence."""
@@ -70,6 +107,7 @@ class ManualOverride:
             "overridden_state": self.overridden_state.value,
             "overridden_position": self.overridden_position,
             "scope": self.scope,
+            "duration_mode": self.duration_mode,
         }
 
     @classmethod
@@ -83,4 +121,5 @@ class ManualOverride:
             overridden_state=ShadingState(d["overridden_state"]),
             overridden_position=d.get("overridden_position"),
             scope=d.get("scope", "daytime"),
+            duration_mode=d.get("duration_mode", "legacy"),
         )

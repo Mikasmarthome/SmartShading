@@ -13,7 +13,8 @@
           "add_window": "Afegeix una finestra",
           "edit_window": "Edita la finestra",
           "remove_window": "Elimina la finestra",
-          "lifecycle_profiles": "Perfils d'horari"
+          "lifecycle_profiles": "Perfils d'horari",
+          "manual_override": "Anul·lació manual"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Perfil actiu"
         }
+      },
+      "manual_override": {
+        "title": "Anul·lació manual",
+        "description": "Defineix el comportament d'una anul·lació manual activa: quant dura i si les accions de confort o protecció poden continuar executant-se mentre és activa.",
+        "data": {
+          "override_duration_mode": "Durada de l'anul·lació",
+          "override_fixed_until": "Hora de finalització fixa",
+          "override_allow_comfort_actions": "Permet accions de confort durant l'anul·lació",
+          "override_allow_protection_actions": "Permet accions de protecció durant l'anul·lació",
+          "override_break_on_lifecycle": "Finalitza l'anul·lació en la transició de cicle",
+          "override_duration_min": "Durada d'anul·lació clàssica (minuts)",
+          "override_night_duration_min": "Durada d'anul·lació nocturna (minuts)",
+          "override_detection_tolerance": "Tolerància de detecció"
+        },
+        "data_description": {
+          "override_duration_mode": "Clàssic: dura un temps fix. Hora fixa: dura fins a una hora configurada.",
+          "override_fixed_until": "Només s'utilitza quan la durada s'estableix a \"Hora fixa\". Si l'hora ja ha passat avui, l'anul·lació acaba a aquesta hora demà.",
+          "override_allow_comfort_actions": "Si està activat, l'ombreig de confort habitual pot continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
+          "override_allow_protection_actions": "Si està activat, les accions de protecció (absència, calor, enlluernament) poden continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
+          "override_break_on_lifecycle": "Si està activat, qualsevol transició de cicle (p. ex. dia a nit) finalitza una anul·lació activa.",
+          "override_duration_min": "Quant dura una anul·lació diürna abans que SmartShading reprengui el control normal (mode de durada clàssic).",
+          "override_night_duration_min": "Límit de seguretat per a una anul·lació nocturna. L'alliberament real es produeix en la transició de cicle matinal.",
+          "override_detection_tolerance": "Canvi mínim de posició (en percentatge) abans que un moviment manual es reconegui com una anul·lació."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "L'activador nocturn més aviat no pot ser posterior al més tard.",
-      "morning_clamp_window_invalid": "L'activador matinal més aviat no pot ser posterior al més tard."
+      "morning_clamp_window_invalid": "L'activador matinal més aviat no pot ser posterior al més tard.",
+      "override_fixed_until_required": "Introduïu una hora de finalització fixa quan la durada estigui establerta a \"Hora fixa\"."
     },
     "abort": {
       "no_options_for_system_entry": "L'entrada de Sistema de SmartShading no té opcions configurables.",
@@ -662,6 +688,12 @@
         "any_home": "Algú a casa",
         "all_home": "Tothom a casa",
         "inverted_any_home": "Invertit (algú a casa = absent)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Clàssic (durada fixa)",
+        "fixed_time": "Hora fixa"
       }
     }
   },

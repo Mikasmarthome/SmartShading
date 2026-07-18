@@ -13,7 +13,8 @@
           "add_window": "Añadir ventana",
           "edit_window": "Editar ventana",
           "remove_window": "Eliminar ventana",
-          "lifecycle_profiles": "Perfiles de horario"
+          "lifecycle_profiles": "Perfiles de horario",
+          "manual_override": "Anulación manual"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Perfil activo"
         }
+      },
+      "manual_override": {
+        "title": "Anulación manual",
+        "description": "Configura el comportamiento de una anulación manual activa: cuánto dura y si las acciones de confort o protección pueden seguir ejecutándose mientras está activa.",
+        "data": {
+          "override_duration_mode": "Duración de la anulación",
+          "override_fixed_until": "Hora de fin fija",
+          "override_allow_comfort_actions": "Permitir acciones de confort durante la anulación",
+          "override_allow_protection_actions": "Permitir acciones de protección durante la anulación",
+          "override_break_on_lifecycle": "Finalizar la anulación en una transición de ciclo",
+          "override_duration_min": "Duración de anulación clásica (minutos)",
+          "override_night_duration_min": "Duración de anulación nocturna (minutos)",
+          "override_detection_tolerance": "Tolerancia de detección"
+        },
+        "data_description": {
+          "override_duration_mode": "Clásico: se mantiene durante una duración fija. Hora fija: se mantiene hasta una hora configurada.",
+          "override_fixed_until": "Solo se usa cuando la duración es \"Hora fija\". Si la hora ya pasó hoy, la anulación termina a esa hora mañana.",
+          "override_allow_comfort_actions": "Si está activado, el sombreado de confort habitual puede seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
+          "override_allow_protection_actions": "Si está activado, las acciones de protección (ausencia, calor, deslumbramiento) pueden seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
+          "override_break_on_lifecycle": "Si está activado, cualquier transición de ciclo (por ejemplo, día a noche) finaliza una anulación activa.",
+          "override_duration_min": "Cuánto dura una anulación diurna antes de que SmartShading reanude el control normal (modo de duración clásico).",
+          "override_night_duration_min": "Límite de seguridad para una anulación nocturna. La liberación real ocurre en la transición del ciclo matutino.",
+          "override_detection_tolerance": "Cambio mínimo de posición (en porcentaje) antes de que un movimiento manual se reconozca como anulación."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "El activador nocturno más temprano no debe ser posterior al más tardío.",
-      "morning_clamp_window_invalid": "El activador matutino más temprano no debe ser posterior al más tardío."
+      "morning_clamp_window_invalid": "El activador matutino más temprano no debe ser posterior al más tardío.",
+      "override_fixed_until_required": "Introduzca una hora de fin fija cuando la duración esté configurada como \"Hora fija\"."
     },
     "abort": {
       "no_options_for_system_entry": "La entrada de Sistema de SmartShading no tiene opciones configurables.",
@@ -662,6 +688,12 @@
         "any_home": "Alguien en casa",
         "all_home": "Todos en casa",
         "inverted_any_home": "Invertido (alguien en casa = ausente)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Clásico (duración fija)",
+        "fixed_time": "Hora fija"
       }
     }
   },

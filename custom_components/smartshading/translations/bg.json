@@ -13,7 +13,8 @@
           "add_window": "Добавяне на прозорец",
           "edit_window": "Редактиране на прозорец",
           "remove_window": "Премахване на прозорец",
-          "lifecycle_profiles": "Профили на графика"
+          "lifecycle_profiles": "Профили на графика",
+          "manual_override": "Ръчно замяна"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Активен профил"
         }
+      },
+      "manual_override": {
+        "title": "Ръчна замяна",
+        "description": "Определя поведението на активна ръчна замяна: колко дълго продължава и дали действията за комфорт или защита все още могат да се изпълняват, докато е активна.",
+        "data": {
+          "override_duration_mode": "Продължителност на замяната",
+          "override_fixed_until": "Фиксиран час на приключване",
+          "override_allow_comfort_actions": "Разреши действия за комфорт по време на замяна",
+          "override_allow_protection_actions": "Разреши защитни действия по време на замяна",
+          "override_break_on_lifecycle": "Прекратяване на замяната при преход в графика",
+          "override_duration_min": "Класическа продължителност на замяна (минути)",
+          "override_night_duration_min": "Нощна продължителност на замяна (минути)",
+          "override_detection_tolerance": "Толеранс на откриване"
+        },
+        "data_description": {
+          "override_duration_mode": "Класически: продължава фиксирано време. Фиксиран час: продължава до зададен час.",
+          "override_fixed_until": "Използва се само когато продължителността е зададена на \"Фиксиран час\". Ако часът вече е минал днес, замяната приключва в този час утре.",
+          "override_allow_comfort_actions": "Ако е активирано, обичайното засенчване за комфорт може да продължи по време на активна замяна. Самата замяна остава активна.",
+          "override_allow_protection_actions": "Ако е активирано, защитните действия (отсъствие, жега, заслепяване) могат да продължат по време на активна замяна. Самата замяна остава активна.",
+          "override_break_on_lifecycle": "Ако е активирано, всеки преход в графика (напр. ден в нощ) прекратява активна замяна.",
+          "override_duration_min": "Колко дълго продължава дневна замяна, преди SmartShading да възобнови нормалното управление (класически режим на продължителност).",
+          "override_night_duration_min": "Граница за безопасност за нощна замяна. Истинското освобождаване става при сутрешния преход в графика.",
+          "override_detection_tolerance": "Минимална промяна на позицията (в проценти), преди ръчно движение да бъде разпознато като замяна."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "Най-ранният нощен тригер не трябва да бъде по-късен от най-късния.",
-      "morning_clamp_window_invalid": "Най-ранният сутрешен тригер не трябва да бъде по-късен от най-късния."
+      "morning_clamp_window_invalid": "Най-ранният сутрешен тригер не трябва да бъде по-късен от най-късния.",
+      "override_fixed_until_required": "Въведете фиксиран час на приключване, когато продължителността е зададена на \"Фиксиран час\"."
     },
     "abort": {
       "no_options_for_system_entry": "Системният запис на SmartShading няма конфигурируеми опции.",
@@ -662,6 +688,12 @@
         "any_home": "Някой е вкъщи",
         "all_home": "Всички са вкъщи",
         "inverted_any_home": "Обърнато (някой вкъщи = отсъстващ)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Класически (фиксирана продължителност)",
+        "fixed_time": "Фиксиран час"
       }
     }
   },

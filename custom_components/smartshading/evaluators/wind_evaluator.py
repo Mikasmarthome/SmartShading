@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
-from ..state_machine.states import ShadingState
+from ..state_machine.states import DecisionCategory, ShadingState
 
 _WIND_SAFE_POSITION = 0  # internal convention: 0 = fully open / retracted
 
@@ -57,4 +57,5 @@ class WindEvaluator:
             shading_state=ShadingState.WIND_SAFE,
             target_position=_WIND_SAFE_POSITION,
             decided_by="WindEvaluator",
+            category=DecisionCategory.SAFETY,
         )

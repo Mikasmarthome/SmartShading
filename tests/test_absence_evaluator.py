@@ -19,7 +19,7 @@ from custom_components.smartshading.models.lifecycle import LifecycleState, Nigh
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.window_decision_input import build_window_decision_input
 from custom_components.smartshading.models.zone import ZoneConfig
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +114,17 @@ class TestAbsenceEvaluatorActive:
         result = evaluator.evaluate(wdi)
         assert result is not None
         assert result.decided_by == "AbsenceEvaluator"
+
+    def test_category_is_protection(
+        self, evaluator: AbsenceEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """T7: Absence is classified PROTECTION (Tier 4 Protection Floor,
+        per this evaluator's own module docstring) — not LIFECYCLE or its
+        own category. See T7 audit point 12."""
+        wdi = _wdi(window, zone, absence_active=True)
+        result = evaluator.evaluate(wdi)
+        assert result is not None
+        assert result.category is DecisionCategory.PROTECTION
 
     def test_target_tilt_is_none(
         self, evaluator: AbsenceEvaluator, window: WindowConfig, zone: ZoneConfig

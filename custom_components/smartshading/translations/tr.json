@@ -13,7 +13,8 @@
           "add_window": "Pencere ekle",
           "edit_window": "Pencereyi düzenle",
           "remove_window": "Pencereyi kaldır",
-          "lifecycle_profiles": "Zamanlama profilleri"
+          "lifecycle_profiles": "Zamanlama profilleri",
+          "manual_override": "Manuel geçersiz kılma"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Etkin profil"
         }
+      },
+      "manual_override": {
+        "title": "Manuel geçersiz kılma",
+        "description": "Aktif bir manuel geçersiz kılmanın davranışını tanımlar: ne kadar sürdüğünü ve aktifken konfor veya koruma eylemlerinin hâlâ çalışıp çalışamayacağını.",
+        "data": {
+          "override_duration_mode": "Geçersiz kılma süresi",
+          "override_fixed_until": "Sabit bitiş saati",
+          "override_allow_comfort_actions": "Geçersiz kılma sırasında konfor eylemlerine izin ver",
+          "override_allow_protection_actions": "Geçersiz kılma sırasında koruma eylemlerine izin ver",
+          "override_break_on_lifecycle": "Program geçişinde geçersiz kılmayı sonlandır",
+          "override_duration_min": "Klasik geçersiz kılma süresi (dakika)",
+          "override_night_duration_min": "Gece geçersiz kılma süresi (dakika)",
+          "override_detection_tolerance": "Algılama toleransı"
+        },
+        "data_description": {
+          "override_duration_mode": "Klasik: sabit bir süre boyunca devam eder. Sabit saat: ayarlanmış bir saate kadar devam eder.",
+          "override_fixed_until": "Yalnızca süre \"Sabit saat\" olarak ayarlandığında kullanılır. Saat bugün zaten geçtiyse, geçersiz kılma yarın bu saatte sona erer.",
+          "override_allow_comfort_actions": "Etkinleştirildiğinde, normal konfor gölgelemesi aktif bir geçersiz kılma sırasında hâlâ çalışabilir. Geçersiz kılmanın kendisi aktif kalır.",
+          "override_allow_protection_actions": "Etkinleştirildiğinde, koruma eylemleri (yokluk, sıcaklık, parlama) aktif bir geçersiz kılma sırasında hâlâ çalışabilir. Geçersiz kılmanın kendisi aktif kalır.",
+          "override_break_on_lifecycle": "Etkinleştirildiğinde, herhangi bir program geçişi (örn. günden geceye) aktif bir geçersiz kılmayı sonlandırır.",
+          "override_duration_min": "SmartShading normal kontrolü devam ettirmeden önce bir gündüz geçersiz kılmasının ne kadar süreceği (klasik süre modu).",
+          "override_night_duration_min": "Bir gece geçersiz kılması için güvenlik sınırı. Gerçek serbest bırakma sabah program geçişinde gerçekleşir.",
+          "override_detection_tolerance": "Manuel bir hareketin geçersiz kılma olarak tanınmasından önceki minimum konum değişikliği (yüzde olarak)."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "En erken gece tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
-      "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz."
+      "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
+      "override_fixed_until_required": "Süre \"Sabit saat\" olarak ayarlandığında sabit bir bitiş saati girin."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading Sistem girişinin yapılandırılabilir seçeneği yoktur.",
@@ -662,6 +688,12 @@
         "any_home": "Biri evde",
         "all_home": "Herkes evde",
         "inverted_any_home": "Ters çevrilmiş (biri evde = dışarıda)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Klasik (sabit süre)",
+        "fixed_time": "Sabit saat"
       }
     }
   },

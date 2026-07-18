@@ -83,3 +83,39 @@ def priority(state: ShadingState) -> int:
 def is_higher_priority(state_a: ShadingState, state_b: ShadingState) -> bool:
     """True if state_a outranks state_b (lower rank number = higher priority)."""
     return priority(state_a) < priority(state_b)
+
+
+class DecisionCategory(Enum):
+    """Fachliche Kategorie einer WindowDecision (v1.2.0-beta.1, T7).
+
+    Getrennt von ShadingState: mehrere Evaluatoren aus unterschiedlichen
+    Tiers geben denselben ShadingState zurück (z. B. STRONG_SHADE sowohl von
+    GlareEvaluator [Tier 4, Protection] als auch von SolarEvaluator [Tier 5,
+    Comfort]) — die Kategorie ist daher NICHT aus ShadingState ableitbar und
+    muss von jeder produktiven Entscheidungsstelle explizit vergeben werden.
+
+    SAFETY     — Tier 1 (Storm/Wind/Rain). Bleibt bei aktivem Manual Override
+                 immer wirksam (unverändert seit vor T7 — Tier 1 läuft vor
+                 Tier 2 und ist damit override-immun per Reihenfolge).
+    LIFECYCLE  — Tier 3 (Night) sowie Night-Contact-/Night-Hard-Hold-
+                 Folgeentscheidungen. Erhält in T7 KEINEN neuen Allow-
+                 Schalter — die bestehende override_break_on_lifecycle-
+                 Semantik bleibt die einzige Möglichkeit, wie eine Lifecycle-
+                 Entscheidung einen aktiven Override beendet.
+    PROTECTION — Tier 4 Protection Floors (Absence, Heat, Glare). Nur bei
+                 aktivem Override durchlässig, wenn allow_protection=True.
+    COMFORT    — Tier 5 (Solar) sowie der reguläre TierOrchestrator-
+                 Fallback OPEN (keine Schutz-/Komfortmaßnahme nötig). Nur
+                 bei aktivem Override durchlässig, wenn allow_comfort=True.
+    HOLD       — Keine positive Entscheidung: die eigentliche
+                 MANUAL_OVERRIDE-Halteposition selbst, sowie echte No-op-
+                 Haltungen ohne Dispatch (z. B. PresenceUncertain-Hold,
+                 BehaviorMode:hold). Von der Override-Policy unverändert
+                 durchgereicht.
+    """
+
+    SAFETY = "safety"
+    LIFECYCLE = "lifecycle"
+    PROTECTION = "protection"
+    COMFORT = "comfort"
+    HOLD = "hold"

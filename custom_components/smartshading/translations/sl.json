@@ -13,7 +13,8 @@
           "add_window": "Dodaj okno",
           "edit_window": "Uredi okno",
           "remove_window": "Odstrani okno",
-          "lifecycle_profiles": "Profili urnika"
+          "lifecycle_profiles": "Profili urnika",
+          "manual_override": "Ročna preglasitev"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Aktivni profil"
         }
+      },
+      "manual_override": {
+        "title": "Ročna preglasitev",
+        "description": "Določa obnašanje aktivne ročne preglasitve: kako dolgo traja in ali lahko dejanja udobja ali zaščite še vedno potekajo, ko je aktivna.",
+        "data": {
+          "override_duration_mode": "Trajanje preglasitve",
+          "override_fixed_until": "Fiksni čas zaključka",
+          "override_allow_comfort_actions": "Dovoli dejanja udobja med preglasitvijo",
+          "override_allow_protection_actions": "Dovoli zaščitna dejanja med preglasitvijo",
+          "override_break_on_lifecycle": "Zaključi preglasitev ob prehodu urnika",
+          "override_duration_min": "Klasično trajanje preglasitve (minute)",
+          "override_night_duration_min": "Nočno trajanje preglasitve (minute)",
+          "override_detection_tolerance": "Toleranca zaznavanja"
+        },
+        "data_description": {
+          "override_duration_mode": "Klasično: traja fiksno obdobje. Fiksni čas: traja do nastavljene ure.",
+          "override_fixed_until": "Uporabljeno samo, ko je trajanje nastavljeno na \"Fiksni čas\". Če je ura danes že minila, se preglasitev zaključi jutri ob tej uri.",
+          "override_allow_comfort_actions": "Če je omogočeno, lahko običajno senčenje udobja še vedno poteka med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
+          "override_allow_protection_actions": "Če je omogočeno, lahko zaščitna dejanja (odsotnost, vročina, bleščanje) še vedno potekajo med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
+          "override_break_on_lifecycle": "Če je omogočeno, vsak prehod urnika (npr. dan v noč) zaključi aktivno preglasitev.",
+          "override_duration_min": "Kako dolgo traja dnevna preglasitev, preden SmartShading nadaljuje običajno upravljanje (klasični način trajanja).",
+          "override_night_duration_min": "Varnostna zgornja meja za nočno preglasitev. Dejanska sprostitev se zgodi ob jutranjem prehodu urnika.",
+          "override_detection_tolerance": "Najmanjša sprememba položaja (v odstotkih), preden je ročni premik prepoznan kot preglasitev."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
-      "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega."
+      "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega.",
+      "override_fixed_until_required": "Vnesite fiksni čas zaključka, ko je trajanje nastavljeno na \"Fiksni čas\"."
     },
     "abort": {
       "no_options_for_system_entry": "Sistemski vnos SmartShading nima nastavljivih možnosti.",
@@ -662,6 +688,12 @@
         "any_home": "Nekdo doma",
         "all_home": "Vsi doma",
         "inverted_any_home": "Obrnjeno (nekdo doma = odsoten)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Klasično (fiksno trajanje)",
+        "fixed_time": "Fiksni čas"
       }
     }
   },

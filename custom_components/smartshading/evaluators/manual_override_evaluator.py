@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
-from ..state_machine.states import ShadingState
+from ..state_machine.states import DecisionCategory, ShadingState
 
 
 class ManualOverrideEvaluator:
@@ -34,4 +34,5 @@ class ManualOverrideEvaluator:
             shading_state=ShadingState.MANUAL_OVERRIDE,
             target_position=wdi.active_override.override_position,
             decided_by="ManualOverrideEvaluator",
+            category=DecisionCategory.HOLD,
         )

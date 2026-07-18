@@ -13,7 +13,8 @@
           "add_window": "Ajouter une fenêtre",
           "edit_window": "Modifier une fenêtre",
           "remove_window": "Supprimer une fenêtre",
-          "lifecycle_profiles": "Profils de planning"
+          "lifecycle_profiles": "Profils de planning",
+          "manual_override": "Dérogation manuelle"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Profil actif"
         }
+      },
+      "manual_override": {
+        "title": "Dérogation manuelle",
+        "description": "Définit le comportement d'une dérogation manuelle active : sa durée et si les actions de confort ou de protection peuvent encore s'exécuter pendant qu'elle est active.",
+        "data": {
+          "override_duration_mode": "Durée de la dérogation",
+          "override_fixed_until": "Heure de fin fixe",
+          "override_allow_comfort_actions": "Autoriser les actions de confort pendant la dérogation",
+          "override_allow_protection_actions": "Autoriser les actions de protection pendant la dérogation",
+          "override_break_on_lifecycle": "Terminer la dérogation lors d'une transition de cycle",
+          "override_duration_min": "Durée de dérogation classique (minutes)",
+          "override_night_duration_min": "Durée de dérogation nocturne (minutes)",
+          "override_detection_tolerance": "Tolérance de détection"
+        },
+        "data_description": {
+          "override_duration_mode": "Classique : dure une durée fixe. Heure fixe : dure jusqu'à une heure configurée.",
+          "override_fixed_until": "Utilisé uniquement si la durée est \"Heure fixe\". Si l'heure est déjà passée aujourd'hui, la dérogation se termine à cette heure demain.",
+          "override_allow_comfort_actions": "Si activé, les mouvements de confort réguliers peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
+          "override_allow_protection_actions": "Si activé, les actions de protection (absence, chaleur, éblouissement) peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
+          "override_break_on_lifecycle": "Si activé, toute transition de cycle (par ex. jour vers nuit) met fin à une dérogation active.",
+          "override_duration_min": "Durée d'une dérogation de jour avant que SmartShading ne reprenne le contrôle normal (mode classique).",
+          "override_night_duration_min": "Limite de sécurité pour une dérogation nocturne. La véritable libération se fait à la transition matinale du cycle.",
+          "override_detection_tolerance": "Changement de position minimal (en pourcentage) avant qu'un mouvement manuel soit reconnu comme une dérogation."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "Le déclencheur nocturne au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
-      "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard."
+      "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
+      "override_fixed_until_required": "Indiquez une heure de fin fixe lorsque la durée est réglée sur \"Heure fixe\"."
     },
     "abort": {
       "no_options_for_system_entry": "L'entrée Système de SmartShading n'a aucune option configurable.",
@@ -662,6 +688,12 @@
         "any_home": "Quelqu'un à la maison",
         "all_home": "Tout le monde à la maison",
         "inverted_any_home": "Inversé (quelqu'un à la maison = absent)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Classique (durée fixe)",
+        "fixed_time": "Heure fixe"
       }
     }
   },

@@ -23,7 +23,7 @@ from __future__ import annotations
 from ..engines.rain_engine import RainStatus
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
-from ..state_machine.states import ShadingState
+from ..state_machine.states import DecisionCategory, ShadingState
 
 
 class RainEvaluator:
@@ -56,4 +56,5 @@ class RainEvaluator:
             shading_state=ShadingState.RAIN_SAFE,
             target_position=safe_pos,
             decided_by="RainEvaluator",
+            category=DecisionCategory.SAFETY,
         )

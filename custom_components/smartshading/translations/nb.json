@@ -13,7 +13,8 @@
           "add_window": "Legg til vindu",
           "edit_window": "Rediger vindu",
           "remove_window": "Fjern vindu",
-          "lifecycle_profiles": "Tidsplanprofiler"
+          "lifecycle_profiles": "Tidsplanprofiler",
+          "manual_override": "Manuell overstyring"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Aktiv profil"
         }
+      },
+      "manual_override": {
+        "title": "Manuell overstyring",
+        "description": "Bestemmer oppførselen til en aktiv manuell overstyring: hvor lenge den varer, og om komfort- eller beskyttelseshandlinger fortsatt kan kjøre mens den er aktiv.",
+        "data": {
+          "override_duration_mode": "Overstyringsvarighet",
+          "override_fixed_until": "Fast sluttidspunkt",
+          "override_allow_comfort_actions": "Tillat komforthandlinger under overstyring",
+          "override_allow_protection_actions": "Tillat beskyttelseshandlinger under overstyring",
+          "override_break_on_lifecycle": "Avslutt overstyring ved skjemaovergang",
+          "override_duration_min": "Klassisk overstyringsvarighet (minutter)",
+          "override_night_duration_min": "Nattlig overstyringsvarighet (minutter)",
+          "override_detection_tolerance": "Deteksjonstoleranse"
+        },
+        "data_description": {
+          "override_duration_mode": "Klassisk: varer en fast periode. Fast tid: varer til et innstilt klokkeslett.",
+          "override_fixed_until": "Brukes kun når varighet er satt til \"Fast tid\". Hvis tidspunktet allerede er passert i dag, avsluttes overstyringen på dette tidspunktet i morgen.",
+          "override_allow_comfort_actions": "Når aktivert, kan vanlig komfortskygging fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
+          "override_allow_protection_actions": "Når aktivert, kan beskyttelseshandlinger (fravær, varme, blending) fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
+          "override_break_on_lifecycle": "Når aktivert, avslutter enhver skjemaovergang (f.eks. dag til natt) en aktiv overstyring.",
+          "override_duration_min": "Hvor lenge en dagovertyring varer før SmartShading gjenopptar normal styring (klassisk varighetsmodus).",
+          "override_night_duration_min": "Sikkerhetsgrense for en nattlig overstyring. Den egentlige frigivelsen skjer ved morgenens skjemaovergang.",
+          "override_detection_tolerance": "Minste posisjonsendring (i prosent) før en manuell bevegelse gjenkjennes som en overstyring."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "Tidligste nattutløser kan ikke være senere enn seneste.",
-      "morning_clamp_window_invalid": "Tidligste morgenutløser kan ikke være senere enn seneste."
+      "morning_clamp_window_invalid": "Tidligste morgenutløser kan ikke være senere enn seneste.",
+      "override_fixed_until_required": "Angi et fast sluttidspunkt når varighet er satt til \"Fast tid\"."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-systemoppføringen har ingen konfigurerbare alternativer.",
@@ -662,6 +688,12 @@
         "any_home": "Noen hjemme",
         "all_home": "Alle hjemme",
         "inverted_any_home": "Invertert (noen hjemme = borte)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Klassisk (fast varighet)",
+        "fixed_time": "Fast tid"
       }
     }
   },

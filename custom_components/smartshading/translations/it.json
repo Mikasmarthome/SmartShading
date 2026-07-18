@@ -13,7 +13,8 @@
           "add_window": "Aggiungi finestra",
           "edit_window": "Modifica finestra",
           "remove_window": "Rimuovi finestra",
-          "lifecycle_profiles": "Profili di programmazione"
+          "lifecycle_profiles": "Profili di programmazione",
+          "manual_override": "Override manuale"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Profilo attivo"
         }
+      },
+      "manual_override": {
+        "title": "Override manuale",
+        "description": "Configura il comportamento di un override manuale attivo: la sua durata e se le azioni di comfort o protezione possono continuare a essere eseguite mentre è attivo.",
+        "data": {
+          "override_duration_mode": "Durata dell'override",
+          "override_fixed_until": "Ora di fine fissa",
+          "override_allow_comfort_actions": "Consenti azioni di comfort durante l'override",
+          "override_allow_protection_actions": "Consenti azioni di protezione durante l'override",
+          "override_break_on_lifecycle": "Termina l'override alla transizione del ciclo",
+          "override_duration_min": "Durata override classica (minuti)",
+          "override_night_duration_min": "Durata override notturno (minuti)",
+          "override_detection_tolerance": "Tolleranza di rilevamento"
+        },
+        "data_description": {
+          "override_duration_mode": "Classico: dura per un tempo fisso. Ora fissa: dura fino a un orario configurato.",
+          "override_fixed_until": "Usato solo quando la durata è impostata su \"Ora fissa\". Se l'orario è già passato oggi, l'override termina a quell'ora domani.",
+          "override_allow_comfort_actions": "Se abilitato, l'ombreggiatura di comfort regolare può continuare durante un override attivo. L'override stesso rimane attivo.",
+          "override_allow_protection_actions": "Se abilitato, le azioni di protezione (assenza, calore, abbagliamento) possono continuare durante un override attivo. L'override stesso rimane attivo.",
+          "override_break_on_lifecycle": "Se abilitato, qualsiasi transizione del ciclo (ad es. giorno-notte) termina un override attivo.",
+          "override_duration_min": "Per quanto tempo dura un override diurno prima che SmartShading riprenda il controllo normale (modalità durata classica).",
+          "override_night_duration_min": "Limite di sicurezza per un override notturno. Il vero rilascio avviene alla transizione del ciclo mattutino.",
+          "override_detection_tolerance": "Variazione minima di posizione (in percentuale) prima che un movimento manuale sia riconosciuto come override."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "L'attivazione notturna più presto non deve essere successiva a quella più tardi.",
-      "morning_clamp_window_invalid": "L'attivazione mattutina più presto non deve essere successiva a quella più tardi."
+      "morning_clamp_window_invalid": "L'attivazione mattutina più presto non deve essere successiva a quella più tardi.",
+      "override_fixed_until_required": "Inserire un'ora di fine fissa quando la durata è impostata su \"Ora fissa\"."
     },
     "abort": {
       "no_options_for_system_entry": "La voce Sistema di SmartShading non ha opzioni configurabili.",
@@ -662,6 +688,12 @@
         "any_home": "Qualcuno a casa",
         "all_home": "Tutti a casa",
         "inverted_any_home": "Invertito (qualcuno a casa = assente)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Classico (durata fissa)",
+        "fixed_time": "Ora fissa"
       }
     }
   },

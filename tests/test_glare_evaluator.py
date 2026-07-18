@@ -27,7 +27,7 @@ from custom_components.smartshading.models.lifecycle import LifecycleState, Nigh
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.window_decision_input import build_window_decision_input
 from custom_components.smartshading.models.zone import ZoneConfig
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +174,18 @@ class TestGlareEvaluatorActive:
         result = evaluator.evaluate(wdi)
         assert result is not None
         assert result.decided_by == "GlareEvaluator"
+
+    def test_category_is_protection(
+        self, evaluator: GlareEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """T7: Glare protection is tagged PROTECTION regardless of shade
+        intensity (LIGHT/NORMAL/STRONG) — the category is not derivable
+        from shading_state, since SolarEvaluator returns the same states
+        tagged COMFORT."""
+        wdi = _wdi(window, zone, is_in_solar_sector=True)
+        result = evaluator.evaluate(wdi)
+        assert result is not None
+        assert result.category is DecisionCategory.PROTECTION
 
     def test_window_id_is_correct(
         self, evaluator: GlareEvaluator, window: WindowConfig, zone: ZoneConfig

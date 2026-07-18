@@ -13,7 +13,8 @@
           "add_window": "Pridať okno",
           "edit_window": "Upraviť okno",
           "remove_window": "Odobrať okno",
-          "lifecycle_profiles": "Profily plánu"
+          "lifecycle_profiles": "Profily plánu",
+          "manual_override": "Ručné prepísanie"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Aktívny profil"
         }
+      },
+      "manual_override": {
+        "title": "Ručné prepísanie",
+        "description": "Určuje správanie aktívneho ručného prepísania: ako dlho trvá a či môžu akcie komfortu alebo ochrany naďalej prebiehať, kým je aktívne.",
+        "data": {
+          "override_duration_mode": "Trvanie prepísania",
+          "override_fixed_until": "Pevný čas ukončenia",
+          "override_allow_comfort_actions": "Povoliť akcie komfortu počas prepísania",
+          "override_allow_protection_actions": "Povoliť ochranné akcie počas prepísania",
+          "override_break_on_lifecycle": "Ukončiť prepísanie pri prechode plánu",
+          "override_duration_min": "Klasické trvanie prepísania (minúty)",
+          "override_night_duration_min": "Nočné trvanie prepísania (minúty)",
+          "override_detection_tolerance": "Tolerancia detekcie"
+        },
+        "data_description": {
+          "override_duration_mode": "Klasický: trvá pevne stanovenú dobu. Pevný čas: trvá do nastaveného času.",
+          "override_fixed_until": "Použije sa iba, keď je trvanie nastavené na \"Pevný čas\". Ak čas dnes už uplynul, prepísanie sa skončí zajtra o tomto čase.",
+          "override_allow_comfort_actions": "Ak je povolené, bežné komfortné tienenie môže naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
+          "override_allow_protection_actions": "Ak je povolené, ochranné akcie (neprítomnosť, teplo, oslnenie) môžu naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
+          "override_break_on_lifecycle": "Ak je povolené, akýkoľvek prechod plánu (napr. deň na noc) ukončí aktívne prepísanie.",
+          "override_duration_min": "Ako dlho trvá denné prepísanie, kým SmartShading obnoví normálne ovládanie (klasický režim trvania).",
+          "override_night_duration_min": "Bezpečnostný limit pre nočné prepísanie. Skutočné uvoľnenie nastáva pri rannom prechode plánu.",
+          "override_detection_tolerance": "Minimálna zmena polohy (v percentách), kým je ručný pohyb rozpoznaný ako prepísanie."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "Najskoršie nočné spustenie nesmie byť neskôr než najneskôršie.",
-      "morning_clamp_window_invalid": "Najskoršie ranné spustenie nesmie byť neskôr než najneskôršie."
+      "morning_clamp_window_invalid": "Najskoršie ranné spustenie nesmie byť neskôr než najneskôršie.",
+      "override_fixed_until_required": "Zadajte pevný čas ukončenia, keď je trvanie nastavené na \"Pevný čas\"."
     },
     "abort": {
       "no_options_for_system_entry": "Systémová položka SmartShading nemá žiadne konfigurovateľné možnosti.",
@@ -662,6 +688,12 @@
         "any_home": "Niekto doma",
         "all_home": "Všetci doma",
         "inverted_any_home": "Invertované (niekto doma = preč)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Klasický (pevné trvanie)",
+        "fixed_time": "Pevný čas"
       }
     }
   },

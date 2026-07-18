@@ -13,7 +13,8 @@
           "add_window": "Adăugați fereastră",
           "edit_window": "Editați fereastra",
           "remove_window": "Eliminați fereastra",
-          "lifecycle_profiles": "Profiluri de program"
+          "lifecycle_profiles": "Profiluri de program",
+          "manual_override": "Suprascriere manuală"
         }
       },
       "weather": {
@@ -392,6 +393,30 @@
         "data": {
           "active_lifecycle_profile_id": "Profil activ"
         }
+      },
+      "manual_override": {
+        "title": "Suprascriere manuală",
+        "description": "Definește comportamentul unei suprascrieri manuale active: cât durează și dacă acțiunile de confort sau protecție mai pot rula în timp ce este activă.",
+        "data": {
+          "override_duration_mode": "Durata suprascrierii",
+          "override_fixed_until": "Oră de încheiere fixă",
+          "override_allow_comfort_actions": "Permite acțiuni de confort în timpul suprascrierii",
+          "override_allow_protection_actions": "Permite acțiuni de protecție în timpul suprascrierii",
+          "override_break_on_lifecycle": "Încheie suprascrierea la tranziția programului",
+          "override_duration_min": "Durata clasică a suprascrierii (minute)",
+          "override_night_duration_min": "Durata suprascrierii de noapte (minute)",
+          "override_detection_tolerance": "Toleranță de detectare"
+        },
+        "data_description": {
+          "override_duration_mode": "Clasic: durează un timp fix. Oră fixă: durează până la o oră configurată.",
+          "override_fixed_until": "Folosit doar când durata este setată pe \"Oră fixă\". Dacă ora a trecut deja azi, suprascrierea se încheie la acea oră mâine.",
+          "override_allow_comfort_actions": "Dacă este activat, umbrirea obișnuită de confort poate rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
+          "override_allow_protection_actions": "Dacă este activat, acțiunile de protecție (absență, căldură, orbire) pot rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
+          "override_break_on_lifecycle": "Dacă este activat, orice tranziție a programului (de ex. zi în noapte) încheie o suprascriere activă.",
+          "override_duration_min": "Cât durează o suprascriere de zi înainte ca SmartShading să reia controlul normal (mod de durată clasic).",
+          "override_night_duration_min": "Limită de siguranță pentru o suprascriere de noapte. Eliberarea reală are loc la tranziția programului de dimineață.",
+          "override_detection_tolerance": "Schimbare minimă de poziție (în procente) înainte ca o mișcare manuală să fie recunoscută ca suprascriere."
+        }
       }
     },
     "error": {
@@ -402,7 +427,8 @@
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "night_clamp_window_invalid": "Declanșatorul de noapte cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
-      "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu."
+      "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
+      "override_fixed_until_required": "Introduceți o oră de încheiere fixă când durata este setată pe \"Oră fixă\"."
     },
     "abort": {
       "no_options_for_system_entry": "Intrarea de Sistem SmartShading nu are opțiuni configurabile.",
@@ -662,6 +688,12 @@
         "any_home": "Cineva acasă",
         "all_home": "Toți acasă",
         "inverted_any_home": "Inversat (cineva acasă = plecat)"
+      }
+    },
+    "override_duration_mode": {
+      "options": {
+        "legacy": "Clasic (durată fixă)",
+        "fixed_time": "Oră fixă"
       }
     }
   },

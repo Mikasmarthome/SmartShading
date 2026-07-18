@@ -38,7 +38,7 @@ from ..const import (
 )
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
-from ..state_machine.states import ShadingState
+from ..state_machine.states import DecisionCategory, ShadingState
 
 
 def _low_angle_glare_value(wdi: WindowDecisionInput) -> float:
@@ -154,4 +154,5 @@ class GlareEvaluator:
             shading_state=state,
             target_position=position,
             decided_by="GlareEvaluator",
+            category=DecisionCategory.PROTECTION,
         )

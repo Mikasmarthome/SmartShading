@@ -17,7 +17,7 @@ from custom_components.smartshading.models.lifecycle import LifecycleState, Nigh
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.window_decision_input import build_window_decision_input
 from custom_components.smartshading.models.zone import ZoneConfig
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 _DEFAULT_THRESHOLD = 14.0
 
@@ -221,6 +221,16 @@ class TestWindEvaluatorOutput:
         result = evaluator.evaluate(wdi)
         assert result is not None
         assert result.decided_by == "WindEvaluator"
+
+    def test_category_is_safety(
+        self, evaluator: WindEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """T7: Wind protection is tagged SAFETY — always allowed through an
+        active Manual Override."""
+        wdi = _wdi(window, zone, wind_speed_ms=15.0)
+        result = evaluator.evaluate(wdi)
+        assert result is not None
+        assert result.category is DecisionCategory.SAFETY
 
     def test_window_id_matches(
         self, evaluator: WindEvaluator, window: WindowConfig, zone: ZoneConfig

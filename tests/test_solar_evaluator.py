@@ -30,7 +30,7 @@ from custom_components.smartshading.models.window_decision_input import (
     build_window_decision_input,
 )
 from custom_components.smartshading.models.zone import ZoneConfig
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 
 # ---------------------------------------------------------------------------
@@ -322,6 +322,17 @@ class TestSolarEvaluatorOutputFields:
         result = evaluator.evaluate(wdi)
         assert result is not None
         assert result.decided_by == "SolarEvaluator"
+
+    def test_category_is_comfort(
+        self, evaluator: SolarEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """T7: Solar comfort shading is tagged COMFORT — distinct from
+        GlareEvaluator's PROTECTION tag despite sharing the same
+        shading_state values."""
+        wdi = _wdi(window, zone, is_in_solar_sector=True, effective_wm2=300.0)
+        result = evaluator.evaluate(wdi)
+        assert result is not None
+        assert result.category is DecisionCategory.COMFORT
 
     def test_window_id_is_correct(
         self, evaluator: SolarEvaluator, window: WindowConfig, zone: ZoneConfig

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..state_machine.states import ShadingState
+from ..state_machine.states import DecisionCategory, ShadingState
 
 
 @dataclass(frozen=True)
@@ -24,10 +24,18 @@ class WindowDecision:
 
     decided_by names the evaluator class or tier that produced this decision,
     primarily for logging and diagnostics (surfaces as a sensor attribute).
+
+    category (v1.2.0-beta.1, T7) is the DecisionCategory this decision
+    belongs to for Manual Override policy purposes — required (no default)
+    so every construction site must state it explicitly; see
+    state_machine/states.py:DecisionCategory for the full rationale (it is
+    NOT derivable from shading_state, since e.g. STRONG_SHADE is returned by
+    both a Tier 4 Protection evaluator and the Tier 5 Comfort evaluator).
     """
 
     window_id: str
     shading_state: ShadingState
     target_position: int | None    # 0=open, 100=shaded; None = no explicit position command
     decided_by: str
+    category: DecisionCategory
     target_tilt: int | None = None  # Phase 2 only; always None in this version

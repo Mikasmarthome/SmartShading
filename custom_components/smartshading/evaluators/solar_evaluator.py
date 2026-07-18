@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
-from ..state_machine.states import ShadingState
+from ..state_machine.states import DecisionCategory, ShadingState
 
 class SolarEvaluator:
     """Tier 5 Comfort Pipeline: solar-based shade classification.
@@ -66,6 +66,7 @@ class SolarEvaluator:
                 shading_state=ShadingState.STRONG_SHADE,
                 target_position=behavior.strong_shade_position,
                 decided_by="SolarEvaluator",
+                category=DecisionCategory.COMFORT,
             )
         if exposure_wm2 >= behavior.normal_shade_threshold_wm2:
             return WindowDecision(
@@ -73,6 +74,7 @@ class SolarEvaluator:
                 shading_state=ShadingState.NORMAL_SHADE,
                 target_position=behavior.normal_shade_position,
                 decided_by="SolarEvaluator",
+                category=DecisionCategory.COMFORT,
             )
         if exposure_wm2 >= behavior.light_shade_threshold_wm2:
             return WindowDecision(
@@ -80,6 +82,7 @@ class SolarEvaluator:
                 shading_state=ShadingState.LIGHT_SHADE,
                 target_position=behavior.light_shade_position,
                 decided_by="SolarEvaluator",
+                category=DecisionCategory.COMFORT,
             )
 
         return None  # below threshold → OPEN

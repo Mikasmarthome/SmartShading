@@ -25,7 +25,7 @@ from custom_components.smartshading.models.lifecycle import LifecycleState, Nigh
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.window_decision_input import build_window_decision_input
 from custom_components.smartshading.models.zone import ZoneConfig
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +239,16 @@ class TestHeatEvaluatorOutput:
         result = evaluator.evaluate(wdi)
         assert result is not None
         assert result.decided_by == "HeatEvaluator"
+
+    def test_category_is_protection(
+        self, evaluator: HeatEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """T7: Heat protection is tagged PROTECTION — this is the category
+        the Manual Override policy checks for allow_protection gating."""
+        wdi = _wdi(window, zone, outdoor_temp_c=30.0, indoor_temp_c=None)
+        result = evaluator.evaluate(wdi)
+        assert result is not None
+        assert result.category is DecisionCategory.PROTECTION
 
     def test_target_position_is_normal_shade_position(
         self, evaluator: HeatEvaluator, window: WindowConfig, zone: ZoneConfig

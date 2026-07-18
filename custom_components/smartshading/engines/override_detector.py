@@ -26,8 +26,9 @@ Coordinator call sequence per window, per cycle:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta, timezone
 
+from .override_fixed_time import compute_fixed_time_expiry
 from ..models.manual_override import ManualOverride
 from ..state_machine.states import ShadingState
 
@@ -54,6 +55,14 @@ class OverrideDetector:
         self._active_overrides: dict[str, ManualOverride] = {}
         self._warmup_counters: dict[str, int] = {}
         self._suppress_ticks: set[str] = set()
+        # T7 review point 4: post-expiry re-arm baseline, FIXED_TIME mode
+        # only (see _maybe_arm_post_expiry_baseline() for the full
+        # rationale). Not used by legacy mode at all — legacy's existing,
+        # intentionally-unchanged "several stale cycles later, a fresh
+        # (short) override forms again" behavior
+        # (tests/test_override_detector.py
+        # TestOverrideDetectorTimeoutSuppression) is untouched.
+        self._post_expiry_baseline: dict[str, int] = {}
 
     # ------------------------------------------------------------------
     # Public API
@@ -73,9 +82,35 @@ class OverrideDetector:
         existing = self._active_overrides.get(window_id)
         if existing is not None and now >= existing.expires_at:
             del self._active_overrides[window_id]
+            self._maybe_arm_post_expiry_baseline(existing)
             self.suppress_next_override_tick(window_id)
             return None
         return existing
+
+    def _maybe_arm_post_expiry_baseline(self, expired: ManualOverride) -> None:
+        """T7 review point 4: a FIXED_TIME override can expire with the
+        cover still sitting at its old, un-moved manual position (no new
+        user action, no dispatch has happened yet). Without this, the very
+        next tick() cycle after the one-shot F30 suppression is consumed
+        would see that unchanged position deviate from the automatic target
+        and immediately re-arm a BRAND NEW override — for fixed_time mode,
+        that means silently extending the hold by up to ~24h from a stale
+        deviation alone, not a genuine new manual movement.
+
+        Recording the just-expired override's own position as a baseline
+        lets tick() (see the "existing is None" branch) recognize "this is
+        still the same old deviation" and withhold detection until the
+        observed position genuinely changes away from that baseline — at
+        which point it IS a real new movement and re-arms normally.
+
+        Scoped to FIXED_TIME only: legacy mode's existing "several stale
+        cycles later, a fresh (short) override is expected again" behavior
+        is unchanged (see class docstring / __init__ comment) — the
+        consequence there (a modest duration_min-scale extension) does not
+        warrant changing well-established, explicitly-tested behavior.
+        """
+        if expired.duration_mode == "fixed_time":
+            self._post_expiry_baseline[expired.window_id] = expired.override_position
 
     # ------------------------------------------------------------------
     # Restart-safe persistence
@@ -138,6 +173,9 @@ class OverrideDetector:
         duration_min: int,
         now: datetime,
         scope: str = "daytime",
+        duration_mode: str = "legacy",
+        fixed_until: time | None = None,
+        now_local: datetime | None = None,
     ) -> None:
         """Update override state for one window in one coordinator cycle.
 
@@ -169,6 +207,33 @@ class OverrideDetector:
             scope:                "daytime" or "night" (v1.1.3) — recorded on the
                                   ManualOverride for diagnostics; does not itself
                                   change detection/renewal behavior.
+            duration_mode:        "legacy" (default) or "fixed_time" (T7). Selects
+                                  how expires_at is computed for a NEW override
+                                  (legacy: now + duration_min; fixed_time:
+                                  compute_fixed_time_expiry(now, fixed_until)) and
+                                  governs renewal semantics (see the "else" branch
+                                  below) — the ManualOverride runtime object itself
+                                  does not carry the mode; only expires_at matters
+                                  once computed.
+            fixed_until:          The configured local clock time an override should
+                                  end at. Required (non-None) when
+                                  duration_mode="fixed_time"; ignored otherwise.
+            now_local:            `now`, converted to Home Assistant's configured
+                                  local timezone (e.g. via dt_util.as_local(now)).
+                                  Required (non-None) when duration_mode="fixed_time":
+                                  fixed_until is a LOCAL wall-clock time (what the
+                                  user configured, e.g. "08:00" means 8 AM in HA's
+                                  own timezone, not UTC), so the fixed-time
+                                  computation must run against `now_local`, not the
+                                  UTC `now` — otherwise a non-UTC HA timezone would
+                                  make the override expire at the wrong wall-clock
+                                  instant. The computed local expiry is converted
+                                  back to the same timezone convention as `now`
+                                  (UTC) before being stored, so all other expires_at
+                                  comparisons in this class stay apples-to-apples.
+                                  If duration_mode="fixed_time" but now_local is not
+                                  supplied, falls back to the legacy duration
+                                  computation (safe default, never raises).
         """
         # Advance warmup counter.
         cycle_count = self._warmup_counters.get(window_id, 0)
@@ -182,6 +247,7 @@ class OverrideDetector:
         existing = self._active_overrides.get(window_id)
         if existing is not None and now >= existing.expires_at:
             del self._active_overrides[window_id]
+            self._maybe_arm_post_expiry_baseline(existing)
             existing = None
             self.suppress_next_override_tick(window_id)
 
@@ -205,7 +271,9 @@ class OverrideDetector:
             # position (within tolerance), the new target simply changed on
             # SmartShading's side — the user did NOT interfere.  This prevents the
             # permanent false-override loop that occurs when tick() runs before the
-            # cover physically responds to a just-dispatched command.
+            # cover physically responds to a just-dispatched command.  This also
+            # covers a T7 allowed Protection/Comfort pass-through dispatch made
+            # while an override was active but has since naturally expired.
             if (
                 smartshading_assumed is not None
                 and abs(observed_position - smartshading_assumed) <= tolerance
@@ -215,31 +283,77 @@ class OverrideDetector:
             # to compare against, so override detection is skipped for this cycle.
             if smartshading_target is None:
                 return
-            # Check for a new override.
+            # T7 review point 4: post-expiry re-arm baseline (FIXED_TIME only).
+            # If the observed position still matches the just-expired
+            # fixed-time override's own position (within tolerance), this is
+            # the SAME stale deviation, not a genuine new manual move — do
+            # NOT create a new override. The baseline is consumed (cleared)
+            # only once the position genuinely changes away from it.
+            baseline = self._post_expiry_baseline.get(window_id)
+            if baseline is not None and abs(observed_position - baseline) <= tolerance:
+                return
+            if window_id in self._post_expiry_baseline:
+                del self._post_expiry_baseline[window_id]
+            # Check for a NEW override (none was active before this cycle, or the
+            # previous one just expired above).  T7: expires_at is always freshly
+            # computed here — for fixed_time mode this yields "today at
+            # fixed_until" or "tomorrow at fixed_until" depending on whether that
+            # instant has already passed, exactly the "new override after expiry
+            # gets the next boundary" semantics (review point 8).
             if abs(observed_position - smartshading_target) > tolerance:
                 self._active_overrides[window_id] = ManualOverride(
                     window_id=window_id,
                     override_position=observed_position,
                     started_at=now,
-                    expires_at=now + timedelta(minutes=duration_min),
+                    expires_at=_compute_new_expiry(
+                        now=now, duration_min=duration_min,
+                        duration_mode=duration_mode, fixed_until=fixed_until,
+                        now_local=now_local,
+                    ),
                     source="position_delta",
                     overridden_state=prev_state,
                     overridden_position=smartshading_target,
                     scope=scope,
+                    duration_mode=duration_mode,
                 )
         else:
-            # Override already active — check if user moved again (renewal).
+            # T7: own-command guard also applies while an override is already
+            # active.  Without this, SmartShading's own dispatch of an ALLOWED
+            # Protection/Comfort action (override_allow_protection_actions /
+            # override_allow_comfort_actions) while the override otherwise
+            # remains in effect would be misread as a fresh manual movement by
+            # the plain position-delta check below, incorrectly "renewing" the
+            # override at the dispatched position and moving its expires_at —
+            # even though expires_at must stay untouched by an allowed
+            # pass-through dispatch (review points 10/11).
+            if (
+                smartshading_assumed is not None
+                and abs(observed_position - smartshading_assumed) <= tolerance
+            ):
+                return
+            # Override already active — check if the user moved it again (a real
+            # renewal, not SmartShading's own dispatch, per the guard above).
             if abs(observed_position - existing.override_position) > tolerance:
+                if duration_mode == "fixed_time":
+                    # T7 review point 8: a renewal of an ALREADY-active
+                    # fixed-time override must NOT move its fixed boundary —
+                    # only a brand-new override (the "existing is None" branch
+                    # above, reached after natural expiry) computes a fresh
+                    # fixed_until occurrence.
+                    new_expires_at = existing.expires_at
+                else:
+                    new_expires_at = now + timedelta(minutes=duration_min)
                 self._active_overrides[window_id] = ManualOverride(
                     window_id=window_id,
                     override_position=observed_position,
                     started_at=now,
-                    expires_at=now + timedelta(minutes=duration_min),
+                    expires_at=new_expires_at,
                     source="position_delta",
                     # Preserve original overridden context for Learning.
                     overridden_state=existing.overridden_state,
                     overridden_position=existing.overridden_position,
                     scope=scope,
+                    duration_mode=existing.duration_mode,
                 )
 
     def suppress_next_override_tick(self, window_id: str) -> None:
@@ -263,3 +377,31 @@ class OverrideDetector:
         takes over — Safety always beats a manual override.
         """
         self._active_overrides.pop(window_id, None)
+        # T7: a manual/safety clear also discards any pending post-expiry
+        # re-arm baseline for this window — the override lifecycle just
+        # ended explicitly, so there is nothing left to compare a "still
+        # stale" position against.
+        self._post_expiry_baseline.pop(window_id, None)
+
+
+def _compute_new_expiry(
+    *,
+    now: datetime,
+    duration_min: int,
+    duration_mode: str,
+    fixed_until: time | None,
+    now_local: datetime | None,
+) -> datetime:
+    """expires_at for a brand-new override (see tick()'s single call site).
+
+    fixed_until is a LOCAL wall-clock time, so the fixed-time computation
+    must run against now_local (HA's configured timezone), not the UTC
+    `now` — see tick()'s now_local docstring. The resulting local instant is
+    converted back to UTC before being returned, matching every other
+    expires_at value's timezone convention (all computed from/compared
+    against a UTC `now` elsewhere in this class).
+    """
+    if duration_mode == "fixed_time" and fixed_until is not None and now_local is not None:
+        local_expiry = compute_fixed_time_expiry(now=now_local, fixed_until=fixed_until)
+        return local_expiry.astimezone(timezone.utc)
+    return now + timedelta(minutes=duration_min)

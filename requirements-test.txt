@@ -1,0 +1,25 @@
+# Test/CI dependencies for the SmartShading test suite (tests/).
+#
+# `homeassistant` is deliberately NOT listed here: the entire test suite
+# stubs Home Assistant via tests/conftest.py and per-test-file sys.modules
+# injection (see conftest.py's module docstring) rather than depending on
+# the real `homeassistant` PyPI package, which pulls in a very large
+# dependency tree the tests never actually exercise.
+#
+# This file is the single source of truth for what the test suite needs —
+# both locally and in .github/workflows/pytest.yml. Keep it minimal: only
+# add a package here if tests/ or custom_components/smartshading/ actually
+# imports it directly (verified via an AST scan of both trees, not a guess).
+pytest
+voluptuous
+
+# tzdata: tests/test_override_fixed_time_dst_and_timezone.py constructs
+# zoneinfo.ZoneInfo("Europe/Berlin") directly. Python's stdlib `zoneinfo`
+# module has no bundled tz database of its own — it relies on the host OS's
+# system tzdata (present by default on most Linux distributions, including
+# GitHub Actions' ubuntu-latest runner, but NOT guaranteed on Windows or
+# minimal/containerized environments) or this PyPI package as an explicit,
+# portable fallback. Listed here so the test suite is reproducible
+# regardless of what the host OS happens to provide — verified by running
+# the full suite in a fresh venv with only this file's contents installed.
+tzdata

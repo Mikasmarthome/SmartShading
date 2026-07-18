@@ -85,6 +85,25 @@ def is_higher_priority(state_a: ShadingState, state_b: ShadingState) -> bool:
     return priority(state_a) < priority(state_b)
 
 
+# Tier 1 Safety Guard states (v1.2.0-beta.1, T8). A single shared definition
+# for "is this ANY safety state" — used wherever code needs to treat Storm,
+# Wind, and Rain uniformly (override-clear, movement-cause classification,
+# dispatch-filter safety bypass, learning-eligibility exclusion). Before T8,
+# several of these call sites used an ad-hoc (STORM_SAFE, WIND_SAFE) tuple
+# that silently excluded RAIN_SAFE — this constant exists specifically to
+# prevent that class of inconsistency from recurring. Not used for the
+# hardware-safe-position-correction or hysteresis-hold-priority logic in
+# coordinator.py, which are legitimately Storm/Wind-specific (Rain has its
+# own, separately correct, equivalent handling there).
+SAFETY_SHADING_STATES = frozenset(
+    {
+        ShadingState.STORM_SAFE,
+        ShadingState.WIND_SAFE,
+        ShadingState.RAIN_SAFE,
+    }
+)
+
+
 class DecisionCategory(Enum):
     """Fachliche Kategorie einer WindowDecision (v1.2.0-beta.1, T7).
 

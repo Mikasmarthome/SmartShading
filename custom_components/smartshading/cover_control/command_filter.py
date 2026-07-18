@@ -178,8 +178,8 @@ class CommandFilterResult:
 
     is_safety
         True when the triggering decision is a Tier 1 Safety state
-        (STORM_SAFE or WIND_SAFE).  Safety commands bypass some filters
-        (not all — see module docstring).
+        (STORM_SAFE, WIND_SAFE, or RAIN_SAFE — v1.2.0-beta.1, T8).  Safety
+        commands bypass some filters (not all — see module docstring).
     """
 
     allowed: bool

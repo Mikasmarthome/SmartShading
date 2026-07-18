@@ -121,7 +121,7 @@ from .evaluators.tier_orchestrator import TierOrchestrator
 from .models.window_decision import WindowDecision
 from .models.window_decision_input import build_window_decision_input
 from .state_machine.guards import StateGuard, StateGuardConfig
-from .state_machine.states import DecisionCategory, ShadingState
+from .state_machine.states import DecisionCategory, SAFETY_SHADING_STATES, ShadingState
 from .state_machine.transitions import bypasses_guard
 import uuid
 
@@ -702,9 +702,7 @@ def _mode_dispatch_allowed(
     if behavior_mode is WindowBehaviorMode.FULLY_AUTOMATIC:
         return True
     return (
-        shading_state in (
-            ShadingState.STORM_SAFE, ShadingState.WIND_SAFE, ShadingState.RAIN_SAFE,
-        )
+        shading_state in SAFETY_SHADING_STATES
         or shading_state is ShadingState.MANUAL_OVERRIDE
         or (
             behavior_mode in (
@@ -3907,9 +3905,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _last_commanded_was_available: bool = False
             _prev_obs_was_available: bool = False
             _observed_internal_stored: bool = False
-            if tier_decision.shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
+            if tier_decision.shading_state in SAFETY_SHADING_STATES:
                 # Phase 9C: record safety clear before removing the override.
                 # Learning write is gated; functional clear always runs.
+                # T8: RAIN_SAFE included here alongside STORM_SAFE/WIND_SAFE —
+                # previously excluded (a pre-existing asymmetry, not a
+                # deliberate design choice — see T8 audit), so a Rain-safe
+                # cycle never cleared an active override. Rain now clears an
+                # active override exactly like Storm/Wind.
                 if obs_enabled and active_override is not None:
                     try:
                         self._learning_store.record_override(OverrideRecord(
@@ -4285,8 +4288,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
             # Phase 9C: detect "started" and "renewed" from tick() outcome.
             # Safety path clears the override — no started/renewed possible there.
-            # Learning writes gated behind obs_enabled.
-            if obs_enabled and tier_decision.shading_state not in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
+            # Learning writes gated behind obs_enabled. T8: RAIN_SAFE included
+            # (see SAFETY_SHADING_STATES) — Rain now clears via the same path
+            # above, so it must be excluded here too.
+            if obs_enabled and tier_decision.shading_state not in SAFETY_SHADING_STATES:
                 if active_override is None and current_override is not None:
                     try:
                         self._learning_store.record_override(OverrideRecord(
@@ -4529,7 +4534,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if _exec.active_control_enabled
                 else ExecutionMode.RECOMMENDATION_ONLY
             )
-            _is_safety = new_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
+            _is_safety = new_state in SAFETY_SHADING_STATES  # T8: includes RAIN_SAFE
             _exec_target_internal = tier_decision.target_position
             _exec_filter_result: CommandFilterResult | None = None
 
@@ -5625,7 +5630,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     @staticmethod
     def _classify_movement_cause(state: ShadingState) -> str:
-        if state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
+        if state in SAFETY_SHADING_STATES:  # T8: includes RAIN_SAFE
             return MOVE_CAUSE_SAFETY
         if state is ShadingState.NIGHT_CLOSED:
             return MOVE_CAUSE_LIFECYCLE
@@ -8761,7 +8766,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Reuse the cycle's decision_id (shared with any PendingOutcome) so the
         # outcome is later attached by decision_id, not by timestamp.
         decision_id = s.decision_id or uuid.uuid4().hex
-        safety_active = s.new_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
+        safety_active = s.new_state in SAFETY_SHADING_STATES  # T8: includes RAIN_SAFE
         is_night = s.new_state is ShadingState.NIGHT_CLOSED
         is_absence = s.new_state is ShadingState.ABSENCE_CLOSED
         shade_states = (ShadingState.LIGHT_SHADE, ShadingState.NORMAL_SHADE, ShadingState.STRONG_SHADE)

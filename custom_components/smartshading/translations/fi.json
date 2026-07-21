@@ -652,7 +652,7 @@
     },
     "active_lifecycle_profile": {
       "options": {
-        "__legacy__": "Oletus"
+        "legacy_default": "Oletus"
       }
     },
     "active_months": {

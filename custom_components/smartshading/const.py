@@ -242,7 +242,7 @@ CONF_PROFILE_DISPLAY_NAME = "profile_display_name"
 # Sentinel value for "no active profile" (use the legacy flat config) in the
 # active-profile SelectSelector — never a real profile_id (those are uuid4
 # hex strings, which never equal this literal).
-LEGACY_PROFILE_SENTINEL = "__legacy__"
+LEGACY_PROFILE_SENTINEL = "legacy_default"
 PROFILE_DISPLAY_NAME_MAX_LEN = 60
 
 CONF_PRESENCE_ENTITY_IDS = "presence_entity_ids"

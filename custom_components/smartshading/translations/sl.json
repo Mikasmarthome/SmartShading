@@ -652,7 +652,7 @@
     },
     "active_lifecycle_profile": {
       "options": {
-        "__legacy__": "Privzeto"
+        "legacy_default": "Privzeto"
       }
     },
     "active_months": {

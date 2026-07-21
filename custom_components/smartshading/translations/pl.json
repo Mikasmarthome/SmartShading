@@ -652,7 +652,7 @@
     },
     "active_lifecycle_profile": {
       "options": {
-        "__legacy__": "Domyślny"
+        "legacy_default": "Domyślny"
       }
     },
     "active_months": {

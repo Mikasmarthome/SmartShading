@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import sys
 import types
 from pathlib import Path
@@ -591,7 +592,7 @@ class TestTranslationCompleteness:
 
     def test_active_lifecycle_profile_selector_translation_present_in_all_files(self):
         """Legacy-selector i18n fix: every i18n file must carry
-        selector.active_lifecycle_profile.options.__legacy__ with a
+        selector.active_lifecycle_profile.options.legacy_default with a
         non-empty value — this is what config_flow.py's new
         translation_key="active_lifecycle_profile" resolves against at
         render time (see ha-selector-select.ts: `${translationKey}.options.
@@ -603,9 +604,37 @@ class TestTranslationCompleteness:
             selector = data.get("selector", {})
             assert "active_lifecycle_profile" in selector, f"{path.name}: missing selector.active_lifecycle_profile"
             options = selector["active_lifecycle_profile"].get("options", {})
-            assert "__legacy__" in options, f"{path.name}: missing selector.active_lifecycle_profile.options.__legacy__"
-            value = options["__legacy__"]
+            assert "legacy_default" in options, f"{path.name}: missing selector.active_lifecycle_profile.options.legacy_default"
+            value = options["legacy_default"]
             assert isinstance(value, str) and value.strip(), f"{path.name}: empty legacy-sentinel translation"
+
+    def test_old_invalid_sentinel_key_is_gone_from_all_files(self):
+        """Regression guard: the original "__legacy__" translation key was
+        rejected by hassfest ("Invalid translation key ... need to be
+        [a-z0-9_]+ and cannot start or end with a hyphen or underscore").
+        It must not reappear in any i18n file."""
+        files = list(self._all_i18n_files())
+        assert len(files) == 25
+        for path in files:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            options = data.get("selector", {}).get("active_lifecycle_profile", {}).get("options", {})
+            assert "__legacy__" not in options, f"{path.name}: stale invalid translation key __legacy__ still present"
+
+    def test_active_lifecycle_profile_option_keys_satisfy_hassfest_translation_key_pattern(self):
+        """Hassfest's translation-key contract, kept narrow and generic (not
+        a full reimplementation of hassfest's schema): every option key
+        under selector.active_lifecycle_profile.options must match
+        ^[a-z0-9_]+$ and must not start or end with "_"."""
+        pattern = re.compile(r"^[a-z0-9_]+$")
+        files = list(self._all_i18n_files())
+        assert len(files) == 25
+        for path in files:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            options = data["selector"]["active_lifecycle_profile"]["options"]
+            for key in options:
+                assert pattern.match(key), f"{path.name}: option key {key!r} does not match {pattern.pattern}"
+                assert not key.startswith("_"), f"{path.name}: option key {key!r} starts with underscore"
+                assert not key.endswith("_"), f"{path.name}: option key {key!r} ends with underscore"
 
     def test_active_lifecycle_profile_selector_translation_does_not_overwrite_existing_selectors(self):
         """The new selector key must be additive — every selector key that

@@ -652,7 +652,7 @@
     },
     "active_lifecycle_profile": {
       "options": {
-        "__legacy__": "Alapértelmezett"
+        "legacy_default": "Alapértelmezett"
       }
     },
     "active_months": {

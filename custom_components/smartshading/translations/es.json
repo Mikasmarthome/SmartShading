@@ -652,7 +652,7 @@
     },
     "active_lifecycle_profile": {
       "options": {
-        "__legacy__": "Predeterminado"
+        "legacy_default": "Predeterminado"
       }
     },
     "active_months": {

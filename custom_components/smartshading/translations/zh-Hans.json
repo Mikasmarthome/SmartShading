@@ -652,7 +652,7 @@
     },
     "active_lifecycle_profile": {
       "options": {
-        "__legacy__": "默认"
+        "legacy_default": "默认"
       }
     },
     "active_months": {

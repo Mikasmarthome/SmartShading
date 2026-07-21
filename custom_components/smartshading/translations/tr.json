@@ -652,7 +652,7 @@
     },
     "active_lifecycle_profile": {
       "options": {
-        "__legacy__": "Varsayılan"
+        "legacy_default": "Varsayılan"
       }
     },
     "active_months": {

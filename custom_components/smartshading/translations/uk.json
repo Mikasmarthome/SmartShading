@@ -652,7 +652,7 @@
     },
     "active_lifecycle_profile": {
       "options": {
-        "__legacy__": "За замовчуванням"
+        "legacy_default": "За замовчуванням"
       }
     },
     "active_months": {

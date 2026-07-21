@@ -652,7 +652,7 @@
     },
     "active_lifecycle_profile": {
       "options": {
-        "__legacy__": "По подразбиране"
+        "legacy_default": "По подразбиране"
       }
     },
     "active_months": {

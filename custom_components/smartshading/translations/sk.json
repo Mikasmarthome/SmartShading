@@ -652,7 +652,7 @@
     },
     "active_lifecycle_profile": {
       "options": {
-        "__legacy__": "Predvolený"
+        "legacy_default": "Predvolený"
       }
     },
     "active_months": {

@@ -650,6 +650,11 @@
         "weekday_weekend": "Hafta içi / Hafta sonu"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Varsayılan"
+      }
+    },
     "active_months": {
       "options": {
         "1": "Ocak",

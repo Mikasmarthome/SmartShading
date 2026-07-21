@@ -650,6 +650,11 @@
         "weekday_weekend": "Zi lucrătoare / Weekend"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Implicit"
+      }
+    },
     "active_months": {
       "options": {
         "1": "ianuarie",

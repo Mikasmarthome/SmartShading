@@ -650,6 +650,11 @@
         "weekday_weekend": "工作日 / 周末"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "默认"
+      }
+    },
     "active_months": {
       "options": {
         "1": "一月",

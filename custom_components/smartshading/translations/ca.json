@@ -650,6 +650,11 @@
         "weekday_weekend": "Entre setmana / Cap de setmana"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Per defecte"
+      }
+    },
     "active_months": {
       "options": {
         "1": "gener",

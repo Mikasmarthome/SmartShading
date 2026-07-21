@@ -650,6 +650,11 @@
         "weekday_weekend": "Pracovný deň / Víkend"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Predvolený"
+      }
+    },
     "active_months": {
       "options": {
         "1": "január",

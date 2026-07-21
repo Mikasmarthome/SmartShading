@@ -650,6 +650,11 @@
         "weekday_weekend": "Будни / Выходные"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "По умолчанию"
+      }
+    },
     "active_months": {
       "options": {
         "1": "январь",

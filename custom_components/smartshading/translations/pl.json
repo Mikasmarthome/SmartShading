@@ -650,6 +650,11 @@
         "weekday_weekend": "Dni robocze / Weekend"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Domyślny"
+      }
+    },
     "active_months": {
       "options": {
         "1": "styczeń",

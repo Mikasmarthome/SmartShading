@@ -2051,7 +2051,11 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         default_value = current_active if current_active in stored_profiles else LEGACY_PROFILE_SENTINEL
         schema = vol.Schema({
             vol.Required(CONF_ACTIVE_LIFECYCLE_PROFILE_ID, default=default_value): SelectSelector(
-                SelectSelectorConfig(options=options, mode=SelectSelectorMode.DROPDOWN)
+                SelectSelectorConfig(
+                    options=options,
+                    mode=SelectSelectorMode.DROPDOWN,
+                    translation_key="active_lifecycle_profile",
+                )
             ),
         })
         return self.async_show_form(step_id="select_active_lifecycle_profile", data_schema=schema)

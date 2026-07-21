@@ -429,6 +429,83 @@ class TestSelectActiveProfile:
 
 
 # ---------------------------------------------------------------------------
+# Legacy-selector i18n fix: the selector's translation_key wiring, the
+# static sentinel's Python-side fallback label, and the dynamic profile
+# options — verified against the REAL selector instance built by the REAL
+# async_step_select_active_lifecycle_profile schema (same technique as
+# TestSelectActiveProfile above).
+# ---------------------------------------------------------------------------
+
+class TestSelectActiveProfileSelectorLocalization:
+    def _stored(self, active_id=None):
+        data = {
+            "lifecycle_profiles": {
+                "p1": {"display_name": "Weekend", "config": {"id": "p1"}},
+                "p2": {"display_name": "Vacation", "config": {"id": "p2"}},
+            }
+        }
+        if active_id is not None:
+            data[CONF_ACTIVE_LIFECYCLE_PROFILE_ID] = active_id
+        return data
+
+    def _selector_instance(self, flow):
+        result = asyncio.run(flow.async_step_select_active_lifecycle_profile(user_input=None))
+        schema: vol.Schema = result["data_schema"]
+        key = _schema_field_key(schema, CONF_ACTIVE_LIFECYCLE_PROFILE_ID)
+        return schema.schema[key]
+
+    def test_selector_translation_key_is_active_lifecycle_profile(self):
+        flow = _make_options_flow(data=self._stored())
+        selector_instance = self._selector_instance(flow)
+        assert selector_instance.config.translation_key == "active_lifecycle_profile"
+
+    def test_static_sentinel_option_keeps_fallback_value_and_label(self):
+        flow = _make_options_flow(data=self._stored())
+        selector_instance = self._selector_instance(flow)
+        sentinel_options = [
+            opt for opt in selector_instance.config.options if opt["value"] == LEGACY_PROFILE_SENTINEL
+        ]
+        assert len(sentinel_options) == 1
+        assert sentinel_options[0]["label"] == "Legacy default"
+
+    def test_dynamic_profile_options_are_unaffected_by_translation_key(self):
+        flow = _make_options_flow(data=self._stored())
+        selector_instance = self._selector_instance(flow)
+        by_value = {opt["value"]: opt["label"] for opt in selector_instance.config.options}
+        # Dynamic profile entries keep their real profile_id as value and the
+        # stored user display_name as label — translation_key must not alter
+        # or replace either (only the frontend, at render time, ever tries a
+        # selector.active_lifecycle_profile.options.<value> lookup, and none
+        # of these uuid-like ids has a matching entry in strings.json).
+        assert by_value["p1"] == "Weekend"
+        assert by_value["p2"] == "Vacation"
+        # No dynamic profile_id is ever used as a synthetic translation key
+        # in strings.json — only the static sentinel is.
+        strings = json.loads((_INTEGRATION_ROOT / "strings.json").read_text(encoding="utf-8"))
+        translated_option_keys = strings["selector"]["active_lifecycle_profile"]["options"].keys()
+        assert "p1" not in translated_option_keys
+        assert "p2" not in translated_option_keys
+
+    def test_persistence_of_dynamic_selection_unaffected_by_translation_key(self):
+        # Regression guard: adding translation_key= to the SelectSelectorConfig
+        # must not change the save/persist path at all.
+        flow = _make_options_flow(data=self._stored())
+        asyncio.run(flow.async_step_select_active_lifecycle_profile(
+            user_input={CONF_ACTIVE_LIFECYCLE_PROFILE_ID: "p2"}
+        ))
+        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
+        assert kwargs["data"][CONF_ACTIVE_LIFECYCLE_PROFILE_ID] == "p2"
+
+    def test_persistence_of_sentinel_selection_unaffected_by_translation_key(self):
+        flow = _make_options_flow(data=self._stored(active_id="p1"))
+        asyncio.run(flow.async_step_select_active_lifecycle_profile(
+            user_input={CONF_ACTIVE_LIFECYCLE_PROFILE_ID: LEGACY_PROFILE_SENTINEL}
+        ))
+        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
+        assert kwargs["data"][CONF_ACTIVE_LIFECYCLE_PROFILE_ID] is None
+
+
+# ---------------------------------------------------------------------------
 # CFLP-12 — legacy flat fields untouched by CRUD.
 # ---------------------------------------------------------------------------
 
@@ -511,6 +588,43 @@ class TestTranslationCompleteness:
         }).lower()
         for forbidden in ("select entity", "automatic", "calendar", "per zone", "per window"):
             assert forbidden not in haystack, forbidden
+
+    def test_active_lifecycle_profile_selector_translation_present_in_all_files(self):
+        """Legacy-selector i18n fix: every i18n file must carry
+        selector.active_lifecycle_profile.options.__legacy__ with a
+        non-empty value — this is what config_flow.py's new
+        translation_key="active_lifecycle_profile" resolves against at
+        render time (see ha-selector-select.ts: `${translationKey}.options.
+        ${option.value}`)."""
+        files = list(self._all_i18n_files())
+        assert len(files) == 25
+        for path in files:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            selector = data.get("selector", {})
+            assert "active_lifecycle_profile" in selector, f"{path.name}: missing selector.active_lifecycle_profile"
+            options = selector["active_lifecycle_profile"].get("options", {})
+            assert "__legacy__" in options, f"{path.name}: missing selector.active_lifecycle_profile.options.__legacy__"
+            value = options["__legacy__"]
+            assert isinstance(value, str) and value.strip(), f"{path.name}: empty legacy-sentinel translation"
+
+    def test_active_lifecycle_profile_selector_translation_does_not_overwrite_existing_selectors(self):
+        """The new selector key must be additive — every selector key that
+        existed before this fix must still be present and unchanged in
+        strings.json (the single source of truth for the English/default
+        strings)."""
+        strings = json.loads((_INTEGRATION_ROOT / "strings.json").read_text(encoding="utf-8"))
+        selector = strings["selector"]
+        pre_existing_keys = {
+            "compass_direction", "night_elevation_preset", "morning_elevation_preset",
+            "lifecycle_trigger", "night_sun_event", "morning_sun_event",
+            "lifecycle_schedule_mode", "active_months", "window_behavior_mode",
+            "cover_hardware_type", "presence_policy", "override_duration_mode",
+        }
+        assert pre_existing_keys <= selector.keys()
+        assert selector["lifecycle_schedule_mode"]["options"] == {
+            "same_every_day": "Same every day",
+            "weekday_weekend": "Weekday / Weekend",
+        }
 
 
 # ---------------------------------------------------------------------------

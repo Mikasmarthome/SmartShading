@@ -650,6 +650,11 @@
         "weekday_weekend": "Καθημερινή / Σαββατοκύριακο"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Προεπιλογή"
+      }
+    },
     "active_months": {
       "options": {
         "1": "Ιανουάριος",

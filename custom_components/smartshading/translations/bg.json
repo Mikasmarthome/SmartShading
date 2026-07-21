@@ -650,6 +650,11 @@
         "weekday_weekend": "Делник / Уикенд"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "По подразбиране"
+      }
+    },
     "active_months": {
       "options": {
         "1": "януари",

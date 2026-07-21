@@ -650,6 +650,11 @@
         "weekday_weekend": "Vardag / Helg"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Standard"
+      }
+    },
     "active_months": {
       "options": {
         "1": "januari",

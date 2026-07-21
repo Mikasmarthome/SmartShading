@@ -650,6 +650,11 @@
         "weekday_weekend": "Wochentag / Wochenende"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Bisherige Standardeinstellungen"
+      }
+    },
     "active_months": {
       "options": {
         "1": "Januar",

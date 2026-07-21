@@ -650,6 +650,11 @@
         "weekday_weekend": "Hétköznap / Hétvége"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Alapértelmezett"
+      }
+    },
     "active_months": {
       "options": {
         "1": "január",

@@ -650,6 +650,11 @@
         "weekday_weekend": "Arki / Viikonloppu"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Oletus"
+      }
+    },
     "active_months": {
       "options": {
         "1": "tammikuu",

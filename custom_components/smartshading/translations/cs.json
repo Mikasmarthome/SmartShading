@@ -650,6 +650,11 @@
         "weekday_weekend": "Pracovní den / Víkend"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Výchozí"
+      }
+    },
     "active_months": {
       "options": {
         "1": "leden",

@@ -650,6 +650,11 @@
         "weekday_weekend": "Delavnik / Vikend"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Privzeto"
+      }
+    },
     "active_months": {
       "options": {
         "1": "januar",

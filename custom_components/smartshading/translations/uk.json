@@ -650,6 +650,11 @@
         "weekday_weekend": "Будні / Вихідні"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "За замовчуванням"
+      }
+    },
     "active_months": {
       "options": {
         "1": "січень",

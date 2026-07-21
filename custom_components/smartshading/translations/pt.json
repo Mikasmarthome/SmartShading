@@ -650,6 +650,11 @@
         "weekday_weekend": "Dias úteis / Fim de semana"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Padrão"
+      }
+    },
     "active_months": {
       "options": {
         "1": "janeiro",

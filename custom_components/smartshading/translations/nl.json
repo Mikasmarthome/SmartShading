@@ -650,6 +650,11 @@
         "weekday_weekend": "Doordeweeks / Weekend"
       }
     },
+    "active_lifecycle_profile": {
+      "options": {
+        "__legacy__": "Standaard"
+      }
+    },
     "active_months": {
       "options": {
         "1": "januari",

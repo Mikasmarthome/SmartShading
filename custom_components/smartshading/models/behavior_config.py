@@ -59,26 +59,6 @@ class BehaviorConfig:
 
     # --- Tier 2: Manual Override ----------------------------------------------
 
-    # Duration (minutes) an override stays active before SmartShading resumes
-    # normal evaluation. Historical default, unchanged since before T7.
-    # NOTE (T7 audit): this field is NOT threaded through to the Coordinator
-    # in the normal setup path (__init__.py never passes it) — the
-    # Coordinator has always used its own hard-coded constructor default
-    # (120 min) for real detection timing instead, and this field only ever
-    # fed an unread informational WDI attribute
-    # (WindowDecisionInput.override_duration_min — see
-    # models/window_decision_input.py, "informational only, no evaluator
-    # reads this WDI field"). T7's actually-effective legacy default (120
-    # min) lives on OverridePolicyConfig.duration_min
-    # (models/override_policy.py) instead, which IS threaded through to the
-    # Coordinator via __init__.py. This field is left at its historical
-    # value deliberately — T7 must not silently change a pre-existing
-    # public dataclass default, even one that is not on the production
-    # wiring path today (it may still be constructed directly by tests,
-    # research/support tooling, or future callers). Cleanup of this
-    # dead/confusing duplication is left to a separate follow-up ticket.
-    override_duration_min: int = 240
-
     # Minimum position delta (internal units 0–100) before a position deviation
     # is declared a manual override.  Suppresses sensor drift and small
     # mechanical deviations.  Default 10 ≈ 10 % of travel range.

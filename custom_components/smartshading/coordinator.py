@@ -3315,13 +3315,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 rain_safe_position=_rain_safe_internal,
                 rain_release_delay_min=_rain_delay_min,
                 active_override=active_override,
-                # Informational only (no evaluator reads this WDI field) — shown
-                # here as whichever duration currently applies (v1.1.3 scope).
-                override_duration_min=(
-                    self._override_night_duration_min
-                    if self._lifecycle_state is LifecycleState.NIGHT
-                    else self._override_duration_min
-                ),
                 override_detection_tolerance=self._override_detection_tolerance,
                 override_break_on_lifecycle=self._override_break_on_lifecycle,
                 override_allow_comfort_actions=self._override_allow_comfort_actions,

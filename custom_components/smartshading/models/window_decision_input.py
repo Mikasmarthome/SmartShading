@@ -145,7 +145,6 @@ def build_window_decision_input(
     rain_release_delay_min: int = 30,
     # Tier 2: Manual Override inputs (Step 8)
     active_override: ManualOverride | None = None,
-    override_duration_min: int = 240,
     override_detection_tolerance: int = 10,
     override_break_on_lifecycle: bool = True,
     override_allow_comfort_actions: bool = False,
@@ -228,7 +227,6 @@ def build_window_decision_input(
         rain_protection_enabled=rain_protection_enabled,
         rain_safe_position=rain_safe_position,
         rain_release_delay_min=rain_release_delay_min,
-        override_duration_min=override_duration_min,
         override_detection_tolerance=override_detection_tolerance,
         override_break_on_lifecycle=override_break_on_lifecycle,
         override_allow_comfort_actions=override_allow_comfort_actions,

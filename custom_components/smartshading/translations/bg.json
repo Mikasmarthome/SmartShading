@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Активиране на защита от топлина",
           "glare_protection_enabled": "Активиране на защита от заслепяване",
           "solar_gain_enabled": "Активиране на слънчево усилване (зимно слънце)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Марж за освобождаване на топлинната защита"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Един или повече вътрешни сензори. Когато са конфигурирани няколко сензора, се използва средната стойност на всички валидни показания.",
           "heat_protection_enabled": "Предотвратява прегряване чрез проактивно засенчване въз основа на позицията на слънцето, времето и температурите.",
           "glare_protection_enabled": "Намалява пряката слънчева светлина, когато слънцето огрява прозореца.",
           "solar_gain_enabled": "Поддържа засенчването по-отворено при хладно време, за да подпомогне пасивното затопляне. Защитата от топлина има приоритет.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "С колко градуса трябва да падне температурата под прага за топлинна защита, преди засенчването да бъде освободено отново. Предотвратява бързо превключване близо до прага. При 0 освобождаването става точно на прага (предишно поведение)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Въведете марж за освобождаване между 0 и 5 °C.",
       "night_clamp_window_invalid": "Най-ранният нощен тригер не трябва да бъде по-късен от най-късния.",
       "morning_clamp_window_invalid": "Най-ранният сутрешен тригер не трябва да бъде по-късен от най-късния.",
       "override_fixed_until_required": "Въведете фиксиран час на приключване, когато продължителността е зададена на \"Фиксиран час\"."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Активиране на защита от топлина",
           "glare_protection_enabled": "Активиране на защита от заслепяване",
           "solar_gain_enabled": "Активиране на слънчево усилване (зимно слънце)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Марж за освобождаване на топлинната защита"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Един или повече вътрешни сензори. Когато са конфигурирани няколко сензора, се използва средната стойност на всички валидни показания.",
           "heat_protection_enabled": "Предотвратява прегряване чрез проактивно засенчване въз основа на позицията на слънцето, времето и температурите.",
           "glare_protection_enabled": "Намалява пряката слънчева светлина, когато слънцето огрява прозореца.",
           "solar_gain_enabled": "Поддържа засенчването по-отворено при хладно време, за да подпомогне пасивното затопляне. Защитата от топлина има приоритет.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "С колко градуса трябва да падне температурата под прага за топлинна защита, преди засенчването да бъде освободено отново. Предотвратява бързо превключване близо до прага. При 0 освобождаването става точно на прага (предишно поведение)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Въведете марж за освобождаване между 0 и 5 °C.",
       "night_clamp_window_invalid": "Най-ранният нощен тригер не трябва да бъде по-късен от най-късния.",
       "morning_clamp_window_invalid": "Най-ранният сутрешен тригер не трябва да бъде по-късен от най-късния."
     },

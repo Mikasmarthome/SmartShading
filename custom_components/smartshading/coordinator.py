@@ -91,6 +91,7 @@ from .engines.lifecycle_engine import (
 )
 from .engines.lifecycle_guard import lifecycle_should_break_override, should_allow_lifecycle_release
 from .engines.ema_engine import EmaSmoother
+from .engines.heat_hysteresis import resolve_heat_needed
 from .engines.presence_engine import evaluate_presence_policy
 from .models.presence import PresencePolicy, PresenceReading
 from .models.learning import OverrideRecord, StateTransitionRecord, WindowCycleSnapshot
@@ -579,6 +580,15 @@ class _WindowComputeState:
     comfort_hold_last_target_ha: int | None = None
     comfort_hold_pending_fallback_open_release_count: int | None = None
     comfort_hold_fallback_release_allowed: bool | None = None
+    # Heat protection hysteresis diagnostics (v1.2.0-beta.1, T9).
+    heat_hysteresis_active: bool = False
+    heat_hysteresis_reason: str | None = None
+    heat_outdoor_entry_c: float | None = None
+    heat_outdoor_exit_c: float | None = None
+    heat_indoor_entry_c: float | None = None
+    heat_indoor_exit_c: float | None = None
+    heat_outdoor_temp_c: float | None = None
+    heat_indoor_temp_c: float | None = None
     # Manual Override diagnostics (v1.1.3): daytime-vs-night duration scope.
     manual_override_scope: str | None = None
     manual_override_expires_at: "datetime | None" = None
@@ -1395,6 +1405,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._wind_holds: dict[str, _SafetyHold] = {}
         self._storm_holds: dict[str, _SafetyHold] = {}
         self._rain_holds: dict[str, _SafetyHold] = {}
+        # Heat protection release hysteresis (v1.2.0-beta.1, T9): per-window
+        # "was heat needed on the prior cycle" latch — see
+        # engines/heat_hysteresis.py. In-memory only, like the holds above;
+        # resets to False (not active) on HA restart/reload, same limitation
+        # as the wind/storm/rain holds.
+        self._heat_active: dict[str, bool] = {}
         self._night_contact_holds: dict[str, _NightContactHold] = {}
         # Comfort Movement Stability Hold (v1.1.1): per-window tracker of the
         # last confirmed dispatch, used to throttle rapid comfort-tier
@@ -3290,6 +3306,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             )
             _vent_pos_internal: int = to_internal_position(_vent_pos_ha)
 
+            # Heat protection release hysteresis (v1.2.0-beta.1, T9): read the
+            # latch persisted from the PRIOR cycle before building this
+            # cycle's WDI. See engines/heat_hysteresis.py and self._heat_active.
+            _heat_was_active = self._heat_active.get(window_id, False)
+
             wdi = build_window_decision_input(
                 window=window,
                 zone=zone,
@@ -3324,6 +3345,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 window_open_night_position=_vent_pos_internal,
                 contact_status=_cs_reading.status,
                 presence_uncertain=presence_uncertain,
+                heat_previously_active=_heat_was_active,
             )
             # P2 provenance: snapshot the pre-adaptation (config) WDI so the
             # deterministic baseline can be evaluated from the same input.
@@ -3521,7 +3543,48 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # applies the identical masking before its own tier evaluation.
             wdi = _apply_window_behavior_mode(wdi, window.behavior_mode)
 
+            # Resolve this cycle's heat-hysteresis state and persist it for
+            # the NEXT cycle's _heat_was_active read above. Computed from the
+            # POST-behavior-mode-masking wdi (heat thresholds are forced to
+            # None for ABSENCE_ONLY / ABSENCE_AND_SCHEDULE / DISABLED_AUTOMATIC
+            # by _apply_window_behavior_mode() above) — otherwise the latch
+            # would persist a stale "active" state computed against thresholds
+            # HeatEvaluator itself never actually sees this cycle. Same pure
+            # function, same inputs HeatEvaluator uses internally — a cheap,
+            # side-effect-free recomputation, not a second implementation
+            # (engines/heat_hysteresis.py).
+            _heat_result = resolve_heat_needed(
+                outdoor_temp_c=wdi.outdoor_temp_c,
+                indoor_temp_c=wdi.indoor_temp_c,
+                outdoor_entry_c=wdi.effective_behavior.heat_outdoor_threshold_c,
+                indoor_entry_c=wdi.effective_behavior.heat_indoor_threshold_c,
+                hysteresis_c=wdi.effective_behavior.heat_hysteresis_c,
+                previously_active=_heat_was_active,
+            )
+            self._heat_active[window_id] = _heat_result.active
+
             tier_decision = self._tier_orchestrator.evaluate_window(wdi)
+
+            # Diagnostics-only: was Heat's own hysteresis-resolved decision
+            # active this cycle but a higher-priority tier (Safety early-exit,
+            # Lifecycle early-exit, another Tier 4 floor via PositionResolver,
+            # or the Tier 2 Manual Override policy) decided the final outcome
+            # instead? Never affects the decision itself — read-only, for
+            # support-export/diagnostics visibility (T9 section 6).
+            _heat_overlaid = _heat_result.active and tier_decision.decided_by != "HeatEvaluator"
+            _heat_diag_reason = "overlaid_by_higher_priority" if _heat_overlaid else _heat_result.reason
+            _heat_outdoor_entry_c = wdi.effective_behavior.heat_outdoor_threshold_c
+            _heat_indoor_entry_c = wdi.effective_behavior.heat_indoor_threshold_c
+            _heat_outdoor_exit_c = (
+                _heat_outdoor_entry_c - wdi.effective_behavior.heat_hysteresis_c
+                if _heat_outdoor_entry_c is not None else None
+            )
+            _heat_indoor_exit_c = (
+                _heat_indoor_entry_c - wdi.effective_behavior.heat_hysteresis_c
+                if _heat_indoor_entry_c is not None else None
+            )
+            _heat_outdoor_temp_c = wdi.outdoor_temp_c
+            _heat_indoor_temp_c = wdi.indoor_temp_c
 
             # P9B Live Authority: apply bounded strategy families to a comfort-tier
             # decision (exit/hysteresis, tier-choice, entry/exit timing).  No-op
@@ -4782,6 +4845,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 tier_decided_by=tier_decision.decided_by,
                 tier_decided_state=tier_decision.shading_state,
                 is_override_active=current_override is not None,
+                heat_hysteresis_active=_heat_result.active,
+                heat_hysteresis_reason=_heat_diag_reason,
+                heat_outdoor_entry_c=_heat_outdoor_entry_c,
+                heat_outdoor_exit_c=_heat_outdoor_exit_c,
+                heat_indoor_entry_c=_heat_indoor_entry_c,
+                heat_indoor_exit_c=_heat_indoor_exit_c,
+                heat_outdoor_temp_c=_heat_outdoor_temp_c,
+                heat_indoor_temp_c=_heat_indoor_temp_c,
                 manual_override_scope=_mo_scope,
                 manual_override_expires_at=_mo_expires_at,
                 manual_override_remaining_min=_mo_remaining_min,
@@ -5322,6 +5393,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     if _rain_held and not _eval_is_rain
                     else None
                 ),
+                heat_hysteresis_active=s.heat_hysteresis_active,
+                heat_hysteresis_reason=s.heat_hysteresis_reason,
+                heat_outdoor_entry_c=s.heat_outdoor_entry_c,
+                heat_outdoor_exit_c=s.heat_outdoor_exit_c,
+                heat_indoor_entry_c=s.heat_indoor_entry_c,
+                heat_indoor_exit_c=s.heat_indoor_exit_c,
+                heat_outdoor_temp_c=s.heat_outdoor_temp_c,
+                heat_indoor_temp_c=s.heat_indoor_temp_c,
                 contact_sensor_configured=s.contact_sensor_configured,
                 contact_sensor_count=s.contact_sensor_count,
                 contact_open_count=s.contact_open_count,

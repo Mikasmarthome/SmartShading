@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Enable heat protection",
           "glare_protection_enabled": "Enable glare protection",
           "solar_gain_enabled": "Enable solar gain (winter sun)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Heat protection release margin"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "One or more indoor sensors. When multiple sensors are configured, the average of all valid readings is used.",
           "heat_protection_enabled": "Prevents overheating by shading proactively based on sun position, weather, and temperatures.",
           "glare_protection_enabled": "Reduces direct sunlight when the sun hits the window.",
           "solar_gain_enabled": "Keeps shading more open in cool weather to support passive warming. Heat protection has priority.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "How many degrees the temperature must drop below the heat protection threshold before shading is released again. Prevents rapid toggling near the threshold. Set to 0 to release exactly at the threshold (legacy behavior)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Enter a heat protection release margin between 0 and 5 °C.",
       "night_clamp_window_invalid": "Night earliest trigger must not be later than night latest trigger.",
       "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger.",
       "override_fixed_until_required": "Enter a fixed end time when duration is set to \"Fixed time\"."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Enable heat protection",
           "glare_protection_enabled": "Enable glare protection",
           "solar_gain_enabled": "Enable solar gain (winter sun)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Heat protection release margin"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "One or more indoor sensors. When multiple sensors are configured, the average of all valid readings is used.",
           "heat_protection_enabled": "Prevents overheating by shading proactively based on sun position, weather, and temperatures.",
           "glare_protection_enabled": "Reduces direct sunlight when the sun hits the window.",
           "solar_gain_enabled": "Keeps shading more open in cool weather to support passive warming. Heat protection has priority.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "How many degrees the temperature must drop below the heat protection threshold before shading is released again. Prevents rapid toggling near the threshold. Set to 0 to release exactly at the threshold (legacy behavior)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Enter a heat protection release margin between 0 and 5 °C.",
       "night_clamp_window_invalid": "Night earliest trigger must not be later than night latest trigger.",
       "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger."
     },

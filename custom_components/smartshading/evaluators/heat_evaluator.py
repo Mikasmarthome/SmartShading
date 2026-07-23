@@ -13,9 +13,9 @@ Because PositionResolver takes max() of all Tier 4 floors, the "at least
 NORMAL_SHADE" semantic is preserved.
 
 Scope:
-  - Reads only wdi.outdoor_temp_c, wdi.indoor_temp_c, and
-    wdi.effective_behavior.heat_outdoor_threshold_c /
-    heat_indoor_threshold_c / normal_shade_position.
+  - Reads only wdi.outdoor_temp_c, wdi.indoor_temp_c, wdi.heat_previously_active,
+    and wdi.effective_behavior.heat_outdoor_threshold_c /
+    heat_indoor_threshold_c / heat_hysteresis_c / normal_shade_position.
   - No lifecycle state, absence, glare, solar, or config hierarchy (INV-18).
   - No HA dependency.
 
@@ -23,9 +23,19 @@ Thresholds (from BehaviorConfig, pre-resolved by build_window_decision_input()):
   heat_outdoor_threshold_c: None → outdoor check disabled
   heat_indoor_threshold_c:  None → indoor check disabled
   Both None                 → heat protection disabled; evaluator always returns None.
+
+Entry/exit hysteresis (v1.2.0-beta.1, T9): the raw ">= threshold" check is
+delegated to engines/heat_hysteresis.resolve_heat_needed(), which stays
+active (does not release) until the temperature drops heat_hysteresis_c
+degrees below the entry threshold — see that module's docstring for the
+full semantics. This evaluator remains a pure function of wdi; the
+"previously active" state itself is owned and persisted by the Coordinator,
+never by this class (no internal mutable state, consistent with every other
+evaluator in this pipeline — see tier_orchestrator.py's Invariants).
 """
 from __future__ import annotations
 
+from ..engines.heat_hysteresis import resolve_heat_needed
 from ..models.window_decision import WindowDecision
 from ..models.window_decision_input import WindowDecisionInput
 from ..state_machine.states import DecisionCategory, ShadingState
@@ -52,23 +62,21 @@ class HeatEvaluator:
         if b.heat_outdoor_threshold_c is None and b.heat_indoor_threshold_c is None:
             return None
 
-        heat_needed = False
-
-        if (
-            b.heat_outdoor_threshold_c is not None
-            and wdi.outdoor_temp_c is not None
-            and wdi.outdoor_temp_c >= b.heat_outdoor_threshold_c
-        ):
-            heat_needed = True
-
-        if (
-            b.heat_indoor_threshold_c is not None
-            and wdi.indoor_temp_c is not None
-            and wdi.indoor_temp_c >= b.heat_indoor_threshold_c
-        ):
-            heat_needed = True
-
-        if not heat_needed:
+        # Entry/exit hysteresis (v1.2.0-beta.1, T9): once active, stays active
+        # until the temperature drops heat_hysteresis_c below the entry
+        # threshold, instead of releasing the instant the raw reading dips
+        # back below entry. wdi.heat_previously_active defaults to False, so
+        # a WDI built without it (every pre-T9 call site) reproduces the
+        # exact legacy ">=" comparison unchanged. See engines/heat_hysteresis.py.
+        heat_result = resolve_heat_needed(
+            outdoor_temp_c=wdi.outdoor_temp_c,
+            indoor_temp_c=wdi.indoor_temp_c,
+            outdoor_entry_c=b.heat_outdoor_threshold_c,
+            indoor_entry_c=b.heat_indoor_threshold_c,
+            hysteresis_c=b.heat_hysteresis_c,
+            previously_active=wdi.heat_previously_active,
+        )
+        if not heat_result.active:
             return None
 
         # Sector gate: only shade for heat when the sun is confirmed in this

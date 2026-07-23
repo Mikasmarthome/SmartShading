@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Isı korumasını etkinleştir",
           "glare_protection_enabled": "Parlama korumasını etkinleştir",
           "solar_gain_enabled": "Güneş kazancını etkinleştir (kış güneşi)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Isı korumasının serbest bırakma payı"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Bir veya daha fazla iç mekân sensörü. Birden fazla sensör yapılandırıldığında tüm geçerli okumaların ortalaması kullanılır.",
           "heat_protection_enabled": "Güneş konumuna, hava durumuna ve sıcaklıklara göre proaktif gölgeleme yaparak aşırı ısınmayı önler.",
           "glare_protection_enabled": "Güneş pencereye vurduğunda doğrudan güneş ışığını azaltır.",
           "solar_gain_enabled": "Pasif ısınmayı desteklemek için serin havalarda gölgelemeyi daha açık tutar. Isı koruması önceliklidir.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Gölgelemenin tekrar serbest bırakılmasından önce sıcaklığın ısı koruma eşiğinin kaç derece altına düşmesi gerektiği. Eşiğe yakın hızlı geçişleri önler. 0 değerinde serbest bırakma tam olarak eşikte gerçekleşir (önceki davranış)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "0 ile 5 °C arasında bir serbest bırakma payı girin.",
       "night_clamp_window_invalid": "En erken gece tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
       "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
       "override_fixed_until_required": "Süre \"Sabit saat\" olarak ayarlandığında sabit bir bitiş saati girin."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Isı korumasını etkinleştir",
           "glare_protection_enabled": "Parlama korumasını etkinleştir",
           "solar_gain_enabled": "Güneş kazancını etkinleştir (kış güneşi)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Isı korumasının serbest bırakma payı"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Bir veya daha fazla iç mekân sensörü. Birden fazla sensör yapılandırıldığında tüm geçerli okumaların ortalaması kullanılır.",
           "heat_protection_enabled": "Güneş konumuna, hava durumuna ve sıcaklıklara göre proaktif gölgeleme yaparak aşırı ısınmayı önler.",
           "glare_protection_enabled": "Güneş pencereye vurduğunda doğrudan güneş ışığını azaltır.",
           "solar_gain_enabled": "Pasif ısınmayı desteklemek için serin havalarda gölgelemeyi daha açık tutar. Isı koruması önceliklidir.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Gölgelemenin tekrar serbest bırakılmasından önce sıcaklığın ısı koruma eşiğinin kaç derece altına düşmesi gerektiği. Eşiğe yakın hızlı geçişleri önler. 0 değerinde serbest bırakma tam olarak eşikte gerçekleşir (önceki davranış)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "0 ile 5 °C arasında bir serbest bırakma payı girin.",
       "night_clamp_window_invalid": "En erken gece tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
       "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz."
     },

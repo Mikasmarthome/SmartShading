@@ -83,6 +83,11 @@ class ComfortConfig:
     solar_gain_enabled: bool = True
     heat_protection_indoor_temp_c: float = 24.0
     heat_protection_outdoor_temp_c: float = 26.0
+    # How many degrees below the threshold the temperature must drop before
+    # heat protection releases (hysteresis, v1.2.0-beta.1, T9). Applied
+    # symmetrically to both the indoor and outdoor threshold. 0.0 reproduces
+    # the pre-T9 exact-threshold behavior (no hysteresis band).
+    heat_protection_hysteresis_c: float = 1.0
     solar_gain_max_outdoor_temp_c: float = 12.0
     # Minimum effective window exposure (W/m²) for glare to be plausible.  Glare
     # must not fire on geometry alone: the window must also be meaningfully lit.

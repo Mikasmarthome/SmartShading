@@ -111,6 +111,16 @@ class WindowDecisionInput:
     # fully open — it never affects safety/manual/night/absence/heat/glare/solar.
     presence_uncertain: bool = False
 
+    # True when HeatEvaluator's hysteresis-resolved decision was active on the
+    # PRIOR evaluation cycle for this window (v1.2.0-beta.1, T9). Populated by
+    # the Coordinator (engines/heat_hysteresis.py owns the state-transition
+    # logic; the Coordinator only persists the resulting boolean across
+    # cycles — see coordinator.py's self._heat_active). Defaults to False so
+    # every existing call site (including all pre-T9 tests) reproduces the
+    # exact legacy "fires only at/above the entry threshold" behavior
+    # unchanged. Never touched by anything other than the Coordinator.
+    heat_previously_active: bool = False
+
 
 # ---------------------------------------------------------------------------
 # Builder
@@ -155,6 +165,9 @@ def build_window_decision_input(
     window_open_night_position: int = 0,
     contact_status: ContactStatus | None = None,
     presence_uncertain: bool = False,
+    # Heat protection hysteresis (v1.2.0-beta.1, T9) — see WindowDecisionInput
+    # .heat_previously_active docstring.
+    heat_previously_active: bool = False,
 ) -> WindowDecisionInput:
     """Assemble a WindowDecisionInput for one window evaluation cycle.
 
@@ -175,6 +188,7 @@ def build_window_decision_input(
     else:
         heat_outdoor_threshold_c = None
         heat_indoor_threshold_c = None
+    heat_hysteresis_c = _comfort.heat_protection_hysteresis_c
 
     # --- Resolve inherited behavior flags and positions ---------------------
     night_shading_enabled: bool = ConfigResolver.resolve(
@@ -248,6 +262,7 @@ def build_window_decision_input(
         ),
         heat_outdoor_threshold_c=heat_outdoor_threshold_c,
         heat_indoor_threshold_c=heat_indoor_threshold_c,
+        heat_hysteresis_c=heat_hysteresis_c,
         glare_protection_enabled=_comfort.glare_protection_enabled,
         glare_min_exposure_wm2=_comfort.glare_min_exposure_wm2,
         solar_gain_suppresses_shading=_solar_gain_suppresses,
@@ -289,4 +304,5 @@ def build_window_decision_input(
         rain_status=rain_status,
         contact_status=contact_status,
         presence_uncertain=presence_uncertain,
+        heat_previously_active=heat_previously_active,
     )

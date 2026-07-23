@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Abilita protezione dal caldo",
           "glare_protection_enabled": "Abilita protezione dall'abbagliamento",
           "solar_gain_enabled": "Abilita guadagno solare (sole invernale)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Margine di rilascio della protezione dal calore"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Uno o più sensori interni. Quando sono configurati più sensori, viene usata la media di tutte le letture valide.",
           "heat_protection_enabled": "Previene il surriscaldamento ombreggiando in modo proattivo in base alla posizione del sole, al meteo e alle temperature.",
           "glare_protection_enabled": "Riduce la luce solare diretta quando il sole colpisce la finestra.",
           "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Di quanti gradi la temperatura deve scendere sotto la soglia di protezione dal calore prima che l'ombreggiatura venga nuovamente rilasciata. Evita commutazioni rapide vicino alla soglia. Con 0 il rilascio avviene esattamente alla soglia (comportamento precedente)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Inserisci un margine di rilascio tra 0 e 5 °C.",
       "night_clamp_window_invalid": "L'attivazione notturna più presto non deve essere successiva a quella più tardi.",
       "morning_clamp_window_invalid": "L'attivazione mattutina più presto non deve essere successiva a quella più tardi.",
       "override_fixed_until_required": "Inserire un'ora di fine fissa quando la durata è impostata su \"Ora fissa\"."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Abilita protezione dal caldo",
           "glare_protection_enabled": "Abilita protezione dall'abbagliamento",
           "solar_gain_enabled": "Abilita guadagno solare (sole invernale)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Margine di rilascio della protezione dal calore"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Uno o più sensori interni. Quando sono configurati più sensori, viene usata la media di tutte le letture valide.",
           "heat_protection_enabled": "Previene il surriscaldamento ombreggiando in modo proattivo in base alla posizione del sole, al meteo e alle temperature.",
           "glare_protection_enabled": "Riduce la luce solare diretta quando il sole colpisce la finestra.",
           "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Di quanti gradi la temperatura deve scendere sotto la soglia di protezione dal calore prima che l'ombreggiatura venga nuovamente rilasciata. Evita commutazioni rapide vicino alla soglia. Con 0 il rilascio avviene esattamente alla soglia (comportamento precedente)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Inserisci un margine di rilascio tra 0 e 5 °C.",
       "night_clamp_window_invalid": "L'attivazione notturna più presto non deve essere successiva a quella più tardi.",
       "morning_clamp_window_invalid": "L'attivazione mattutina più presto non deve essere successiva a quella più tardi."
     },

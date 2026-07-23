@@ -169,6 +169,9 @@ from .const import (
     CONF_GLARE_MIN_EXPOSURE_WM2,
     DEFAULT_GLARE_MIN_EXPOSURE_WM2,
     GLARE_MIN_EXPOSURE_MAX_WM2,
+    CONF_HEAT_PROTECTION_HYSTERESIS_C,
+    DEFAULT_HEAT_PROTECTION_HYSTERESIS_C,
+    HEAT_PROTECTION_HYSTERESIS_MAX_C,
     DEFAULT_WEEKDAY_MORNING_FIXED_TIME,
     DEFAULT_WEEKDAY_NIGHT_FIXED_TIME,
     DEFAULT_WEEKEND_MORNING_FIXED_TIME,
@@ -584,6 +587,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._glare_min_exposure_wm2: float = DEFAULT_GLARE_MIN_EXPOSURE_WM2
         self._heat_protection_indoor_temp_c: float = DEFAULT_HEAT_PROTECTION_INDOOR_TEMP_C
         self._heat_protection_outdoor_temp_c: float = DEFAULT_HEAT_PROTECTION_OUTDOOR_TEMP_C
+        self._heat_protection_hysteresis_c: float = DEFAULT_HEAT_PROTECTION_HYSTERESIS_C
         self._solar_gain_max_outdoor_temp_c: float = DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C
         self._windows: list[WindowConfig] = []
         self._cover_groups: list[CoverGroup] = []
@@ -1002,12 +1006,20 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     raise ValueError
             except (TypeError, ValueError):
                 errors["base"] = "invalid_glare_min_exposure"
+            _raw_heat_hysteresis = user_input.get(CONF_HEAT_PROTECTION_HYSTERESIS_C)
+            try:
+                _heat_hysteresis = float(_raw_heat_hysteresis)
+                if not (0.0 <= _heat_hysteresis <= HEAT_PROTECTION_HYSTERESIS_MAX_C):
+                    raise ValueError
+            except (TypeError, ValueError):
+                errors["base"] = "invalid_heat_hysteresis"
             if not errors:
                 self._indoor_temperature_sensor_ids = user_input.get(CONF_INDOOR_TEMPERATURE_SENSOR_IDS) or []
                 self._heat_protection_enabled = bool(user_input[CONF_HEAT_PROTECTION_ENABLED])
                 self._glare_protection_enabled = bool(user_input[CONF_GLARE_PROTECTION_ENABLED])
                 self._solar_gain_enabled = bool(user_input[CONF_SOLAR_GAIN_ENABLED])
                 self._glare_min_exposure_wm2 = _glare_min
+                self._heat_protection_hysteresis_c = _heat_hysteresis
                 return await self.async_step_lifecycle()
 
         # Indoor temperature sensors are per-zone and must never be carried
@@ -1030,6 +1042,16 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     NumberSelectorConfig(
                         min=0, max=GLARE_MIN_EXPOSURE_MAX_WM2, step=5,
                         mode=NumberSelectorMode.BOX, unit_of_measurement="W/m²",
+                    )
+                ),
+                vol.Required(
+                    CONF_HEAT_PROTECTION_HYSTERESIS_C,
+                    default=_prefill_comfort.get(
+                        "heat_protection_hysteresis_c", DEFAULT_HEAT_PROTECTION_HYSTERESIS_C),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=0, max=HEAT_PROTECTION_HYSTERESIS_MAX_C, step=0.5,
+                        mode=NumberSelectorMode.BOX, unit_of_measurement="°C",
                     )
                 ),
             }
@@ -1261,6 +1283,7 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 solar_gain_enabled=self._solar_gain_enabled,
                 heat_protection_indoor_temp_c=self._heat_protection_indoor_temp_c,
                 heat_protection_outdoor_temp_c=self._heat_protection_outdoor_temp_c,
+                heat_protection_hysteresis_c=self._heat_protection_hysteresis_c,
                 solar_gain_max_outdoor_temp_c=self._solar_gain_max_outdoor_temp_c,
                 glare_min_exposure_wm2=self._glare_min_exposure_wm2,
             ),
@@ -2084,6 +2107,19 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             else:
                 if not (0.0 <= _glare_min <= GLARE_MIN_EXPOSURE_MAX_WM2):
                     errors["base"] = "invalid_glare_min_exposure"
+            # Heat protection hysteresis (v1.2.0-beta.1, T9): same validation
+            # discipline as glare_min_exposure_wm2 above — a malformed/out-of-
+            # range value must never reach storage.
+            _heat_hysteresis = stored_comfort.get(
+                "heat_protection_hysteresis_c", DEFAULT_HEAT_PROTECTION_HYSTERESIS_C)
+            _raw_heat_hysteresis = user_input.get(CONF_HEAT_PROTECTION_HYSTERESIS_C)
+            try:
+                _heat_hysteresis = float(_raw_heat_hysteresis)
+            except (TypeError, ValueError):
+                errors["base"] = "invalid_heat_hysteresis"
+            else:
+                if not (0.0 <= _heat_hysteresis <= HEAT_PROTECTION_HYSTERESIS_MAX_C):
+                    errors["base"] = "invalid_heat_hysteresis"
             if not errors:
                 new_comfort = {
                     **stored_comfort,
@@ -2091,6 +2127,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     "glare_protection_enabled": bool(user_input[CONF_GLARE_PROTECTION_ENABLED]),
                     "solar_gain_enabled": bool(user_input[CONF_SOLAR_GAIN_ENABLED]),
                     "glare_min_exposure_wm2": _glare_min,
+                    "heat_protection_hysteresis_c": _heat_hysteresis,
                 }
                 return self._save_and_reload(
                     {
@@ -2130,6 +2167,16 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     NumberSelectorConfig(
                         min=0, max=GLARE_MIN_EXPOSURE_MAX_WM2, step=5,
                         mode=NumberSelectorMode.BOX, unit_of_measurement="W/m²",
+                    )
+                ),
+                vol.Required(
+                    CONF_HEAT_PROTECTION_HYSTERESIS_C,
+                    default=stored_comfort.get(
+                        "heat_protection_hysteresis_c", DEFAULT_HEAT_PROTECTION_HYSTERESIS_C),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=0, max=HEAT_PROTECTION_HYSTERESIS_MAX_C, step=0.5,
+                        mode=NumberSelectorMode.BOX, unit_of_measurement="°C",
                     )
                 ),
             }

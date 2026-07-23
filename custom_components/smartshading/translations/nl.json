@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Hittebescherming inschakelen",
           "glare_protection_enabled": "Verblindingsbescherming inschakelen",
           "solar_gain_enabled": "Zonnewinst inschakelen (winterzon)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Vrijgavemarge van de hittebescherming"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Een of meer binnensensoren. Als er meerdere sensoren zijn geconfigureerd, wordt het gemiddelde van alle geldige metingen gebruikt.",
           "heat_protection_enabled": "Voorkomt oververhitting door proactief te schermen op basis van zonpositie, weer en temperaturen.",
           "glare_protection_enabled": "Vermindert direct zonlicht wanneer de zon op het venster valt.",
           "solar_gain_enabled": "Houdt de zonwering bij koel weer meer open om passieve opwarming te ondersteunen. Hittebescherming heeft voorrang.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Hoeveel graden de temperatuur onder de hittebeschermingsdrempel moet zakken voordat de bescherming weer wordt vrijgegeven. Voorkomt snel schakelen rond de drempel. Bij 0 wordt precies op de drempel vrijgegeven (vorig gedrag)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Voer een vrijgavemarge in tussen 0 en 5 °C.",
       "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
       "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste.",
       "override_fixed_until_required": "Voer een vaste eindtijd in wanneer de duur is ingesteld op \"Vaste tijd\"."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Hittebescherming inschakelen",
           "glare_protection_enabled": "Verblindingsbescherming inschakelen",
           "solar_gain_enabled": "Zonnewinst inschakelen (winterzon)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Vrijgavemarge van de hittebescherming"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Een of meer binnensensoren. Als er meerdere sensoren zijn geconfigureerd, wordt het gemiddelde van alle geldige metingen gebruikt.",
           "heat_protection_enabled": "Voorkomt oververhitting door proactief te schermen op basis van zonpositie, weer en temperaturen.",
           "glare_protection_enabled": "Vermindert direct zonlicht wanneer de zon op het venster valt.",
           "solar_gain_enabled": "Houdt de zonwering bij koel weer meer open om passieve opwarming te ondersteunen. Hittebescherming heeft voorrang.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Hoeveel graden de temperatuur onder de hittebeschermingsdrempel moet zakken voordat de bescherming weer wordt vrijgegeven. Voorkomt snel schakelen rond de drempel. Bij 0 wordt precies op de drempel vrijgegeven (vorig gedrag)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Voer een vrijgavemarge in tussen 0 en 5 °C.",
       "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
       "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste."
     },

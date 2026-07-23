@@ -328,6 +328,46 @@ class WindowExecutionDiagnostics:
     """Seconds remaining in the rain dry-cooldown hold, or None when no hold
     is active. Computed from SafetyHold._last_triggered and rain_release_delay_min."""
 
+    # --- Heat protection hysteresis diagnostics (v1.2.0-beta.1, T9) ---------
+
+    heat_hysteresis_active: bool = False
+    """True when HeatEvaluator's hysteresis-resolved decision was active this
+    cycle (entered, held by hysteresis, or held due to missing data) —
+    regardless of whether it was the tier that actually decided the final
+    outcome (see heat_hysteresis_reason for that distinction)."""
+
+    heat_hysteresis_reason: str | None = None
+    """One of engines.heat_hysteresis's REASON_* codes ("disabled",
+    "insufficient_data", "held_missing_data", "not_needed", "entered",
+    "held_by_hysteresis", "exited"), or "overlaid_by_higher_priority" when
+    heat_hysteresis_active is True but a higher-priority tier (Safety,
+    Lifecycle, another Tier 4 floor, or the Manual Override policy gate)
+    decided the final outcome instead. None when not populated."""
+
+    heat_outdoor_entry_c: float | None = None
+    """The configured outdoor heat entry threshold this cycle, or None when
+    the outdoor check is disabled."""
+
+    heat_outdoor_exit_c: float | None = None
+    """heat_outdoor_entry_c minus the configured hysteresis margin, or None
+    when the outdoor check is disabled."""
+
+    heat_indoor_entry_c: float | None = None
+    """The configured indoor heat entry threshold this cycle, or None when
+    the indoor check is disabled."""
+
+    heat_indoor_exit_c: float | None = None
+    """heat_indoor_entry_c minus the configured hysteresis margin, or None
+    when the indoor check is disabled."""
+
+    heat_outdoor_temp_c: float | None = None
+    """The outdoor temperature reading HeatEvaluator saw this cycle, or None
+    when unavailable."""
+
+    heat_indoor_temp_c: float | None = None
+    """The indoor temperature reading HeatEvaluator saw this cycle, or None
+    when unavailable/not configured."""
+
     # --- Night contact diagnostics (v1.1.0) ----------------------------------
 
     contact_sensor_configured: bool = False

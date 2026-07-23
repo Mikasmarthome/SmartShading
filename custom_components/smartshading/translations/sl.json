@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Omogoči zaščito pred vročino",
           "glare_protection_enabled": "Omogoči zaščito pred bleščanjem",
           "solar_gain_enabled": "Omogoči sončni dobitek (zimsko sonce)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Razpon sprostitve toplotne zaščite"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "En ali več notranjih senzorjev. Ko je konfiguriranih več senzorjev, se uporabi povprečje vseh veljavnih meritev.",
           "heat_protection_enabled": "Preprečuje pregrevanje s proaktivnim senčenjem glede na položaj sonca, vreme in temperature.",
           "glare_protection_enabled": "Zmanjšuje neposredno sončno svetlobo, ko sonce zadene okno.",
           "solar_gain_enabled": "V hladnem vremenu ohranja senčenje bolj odprto za podporo pasivnemu ogrevanju. Zaščita pred vročino ima prednost.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Za koliko stopinj mora temperatura pasti pod prag toplotne zaščite, preden se senčenje ponovno sprosti. Preprečuje hitro preklapljanje blízu praga. Pri 0 se sprosti natanko na pragu (prejšnje vedenje)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Vnesite razpon sprostitve med 0 in 5 °C.",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
       "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega.",
       "override_fixed_until_required": "Vnesite fiksni čas zaključka, ko je trajanje nastavljeno na \"Fiksni čas\"."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Omogoči zaščito pred vročino",
           "glare_protection_enabled": "Omogoči zaščito pred bleščanjem",
           "solar_gain_enabled": "Omogoči sončni dobitek (zimsko sonce)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Razpon sprostitve toplotne zaščite"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "En ali več notranjih senzorjev. Ko je konfiguriranih več senzorjev, se uporabi povprečje vseh veljavnih meritev.",
           "heat_protection_enabled": "Preprečuje pregrevanje s proaktivnim senčenjem glede na položaj sonca, vreme in temperature.",
           "glare_protection_enabled": "Zmanjšuje neposredno sončno svetlobo, ko sonce zadene okno.",
           "solar_gain_enabled": "V hladnem vremenu ohranja senčenje bolj odprto za podporo pasivnemu ogrevanju. Zaščita pred vročino ima prednost.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Za koliko stopinj mora temperatura pasti pod prag toplotne zaščite, preden se senčenje ponovno sprosti. Preprečuje hitro preklapljanje blízu praga. Pri 0 se sprosti natanko na pragu (prejšnje vedenje)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Vnesite razpon sprostitve med 0 in 5 °C.",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
       "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega."
     },

@@ -59,6 +59,8 @@ def _wdi(
     heat_protection_enabled: bool = True,
     heat_outdoor_threshold_c: float = 26.0,
     heat_indoor_threshold_c: float = 24.0,
+    heat_hysteresis_c: float = 1.0,
+    heat_previously_active: bool = False,
     normal_shade_ha: int = 25,   # HA 25 → internal 75
     is_in_solar_sector: bool = True,
     exposure=None,
@@ -67,6 +69,7 @@ def _wdi(
         heat_protection_enabled=heat_protection_enabled,
         heat_protection_outdoor_temp_c=heat_outdoor_threshold_c,
         heat_protection_indoor_temp_c=heat_indoor_threshold_c,
+        heat_protection_hysteresis_c=heat_hysteresis_c,
         glare_protection_enabled=False,
     )
     return build_window_decision_input(
@@ -82,6 +85,7 @@ def _wdi(
         exposure=exposure,
         is_in_solar_sector=is_in_solar_sector,
         comfort_config=comfort_config,
+        heat_previously_active=heat_previously_active,
     )
 
 
@@ -509,4 +513,77 @@ class TestHeatEvaluatorEffectiveExposureGate:
         wdi = _wdi(window, zone, outdoor_temp_c=40.0, indoor_temp_c=35.0,
                    heat_protection_enabled=False,
                    is_in_solar_sector=False, exposure=None)
+        assert evaluator.evaluate(wdi) is None
+
+
+# ---------------------------------------------------------------------------
+# Entry/exit hysteresis (v1.2.0-beta.1, T9)
+# ---------------------------------------------------------------------------
+
+class TestHeatEvaluatorHysteresis:
+    """HeatEvaluator delegates to engines.heat_hysteresis.resolve_heat_needed()
+    — these tests prove the delegation is wired correctly end-to-end through
+    the real evaluator + WindowDecisionInput, not just the pure function in
+    isolation (see tests/test_heat_hysteresis.py for the exhaustive pure-
+    function matrix)."""
+
+    def test_default_wdi_reproduces_legacy_exact_threshold(
+        self, evaluator: HeatEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """heat_previously_active defaults to False — a WDI built exactly
+        like every pre-T9 call site fires only at/above the entry threshold,
+        unchanged."""
+        wdi = _wdi(window, zone, outdoor_temp_c=None, indoor_temp_c=23.9)
+        assert evaluator.evaluate(wdi) is None
+
+    def test_value_between_entry_and_exit_stays_shaded_when_previously_active(
+        self, evaluator: HeatEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        # Ticket example: entry 24.0, exit 23.0 (hysteresis 1.0), 23.6 held.
+        wdi = _wdi(
+            window, zone, outdoor_temp_c=None, indoor_temp_c=23.6,
+            heat_previously_active=True,
+        )
+        decision = evaluator.evaluate(wdi)
+        assert decision is not None
+        assert decision.shading_state is ShadingState.NORMAL_SHADE
+
+    def test_value_between_entry_and_exit_does_not_fire_when_not_previously_active(
+        self, evaluator: HeatEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        wdi = _wdi(
+            window, zone, outdoor_temp_c=None, indoor_temp_c=23.6,
+            heat_previously_active=False,
+        )
+        assert evaluator.evaluate(wdi) is None
+
+    def test_value_below_exit_releases_even_if_previously_active(
+        self, evaluator: HeatEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        wdi = _wdi(
+            window, zone, outdoor_temp_c=None, indoor_temp_c=22.9,
+            heat_outdoor_threshold_c=None, heat_previously_active=True,
+        )
+        assert evaluator.evaluate(wdi) is None
+
+    def test_zero_hysteresis_disables_the_band(
+        self, evaluator: HeatEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        wdi = _wdi(
+            window, zone, outdoor_temp_c=None, indoor_temp_c=23.9,
+            heat_outdoor_threshold_c=None,
+            heat_hysteresis_c=0.0, heat_previously_active=True,
+        )
+        assert evaluator.evaluate(wdi) is None
+
+    def test_sector_gate_still_applies_while_hysteresis_active(
+        self, evaluator: HeatEvaluator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """The sector/exposure gates are NOT hysteretic — they remain
+        unconditional immediate suppressors even while the thermal
+        hysteresis state is active."""
+        wdi = _wdi(
+            window, zone, outdoor_temp_c=None, indoor_temp_c=23.6,
+            heat_previously_active=True, is_in_solar_sector=False,
+        )
         assert evaluator.evaluate(wdi) is None

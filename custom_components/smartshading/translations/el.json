@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Ενεργοποίηση προστασίας από θερμότητα",
           "glare_protection_enabled": "Ενεργοποίηση προστασίας από θάμβωση",
           "solar_gain_enabled": "Ενεργοποίηση ηλιακού κέρδους (χειμερινός ήλιος)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Περιθώριο απελευθέρωσης θερμικής προστασίας"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Ένας ή περισσότεροι εσωτερικοί αισθητήρες. Όταν έχουν διαμορφωθεί πολλοί αισθητήρες, χρησιμοποιείται ο μέσος όρος όλων των έγκυρων μετρήσεων.",
           "heat_protection_enabled": "Αποτρέπει την υπερθέρμανση σκιάζοντας προληπτικά με βάση τη θέση του ήλιου, τον καιρό και τις θερμοκρασίες.",
           "glare_protection_enabled": "Μειώνει το άμεσο ηλιακό φως όταν ο ήλιος χτυπά το παράθυρο.",
           "solar_gain_enabled": "Διατηρεί τη σκίαση πιο ανοιχτή σε δροσερό καιρό για να υποστηρίξει την παθητική θέρμανση. Η προστασία από θερμότητα έχει προτεραιότητα.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Πόσους βαθμούς πρέπει να πέσει η θερμοκρασία κάτω από το όριο θερμικής προστασίας πριν απελευθερωθεί ξανά η σκίαση. Αποτρέπει τη γρήγορη εναλλαγή κοντά στο όριο. Με 0 η απελευθέρωση γίνεται ακριβώς στο όριο (προηγούμενη συμπεριφορά)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Εισαγάγετε περιθώριο απελευθέρωσης μεταξύ 0 και 5 °C.",
       "night_clamp_window_invalid": "Η νωρίτερη νυχτερινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη.",
       "morning_clamp_window_invalid": "Η νωρίτερη πρωινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη.",
       "override_fixed_until_required": "Εισαγάγετε μια σταθερή ώρα λήξης όταν η διάρκεια έχει οριστεί σε \"Σταθερή ώρα\"."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Ενεργοποίηση προστασίας από θερμότητα",
           "glare_protection_enabled": "Ενεργοποίηση προστασίας από θάμβωση",
           "solar_gain_enabled": "Ενεργοποίηση ηλιακού κέρδους (χειμερινός ήλιος)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Περιθώριο απελευθέρωσης θερμικής προστασίας"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Ένας ή περισσότεροι εσωτερικοί αισθητήρες. Όταν έχουν διαμορφωθεί πολλοί αισθητήρες, χρησιμοποιείται ο μέσος όρος όλων των έγκυρων μετρήσεων.",
           "heat_protection_enabled": "Αποτρέπει την υπερθέρμανση σκιάζοντας προληπτικά με βάση τη θέση του ήλιου, τον καιρό και τις θερμοκρασίες.",
           "glare_protection_enabled": "Μειώνει το άμεσο ηλιακό φως όταν ο ήλιος χτυπά το παράθυρο.",
           "solar_gain_enabled": "Διατηρεί τη σκίαση πιο ανοιχτή σε δροσερό καιρό για να υποστηρίξει την παθητική θέρμανση. Η προστασία από θερμότητα έχει προτεραιότητα.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Πόσους βαθμούς πρέπει να πέσει η θερμοκρασία κάτω από το όριο θερμικής προστασίας πριν απελευθερωθεί ξανά η σκίαση. Αποτρέπει τη γρήγορη εναλλαγή κοντά στο όριο. Με 0 η απελευθέρωση γίνεται ακριβώς στο όριο (προηγούμενη συμπεριφορά)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Εισαγάγετε περιθώριο απελευθέρωσης μεταξύ 0 και 5 °C.",
       "night_clamp_window_invalid": "Η νωρίτερη νυχτερινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη.",
       "morning_clamp_window_invalid": "Η νωρίτερη πρωινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη."
     },

@@ -109,14 +109,16 @@
           "heat_protection_enabled": "启用隔热保护",
           "glare_protection_enabled": "启用防眩光保护",
           "solar_gain_enabled": "启用太阳得热（冬季阳光）",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "热保护释放余量"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "一个或多个室内传感器。配置多个传感器时，使用所有有效读数的平均值。",
           "heat_protection_enabled": "根据太阳位置、天气和温度主动遮阳，从而防止过热。",
           "glare_protection_enabled": "当阳光照射到窗户时减少直射阳光。",
           "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "温度需要降到热保护阈值以下多少度，邃阳才会再次解除。可防止在阈值附近频繁切换。设为 0 时将在阈值处立即解除（旧行为）。"
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "请输入 0 到 5 °C 之间的释放余量。",
       "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
       "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。",
       "override_fixed_until_required": "当持续时间设置为“固定时间”时，请输入固定结束时间。"
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "启用隔热保护",
           "glare_protection_enabled": "启用防眩光保护",
           "solar_gain_enabled": "启用太阳得热（冬季阳光）",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "热保护释放余量"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "一个或多个室内传感器。配置多个传感器时，使用所有有效读数的平均值。",
           "heat_protection_enabled": "根据太阳位置、天气和温度主动遮阳，从而防止过热。",
           "glare_protection_enabled": "当阳光照射到窗户时减少直射阳光。",
           "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "温度需要降到热保护阈值以下多少度，邃阳才会再次解除。可防止在阈值附近频繁切换。设为 0 时将在阈值处立即解除（旧行为）。"
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "请输入 0 到 5 °C 之间的释放余量。",
       "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
       "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。"
     },

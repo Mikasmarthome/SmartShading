@@ -329,11 +329,17 @@ CONF_GLARE_PROTECTION_ENABLED = "glare_protection_enabled"
 CONF_SOLAR_GAIN_ENABLED = "solar_gain_enabled"
 CONF_HEAT_PROTECTION_INDOOR_TEMP_C = "heat_protection_indoor_temp_c"
 CONF_HEAT_PROTECTION_OUTDOOR_TEMP_C = "heat_protection_outdoor_temp_c"
+CONF_HEAT_PROTECTION_HYSTERESIS_C = "heat_protection_hysteresis_c"
 CONF_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C = "solar_gain_max_outdoor_temp_c"
 CONF_GLARE_MIN_EXPOSURE_WM2 = "glare_min_exposure_wm2"
 
 DEFAULT_HEAT_PROTECTION_INDOOR_TEMP_C = 24.0
 DEFAULT_HEAT_PROTECTION_OUTDOOR_TEMP_C = 26.0
+# v1.2.0-beta.1, T9: degrees below the heat threshold the temperature must
+# drop before shading is released again (hysteresis). 0 = legacy exact
+# threshold (no hysteresis) — a full backward-compatibility escape hatch.
+DEFAULT_HEAT_PROTECTION_HYSTERESIS_C = 1.0
+HEAT_PROTECTION_HYSTERESIS_MAX_C = 5.0
 DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C = 12.0
 # Minimum effective window exposure (W/m²) for glare protection to fire.  Must
 # match models.comfort.ComfortConfig.glare_min_exposure_wm2 default.  The upper

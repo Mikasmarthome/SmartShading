@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Aktivera värmeskydd",
           "glare_protection_enabled": "Aktivera bländningsskydd",
           "solar_gain_enabled": "Aktivera solinstrålning (vintersol)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Frigöringsmarginal för värmeskydd"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "En eller flera inomhussensorer. När flera sensorer är konfigurerade används medelvärdet av alla giltiga avläsningar.",
           "heat_protection_enabled": "Förhindrar överhettning genom att skugga proaktivt baserat på solposition, väder och temperaturer.",
           "glare_protection_enabled": "Minskar direkt solljus när solen träffar fönstret.",
           "solar_gain_enabled": "Håller solskyddet mer öppet vid svalt väder för att stödja passiv uppvärmning. Värmeskydd har prioritet.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Hur många grader temperaturen måste sjunka under värmeskyddets tröskelvärde innan avskärmningen frigörs igen. Förhindrar snabb växling nära tröskeln. Vid 0 frigörs den exakt vid tröskeln (tidigare beteende)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Ange en frigöringsmarginal mellan 0 och 5 °C.",
       "night_clamp_window_invalid": "Tidigaste nattutlösaren får inte vara senare än senaste.",
       "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste.",
       "override_fixed_until_required": "Ange en fast sluttid när varaktighet är satt till \"Fast tid\"."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Aktivera värmeskydd",
           "glare_protection_enabled": "Aktivera bländningsskydd",
           "solar_gain_enabled": "Aktivera solinstrålning (vintersol)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Frigöringsmarginal för värmeskydd"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "En eller flera inomhussensorer. När flera sensorer är konfigurerade används medelvärdet av alla giltiga avläsningar.",
           "heat_protection_enabled": "Förhindrar överhettning genom att skugga proaktivt baserat på solposition, väder och temperaturer.",
           "glare_protection_enabled": "Minskar direkt solljus när solen träffar fönstret.",
           "solar_gain_enabled": "Håller solskyddet mer öppet vid svalt väder för att stödja passiv uppvärmning. Värmeskydd har prioritet.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Hur många grader temperaturen måste sjunka under värmeskyddets tröskelvärde innan avskärmningen frigörs igen. Förhindrar snabb växling nära tröskeln. Vid 0 frigörs den exakt vid tröskeln (tidigare beteende)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Ange en frigöringsmarginal mellan 0 och 5 °C.",
       "night_clamp_window_invalid": "Tidigaste nattutlösaren får inte vara senare än senaste.",
       "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste."
     },

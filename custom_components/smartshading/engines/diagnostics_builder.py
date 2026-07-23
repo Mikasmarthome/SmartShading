@@ -231,6 +231,21 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
             "source": source,  # "legacy" | "stored" | "fallback"
         }
 
+    def _heat_protection_summary():
+        # PUBLIC: configuration + aggregate count only — no window ids, no
+        # temperature readings (those are per-window/support-export detail,
+        # see engines/support_export.py's prov["heat"]). Uses the same
+        # window_id -> bool latch the Coordinator persists across cycles
+        # (self._heat_active, engines/heat_hysteresis.py) — no per-window
+        # breakdown, matching this contract's counts/status-only discipline.
+        comfort = getattr(c, "_comfort_config", None)
+        active_latch = getattr(c, "_heat_active", None) or {}
+        return {
+            "enabled": bool(getattr(comfort, "heat_protection_enabled", True)),
+            "hysteresis_c": getattr(comfort, "heat_protection_hysteresis_c", 1.0),
+            "active_window_count": sum(1 for v in active_latch.values() if v),
+        }
+
     def _manual_override_summary():
         # PUBLIC: policy configuration + aggregate counts only. No window/
         # cover ids, no override positions, no per-window override details,
@@ -317,6 +332,7 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         "inputs_summary": _safe(_inputs_summary, errors, "inputs"),
         "presence_summary": _safe(_presence_summary, errors, "presence"),
         "lifecycle_profile_summary": _safe(_lifecycle_profile_summary, errors, "lifecycle_profile"),
+        "heat_protection_summary": _safe(_heat_protection_summary, errors, "heat_protection"),
         "manual_override_summary": _safe(_manual_override_summary, errors, "manual_override"),
         "learning_authority_summary": _safe(
             _learning_authority_summary, errors, "learning_authority"),

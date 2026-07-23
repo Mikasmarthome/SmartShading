@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Hitzeschutz aktivieren",
           "glare_protection_enabled": "Blendschutz aktivieren",
           "solar_gain_enabled": "Solar-Gewinn aktivieren (Wintersonne)",
-          "glare_min_exposure_wm2": "Mindestexposition für Blendschutz"
+          "glare_min_exposure_wm2": "Mindestexposition für Blendschutz",
+          "heat_protection_hysteresis_c": "Freigabespanne der Hitzeschutz-Beschattung"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Ein oder mehrere Innensensoren. Bei mehreren Sensoren wird der Durchschnitt aller gültigen Messwerte verwendet.",
           "heat_protection_enabled": "Beschattet vorbeugend, bevor Räume überhitzen – basierend auf Sonnenstand, Wetter und Temperaturen.",
           "glare_protection_enabled": "Reduziert direkte Sonneneinstrahlung, wenn die Sonne direkt auf das Fenster trifft.",
           "solar_gain_enabled": "Hält Beschattung bei kühlem Wetter offener, um passive Erwärmung zu unterstützen. Hitzeschutz hat Vorrang.",
-          "glare_min_exposure_wm2": "Blendschutz wird nur ausgelöst, wenn das Fenster im Sonnensektor liegt und die effektive Fensterexposition mindestens diesen Wert erreicht. Dadurch wird verhindert, dass eine rein geometrische Sonnenlage ohne relevante Einstrahlung unnötige Beschattung auslöst."
+          "glare_min_exposure_wm2": "Blendschutz wird nur ausgelöst, wenn das Fenster im Sonnensektor liegt und die effektive Fensterexposition mindestens diesen Wert erreicht. Dadurch wird verhindert, dass eine rein geometrische Sonnenlage ohne relevante Einstrahlung unnötige Beschattung auslöst.",
+          "heat_protection_hysteresis_c": "Um wie viele Grad die Temperatur unter den Hitzeschutz-Schwellenwert fallen muss, bevor die Beschattung wieder freigegeben wird. Verhindert schnelles Hin- und Herschalten in der Nähe des Schwellenwerts. Bei 0 erfolgt die Freigabe genau am Schwellenwert (bisheriges Verhalten)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_block": "Für Option A muss ein Kontaktsensor ausgewählt sein.",
       "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein.",
       "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben.",
+      "invalid_heat_hysteresis": "Gib eine Freigabespanne zwischen 0 und 5 °C ein.",
       "night_clamp_window_invalid": "Der früheste nächtliche Auslöser darf nicht später sein als der späteste.",
       "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste.",
       "override_fixed_until_required": "Bitte eine feste Endzeit angeben, wenn die Dauer auf \"Feste Uhrzeit\" gesetzt ist."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Hitzeschutz aktivieren",
           "glare_protection_enabled": "Blendschutz aktivieren",
           "solar_gain_enabled": "Solar-Gewinn aktivieren (Wintersonne)",
-          "glare_min_exposure_wm2": "Mindestexposition für Blendschutz"
+          "glare_min_exposure_wm2": "Mindestexposition für Blendschutz",
+          "heat_protection_hysteresis_c": "Freigabespanne der Hitzeschutz-Beschattung"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Ein oder mehrere Innensensoren. Bei mehreren Sensoren wird der Durchschnitt aller gültigen Messwerte verwendet.",
           "heat_protection_enabled": "Beschattet vorbeugend, bevor Räume überhitzen – basierend auf Sonnenstand, Wetter und Temperaturen.",
           "glare_protection_enabled": "Reduziert direkte Sonneneinstrahlung, wenn die Sonne direkt auf das Fenster trifft.",
           "solar_gain_enabled": "Hält Beschattung bei kühlem Wetter offener, um passive Erwärmung zu unterstützen. Hitzeschutz hat Vorrang.",
-          "glare_min_exposure_wm2": "Blendschutz wird nur ausgelöst, wenn das Fenster im Sonnensektor liegt und die effektive Fensterexposition mindestens diesen Wert erreicht. Dadurch wird verhindert, dass eine rein geometrische Sonnenlage ohne relevante Einstrahlung unnötige Beschattung auslöst."
+          "glare_min_exposure_wm2": "Blendschutz wird nur ausgelöst, wenn das Fenster im Sonnensektor liegt und die effektive Fensterexposition mindestens diesen Wert erreicht. Dadurch wird verhindert, dass eine rein geometrische Sonnenlage ohne relevante Einstrahlung unnötige Beschattung auslöst.",
+          "heat_protection_hysteresis_c": "Um wie viele Grad die Temperatur unter den Hitzeschutz-Schwellenwert fallen muss, bevor die Beschattung wieder freigegeben wird. Verhindert schnelles Hin- und Herschalten in der Nähe des Schwellenwerts. Bei 0 erfolgt die Freigabe genau am Schwellenwert (bisheriges Verhalten)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_block": "Für Option A muss ein Kontaktsensor ausgewählt sein.",
       "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein.",
       "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben.",
+      "invalid_heat_hysteresis": "Gib eine Freigabespanne zwischen 0 und 5 °C ein.",
       "night_clamp_window_invalid": "Der früheste nächtliche Auslöser darf nicht später sein als der späteste.",
       "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste."
     },

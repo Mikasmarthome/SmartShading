@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Włącz ochronę przed ciepłem",
           "glare_protection_enabled": "Włącz ochronę przed olśnieniem",
           "solar_gain_enabled": "Włącz zysk słoneczny (zimowe słońce)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Margines zwolnienia ochrony przed upałem"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Jeden lub więcej czujników wewnętrznych. Gdy skonfigurowano wiele czujników, używana jest średnia wszystkich prawidłowych odczytów.",
           "heat_protection_enabled": "Zapobiega przegrzewaniu, zacieniając proaktywnie na podstawie pozycji słońca, pogody i temperatur.",
           "glare_protection_enabled": "Redukuje bezpośrednie światło słoneczne, gdy słońce pada na okno.",
           "solar_gain_enabled": "Utrzymuje osłonę bardziej otwartą przy chłodnej pogodzie, aby wspomóc pasywne nagrzewanie. Ochrona przed ciepłem ma priorytet.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "O ile stopni temperatura musi spaść poniżej progu ochrony przed upałem, zanim zacienienie zostanie ponownie zwolnione. Zapobiega szybkiemu przełączaniu w pobliżu progu. Przy 0 zwolnienie następuje dokładnie na progu (poprzednie zachowanie)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Podaj margines zwolnienia od 0 do 5 °C.",
       "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
       "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy.",
       "override_fixed_until_required": "Podaj stałą godzinę zakończenia, gdy czas trwania jest ustawiony na \"Stała godzina\"."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Włącz ochronę przed ciepłem",
           "glare_protection_enabled": "Włącz ochronę przed olśnieniem",
           "solar_gain_enabled": "Włącz zysk słoneczny (zimowe słońce)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Margines zwolnienia ochrony przed upałem"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Jeden lub więcej czujników wewnętrznych. Gdy skonfigurowano wiele czujników, używana jest średnia wszystkich prawidłowych odczytów.",
           "heat_protection_enabled": "Zapobiega przegrzewaniu, zacieniając proaktywnie na podstawie pozycji słońca, pogody i temperatur.",
           "glare_protection_enabled": "Redukuje bezpośrednie światło słoneczne, gdy słońce pada na okno.",
           "solar_gain_enabled": "Utrzymuje osłonę bardziej otwartą przy chłodnej pogodzie, aby wspomóc pasywne nagrzewanie. Ochrona przed ciepłem ma priorytet.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "O ile stopni temperatura musi spaść poniżej progu ochrony przed upałem, zanim zacienienie zostanie ponownie zwolnione. Zapobiega szybkiemu przełączaniu w pobliżu progu. Przy 0 zwolnienie następuje dokładnie na progu (poprzednie zachowanie)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Podaj margines zwolnienia od 0 do 5 °C.",
       "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
       "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy."
     },

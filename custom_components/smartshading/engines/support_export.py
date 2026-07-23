@@ -269,6 +269,24 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 } if diag is not None else {
                     "configured": getattr(c, "_rain_sensor_id", None) is not None,
                     "status": None}
+                # Heat protection hysteresis (v1.2.0-beta.1, T9): entry/exit
+                # thresholds, current readings, and the resolved hysteresis
+                # state/reason — lets a support case reconstruct exactly why
+                # heat protection was entered, held, or released this cycle.
+                prov["heat"] = {
+                    "active": getattr(diag, "heat_hysteresis_active", False),
+                    "reason": getattr(diag, "heat_hysteresis_reason", None),
+                    "outdoor_entry_c": getattr(diag, "heat_outdoor_entry_c", None),
+                    "outdoor_exit_c": getattr(diag, "heat_outdoor_exit_c", None),
+                    "indoor_entry_c": getattr(diag, "heat_indoor_entry_c", None),
+                    "indoor_exit_c": getattr(diag, "heat_indoor_exit_c", None),
+                    "outdoor_temp_c": getattr(diag, "heat_outdoor_temp_c", None),
+                    "indoor_temp_c": getattr(diag, "heat_indoor_temp_c", None),
+                } if diag is not None else {
+                    "active": False, "reason": None,
+                    "outdoor_entry_c": None, "outdoor_exit_c": None,
+                    "indoor_entry_c": None, "indoor_exit_c": None,
+                    "outdoor_temp_c": None, "indoor_temp_c": None}
                 # Comfort Movement Stability Hold (v1.1.1/v1.1.2 field-fix
                 # follow-up). Timing context for a held non-priority dispatch;
                 # active/blocked-reason itself is already visible via the

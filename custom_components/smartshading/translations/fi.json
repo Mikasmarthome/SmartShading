@@ -109,14 +109,16 @@
           "heat_protection_enabled": "Ota käyttöön lämpösuojaus",
           "glare_protection_enabled": "Ota käyttöön häikäisysuojaus",
           "solar_gain_enabled": "Ota käyttöön aurinkolämpö (talviaurinko)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Lämpösuojauksen vapautusmarginaali"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Yksi tai useampi sisäanturi. Kun useita antureita on määritetty, käytetään kaikkien kelvollisten lukemien keskiarvoa.",
           "heat_protection_enabled": "Estää ylikuumenemisen varjostamalla ennakoivasti auringon sijainnin, sään ja lämpötilojen perusteella.",
           "glare_protection_enabled": "Vähentää suoraa auringonvaloa, kun aurinko osuu ikkunaan.",
           "solar_gain_enabled": "Pitää varjostuksen avoimempana viileällä säällä passiivisen lämpenemisen tukemiseksi. Lämpösuojaus on etusijalla.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Kuinka monta astetta lämpötilan on laskettava lämpösuojan kynnysarvon alle, ennen kuin varjostus vapautetaan uudelleen. Estää nopean edestakaisin kytkeytymisen kynnyksen lähellä. Arvolla 0 vapautus tapahtuu tarkalleen kynnyksellä (aiempi toiminta)."
         }
       },
       "behavior": {
@@ -426,6 +428,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Anna vapautusmarginaali väliltä 0–5 °C.",
       "night_clamp_window_invalid": "Aikaisin yölaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
       "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
       "override_fixed_until_required": "Anna kiinteä lopetusaika, kun kesto on asetettu \"Kiinteä aika\"-tilaan."
@@ -559,14 +562,16 @@
           "heat_protection_enabled": "Ota käyttöön lämpösuojaus",
           "glare_protection_enabled": "Ota käyttöön häikäisysuojaus",
           "solar_gain_enabled": "Ota käyttöön aurinkolämpö (talviaurinko)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection"
+          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "heat_protection_hysteresis_c": "Lämpösuojauksen vapautusmarginaali"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Yksi tai useampi sisäanturi. Kun useita antureita on määritetty, käytetään kaikkien kelvollisten lukemien keskiarvoa.",
           "heat_protection_enabled": "Estää ylikuumenemisen varjostamalla ennakoivasti auringon sijainnin, sään ja lämpötilojen perusteella.",
           "glare_protection_enabled": "Vähentää suoraa auringonvaloa, kun aurinko osuu ikkunaan.",
           "solar_gain_enabled": "Pitää varjostuksen avoimempana viileällä säällä passiivisen lämpenemisen tukemiseksi. Lämpösuojaus on etusijalla.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading."
+          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
+          "heat_protection_hysteresis_c": "Kuinka monta astetta lämpötilan on laskettava lämpösuojan kynnysarvon alle, ennen kuin varjostus vapautetaan uudelleen. Estää nopean edestakaisin kytkeytymisen kynnyksen lähellä. Arvolla 0 vapautus tapahtuu tarkalleen kynnyksellä (aiempi toiminta)."
         }
       }
     },
@@ -579,6 +584,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "invalid_heat_hysteresis": "Anna vapautusmarginaali väliltä 0–5 °C.",
       "night_clamp_window_invalid": "Aikaisin yölaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
       "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin."
     },

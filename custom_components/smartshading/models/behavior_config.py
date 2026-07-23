@@ -102,6 +102,12 @@ class BehaviorConfig:
     heat_outdoor_threshold_c: float | None = 26.0
     heat_indoor_threshold_c: float | None = 24.0
 
+    # Heat protection release hysteresis (v1.2.0-beta.1, T9). Degrees below
+    # the entry threshold the temperature must drop before heat protection
+    # releases — applied symmetrically to outdoor/indoor. 0.0 reproduces the
+    # pre-T9 exact-threshold behavior. See engines/heat_hysteresis.py.
+    heat_hysteresis_c: float = 1.0
+
     # Glare protection enabled flag.
     # False = GlareEvaluator always returns None for this window.
     # Pre-resolved from ComfortConfig by build_window_decision_input().

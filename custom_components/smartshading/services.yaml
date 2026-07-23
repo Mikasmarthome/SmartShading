@@ -1,0 +1,7 @@
+clear_manual_override:
+  target:
+    entity:
+      domain: binary_sensor
+      integration: smartshading
+    device:
+      integration: smartshading

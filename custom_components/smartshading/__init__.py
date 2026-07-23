@@ -54,6 +54,10 @@ from .engines.learning_persistence import (
     LEARNING_STORE_VERSION,
 )
 from .models.forecast_store import ForecastLearningStore
+from .services import (
+    async_setup_services,
+    async_unload_services_if_no_zone_entries_remain,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -92,7 +96,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
         coordinator.async_teardown_contact_listeners()
         coordinator.async_teardown_lifecycle_boundary_timer()
         await coordinator.async_flush_learning()
-    return await hass.config_entries.async_unload_platforms(entry, ZONE_PLATFORMS)
+    unloaded = await hass.config_entries.async_unload_platforms(entry, ZONE_PLATFORMS)
+    if unloaded:
+        async_unload_services_if_no_zone_entries_remain(hass, entry.entry_id)
+    return unloaded
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry) -> None:
@@ -241,6 +248,11 @@ async def _async_setup_zone_entry(
 
     # Debug logging flag: default False until the system entry sets it.
     hass.data[DOMAIN].setdefault(DATA_DEBUG_LOGGING, False)
+
+    # Services (v1.2.0-beta.1, T10.1): registered once regardless of how many
+    # zone entries exist — async_setup_services() itself is guarded by
+    # hass.services.has_service().
+    async_setup_services(hass)
 
     # ------------------------------------------------------------------
     # Lifecycle profile resolution (v1.2.0-beta.1, T6): resolved ONCE here,

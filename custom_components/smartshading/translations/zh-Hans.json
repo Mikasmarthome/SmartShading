@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "清除手动覆盖",
+      "description": "结束当前生效的手动覆盖，使 SmartShading 重新接管自动控制。",
+      "fields": {}
+    }
   }
 }

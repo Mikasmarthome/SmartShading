@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Effacer la dérogation manuelle",
+      "description": "Met fin à une dérogation manuelle active afin que SmartShading reprenne le contrôle automatique.",
+      "fields": {}
+    }
   }
 }

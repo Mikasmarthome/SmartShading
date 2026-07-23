@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Rensa manuell åsidosättning",
+      "description": "Avslutar en aktiv manuell åsidosättning så att SmartShading återigen tar över den automatiska styrningen.",
+      "fields": {}
+    }
   }
 }

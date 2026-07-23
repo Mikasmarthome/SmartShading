@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Zrušit ruční přepsání",
+      "description": "Ukončí aktivní ruční přepsání, aby SmartShading opět převzal automatické řízení.",
+      "fields": {}
+    }
   }
 }

@@ -499,9 +499,11 @@ class WindowExecutionDiagnostics:
     manual_override_release_reason: str | None = None
     """v1.1.3: why the override that was active last cycle is no longer active
     this cycle: "timeout" (duration elapsed), "lifecycle_transition" (Morning/
-    other lifecycle change), "safety" (Tier 1 Safety took over), or None (no
-    release happened this cycle — either still active or already inactive
-    before this cycle)."""
+    other lifecycle change), "safety" (Tier 1 Safety took over),
+    "comfort_decision" / "protection_decision" (T10 strategy-triggered
+    release), "manual_service" (T10.1: explicit clear_manual_override
+    service/action), or None (no release happened this cycle — either still
+    active or already inactive before this cycle)."""
 
     manual_override_position: int | None = None
     """F31a: HA position (0=closed, 100=open) the active override is holding —

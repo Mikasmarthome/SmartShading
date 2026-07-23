@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Handmatige overschrijving wissen",
+      "description": "Beëindigt een actieve handmatige overschrijving zodat SmartShading de automatische besturing weer overneemt.",
+      "fields": {}
+    }
   }
 }

@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Cancella override manuale",
+      "description": "Termina un override manuale attivo in modo che SmartShading riprenda il controllo automatico.",
+      "fields": {}
+    }
   }
 }

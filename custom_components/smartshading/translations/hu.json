@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Kézi felülbírálás törlése",
+      "description": "Befejezi az aktív kézi felülbírálást, így a SmartShading ismét átveszi az automatikus vezérlést.",
+      "fields": {}
+    }
   }
 }

@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Ryd manuel tilsidesættelse",
+      "description": "Afslutter en aktiv manuel tilsidesættelse, så SmartShading igen overtager den automatiske styring.",
+      "fields": {}
+    }
   }
 }

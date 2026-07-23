@@ -1302,6 +1302,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Per-window override state from the previous cycle — used to detect
         # natural expiry ("expired") and renewal ("renewed") events.
         self._prev_overrides: dict[str, object] = {}
+        # T10.1: window_id -> release reason for an override cleared OUTSIDE
+        # the normal per-cycle loop (async_clear_manual_override(), called
+        # on-demand from a service). Consumed by the very next cycle so its
+        # manual_override_release_reason diagnostic and Learning record show
+        # the real cause instead of being misattributed as a natural
+        # "timeout" — see the per-window loop below, right after
+        # self._override_detector.get().
+        self._explicit_override_clear_reasons: dict[str, str] = {}
         # Per-window cycle counter for periodic snapshot scheduling.
         self._snapshot_counters: dict[str, int] = {}
         self.guard = StateGuard(
@@ -2072,6 +2080,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._mark_learning_dirty()
             except Exception:
                 _LOGGER.warning("Learning: override 'cleared_by_manual' record failed for %s", window_id)
+        # T10.1: recorded so the next per-cycle loop iteration reports this
+        # window's manual_override_release_reason accurately (instead of
+        # misreading the transition as a natural "timeout") and skips
+        # recording a duplicate "expired" Learning event for it — see the
+        # per-window loop's _explicit_clear_reason handling.
+        self._explicit_override_clear_reasons[window_id] = "manual_service"
         self._override_detector.clear(window_id)
         self._override_detector.suppress_next_override_tick(window_id)
         await self.async_request_refresh()
@@ -2942,6 +2956,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # always carries a fresh (or None) active_override this cycle.
             active_override = self._override_detector.get(window_id, now)
 
+            # T10.1: an explicit, out-of-band clear (async_clear_manual_override(),
+            # called from the clear_manual_override service) happened between
+            # cycles — consume its recorded reason here so it is reported
+            # accurately instead of falling through to the "timeout" guess
+            # below, and so the Learning "expired" record right after this is
+            # correctly skipped (that clear already recorded its own accurate
+            # "cleared_by_manual" event synchronously).
+            _explicit_clear_reason = self._explicit_override_clear_reasons.pop(window_id, None)
+
             # v1.1.3: manual_override_release_reason diagnostic — computed
             # unconditionally (unlike the obs_enabled-gated Learning record
             # below) so it is available even when Learning/observation is off.
@@ -2950,40 +2973,50 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # (both require active_override is not None, which a natural
             # timeout here has just made None).
             _override_release_reason: str | None = (
-                "timeout" if _prev_override is not None and active_override is None else None
+                _explicit_clear_reason if _explicit_clear_reason is not None
+                else ("timeout" if _prev_override is not None and active_override is None else None)
             )
 
             # Phase 9C: detect natural expiry (detector.get() returned None
             # because expires_at < now, not because of an explicit clear).
             if obs_enabled and _prev_override is not None and active_override is None:
-                try:
-                    self._learning_store.record_override(OverrideRecord(
-                        timestamp=now,
-                        window_id=window_id,
-                        event_type="expired",
-                        lifecycle_state=self._lifecycle_state.value,
-                        override_position=_prev_override.override_position,  # type: ignore[union-attr]
-                        overridden_state=_prev_override.overridden_state,  # type: ignore[union-attr]
-                        overridden_position=_prev_override.overridden_position,  # type: ignore[union-attr]
-                        override_duration_min=(
-                            (_prev_override.expires_at - _prev_override.started_at).total_seconds() / 60  # type: ignore[union-attr]
-                        ),
-                        outdoor_temp_c=weather_inputs.outdoor_temperature,
-                        solar_radiation_wm2=weather_inputs.solar_radiation,
-                        sun_azimuth=sun_position.azimuth if sun_position is not None else None,
-                        sun_elevation=sun_position.elevation if sun_position is not None else None,
-                        solar_relative_azimuth=(
-                            sun_position.azimuth - window.azimuth if sun_position is not None else None
-                        ),
-                        weather_condition=weather_inputs.weather_condition,
-                        cloud_cover_pct=weather_inputs.cloud_cover,
-                        raw_solar_radiation_wm2=None,   # exposure not yet computed (pre-sun-branch)
-                        effective_exposure_wm2=None,
-                        learned_solar_impact_factor=None,
-                        decided_by=None,  # tier_decision not available (pre-sun-branch)
-                    ))
-                except Exception:
-                    _LOGGER.warning("Learning: override 'expired' record failed for %s", window_id)
+                # T10.1: an explicit clear (async_clear_manual_override(),
+                # via the clear_manual_override service) already recorded its
+                # own accurate "cleared_by_manual" OverrideRecord synchronously
+                # — recording "expired" here too would be a duplicate,
+                # misattributed event for the exact same transition. The
+                # position-preference signal below is NOT skipped: it reflects
+                # a real user-preferred position regardless of why the
+                # override ended, so that learning signal stays intact.
+                if _explicit_clear_reason is None:
+                    try:
+                        self._learning_store.record_override(OverrideRecord(
+                            timestamp=now,
+                            window_id=window_id,
+                            event_type="expired",
+                            lifecycle_state=self._lifecycle_state.value,
+                            override_position=_prev_override.override_position,  # type: ignore[union-attr]
+                            overridden_state=_prev_override.overridden_state,  # type: ignore[union-attr]
+                            overridden_position=_prev_override.overridden_position,  # type: ignore[union-attr]
+                            override_duration_min=(
+                                (_prev_override.expires_at - _prev_override.started_at).total_seconds() / 60  # type: ignore[union-attr]
+                            ),
+                            outdoor_temp_c=weather_inputs.outdoor_temperature,
+                            solar_radiation_wm2=weather_inputs.solar_radiation,
+                            sun_azimuth=sun_position.azimuth if sun_position is not None else None,
+                            sun_elevation=sun_position.elevation if sun_position is not None else None,
+                            solar_relative_azimuth=(
+                                sun_position.azimuth - window.azimuth if sun_position is not None else None
+                            ),
+                            weather_condition=weather_inputs.weather_condition,
+                            cloud_cover_pct=weather_inputs.cloud_cover,
+                            raw_solar_radiation_wm2=None,   # exposure not yet computed (pre-sun-branch)
+                            effective_exposure_wm2=None,
+                            learned_solar_impact_factor=None,
+                            decided_by=None,  # tier_decision not available (pre-sun-branch)
+                        ))
+                    except Exception:
+                        _LOGGER.warning("Learning: override 'expired' record failed for %s", window_id)
 
                 # Step 6: record position preference signal for target adaptation.
                 try:

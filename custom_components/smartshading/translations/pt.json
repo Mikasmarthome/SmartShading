@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Limpar substituição manual",
+      "description": "Termina uma substituição manual ativa para que o SmartShading volte a assumir o controlo automático.",
+      "fields": {}
+    }
   }
 }

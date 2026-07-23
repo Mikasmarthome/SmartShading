@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Șterge suprascrierea manuală",
+      "description": "Încheie o suprascriere manuală activă, astfel încât SmartShading preia din nou controlul automat.",
+      "fields": {}
+    }
   }
 }

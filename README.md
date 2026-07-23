@@ -137,8 +137,13 @@ protections, not a replacement for them.
 ## Manual Override
 
 When you move a cover manually, SmartShading recognizes the manual override and holds back automatic
-commands for that window so it does not fight your action. Automatic decisions resume after the override
-period, and safety conditions still take priority while an override is held.
+commands for that window so it does not fight your action. Safety conditions still take priority while an
+override is held. When you get automatic control back is configurable — after a fixed duration, at a fixed
+time, at the end of the day/night cycle, on the next automatic comfort or protection decision, on the next
+automatic decision of any kind, or only when you clear it yourself.
+
+To end an override immediately instead of waiting, call the `smartshading.clear_manual_override` service and
+target the window's "Override active" entity (or a whole zone device/area to clear several at once).
 
 ## Night and morning behavior
 

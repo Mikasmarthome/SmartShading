@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Fjern manuell overstyring",
+      "description": "Avslutter en aktiv manuell overstyring, slik at SmartShading igjen overtar den automatiske styringen.",
+      "fields": {}
+    }
   }
 }

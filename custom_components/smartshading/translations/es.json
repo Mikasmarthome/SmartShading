@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Borrar anulación manual",
+      "description": "Finaliza una anulación manual activa para que SmartShading vuelva a asumir el control automático.",
+      "fields": {}
+    }
   }
 }

@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Počisti ročno preglasitev",
+      "description": "Konča aktivno ročno preglasitev, tako da SmartShading znova prevzame samodejni nadzor.",
+      "fields": {}
+    }
   }
 }

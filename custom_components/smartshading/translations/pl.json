@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Wyczyść ręczne zastąpienie",
+      "description": "Kończy aktywne ręczne zastąpienie, dzięki czemu SmartShading ponownie przejmuje automatyczne sterowanie.",
+      "fields": {}
+    }
   }
 }

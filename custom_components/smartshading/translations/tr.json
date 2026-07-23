@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Manuel geçersiz kılmayı temizle",
+      "description": "Etkin bir manuel geçersiz kılmayı sonlandırır, böylece SmartShading otomatik kontrolü yeniden devralır.",
+      "fields": {}
+    }
   }
 }

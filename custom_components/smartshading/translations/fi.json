@@ -847,5 +847,12 @@
         }
       }
     }
+  },
+  "services": {
+    "clear_manual_override": {
+      "name": "Poista manuaalinen ohitus",
+      "description": "Lopettaa aktiivisen manuaalisen ohituksen, jotta SmartShading ottaa automaattisen hallinnan taas käyttöön.",
+      "fields": {}
+    }
   }
 }

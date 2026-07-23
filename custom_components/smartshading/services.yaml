@@ -3,5 +3,3 @@ clear_manual_override:
     entity:
       domain: binary_sensor
       integration: smartshading
-    device:
-      integration: smartshading

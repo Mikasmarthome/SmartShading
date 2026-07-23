@@ -48,3 +48,10 @@ class TestServicesYaml:
         text = path.read_text(encoding="utf-8")
         assert text.startswith("clear_manual_override:")
         assert "target:" in text
+        # Regression guard: Hassfest rejects a `device:` filter directly
+        # under `target` ("Services do not support device filters on
+        # target, use a device selector instead") — device/area targeting
+        # in the HA UI's target picker still works without this key; it
+        # only narrows which entities are suggested, which `entity:` alone
+        # already does.
+        assert "device:" not in text

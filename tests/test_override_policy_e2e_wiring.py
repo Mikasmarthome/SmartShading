@@ -17,10 +17,17 @@ Two-part proof, matching the two halves of the wiring chain:
   derived kwargs (exactly as __init__.py would), then drives its OWN
   OverrideDetector instance using the Coordinator's OWN stored attributes
   (self._override_duration_min, self._override_night_duration_min,
-  self._override_detection_tolerance, self._override_break_on_lifecycle) —
+  self._override_detection_tolerance, self._override_release_strategy) —
   proving a non-default configured value genuinely changes the detector's
   observable output (expiry timing, detection threshold), not just that a
   constructor parameter exists.
+
+  T10: the old boolean override_break_on_lifecycle constructor kwarg/
+  attribute became the OverrideReleaseStrategy-valued
+  override_release_strategy — LIFECYCLE reproduces the old True, any other
+  strategy reproduces the old False (see coordinator.py, which derives the
+  break_enabled bool passed to lifecycle_should_break_override() as
+  `self._override_release_strategy is OverrideReleaseStrategy.LIFECYCLE`).
 """
 from __future__ import annotations
 
@@ -32,6 +39,7 @@ from unittest.mock import MagicMock
 
 from custom_components.smartshading.engines.lifecycle_guard import lifecycle_should_break_override
 from custom_components.smartshading.models.lifecycle import LifecycleState
+from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy
 
 # ---------------------------------------------------------------------------
 # HA stubs — identical technique to test_manual_override_diagnostics.py.
@@ -244,21 +252,23 @@ class TestDetectionToleranceWiredToDetectorAtStartAndRenewal:
 
 
 class TestBreakOnLifecycleWired:
-    def test_custom_break_on_lifecycle_false_disables_the_break(self) -> None:
-        coord = _make_coord(override_break_on_lifecycle=False)
-        assert coord._override_break_on_lifecycle is False
+    def test_non_lifecycle_release_strategy_disables_the_break(self) -> None:
+        coord = _make_coord(override_release_strategy=OverrideReleaseStrategy.DURATION)
+        assert coord._override_release_strategy is OverrideReleaseStrategy.DURATION
+        break_enabled = coord._override_release_strategy is OverrideReleaseStrategy.LIFECYCLE
         should_break = lifecycle_should_break_override(
             prev=LifecycleState.DAY, new=LifecycleState.NIGHT,
-            break_enabled=coord._override_break_on_lifecycle,
+            break_enabled=break_enabled,
         )
         assert should_break is False
 
-    def test_default_break_on_lifecycle_true_enables_the_break(self) -> None:
+    def test_default_lifecycle_release_strategy_enables_the_break(self) -> None:
         coord = _make_coord()
-        assert coord._override_break_on_lifecycle is True
+        assert coord._override_release_strategy is OverrideReleaseStrategy.LIFECYCLE
+        break_enabled = coord._override_release_strategy is OverrideReleaseStrategy.LIFECYCLE
         should_break = lifecycle_should_break_override(
             prev=LifecycleState.DAY, new=LifecycleState.NIGHT,
-            break_enabled=coord._override_break_on_lifecycle,
+            break_enabled=break_enabled,
         )
         assert should_break is True
 

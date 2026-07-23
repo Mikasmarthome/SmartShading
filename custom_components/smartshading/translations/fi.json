@@ -400,21 +400,21 @@
         "title": "Manuaalinen ohitus",
         "description": "Määrittää aktiivisen manuaalisen ohituksen käyttäytymisen: kuinka kauan se kestää ja voivatko mukavuus- tai suojaustoiminnot silti käydä sen ollessa aktiivinen.",
         "data": {
-          "override_duration_mode": "Ohituksen kesto",
+          "override_release_strategy": "Vapautusstrategia",
           "override_fixed_until": "Kiinteä lopetusaika",
           "override_allow_comfort_actions": "Salli mukavuustoiminnot ohituksen aikana",
           "override_allow_protection_actions": "Salli suojaustoiminnot ohituksen aikana",
-          "override_break_on_lifecycle": "Lopeta ohitus aikataulusiirtymässä",
+          "override_safety_timeout_enabled": "Turva-aikakatkaisu",
           "override_duration_min": "Perinteinen ohituksen kesto (minuuttia)",
           "override_night_duration_min": "Yön ohituksen kesto (minuuttia)",
           "override_detection_tolerance": "Tunnistustoleranssi"
         },
         "data_description": {
-          "override_duration_mode": "Perinteinen: kestää kiinteän ajan. Kiinteä aika: kestää asetettuun kellonaikaan asti.",
-          "override_fixed_until": "Käytetään vain, kun kesto on asetettu \"Kiinteä aika\"-tilaan. Jos aika on jo ohi tänään, ohitus päättyy tähän aikaan huomenna.",
+          "override_release_strategy": "Määrittää, miten ohitus päättyy: kiinteän keston jälkeen, kiinteänä ajankohtana, seuraavassa aikataulusiirtymässä, seuraavassa automaattisessa päätöksessä tai vain manuaalisesti tyhjentämällä.",
+          "override_fixed_until": "Käytetään vain, kun vapautusstrategia on asetettu \"Kiinteä aika\"-tilaan. Jos aika on jo ohi tänään, ohitus päättyy tähän aikaan huomenna.",
           "override_allow_comfort_actions": "Kun käytössä, tavallinen mukavuusvarjostus voi silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
           "override_allow_protection_actions": "Kun käytössä, suojaustoiminnot (poissaolo, kuumuus, häikäisy) voivat silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
-          "override_break_on_lifecycle": "Kun käytössä, mikä tahansa aikataulusiirtymä (esim. päivästä yöhön) lopettaa aktiivisen ohituksen.",
+          "override_safety_timeout_enabled": "Valinnainen enimmäiskesto turvaverkkona avoimille strategioille, jotta ohitus ei jää pysyvästi unohduksiin.",
           "override_duration_min": "Kuinka kauan päiväohitus kestää ennen kuin SmartShading jatkaa normaalia ohjausta (perinteinen kestomoodi).",
           "override_night_duration_min": "Turvaraja yön ohitukselle. Todellinen vapautus tapahtuu aamun aikataulusiirtymässä.",
           "override_detection_tolerance": "Pienin sallittu asennon muutos (prosentteina) ennen kuin manuaalinen liike tunnistetaan ohitukseksi."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Käänteinen (joku kotona = poissa)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Perinteinen (kiinteä kesto)",
-        "fixed_time": "Kiinteä aika"
+        "duration": "Kiinteän keston jälkeen",
+        "fixed_time": "Kiinteä aika",
+        "lifecycle": "Päivä-/yösyklin lopussa",
+        "first_comfort": "Seuraavassa automaattisessa mukavuustoiminnossa",
+        "first_protection": "Seuraavassa suojaavassa varjostuksessa",
+        "first_any_decision": "Seuraavassa automaattisessa päätöksessä",
+        "manual": "Vain manuaalinen tyhjennys"
       }
     }
   },

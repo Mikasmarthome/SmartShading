@@ -400,21 +400,21 @@
         "title": "Ruční přepsání",
         "description": "Určuje chování aktivního ručního přepsání: jak dlouho trvá a zda mohou akce komfortu nebo ochrany stále probíhat, když je aktivní.",
         "data": {
-          "override_duration_mode": "Doba trvání přepsání",
+          "override_release_strategy": "Strategie ukončení",
           "override_fixed_until": "Pevný čas ukončení",
           "override_allow_comfort_actions": "Povolit akce komfortu během přepsání",
           "override_allow_protection_actions": "Povolit ochranné akce během přepsání",
-          "override_break_on_lifecycle": "Ukončit přepsání při přechodu plánu",
+          "override_safety_timeout_enabled": "Bezpečnostní časový limit",
           "override_duration_min": "Klasická doba trvání přepsání (minuty)",
           "override_night_duration_min": "Noční doba trvání přepsání (minuty)",
           "override_detection_tolerance": "Tolerance detekce"
         },
         "data_description": {
-          "override_duration_mode": "Klasický: trvá po pevnou dobu. Pevný čas: trvá do nastaveného času.",
-          "override_fixed_until": "Použije se pouze, když je doba trvání nastavena na \"Pevný čas\". Pokud čas dnes již uplynul, přepsání skončí zítra v tuto dobu.",
+          "override_release_strategy": "Určuje, jak přepsání skončí: po pevné době trvání, v pevný čas, při dalším přechodu plánu, při dalším automatickém rozhodnutí nebo pouze ručním zrušením.",
+          "override_fixed_until": "Použije se pouze, když je strategie ukončení nastavena na \"Pevný čas\". Pokud čas dnes již uplynul, přepsání skončí zítra v tuto dobu.",
           "override_allow_comfort_actions": "Je-li povoleno, běžné komfortní stínění může stále probíhat během aktivního přepsání. Samotné přepsání zůstává aktivní.",
           "override_allow_protection_actions": "Je-li povoleno, ochranné akce (nepřítomnost, horko, oslnění) mohou stále probíhat během aktivního přepsání. Samotné přepsání zůstává aktivní.",
-          "override_break_on_lifecycle": "Je-li povoleno, jakýkoli přechod plánu (např. den na noc) ukončí aktivní přepsání.",
+          "override_safety_timeout_enabled": "Volitelná maximální doba jako pojistka pro otevřené strategie, aby přepsání nezůstalo trvale zapomenuto.",
           "override_duration_min": "Jak dlouho trvá denní přepsání, než SmartShading obnoví normální ovládání (klasický režim trvání).",
           "override_night_duration_min": "Bezpečnostní limit pro noční přepsání. Skutečné uvolnění nastává při ranním přechodu plánu.",
           "override_detection_tolerance": "Minimální změna polohy (v procentech), než je ruční pohyb rozpoznán jako přepsání."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Invertováno (někdo doma = pryč)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Klasický (pevná doba)",
-        "fixed_time": "Pevný čas"
+        "duration": "Po pevné době trvání",
+        "fixed_time": "Pevný čas",
+        "lifecycle": "Na konci denního/nočního cyklu",
+        "first_comfort": "Při dalším automatickém komfortním zásahu",
+        "first_protection": "Při dalším ochranném stínění",
+        "first_any_decision": "Při dalším automatickém rozhodnutí",
+        "manual": "Pouze ruční zrušení"
       }
     }
   },

@@ -349,12 +349,12 @@ DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C = 12.0
 DEFAULT_GLARE_MIN_EXPOSURE_WM2 = 100.0
 GLARE_MIN_EXPOSURE_MAX_WM2 = 500.0
 
-# Manual Override policy (v1.2.0-beta.1, T7).
-CONF_OVERRIDE_DURATION_MODE = "override_duration_mode"
+# Manual Override policy (v1.2.0-beta.1, T7; release-strategy architecture T10).
+CONF_OVERRIDE_RELEASE_STRATEGY = "override_release_strategy"
 CONF_OVERRIDE_FIXED_UNTIL = "override_fixed_until"
 CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS = "override_allow_comfort_actions"
 CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS = "override_allow_protection_actions"
-CONF_OVERRIDE_BREAK_ON_LIFECYCLE = "override_break_on_lifecycle"
+CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED = "override_safety_timeout_enabled"
 CONF_OVERRIDE_DURATION_MIN = "override_duration_min"
 CONF_OVERRIDE_NIGHT_DURATION_MIN = "override_night_duration_min"
 CONF_OVERRIDE_DETECTION_TOLERANCE = "override_detection_tolerance"

@@ -18,6 +18,7 @@ from datetime import datetime, time, timedelta, timezone
 from custom_components.smartshading.engines.lifecycle_guard import lifecycle_should_break_override
 from custom_components.smartshading.engines.override_detector import OverrideDetector
 from custom_components.smartshading.models.lifecycle import LifecycleState
+from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy
 from custom_components.smartshading.state_machine.states import ShadingState
 
 _UTC = timezone.utc
@@ -34,7 +35,7 @@ def _detector_with_fixed_time_override(fixed_until: time = time(20, 0)) -> tuple
     det.tick(
         window_id="w1", observed_position=40, smartshading_target=0,
         prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0,
-        duration_mode="fixed_time", fixed_until=fixed_until, now_local=t0,
+        release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=fixed_until, now_local=t0,
     )
     return det, t0
 

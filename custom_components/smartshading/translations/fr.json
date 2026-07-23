@@ -400,21 +400,21 @@
         "title": "Dérogation manuelle",
         "description": "Définit le comportement d'une dérogation manuelle active : sa durée et si les actions de confort ou de protection peuvent encore s'exécuter pendant qu'elle est active.",
         "data": {
-          "override_duration_mode": "Durée de la dérogation",
+          "override_release_strategy": "Stratégie de fin",
           "override_fixed_until": "Heure de fin fixe",
           "override_allow_comfort_actions": "Autoriser les actions de confort pendant la dérogation",
           "override_allow_protection_actions": "Autoriser les actions de protection pendant la dérogation",
-          "override_break_on_lifecycle": "Terminer la dérogation lors d'une transition de cycle",
+          "override_safety_timeout_enabled": "Délai de sécurité",
           "override_duration_min": "Durée de dérogation classique (minutes)",
           "override_night_duration_min": "Durée de dérogation nocturne (minutes)",
           "override_detection_tolerance": "Tolérance de détection"
         },
         "data_description": {
-          "override_duration_mode": "Classique : dure une durée fixe. Heure fixe : dure jusqu'à une heure configurée.",
-          "override_fixed_until": "Utilisé uniquement si la durée est \"Heure fixe\". Si l'heure est déjà passée aujourd'hui, la dérogation se termine à cette heure demain.",
+          "override_release_strategy": "Contrôle la fin de la dérogation : après une durée fixe, à une heure fixe, à la prochaine transition de cycle, à la prochaine décision automatique, ou uniquement par effacement manuel.",
+          "override_fixed_until": "Utilisé uniquement si la stratégie de fin est \"Heure fixe\". Si l'heure est déjà passée aujourd'hui, la dérogation se termine à cette heure demain.",
           "override_allow_comfort_actions": "Si activé, les mouvements de confort réguliers peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
           "override_allow_protection_actions": "Si activé, les actions de protection (absence, chaleur, éblouissement) peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
-          "override_break_on_lifecycle": "Si activé, toute transition de cycle (par ex. jour vers nuit) met fin à une dérogation active.",
+          "override_safety_timeout_enabled": "Durée maximale optionnelle comme filet de sécurité pour les stratégies ouvertes, afin qu'une dérogation ne soit jamais oubliée définitivement.",
           "override_duration_min": "Durée d'une dérogation de jour avant que SmartShading ne reprenne le contrôle normal (mode classique).",
           "override_night_duration_min": "Limite de sécurité pour une dérogation nocturne. La véritable libération se fait à la transition matinale du cycle.",
           "override_detection_tolerance": "Changement de position minimal (en pourcentage) avant qu'un mouvement manuel soit reconnu comme une dérogation."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Inversé (quelqu'un à la maison = absent)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Classique (durée fixe)",
-        "fixed_time": "Heure fixe"
+        "duration": "Après une durée fixe",
+        "fixed_time": "Heure fixe",
+        "lifecycle": "À la fin du cycle jour/nuit",
+        "first_comfort": "À la prochaine action automatique de confort",
+        "first_protection": "À la prochaine protection solaire",
+        "first_any_decision": "À la prochaine décision automatique",
+        "manual": "Effacement manuel uniquement"
       }
     }
   },

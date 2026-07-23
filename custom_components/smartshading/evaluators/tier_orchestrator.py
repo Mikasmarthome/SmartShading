@@ -176,4 +176,5 @@ class TierOrchestrator:
             candidate=candidate,
             allow_comfort=wdi.effective_behavior.override_allow_comfort_actions,
             allow_protection=wdi.effective_behavior.override_allow_protection_actions,
+            release_strategy=wdi.effective_behavior.override_release_strategy,
         )

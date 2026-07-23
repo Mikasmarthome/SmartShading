@@ -21,6 +21,7 @@ from custom_components.smartshading.engines.lifecycle_guard import (
 from custom_components.smartshading.models.behavior_config import BehaviorConfig
 from custom_components.smartshading.models.learning import OVERRIDE_EVENT_TYPES
 from custom_components.smartshading.models.lifecycle import LifecycleState
+from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy
 
 
 # ===========================================================================
@@ -120,8 +121,11 @@ class TestOverrideEventTypesIncludesLifecycle:
     def test_cleared_by_lifecycle_in_event_types(self) -> None:
         assert "cleared_by_lifecycle" in OVERRIDE_EVENT_TYPES
 
-    def test_event_types_has_five_members(self) -> None:
-        assert len(OVERRIDE_EVENT_TYPES) == 5
+    def test_event_types_has_eight_members(self) -> None:
+        # T10: three release-strategy-triggered clear reasons were added
+        # (cleared_by_comfort, cleared_by_protection, cleared_by_manual)
+        # alongside the original five.
+        assert len(OVERRIDE_EVENT_TYPES) == 8
 
 
 # ===========================================================================
@@ -129,19 +133,27 @@ class TestOverrideEventTypesIncludesLifecycle:
 # ===========================================================================
 
 class TestBehaviorConfigOverrideBreakOnLifecycle:
-    def test_default_is_true(self) -> None:
-        bc = BehaviorConfig()
-        assert bc.override_break_on_lifecycle is True
+    """T10: the old bool override_break_on_lifecycle field became the
+    OverrideReleaseStrategy-valued override_release_strategy field —
+    LIFECYCLE reproduces the old True (break on any lifecycle transition),
+    any other strategy reproduces the old False (see lifecycle_guard.py
+    lifecycle_should_break_override(), still a plain bool at that layer;
+    the coordinator now derives that bool from
+    ``override_release_strategy is OverrideReleaseStrategy.LIFECYCLE``)."""
 
-    def test_opt_out_false(self) -> None:
-        bc = BehaviorConfig(override_break_on_lifecycle=False)
-        assert bc.override_break_on_lifecycle is False
+    def test_default_is_lifecycle(self) -> None:
+        bc = BehaviorConfig()
+        assert bc.override_release_strategy is OverrideReleaseStrategy.LIFECYCLE
+
+    def test_opt_out_to_duration(self) -> None:
+        bc = BehaviorConfig(override_release_strategy=OverrideReleaseStrategy.DURATION)
+        assert bc.override_release_strategy is OverrideReleaseStrategy.DURATION
 
     def test_frozen(self) -> None:
         from dataclasses import FrozenInstanceError
         bc = BehaviorConfig()
         with pytest.raises(FrozenInstanceError):
-            bc.override_break_on_lifecycle = False  # type: ignore[misc]
+            bc.override_release_strategy = OverrideReleaseStrategy.DURATION  # type: ignore[misc]
 
 
 # ===========================================================================
@@ -151,7 +163,7 @@ class TestBehaviorConfigOverrideBreakOnLifecycle:
 class TestWindowDecisionInputThreading:
     """Verify the new param reaches BehaviorConfig through the builder."""
 
-    def _make_wdi(self, break_on_lifecycle: bool):
+    def _make_wdi(self, release_strategy: OverrideReleaseStrategy):
         from custom_components.smartshading.models.window_decision_input import (
             build_window_decision_input,
         )
@@ -181,19 +193,19 @@ class TestWindowDecisionInputThreading:
             indoor_temp_c=None,
             exposure=None,
             is_in_solar_sector=False,
-            override_break_on_lifecycle=break_on_lifecycle,
+            override_release_strategy=release_strategy,
         )
 
-    def test_break_true_reaches_behavior(self) -> None:
-        wdi = self._make_wdi(True)
-        assert wdi.effective_behavior.override_break_on_lifecycle is True
+    def test_lifecycle_reaches_behavior(self) -> None:
+        wdi = self._make_wdi(OverrideReleaseStrategy.LIFECYCLE)
+        assert wdi.effective_behavior.override_release_strategy is OverrideReleaseStrategy.LIFECYCLE
 
-    def test_break_false_reaches_behavior(self) -> None:
-        wdi = self._make_wdi(False)
-        assert wdi.effective_behavior.override_break_on_lifecycle is False
+    def test_duration_reaches_behavior(self) -> None:
+        wdi = self._make_wdi(OverrideReleaseStrategy.DURATION)
+        assert wdi.effective_behavior.override_release_strategy is OverrideReleaseStrategy.DURATION
 
-    def test_default_is_true(self) -> None:
-        """Calling the builder without the param must default to True."""
+    def test_default_is_lifecycle(self) -> None:
+        """Calling the builder without the param must default to LIFECYCLE."""
         from custom_components.smartshading.models.window_decision_input import (
             build_window_decision_input,
         )
@@ -223,9 +235,9 @@ class TestWindowDecisionInputThreading:
             indoor_temp_c=None,
             exposure=None,
             is_in_solar_sector=False,
-            # override_break_on_lifecycle NOT passed — must default to True
+            # override_release_strategy NOT passed — must default to LIFECYCLE
         )
-        assert wdi.effective_behavior.override_break_on_lifecycle is True
+        assert wdi.effective_behavior.override_release_strategy is OverrideReleaseStrategy.LIFECYCLE
 
 
 # ===========================================================================

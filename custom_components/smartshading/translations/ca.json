@@ -400,21 +400,21 @@
         "title": "Anul·lació manual",
         "description": "Defineix el comportament d'una anul·lació manual activa: quant dura i si les accions de confort o protecció poden continuar executant-se mentre és activa.",
         "data": {
-          "override_duration_mode": "Durada de l'anul·lació",
+          "override_release_strategy": "Estratègia de finalització",
           "override_fixed_until": "Hora de finalització fixa",
           "override_allow_comfort_actions": "Permet accions de confort durant l'anul·lació",
           "override_allow_protection_actions": "Permet accions de protecció durant l'anul·lació",
-          "override_break_on_lifecycle": "Finalitza l'anul·lació en la transició de cicle",
+          "override_safety_timeout_enabled": "Temps de seguretat",
           "override_duration_min": "Durada d'anul·lació clàssica (minuts)",
           "override_night_duration_min": "Durada d'anul·lació nocturna (minuts)",
           "override_detection_tolerance": "Tolerància de detecció"
         },
         "data_description": {
-          "override_duration_mode": "Clàssic: dura un temps fix. Hora fixa: dura fins a una hora configurada.",
-          "override_fixed_until": "Només s'utilitza quan la durada s'estableix a \"Hora fixa\". Si l'hora ja ha passat avui, l'anul·lació acaba a aquesta hora demà.",
+          "override_release_strategy": "Controla com finalitza l'anul·lació: després d'una durada fixa, a una hora fixa, en la següent transició de cicle, en la següent decisió automàtica, o només quan s'esborri manualment.",
+          "override_fixed_until": "Només s'utilitza quan l'estratègia de finalització s'estableix a \"Hora fixa\". Si l'hora ja ha passat avui, l'anul·lació acaba a aquesta hora demà.",
           "override_allow_comfort_actions": "Si està activat, l'ombreig de confort habitual pot continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
           "override_allow_protection_actions": "Si està activat, les accions de protecció (absència, calor, enlluernament) poden continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
-          "override_break_on_lifecycle": "Si està activat, qualsevol transició de cicle (p. ex. dia a nit) finalitza una anul·lació activa.",
+          "override_safety_timeout_enabled": "Durada màxima opcional com a xarxa de seguretat per a estratègies obertes, perquè una anul·lació mai quedi oblidada permanentment.",
           "override_duration_min": "Quant dura una anul·lació diürna abans que SmartShading reprengui el control normal (mode de durada clàssic).",
           "override_night_duration_min": "Límit de seguretat per a una anul·lació nocturna. L'alliberament real es produeix en la transició de cicle matinal.",
           "override_detection_tolerance": "Canvi mínim de posició (en percentatge) abans que un moviment manual es reconegui com una anul·lació."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Invertit (algú a casa = absent)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Clàssic (durada fixa)",
-        "fixed_time": "Hora fixa"
+        "duration": "Després d'una durada fixa",
+        "fixed_time": "Hora fixa",
+        "lifecycle": "Al final del cicle de dia/nit",
+        "first_comfort": "En la següent acció automàtica de confort",
+        "first_protection": "En la següent protecció solar",
+        "first_any_decision": "En la següent decisió automàtica",
+        "manual": "Només esborrat manual"
       }
     }
   },

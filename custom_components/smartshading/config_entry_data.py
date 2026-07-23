@@ -29,7 +29,7 @@ from .models.lifecycle import (
     SunEvent,
 )
 from .models.lifecycle_profile import LifecycleProfile
-from .models.manual_override import OverrideDurationMode
+from .models.manual_override import LEGACY_DURATION_MODE_MIGRATION, OverrideReleaseStrategy
 from .models.obstruction import ObstructionZone
 from .models.override_policy import OverridePolicyConfig
 from .models.presence import PresencePolicy
@@ -313,14 +313,14 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             "glare_min_exposure_wm2": data.comfort_config.glare_min_exposure_wm2,
         },
         "override_policy": {
-            "duration_mode": data.override_policy.duration_mode.value,
+            "release_strategy": data.override_policy.release_strategy.value,
             "fixed_until": _time_to_storage(data.override_policy.fixed_until),
             "allow_comfort_actions": data.override_policy.allow_comfort_actions,
             "allow_protection_actions": data.override_policy.allow_protection_actions,
             "duration_min": data.override_policy.duration_min,
             "night_duration_min": data.override_policy.night_duration_min,
             "detection_tolerance": data.override_policy.detection_tolerance,
-            "break_on_lifecycle": data.override_policy.break_on_lifecycle,
+            "safety_timeout_enabled": data.override_policy.safety_timeout_enabled,
         },
     }
 
@@ -498,32 +498,65 @@ def _comfort_config_from_storage(raw: dict[str, Any] | None) -> ComfortConfig:
 def _override_policy_from_storage(raw: dict[str, Any] | None) -> OverridePolicyConfig:
     """Backwards compatible: ConfigEntries without an override_policy key
     (every pre-T7 config) fall back to full OverridePolicyConfig defaults —
-    duration_mode=legacy, allow_comfort_actions=False, allow_protection_
-    actions=False — reproducing pre-T7 behavior exactly. No migration, no
-    rewrite: invalid/unknown values fall back safely field-by-field, never
-    raising and never crashing the whole ConfigEntry."""
+    release_strategy=LIFECYCLE, allow_comfort_actions=False, allow_
+    protection_actions=False — reproducing pre-T7 behavior exactly. No
+    migration, no rewrite: invalid/unknown values fall back safely
+    field-by-field, never raising and never crashing the whole ConfigEntry.
+
+    v1.2.0-beta.1, T10: a stored entry from T7-T9 (duration_mode +
+    break_on_lifecycle, no release_strategy key) is migrated in-memory on
+    every load, without ever rewriting storage:
+      - break_on_lifecycle=True (the T7 default) -> LIFECYCLE. This is
+        deliberately NOT duration_mode-dependent: break_on_lifecycle was
+        already a stronger, independent release condition layered on top of
+        whatever duration_mode was set, and in practice fired before
+        duration_min in almost every real scenario (see
+        models/manual_override.py's pre-T10 scope-field docstring: "night:
+        held until the Morning lifecycle transition; expires_at is a
+        generous safety-net... not the real release mechanism"). Mapping it
+        to LIFECYCLE reproduces this exact effective behavior; duration_min/
+        night_duration_min become the safety-timeout they always effectively
+        were.
+      - break_on_lifecycle=False -> the stored duration_mode is migrated via
+        LEGACY_DURATION_MODE_MIGRATION ("legacy"->DURATION, "fixed_time"->
+        FIXED_TIME) — lifecycle-break was explicitly disabled, so behavior
+        stays governed purely by the configured duration/fixed-time expiry,
+        unchanged.
+    A stored release_strategy key (T10+) is used directly and always wins.
+    """
     if not raw:
         return OverridePolicyConfig()
-    try:
-        duration_mode = OverrideDurationMode(raw.get("duration_mode", OverrideDurationMode.LEGACY.value))
-    except ValueError:
-        duration_mode = OverrideDurationMode.LEGACY
+
+    _raw_strategy = raw.get("release_strategy")
+    if _raw_strategy is not None:
+        try:
+            release_strategy = OverrideReleaseStrategy(_raw_strategy)
+        except ValueError:
+            release_strategy = OverrideReleaseStrategy.LIFECYCLE
+    elif bool(raw.get("break_on_lifecycle", True)):
+        release_strategy = OverrideReleaseStrategy.LIFECYCLE
+    else:
+        release_strategy = OverrideReleaseStrategy(
+            LEGACY_DURATION_MODE_MIGRATION.get(
+                raw.get("duration_mode", "legacy"), OverrideReleaseStrategy.DURATION.value)
+        )
+
     fixed_until = _time_from_storage(raw.get("fixed_until"))
-    # A FIXED_TIME mode with no valid configured clock time is not
-    # actionable — fall back to legacy rather than crash or silently do
+    # A FIXED_TIME strategy with no valid configured clock time is not
+    # actionable — fall back to DURATION rather than crash or silently do
     # nothing at runtime (deterministic, documented fallback per T7 review
-    # point 15).
-    if duration_mode is OverrideDurationMode.FIXED_TIME and fixed_until is None:
-        duration_mode = OverrideDurationMode.LEGACY
+    # point 15, preserved unchanged in spirit for T10).
+    if release_strategy is OverrideReleaseStrategy.FIXED_TIME and fixed_until is None:
+        release_strategy = OverrideReleaseStrategy.DURATION
     return OverridePolicyConfig(
-        duration_mode=duration_mode,
+        release_strategy=release_strategy,
         fixed_until=fixed_until,
         allow_comfort_actions=bool(raw.get("allow_comfort_actions", False)),
         allow_protection_actions=bool(raw.get("allow_protection_actions", False)),
         duration_min=_safe_int(raw.get("duration_min"), 120),
         night_duration_min=_safe_int(raw.get("night_duration_min"), 720),
         detection_tolerance=_safe_int(raw.get("detection_tolerance"), 10),
-        break_on_lifecycle=bool(raw.get("break_on_lifecycle", True)),
+        safety_timeout_enabled=bool(raw.get("safety_timeout_enabled", True)),
     )
 
 

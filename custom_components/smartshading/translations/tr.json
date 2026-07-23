@@ -400,21 +400,21 @@
         "title": "Manuel geçersiz kılma",
         "description": "Aktif bir manuel geçersiz kılmanın davranışını tanımlar: ne kadar sürdüğünü ve aktifken konfor veya koruma eylemlerinin hâlâ çalışıp çalışamayacağını.",
         "data": {
-          "override_duration_mode": "Geçersiz kılma süresi",
+          "override_release_strategy": "Serbest bırakma stratejisi",
           "override_fixed_until": "Sabit bitiş saati",
           "override_allow_comfort_actions": "Geçersiz kılma sırasında konfor eylemlerine izin ver",
           "override_allow_protection_actions": "Geçersiz kılma sırasında koruma eylemlerine izin ver",
-          "override_break_on_lifecycle": "Program geçişinde geçersiz kılmayı sonlandır",
+          "override_safety_timeout_enabled": "Güvenlik zaman aşımı",
           "override_duration_min": "Klasik geçersiz kılma süresi (dakika)",
           "override_night_duration_min": "Gece geçersiz kılma süresi (dakika)",
           "override_detection_tolerance": "Algılama toleransı"
         },
         "data_description": {
-          "override_duration_mode": "Klasik: sabit bir süre boyunca devam eder. Sabit saat: ayarlanmış bir saate kadar devam eder.",
-          "override_fixed_until": "Yalnızca süre \"Sabit saat\" olarak ayarlandığında kullanılır. Saat bugün zaten geçtiyse, geçersiz kılma yarın bu saatte sona erer.",
+          "override_release_strategy": "Geçersiz kılmanın nasıl sona ereceğini kontrol eder: sabit bir süre sonra, sabit bir saatte, bir sonraki program geçişinde, bir sonraki otomatik kararda veya yalnızca manuel temizlemeyle.",
+          "override_fixed_until": "Yalnızca serbest bırakma stratejisi \"Sabit saat\" olarak ayarlandığında kullanılır. Saat bugün zaten geçtiyse, geçersiz kılma yarın bu saatte sona erer.",
           "override_allow_comfort_actions": "Etkinleştirildiğinde, normal konfor gölgelemesi aktif bir geçersiz kılma sırasında hâlâ çalışabilir. Geçersiz kılmanın kendisi aktif kalır.",
           "override_allow_protection_actions": "Etkinleştirildiğinde, koruma eylemleri (yokluk, sıcaklık, parlama) aktif bir geçersiz kılma sırasında hâlâ çalışabilir. Geçersiz kılmanın kendisi aktif kalır.",
-          "override_break_on_lifecycle": "Etkinleştirildiğinde, herhangi bir program geçişi (örn. günden geceye) aktif bir geçersiz kılmayı sonlandırır.",
+          "override_safety_timeout_enabled": "Açık uçlu stratejiler için güvenlik ağı olarak isteğe bağlı maksimum süre, böylece bir geçersiz kılma asla kalıcı olarak unutulmaz.",
           "override_duration_min": "SmartShading normal kontrolü devam ettirmeden önce bir gündüz geçersiz kılmasının ne kadar süreceği (klasik süre modu).",
           "override_night_duration_min": "Bir gece geçersiz kılması için güvenlik sınırı. Gerçek serbest bırakma sabah program geçişinde gerçekleşir.",
           "override_detection_tolerance": "Manuel bir hareketin geçersiz kılma olarak tanınmasından önceki minimum konum değişikliği (yüzde olarak)."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Ters çevrilmiş (biri evde = dışarıda)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Klasik (sabit süre)",
-        "fixed_time": "Sabit saat"
+        "duration": "Sabit bir süre sonra",
+        "fixed_time": "Sabit saat",
+        "lifecycle": "Gündüz/gece döngüsünün sonunda",
+        "first_comfort": "Bir sonraki otomatik konfor eyleminde",
+        "first_protection": "Bir sonraki koruyucu gölgelemede",
+        "first_any_decision": "Bir sonraki otomatik kararda",
+        "manual": "Yalnızca manuel temizleme"
       }
     }
   },

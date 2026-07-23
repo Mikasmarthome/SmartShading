@@ -400,21 +400,21 @@
         "title": "Ročna preglasitev",
         "description": "Določa obnašanje aktivne ročne preglasitve: kako dolgo traja in ali lahko dejanja udobja ali zaščite še vedno potekajo, ko je aktivna.",
         "data": {
-          "override_duration_mode": "Trajanje preglasitve",
+          "override_release_strategy": "Strategija zaključka",
           "override_fixed_until": "Fiksni čas zaključka",
           "override_allow_comfort_actions": "Dovoli dejanja udobja med preglasitvijo",
           "override_allow_protection_actions": "Dovoli zaščitna dejanja med preglasitvijo",
-          "override_break_on_lifecycle": "Zaključi preglasitev ob prehodu urnika",
+          "override_safety_timeout_enabled": "Varnostna časovna omejitev",
           "override_duration_min": "Klasično trajanje preglasitve (minute)",
           "override_night_duration_min": "Nočno trajanje preglasitve (minute)",
           "override_detection_tolerance": "Toleranca zaznavanja"
         },
         "data_description": {
-          "override_duration_mode": "Klasično: traja fiksno obdobje. Fiksni čas: traja do nastavljene ure.",
-          "override_fixed_until": "Uporabljeno samo, ko je trajanje nastavljeno na \"Fiksni čas\". Če je ura danes že minila, se preglasitev zaključi jutri ob tej uri.",
+          "override_release_strategy": "Nadzoruje, kako se preglasitev konča: po fiksnem trajanju, ob fiksnem času, ob naslednjem prehodu urnika, ob naslednji samodejni odločitvi ali le z ročnim počiščenjem.",
+          "override_fixed_until": "Uporabljeno samo, ko je strategija zaključka nastavljena na \"Fiksni čas\". Če je ura danes že minila, se preglasitev zaključi jutri ob tej uri.",
           "override_allow_comfort_actions": "Če je omogočeno, lahko običajno senčenje udobja še vedno poteka med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
           "override_allow_protection_actions": "Če je omogočeno, lahko zaščitna dejanja (odsotnost, vročina, bleščanje) še vedno potekajo med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
-          "override_break_on_lifecycle": "Če je omogočeno, vsak prehod urnika (npr. dan v noč) zaključi aktivno preglasitev.",
+          "override_safety_timeout_enabled": "Neobvezno največje trajanje kot varnostna mreža za odprte strategije, da preglasitev nikoli ni trajno pozabljena.",
           "override_duration_min": "Kako dolgo traja dnevna preglasitev, preden SmartShading nadaljuje običajno upravljanje (klasični način trajanja).",
           "override_night_duration_min": "Varnostna zgornja meja za nočno preglasitev. Dejanska sprostitev se zgodi ob jutranjem prehodu urnika.",
           "override_detection_tolerance": "Najmanjša sprememba položaja (v odstotkih), preden je ročni premik prepoznan kot preglasitev."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Obrnjeno (nekdo doma = odsoten)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Klasično (fiksno trajanje)",
-        "fixed_time": "Fiksni čas"
+        "duration": "Po fiksnem trajanju",
+        "fixed_time": "Fiksni čas",
+        "lifecycle": "Ob koncu dnevnega/nočnega cikla",
+        "first_comfort": "Ob naslednjem samodejnem udobnem dejanju",
+        "first_protection": "Ob naslednjem zaščitnem senčenju",
+        "first_any_decision": "Ob naslednji samodejni odločitvi",
+        "manual": "Samo ročno počiščenje"
       }
     }
   },

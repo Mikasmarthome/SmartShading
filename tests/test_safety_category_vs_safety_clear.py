@@ -40,7 +40,7 @@ from custom_components.smartshading.evaluators.tier_orchestrator import TierOrch
 from custom_components.smartshading.models.comfort import ComfortConfig
 from custom_components.smartshading.models.config import GlobalDefaults, ShadePositionDefaults
 from custom_components.smartshading.models.lifecycle import LifecycleState, NightDayLifecycleConfig
-from custom_components.smartshading.models.manual_override import ManualOverride
+from custom_components.smartshading.models.manual_override import ManualOverride, OverrideReleaseStrategy
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.window_decision_input import build_window_decision_input
 from custom_components.smartshading.models.zone import ZoneConfig
@@ -64,7 +64,7 @@ def _detector_with_active_override(fixed_time: bool = False) -> tuple[OverrideDe
         det.tick(
             window_id="w1", observed_position=40, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0,
-            duration_mode="fixed_time", fixed_until=dtime(20, 0), now_local=t0,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=dtime(20, 0), now_local=t0,
         )
     else:
         det.tick(
@@ -305,7 +305,7 @@ class TestFixedTimeOverrideClearedByRain:
         det.tick(
             window_id="w1", observed_position=65, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t1,
-            duration_mode="fixed_time", fixed_until=dtime(20, 0), now_local=t1,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=dtime(20, 0), now_local=t1,
         )
         new_override = det.get("w1", t1)
         assert new_override is not None

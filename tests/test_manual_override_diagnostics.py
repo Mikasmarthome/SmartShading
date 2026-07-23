@@ -98,7 +98,10 @@ sys.modules.pop("custom_components.smartshading.coordinator", None)
 from custom_components.smartshading.coordinator import SmartShadingCoordinator  # noqa: E402
 from custom_components.smartshading.engines.diagnostics_builder import build_consolidated_diagnostics  # noqa: E402
 from custom_components.smartshading.models.lifecycle import NightDayLifecycleConfig  # noqa: E402
-from custom_components.smartshading.models.manual_override import ManualOverride  # noqa: E402
+from custom_components.smartshading.models.manual_override import (  # noqa: E402
+    ManualOverride,
+    OverrideReleaseStrategy,
+)
 from custom_components.smartshading.state_machine.states import ShadingState  # noqa: E402
 
 
@@ -138,12 +141,13 @@ class TestLegacyDefaultsSummary:
         coord = _make_coord()
         summary = build_consolidated_diagnostics(coord)["manual_override_summary"]
         assert summary == {
-            "duration_mode": "legacy",
+            "release_strategy": "lifecycle",
             "fixed_time_configured": False,
             "allow_comfort": False,
             "allow_protection": False,
-            "break_on_lifecycle": True,
+            "safety_timeout_enabled": True,
             "active_override_count": 0,
+            "active_override_strategy_counts": {},
             "nearest_expiry_remaining_min": None,
         }
 
@@ -151,18 +155,18 @@ class TestLegacyDefaultsSummary:
 class TestConfiguredFlagsSurfaceSafely:
     def test_fixed_time_and_allow_flags(self):
         coord = _make_coord(
-            override_duration_mode="fixed_time",
+            override_release_strategy=OverrideReleaseStrategy.FIXED_TIME,
             override_fixed_until=time(8, 0),
             override_allow_comfort_actions=True,
             override_allow_protection_actions=True,
-            override_break_on_lifecycle=False,
+            override_safety_timeout_enabled=False,
         )
         summary = build_consolidated_diagnostics(coord)["manual_override_summary"]
-        assert summary["duration_mode"] == "fixed_time"
+        assert summary["release_strategy"] == "fixed_time"
         assert summary["fixed_time_configured"] is True
         assert summary["allow_comfort"] is True
         assert summary["allow_protection"] is True
-        assert summary["break_on_lifecycle"] is False
+        assert summary["safety_timeout_enabled"] is False
         # The raw configured clock time itself is never exposed.
         assert "08:00" not in str(summary)
         assert "time(8, 0)" not in str(summary)
@@ -261,7 +265,10 @@ class TestNearestExpiryNeverNegative:
 
 class TestFixedTimeAndLegacyProduceEquivalentDiagnosticsShape:
     def test_fixed_time_override_diagnostics_same_shape_as_legacy(self) -> None:
-        coord = _make_coord(override_duration_mode="fixed_time", override_fixed_until=time(23, 0))
+        coord = _make_coord(
+            override_release_strategy=OverrideReleaseStrategy.FIXED_TIME,
+            override_fixed_until=time(23, 0),
+        )
         now = datetime.now(timezone.utc)
         coord._override_detector.tick(
             window_id="w1", observed_position=0, smartshading_target=0,
@@ -271,16 +278,17 @@ class TestFixedTimeAndLegacyProduceEquivalentDiagnosticsShape:
         coord._override_detector.tick(
             window_id="w1", observed_position=40, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=now + timedelta(minutes=1),
-            duration_mode="fixed_time", fixed_until=time(23, 59), now_local=now_local + timedelta(minutes=1),
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(23, 59),
+            now_local=now_local + timedelta(minutes=1),
         )
         summary = build_consolidated_diagnostics(coord)["manual_override_summary"]
-        assert summary["duration_mode"] == "fixed_time"
+        assert summary["release_strategy"] == "fixed_time"
         assert summary["active_override_count"] == 1
         assert isinstance(summary["nearest_expiry_remaining_min"], float)
         assert set(summary.keys()) == {
-            "duration_mode", "fixed_time_configured", "allow_comfort",
-            "allow_protection", "break_on_lifecycle", "active_override_count",
-            "nearest_expiry_remaining_min",
+            "release_strategy", "fixed_time_configured", "allow_comfort",
+            "allow_protection", "safety_timeout_enabled", "active_override_count",
+            "active_override_strategy_counts", "nearest_expiry_remaining_min",
         }  # identical shape to the legacy case
 
 
@@ -360,9 +368,9 @@ class TestNoWindowOrPositionDataExposed:
         )
         summary = build_consolidated_diagnostics(coord)["manual_override_summary"]
         assert "window-secret-42" not in str(summary)
-        assert "77" not in str(summary.get("duration_mode", ""))
+        assert "77" not in str(summary.get("release_strategy", ""))
         assert set(summary.keys()) == {
-            "duration_mode", "fixed_time_configured", "allow_comfort",
-            "allow_protection", "break_on_lifecycle", "active_override_count",
-            "nearest_expiry_remaining_min",
+            "release_strategy", "fixed_time_configured", "allow_comfort",
+            "allow_protection", "safety_timeout_enabled", "active_override_count",
+            "active_override_strategy_counts", "nearest_expiry_remaining_min",
         }

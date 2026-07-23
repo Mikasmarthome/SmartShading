@@ -58,7 +58,7 @@ from .config_entry_data import (
 )
 from .models.comfort import ComfortConfig
 from .models.config import GlobalDefaults, ShadePositionDefaults
-from .models.manual_override import OverrideDurationMode
+from .models.manual_override import OverrideReleaseStrategy
 from .models.cover_group import CoverGroup, CoverHardwareType, CoverSyncMode, cover_hardware_type_from_str
 from .models.presence import PresencePolicy
 from .models.lifecycle_profile import LifecycleProfile
@@ -107,10 +107,10 @@ from .const import (
     CONF_OUTDOOR_TEMPERATURE_SENSOR_ID,
     CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
     CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS,
-    CONF_OVERRIDE_BREAK_ON_LIFECYCLE,
+    CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
     CONF_OVERRIDE_DETECTION_TOLERANCE,
     CONF_OVERRIDE_DURATION_MIN,
-    CONF_OVERRIDE_DURATION_MODE,
+    CONF_OVERRIDE_RELEASE_STRATEGY,
     CONF_OVERRIDE_FIXED_UNTIL,
     CONF_OVERRIDE_NIGHT_DURATION_MIN,
     DEFAULT_OVERRIDE_DETECTION_TOLERANCE,
@@ -2194,14 +2194,16 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
 
         if user_input is not None:
             try:
-                duration_mode = OverrideDurationMode(user_input.get(CONF_OVERRIDE_DURATION_MODE, OverrideDurationMode.LEGACY.value))
+                release_strategy = OverrideReleaseStrategy(
+                    user_input.get(CONF_OVERRIDE_RELEASE_STRATEGY, OverrideReleaseStrategy.LIFECYCLE.value)
+                )
             except ValueError:
-                duration_mode = OverrideDurationMode.LEGACY
+                release_strategy = OverrideReleaseStrategy.LIFECYCLE
             fixed_until = _parse_optional_time_input(user_input.get(CONF_OVERRIDE_FIXED_UNTIL))
-            # Fixed-time mode requires a configured clock time — same
+            # Fixed-time strategy requires a configured clock time — same
             # deterministic-fallback rule as loading a malformed stored
             # value (config_entry_data._override_policy_from_storage()).
-            if duration_mode is OverrideDurationMode.FIXED_TIME and fixed_until is None:
+            if release_strategy is OverrideReleaseStrategy.FIXED_TIME and fixed_until is None:
                 errors["base"] = "override_fixed_until_required"
 
             # Server-side validation for the three numeric fields: NumberSelector
@@ -2223,42 +2225,42 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             )
             if not errors:
                 new_policy = {
-                    "duration_mode": duration_mode.value,
+                    "release_strategy": release_strategy.value,
                     # T7 review point 13: fixed_until is deliberately preserved
-                    # regardless of the currently-selected duration_mode (not
-                    # cleared when switching to legacy) — this lets a user
-                    # switch Fixed Time -> Legacy -> Fixed Time without
+                    # regardless of the currently-selected release_strategy (not
+                    # cleared when switching away from fixed_time) — this lets a
+                    # user switch Fixed Time -> Lifecycle -> Fixed Time without
                     # re-entering the clock time. It has no functional effect
-                    # while duration_mode="legacy" (see
-                    # engines/override_detector.py: fixed_until is only ever
-                    # read when duration_mode="fixed_time").
+                    # while release_strategy != "fixed_time" (see
+                    # engines/override_release.py: fixed_until is only ever
+                    # read when the strategy is FIXED_TIME).
                     "fixed_until": fixed_until.isoformat() if fixed_until is not None else None,
                     "allow_comfort_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS, False)),
                     "allow_protection_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS, False)),
                     "duration_min": duration_min,
                     "night_duration_min": night_duration_min,
                     "detection_tolerance": detection_tolerance,
-                    "break_on_lifecycle": bool(user_input.get(CONF_OVERRIDE_BREAK_ON_LIFECYCLE, True)),
+                    "safety_timeout_enabled": bool(user_input.get(CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED, True)),
                 }
                 return self._save_and_reload({"override_policy": new_policy})
 
-        duration_mode_selector = SelectSelector(
+        release_strategy_selector = SelectSelector(
             SelectSelectorConfig(
-                options=[m.value for m in OverrideDurationMode],
+                options=[s.value for s in OverrideReleaseStrategy],
                 mode=SelectSelectorMode.DROPDOWN,
-                translation_key="override_duration_mode",
+                translation_key="override_release_strategy",
             )
         )
         schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_OVERRIDE_DURATION_MODE,
-                    default=stored.get("duration_mode", OverrideDurationMode.LEGACY.value),
-                ): duration_mode_selector,
+                    CONF_OVERRIDE_RELEASE_STRATEGY,
+                    default=stored.get("release_strategy", OverrideReleaseStrategy.LIFECYCLE.value),
+                ): release_strategy_selector,
                 # Fixed-time-only field: shown unconditionally (no per-field
                 # conditional visibility in this Flow — matches the established
                 # pattern from the T6 lifecycle-profile form) but only used
-                # fachlich when duration_mode=fixed_time; ignored otherwise.
+                # fachlich when release_strategy=fixed_time; ignored otherwise.
                 vol.Optional(
                     CONF_OVERRIDE_FIXED_UNTIL,
                     description={"suggested_value": stored.get("fixed_until")},
@@ -2271,9 +2273,13 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS,
                     default=stored.get("allow_protection_actions", False),
                 ): BooleanSelector(),
+                # Only meaningful for unbounded strategies (LIFECYCLE, FIRST_*,
+                # MANUAL) — a safety-net maximum so an override is never
+                # permanently forgotten. Ignored for DURATION/FIXED_TIME, which
+                # already have their own explicit bound.
                 vol.Required(
-                    CONF_OVERRIDE_BREAK_ON_LIFECYCLE,
-                    default=stored.get("break_on_lifecycle", True),
+                    CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
+                    default=stored.get("safety_timeout_enabled", True),
                 ): BooleanSelector(),
                 vol.Required(
                     CONF_OVERRIDE_DURATION_MIN,

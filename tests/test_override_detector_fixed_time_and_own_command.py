@@ -26,6 +26,7 @@ from datetime import datetime, time, timedelta, timezone
 import pytest
 
 from custom_components.smartshading.engines.override_detector import OverrideDetector
+from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy
 from custom_components.smartshading.state_machine.states import ShadingState
 
 _UTC = timezone.utc
@@ -43,11 +44,17 @@ def _detector_past_warmup(window_id: str = "w1") -> OverrideDetector:
 
 class TestLegacyRenewalUnchanged:
     def test_manual_renewal_before_expiry_extends_expires_at(self) -> None:
+        # DURATION is T7's "legacy" mode, renamed — only DURATION extends
+        # expires_at on renewal (extends_on_renewal(), override_release.py);
+        # every other strategy (including the tick()-default LIFECYCLE) keeps
+        # the original boundary, so this legacy-renewal-extends behavior must
+        # be pinned explicitly rather than relying on tick()'s own default.
         det = _detector_past_warmup()
         t0 = _WARMUP_NOW + timedelta(minutes=1)
         det.tick(
             window_id="w1", observed_position=20, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0,
+            release_strategy=OverrideReleaseStrategy.DURATION,
         )
         ov1 = det.get("w1", t0)
         assert ov1 is not None
@@ -57,6 +64,7 @@ class TestLegacyRenewalUnchanged:
         det.tick(
             window_id="w1", observed_position=60, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t1,
+            release_strategy=OverrideReleaseStrategy.DURATION,
         )
         ov2 = det.get("w1", t1)
         assert ov2 is not None
@@ -71,7 +79,7 @@ class TestFixedTimeRenewalDoesNotMoveBoundary:
         det.tick(
             window_id="w1", observed_position=20, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t0,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t0,
         )
         ov1 = det.get("w1", t0)
         assert ov1 is not None
@@ -81,7 +89,7 @@ class TestFixedTimeRenewalDoesNotMoveBoundary:
         det.tick(
             window_id="w1", observed_position=60, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t1,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t1,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t1,
         )
         ov2 = det.get("w1", t1)
         assert ov2 is not None
@@ -96,7 +104,7 @@ class TestFixedTimeNewOverrideAfterExpiryGetsNextBoundary:
         det.tick(
             window_id="w1", observed_position=20, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t0,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t0,
         )
         ov1 = det.get("w1", t0)
         assert ov1.expires_at == datetime(2026, 6, 15, 8, 0, tzinfo=_UTC)
@@ -110,7 +118,7 @@ class TestFixedTimeNewOverrideAfterExpiryGetsNextBoundary:
         det.tick(
             window_id="w1", observed_position=20, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t_expired,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t_expired,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t_expired,
         )
         assert det.get("w1", t_expired) is None
 
@@ -121,7 +129,7 @@ class TestFixedTimeNewOverrideAfterExpiryGetsNextBoundary:
         det.tick(
             window_id="w1", observed_position=55, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t_new_move,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t_new_move,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t_new_move,
         )
         ov2 = det.get("w1", t_new_move)
         assert ov2 is not None

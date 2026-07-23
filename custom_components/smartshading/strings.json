@@ -400,21 +400,21 @@
         "title": "Manual Override",
         "description": "Configure how an active Manual Override behaves: how long it lasts, and whether Comfort or Protection actions may still run while it is active.",
         "data": {
-          "override_duration_mode": "Override duration",
+          "override_release_strategy": "Release strategy",
           "override_fixed_until": "Fixed end time",
           "override_allow_comfort_actions": "Allow comfort actions during override",
           "override_allow_protection_actions": "Allow protection actions during override",
-          "override_break_on_lifecycle": "Break override on lifecycle transition",
+          "override_safety_timeout_enabled": "Safety timeout",
           "override_duration_min": "Legacy override duration (minutes)",
           "override_night_duration_min": "Night override duration (minutes)",
           "override_detection_tolerance": "Detection tolerance"
         },
         "data_description": {
-          "override_duration_mode": "Legacy: holds for a fixed duration. Fixed time: holds until a configured clock time.",
-          "override_fixed_until": "Only used when duration is set to \"Fixed time\". If already passed today, the override ends at this time tomorrow.",
+          "override_release_strategy": "Controls how the override ends: after a fixed duration, at a fixed time, at the next schedule transition, on the next automatic decision, or only when cleared manually.",
+          "override_fixed_until": "Only used when release strategy is set to \"Until a fixed time\". If already passed today, the override ends at this time tomorrow.",
           "override_allow_comfort_actions": "When enabled, regular comfort shading may still run while an override is active. The override itself stays active.",
           "override_allow_protection_actions": "When enabled, protection actions (absence, heat, glare) may still run while an override is active. The override itself stays active.",
-          "override_break_on_lifecycle": "When enabled, any schedule transition (e.g. day to night) ends an active override.",
+          "override_safety_timeout_enabled": "Optional maximum duration as a safety net for open-ended strategies, so an override is never permanently forgotten.",
           "override_duration_min": "How long a daytime override lasts before SmartShading resumes normal control (legacy duration mode).",
           "override_night_duration_min": "Safety-net cap for a night-time override. The real release is the morning schedule transition.",
           "override_detection_tolerance": "Minimum position change (in percent) before a manual movement is recognized as an override."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Inverted (anyone home = away)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Legacy (fixed duration)",
-        "fixed_time": "Fixed time"
+        "duration": "After a fixed duration",
+        "fixed_time": "Until a fixed time",
+        "lifecycle": "At the end of the day/night cycle",
+        "first_comfort": "On the next automatic comfort action",
+        "first_protection": "On the next protective shading",
+        "first_any_decision": "On the next automatic decision",
+        "manual": "Manually cleared only"
       }
     }
   },

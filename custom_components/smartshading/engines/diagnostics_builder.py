@@ -267,6 +267,12 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         detector = getattr(c, "_override_detector", None)
         active_count = 0
         nearest_remaining_min = None
+        # PUBLIC aggregate breakdown of *why* each active override is still
+        # active — how many are waiting on which release strategy — without
+        # naming a single window/cover. Answers ticket T10 §6's "which
+        # strategy is active" at the same counts-only granularity the rest
+        # of this contract already uses.
+        strategy_counts: dict[str, int] = {}
         if detector is not None:
             try:
                 snapshot = detector.active_overrides_snapshot(now)
@@ -277,16 +283,24 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
                         for ov in snapshot
                     ]
                     nearest_remaining_min = round(max(0.0, min(remaining)), 1)
+                    for ov in snapshot:
+                        strat = ov.get("release_strategy", "duration")
+                        strategy_counts[strat] = strategy_counts.get(strat, 0) + 1
             except Exception:
                 active_count = 0
                 nearest_remaining_min = None
+                strategy_counts = {}
+        configured_strategy = getattr(c, "_override_release_strategy", None)
         return {
-            "duration_mode": getattr(c, "_override_duration_mode", "legacy"),
+            "release_strategy": (
+                configured_strategy.value if configured_strategy is not None else "lifecycle"
+            ),
             "fixed_time_configured": getattr(c, "_override_fixed_until", None) is not None,
             "allow_comfort": bool(getattr(c, "_override_allow_comfort_actions", False)),
             "allow_protection": bool(getattr(c, "_override_allow_protection_actions", False)),
-            "break_on_lifecycle": bool(getattr(c, "_override_break_on_lifecycle", True)),
+            "safety_timeout_enabled": bool(getattr(c, "_override_safety_timeout_enabled", True)),
             "active_override_count": active_count,
+            "active_override_strategy_counts": strategy_counts,
             "nearest_expiry_remaining_min": nearest_remaining_min,
         }
 

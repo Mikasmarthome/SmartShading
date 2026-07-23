@@ -119,6 +119,7 @@ from .models.window import WindowBehaviorMode, WindowConfig
 from .models.zone import ZoneConfig
 from .models.zone_execution_config import ZoneExecutionConfig
 from .evaluators.tier_orchestrator import TierOrchestrator
+from .models.manual_override import OverrideReleaseStrategy
 from .models.window_decision import WindowDecision
 from .models.window_decision_input import build_window_decision_input
 from .state_machine.guards import StateGuard, StateGuardConfig
@@ -598,6 +599,11 @@ class _WindowComputeState:
     # (converted to HA convention at WindowExecutionDiagnostics construction,
     # once invert_position/exec_cap is known).
     manual_override_position_internal: int | None = None
+    # T10: which release strategy governs the active override, and when it
+    # started — support/diagnostics need both to explain "why is this
+    # override still active / what is it waiting for" without code reading.
+    manual_override_release_strategy: str | None = None
+    manual_override_started_at: "datetime | None" = None
     # v1.1.5 position-based self-healing recovery open (ABSENCE_ONLY / A&S).
     behavior_mode_recovery_open: bool = False
     # Authoritative solar source this cycle (engines/solar_source.py) — carried
@@ -1048,8 +1054,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         override_duration_min: int = 120,
         override_night_duration_min: int = 720,
         override_detection_tolerance: int = 10,
-        override_break_on_lifecycle: bool = True,
-        override_duration_mode: str = "legacy",
+        override_release_strategy: OverrideReleaseStrategy = OverrideReleaseStrategy.LIFECYCLE,
+        override_safety_timeout_enabled: bool = True,
         override_fixed_until: time | None = None,
         override_allow_comfort_actions: bool = False,
         override_allow_protection_actions: bool = False,
@@ -1114,11 +1120,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._override_duration_min = override_duration_min
         self._override_night_duration_min = override_night_duration_min
         self._override_detection_tolerance = override_detection_tolerance
-        self._override_break_on_lifecycle = override_break_on_lifecycle
-        # T7 (v1.2.0-beta.1): fixed-time expiry mode and per-category allow
-        # switches while an override is active. All default to legacy/False —
-        # unchanged pre-T7 behavior unless explicitly configured.
-        self._override_duration_mode = override_duration_mode
+        # v1.2.0-beta.1, T10: release_strategy replaces T7's separate
+        # duration_mode + break_on_lifecycle pair — LIFECYCLE reproduces the
+        # T7 default (break_on_lifecycle=True) exactly. safety_timeout_enabled
+        # controls whether override_duration_min/_night_duration_min above
+        # also apply as a defensive maximum for LIFECYCLE / FIRST_COMFORT /
+        # FIRST_PROTECTION / FIRST_ANY_DECISION / MANUAL — see
+        # engines/override_release.py.
+        self._override_release_strategy = override_release_strategy
+        self._override_safety_timeout_enabled = override_safety_timeout_enabled
         self._override_fixed_until = override_fixed_until
         self._override_allow_comfort_actions = override_allow_comfort_actions
         self._override_allow_protection_actions = override_allow_protection_actions
@@ -2016,6 +2026,56 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     self._override_detector.suppress_next_override_tick(window_id)
         self._persist_zone_controls()
         await self.async_request_refresh()
+
+    async def async_clear_manual_override(self, window_id: str) -> bool:
+        """Explicitly end an active Manual Override for one window
+        (v1.2.0-beta.1, T10) — the user-facing action the MANUAL release
+        strategy relies on ("the user clears it themselves").
+
+        Safe to call for a window with no active override (no-op, returns
+        False). This is the coordinator-level public API for that action;
+        deliberately independent of any specific entry point (a future HA
+        service or button can call this directly) — see
+        models/manual_override.py's `source="service_call"` field, which
+        already anticipated exactly this.
+        """
+        if window_id not in self.windows:
+            return False
+        now = dt_util.utcnow()
+        active = self._override_detector.get(window_id, now)
+        if active is None:
+            return False
+        zone_id = self.windows[window_id].zone_id
+        if self.effective_zone_execution(zone_id).learning_enabled:
+            try:
+                self._learning_store.record_override(OverrideRecord(
+                    timestamp=now,
+                    window_id=window_id,
+                    event_type="cleared_by_manual",
+                    lifecycle_state=self._lifecycle_state.value,
+                    override_position=active.override_position,
+                    overridden_state=active.overridden_state,
+                    overridden_position=active.overridden_position,
+                    override_duration_min=(now - active.started_at).total_seconds() / 60,
+                    outdoor_temp_c=None,
+                    solar_radiation_wm2=None,
+                    sun_azimuth=None,
+                    sun_elevation=None,
+                    solar_relative_azimuth=None,
+                    weather_condition=None,
+                    cloud_cover_pct=None,
+                    raw_solar_radiation_wm2=None,
+                    effective_exposure_wm2=None,
+                    learned_solar_impact_factor=None,
+                    decided_by=None,  # outside a coordinator cycle — no tier_decision
+                ))
+                self._mark_learning_dirty()
+            except Exception:
+                _LOGGER.warning("Learning: override 'cleared_by_manual' record failed for %s", window_id)
+        self._override_detector.clear(window_id)
+        self._override_detector.suppress_next_override_tick(window_id)
+        await self.async_request_refresh()
+        return True
 
     def _persist_zone_controls(self) -> None:
         """Write current zone execution overrides into config_entry.options."""
@@ -2957,7 +3017,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     and lifecycle_should_break_override(
                         prev=_prev_lifecycle_state,
                         new=self._lifecycle_state,
-                        break_enabled=self._override_break_on_lifecycle,
+                        break_enabled=(
+                            self._override_release_strategy is OverrideReleaseStrategy.LIFECYCLE
+                        ),
                     ) and active_override is not None):
                 # Phase 9C: record lifecycle clear before removing the override.
                 # Learning write is gated — functional clear always runs.
@@ -3337,7 +3399,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 rain_release_delay_min=_rain_delay_min,
                 active_override=active_override,
                 override_detection_tolerance=self._override_detection_tolerance,
-                override_break_on_lifecycle=self._override_break_on_lifecycle,
+                override_release_strategy=self._override_release_strategy,
                 override_allow_comfort_actions=self._override_allow_comfort_actions,
                 override_allow_protection_actions=self._override_allow_protection_actions,
                 night_block_on_window_open=window.night_block_on_window_open,
@@ -4024,6 +4086,63 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 "Learning: outcome resolution (safety) failed for %s", window_id
                             )
             else:
+                # v1.2.0-beta.1, T10: strategy-triggered release. The Tier 2
+                # policy (evaluate_manual_override_policy(), via
+                # engines/override_release.resolve_candidate_release()) has
+                # already determined that THIS cycle's candidate is exactly
+                # the kind of decision the active override's release_strategy
+                # (FIRST_COMFORT / FIRST_PROTECTION / FIRST_ANY_DECISION) was
+                # waiting for — clear it now, before tick() runs, same
+                # pattern as the lifecycle-transition clear above.
+                if tier_decision.release_override and active_override is not None:
+                    if obs_enabled:
+                        try:
+                            self._learning_store.record_override(OverrideRecord(
+                                timestamp=now,
+                                window_id=window_id,
+                                event_type=(
+                                    "cleared_by_comfort"
+                                    if tier_decision.category is DecisionCategory.COMFORT
+                                    else "cleared_by_protection"
+                                ),
+                                lifecycle_state=self._lifecycle_state.value,
+                                override_position=active_override.override_position,
+                                overridden_state=active_override.overridden_state,
+                                overridden_position=active_override.overridden_position,
+                                override_duration_min=(
+                                    (now - active_override.started_at).total_seconds() / 60
+                                ),
+                                outdoor_temp_c=weather_inputs.outdoor_temperature,
+                                solar_radiation_wm2=weather_inputs.solar_radiation,
+                                sun_azimuth=sun_position.azimuth,
+                                sun_elevation=sun_position.elevation,
+                                solar_relative_azimuth=sun_position.azimuth - window.azimuth,
+                                weather_condition=weather_inputs.weather_condition,
+                                cloud_cover_pct=weather_inputs.cloud_cover,
+                                raw_solar_radiation_wm2=effective_radiation,
+                                effective_exposure_wm2=exposure.effective_exposure,
+                                learned_solar_impact_factor=exposure.learned_solar_impact_factor,
+                                decided_by=tier_decision.decided_by,
+                            ))
+                        except Exception:
+                            _LOGGER.warning(
+                                "Learning: override strategy-triggered clear record failed for %s",
+                                window_id,
+                            )
+                    _override_release_reason = (
+                        "comfort_decision" if tier_decision.category is DecisionCategory.COMFORT
+                        else "protection_decision"
+                    )
+                    self._override_detector.clear(window_id)
+                    # Suppress this SAME cycle's tick() call below — without
+                    # this, tick() would immediately compare the still-
+                    # unmoved override position against the just-approved
+                    # candidate's (likely very different) target and
+                    # re-create a brand-new override before dispatch has had
+                    # any chance to move the cover, undoing the release.
+                    self._override_detector.suppress_next_override_tick(window_id)
+                    active_override = None
+
                 # Convert observed position HA→internal for delta comparison.
                 observed_internal = (
                     100 - cover_position.best_known_position
@@ -4087,13 +4206,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     duration_min=_override_duration_for_scope,
                     scope=_override_scope,
                     now=now,
-                    # T7: fixed_time mode governs uniformly across day/night
-                    # scope (duration_min above is then unused by the
-                    # detector) — override_break_on_lifecycle is unaffected
-                    # and can still end the override earlier regardless of
-                    # duration_mode (handled independently above via
-                    # lifecycle_should_break_override()).
-                    duration_mode=self._override_duration_mode,
+                    # T10: release_strategy governs how expires_at is
+                    # computed/interpreted uniformly across day/night scope —
+                    # LIFECYCLE/FIRST_*/MANUAL are ended by their own
+                    # mechanisms (handled independently above/at the top of
+                    # this else-branch), duration_min here is then only the
+                    # optional defensive safety-net for those strategies.
+                    release_strategy=self._override_release_strategy,
+                    safety_timeout_enabled=self._override_safety_timeout_enabled,
                     fixed_until=self._override_fixed_until,
                     # fixed_until is a LOCAL wall-clock time (what the user
                     # configured in HA's own timezone) — must be evaluated
@@ -4331,6 +4451,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _mo_expires_at: datetime | None = None
             _mo_remaining_min: float | None = None
             _mo_position_internal: int | None = None
+            _mo_release_strategy: str | None = None
+            _mo_started_at: datetime | None = None
             if current_override is not None:
                 _mo_scope = current_override.scope
                 _mo_expires_at = current_override.expires_at
@@ -4341,6 +4463,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 # convention) — converted to HA convention at
                 # WindowExecutionDiagnostics construction.
                 _mo_position_internal = current_override.override_position
+                # T10: which release strategy governs this override, and when
+                # it started — support export/diagnostics need both to
+                # explain why it is still active without code inspection.
+                _mo_release_strategy = current_override.release_strategy
+                _mo_started_at = current_override.started_at
 
             # Phase 9C: detect "started" and "renewed" from tick() outcome.
             # Safety path clears the override — no started/renewed possible there.
@@ -4858,6 +4985,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 manual_override_remaining_min=_mo_remaining_min,
                 manual_override_release_reason=_override_release_reason,
                 manual_override_position_internal=_mo_position_internal,
+                manual_override_release_strategy=_mo_release_strategy,
+                manual_override_started_at=_mo_started_at,
                 behavior_mode_recovery_open=_behavior_recovery_open,
                 selected_solar_source=_solar_sel.source,
                 solar_source_quality=_solar_sel.quality,
@@ -5446,6 +5575,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     and s.exec_cap is not None
                     else None
                 ),
+                manual_override_release_strategy=s.manual_override_release_strategy,
+                manual_override_started_at=s.manual_override_started_at,
                 behavior_mode_recovery_open=s.behavior_mode_recovery_open,
                 selected_solar_source=s.selected_solar_source,
                 solar_source_quality=s.solar_source_quality,

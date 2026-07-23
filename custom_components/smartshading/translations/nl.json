@@ -400,21 +400,21 @@
         "title": "Handmatige overschrijving",
         "description": "Bepaalt het gedrag van een actieve handmatige overschrijving: hoe lang deze duurt en of comfort- of beschermingsacties nog mogen plaatsvinden terwijl deze actief is.",
         "data": {
-          "override_duration_mode": "Duur van de overschrijving",
+          "override_release_strategy": "Vrijgavestrategie",
           "override_fixed_until": "Vaste eindtijd",
           "override_allow_comfort_actions": "Comfortacties toestaan tijdens overschrijving",
           "override_allow_protection_actions": "Beschermingsacties toestaan tijdens overschrijving",
-          "override_break_on_lifecycle": "Overschrijving beëindigen bij schemaovergang",
+          "override_safety_timeout_enabled": "Veiligheidstime-out",
           "override_duration_min": "Klassieke overschrijvingsduur (minuten)",
           "override_night_duration_min": "Nacht-overschrijvingsduur (minuten)",
           "override_detection_tolerance": "Detectietolerantie"
         },
         "data_description": {
-          "override_duration_mode": "Klassiek: duurt een vaste periode. Vaste tijd: duurt tot een ingestelde kloktijd.",
-          "override_fixed_until": "Alleen gebruikt wanneer de duur is ingesteld op \"Vaste tijd\". Als de tijd vandaag al is verstreken, eindigt de overschrijving morgen op dat tijdstip.",
+          "override_release_strategy": "Bepaalt hoe de overschrijving eindigt: na een vaste duur, op een vast tijdstip, bij de volgende schemaovergang, bij de volgende automatische beslissing, of alleen door handmatig wissen.",
+          "override_fixed_until": "Alleen gebruikt wanneer de vrijgavestrategie is ingesteld op \"Vaste tijd\". Als de tijd vandaag al is verstreken, eindigt de overschrijving morgen op dat tijdstip.",
           "override_allow_comfort_actions": "Indien ingeschakeld, kan de reguliere comfortbeschaduwing nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
           "override_allow_protection_actions": "Indien ingeschakeld, kunnen beschermingsacties (afwezigheid, hitte, verblinding) nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
-          "override_break_on_lifecycle": "Indien ingeschakeld, beëindigt elke schemaovergang (bijv. dag naar nacht) een actieve overschrijving.",
+          "override_safety_timeout_enabled": "Optionele maximale duur als vangnet voor open strategieën, zodat een overschrijving nooit permanent vergeten wordt.",
           "override_duration_min": "Hoe lang een dag-overschrijving duurt voordat SmartShading de normale besturing hervat (klassieke duurmodus).",
           "override_night_duration_min": "Veiligheidslimiet voor een nacht-overschrijving. De echte vrijgave gebeurt bij de ochtendlijke schemaovergang.",
           "override_detection_tolerance": "Minimale positieverandering (in procenten) voordat een handmatige beweging als overschrijving wordt herkend."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Omgekeerd (iemand thuis = afwezig)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Klassiek (vaste duur)",
-        "fixed_time": "Vaste tijd"
+        "duration": "Na een vaste duur",
+        "fixed_time": "Vaste tijd",
+        "lifecycle": "Aan het einde van de dag-/nachtcyclus",
+        "first_comfort": "Bij de volgende automatische comfortactie",
+        "first_protection": "Bij de volgende beschermende beschaduwing",
+        "first_any_decision": "Bij de volgende automatische beslissing",
+        "manual": "Alleen handmatig wissen"
       }
     }
   },

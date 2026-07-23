@@ -44,6 +44,7 @@ import pytest
 
 from custom_components.smartshading.engines.override_detector import OverrideDetector
 from custom_components.smartshading.engines.override_fixed_time import compute_fixed_time_expiry
+from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy
 from custom_components.smartshading.state_machine.states import ShadingState
 
 _BERLIN = ZoneInfo("Europe/Berlin")
@@ -170,7 +171,7 @@ class TestDetectorEndToEndWithRealTimezone:
         det.tick(
             window_id="w1", observed_position=40, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=now_utc,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=now_local,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=now_local,
         )
         override = det.get("w1", now_utc)
         assert override is not None
@@ -193,7 +194,7 @@ class TestDetectorEndToEndWithRealTimezone:
         det.tick(
             window_id="w1", observed_position=40, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0,
-            duration_mode="fixed_time", fixed_until=time(8, 0),  # now_local omitted
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0),  # now_local omitted
         )
         override = det.get("w1", t0)
         assert override is not None

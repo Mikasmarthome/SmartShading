@@ -400,21 +400,21 @@
         "title": "Anulación manual",
         "description": "Configura el comportamiento de una anulación manual activa: cuánto dura y si las acciones de confort o protección pueden seguir ejecutándose mientras está activa.",
         "data": {
-          "override_duration_mode": "Duración de la anulación",
+          "override_release_strategy": "Estrategia de finalización",
           "override_fixed_until": "Hora de fin fija",
           "override_allow_comfort_actions": "Permitir acciones de confort durante la anulación",
           "override_allow_protection_actions": "Permitir acciones de protección durante la anulación",
-          "override_break_on_lifecycle": "Finalizar la anulación en una transición de ciclo",
+          "override_safety_timeout_enabled": "Tiempo de seguridad",
           "override_duration_min": "Duración de anulación clásica (minutos)",
           "override_night_duration_min": "Duración de anulación nocturna (minutos)",
           "override_detection_tolerance": "Tolerancia de detección"
         },
         "data_description": {
-          "override_duration_mode": "Clásico: se mantiene durante una duración fija. Hora fija: se mantiene hasta una hora configurada.",
-          "override_fixed_until": "Solo se usa cuando la duración es \"Hora fija\". Si la hora ya pasó hoy, la anulación termina a esa hora mañana.",
+          "override_release_strategy": "Controla cómo termina la anulación: tras una duración fija, a una hora fija, en la siguiente transición de ciclo, en la siguiente decisión automática, o solo al borrarla manualmente.",
+          "override_fixed_until": "Solo se usa cuando la estrategia de finalización es \"Hora fija\". Si la hora ya pasó hoy, la anulación termina a esa hora mañana.",
           "override_allow_comfort_actions": "Si está activado, el sombreado de confort habitual puede seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
           "override_allow_protection_actions": "Si está activado, las acciones de protección (ausencia, calor, deslumbramiento) pueden seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
-          "override_break_on_lifecycle": "Si está activado, cualquier transición de ciclo (por ejemplo, día a noche) finaliza una anulación activa.",
+          "override_safety_timeout_enabled": "Duración máxima opcional como red de seguridad para estrategias abiertas, para que una anulación nunca quede olvidada permanentemente.",
           "override_duration_min": "Cuánto dura una anulación diurna antes de que SmartShading reanude el control normal (modo de duración clásico).",
           "override_night_duration_min": "Límite de seguridad para una anulación nocturna. La liberación real ocurre en la transición del ciclo matutino.",
           "override_detection_tolerance": "Cambio mínimo de posición (en porcentaje) antes de que un movimiento manual se reconozca como anulación."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Invertido (alguien en casa = ausente)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Clásico (duración fija)",
-        "fixed_time": "Hora fija"
+        "duration": "Tras una duración fija",
+        "fixed_time": "Hora fija",
+        "lifecycle": "Al final del ciclo de día/noche",
+        "first_comfort": "En la siguiente acción automática de confort",
+        "first_protection": "En la siguiente protección solar",
+        "first_any_decision": "En la siguiente decisión automática",
+        "manual": "Solo borrado manual"
       }
     }
   },

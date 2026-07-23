@@ -400,21 +400,21 @@
         "title": "Kézi felülbírálás",
         "description": "Meghatározza az aktív kézi felülbírálás viselkedését: mennyi ideig tart, és hogy a kényelmi vagy védelmi műveletek futhatnak-e még, amíg aktív.",
         "data": {
-          "override_duration_mode": "Felülbírálás időtartama",
+          "override_release_strategy": "Feloldási stratégia",
           "override_fixed_until": "Rögzített befejezési idő",
           "override_allow_comfort_actions": "Kényelmi műveletek engedélyezése felülbírálás alatt",
           "override_allow_protection_actions": "Védelmi műveletek engedélyezése felülbírálás alatt",
-          "override_break_on_lifecycle": "Felülbírálás befejezése ütemezésváltáskor",
+          "override_safety_timeout_enabled": "Biztonsági időkorlát",
           "override_duration_min": "Klasszikus felülbírálási időtartam (perc)",
           "override_night_duration_min": "Éjszakai felülbírálási időtartam (perc)",
           "override_detection_tolerance": "Érzékelési tolerancia"
         },
         "data_description": {
-          "override_duration_mode": "Klasszikus: rögzített ideig tart. Rögzített idő: egy beállított időpontig tart.",
-          "override_fixed_until": "Csak akkor használatos, ha az időtartam \"Rögzített idő\"-re van állítva. Ha az idő ma már elmúlt, a felülbírálás holnap ekkor ér véget.",
+          "override_release_strategy": "Meghatározza, hogyan ér véget a felülbírálás: fix időtartam után, fix időpontban, a következő ütemezésváltáskor, a következő automatikus döntéskor, vagy csak kézi törléssel.",
+          "override_fixed_until": "Csak akkor használatos, ha a feloldási stratégia \"Rögzített idő\"-re van állítva. Ha az idő ma már elmúlt, a felülbírálás holnap ekkor ér véget.",
           "override_allow_comfort_actions": "Ha engedélyezve van, a szokásos kényelmi árnyékolás továbbra is futhat aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
           "override_allow_protection_actions": "Ha engedélyezve van, a védelmi műveletek (távollét, hőség, vakítás) továbbra is futhatnak aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
-          "override_break_on_lifecycle": "Ha engedélyezve van, bármely ütemezésváltás (pl. nappalból éjszakába) befejezi az aktív felülbírálást.",
+          "override_safety_timeout_enabled": "Opcionális maximális időtartam biztonsági hálóként a nyitott végű stratégiákhoz, hogy a felülbírálás sose maradjon véglegesen elfeledve.",
           "override_duration_min": "Meddig tart egy nappali felülbírálás, mielőtt a SmartShading folytatja a normál vezérlést (klasszikus időtartam mód).",
           "override_night_duration_min": "Biztonsági korlát az éjszakai felülbírálásra. A valódi felszabadulás a reggeli ütemezésváltáskor történik.",
           "override_detection_tolerance": "Minimális pozícióváltozás (százalékban), mielőtt egy kézi mozgást felülbírálásként ismer fel a rendszer."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Fordított (valaki otthon = távol)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Klasszikus (rögzített időtartam)",
-        "fixed_time": "Rögzített idő"
+        "duration": "Fix időtartam után",
+        "fixed_time": "Rögzített idő",
+        "lifecycle": "A nappal/éjszaka ciklus végén",
+        "first_comfort": "A következő automatikus kényelmi művelet esetén",
+        "first_protection": "A következő védelmi árnyékolás esetén",
+        "first_any_decision": "A következő automatikus döntés esetén",
+        "manual": "Csak kézi törlés"
       }
     }
   },

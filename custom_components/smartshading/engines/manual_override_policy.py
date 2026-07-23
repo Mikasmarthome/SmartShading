@@ -5,6 +5,17 @@ is active?" is decided. No distributed `if override:` checks anywhere else —
 every Tier 3/4/5 evaluator remains completely unaware that Manual Override
 exists (unchanged from before T7; see evaluators/*.py module docstrings).
 
+v1.2.0-beta.1, T10: also the single central place where "does this candidate
+qualify to RELEASE the active override" is decided, via
+engines/override_release.resolve_candidate_release() — set as
+WindowDecision.release_override on the returned decision. Choosing
+FIRST_COMFORT / FIRST_PROTECTION / FIRST_ANY_DECISION as the override's
+release_strategy implicitly treats the *triggering* candidate as allowed
+through this same cycle (so the user sees the shading move immediately when
+the override ends, not a one-cycle-delayed catch-up) — independent of the
+allow_comfort/allow_protection flags, which remain a separate, orthogonal
+knob for passthrough-without-ending-the-override under any strategy.
+
 Pure function: no HA state, no I/O, no override-state mutation, no dispatch.
 Does not call OverrideDetector — the caller (TierOrchestrator) passes the
 already-resolved `active_override` and the already-computed Tier 3/4/5
@@ -87,7 +98,10 @@ by the coordinator) ever changes override state.
 """
 from __future__ import annotations
 
-from ..models.manual_override import ManualOverride
+from dataclasses import replace
+
+from .override_release import resolve_candidate_release
+from ..models.manual_override import ManualOverride, OverrideReleaseStrategy
 from ..models.window_decision import WindowDecision
 from ..state_machine.states import DecisionCategory, ShadingState
 
@@ -100,6 +114,7 @@ def evaluate_manual_override_policy(
     candidate: WindowDecision,
     allow_comfort: bool,
     allow_protection: bool,
+    release_strategy: OverrideReleaseStrategy = OverrideReleaseStrategy.LIFECYCLE,
 ) -> WindowDecision:
     """Return the effective WindowDecision after applying Manual Override policy.
 
@@ -109,14 +124,20 @@ def evaluate_manual_override_policy(
         candidate: The WindowDecision that Tier 3/4/5 (Lifecycle/Protection/
             Comfort) would produce this cycle, with its category already set.
         allow_comfort: Whether COMFORT-category candidates may proceed while
-            an override is active.
+            an override is active (independent of release_strategy).
         allow_protection: Whether PROTECTION-category candidates may proceed
-            while an override is active.
+            while an override is active (independent of release_strategy).
+        release_strategy: The active override's configured release strategy
+            (v1.2.0-beta.1, T10) — only FIRST_COMFORT / FIRST_PROTECTION /
+            FIRST_ANY_DECISION affect this function's outcome; every other
+            value behaves exactly as if this parameter were absent.
 
     Returns:
-        `candidate` unchanged if no override is active, if its category is
-        always-allowed, or if its category's allow-flag is set. Otherwise a
-        MANUAL_OVERRIDE hold decision at the override's position.
+        `candidate` unchanged if no override is active or its category is
+        always-allowed. Otherwise, if this candidate qualifies to release
+        the override (per release_strategy) or its category's allow-flag is
+        set, `candidate` with `release_override` set accordingly. Otherwise
+        a MANUAL_OVERRIDE hold decision at the override's position.
     """
     if active_override is None:
         return candidate
@@ -124,10 +145,13 @@ def evaluate_manual_override_policy(
     category = candidate.category
     if category in _ALLOW_ALWAYS:
         return candidate
-    if category is DecisionCategory.PROTECTION and allow_protection:
-        return candidate
-    if category is DecisionCategory.COMFORT and allow_comfort:
-        return candidate
+
+    release_now = resolve_candidate_release(strategy=release_strategy, category=category)
+
+    if category is DecisionCategory.PROTECTION and (allow_protection or release_now):
+        return replace(candidate, release_override=release_now) if release_now else candidate
+    if category is DecisionCategory.COMFORT and (allow_comfort or release_now):
+        return replace(candidate, release_override=release_now) if release_now else candidate
 
     return WindowDecision(
         window_id=candidate.window_id,

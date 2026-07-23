@@ -203,13 +203,17 @@ class TestOverrideRecord:
         assert record.override_duration_min == 47.5
 
     def test_override_event_types_constant_completeness(self) -> None:
-        """OVERRIDE_EVENT_TYPES must contain all five documented event types."""
+        """OVERRIDE_EVENT_TYPES must contain all documented event types,
+        including the T10 strategy-triggered/manual clear reasons."""
         assert set(OVERRIDE_EVENT_TYPES) == {
             "started",
             "expired",
             "renewed",
             "cleared_by_safety",
             "cleared_by_lifecycle",
+            "cleared_by_comfort",
+            "cleared_by_protection",
+            "cleared_by_manual",
         }
 
 

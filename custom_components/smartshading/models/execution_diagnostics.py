@@ -508,6 +508,16 @@ class WindowExecutionDiagnostics:
     the position the user set the cover to, distinct from expiry/scope/release
     timing. None when no override is active."""
 
+    manual_override_release_strategy: str | None = None
+    """T10: which OverrideReleaseStrategy value governs the active override's
+    end condition ("duration", "fixed_time", "lifecycle", "first_comfort",
+    "first_protection", "first_any_decision", "manual"). None when no
+    override is active."""
+
+    manual_override_started_at: datetime | None = None
+    """T10: absolute UTC timestamp the active override started at. None when
+    no override is active."""
+
     behavior_mode_recovery_open: bool = False
     """v1.1.5: True when the position-based self-healing recovery released this
     ABSENCE_ONLY / ABSENCE_AND_SCHEDULE window with a one-directional OPEN

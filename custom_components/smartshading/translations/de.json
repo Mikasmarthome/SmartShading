@@ -400,21 +400,21 @@
         "title": "Manueller Override",
         "description": "Legt fest, wie ein aktiver manueller Override sich verhält: wie lange er dauert und ob Komfort- oder Schutzaktionen währenddessen weiterhin ausgeführt werden dürfen.",
         "data": {
-          "override_duration_mode": "Override-Dauer",
+          "override_release_strategy": "Freigabestrategie",
           "override_fixed_until": "Feste Endzeit",
           "override_allow_comfort_actions": "Komfortaktionen während Override erlauben",
           "override_allow_protection_actions": "Schutzaktionen während Override erlauben",
-          "override_break_on_lifecycle": "Override bei Zeitplan-Übergang beenden",
+          "override_safety_timeout_enabled": "Sicherheits-Timeout",
           "override_duration_min": "Legacy-Override-Dauer (Minuten)",
           "override_night_duration_min": "Nacht-Override-Dauer (Minuten)",
           "override_detection_tolerance": "Erkennungstoleranz"
         },
         "data_description": {
-          "override_duration_mode": "Legacy: hält für eine feste Dauer. Feste Uhrzeit: hält bis zu einer konfigurierten Uhrzeit.",
-          "override_fixed_until": "Nur wirksam, wenn die Dauer auf \"Feste Uhrzeit\" gesetzt ist. Ist die Uhrzeit heute bereits vorbei, endet der Override morgen zu dieser Uhrzeit.",
+          "override_release_strategy": "Legt fest, wie der Override endet: nach einer festen Dauer, zu einer festen Uhrzeit, beim nächsten Zeitplan-Übergang, bei der nächsten automatischen Entscheidung oder nur durch manuelles Löschen.",
+          "override_fixed_until": "Nur wirksam, wenn die Freigabestrategie auf \"Feste Uhrzeit\" gesetzt ist. Ist die Uhrzeit heute bereits vorbei, endet der Override morgen zu dieser Uhrzeit.",
           "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktivem Override weiterhin ausgeführt werden. Der Override selbst bleibt aktiv.",
           "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktivem Override weiterhin ausgeführt werden. Der Override selbst bleibt aktiv.",
-          "override_break_on_lifecycle": "Wenn aktiviert, beendet jeder Zeitplan-Übergang (z. B. Tag zu Nacht) einen aktiven Override.",
+          "override_safety_timeout_enabled": "Optionale maximale Dauer als Sicherheitsnetz für offene Strategien, damit ein Override niemals dauerhaft vergessen wird.",
           "override_duration_min": "Wie lange ein Tages-Override dauert, bevor SmartShading die normale Steuerung fortsetzt (Legacy-Dauermodus).",
           "override_night_duration_min": "Sicherheitsnetz-Obergrenze für einen Nacht-Override. Die eigentliche Freigabe erfolgt beim morgendlichen Zeitplan-Übergang.",
           "override_detection_tolerance": "Minimale Positionsänderung (in Prozent), bevor eine manuelle Bewegung als Override erkannt wird."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Invertiert (jemand zuhause = abwesend)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Legacy (feste Dauer)",
-        "fixed_time": "Feste Uhrzeit"
+        "duration": "Nach einer festen Dauer",
+        "fixed_time": "Feste Uhrzeit",
+        "lifecycle": "Am Ende des Tag-/Nacht-Zyklus",
+        "first_comfort": "Bei der nächsten automatischen Komfort-Aktion",
+        "first_protection": "Bei der nächsten Schutzbeschattung",
+        "first_any_decision": "Bei der nächsten automatischen Entscheidung",
+        "manual": "Nur manuell löschen"
       }
     }
   },

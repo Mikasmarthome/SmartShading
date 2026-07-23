@@ -400,21 +400,21 @@
         "title": "手动覆盖",
         "description": "配置激活的手动覆盖的行为：持续多长时间，以及在其激活期间是否仍允许执行舒适或保护动作。",
         "data": {
-          "override_duration_mode": "覆盖持续时间",
+          "override_release_strategy": "释放策略",
           "override_fixed_until": "固定结束时间",
           "override_allow_comfort_actions": "覆盖期间允许舒适动作",
           "override_allow_protection_actions": "覆盖期间允许保护动作",
-          "override_break_on_lifecycle": "在计划转换时结束覆盖",
+          "override_safety_timeout_enabled": "安全超时",
           "override_duration_min": "传统覆盖持续时间（分钟）",
           "override_night_duration_min": "夜间覆盖持续时间（分钟）",
           "override_detection_tolerance": "检测容差"
         },
         "data_description": {
-          "override_duration_mode": "传统模式：持续固定时长。固定时间模式：持续到设定的时钟时间。",
-          "override_fixed_until": "仅当持续时间设置为“固定时间”时使用。如果该时间今天已过，覆盖将于明天此时结束。",
+          "override_release_strategy": "控制覆盖如何结束：固定时长后、固定时间、下一次计划转换时、下一次自动决策时，或仅手动清除。",
+          "override_fixed_until": "仅当释放策略设置为\"固定时间\"时使用。如果该时间今天已过，覆盖将于明天此时结束。",
           "override_allow_comfort_actions": "启用后，常规舒适遮阳仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
           "override_allow_protection_actions": "启用后，保护动作（离家、高温、眩光）仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
-          "override_break_on_lifecycle": "启用后，任何计划转换（例如白天转夜间）都会结束激活的覆盖。",
+          "override_safety_timeout_enabled": "为开放式策略提供的可选最大时长安全网，确保覆盖不会被永久遗忘。",
           "override_duration_min": "在 SmartShading 恢复正常控制之前，白天覆盖持续多长时间（传统持续时间模式）。",
           "override_night_duration_min": "夜间覆盖的安全上限。真正的释放发生在早晨的计划转换时。",
           "override_detection_tolerance": "手动移动被识别为覆盖之前所需的最小位置变化（百分比）。"
@@ -701,10 +701,15 @@
         "inverted_any_home": "反转（有人在家=离开）"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "传统（固定时长）",
-        "fixed_time": "固定时间"
+        "duration": "固定时长后",
+        "fixed_time": "固定时间",
+        "lifecycle": "在日/夜周期结束时",
+        "first_comfort": "在下一次自动舒适动作时",
+        "first_protection": "在下一次保护性遮阳时",
+        "first_any_decision": "在下一次自动决策时",
+        "manual": "仅手动清除"
       }
     }
   },

@@ -49,6 +49,19 @@ MAX_SUPPORT_DECISIONS_PER_ZONE = 300
 # before byte-cap truncation.  Only significant events survive same_position compression.
 MAX_SUPPORT_TIMELINE_EVENTS = 200
 
+# T10: plain-language "what is this override still waiting for" per release
+# strategy, for prov["manual_override"]["waiting_on"] — support-readable
+# without needing to know the OverrideReleaseStrategy enum.
+_OVERRIDE_WAITING_ON = {
+    "duration": "configured duration elapses",
+    "fixed_time": "configured clock time reached",
+    "lifecycle": "next lifecycle transition (e.g. day/night change)",
+    "first_comfort": "next automatic Comfort decision",
+    "first_protection": "next automatic Protection decision",
+    "first_any_decision": "next automatic decision of any kind",
+    "manual": "explicit manual clear",
+}
+
 # Event types that constitute "critical" support events (non-noise).
 _CRITICAL_EVENT_TYPES = frozenset({
     "dispatch_sent", "dispatch_failed", "command_blocked", "recommendation_only",
@@ -311,18 +324,25 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                     "pending_fallback_open_release_count": None,
                     "fallback_release_allowed": None}
                 # Manual Override daytime/night duration scope (v1.1.3).
+                # T10: release_strategy/started_at/waiting_on added so support
+                # can answer "which strategy is active, since when, and what
+                # is it waiting for" without reading code.
+                _mo_strategy = getattr(diag, "manual_override_release_strategy", None)
                 prov["manual_override"] = {
                     "active": bool(getattr(diag, "manual_override_active", False)),
                     "scope": getattr(diag, "manual_override_scope", None),
+                    "started_at": _iso_s(getattr(diag, "manual_override_started_at", None)),
                     "expires_at": _iso_s(getattr(diag, "manual_override_expires_at", None)),
                     "remaining_min": getattr(diag, "manual_override_remaining_min", None),
+                    "release_strategy": _mo_strategy,
+                    "waiting_on": _OVERRIDE_WAITING_ON.get(_mo_strategy),
                     "release_reason": getattr(diag, "manual_override_release_reason", None),
                     # F31a: the HA position the override is holding.
                     "override_position_ha": getattr(diag, "manual_override_position", None),
                 } if diag is not None else {
-                    "active": False, "scope": None, "expires_at": None,
-                    "remaining_min": None, "release_reason": None,
-                    "override_position_ha": None}
+                    "active": False, "scope": None, "started_at": None, "expires_at": None,
+                    "remaining_min": None, "release_strategy": None, "waiting_on": None,
+                    "release_reason": None, "override_position_ha": None}
                 # Position-based self-healing recovery open (v1.1.5): true when a
                 # stuck-down ABSENCE_ONLY / A&S window was released this cycle.
                 prov["recovery_open_active"] = bool(

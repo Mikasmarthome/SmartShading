@@ -24,7 +24,10 @@ from custom_components.smartshading.engines.override_detector import (
     OverrideDetector,
     _WARMUP_CYCLES_REQUIRED,
 )
-from custom_components.smartshading.models.manual_override import ManualOverride
+from custom_components.smartshading.models.manual_override import (
+    ManualOverride,
+    OverrideReleaseStrategy,
+)
 from custom_components.smartshading.state_machine.states import ShadingState
 
 _NOW = datetime(2026, 6, 17, 14, 0, tzinfo=timezone.utc)
@@ -337,7 +340,13 @@ class TestOverrideDetectorRenewal:
         assert renewed.override_position == 50
 
     def test_renewal_resets_expiry(self, detector: OverrideDetector) -> None:
-        """Renewed override gets a fresh expiry from the renewal time."""
+        """Renewed override gets a fresh expiry from the renewal time.
+
+        v1.2.0-beta.1, T10: extends-on-renewal is now specific to the
+        DURATION release strategy (see engines/override_release.
+        extends_on_renewal()) rather than the detector's own default —
+        explicitly requested here since that is exactly the behavior this
+        test verifies."""
         _warmup(detector)
         detector.tick(
             window_id=_WINDOW,
@@ -347,6 +356,7 @@ class TestOverrideDetectorRenewal:
             tolerance=_TOLERANCE,
             duration_min=_DURATION_MIN,
             now=_NOW,
+            release_strategy=OverrideReleaseStrategy.DURATION,
         )
         later = _NOW + timedelta(hours=2)
         detector.tick(
@@ -357,6 +367,7 @@ class TestOverrideDetectorRenewal:
             tolerance=_TOLERANCE,
             duration_min=_DURATION_MIN,
             now=later,
+            release_strategy=OverrideReleaseStrategy.DURATION,
         )
         renewed = detector.get(_WINDOW, later)
         assert renewed is not None

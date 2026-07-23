@@ -400,21 +400,21 @@
         "title": "Substituição manual",
         "description": "Define o comportamento de uma substituição manual ativa: quanto tempo dura e se as ações de conforto ou proteção ainda podem ser executadas enquanto está ativa.",
         "data": {
-          "override_duration_mode": "Duração da substituição",
+          "override_release_strategy": "Estratégia de finalização",
           "override_fixed_until": "Hora de término fixa",
           "override_allow_comfort_actions": "Permitir ações de conforto durante a substituição",
           "override_allow_protection_actions": "Permitir ações de proteção durante a substituição",
-          "override_break_on_lifecycle": "Encerrar substituição na transição de ciclo",
+          "override_safety_timeout_enabled": "Tempo limite de segurança",
           "override_duration_min": "Duração de substituição clássica (minutos)",
           "override_night_duration_min": "Duração de substituição noturna (minutos)",
           "override_detection_tolerance": "Tolerância de deteção"
         },
         "data_description": {
-          "override_duration_mode": "Clássico: mantém-se por uma duração fixa. Hora fixa: mantém-se até uma hora configurada.",
-          "override_fixed_until": "Usado apenas quando a duração está definida como \"Hora fixa\". Se a hora já passou hoje, a substituição termina a essa hora amanhã.",
+          "override_release_strategy": "Controla como a substituição termina: após uma duração fixa, a uma hora fixa, na próxima transição de ciclo, na próxima decisão automática, ou apenas por limpeza manual.",
+          "override_fixed_until": "Usado apenas quando a estratégia de finalização está definida como \"Hora fixa\". Se a hora já passou hoje, a substituição termina a essa hora amanhã.",
           "override_allow_comfort_actions": "Quando ativado, o sombreamento de conforto normal ainda pode ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
           "override_allow_protection_actions": "Quando ativado, as ações de proteção (ausência, calor, encandeamento) ainda podem ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
-          "override_break_on_lifecycle": "Quando ativado, qualquer transição de ciclo (por exemplo, dia para noite) encerra uma substituição ativa.",
+          "override_safety_timeout_enabled": "Duração máxima opcional como rede de segurança para estratégias abertas, para que uma substituição nunca fique permanentemente esquecida.",
           "override_duration_min": "Quanto tempo dura uma substituição diurna antes de o SmartShading retomar o controlo normal (modo de duração clássico).",
           "override_night_duration_min": "Limite de segurança para uma substituição noturna. A libertação real ocorre na transição do ciclo matinal.",
           "override_detection_tolerance": "Alteração mínima de posição (em percentagem) antes de um movimento manual ser reconhecido como substituição."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Invertido (alguém em casa = ausente)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Clássico (duração fixa)",
-        "fixed_time": "Hora fixa"
+        "duration": "Após uma duração fixa",
+        "fixed_time": "Hora fixa",
+        "lifecycle": "No final do ciclo dia/noite",
+        "first_comfort": "Na próxima ação automática de conforto",
+        "first_protection": "Na próxima proteção solar",
+        "first_any_decision": "Na próxima decisão automática",
+        "manual": "Apenas limpeza manual"
       }
     }
   },

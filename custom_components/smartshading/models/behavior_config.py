@@ -17,6 +17,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .manual_override import OverrideReleaseStrategy
+
 
 @dataclass(frozen=True)
 class BehaviorConfig:
@@ -64,11 +66,14 @@ class BehaviorConfig:
     # mechanical deviations.  Default 10 ≈ 10 % of travel range.
     override_detection_tolerance: int = 10
 
-    # When True, any lifecycle state transition (e.g. DAY→NIGHT, NIGHT→MORNING)
-    # clears an active manual override so SmartShading resumes normal evaluation
-    # for that phase.  Power users who want overrides to survive phase boundaries
-    # can opt out by setting this to False.
-    override_break_on_lifecycle: bool = True
+    # How an active override ends (v1.2.0-beta.1, T10) — passed to
+    # evaluate_manual_override_policy() to decide whether the current Tier
+    # 3/4/5 candidate qualifies to release it (FIRST_COMFORT /
+    # FIRST_PROTECTION / FIRST_ANY_DECISION only; every other value is a
+    # no-op here — see engines/override_release.py). DURATION/FIXED_TIME
+    # expiry, LIFECYCLE transitions, Safety, and MANUAL clears are each
+    # their own separate, unrelated mechanism, not read from this field.
+    override_release_strategy: OverrideReleaseStrategy = OverrideReleaseStrategy.LIFECYCLE
 
     # T7 (v1.2.0-beta.1): while a Manual Override is active, whether Comfort-
     # category (Tier 5 Solar, plus the plain daytime fallback OPEN) resp.

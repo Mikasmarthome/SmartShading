@@ -26,7 +26,8 @@ from ..state_machine.states import ShadingState
 # Valid values for OverrideRecord.event_type.
 # Provided as a module-level constant for runtime validation in Phase 9C.
 OverrideEventType = Literal[
-    "started", "expired", "renewed", "cleared_by_safety", "cleared_by_lifecycle"
+    "started", "expired", "renewed", "cleared_by_safety", "cleared_by_lifecycle",
+    "cleared_by_comfort", "cleared_by_protection", "cleared_by_manual",
 ]
 OVERRIDE_EVENT_TYPES: tuple[str, ...] = (
     "started",
@@ -34,6 +35,10 @@ OVERRIDE_EVENT_TYPES: tuple[str, ...] = (
     "renewed",
     "cleared_by_safety",
     "cleared_by_lifecycle",   # Step 8c: Night/Morning lifecycle transition cleared the override
+    # v1.2.0-beta.1, T10: release_strategy-triggered clears.
+    "cleared_by_comfort",     # FIRST_COMFORT / FIRST_ANY_DECISION: a Comfort-tier candidate fired
+    "cleared_by_protection",  # FIRST_PROTECTION / FIRST_ANY_DECISION: a Protection-tier candidate fired
+    "cleared_by_manual",      # MANUAL: the user explicitly cleared it (async_clear_manual_override())
 )
 
 

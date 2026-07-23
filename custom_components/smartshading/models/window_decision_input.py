@@ -23,7 +23,7 @@ from ..engines.rain_engine import RainStatus
 from ..engines.weather_engine import WeatherCondition
 from ..models.comfort import ComfortConfig
 from ..models.lifecycle import LifecycleState, NightDayLifecycleConfig
-from ..models.manual_override import ManualOverride
+from ..models.manual_override import ManualOverride, OverrideReleaseStrategy
 from ..models.window import WindowConfig
 from ..models.zone import ZoneConfig
 from ..state_machine.states import ShadingState
@@ -156,7 +156,7 @@ def build_window_decision_input(
     # Tier 2: Manual Override inputs (Step 8)
     active_override: ManualOverride | None = None,
     override_detection_tolerance: int = 10,
-    override_break_on_lifecycle: bool = True,
+    override_release_strategy: OverrideReleaseStrategy = OverrideReleaseStrategy.LIFECYCLE,
     override_allow_comfort_actions: bool = False,
     override_allow_protection_actions: bool = False,
     # Tier 3 extension: night contact behavior (v1.1.0)
@@ -242,7 +242,7 @@ def build_window_decision_input(
         rain_safe_position=rain_safe_position,
         rain_release_delay_min=rain_release_delay_min,
         override_detection_tolerance=override_detection_tolerance,
-        override_break_on_lifecycle=override_break_on_lifecycle,
+        override_release_strategy=override_release_strategy,
         override_allow_comfort_actions=override_allow_comfort_actions,
         override_allow_protection_actions=override_allow_protection_actions,
         night_position=(

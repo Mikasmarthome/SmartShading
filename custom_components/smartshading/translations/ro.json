@@ -400,21 +400,21 @@
         "title": "Suprascriere manuală",
         "description": "Definește comportamentul unei suprascrieri manuale active: cât durează și dacă acțiunile de confort sau protecție mai pot rula în timp ce este activă.",
         "data": {
-          "override_duration_mode": "Durata suprascrierii",
+          "override_release_strategy": "Strategie de încheiere",
           "override_fixed_until": "Oră de încheiere fixă",
           "override_allow_comfort_actions": "Permite acțiuni de confort în timpul suprascrierii",
           "override_allow_protection_actions": "Permite acțiuni de protecție în timpul suprascrierii",
-          "override_break_on_lifecycle": "Încheie suprascrierea la tranziția programului",
+          "override_safety_timeout_enabled": "Interval de siguranță",
           "override_duration_min": "Durata clasică a suprascrierii (minute)",
           "override_night_duration_min": "Durata suprascrierii de noapte (minute)",
           "override_detection_tolerance": "Toleranță de detectare"
         },
         "data_description": {
-          "override_duration_mode": "Clasic: durează un timp fix. Oră fixă: durează până la o oră configurată.",
-          "override_fixed_until": "Folosit doar când durata este setată pe \"Oră fixă\". Dacă ora a trecut deja azi, suprascrierea se încheie la acea oră mâine.",
+          "override_release_strategy": "Controlează cum se încheie suprascrierea: după o durată fixă, la o oră fixă, la următoarea tranziție a programului, la următoarea decizie automată, sau doar prin ștergere manuală.",
+          "override_fixed_until": "Folosit doar când strategia de încheiere este setată pe \"Oră fixă\". Dacă ora a trecut deja azi, suprascrierea se încheie la acea oră mâine.",
           "override_allow_comfort_actions": "Dacă este activat, umbrirea obișnuită de confort poate rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
           "override_allow_protection_actions": "Dacă este activat, acțiunile de protecție (absență, căldură, orbire) pot rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
-          "override_break_on_lifecycle": "Dacă este activat, orice tranziție a programului (de ex. zi în noapte) încheie o suprascriere activă.",
+          "override_safety_timeout_enabled": "Durată maximă opțională ca plasă de siguranță pentru strategiile deschise, astfel încât o suprascriere să nu fie niciodată uitată permanent.",
           "override_duration_min": "Cât durează o suprascriere de zi înainte ca SmartShading să reia controlul normal (mod de durată clasic).",
           "override_night_duration_min": "Limită de siguranță pentru o suprascriere de noapte. Eliberarea reală are loc la tranziția programului de dimineață.",
           "override_detection_tolerance": "Schimbare minimă de poziție (în procente) înainte ca o mișcare manuală să fie recunoscută ca suprascriere."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Inversat (cineva acasă = plecat)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Clasic (durată fixă)",
-        "fixed_time": "Oră fixă"
+        "duration": "După o durată fixă",
+        "fixed_time": "Oră fixă",
+        "lifecycle": "La sfârșitul ciclului zi/noapte",
+        "first_comfort": "La următoarea acțiune automată de confort",
+        "first_protection": "La următoarea umbrire de protecție",
+        "first_any_decision": "La următoarea decizie automată",
+        "manual": "Doar ștergere manuală"
       }
     }
   },

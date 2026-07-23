@@ -647,7 +647,7 @@ class TestTranslationCompleteness:
             "compass_direction", "night_elevation_preset", "morning_elevation_preset",
             "lifecycle_trigger", "night_sun_event", "morning_sun_event",
             "lifecycle_schedule_mode", "active_months", "window_behavior_mode",
-            "cover_hardware_type", "presence_policy", "override_duration_mode",
+            "cover_hardware_type", "presence_policy", "override_release_strategy",
         }
         assert pre_existing_keys <= selector.keys()
         assert selector["lifecycle_schedule_mode"]["options"] == {

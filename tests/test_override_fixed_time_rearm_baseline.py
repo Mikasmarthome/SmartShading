@@ -28,6 +28,7 @@ from __future__ import annotations
 from datetime import datetime, time, timedelta, timezone
 
 from custom_components.smartshading.engines.override_detector import OverrideDetector
+from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy
 from custom_components.smartshading.state_machine.states import ShadingState
 
 _UTC = timezone.utc
@@ -55,7 +56,7 @@ class TestNoAutomaticRearmFromPersistedStaleDeviation:
         det.tick(
             window_id="w1", observed_position=30, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t0,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t0,
         )
         assert det.get("w1", t0) is not None
 
@@ -65,7 +66,7 @@ class TestNoAutomaticRearmFromPersistedStaleDeviation:
         det.tick(
             window_id="w1", observed_position=30, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t1,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t1,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t1,
         )
         assert det.get("w1", t1) is None
 
@@ -77,7 +78,7 @@ class TestNoAutomaticRearmFromPersistedStaleDeviation:
             det.tick(
                 window_id="w1", observed_position=30, smartshading_target=0,
                 prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t_n,
-                duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t_n,
+                release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t_n,
             )
             assert det.get("w1", t_n) is None, f"unexpected re-arm at +{minutes}min"
 
@@ -93,7 +94,7 @@ class TestGenuineNewMovementAfterExpiryStillArmsANewOverride:
         det.tick(
             window_id="w1", observed_position=30, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t0,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t0,
         )
         assert det.get("w1", t0) is not None
 
@@ -101,7 +102,7 @@ class TestGenuineNewMovementAfterExpiryStillArmsANewOverride:
         det.tick(
             window_id="w1", observed_position=30, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t1,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t1,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t1,
         )
         assert det.get("w1", t1) is None
 
@@ -110,7 +111,7 @@ class TestGenuineNewMovementAfterExpiryStillArmsANewOverride:
         det.tick(
             window_id="w1", observed_position=30, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t2,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t2,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t2,
         )
         assert det.get("w1", t2) is None
 
@@ -119,7 +120,7 @@ class TestGenuineNewMovementAfterExpiryStillArmsANewOverride:
         det.tick(
             window_id="w1", observed_position=70, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t3,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t3,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t3,
         )
         new_override = det.get("w1", t3)
         assert new_override is not None
@@ -136,19 +137,19 @@ class TestGenuineNewMovementAfterExpiryStillArmsANewOverride:
         det.tick(
             window_id="w1", observed_position=30, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t0,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t0,
         )
         t1 = datetime(2026, 6, 15, 8, 1, tzinfo=_UTC)
         det.tick(
             window_id="w1", observed_position=30, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t1,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t1,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t1,
         )
         t2 = t1 + timedelta(minutes=5)
         det.tick(
             window_id="w1", observed_position=70, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t2,
-            duration_mode="fixed_time", fixed_until=time(8, 0), now_local=t2,
+            release_strategy=OverrideReleaseStrategy.FIXED_TIME, fixed_until=time(8, 0), now_local=t2,
         )
         new_override = det.get("w1", t2)
         assert new_override is not None
@@ -160,19 +161,24 @@ class TestGenuineNewMovementAfterExpiryStillArmsANewOverride:
 
 class TestLegacyModeUnaffectedByRearmBaseline:
     def test_legacy_mode_still_rearms_from_persisted_stale_deviation(self) -> None:
-        """Explicit counterpart proof: legacy mode's pre-existing behavior
-        (a stale, unmoved deviation DOES eventually re-arm a fresh override
-        several cycles after natural expiry) is completely unchanged — no
-        baseline is ever recorded for it."""
+        """Explicit counterpart proof: DURATION mode (T7's "legacy",
+        renamed)'s pre-existing behavior (a stale, unmoved deviation DOES
+        eventually re-arm a fresh override several cycles after natural
+        expiry) is completely unchanged — no baseline is ever recorded for
+        it (uses_post_expiry_baseline() is False only for DURATION; every
+        other strategy, including tick()'s own new default LIFECYCLE, DOES
+        use the baseline — see override_release.py). DURATION must
+        therefore be passed explicitly here, not relied on as a default."""
         det = _detector_past_warmup()
         t0 = datetime(2026, 6, 15, 7, 0, tzinfo=_UTC)
         det.tick(
             window_id="w1", observed_position=30, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0,
-        )  # legacy mode (default)
+            release_strategy=OverrideReleaseStrategy.DURATION,
+        )  # DURATION ("legacy") mode, explicit
         ov1 = det.get("w1", t0)
         assert ov1 is not None
-        assert ov1.duration_mode == "legacy"
+        assert ov1.release_strategy == "duration"
 
         expired_now = t0 + timedelta(minutes=121)
         assert det.get("w1", expired_now) is None
@@ -181,17 +187,19 @@ class TestLegacyModeUnaffectedByRearmBaseline:
         det.tick(
             window_id="w1", observed_position=30, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=expired_now,
+            release_strategy=OverrideReleaseStrategy.DURATION,
         )
         assert det.get("w1", expired_now) is None
 
-        # A LATER cycle, still unmoved: legacy mode re-arms (unchanged,
+        # A LATER cycle, still unmoved: DURATION mode re-arms (unchanged,
         # pre-existing, explicitly documented behavior).
         later = expired_now + timedelta(minutes=10)
         det.tick(
             window_id="w1", observed_position=30, smartshading_target=0,
             prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=later,
+            release_strategy=OverrideReleaseStrategy.DURATION,
         )
         rearmed = det.get("w1", later)
         assert rearmed is not None
         assert rearmed.override_position == 30
-        assert rearmed.duration_mode == "legacy"
+        assert rearmed.release_strategy == "duration"

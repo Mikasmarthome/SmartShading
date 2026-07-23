@@ -31,6 +31,17 @@ class WindowDecision:
     state_machine/states.py:DecisionCategory for the full rationale (it is
     NOT derivable from shading_state, since e.g. STRONG_SHADE is returned by
     both a Tier 4 Protection evaluator and the Tier 5 Comfort evaluator).
+
+    release_override (v1.2.0-beta.1, T10) is True only when
+    evaluate_manual_override_policy() determines this candidate's category
+    is exactly the kind of decision the ACTIVE override's configured
+    release_strategy is waiting for (FIRST_COMFORT / FIRST_PROTECTION /
+    FIRST_ANY_DECISION — see engines/override_release.py). It never mutates
+    override state itself (this remains a pure model); the Coordinator reads
+    this flag on the returned WindowDecision and calls
+    OverrideDetector.clear() when it is True. Always False everywhere else —
+    every other construction site in the codebase is unaffected by this
+    field's default.
     """
 
     window_id: str
@@ -39,3 +50,4 @@ class WindowDecision:
     decided_by: str
     category: DecisionCategory
     target_tilt: int | None = None  # Phase 2 only; always None in this version
+    release_override: bool = False

@@ -114,13 +114,14 @@ from custom_components.smartshading.config_flow import SmartShadingOptionsFlow  
 from custom_components.smartshading.const import (  # noqa: E402
     CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
     CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS,
-    CONF_OVERRIDE_BREAK_ON_LIFECYCLE,
     CONF_OVERRIDE_DETECTION_TOLERANCE,
     CONF_OVERRIDE_DURATION_MIN,
-    CONF_OVERRIDE_DURATION_MODE,
     CONF_OVERRIDE_FIXED_UNTIL,
     CONF_OVERRIDE_NIGHT_DURATION_MIN,
+    CONF_OVERRIDE_RELEASE_STRATEGY,
+    CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
 )
+from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _INTEGRATION_ROOT = _REPO_ROOT / "custom_components" / "smartshading"
@@ -148,11 +149,11 @@ def _make_options_flow(data: dict | None = None) -> SmartShadingOptionsFlow:
 
 
 _FULL_INPUT = {
-    CONF_OVERRIDE_DURATION_MODE: "fixed_time",
+    CONF_OVERRIDE_RELEASE_STRATEGY: OverrideReleaseStrategy.FIXED_TIME.value,
     CONF_OVERRIDE_FIXED_UNTIL: "08:00:00",
     CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS: True,
     CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS: True,
-    CONF_OVERRIDE_BREAK_ON_LIFECYCLE: False,
+    CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED: False,
     CONF_OVERRIDE_DURATION_MIN: 90,
     CONF_OVERRIDE_NIGHT_DURATION_MIN: 600,
     CONF_OVERRIDE_DETECTION_TOLERANCE: 15,
@@ -167,15 +168,17 @@ class TestMenuReachability:
         assert "manual_override" in result["menu_options"]
 
 
-class TestLegacyDefaultsPreselected:
+class TestDefaultsPreselected:
     def test_defaults_when_nothing_stored(self):
         flow = _make_options_flow(data={})
         result = asyncio.run(flow.async_step_manual_override(user_input=None))
         schema: vol.Schema = result["data_schema"]
-        assert _schema_field_key(schema, CONF_OVERRIDE_DURATION_MODE).default() == "legacy"
+        assert _schema_field_key(schema, CONF_OVERRIDE_RELEASE_STRATEGY).default() == (
+            OverrideReleaseStrategy.LIFECYCLE.value
+        )
         assert _schema_field_key(schema, CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS).default() is False
         assert _schema_field_key(schema, CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS).default() is False
-        assert _schema_field_key(schema, CONF_OVERRIDE_BREAK_ON_LIFECYCLE).default() is True
+        assert _schema_field_key(schema, CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED).default() is True
         assert _schema_field_key(schema, CONF_OVERRIDE_DURATION_MIN).default() == 120
         assert _schema_field_key(schema, CONF_OVERRIDE_NIGHT_DURATION_MIN).default() == 720
         assert _schema_field_key(schema, CONF_OVERRIDE_DETECTION_TOLERANCE).default() == 10
@@ -183,19 +186,25 @@ class TestLegacyDefaultsPreselected:
 
 class TestStoredValuesPreselected:
     def test_stored_values_shown_on_reopen(self):
+        # New-format ("release_strategy"/"safety_timeout_enabled") stored dict:
+        # async_step_manual_override() reads the raw ConfigEntry.data directly
+        # (no old->new migration on this path — that migration only happens in
+        # config_entry_data._override_policy_from_storage(), used elsewhere),
+        # so pre-filling the form requires the new key names.
         flow = _make_options_flow(data={
             "override_policy": {
-                "duration_mode": "fixed_time", "fixed_until": "09:30:00",
+                "release_strategy": "fixed_time", "fixed_until": "09:30:00",
                 "allow_comfort_actions": True, "allow_protection_actions": False,
                 "duration_min": 60, "night_duration_min": 500,
-                "detection_tolerance": 20, "break_on_lifecycle": False,
+                "detection_tolerance": 20, "safety_timeout_enabled": False,
             }
         })
         result = asyncio.run(flow.async_step_manual_override(user_input=None))
         schema: vol.Schema = result["data_schema"]
-        assert _schema_field_key(schema, CONF_OVERRIDE_DURATION_MODE).default() == "fixed_time"
+        assert _schema_field_key(schema, CONF_OVERRIDE_RELEASE_STRATEGY).default() == "fixed_time"
         assert _schema_field_key(schema, CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS).default() is True
         assert _schema_field_key(schema, CONF_OVERRIDE_DURATION_MIN).default() == 60
+        assert _schema_field_key(schema, CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED).default() is False
 
 
 class TestSavePersistsEveryField:
@@ -204,24 +213,24 @@ class TestSavePersistsEveryField:
         asyncio.run(flow.async_step_manual_override(user_input=dict(_FULL_INPUT)))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         saved = kwargs["data"]["override_policy"]
-        assert saved["duration_mode"] == "fixed_time"
+        assert saved["release_strategy"] == "fixed_time"
         assert saved["fixed_until"] == "08:00:00"
         assert saved["allow_comfort_actions"] is True
         assert saved["allow_protection_actions"] is True
-        assert saved["break_on_lifecycle"] is False
+        assert saved["safety_timeout_enabled"] is False
         assert saved["duration_min"] == 90
         assert saved["night_duration_min"] == 600
         assert saved["detection_tolerance"] == 15
 
-    def test_legacy_mode_saved_without_fixed_until(self):
+    def test_duration_mode_saved_without_fixed_until(self):
         flow = _make_options_flow(data={})
-        legacy_input = dict(_FULL_INPUT)
-        legacy_input[CONF_OVERRIDE_DURATION_MODE] = "legacy"
-        legacy_input.pop(CONF_OVERRIDE_FIXED_UNTIL, None)
-        asyncio.run(flow.async_step_manual_override(user_input=legacy_input))
+        duration_input = dict(_FULL_INPUT)
+        duration_input[CONF_OVERRIDE_RELEASE_STRATEGY] = OverrideReleaseStrategy.DURATION.value
+        duration_input.pop(CONF_OVERRIDE_FIXED_UNTIL, None)
+        asyncio.run(flow.async_step_manual_override(user_input=duration_input))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         saved = kwargs["data"]["override_policy"]
-        assert saved["duration_mode"] == "legacy"
+        assert saved["release_strategy"] == "duration"
         assert saved["fixed_until"] is None
 
 
@@ -238,7 +247,7 @@ class TestFixedTimeRequiresFixedUntil:
 
 class TestNoMutationOnRender:
     def test_render_does_not_touch_entry(self):
-        original = {"override_policy": {"duration_mode": "legacy"}}
+        original = {"override_policy": {"release_strategy": "duration"}}
         flow = _make_options_flow(data=dict(original))
         asyncio.run(flow.async_step_manual_override(user_input=None))
         assert flow._config_entry.data == original
@@ -260,6 +269,10 @@ class TestTranslationCompleteness:
         yield from sorted((_INTEGRATION_ROOT / "translations").glob("*.json"))
 
     def test_every_file_has_manual_override_strings(self):
+        # T10 renamed duration_mode/break_on_lifecycle to release_strategy/
+        # safety_timeout_enabled in every i18n file (strings.json AND all 24
+        # translations/*.json) — verified consistent across the full set,
+        # not just the English source.
         files = list(self._all_i18n_files())
         assert len(files) == 25
         for path in files:
@@ -269,15 +282,18 @@ class TestTranslationCompleteness:
             assert "manual_override" in opt["step"], path.name
             assert opt["step"]["manual_override"]["title"], path.name
             for key in (
-                "override_duration_mode", "override_fixed_until",
+                "override_release_strategy", "override_fixed_until",
                 "override_allow_comfort_actions", "override_allow_protection_actions",
-                "override_break_on_lifecycle", "override_duration_min",
+                "override_safety_timeout_enabled", "override_duration_min",
                 "override_night_duration_min", "override_detection_tolerance",
             ):
                 assert key in opt["step"]["manual_override"]["data"], f"{path.name}: missing {key}"
             assert "override_fixed_until_required" in opt.get("error", {}), path.name
-            assert "override_duration_mode" in data.get("selector", {}), path.name
-            assert set(data["selector"]["override_duration_mode"]["options"].keys()) == {"legacy", "fixed_time"}, path.name
+            assert "override_release_strategy" in data.get("selector", {}), path.name
+            assert set(data["selector"]["override_release_strategy"]["options"].keys()) == {
+                "duration", "fixed_time", "lifecycle",
+                "first_comfort", "first_protection", "first_any_decision", "manual",
+            }, path.name
 
     def test_no_english_leftovers_in_translations(self):
         en = json.loads((_INTEGRATION_ROOT / "translations" / "en.json").read_text(encoding="utf-8"))

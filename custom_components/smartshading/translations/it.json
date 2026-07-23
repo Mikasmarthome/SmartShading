@@ -400,21 +400,21 @@
         "title": "Override manuale",
         "description": "Configura il comportamento di un override manuale attivo: la sua durata e se le azioni di comfort o protezione possono continuare a essere eseguite mentre è attivo.",
         "data": {
-          "override_duration_mode": "Durata dell'override",
+          "override_release_strategy": "Strategia di fine",
           "override_fixed_until": "Ora di fine fissa",
           "override_allow_comfort_actions": "Consenti azioni di comfort durante l'override",
           "override_allow_protection_actions": "Consenti azioni di protezione durante l'override",
-          "override_break_on_lifecycle": "Termina l'override alla transizione del ciclo",
+          "override_safety_timeout_enabled": "Timeout di sicurezza",
           "override_duration_min": "Durata override classica (minuti)",
           "override_night_duration_min": "Durata override notturno (minuti)",
           "override_detection_tolerance": "Tolleranza di rilevamento"
         },
         "data_description": {
-          "override_duration_mode": "Classico: dura per un tempo fisso. Ora fissa: dura fino a un orario configurato.",
-          "override_fixed_until": "Usato solo quando la durata è impostata su \"Ora fissa\". Se l'orario è già passato oggi, l'override termina a quell'ora domani.",
+          "override_release_strategy": "Controlla come termina l'override: dopo una durata fissa, a un'ora fissa, alla successiva transizione del ciclo, alla successiva decisione automatica, o solo con cancellazione manuale.",
+          "override_fixed_until": "Usato solo quando la strategia di fine è impostata su \"Ora fissa\". Se l'orario è già passato oggi, l'override termina a quell'ora domani.",
           "override_allow_comfort_actions": "Se abilitato, l'ombreggiatura di comfort regolare può continuare durante un override attivo. L'override stesso rimane attivo.",
           "override_allow_protection_actions": "Se abilitato, le azioni di protezione (assenza, calore, abbagliamento) possono continuare durante un override attivo. L'override stesso rimane attivo.",
-          "override_break_on_lifecycle": "Se abilitato, qualsiasi transizione del ciclo (ad es. giorno-notte) termina un override attivo.",
+          "override_safety_timeout_enabled": "Durata massima opzionale come rete di sicurezza per le strategie aperte, così un override non resta mai dimenticato permanentemente.",
           "override_duration_min": "Per quanto tempo dura un override diurno prima che SmartShading riprenda il controllo normale (modalità durata classica).",
           "override_night_duration_min": "Limite di sicurezza per un override notturno. Il vero rilascio avviene alla transizione del ciclo mattutino.",
           "override_detection_tolerance": "Variazione minima di posizione (in percentuale) prima che un movimento manuale sia riconosciuto come override."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Invertito (qualcuno a casa = assente)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Classico (durata fissa)",
-        "fixed_time": "Ora fissa"
+        "duration": "Dopo una durata fissa",
+        "fixed_time": "Ora fissa",
+        "lifecycle": "Alla fine del ciclo giorno/notte",
+        "first_comfort": "Alla successiva azione automatica di comfort",
+        "first_protection": "Alla successiva protezione solare",
+        "first_any_decision": "Alla successiva decisione automatica",
+        "manual": "Solo cancellazione manuale"
       }
     }
   },

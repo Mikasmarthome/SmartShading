@@ -51,6 +51,7 @@ from __future__ import annotations
 from datetime import datetime, time, timedelta, timezone
 
 from custom_components.smartshading.engines.override_detector import OverrideDetector
+from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy
 from custom_components.smartshading.state_machine.states import ShadingState
 
 _UTC = timezone.utc
@@ -64,9 +65,12 @@ def _detector_with_active_override(duration_mode: str = "legacy", fixed_until: t
         prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=_WARMUP_NOW,
     )
     t0 = _WARMUP_NOW + timedelta(minutes=1)
-    kwargs = {}
     if duration_mode == "fixed_time":
-        kwargs = {"duration_mode": "fixed_time", "fixed_until": fixed_until, "now_local": t0}
+        # DURATION is tick()'s "legacy" mode, renamed (T10) — explicit here
+        # since tick()'s own default changed from that to LIFECYCLE.
+        kwargs = {"release_strategy": OverrideReleaseStrategy.FIXED_TIME, "fixed_until": fixed_until, "now_local": t0}
+    else:
+        kwargs = {"release_strategy": OverrideReleaseStrategy.DURATION}
     det.tick(
         window_id="w1", observed_position=20, smartshading_target=0,
         prev_state=ShadingState.OPEN, tolerance=10, duration_min=120, now=t0, **kwargs,

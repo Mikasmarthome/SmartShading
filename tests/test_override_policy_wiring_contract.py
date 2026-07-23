@@ -31,8 +31,8 @@ _EXPECTED_WIRING = {
     "override_duration_min": "duration_min",
     "override_night_duration_min": "night_duration_min",
     "override_detection_tolerance": "detection_tolerance",
-    "override_break_on_lifecycle": "break_on_lifecycle",
-    "override_duration_mode": "duration_mode",  # + .value
+    "override_safety_timeout_enabled": "safety_timeout_enabled",
+    "override_release_strategy": "release_strategy",  # passed as the enum itself, no .value
     "override_fixed_until": "fixed_until",
     "override_allow_comfort_actions": "allow_comfort_actions",
     "override_allow_protection_actions": "allow_protection_actions",
@@ -66,7 +66,7 @@ def _expr_to_dotted_path(node: ast.AST) -> str | None:
 
 
 class TestEveryOverridePolicyFieldIsWiredNotHardcoded:
-    def test_all_eight_kwargs_reference_entry_data_override_policy(self) -> None:
+    def test_all_override_policy_kwargs_reference_entry_data_override_policy(self) -> None:
         call = _find_coordinator_call()
         by_kw = {kw.arg: kw.value for kw in call.keywords if kw.arg in _EXPECTED_WIRING}
         missing = set(_EXPECTED_WIRING) - set(by_kw)
@@ -83,9 +83,6 @@ class TestEveryOverridePolicyFieldIsWiredNotHardcoded:
                 )
                 continue
             expected_full = f"entry_data.override_policy.{expected_attr}"
-            # override_duration_mode is passed as `.value` (enum -> str).
-            if kwarg_name == "override_duration_mode":
-                expected_full += ".value"
             if dotted != expected_full:
                 violations.append(
                     f"{kwarg_name}={dotted!r}, expected {expected_full!r}"

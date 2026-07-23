@@ -400,21 +400,21 @@
         "title": "Ręczne zastąpienie",
         "description": "Określa zachowanie aktywnego ręcznego zastąpienia: jak długo trwa i czy działania komfortu lub ochrony mogą nadal być wykonywane, gdy jest aktywne.",
         "data": {
-          "override_duration_mode": "Czas trwania zastąpienia",
+          "override_release_strategy": "Strategia zakończenia",
           "override_fixed_until": "Stała godzina zakończenia",
           "override_allow_comfort_actions": "Zezwól na działania komfortu podczas zastąpienia",
           "override_allow_protection_actions": "Zezwól na działania ochrony podczas zastąpienia",
-          "override_break_on_lifecycle": "Zakończ zastąpienie przy przejściu harmonogramu",
+          "override_safety_timeout_enabled": "Limit czasu bezpieczeństwa",
           "override_duration_min": "Klasyczny czas trwania zastąpienia (minuty)",
           "override_night_duration_min": "Nocny czas trwania zastąpienia (minuty)",
           "override_detection_tolerance": "Tolerancja wykrywania"
         },
         "data_description": {
-          "override_duration_mode": "Klasyczny: trwa przez stały czas. Stała godzina: trwa do ustawionej godziny.",
-          "override_fixed_until": "Używane tylko, gdy czas trwania jest ustawiony na \"Stała godzina\". Jeśli godzina już minęła dzisiaj, zastąpienie kończy się o tej godzinie jutro.",
+          "override_release_strategy": "Określa, jak kończy się zastąpienie: po stałym czasie, o stałej godzinie, przy następnym przejściu harmonogramu, przy następnej automatycznej decyzji lub tylko przez ręczne wyczyszczenie.",
+          "override_fixed_until": "Używane tylko, gdy strategia zakończenia jest ustawiona na \"Stała godzina\". Jeśli godzina już minęła dzisiaj, zastąpienie kończy się o tej godzinie jutro.",
           "override_allow_comfort_actions": "Jeśli włączone, zwykłe zacienianie komfortowe może nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
           "override_allow_protection_actions": "Jeśli włączone, działania ochronne (nieobecność, upał, olśnienie) mogą nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
-          "override_break_on_lifecycle": "Jeśli włączone, każde przejście harmonogramu (np. dzień na noc) kończy aktywne zastąpienie.",
+          "override_safety_timeout_enabled": "Opcjonalny maksymalny czas jako zabezpieczenie dla otwartych strategii, aby zastąpienie nigdy nie zostało trwale zapomniane.",
           "override_duration_min": "Jak długo trwa dzienne zastąpienie, zanim SmartShading wznowi normalne sterowanie (klasyczny tryb czasu trwania).",
           "override_night_duration_min": "Limit bezpieczeństwa dla nocnego zastąpienia. Rzeczywiste zwolnienie następuje przy porannym przejściu harmonogramu.",
           "override_detection_tolerance": "Minimalna zmiana pozycji (w procentach), zanim ręczny ruch zostanie rozpoznany jako zastąpienie."
@@ -701,10 +701,15 @@
         "inverted_any_home": "Odwrócone (ktoś w domu = nieobecny)"
       }
     },
-    "override_duration_mode": {
+    "override_release_strategy": {
       "options": {
-        "legacy": "Klasyczny (stały czas)",
-        "fixed_time": "Stała godzina"
+        "duration": "Po stałym czasie",
+        "fixed_time": "Stała godzina",
+        "lifecycle": "Na końcu cyklu dnia/nocy",
+        "first_comfort": "Przy następnym automatycznym działaniu komfortu",
+        "first_protection": "Przy następnym zacienieniu ochronnym",
+        "first_any_decision": "Przy następnej automatycznej decyzji",
+        "manual": "Tylko ręczne wyczyszczenie"
       }
     }
   },

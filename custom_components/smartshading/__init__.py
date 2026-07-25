@@ -40,8 +40,6 @@ from .const import (
 )
 from .cover_control.global_dispatch_throttle import GlobalSerialDispatch
 from .coordinator import SmartShadingCoordinator, SmartShadingRuntimeData
-from .cover_control.cover_controller import CoverController
-from .cover_control.travel_tracker import TravelTracker
 from .engines.forecast_orchestrator import async_run_startup_matching
 from .engines.forecast_persistence import (
     STORAGE_KEY as FORECAST_STORAGE_KEY,
@@ -337,7 +335,6 @@ async def _async_setup_zone_entry(
         global_defaults=coordinator.global_defaults,
         shade_position_defaults=coordinator.shade_position_defaults,
         assumed_state_manager=coordinator.assumed_state_manager,
-        cover_controller=CoverController(TravelTracker(), coordinator.assumed_state_manager),
         learning_store=coordinator.learning_store,
         forecast_store=_fl_store,
         forecast_adapter=_fl_adapter,

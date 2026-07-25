@@ -231,6 +231,16 @@ class ExecutionResult:
     without detecting completion — the queue still continues (see
     cover_control/dispatch_completion.py module docstring)."""
 
+    # --- T11.1: PARALLEL-mode concurrent-batch diagnostics (additive) ---
+    parallel_batch_id: str | None = None
+    """Identifies which concurrently-dispatched batch this result belongs to
+    (PARALLEL mode only) — e.g. "safety", "zone:<zone_id>", or "all". None
+    for SPACED/SEQUENTIAL results (unrelated to batching)."""
+
+    parallel_batch_size: int | None = None
+    """How many intents were dispatched concurrently in this result's batch
+    (PARALLEL mode only). None outside PARALLEL mode."""
+
 
 # ---------------------------------------------------------------------------
 # ExecutionPlanResult

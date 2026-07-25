@@ -38,7 +38,6 @@ from .capability_detector import CapabilityDetector
 from .const import DEFAULT_UPDATE_INTERVAL, DOMAIN
 from .cover_control.assumed_state_manager import AssumedStateManager, confidence_level
 from .cover_control.cover_capabilities import CoverCapability
-from .cover_control.cover_controller import CoverController
 from .engines.comfort_engine import ComfortEngine
 from .engines.exposure_engine import ExposureEngine
 from .engines.solar_source import (
@@ -119,7 +118,7 @@ from .models.window import WindowBehaviorMode, WindowConfig
 from .models.zone import ZoneConfig
 from .models.zone_execution_config import ZoneExecutionConfig
 from .evaluators.tier_orchestrator import TierOrchestrator
-from .models.dispatch_config import DispatchConfig
+from .models.dispatch_config import DispatchConfig, DispatchMode
 from .models.manual_override import OverrideReleaseStrategy
 from .models.window_decision import WindowDecision
 from .models.window_decision_input import build_window_decision_input
@@ -369,6 +368,7 @@ from .cover_control.execution_result import (
     build_execution_plan_result,
     build_not_attempted_result,
 )
+from .cover_control.dispatch_batch import DispatchItem, group_into_batches
 from .cover_control.dispatch_completion import wait_for_travel_completion
 from .cover_control.dispatch_orchestrator import (
     effective_interval_s,
@@ -515,7 +515,6 @@ class SmartShadingRuntimeData:
     global_defaults: GlobalDefaults
     shade_position_defaults: ShadePositionDefaults
     assumed_state_manager: AssumedStateManager
-    cover_controller: CoverController
     # Learning Store — read-only public reference for global export.
     # Always present; coordinator initialises it unconditionally.
     learning_store: LearningStore
@@ -1033,6 +1032,31 @@ def _build_zone_dispatch_order(
         window_order_in_zone[window_id] = idx
         zone_window_counters[zid] = idx + 1
     return zone_order, window_order_in_zone
+
+
+def _harmonized_filter_for_dispatch(exec_filter_result, harm, exec_cap):
+    """Return the harmonization-adjusted CommandFilterResult to dispatch
+    from, or the unmodified exec_filter_result when this window's target was
+    not changed by harmonization. Pure — no side effects.
+
+    Extracted (T11.1) so the Pass-2 per-window loop (sequential dispatch
+    modes) and the PARALLEL pre-dispatch pass (_predispatch_parallel_batches)
+    compute this identically from one place — no duplicated-and-possibly-
+    drifting copy of the harmonization-adjustment logic.
+    """
+    if harm.harmonized and exec_filter_result is not None and exec_cap is not None:
+        # Convert back to internal so AssumedStateManager.update() receives
+        # the correct position after dispatch.
+        harm_internal = to_internal_position(
+            harm.final_target_position_ha,  # type: ignore[arg-type]
+            invert=exec_cap.invert_position,
+        )
+        return replace(
+            exec_filter_result,
+            target_position_ha=harm.final_target_position_ha,
+            target_position_internal=harm_internal,
+        )
+    return exec_filter_result
 
 
 class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
@@ -5202,25 +5226,25 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # scope; see dispatch_orchestrator.effective_interval_s()).
         _dispatch_prev_zone_id: str | None = None
 
+        # T11.1: PARALLEL mode dispatches every eligible intent for this
+        # cycle CONCURRENTLY, in one pre-pass BEFORE the per-window loop
+        # below — see _predispatch_parallel_batches() docstring for the full
+        # rationale. For every other mode this is a no-op empty dict, and
+        # the per-window loop's own sequential dispatch block (unchanged)
+        # runs exactly as it did before T11.1.
+        _parallel_results: dict[tuple[str, str], object] = {}
+        if self._dispatch_config.mode is DispatchMode.PARALLEL:
+            _parallel_results = await self._predispatch_parallel_batches(
+                _ordered_window_states, _harmonization, now, _this_dispatch_gen,
+            )
+
         # For harmonized windows, the filter result is replaced with a new one
         # carrying the group's harmonized target_position_ha before plan building.
         for window_id, s in _ordered_window_states:
             harm = _harmonization[window_id]
-            _exec_filter_for_dispatch = s.exec_filter_result
-
-            if harm.harmonized and s.exec_filter_result is not None and s.exec_cap is not None:
-                # Build a modified CommandFilterResult with the harmonized HA target.
-                # Convert back to internal so AssumedStateManager.update() receives
-                # the correct position after dispatch.
-                _harm_internal = to_internal_position(
-                    harm.final_target_position_ha,  # type: ignore[arg-type]
-                    invert=s.exec_cap.invert_position,
-                )
-                _exec_filter_for_dispatch = replace(
-                    s.exec_filter_result,
-                    target_position_ha=harm.final_target_position_ha,
-                    target_position_internal=_harm_internal,
-                )
+            _exec_filter_for_dispatch = _harmonized_filter_for_dispatch(
+                s.exec_filter_result, harm, s.exec_cap,
+            )
 
             _exec_plan_result = None
             _dispatch_suppressed_reason: str | None = None
@@ -5267,6 +5291,25 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             _intent,
                             reason="startup_grace_active: dispatch suppressed during startup hydration",
                         ))
+                    elif self._dispatch_config.mode is DispatchMode.PARALLEL:
+                        # T11.1: this intent was already dispatched CONCURRENTLY
+                        # (alongside every other eligible intent in its batch)
+                        # by _predispatch_parallel_batches() above, before this
+                        # loop started. No additional await/lock/throttle here —
+                        # that would defeat genuine parallelism. Look up the
+                        # already-computed result by (window_id, entity_id),
+                        # which is unique within one coordinator cycle.
+                        _result = _parallel_results.get((window_id, _intent.cover_entity_id))
+                        if _result is None:
+                            # Defensive only — every eligible intent reaching
+                            # this branch was included in the pre-pass batch
+                            # build using the identical eligibility gates
+                            # (not _intent.allowed / startup grace) checked
+                            # just above, so this should never happen.
+                            _result = build_not_attempted_result(
+                                _intent, reason="parallel_dispatch_result_missing",
+                            )
+                        _exec_results.append(_result)
                     else:
                         # Serial Dispatch (Step 10): acquire the integration-wide
                         # lock before every cover command.  The lock is shared
@@ -6228,6 +6271,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "completion_method": _ctx.get("completion_method"),
             "completion_wait_s": _ctx.get("completion_wait_s"),
             "completion_timed_out": _ctx.get("completion_timed_out"),
+            # T11.1: concurrent-batch identity (PARALLEL mode only).
+            "parallel_batch_id": _ctx.get("parallel_batch_id"),
+            "parallel_batch_size": _ctx.get("parallel_batch_size"),
         })
         if len(self._support_critical_events) > 500:
             self._support_critical_events = self._support_critical_events[-500:]
@@ -6286,6 +6332,168 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             oldest = sorted(self._research_daily_buckets)[0]
             del self._research_daily_buckets[oldest]
 
+    async def _predispatch_parallel_batches(
+        self, ordered_window_states, harmonization, now, this_dispatch_gen,
+    ) -> dict:
+        """T11.1: genuinely concurrent dispatch for DispatchMode.PARALLEL.
+
+        Runs BEFORE the main per-window Pass-2 loop, as one self-contained
+        pre-pass — the loop itself (600+ lines of per-window diagnostics,
+        learning, StateGuard, ComfortMovementHold, override-release-reason
+        bookkeeping, etc.) is NOT restructured or duplicated; it stays
+        exactly as it was for SPACED/SEQUENTIAL, and for PARALLEL it simply
+        looks up the already-computed ExecutionResult this method produced
+        (see the "elif self._dispatch_config.mode is DispatchMode.PARALLEL"
+        branch in the main loop) instead of dispatching again.
+
+        Why a pre-pass instead of restructuring the main loop: intent
+        construction (harmonization-adjusted CommandFilterResult →
+        build_execution_plan()) is a PURE, side-effect-free function of data
+        the coordinator already fully computed before Pass 2 begins (Pass 1
+        — window decisions, harmonization). Recomputing it here (identical
+        to what the main loop recomputes for its own bookkeeping) is safe
+        and cheap; it is the only way to know WHICH intents need dispatching
+        before the loop that consumes/records those results runs, without
+        duplicating that loop's much larger post-processing tail.
+
+        Lock semantics: the shared GlobalSerialDispatch lock is held for a
+        batch's WHOLE concurrent-dispatch duration (once per batch, not once
+        per intent) — items WITHIN one batch run genuinely concurrently
+        against each other, but the batch as a whole still mutually excludes
+        a DIFFERENT coordinator's (different zone entry's) simultaneous
+        dispatch, preserving the lock's original documented purpose
+        (cover_control/global_dispatch_throttle.py: "only one coordinator
+        may dispatch at a time"). Since hass.services.async_call() defaults
+        to blocking=False (verified: cover_control/ha_service_adapter.py
+        never passes blocking=True), each dispatch already returns almost
+        immediately regardless of the physical cover's travel time — so
+        holding the lock for one batch's gather() is a negligible, safe
+        serialization point, not a real bottleneck.
+
+        Own-command guard timing: assumed-state update + override-detection
+        suppression for a SENT result happen in the EXISTING post-dispatch
+        block inside the main loop (unchanged — operates on
+        ExecutionPlanResult, itself built from whichever ExecutionResults
+        ended up in _exec_results, sequential or pre-fetched-parallel alike).
+        This preserves the exact same "protected before the window's own
+        NEXT coordinator cycle can ever observe it" invariant the sequential
+        path has always provided — SmartShading's OverrideDetector only
+        ever runs within the coordinator's own single-threaded update cycle,
+        never concurrently with the coordinator's own dispatch code, so
+        there is no actual race window to close by moving it earlier.
+        """
+        _dispatchable: list[DispatchItem] = []
+        _plan_cache: dict[str, tuple] = {}
+        for window_id, s in ordered_window_states:
+            harm = harmonization[window_id]
+            exec_filter_for_dispatch = _harmonized_filter_for_dispatch(
+                s.exec_filter_result, harm, s.exec_cap,
+            )
+            if not (
+                s.exec_entity_id is not None
+                and s.exec_cap is not None
+                and s.exec_snapshot is not None
+                and exec_filter_for_dispatch is not None
+            ):
+                continue
+            exec_plan = build_execution_plan(
+                window_id=window_id,
+                cover_entity_ids=self.cover_groups[s.window.cover_group_id].cover_ids,
+                filter_result=exec_filter_for_dispatch,
+                decided_by=s.tier_decided_by or "unknown",
+                now=now,
+            )
+            _plan_cache[window_id] = (exec_plan, s)
+            for intent in exec_plan.intents:
+                if not intent.allowed:
+                    continue  # main loop builds the BLOCKED result itself
+                if self._startup_cycles_remaining > 0 and not intent.is_safety:
+                    continue  # main loop builds the NOT_ATTEMPTED result itself
+                _dispatchable.append(DispatchItem(
+                    is_safety=intent.is_safety, zone_id=s.window.zone_id,
+                    payload=(window_id, intent),
+                ))
+
+        results: dict[tuple[str, str], object] = {}
+        if not _dispatchable:
+            return results
+
+        batches = group_into_batches(
+            _dispatchable, zone_batching=self._dispatch_config.zone_batching,
+        )
+        _prev_zone_id: str | None = None
+        for batch in batches:
+            # Zone-boundary spacing (T11 zone_batching): applies only between
+            # successive non-safety batches, never before the safety fast-lane.
+            if (
+                not batch.is_safety_batch
+                and self._dispatch_config.zone_batching
+                and batch.zone_id != _prev_zone_id
+                and _prev_zone_id is not None
+            ):
+                _wait = self._serial_dispatch.time_until_next_allowed(
+                    min_interval_override=timedelta(
+                        seconds=self._dispatch_config.start_interval_s
+                    )
+                )
+                if _wait.total_seconds() > 0:
+                    await asyncio.sleep(_wait.total_seconds())
+            if not batch.is_safety_batch:
+                _prev_zone_id = batch.zone_id
+
+            batch_id = "safety" if batch.is_safety_batch else (
+                f"zone:{batch.zone_id}" if batch.zone_id is not None else "all"
+            )
+            async with self._serial_dispatch.lock:
+                _coros = [
+                    self._dispatch_one_parallel_item(
+                        window_id, intent, this_dispatch_gen,
+                        batch_id=batch_id, batch_size=len(batch.items),
+                    )
+                    for window_id, intent in (item.payload for item in batch.items)
+                ]
+                _batch_results = await asyncio.gather(*_coros)
+            for item, result in zip(batch.items, _batch_results):
+                _window_id, _intent = item.payload
+                results[(_window_id, _intent.cover_entity_id)] = result
+        return results
+
+    async def _dispatch_one_parallel_item(
+        self, window_id, intent, this_dispatch_gen, *, batch_id, batch_size,
+    ):
+        """Dispatch exactly one intent as part of a concurrently-gathered
+        PARALLEL batch. Never raises — any unexpected exception is converted
+        into a structured FAILED-shaped result so one cover's failure can
+        never swallow or corrupt the rest of the batch's results
+        (asyncio.gather() default, no return_exceptions needed precisely
+        because this coroutine itself guarantees it never raises)."""
+        try:
+            if not intent.is_safety and self._dispatch_generation != this_dispatch_gen:
+                return replace(
+                    build_not_attempted_result(intent, reason="stale_presence_superseded"),
+                    parallel_batch_id=batch_id, parallel_batch_size=batch_size,
+                )
+            _dispatch_now = dt_util.utcnow()
+            _result = await dispatch_cover_intent(self.hass, intent, now_utc=_dispatch_now)
+            if _result.status in (ExecutionStatus.SENT, ExecutionStatus.FAILED):
+                self._serial_dispatch.record_dispatch(_dispatch_now)
+                if _result.status == ExecutionStatus.FAILED:
+                    _LOGGER.warning(
+                        "SmartShading: cover dispatch FAILED entity=%s error=%s (%s)",
+                        _result.entity_id, _result.error, _result.failure_exception_type,
+                    )
+            return replace(_result, parallel_batch_id=batch_id, parallel_batch_size=batch_size)
+        except Exception as exc:
+            _LOGGER.exception(
+                "SmartShading: unexpected error in parallel dispatch for %s", window_id,
+            )
+            return replace(
+                build_not_attempted_result(
+                    intent, reason=f"parallel_dispatch_error: {type(exc).__name__}",
+                ),
+                parallel_batch_id=batch_id, parallel_batch_size=batch_size,
+            )
+
     def _dispatch_context(self, s, *, throttled=False, planned_ms=None, actual_ms=None,
                           started_mono=None, slot_granted_mono=None,
                           timing_status="recorded", exec_result=None) -> dict:
@@ -6317,6 +6525,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "completion_method": getattr(exec_result, "completion_method", None),
             "completion_wait_s": getattr(exec_result, "completion_wait_s", None),
             "completion_timed_out": bool(getattr(exec_result, "completion_timed_out", False)),
+            # T11.1: which concurrently-dispatched batch this event belongs
+            # to (PARALLEL mode only) and how many intents it contained.
+            "parallel_batch_id": getattr(exec_result, "parallel_batch_id", None),
+            "parallel_batch_size": getattr(exec_result, "parallel_batch_size", None),
             # Real global serial min-interval wait (planned vs measured).
             "global_wait_required": bool(throttled),
             "planned_global_interval_wait_ms": (planned_ms if throttled else 0),
@@ -6334,11 +6546,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 round(mi.total_seconds() * 1000) if mi is not None else None)
         except Exception:
             ctx["required_global_interval_ms"] = None
-        # Movement + position-before from THIS cycle's snapshot (entity_state source).
-        # TravelTracker is NOT consulted: it is owned by CoverController and is not
-        # updated by the coordinator's live dispatch path, so it cannot reliably know
-        # the coordinator's active travel.  unknown ≠ false: movement is only
-        # recorded when the entity is available with a definite (non-unknown) state.
+        # Movement + position-before from THIS cycle's snapshot (entity_state
+        # source). No estimation-based tracker is consulted here — for
+        # SEQUENTIAL-mode travel-completion detection see
+        # cover_control/dispatch_completion.py instead (T11), which
+        # estimates from each cover's own travel_time_open_s/close_s
+        # directly. unknown ≠ false: movement is only recorded when the
+        # entity is available with a definite (non-unknown) state.
         snap = getattr(s, "exec_snapshot", None)
         _unknown_states = (None, "unknown", "unavailable")
         if snap is not None and getattr(snap, "available", False) and \

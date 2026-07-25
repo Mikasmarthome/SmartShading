@@ -548,6 +548,9 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                         "completion_method": pe.get("completion_method"),
                         "completion_wait_s": pe.get("completion_wait_s"),
                         "completion_timed_out": pe.get("completion_timed_out"),
+                        # T11.1: concurrent-batch identity (PARALLEL mode only).
+                        "parallel_batch_id": pe.get("parallel_batch_id"),
+                        "parallel_batch_size": pe.get("parallel_batch_size"),
                     },
                 })
         # Sort newest-first so non-critical fill-up keeps the most recent records.

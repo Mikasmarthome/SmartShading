@@ -78,13 +78,6 @@ class BiasDirection(Enum):
     UNBIASED         = "unbiased"
 
 
-class ForecastResolution(Enum):
-    """Temporal resolution of the original forecast."""
-
-    HOURLY = "hourly"
-    DAILY  = "daily"
-
-
 # ---------------------------------------------------------------------------
 # ForecastRecord — matched forecast-actual pair
 # ---------------------------------------------------------------------------

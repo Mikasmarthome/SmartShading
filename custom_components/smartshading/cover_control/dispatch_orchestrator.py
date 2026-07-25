@@ -14,10 +14,15 @@ loop and engines/override_release.py's architecture note):
   - Cross-cycle staleness/preemption: the existing self._dispatch_generation
     stale-intent guard (coordinator.py) already lets a new coordinator cycle
     (fired mid-dispatch by a presence/safety event) cancel not-yet-dispatched
-    non-safety intents while safety intents remain exempt. T11 only needed to
-    confirm this guard is checked at every await point in the loop, including
-    the new SEQUENTIAL completion-wait — it already is, since that guard runs
-    once per intent, after any wait.
+    non-safety intents while safety intents remain exempt. T15 note: this
+    guard runs exactly once per intent, immediately before that intent's own
+    dispatch_cover_intent() call — it is NOT re-checked after the SEQUENTIAL
+    completion-wait (dispatch_completion.py) or the post-dispatch state
+    mutation (assumed-state update, StateGuard, ComfortMovementHold). Those
+    steps only run for intents that already passed the guard once, and by
+    design a real command that was already sent is not un-sent by a later
+    generation bump — but a generation bump during the completion-wait does
+    not gate anything downstream of it either.
   - Duplicate/no-op suppression: CommandFilter's pre-dispatch position-
     tolerance check (BLOCKED_SAME_POSITION) already prevents redispatching an
     unchanged target.

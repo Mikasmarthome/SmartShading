@@ -15,13 +15,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-CURRENT_PAYLOAD_SCHEMA: int = 3
-
-# Sections that must exist (as empty defaults) from v3 onwards.
-_V3_LIST_SECTIONS: tuple[str, ...] = (
-    "shadow_proposals", "bounded_experiments", "persistent_adoptions",
-    "strategy_experiments", "persistent_strategy_adoptions",
-)
+# T15: capped at 2, matching the actual payload format learning_persistence.py
+# reads and writes (PAYLOAD_SCHEMA_V1/V2). A v3 step existed here previously
+# but its migrated output was never consumed anywhere — deserialize_into_
+# learning_store() only ever accepts version 1 or 2 and raises for anything
+# else. Advertising CURRENT_PAYLOAD_SCHEMA=3 here meant a hypothetical future
+# v3 payload would pass THIS module's accept_authority gate and then be
+# rejected by the real deserializer, silently discarding a whole learning
+# store (empty-store fallback) instead of erroring cleanly at the gate that's
+# supposed to catch it. Raise this back to 3 only alongside a real payload
+# writer + reader that actually produce/consume schema 3.
+CURRENT_PAYLOAD_SCHEMA: int = 2
 
 
 @dataclass(frozen=True)
@@ -47,20 +51,6 @@ def _v1_to_v2(data: dict) -> dict:
     return data
 
 
-def _v2_to_v3(data: dict, *, owner_entry_id: str | None) -> dict:
-    data = dict(data)
-    data["schema_version"] = 3
-    # Owner: a learning store file is entry-scoped (filename carries entry_id), so
-    # filling owner_entry_id from the opening entry is unambiguous when absent.
-    if not data.get("owner_entry_id") and owner_entry_id is not None:
-        data["owner_entry_id"] = owner_entry_id
-    data.setdefault("created_by_domain", "smartshading")
-    data.setdefault("consumed_experiment_ledger", {})
-    for key in _V3_LIST_SECTIONS:
-        data.setdefault(key, [])
-    return data
-
-
 def migrate_payload(
     data: object, *, owner_entry_id: str | None,
 ) -> MigrationResult:
@@ -83,8 +73,5 @@ def migrate_payload(
     if version <= 1:
         cur = _v1_to_v2(cur)
         steps.append("v1_to_v2")
-    if detect_payload_schema_version(cur) <= 2:
-        cur = _v2_to_v3(cur, owner_entry_id=owner_entry_id)
-        steps.append("v2_to_v3")
     return MigrationResult(
         cur, CURRENT_PAYLOAD_SCHEMA, tuple(steps), accept_authority=True)

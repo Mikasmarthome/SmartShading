@@ -1,17 +1,12 @@
-"""Weather snapshot model and evaluation. See ARCHITECTURE.md §5.3.
+"""Weather evaluation helpers. See ARCHITECTURE.md §5.3.
 
-get_snapshot() is an interface stub for this phase: reading a live weather
-source (HA weather entity / sensor) requires Home Assistant, which this
-package deliberately does not depend on yet (see ARCHITECTURE.md §16.1 -
-this is exactly the kind of HA-dependent piece deferred to the integration
-phase). calculate_effective_radiation() and is_storm_condition() are pure
-math/logic and fully implemented and testable now.
+Pure math/logic (radiation estimate, storm classification, HA weather-state
+parsing) — reading a live weather source is done directly in coordinator.py,
+which owns the actual HA weather-entity/sensor access.
 """
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 
 
@@ -34,9 +29,6 @@ class WeatherCondition(Enum):
 
 STORM_CONDITIONS: frozenset[WeatherCondition] = frozenset(
     {WeatherCondition.STORM, WeatherCondition.THUNDERSTORM, WeatherCondition.HAIL}
-)
-RAIN_CONDITIONS: frozenset[WeatherCondition] = frozenset(
-    {WeatherCondition.RAIN, WeatherCondition.HEAVY_RAIN}
 )
 
 # ---------------------------------------------------------------------------
@@ -73,36 +65,8 @@ DEFAULT_SOLAR_CONSTANT_WM2 = 1000.0
 DEFAULT_STORM_WIND_THRESHOLD_MS = 20.0
 
 
-@dataclass(frozen=True)
-class WeatherSnapshot:
-    """ARCHITECTURE.md §3.7."""
-
-    timestamp: datetime
-    outdoor_temp_c: float
-    cloud_cover_pct: float  # 0-100
-    solar_radiation_wm2: float
-    effective_solar_radiation_wm2: float
-    wind_speed_ms: float
-    wind_gust_ms: float
-    condition: WeatherCondition
-    is_rain: bool
-    is_storm_safe_required: bool
-
-
 class WeatherEngine:
     """Evaluates the configured weather source (ARCHITECTURE.md §5.3)."""
-
-    def get_snapshot(self, *args: object, **kwargs: object) -> WeatherSnapshot:
-        """Read the configured weather source and build a WeatherSnapshot.
-
-        Not implemented yet - requires a live HA weather entity or sensor.
-        Implemented once SmartShading is wired into Home Assistant
-        (ARCHITECTURE.md §14, after the core foundation).
-        """
-        raise NotImplementedError(
-            "WeatherEngine.get_snapshot() requires a live weather source and is "
-            "implemented when SmartShading is integrated into Home Assistant."
-        )
 
     @staticmethod
     def calculate_effective_radiation(
@@ -125,10 +89,6 @@ class WeatherEngine:
     ) -> bool:
         """ARCHITECTURE.md §4.6 STORM_SAFE entry conditions (weather part)."""
         return condition in STORM_CONDITIONS or wind_gust_ms >= storm_wind_threshold_ms
-
-    @staticmethod
-    def is_rain_condition(condition: WeatherCondition) -> bool:
-        return condition in RAIN_CONDITIONS
 
     @staticmethod
     def parse_weather_condition(raw: str | None) -> WeatherCondition | None:

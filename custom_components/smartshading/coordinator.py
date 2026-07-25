@@ -1411,6 +1411,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Incremented by each _on_presence_change callback; checked inside the
         # dispatch lock to cancel non-safety intents computed before a newer
         # presence event invalidated the batch.
+        # T15: NOT the same counter as self._config_generation_tracker (a
+        # separate, persisted, per-window fingerprint-based counter that
+        # gates thermal/contribution/adoption invalidation). This one is a
+        # plain runtime-only int, reset to 0 on every restart/reload, used
+        # only by the two dispatch-time staleness checks in the Pass-2 loop.
         self._dispatch_generation: int = 0
         # Learning Loop Closure (9F15): per-window AdaptiveProfile cache.
         # Updated each sun-path cycle; carries the last computed profile for
@@ -1785,7 +1790,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Increment before scheduling so any intents currently waiting
             # for the dispatch lock see the updated generation and self-cancel.
             self._dispatch_generation += 1
-            self.hass.async_create_task(self.async_request_refresh())
+            # T15: tied to the config entry (not a bare hass task) so HA
+            # cancels it automatically on unload — a plain hass.async_create_task
+            # here would be untracked and could keep running after unload.
+            entry.async_create_background_task(
+                self.hass, self.async_request_refresh(), "smartshading_presence_refresh",
+            )
 
         for entity_id in self._presence_entity_ids:
             unsub = async_track_state_change_event(
@@ -1846,7 +1856,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Bump generation so any intents waiting on the dispatch lock see the
             # newer generation and self-cancel, then re-evaluate immediately.
             self._dispatch_generation += 1
-            self.hass.async_create_task(self.async_request_refresh())
+            # T15: tied to the config entry so HA cancels it on unload.
+            entry.async_create_background_task(
+                self.hass, self.async_request_refresh(), "smartshading_contact_refresh",
+            )
 
         for entity_id in contact_ids:
             unsub = async_track_state_change_event(
@@ -1946,7 +1959,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self._last_lifecycle_boundary_refresh_utc = dt_util.utcnow()
             # Bump generation so any stale queued intent self-cancels, refresh now.
             self._dispatch_generation += 1
-            self.hass.async_create_task(self.async_request_refresh())
+            # T15: tied to the config entry so HA cancels it on unload.
+            self.config_entry.async_create_background_task(
+                self.hass, self.async_request_refresh(), "smartshading_lifecycle_boundary_refresh",
+            )
             # Schedule the following boundary (exceptions must not break the chain).
             try:
                 self._schedule_next_lifecycle_boundary()

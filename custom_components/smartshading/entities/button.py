@@ -199,8 +199,7 @@ async def _collect_zone_entries(hass: HomeAssistant) -> list[dict]:
     """Collect learning and forecast stores from all active SmartShading zone entries.
 
     Only ENTRY_TYPE_ZONE entries are included; the system entry itself is
-    excluded.  Returns a list of per-zone dicts suitable for
-    build_global_learning_export().
+    excluded.
     """
     result: list[dict] = []
     for entry in hass.config_entries.async_entries(DOMAIN):

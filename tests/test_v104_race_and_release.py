@@ -720,8 +720,8 @@ class TestMultiZoneTrigger:
         for cb in callbacks:
             cb(event)
 
-        for coord in coords:
-            coord.hass.async_create_task.assert_called()
+        for entry in entries:
+            entry.async_create_background_task.assert_called()
 
     def test_tc_rr16b_each_zone_gets_independent_refresh(self):
         """TC-RR16b: each callback triggers only its own coordinator's refresh."""
@@ -751,8 +751,8 @@ class TestMultiZoneTrigger:
         for cb in cbs_a:
             cb(event)
 
-        coord_a.hass.async_create_task.assert_called()
-        coord_b.hass.async_create_task.assert_not_called()
+        entry_a.async_create_background_task.assert_called()
+        entry_b.async_create_background_task.assert_not_called()
 
     def test_tc_rr16c_all_zones_generation_increments_on_shared_event(self):
         """TC-RR16c: same presence entity → each zone's _dispatch_generation increments."""

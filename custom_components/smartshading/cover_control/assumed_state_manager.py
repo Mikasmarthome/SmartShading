@@ -4,11 +4,17 @@ exactly: AssumedPositionState, confidence/uncertainty model, restart-during-
 travel handling, drift suspicion, and reference-travel (endstop)
 calibration.
 
-No Home Assistant dependencies. RestoreEntity-style persistence is
-supported via initialize_from_restore()/export_for_restore() - the actual
-HA Storage read/write happens in a later integration phase
-(ARCHITECTURE.md §16.1: STORAGE_VERSION + migration hook are also deferred
-to that phase, this module is the pure logic the storage layer will wrap).
+No Home Assistant dependencies. RestoreEntity-style persistence is designed
+for via initialize_from_restore()/export_for_restore() - the actual HA
+Storage read/write, and the call sites that would invoke these two methods
+plus on_restart()/on_reference_travel()/record_progress()/
+is_position_trustworthy()/is_drift_suspected(), are deferred to a later
+integration phase (ARCHITECTURE.md §16.1) and NOT wired into the coordinator
+today (confirmed T15 audit: zero call sites outside this module and its own
+tests). Confidence/drift ARE computed and exposed for display (diagnostic
+sensor, get_state()) but do not currently gate any dispatch/override
+decision — assumed state for unreliable-feedback covers is trusted
+indefinitely, is never persisted, and is lost on every HA restart/reload.
 """
 from __future__ import annotations
 

@@ -57,10 +57,6 @@ DATA_DEBUG_LOGGING = "debug_logging"       # bool: debug logging enabled
 # config_entry.options key for the debug logging switch (system entry only).
 CONF_DEBUG_LOGGING = "debug_logging"
 
-# Storage key for the privacy-safe learning export written by the export button.
-LEARNING_EXPORT_STORAGE_KEY = "smartshading_learning_export"
-LEARNING_EXPORT_STORAGE_VERSION = 1
-
 # Zone control persistence key in config_entry.options (Step 9G11).
 # Stores per-zone learning_enabled / active_control_enabled so switch
 # state survives HA restart without modifying config_entry.data.
@@ -200,8 +196,6 @@ EMA_ALPHA_MAX = 1.0
 
 # Rain protection per-window config keys (stored in ConfigEntry.data per window).
 CONF_RAIN_PROTECTION_ENABLED = "rain_protection_enabled"
-CONF_RAIN_SAFE_POSITION = "rain_safe_position"
-CONF_RAIN_RELEASE_DELAY_MIN = "rain_release_delay_min"
 
 # Defaults for rain protection settings.
 DEFAULT_RAIN_RELEASE_DELAY_MIN = 30   # minutes dry cooldown before RAIN_SAFE releases

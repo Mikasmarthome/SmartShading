@@ -260,7 +260,7 @@ class TestPresenceCallbackBehavior:
         event = _mock_event(old_state_str="not_home", new_state_str="home")
         callbacks[0](event)
 
-        coord.hass.async_create_task.assert_called_once()
+        entry.async_create_background_task.assert_called_once()
 
     def test_tc_pr7_home_to_away_triggers_refresh(self):
         """TC-PR7: home→not_home also triggers refresh (departure is also a presence change)."""
@@ -271,7 +271,7 @@ class TestPresenceCallbackBehavior:
         event = _mock_event(old_state_str="home", new_state_str="not_home")
         callbacks[0](event)
 
-        coord.hass.async_create_task.assert_called_once()
+        entry.async_create_background_task.assert_called_once()
 
     def test_tc_pr8_same_state_deduplicated_no_refresh(self):
         """TC-PR8: same old/new state → deduplication → no refresh."""
@@ -282,7 +282,7 @@ class TestPresenceCallbackBehavior:
         event = _mock_event(old_state_str="home", new_state_str="home")
         callbacks[0](event)
 
-        coord.hass.async_create_task.assert_not_called()
+        entry.async_create_background_task.assert_not_called()
 
     def test_tc_pr9_none_new_state_no_refresh(self):
         """TC-PR9: entity removed (new_state=None) → no refresh."""
@@ -293,7 +293,7 @@ class TestPresenceCallbackBehavior:
         event = _mock_event(old_state_str="home", new_state_str=None)
         callbacks[0](event)
 
-        coord.hass.async_create_task.assert_not_called()
+        entry.async_create_background_task.assert_not_called()
 
     def test_tc_pr10_none_old_state_no_refresh(self):
         """TC-PR10: entity added (old_state=None) → no refresh."""
@@ -304,7 +304,7 @@ class TestPresenceCallbackBehavior:
         event = _mock_event(old_state_str=None, new_state_str="home")
         callbacks[0](event)
 
-        coord.hass.async_create_task.assert_not_called()
+        entry.async_create_background_task.assert_not_called()
 
 
 class TestPresenceTeardown:
@@ -678,33 +678,33 @@ class TestContactCallbackBehavior:
         cbs = _capture_contact_cb(coord, entry)
         assert cbs
         cbs[0](_mock_event(old_state_str="off", new_state_str="on"))
-        coord.hass.async_create_task.assert_called_once()
+        entry.async_create_background_task.assert_called_once()
 
     def test_open_to_closed_triggers_refresh(self):
         coord, entry = _make_coord_contacts([_win("w1", contacts=["binary_sensor.a"])])
         cbs = _capture_contact_cb(coord, entry)
         cbs[0](_mock_event(old_state_str="on", new_state_str="off"))
-        coord.hass.async_create_task.assert_called_once()
+        entry.async_create_background_task.assert_called_once()
 
     def test_unavailable_to_closed_triggers_refresh(self):
         # Sensor recovering after restart → re-evaluate (may now reach Phase 2).
         coord, entry = _make_coord_contacts([_win("w1", contacts=["binary_sensor.a"])])
         cbs = _capture_contact_cb(coord, entry)
         cbs[0](_mock_event(old_state_str="unavailable", new_state_str="off"))
-        coord.hass.async_create_task.assert_called_once()
+        entry.async_create_background_task.assert_called_once()
 
     def test_same_state_deduplicated(self):
         coord, entry = _make_coord_contacts([_win("w1", contacts=["binary_sensor.a"])])
         cbs = _capture_contact_cb(coord, entry)
         cbs[0](_mock_event(old_state_str="on", new_state_str="on"))
-        coord.hass.async_create_task.assert_not_called()
+        entry.async_create_background_task.assert_not_called()
 
     def test_none_states_no_refresh(self):
         coord, entry = _make_coord_contacts([_win("w1", contacts=["binary_sensor.a"])])
         cbs = _capture_contact_cb(coord, entry)
         cbs[0](_mock_event(old_state_str="off", new_state_str=None))
         cbs[0](_mock_event(old_state_str=None, new_state_str="on"))
-        coord.hass.async_create_task.assert_not_called()
+        entry.async_create_background_task.assert_not_called()
 
     def test_multi_contact_one_open_triggers_refresh(self):
         coord, entry = _make_coord_contacts([
@@ -712,7 +712,7 @@ class TestContactCallbackBehavior:
         cbs = _capture_contact_cb(coord, entry)
         assert len(cbs) == 2
         cbs[1](_mock_event(old_state_str="off", new_state_str="on"))
-        coord.hass.async_create_task.assert_called_once()
+        entry.async_create_background_task.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -824,9 +824,14 @@ class TestLifecycleBoundaryTimer:
              patch.object(_coord_module_ref.dt_util, "now", return_value=_local(2026, 6, 30, 5, 0)), \
              patch.object(_coord_module_ref.dt_util, "utcnow", return_value=_local(2026, 6, 30, 6, 35)):
             coord.async_setup_lifecycle_boundary_timer(entry)
-            before = coord.hass.async_create_task.call_count
+            # The boundary-fire callback schedules its refresh via
+            # coord.config_entry (the entry the coordinator was constructed
+            # with), not the `entry` parameter passed to this setup call —
+            # matching production, where __init__.py passes the same entry
+            # to both the constructor and this setup method.
+            before = coord.config_entry.async_create_background_task.call_count
             captured["cb"](_local(2026, 6, 30, 6, 35))  # boundary fires
-        assert coord.hass.async_create_task.call_count == before + 1
+        assert coord.config_entry.async_create_background_task.call_count == before + 1
         assert coord._last_lifecycle_boundary_refresh_utc is not None
 
     def test_teardown_cancels_timer(self):

@@ -200,8 +200,10 @@ class DecisionOutcome:
     # None for legacy v1 outcomes, which use the isolated timestamp fallback.
     decision_id: str | None = None
     # LE 2.0 / P3 — additive multi-objective decomposition.  None for legacy v1
-    # outcomes and for P2 records written before P3.  Has NO active learning
-    # authority in P3 (the legacy outcome_score remains authoritative).
+    # outcomes and for P2 records written before P3.  T12: this is now the
+    # source of truth outcome_score is DERIVED from (see
+    # engines/outcome_resolution._composite_outcome_score); None only for
+    # outcomes resolved before T12/P3.
     multi_objective: MultiObjectiveOutcome | None = None
 
     @property
@@ -281,25 +283,3 @@ class DecisionOutcome:
         )
 
 
-@dataclass
-class EvaluatorConfidenceRecord:
-    """Running tally of an evaluator's decision quality for one window.
-
-    Not frozen — the Learning Engine increments decision_count and
-    override_count and recomputes override_rate as new outcomes arrive.
-
-    Confidence model (Learning Engine, Phase 9+):
-        base_confidence = 1.0 - override_rate
-        sample_weight   = min(1.0, decision_count / 100)
-        confidence      = base_confidence * sample_weight
-
-    Records with fewer than ~30 decisions are statistically insignificant.
-    The Learning Engine must not use them to adjust evaluator thresholds.
-    """
-
-    window_id: str
-    evaluator_name: str
-    last_updated: datetime
-    decision_count: int = 0
-    override_count: int = 0
-    override_rate: float = 0.0

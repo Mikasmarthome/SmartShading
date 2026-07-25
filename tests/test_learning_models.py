@@ -1,13 +1,16 @@
 """Tests for Learning Foundation data models (Phase 9A).
 
 Contract:
-  - All 5 dataclasses are instantiable with required fields only.
+  - All 4 dataclasses are instantiable with required fields only.
   - Optional fields default to None (or the documented default value).
   - Frozen dataclasses (StateTransitionRecord, OverrideRecord,
     WindowCycleSnapshot, DecisionOutcome) reject mutation.
-  - EvaluatorConfidenceRecord is NOT frozen — it accepts mutation.
   - No Home Assistant imports, no coordinator dependencies.
   - Phase 9A adds no side effects to any existing module.
+
+T12: EvaluatorConfidenceRecord was removed — it was never constructed
+anywhere in the codebase (confirmed dead code); ConfidenceEngine is the
+sole confidence authority (see test_confidence_engine.py).
 """
 from __future__ import annotations
 
@@ -19,7 +22,6 @@ import pytest
 from custom_components.smartshading.models.learning import (
     OVERRIDE_EVENT_TYPES,
     DecisionOutcome,
-    EvaluatorConfidenceRecord,
     OverrideRecord,
     StateTransitionRecord,
     WindowCycleSnapshot,
@@ -381,72 +383,6 @@ class TestDecisionOutcome:
 
 
 # ---------------------------------------------------------------------------
-# EvaluatorConfidenceRecord
-# ---------------------------------------------------------------------------
-
-class TestEvaluatorConfidenceRecord:
-    def test_minimal_construction(self) -> None:
-        record = EvaluatorConfidenceRecord(
-            window_id="w-south",
-            evaluator_name="HeatEvaluator",
-            last_updated=_NOW,
-        )
-        assert record.window_id == "w-south"
-        assert record.evaluator_name == "HeatEvaluator"
-
-    def test_default_counters(self) -> None:
-        record = EvaluatorConfidenceRecord(
-            window_id="w1",
-            evaluator_name="SolarEvaluator",
-            last_updated=_NOW,
-        )
-        assert record.decision_count == 0
-        assert record.override_count == 0
-        assert record.override_rate == 0.0
-
-    def test_full_construction(self) -> None:
-        record = EvaluatorConfidenceRecord(
-            window_id="w1",
-            evaluator_name="HeatEvaluator",
-            last_updated=_NOW,
-            decision_count=150,
-            override_count=12,
-            override_rate=0.08,
-        )
-        assert record.decision_count == 150
-        assert record.override_count == 12
-        assert record.override_rate == 0.08
-
-    def test_is_mutable(self) -> None:
-        """EvaluatorConfidenceRecord is NOT frozen — the Learning Engine updates it."""
-        record = EvaluatorConfidenceRecord(
-            window_id="w1",
-            evaluator_name="GlareEvaluator",
-            last_updated=_NOW,
-        )
-        record.decision_count += 1
-        record.override_count += 1
-        record.override_rate = 1.0
-        record.last_updated = _NOW
-        assert record.decision_count == 1
-        assert record.override_rate == 1.0
-
-    def test_all_evaluator_names_accepted(self) -> None:
-        evaluators = [
-            "StormEvaluator", "WindEvaluator", "ManualOverrideEvaluator",
-            "NightEvaluator", "AbsenceEvaluator", "HeatEvaluator",
-            "GlareEvaluator", "SolarEvaluator",
-        ]
-        for name in evaluators:
-            record = EvaluatorConfidenceRecord(
-                window_id="w1",
-                evaluator_name=name,
-                last_updated=_NOW,
-            )
-            assert record.evaluator_name == name
-
-
-# ---------------------------------------------------------------------------
 # Cross-model: no HA dependencies, no side effects on existing modules
 # ---------------------------------------------------------------------------
 
@@ -463,10 +399,9 @@ class TestLearningModelsIsolation:
         # collection itself would fail (coordinator needs real HA). The fact
         # that all tests here pass proves the import chain is HA-free.
 
-    def test_all_five_records_are_importable(self) -> None:
+    def test_all_four_records_are_importable(self) -> None:
         from custom_components.smartshading.models.learning import (  # noqa: F401
             DecisionOutcome,
-            EvaluatorConfidenceRecord,
             OverrideRecord,
             StateTransitionRecord,
             WindowCycleSnapshot,

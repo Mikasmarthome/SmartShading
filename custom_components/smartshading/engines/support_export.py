@@ -357,6 +357,50 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
     def _strategy_learning():
         return _per_window(ltb.build_strategy_learning_trace)
 
+    def _adaptation_trace(coord, wid):
+        # T12: per-cycle audit trail of what learning actually changed —
+        # confidence, old/new value per parameter, strength, reason, when.
+        # Produced every cycle by apply_adaptive_profile() regardless of
+        # whether adaptation took effect (gate-blocked cycles are visible
+        # too, not just successful ones).
+        tr = (getattr(coord, "_adaptation_traces", {}) or {}).get(wid)
+        if tr is None:
+            return {"section_status": "not_recorded", "reason": "no_trace_this_cycle"}
+        return {
+            "computed_at_utc": _iso_s(getattr(tr, "computed_at_utc", None)),
+            "learning_active": tr.learning_active,
+            "confidence_level": tr.confidence_level,
+            "adaptation_strength": tr.adaptation_strength,
+            "reason": tr.reason,
+            "parameters": {
+                "heat_outdoor_threshold_c": {
+                    "old": tr.heat_outdoor_original, "new": tr.heat_outdoor_adapted,
+                    "factor": tr.heat_outdoor_factor,
+                },
+                "heat_indoor_threshold_c": {
+                    "old": tr.heat_indoor_original, "new": tr.heat_indoor_adapted,
+                    "factor": tr.heat_indoor_factor,
+                },
+                "normal_shade_position": {
+                    "old": tr.shade_position_original, "new": tr.shade_position_adapted,
+                    "factor": tr.shade_position_factor,
+                },
+                "light_shade_threshold_wm2": {
+                    "old": tr.light_shade_threshold_original,
+                    "new": tr.light_shade_threshold_adapted,
+                },
+                "normal_shade_threshold_wm2": {
+                    "old": tr.normal_shade_threshold_original,
+                    "new": tr.normal_shade_threshold_adapted,
+                },
+                "strong_shade_threshold_wm2": {
+                    "old": tr.strong_shade_threshold_original,
+                    "new": tr.strong_shade_threshold_adapted,
+                    "factor": tr.solar_escalation_factor_applied,
+                },
+            },
+        }
+
     def _pseudo_position(coord, wid):
         tr = ltb.build_position_learning_trace(coord, wid)
         for intensity in tr.get("intensities", {}).values():
@@ -710,6 +754,95 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         out["at"] = _iso_s(out.get("at"))
         return out
 
+    def _pseudo_outcome(wid: str, o) -> dict:
+        mo = getattr(o, "multi_objective", None)
+        return {
+            "window_ref": _wref(wid),
+            "decision_timestamp_utc": _iso_s(getattr(o, "decision_timestamp", None)),
+            "evaluation_timestamp_utc": _iso_s(getattr(o, "evaluation_timestamp", None)),
+            "decided_by": getattr(o, "decided_by", None),
+            "decided_state": str(getattr(o, "decided_state", None)),
+            "resolution_status": getattr(o, "resolution_status", None),
+            "override_occurred": bool(getattr(o, "override_occurred", False)),
+            "escalation_occurred": bool(getattr(o, "escalation_occurred", False)),
+            "outcome_score": getattr(o, "outcome_score", None),
+            "indoor_temp_delta_c": getattr(o, "indoor_temp_delta_c", None),
+            # T12: MultiObjectiveOutcome is the source of truth outcome_score
+            # is derived from — surface its dimension breakdown so a support
+            # case can see WHY a score was positive/negative, not just the
+            # number.
+            "multi_objective": {
+                "thermal_available": getattr(mo.thermal, "available", False),
+                "thermal_score": getattr(mo.thermal, "score", None),
+                "movement_available": getattr(mo.movement, "available", False),
+                "movement_score": getattr(mo.movement, "score", None),
+                "preference_available": getattr(mo.preference, "available", False),
+                "preference_score": getattr(mo.preference, "score", None),
+                "reliability_overall": getattr(mo.reliability, "overall", None),
+                "confounded": getattr(mo.confounders, "detected", ()),
+            } if mo is not None else None,
+        }
+
+    def _recent_outcomes():
+        store = getattr(c, "learning_store", None)
+        if store is None:
+            return {"section_status": "not_recorded", "reason": "learning_store_unavailable"}
+        recs = []
+        for wid in (getattr(c, "windows", {}) or {}):
+            try:
+                # Per-window read is unbounded here — the combined cap below
+                # is what actually bounds the exported total across windows.
+                for o in store.get_outcomes(wid, limit=MAX_SUPPORT_OUTCOMES_PER_ZONE * 4):
+                    recs.append((getattr(o, "decision_timestamp", None), wid, o))
+            except Exception:
+                continue
+        # cap_records keeps the newest via records[-N:] — feed oldest-first.
+        recs.sort(key=lambda t: t[0] or now)
+        capped, meta = cap_records(
+            [{"decision_timestamp": ts, "wid": wid, "o": o} for ts, wid, o in recs],
+            MAX_SUPPORT_OUTCOMES_PER_ZONE,
+        )
+        capped = list(reversed(capped))  # newest-first for display
+        return {
+            "records": [_pseudo_outcome(r["wid"], r["o"]) for r in capped],
+            "truncation": meta,
+        }
+
+    def _pseudo_transition(wid: str, t) -> dict:
+        return {
+            "window_ref": _wref(wid),
+            "timestamp_utc": _iso_s(getattr(t, "timestamp", None)),
+            "from_state": str(getattr(t, "from_state", None)),
+            "to_state": str(getattr(t, "to_state", None)),
+            "decided_by": getattr(t, "decided_by", None),
+            "lifecycle_state": getattr(t, "lifecycle_state", None),
+        }
+
+    def _recent_learning_transitions():
+        store = getattr(c, "learning_store", None)
+        if store is None:
+            return {"section_status": "not_recorded", "reason": "learning_store_unavailable"}
+        recs = []
+        for wid in (getattr(c, "windows", {}) or {}):
+            try:
+                # Per-window read is unbounded here — the combined cap below
+                # is what actually bounds the exported total across windows.
+                for t in store.get_transitions(wid, limit=MAX_SUPPORT_LEARNING_TRANSITIONS_PER_ZONE * 4):
+                    recs.append((getattr(t, "timestamp", None), wid, t))
+            except Exception:
+                continue
+        # cap_records keeps the newest via records[-N:] — feed oldest-first.
+        recs.sort(key=lambda tpl: tpl[0] or now)
+        capped, meta = cap_records(
+            [{"timestamp": ts, "wid": wid, "t": t} for ts, wid, t in recs],
+            MAX_SUPPORT_LEARNING_TRANSITIONS_PER_ZONE,
+        )
+        capped = list(reversed(capped))  # newest-first for display
+        return {
+            "records": [_pseudo_transition(r["wid"], r["t"]) for r in capped],
+            "truncation": meta,
+        }
+
     def _recent_dispatches():
         snap = (getattr(c, "dispatch_trace_snapshot", lambda: {})() or {}).get("zones", {})
         recs = []
@@ -764,16 +897,19 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         "inputs": _safe(_inputs, errors, "inputs"),
         "position_learning": _safe(_position_learning, errors, "position_learning"),
         "strategy_learning": _safe(_strategy_learning, errors, "strategy_learning"),
+        "adaptation_trace": _safe(
+            lambda: _per_window(_adaptation_trace), errors, "adaptation_trace"),
         "current_decisions": {},  # filled below (latest record per zone)
         "recent_decisions": recent_dec,
         "recent_dispatches": _safe(_recent_dispatches, errors, "recent_dispatches"),
         "recent_no_dispatches": _safe(lambda: _no_dispatches(recent_dec), errors,
                                       "recent_no_dispatches"),
-        # No dedicated outcome/transition rings exist → honest not_recorded.
-        "recent_outcomes": {"section_status": "not_recorded",
-                            "reason": "no_dedicated_outcome_history_ring"},
-        "recent_learning_transitions": {"section_status": "not_recorded",
-                                        "reason": "no_dedicated_transition_history_ring"},
+        # T12: LearningStore's outcome/transition ring buffers are now
+        # surfaced here (bounded, pseudonymized) — see _recent_outcomes /
+        # _recent_learning_transitions.
+        "recent_outcomes": _safe(_recent_outcomes, errors, "recent_outcomes"),
+        "recent_learning_transitions": _safe(
+            _recent_learning_transitions, errors, "recent_learning_transitions"),
         "storage": _safe(_storage, errors, "storage"),
         "history_metadata": _safe(
             lambda: _support_history_metadata(recent_dec, dec_trunc), errors,

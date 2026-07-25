@@ -18,13 +18,17 @@ Hard invariants (P3 sharpenings):
   - override_direction is SEPARATE from preference score; direction is never
     encoded in the score sign.
   - reliability.overall is a conservative diagnostic summary only — it carries
-    NO active learning authority; the per-dimension reliabilities gate.
+    NO active learning authority by itself; the per-dimension reliabilities
+    gate (thermal/movement/preference reliability weight the composite score
+    and, for thermal, additionally gate shadow-proposal eligibility).
   - reconstruction is dimension-specific (reconstructed + reconstruction_quality).
   - No Home Assistant import.  Fully serializable.  Frozen dataclasses.
 
-These models have NO runtime authority in P3: they are recorded, persisted,
-exported and tested, but the active learning chain still consumes the legacy
-score until later phases migrate each consumer.
+T12: MultiObjectiveOutcome is the single source of truth for outcome
+quality. ``DecisionOutcome.outcome_score`` (and this dataclass's own
+``legacy_score`` mirror) are DERIVED from these dimension scores — see
+``engines/outcome_resolution._composite_outcome_score`` — rather than being
+computed independently. There is exactly one outcome-score computation path.
 """
 from __future__ import annotations
 
@@ -481,6 +485,9 @@ class MultiObjectiveOutcome:
     confounders: OutcomeConfounders = field(default_factory=OutcomeConfounders)
     attribution_quality: str = ATTRIBUTION_UNKNOWN
     resolution_status: str = "pending"
+    # T12: mirrors the final composite DecisionOutcome.outcome_score derived
+    # from this same object (see outcome_resolution._composite_outcome_score),
+    # kept for provenance/round-tripping and legacy (pre-T12) records.
     legacy_score: float | None = None
     schema_version: int = MULTI_OBJECTIVE_SCHEMA_VERSION
 

@@ -15,7 +15,14 @@ Resolution status rules:
     TIMEOUT  + no temp         → "partial_no_temp"
     any other trigger          → "partial_early_exit"
 
-Score model  [-1.0 … +1.0]:
+Outcome score  [-1.0 … +1.0]:
+    T12: outcome_score is now a composite DERIVED from MultiObjectiveOutcome
+    (see ``_composite_outcome_score``) — it is a reliability-weighted blend
+    of the preference/thermal/movement dimension scores plus the trigger
+    context baseline described below, not an independently computed value.
+    MultiObjectiveOutcome is the single source of truth for outcome quality.
+
+Context baseline component  [-1.0 … +1.0]:
     Override:       dominant negative signal; range [-1.0, -0.5].
                     Shorter delay = stronger negative (user corrected quickly).
     Stability:      +0.30 if TIMEOUT with no override (accepted for full window).
@@ -50,7 +57,7 @@ Note on evaluator-specific scoring (NightEvaluator, AbsenceEvaluator, etc.):
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import Enum
 
@@ -340,14 +347,24 @@ def _open_heat_component(
     return -min(_OPEN_OVERHEAT_MAX_PENALTY, excess * _OPEN_OVERHEAT_PENALTY_PER_C)
 
 
-def _compute_score(
+def _compute_context_score(
     trigger: OutcomeResolutionTrigger,
     decided_state: ShadingState,
     override_delay_min: float | None,
     indoor_temp_delta_c: float | None,
     outdoor_temp_c: float | None = None,
 ) -> float:
-    """Compute an outcome score in [-1.0, +1.0].
+    """Compute the trigger/context score component in [-1.0, +1.0].
+
+    T12: this is no longer the outcome score itself — it is folded into
+    ``_composite_outcome_score`` as a low-weight baseline signal alongside the
+    MultiObjectiveOutcome dimension scores (thermal/movement/preference),
+    which are now the primary source of truth for outcome quality. Kept as a
+    baseline because it captures information no per-dimension score
+    currently carries on its own (the TIMEOUT "user accepted this decision
+    for the full observation window" signal), so a cycle without any mature
+    per-dimension data still yields a meaningful, non-neutral outcome score
+    instead of collapsing to 0.0.
 
     Override path (dominant negative):
         score = -1.0 + delay_factor * 0.5
@@ -375,6 +392,60 @@ def _compute_score(
         )
 
     return max(-1.0, min(1.0, score))
+
+
+# Composite weights: preference is a direct, unambiguous rejection signal and
+# dominates; thermal is the primary physical effect; movement is a secondary
+# stability signal; the trigger/context baseline always contributes a little
+# so a cycle with no mature per-dimension data is never flatly neutral.
+_COMPOSITE_CONTEXT_WEIGHT: float = 0.5
+_COMPOSITE_PREFERENCE_WEIGHT: float = 3.0
+_COMPOSITE_THERMAL_WEIGHT: float = 2.0
+_COMPOSITE_MOVEMENT_WEIGHT: float = 1.0
+# A dimension's reliability scales its weight but never zeroes it out — even
+# low-trust data is a (heavily damped) signal, not noise to discard outright.
+_MIN_RELIABILITY_WEIGHT: float = 0.15
+
+
+def _reliability_weight(reliability: float | None) -> float:
+    if reliability is None:
+        return 1.0
+    return max(_MIN_RELIABILITY_WEIGHT, min(1.0, reliability))
+
+
+def _composite_outcome_score(
+    mo: MultiObjectiveOutcome, *, context_score: float,
+) -> float:
+    """T12: the single outcome-score computation. MultiObjectiveOutcome is
+    the primary source of truth — its available, reliability-weighted
+    dimension scores (preference/thermal/movement) dominate the result. The
+    legacy trigger/context formula (``context_score``) is folded in at a low
+    fixed weight purely as a baseline so a cycle without mature per-dimension
+    data still yields a meaningful score. This replaces the previous design
+    where a legacy scalar and MultiObjectiveOutcome were two independently
+    computed, never-reconciled "truths".
+    """
+    components: list[tuple[float, float]] = [(context_score, _COMPOSITE_CONTEXT_WEIGHT)]
+    if mo.preference.available and mo.preference.score is not None:
+        components.append((
+            mo.preference.score,
+            _COMPOSITE_PREFERENCE_WEIGHT * _reliability_weight(mo.reliability.preference),
+        ))
+    if mo.thermal.available and mo.thermal.score is not None:
+        components.append((
+            mo.thermal.score,
+            _COMPOSITE_THERMAL_WEIGHT * _reliability_weight(mo.reliability.thermal),
+        ))
+    if mo.movement.available and mo.movement.score is not None:
+        components.append((
+            mo.movement.score,
+            _COMPOSITE_MOVEMENT_WEIGHT * _reliability_weight(mo.reliability.movement),
+        ))
+    total_weight = sum(w for _, w in components)
+    if total_weight <= 0.0:
+        return max(-1.0, min(1.0, context_score))
+    composite = sum(s * w for s, w in components) / total_weight
+    return max(-1.0, min(1.0, composite))
 
 
 # ===========================================================================
@@ -1015,7 +1086,7 @@ def resolve_outcome(
         interrupted=inp.observation_interrupted,
     )
 
-    outcome_score = _compute_score(
+    context_score = _compute_context_score(
         trigger=inp.trigger,
         decided_state=pending.to_state,
         override_delay_min=inp.override_delay_min,
@@ -1023,11 +1094,16 @@ def resolve_outcome(
         outdoor_temp_c=pending.outdoor_temp_at_decision,
     )
 
-    # P3: assemble the multi-objective decomposition (additive; legacy score
-    # above is bit-identical and remains the active authority in P3).
+    # T12: MultiObjectiveOutcome is the single source of truth for outcome
+    # quality. outcome_score is DERIVED from it (composite of the available,
+    # reliability-weighted dimension scores plus the context baseline) rather
+    # than computed independently — there is exactly one score computation
+    # path, not two reconciled-never truths.
     multi_objective = _build_multi_objective(
-        pending, inp, indoor_temp_delta_c, outcome_score, resolution_status
+        pending, inp, indoor_temp_delta_c, context_score, resolution_status
     )
+    outcome_score = _composite_outcome_score(multi_objective, context_score=context_score)
+    multi_objective = replace(multi_objective, legacy_score=outcome_score)
 
     return DecisionOutcome(
         decision_timestamp=pending.decision_timestamp,

@@ -135,10 +135,7 @@ class LearningPersistenceConfig:
     lesser of the per-window limit below and the LearningStore ring-buffer
     capacity set in the coordinator.
 
-    EvaluatorConfidenceRecord has no automatic age deletion because it
-    represents aggregated trust knowledge, not individual events.
-    DecisionOutcome limits are defined here for forward-compatibility; the
-    Learning Engine will start writing these records in a future phase.
+    DecisionOutcome limits are defined here for forward-compatibility.
     """
 
     # StateTransitionRecord: 1 year / 5 000 per window

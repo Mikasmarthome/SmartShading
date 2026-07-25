@@ -172,6 +172,46 @@ class ConfidenceResult:
 
 
 # ---------------------------------------------------------------------------
+# Shared evidence-maturity ramp
+# ---------------------------------------------------------------------------
+
+def compute_sample_maturity_confidence(
+    count: int,
+    *,
+    count_target: float,
+    distinct_days: int | None = None,
+    day_target: float | None = None,
+) -> float:
+    """T12: the ONE formula this codebase uses anywhere raw evidence quantity
+    must be turned into a confidence-like number that ramps 0 → 1 as evidence
+    accumulates and saturates once a target sample size is reached.
+
+    Used for:
+      - Global Confidence (G) in ``compute_confidence()``: total resolved
+        outcomes for a window, count_target=50, no day component.
+      - Shadow-candidate maturity (coordinator._maybe_shadow): negative
+        baseline outcome count, count_target=8, plus a distinct-day spread
+        requirement (day_target=3) so a burst of same-day observations
+        cannot alone reach full confidence.
+
+    Previously these were two independently written, unrelated-looking
+    formulas that happened to share the same "min(1, x/target)" shape; they
+    are now provably the same function, eliminating a duplicate-confidence
+    risk between the window-level and shadow-candidate-level ramps.
+
+    count_factor = clamp(count / count_target, 0, 1)
+    day_factor   = clamp(distinct_days / day_target, 0, 1)   (only if both
+                   distinct_days and day_target are given; omitted → 1.0)
+    return       = count_factor * day_factor, clamped to [0.0, 1.0]
+    """
+    count_factor = min(1.0, max(0.0, count) / count_target) if count_target > 0 else 1.0
+    if distinct_days is None or day_target is None or day_target <= 0:
+        return max(0.0, min(1.0, count_factor))
+    day_factor = min(1.0, max(0.0, distinct_days) / day_target)
+    return max(0.0, min(1.0, count_factor * day_factor))
+
+
+# ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
 
@@ -222,7 +262,7 @@ def compute_confidence(inp: ConfidenceInput) -> ConfidenceResult:
     result = inp.result
 
     # --- Global confidence ---------------------------------------------------
-    G = min(1.0, inp.total_resolved_outcomes / 50)
+    G = compute_sample_maturity_confidence(inp.total_resolved_outcomes, count_target=50)
 
     # --- Sample factor -------------------------------------------------------
     sample_factor: float = min(1.0, result.similar_count / 25)

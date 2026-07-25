@@ -347,7 +347,11 @@ from .engines.rain_engine import (
 )
 from .engines.sun_sector import azimuth_in_sector
 from .engines.adaptation_layer import AdaptationInput, AdaptiveProfile, compute_adaptive_profile
-from .engines.confidence_engine import ConfidenceInput, compute_confidence
+from .engines.confidence_engine import (
+    ConfidenceInput,
+    compute_confidence,
+    compute_sample_maturity_confidence,
+)
 from .engines.target_position_adapter import TargetPositionAdapter
 from .engines.learning_signal_aggregator import LearningAggregateInput, aggregate_learning_signals
 from .engines.override_learning import OverrideLearningInput, compute_override_learning
@@ -8904,7 +8908,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if day_key not in self._shadow_day_seen:
             self._shadow_day_seen.add(day_key)
             days += 1
-        confidence = min(1.0, neg_count / 8.0) * min(1.0, days / 3.0)
+        # T12: shares the same evidence-maturity ramp as Global Confidence (G)
+        # in ConfidenceEngine — ONE formula for "confidence from evidence
+        # quantity", not two independently maintained copies.
+        confidence = compute_sample_maturity_confidence(
+            neg_count, count_target=8.0, distinct_days=days, day_target=3.0,
+        )
         evaluation = ShadowEvaluation(
             comparable_baseline_outcomes=comparable,
             negative_baseline_outcomes=neg_count,

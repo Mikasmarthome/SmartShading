@@ -7,13 +7,13 @@ and appear as separate items under "SmartShading" in the HA integrations UI.
 Config Flow steps (per zone setup):
   1. async_step_user              zone name, HA location flag
   2. async_step_weather           optional weather entity + dedicated sensors
-  3. async_step_lifecycle         night/morning trigger type selection
-  3b. async_step_lifecycle_detail conditional time/elevation fields
-  4. async_step_presence          presence entities + absence_delay_min
-  5. async_step_window            window name, floor level, azimuth
-  6. async_step_cover_group       assign covers to a new CoverGroup for the window
-  7. async_step_add_another_window loop or continue to comfort
-  8. async_step_comfort           heat/glare/solar-gain toggles + indoor temp sensor
+  3. async_step_comfort           heat/glare/solar-gain toggles + indoor temp sensor
+  4. async_step_lifecycle         night/morning trigger type selection
+  4b. async_step_lifecycle_detail conditional time/elevation fields
+  5. async_step_presence          presence entities + absence_delay_min
+  6. async_step_window            window name, floor level, azimuth
+  7. async_step_cover_group       assign covers to a new CoverGroup for the window
+  8. async_step_add_another_window loop or finish
      Shade-position defaults (40/25/10 %) are applied automatically on finish.
   Entry title = zone name.  No single-instance guard.
 

@@ -57,6 +57,12 @@ class _EntityCategory(enum.Enum):
     DIAGNOSTIC = "diagnostic"
 
 
+class _SensorStateClass(enum.Enum):
+    MEASUREMENT = "measurement"
+    TOTAL = "total"
+    TOTAL_INCREASING = "total_increasing"
+
+
 class _OptionsFlowStub:
     """Baseline OptionsFlow stub with all methods SmartShadingOptionsFlow calls."""
 
@@ -148,6 +154,12 @@ _SHARED_HA_STUBS = {
     # per-file stub still wins if registered first) removes that dependency.
     "homeassistant.components.button": _stub_mod(
         "homeassistant.components.button", ButtonEntity=object,
+    ),
+    # entities/zone_summary.py imports this at module scope (same fragile
+    # import-order dependency as the button stub above).
+    "homeassistant.components.sensor": _stub_mod(
+        "homeassistant.components.sensor",
+        SensorEntity=object, SensorStateClass=_SensorStateClass,
     ),
     "homeassistant.const": _stub_mod(
         "homeassistant.const",

@@ -14,7 +14,8 @@
           "edit_window": "Edit window",
           "remove_window": "Remove window",
           "lifecycle_profiles": "Lifecycle profiles",
-          "manual_override": "Manual Override"
+          "manual_override": "Manual Override",
+          "dispatch": "Cover Dispatch"
         }
       },
       "weather": {
@@ -442,14 +443,15 @@
     "error": {
       "cannot_remove_last_window": "Cannot remove the last window. A zone must have at least one window.",
       "obstruction_elevation_range_invalid": "\"Blocked from elevation\" must not be greater than \"Blocked until elevation\".",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Enter a heat protection release margin between 0 and 5 °C.",
       "night_clamp_window_invalid": "Night earliest trigger must not be later than night latest trigger.",
       "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger.",
-      "override_fixed_until_required": "Enter a fixed end time when duration is set to \"Fixed time\"."
+      "override_fixed_until_required": "Enter a fixed end time when duration is set to \"Fixed time\".",
+      "invalid_custom_azimuth": "Enter a custom azimuth between 0 and 359 degrees, or pick a compass direction.",
+      "no_covers_selected": "Select at least one cover entity for this window."
     },
     "abort": {
       "no_options_for_system_entry": "The SmartShading System entry has no configurable options.",
@@ -598,7 +600,6 @@
       "no_covers_selected": "Select at least one cover entity for this window.",
       "empty_zone_name": "Zone name is required.",
       "obstruction_elevation_range_invalid": "\"Blocked from elevation\" must not be greater than \"Blocked until elevation\".",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",

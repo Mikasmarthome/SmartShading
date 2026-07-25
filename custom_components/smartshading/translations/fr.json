@@ -14,7 +14,8 @@
           "edit_window": "Modifier une fenêtre",
           "remove_window": "Supprimer une fenêtre",
           "lifecycle_profiles": "Profils de planning",
-          "manual_override": "Dérogation manuelle"
+          "manual_override": "Dérogation manuelle",
+          "dispatch": "Coordination des volets"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "« Bloquée à partir de l'élévation » ne doit pas être supérieure à « Bloquée jusqu'à l'élévation ».",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Entrez une marge de relâchement entre 0 et 5 °C.",
       "night_clamp_window_invalid": "Le déclencheur nocturne au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
       "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
-      "override_fixed_until_required": "Indiquez une heure de fin fixe lorsque la durée est réglée sur \"Heure fixe\"."
+      "override_fixed_until_required": "Indiquez une heure de fin fixe lorsque la durée est réglée sur \"Heure fixe\".",
+      "invalid_custom_azimuth": "Saisissez un azimut personnalisé entre 0 et 359 degrés, ou choisissez une direction de boussole.",
+      "no_covers_selected": "Sélectionnez au moins une entité de volet pour cette fenêtre."
     },
     "abort": {
       "no_options_for_system_entry": "L'entrée Système de SmartShading n'a aucune option configurable.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "« Bloquée à partir de l'élévation » ne doit pas être supérieure à « Bloquée jusqu'à l'élévation ».",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Entrez une marge de relâchement entre 0 et 5 °C.",
       "night_clamp_window_invalid": "Le déclencheur nocturne au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",

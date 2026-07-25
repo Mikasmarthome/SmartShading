@@ -14,7 +14,8 @@
           "edit_window": "Fenster bearbeiten",
           "remove_window": "Fenster entfernen",
           "lifecycle_profiles": "Zeitplan-Profile",
-          "manual_override": "Manueller Override"
+          "manual_override": "Manuelle Übersteuerung",
+          "dispatch": "Rollladen-Ansteuerung"
         }
       },
       "weather": {
@@ -397,27 +398,27 @@
         }
       },
       "manual_override": {
-        "title": "Manueller Override",
-        "description": "Legt fest, wie ein aktiver manueller Override sich verhält: wie lange er dauert und ob Komfort- oder Schutzaktionen währenddessen weiterhin ausgeführt werden dürfen.",
+        "title": "Manuelle Übersteuerung",
+        "description": "Legt fest, wie eine aktive manuelle Übersteuerung sich verhält: wie lange sie dauert und ob Komfort- oder Schutzaktionen währenddessen weiterhin ausgeführt werden dürfen.",
         "data": {
           "override_release_strategy": "Freigabestrategie",
           "override_fixed_until": "Feste Endzeit",
-          "override_allow_comfort_actions": "Komfortaktionen während Override erlauben",
-          "override_allow_protection_actions": "Schutzaktionen während Override erlauben",
+          "override_allow_comfort_actions": "Komfortaktionen während der Übersteuerung erlauben",
+          "override_allow_protection_actions": "Schutzaktionen während der Übersteuerung erlauben",
           "override_safety_timeout_enabled": "Sicherheits-Timeout",
-          "override_duration_min": "Legacy-Override-Dauer (Minuten)",
-          "override_night_duration_min": "Nacht-Override-Dauer (Minuten)",
+          "override_duration_min": "Legacy-Dauer der Übersteuerung (Minuten)",
+          "override_night_duration_min": "Dauer der Nacht-Übersteuerung (Minuten)",
           "override_detection_tolerance": "Erkennungstoleranz"
         },
         "data_description": {
-          "override_release_strategy": "Legt fest, wie der Override endet: nach einer festen Dauer, zu einer festen Uhrzeit, beim nächsten Zeitplan-Übergang, bei der nächsten automatischen Entscheidung oder nur durch manuelles Löschen.",
-          "override_fixed_until": "Nur wirksam, wenn die Freigabestrategie auf \"Feste Uhrzeit\" gesetzt ist. Ist die Uhrzeit heute bereits vorbei, endet der Override morgen zu dieser Uhrzeit.",
-          "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktivem Override weiterhin ausgeführt werden. Der Override selbst bleibt aktiv.",
-          "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktivem Override weiterhin ausgeführt werden. Der Override selbst bleibt aktiv.",
-          "override_safety_timeout_enabled": "Optionale maximale Dauer als Sicherheitsnetz für offene Strategien, damit ein Override niemals dauerhaft vergessen wird.",
-          "override_duration_min": "Wie lange ein Tages-Override dauert, bevor SmartShading die normale Steuerung fortsetzt (Legacy-Dauermodus).",
-          "override_night_duration_min": "Sicherheitsnetz-Obergrenze für einen Nacht-Override. Die eigentliche Freigabe erfolgt beim morgendlichen Zeitplan-Übergang.",
-          "override_detection_tolerance": "Minimale Positionsänderung (in Prozent), bevor eine manuelle Bewegung als Override erkannt wird."
+          "override_release_strategy": "Legt fest, wie die Übersteuerung endet: nach einer festen Dauer, zu einer festen Uhrzeit, beim nächsten Zeitplan-Übergang, bei der nächsten automatischen Entscheidung oder nur durch manuelles Löschen.",
+          "override_fixed_until": "Nur wirksam, wenn die Freigabestrategie auf \"Feste Uhrzeit\" gesetzt ist. Ist die Uhrzeit heute bereits vorbei, endet die Übersteuerung morgen zu dieser Uhrzeit.",
+          "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
+          "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
+          "override_safety_timeout_enabled": "Optionale maximale Dauer als Sicherheitsnetz für offene Strategien, damit eine Übersteuerung niemals dauerhaft vergessen wird.",
+          "override_duration_min": "Wie lange eine Tages-Übersteuerung dauert, bevor SmartShading die normale Steuerung fortsetzt (Legacy-Dauermodus).",
+          "override_night_duration_min": "Sicherheitsnetz-Obergrenze für eine Nacht-Übersteuerung. Die eigentliche Freigabe erfolgt beim morgendlichen Zeitplan-Übergang.",
+          "override_detection_tolerance": "Minimale Positionsänderung (in Prozent), bevor eine manuelle Bewegung als Übersteuerung erkannt wird."
         }
       },
       "dispatch": {
@@ -442,14 +443,15 @@
     "error": {
       "cannot_remove_last_window": "Das letzte Fenster kann nicht entfernt werden. Eine Zone muss mindestens ein Fenster haben.",
       "obstruction_elevation_range_invalid": "\"Blockiert ab Sonnenhöhe\" darf nicht größer als \"Blockiert bis Sonnenhöhe\" sein.",
-      "night_lift_requires_night_block": "Option B (Lüftungsposition) erfordert, dass Option A (Nachtfahrt blockieren) aktiviert ist.",
       "contact_sensor_required_for_block": "Für Option A muss ein Kontaktsensor ausgewählt sein.",
       "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein.",
       "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben.",
       "invalid_heat_hysteresis": "Gib eine Freigabespanne zwischen 0 und 5 °C ein.",
       "night_clamp_window_invalid": "Der früheste nächtliche Auslöser darf nicht später sein als der späteste.",
       "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste.",
-      "override_fixed_until_required": "Bitte eine feste Endzeit angeben, wenn die Dauer auf \"Feste Uhrzeit\" gesetzt ist."
+      "override_fixed_until_required": "Bitte eine feste Endzeit angeben, wenn die Dauer auf \"Feste Uhrzeit\" gesetzt ist.",
+      "invalid_custom_azimuth": "Gib einen benutzerdefinierten Azimut zwischen 0 und 359 Grad ein oder wähle eine Himmelsrichtung.",
+      "no_covers_selected": "Wähle mindestens eine Cover-Entität für dieses Fenster aus."
     },
     "abort": {
       "no_options_for_system_entry": "Der SmartShading-System-Eintrag hat keine konfigurierbaren Optionen.",
@@ -598,7 +600,6 @@
       "no_covers_selected": "Wähle mindestens eine Cover-Entität für dieses Fenster aus.",
       "empty_zone_name": "Zonenname ist erforderlich.",
       "obstruction_elevation_range_invalid": "\"Blockiert ab Sonnenhöhe\" darf nicht größer als \"Blockiert bis Sonnenhöhe\" sein.",
-      "night_lift_requires_night_block": "Option B (Lüftungsposition) erfordert, dass Option A (Nachtfahrt blockieren) aktiviert ist.",
       "contact_sensor_required_for_block": "Für Option A muss ein Kontaktsensor ausgewählt sein.",
       "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein.",
       "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben.",
@@ -875,8 +876,8 @@
   },
   "services": {
     "clear_manual_override": {
-      "name": "Manuellen Override aufheben",
-      "description": "Beendet einen aktiven manuellen Override. SmartShading übernimmt anschließend wieder die automatische Steuerung.",
+      "name": "Manuelle Übersteuerung aufheben",
+      "description": "Beendet eine aktive manuelle Übersteuerung. SmartShading übernimmt anschließend wieder die automatische Steuerung.",
       "fields": {}
     }
   }

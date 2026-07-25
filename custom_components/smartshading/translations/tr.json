@@ -14,7 +14,8 @@
           "edit_window": "Pencereyi düzenle",
           "remove_window": "Pencereyi kaldır",
           "lifecycle_profiles": "Zamanlama profilleri",
-          "manual_override": "Manuel geçersiz kılma"
+          "manual_override": "Manuel geçersiz kılma",
+          "dispatch": "Gölgelik Koordinasyonu"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "„Şu yükseklikten itibaren engellenir“, „Şu yüksekliğe kadar engellenir“ değerinden büyük olmamalıdır.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "0 ile 5 °C arasında bir serbest bırakma payı girin.",
       "night_clamp_window_invalid": "En erken gece tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
       "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
-      "override_fixed_until_required": "Süre \"Sabit saat\" olarak ayarlandığında sabit bir bitiş saati girin."
+      "override_fixed_until_required": "Süre \"Sabit saat\" olarak ayarlandığında sabit bir bitiş saati girin.",
+      "invalid_custom_azimuth": "0 ile 359 derece arasında özel bir azimut girin veya bir pusula yönü seçin.",
+      "no_covers_selected": "Bu pencere için en az bir gölgelik varlığı seçin."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading Sistem girişinin yapılandırılabilir seçeneği yoktur.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "„Şu yükseklikten itibaren engellenir“, „Şu yüksekliğe kadar engellenir“ değerinden büyük olmamalıdır.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "0 ile 5 °C arasında bir serbest bırakma payı girin.",
       "night_clamp_window_invalid": "En erken gece tetikleyicisi, en geç tetikleyiciden sonra olamaz.",

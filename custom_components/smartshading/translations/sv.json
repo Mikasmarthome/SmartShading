@@ -14,7 +14,8 @@
           "edit_window": "Redigera fönster",
           "remove_window": "Ta bort fönster",
           "lifecycle_profiles": "Schemaprofiler",
-          "manual_override": "Manuell åsidosättning"
+          "manual_override": "Manuell åsidosättning",
+          "dispatch": "Samordning av solskydd"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "\"Blockerad från höjd\" får inte vara större än \"Blockerad till höjd\".",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Ange en frigöringsmarginal mellan 0 och 5 °C.",
       "night_clamp_window_invalid": "Tidigaste nattutlösaren får inte vara senare än senaste.",
       "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste.",
-      "override_fixed_until_required": "Ange en fast sluttid när varaktighet är satt till \"Fast tid\"."
+      "override_fixed_until_required": "Ange en fast sluttid när varaktighet är satt till \"Fast tid\".",
+      "invalid_custom_azimuth": "Ange en anpassad azimut mellan 0 och 359 grader, eller välj en kompassriktning.",
+      "no_covers_selected": "Välj minst en solskyddsentitet för det här fönstret."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-systemposten har inga konfigurerbara alternativ.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "\"Blockerad från höjd\" får inte vara större än \"Blockerad till höjd\".",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Ange en frigöringsmarginal mellan 0 och 5 °C.",
       "night_clamp_window_invalid": "Tidigaste nattutlösaren får inte vara senare än senaste.",

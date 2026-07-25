@@ -14,7 +14,8 @@
           "edit_window": "Editar ventana",
           "remove_window": "Eliminar ventana",
           "lifecycle_profiles": "Perfiles de horario",
-          "manual_override": "Anulación manual"
+          "manual_override": "Anulación manual",
+          "dispatch": "Coordinación de persianas"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "«Bloqueada desde la elevación» no puede ser mayor que «Bloqueada hasta la elevación».",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Introduce un margen de liberación entre 0 y 5 °C.",
       "night_clamp_window_invalid": "El activador nocturno más temprano no debe ser posterior al más tardío.",
       "morning_clamp_window_invalid": "El activador matutino más temprano no debe ser posterior al más tardío.",
-      "override_fixed_until_required": "Introduzca una hora de fin fija cuando la duración esté configurada como \"Hora fija\"."
+      "override_fixed_until_required": "Introduzca una hora de fin fija cuando la duración esté configurada como \"Hora fija\".",
+      "invalid_custom_azimuth": "Introduce un acimut personalizado entre 0 y 359 grados, o elige una dirección de la brújula.",
+      "no_covers_selected": "Selecciona al menos una entidad de persiana para esta ventana."
     },
     "abort": {
       "no_options_for_system_entry": "La entrada de Sistema de SmartShading no tiene opciones configurables.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "«Bloqueada desde la elevación» no puede ser mayor que «Bloqueada hasta la elevación».",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Introduce un margen de liberación entre 0 y 5 °C.",
       "night_clamp_window_invalid": "El activador nocturno más temprano no debe ser posterior al más tardío.",

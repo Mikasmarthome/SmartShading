@@ -14,7 +14,8 @@
           "edit_window": "Edytuj okno",
           "remove_window": "Usuń okno",
           "lifecycle_profiles": "Profile harmonogramu",
-          "manual_override": "Ręczne zastąpienie"
+          "manual_override": "Ręczne zastąpienie",
+          "dispatch": "Koordynacja osłon"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "„Blokowana od wysokości” nie może być większa niż „Blokowana do wysokości”.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Podaj margines zwolnienia od 0 do 5 °C.",
       "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
       "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy.",
-      "override_fixed_until_required": "Podaj stałą godzinę zakończenia, gdy czas trwania jest ustawiony na \"Stała godzina\"."
+      "override_fixed_until_required": "Podaj stałą godzinę zakończenia, gdy czas trwania jest ustawiony na \"Stała godzina\".",
+      "invalid_custom_azimuth": "Wprowadź niestandardowy azymut od 0 do 359 stopni lub wybierz kierunek kompasu.",
+      "no_covers_selected": "Wybierz co najmniej jedną encję osłony dla tego okna."
     },
     "abort": {
       "no_options_for_system_entry": "Wpis systemowy SmartShading nie ma konfigurowalnych opcji.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "„Blokowana od wysokości” nie może być większa niż „Blokowana do wysokości”.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Podaj margines zwolnienia od 0 do 5 °C.",
       "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",

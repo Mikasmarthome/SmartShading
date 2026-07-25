@@ -14,7 +14,8 @@
           "edit_window": "Επεξεργασία παραθύρου",
           "remove_window": "Αφαίρεση παραθύρου",
           "lifecycle_profiles": "Προφίλ προγράμματος",
-          "manual_override": "Χειροκίνητη παράκαμψη"
+          "manual_override": "Χειροκίνητη παράκαμψη",
+          "dispatch": "Συντονισμός σκιάστρων"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "Το «Αποκλεισμένη από ύψος» δεν πρέπει να είναι μεγαλύτερο από το «Αποκλεισμένη έως ύψος».",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Εισαγάγετε περιθώριο απελευθέρωσης μεταξύ 0 και 5 °C.",
       "night_clamp_window_invalid": "Η νωρίτερη νυχτερινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη.",
       "morning_clamp_window_invalid": "Η νωρίτερη πρωινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη.",
-      "override_fixed_until_required": "Εισαγάγετε μια σταθερή ώρα λήξης όταν η διάρκεια έχει οριστεί σε \"Σταθερή ώρα\"."
+      "override_fixed_until_required": "Εισαγάγετε μια σταθερή ώρα λήξης όταν η διάρκεια έχει οριστεί σε \"Σταθερή ώρα\".",
+      "invalid_custom_azimuth": "Εισαγάγετε ένα προσαρμοσμένο αζιμούθιο μεταξύ 0 και 359 μοιρών ή επιλέξτε μια κατεύθυνση πυξίδας.",
+      "no_covers_selected": "Επιλέξτε τουλάχιστον μία οντότητα σκιάστρου για αυτό το παράθυρο."
     },
     "abort": {
       "no_options_for_system_entry": "Η καταχώριση Συστήματος του SmartShading δεν έχει διαμορφώσιμες επιλογές.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "Το «Αποκλεισμένη από ύψος» δεν πρέπει να είναι μεγαλύτερο από το «Αποκλεισμένη έως ύψος».",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Εισαγάγετε περιθώριο απελευθέρωσης μεταξύ 0 και 5 °C.",
       "night_clamp_window_invalid": "Η νωρίτερη νυχτερινή ενεργοποίηση δεν πρέπει να είναι αργότερη από την αργότερη.",

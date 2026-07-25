@@ -429,15 +429,10 @@ class SmartShadingExportButton(ButtonEntity):
 
 
 class SmartShadingResearchExportButton(ButtonEntity):
-    """Button that opens the Research Export confirmation flow.
+    """Button that writes a Research Export file for all active zones.
 
-    Press → starts the Options Flow for the System Entry → confirmation form
-    is shown → user must check the confirmation box → only then is the export
-    file written.
-
-    The file is never written directly from async_press.  The mandatory
-    confirmation in the Options Flow cannot be bypassed regardless of how
-    this button is triggered.
+    Press → async_press() aggregates every active zone coordinator and
+    writes the export directly to /config/www/ (no confirmation step).
     """
 
     _attr_has_entity_name = True

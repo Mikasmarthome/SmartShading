@@ -14,7 +14,8 @@
           "edit_window": "Uredi okno",
           "remove_window": "Odstrani okno",
           "lifecycle_profiles": "Profili urnika",
-          "manual_override": "Ročna preglasitev"
+          "manual_override": "Ročna preglasitev",
+          "dispatch": "Usklajevanje senčil"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "»Blokirano od višine« ne sme biti večje od »Blokirano do višine«.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Vnesite razpon sprostitve med 0 in 5 °C.",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
       "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega.",
-      "override_fixed_until_required": "Vnesite fiksni čas zaključka, ko je trajanje nastavljeno na \"Fiksni čas\"."
+      "override_fixed_until_required": "Vnesite fiksni čas zaključka, ko je trajanje nastavljeno na \"Fiksni čas\".",
+      "invalid_custom_azimuth": "Vnesite azimut po meri med 0 in 359 stopinjami ali izberite smer kompasa.",
+      "no_covers_selected": "Izberite vsaj eno entiteto senčila za to okno."
     },
     "abort": {
       "no_options_for_system_entry": "Sistemski vnos SmartShading nima nastavljivih možnosti.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "»Blokirano od višine« ne sme biti večje od »Blokirano do višine«.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Vnesite razpon sprostitve med 0 in 5 °C.",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",

@@ -14,7 +14,8 @@
           "edit_window": "Muokkaa ikkunaa",
           "remove_window": "Poista ikkuna",
           "lifecycle_profiles": "Aikatauluprofiilit",
-          "manual_override": "Manuaalinen ohitus"
+          "manual_override": "Manuaalinen ohitus",
+          "dispatch": "Varjostimien ajoitus"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "”Estetty korkeudesta” ei saa olla suurempi kuin ”Estetty korkeuteen asti”.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Anna vapautusmarginaali väliltä 0–5 °C.",
       "night_clamp_window_invalid": "Aikaisin yölaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
       "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
-      "override_fixed_until_required": "Anna kiinteä lopetusaika, kun kesto on asetettu \"Kiinteä aika\"-tilaan."
+      "override_fixed_until_required": "Anna kiinteä lopetusaika, kun kesto on asetettu \"Kiinteä aika\"-tilaan.",
+      "invalid_custom_azimuth": "Anna mukautettu atsimuutti väliltä 0–359 astetta tai valitse kompassisuunta.",
+      "no_covers_selected": "Valitse vähintään yksi varjostinentiteetti tälle ikkunalle."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-järjestelmämerkinnällä ei ole määritettäviä asetuksia.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "”Estetty korkeudesta” ei saa olla suurempi kuin ”Estetty korkeuteen asti”.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Anna vapautusmarginaali väliltä 0–5 °C.",
       "night_clamp_window_invalid": "Aikaisin yölaukaisu ei saa olla myöhäisempi kuin myöhäisin.",

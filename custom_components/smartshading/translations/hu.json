@@ -14,7 +14,8 @@
           "edit_window": "Ablak szerkesztése",
           "remove_window": "Ablak eltávolítása",
           "lifecycle_profiles": "Ütemezési profilok",
-          "manual_override": "Kézi felülbírálás"
+          "manual_override": "Kézi felülbírálás",
+          "dispatch": "Árnyékolók ütemezése"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Adjon meg egy feloldási tartományt 0 és 5 °C között.",
       "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",
       "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél.",
-      "override_fixed_until_required": "Adjon meg egy rögzített befejezési időt, ha az időtartam \"Rögzített idő\"-re van állítva."
+      "override_fixed_until_required": "Adjon meg egy rögzített befejezési időt, ha az időtartam \"Rögzített idő\"-re van állítva.",
+      "invalid_custom_azimuth": "Adjon meg egy egyéni azimutot 0 és 359 fok között, vagy válasszon iránytű-irányt.",
+      "no_covers_selected": "Válasszon legalább egy árnyékoló entitást ehhez az ablakhoz."
     },
     "abort": {
       "no_options_for_system_entry": "A SmartShading rendszerbejegyzésnek nincsenek konfigurálható beállításai.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Adjon meg egy feloldási tartományt 0 és 5 °C között.",
       "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",

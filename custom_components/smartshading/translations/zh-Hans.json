@@ -14,7 +14,8 @@
           "edit_window": "编辑窗户",
           "remove_window": "移除窗户",
           "lifecycle_profiles": "生命周期配置文件",
-          "manual_override": "手动覆盖"
+          "manual_override": "手动覆盖",
+          "dispatch": "遮阳帘调度"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "“从该高度起被遮挡”不得大于“至该高度止被遮挡”。",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "请输入 0 到 5 °C 之间的释放余量。",
       "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
       "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。",
-      "override_fixed_until_required": "当持续时间设置为“固定时间”时，请输入固定结束时间。"
+      "override_fixed_until_required": "当持续时间设置为“固定时间”时，请输入固定结束时间。",
+      "invalid_custom_azimuth": "输入 0 到 359 度之间的自定义方位角，或选择一个罗盘方向。",
+      "no_covers_selected": "请为该窗户至少选择一个遮阳帘实体。"
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading 系统条目没有可配置的选项。",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "“从该高度起被遮挡”不得大于“至该高度止被遮挡”。",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "请输入 0 到 5 °C 之间的释放余量。",
       "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",

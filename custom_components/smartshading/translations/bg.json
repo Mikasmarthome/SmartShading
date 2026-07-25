@@ -14,7 +14,8 @@
           "edit_window": "Редактиране на прозорец",
           "remove_window": "Премахване на прозорец",
           "lifecycle_profiles": "Профили на графика",
-          "manual_override": "Ръчно замяна"
+          "manual_override": "Ръчно замяна",
+          "dispatch": "Координация на щорите"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "„Блокирана от височина“ не трябва да е по-голяма от „Блокирана до височина“.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Въведете марж за освобождаване между 0 и 5 °C.",
       "night_clamp_window_invalid": "Най-ранният нощен тригер не трябва да бъде по-късен от най-късния.",
       "morning_clamp_window_invalid": "Най-ранният сутрешен тригер не трябва да бъде по-късен от най-късния.",
-      "override_fixed_until_required": "Въведете фиксиран час на приключване, когато продължителността е зададена на \"Фиксиран час\"."
+      "override_fixed_until_required": "Въведете фиксиран час на приключване, когато продължителността е зададена на \"Фиксиран час\".",
+      "invalid_custom_azimuth": "Въведете персонализиран азимут между 0 и 359 градуса или изберете посока на компаса.",
+      "no_covers_selected": "Изберете поне един обект щора за този прозорец."
     },
     "abort": {
       "no_options_for_system_entry": "Системният запис на SmartShading няма конфигурируеми опции.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "„Блокирана от височина“ не трябва да е по-голяма от „Блокирана до височина“.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Въведете марж за освобождаване между 0 и 5 °C.",
       "night_clamp_window_invalid": "Най-ранният нощен тригер не трябва да бъде по-късен от най-късния.",

@@ -14,7 +14,8 @@
           "edit_window": "Upravit okno",
           "remove_window": "Odebrat okno",
           "lifecycle_profiles": "Profily plánu",
-          "manual_override": "Ruční přepsání"
+          "manual_override": "Ruční přepsání",
+          "dispatch": "Koordinace stínění"
         }
       },
       "weather": {
@@ -444,12 +445,13 @@
       "obstruction_elevation_range_invalid": "„Blokována od výšky“ nesmí být větší než „Blokována do výšky“.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Zadejte rozpětí uvolnění mezi 0 a 5 °C.",
       "night_clamp_window_invalid": "Nejdřívější noční spuštění nesmí být pozdější než nejpozdější.",
       "morning_clamp_window_invalid": "Nejdřívější ranní spuštění nesmí být pozdější než nejpozdější.",
-      "override_fixed_until_required": "Zadejte pevný čas ukončení, když je doba trvání nastavena na \"Pevný čas\"."
+      "override_fixed_until_required": "Zadejte pevný čas ukončení, když je doba trvání nastavena na \"Pevný čas\".",
+      "invalid_custom_azimuth": "Zadejte vlastní azimut mezi 0 a 359 stupni, nebo vyberte směr kompasu.",
+      "no_covers_selected": "Vyberte alespoň jednu entitu stínění pro toto okno."
     },
     "abort": {
       "no_options_for_system_entry": "Systémová položka SmartShading nemá žádné konfigurovatelné možnosti.",
@@ -600,7 +602,6 @@
       "obstruction_elevation_range_invalid": "„Blokována od výšky“ nesmí být větší než „Blokována do výšky“.",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "night_lift_requires_night_block": "Option B (lift to ventilation position) requires Option A (block night move) to be enabled.",
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Zadejte rozpětí uvolnění mezi 0 a 5 °C.",
       "night_clamp_window_invalid": "Nejdřívější noční spuštění nesmí být pozdější než nejpozdější.",

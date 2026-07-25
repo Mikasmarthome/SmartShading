@@ -4,17 +4,26 @@ exactly: AssumedPositionState, confidence/uncertainty model, restart-during-
 travel handling, drift suspicion, and reference-travel (endstop)
 calibration.
 
-No Home Assistant dependencies. RestoreEntity-style persistence is designed
-for via initialize_from_restore()/export_for_restore() - the actual HA
-Storage read/write, and the call sites that would invoke these two methods
-plus on_restart()/on_reference_travel()/record_progress()/
-is_position_trustworthy()/is_drift_suspected(), are deferred to a later
-integration phase (ARCHITECTURE.md §16.1) and NOT wired into the coordinator
-today (confirmed T15 audit: zero call sites outside this module and its own
-tests). Confidence/drift ARE computed and exposed for display (diagnostic
-sensor, get_state()) but do not currently gate any dispatch/override
-decision — assumed state for unreliable-feedback covers is trusted
-indefinitely, is never persisted, and is lost on every HA restart/reload.
+No Home Assistant dependencies. As of T16, this module is fully wired into
+the coordinator:
+  - is_position_trustworthy() gates CommandFilter's position-tolerance
+    check (widened when confidence is low, ARCHITECTURE.md §6.2's "Anwendung
+    in der Decision Engine") — coordinator.py, before every CommandFilter
+    call.
+  - initialize_from_restore()/export_for_restore() are used by
+    engines/learning_persistence.py's save/restore path, so confidence/
+    uncertainty/drift-suspicion state survives a HA restart or config-entry
+    reload instead of resetting to empty every time.
+  - The diagnostic sensor and engines/support_export.py's assumed_state
+    section both expose the resulting confidence/uncertainty/drift values.
+
+Still NOT wired (deferred, no known consumer designed for them yet):
+on_restart()/on_reference_travel()/record_progress() — these require a
+travel-in-progress detector and/or a reference-travel (endstop) event
+source that does not exist in the coordinator today; wiring them without
+that upstream signal would have no real caller. is_drift_suspected() is
+computed and persisted but not separately consulted anywhere beyond feeding
+is_position_trustworthy()'s underlying confidence value.
 """
 from __future__ import annotations
 
@@ -101,6 +110,11 @@ class AssumedStateManager:
         """Snapshot for persistence. Returns a copy, not the live record."""
         record = self._records.get(cover_id)
         return replace(record) if record is not None else None
+
+    def known_cover_ids(self) -> set[str]:
+        """All cover ids this manager currently holds a record for (T16,
+        used by the coordinator to build the full persisted snapshot)."""
+        return set(self._records.keys())
 
     # -- Restart-during-travel (ARCHITECTURE.md §6.2) --
 

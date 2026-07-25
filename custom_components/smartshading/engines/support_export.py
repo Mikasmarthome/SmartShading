@@ -421,6 +421,30 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             "reason": getattr(diag, "heat_hysteresis_reason", None),
         }
 
+    def _assumed_state_diag_for(wid: str) -> dict | None:
+        # T16: surfaces AssumedStateManager confidence/drift/uncertainty for
+        # this window's cover — previously computed and used internally
+        # (T16 tolerance-widening gate) and shown on the diagnostic sensor,
+        # but never exported here for a support case.
+        window = (getattr(c, "windows", {}) or {}).get(wid)
+        manager = getattr(c, "assumed_state_manager", None)
+        if window is None or manager is None:
+            return None
+        cover_group = (getattr(c, "cover_groups", {}) or {}).get(window.cover_group_id)
+        if cover_group is None or not getattr(cover_group, "cover_ids", None):
+            return None
+        cover_id = cover_group.cover_ids[0]
+        state = manager.get_state(cover_id, now)
+        if state is None:
+            return {"available": False}
+        return {
+            "available": True,
+            "confidence": round(state.confidence, 3),
+            "position_uncertainty_pct": state.position_uncertainty_pct,
+            "is_drift_suspected": state.is_drift_suspected,
+            "interrupted_travel": state.interrupted_travel,
+        }
+
     def _explainability():
         # T13: one structured "why" per window — synthesized from the same
         # already-computed decision-trace/heat/adaptation data the other
@@ -966,6 +990,9 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         "strategy_learning": _safe(_strategy_learning, errors, "strategy_learning"),
         "adaptation_trace": _safe(
             lambda: _per_window(_adaptation_trace), errors, "adaptation_trace"),
+        "assumed_state": _safe(
+            lambda: _per_window(lambda _coord, wid: _assumed_state_diag_for(wid)),
+            errors, "assumed_state"),
         "explainability": _safe(_explainability, errors, "explainability"),
         "current_decisions": {},  # filled below (latest record per zone)
         "recent_decisions": recent_dec,

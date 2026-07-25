@@ -478,6 +478,7 @@ def serialize_learning_store(
     shadow_tombstones: list | None = None,
     active_overrides: list | None = None,
     current_states: dict | None = None,
+    assumed_state: dict | None = None,
     config_snapshot: dict | None = None,
     owner_entry_id: str | None = None,
     owner_zone_id: str | None = None,
@@ -589,6 +590,31 @@ def serialize_learning_store(
         # forgotten ABSENCE_CLOSED can never be recovered without this restore.
         "current_states": (
             {wid: state.value for wid, state in (current_states or {}).items()}
+        ),
+        # T16 — restart-safe assumed cover position (AssumedStateManager).
+        # Without this, a cover without reliable position feedback (Somfy
+        # RTS etc.) loses all confidence/uncertainty tracking on every
+        # restart/reload — the manager starts fully empty and has to rebuild
+        # trust in the assumed position from scratch. Only the fields the
+        # manager actually persists across a read are stored; confidence
+        # and is_drift_suspected are always recomputed against the current
+        # time in get_state(), never stored as stale snapshots.
+        "assumed_state": (
+            {
+                cover_id: {
+                    "assumed_position": rec.assumed_position,
+                    "assumed_tilt": rec.assumed_tilt,
+                    "last_commanded_at": (
+                        rec.last_commanded_at.isoformat()
+                        if rec.last_commanded_at is not None else None
+                    ),
+                    "last_known_good_at": rec.last_known_good_at.isoformat(),
+                    "position_uncertainty_pct": rec.position_uncertainty_pct,
+                    "interrupted_travel": rec.interrupted_travel,
+                    "last_commanded_position": rec.last_commanded_position,
+                }
+                for cover_id, rec in (assumed_state or {}).items()
+            }
         ),
         # P10 — normalised config snapshot for next-restore typed diff invalidation.
         "config_snapshot": config_snapshot or {},
@@ -776,6 +802,7 @@ class RestoreExtras:
     current_states: dict = field(default_factory=dict)  # window_id -> ShadingState.value
     support_critical_events: list = field(default_factory=list)  # P4c compact critical events
     research_daily_buckets: dict = field(default_factory=dict)  # P4c date → counts
+    assumed_state: dict = field(default_factory=dict)  # T16: cover_id -> raw assumed-state dict
 
 
 def deserialize_into_learning_store(
@@ -1129,6 +1156,18 @@ def deserialize_into_learning_store(
         if isinstance(k, str) and isinstance(v, str) and v in _valid_state_values
     }
 
+    # T16: restart-safe AssumedStateManager records (additive). Raw
+    # {cover_id: {...}} dict; the coordinator reconstructs an
+    # AssumedPositionState per cover and calls
+    # assumed_state_manager.initialize_from_restore(). A malformed entry is
+    # skipped individually — that cover simply starts with no assumed state,
+    # exactly like a fresh install, never raises.
+    _raw_as = data.get("assumed_state") or {}
+    assumed_state: dict = {
+        k: v for k, v in _raw_as.items()
+        if isinstance(k, str) and isinstance(v, dict) and "last_known_good_at" in v
+    }
+
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
         config_generations=config_generations,
@@ -1153,6 +1192,7 @@ def deserialize_into_learning_store(
         current_states=current_states,
         support_critical_events=support_critical_events,
         research_daily_buckets=research_daily_buckets,
+        assumed_state=assumed_state,
     )
 
 
@@ -1308,6 +1348,7 @@ class LearningPersistenceAdapter:
         shadow_tombstones: list | None = None,
         active_overrides: list | None = None,
         current_states: dict | None = None,
+        assumed_state: dict | None = None,
         config_snapshot: dict | None = None,
         owner_zone_id: str | None = None,
         support_critical_events: list | None = None,
@@ -1338,6 +1379,7 @@ class LearningPersistenceAdapter:
                 shadow_tombstones=shadow_tombstones,
                 active_overrides=active_overrides,
                 current_states=current_states,
+                assumed_state=assumed_state,
                 config_snapshot=config_snapshot,
                 owner_entry_id=getattr(self, "_entry_id", None),
                 owner_zone_id=owner_zone_id,

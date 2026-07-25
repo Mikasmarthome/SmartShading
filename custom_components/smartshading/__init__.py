@@ -87,6 +87,19 @@ async def async_unload_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
         cancel[1]()
     coordinator = getattr(getattr(entry, "runtime_data", None), "coordinator", None)
     if coordinator is not None:
+        # T16: shut the coordinator down FIRST, before our own teardown/flush
+        # below. DataUpdateCoordinator.async_shutdown() is otherwise only
+        # invoked by HA's own entry.async_on_unload machinery AFTER this
+        # whole function returns — meaning the coordinator's periodic
+        # refresh could still be scheduled (or, if already running, still
+        # executing) while we tear down listeners and flush learning data.
+        # Calling it explicitly here stops any NEW refresh from being
+        # scheduled and unsubscribes the refresh timer immediately.
+        # Idempotent (HA calls it again later via the same mechanism; a
+        # second call is a no-op). Does not cancel a refresh that is already
+        # mid-execution at the exact moment unload starts — that narrower
+        # race is a known, documented residual risk (T15/T16 audits).
+        await coordinator.async_shutdown()
         # Explicit teardown as a safety net; also called via entry.async_on_unload
         # registered in async_setup_presence_listeners / async_setup_contact_listeners.
         # Idempotent.

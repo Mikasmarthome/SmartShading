@@ -51,6 +51,15 @@ from enum import Enum
 
 from .position_semantics import clamp_position, positions_within_tolerance, to_ha_position
 
+# T16: ARCHITECTURE.md §6.2 "Anwendung in der Decision Engine" — when a
+# cover's assumed position is no longer trustworthy (AssumedStateManager
+# confidence below its threshold), the tolerance check should widen instead
+# of issuing more frequent corrective commands against a position we are not
+# confident about. This is the multiplier applied to
+# ExecutionCapability.position_tolerance when the caller signals low
+# confidence via position_confidence_low=True.
+LOW_CONFIDENCE_TOLERANCE_MULTIPLIER: int = 3
+
 # ---------------------------------------------------------------------------
 # Blocked-reason string constants
 # (string constants rather than an enum: extensible, log-friendly)
@@ -234,6 +243,7 @@ class CommandFilter:
         target_tilt_ha: int | None = None,
         comfort_hold_allowed: bool = True,
         fallback_release_allowed: bool = True,
+        position_confidence_low: bool = False,
     ) -> CommandFilterResult:
         """Evaluate all blocking conditions and return a CommandFilterResult.
 
@@ -279,6 +289,18 @@ class CommandFilter:
             confirmed for enough consecutive cycles (F29 field fix). Default
             True preserves prior behavior for every non-fallback decision
             path. Does not bypass is_safety.
+        position_confidence_low:
+            True when AssumedStateManager.is_position_trustworthy() is False
+            for this cover (T16, ARCHITECTURE.md §6.2). Widens the
+            position-tolerance check instead of issuing a corrective command
+            against a position we are no longer confident about — a cover
+            without reliable feedback whose assumed position has decayed in
+            confidence (silence, drift-after-restart) should not be
+            re-commanded on every cycle just because the (uncertain) assumed
+            position differs slightly from the target. Default False
+            preserves prior behavior for every cover with reliable feedback
+            (confidence is always 1.0 for those) and for any caller that
+            does not pass this parameter. Does not bypass is_safety.
 
         Returns
         -------
@@ -354,7 +376,14 @@ class CommandFilter:
         # Safety bypasses: a retraction command must always execute even if
         # the assumed position is already near the target (the assumed
         # position may be wrong after HA restart or drift).
+        # T16: when position_confidence_low is True, the tolerance widens
+        # (LOW_CONFIDENCE_TOLERANCE_MULTIPLIER) instead of trusting an
+        # uncertain assumed position enough to keep issuing corrective
+        # commands — see ARCHITECTURE.md §6.2.
         # ------------------------------------------------------------------
+        _effective_tolerance = execution_capability.position_tolerance
+        if position_confidence_low:
+            _effective_tolerance *= LOW_CONFIDENCE_TOLERANCE_MULTIPLIER
         if (
             target_position_internal is not None
             and current_position_internal is not None
@@ -362,7 +391,7 @@ class CommandFilter:
             and positions_within_tolerance(
                 target_position_internal,
                 current_position_internal,
-                execution_capability.position_tolerance,
+                _effective_tolerance,
             )
         ):
             return _blocked(BLOCKED_SAME_POSITION)

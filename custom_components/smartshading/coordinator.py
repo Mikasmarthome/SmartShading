@@ -36,7 +36,11 @@ from homeassistant.util import dt as dt_util
 
 from .capability_detector import CapabilityDetector
 from .const import DEFAULT_UPDATE_INTERVAL, DOMAIN
-from .cover_control.assumed_state_manager import AssumedStateManager, confidence_level
+from .cover_control.assumed_state_manager import (
+    AssumedPositionState,
+    AssumedStateManager,
+    confidence_level,
+)
 from .cover_control.cover_capabilities import CoverCapability
 from .engines.comfort_engine import ComfortEngine
 from .engines.exposure_engine import ExposureEngine
@@ -1577,6 +1581,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "current_states": {
                 wid: st for wid, st in self._current_states.items() if wid in self.windows
             },
+            # T16: restart-safe AssumedStateManager records — see restore
+            # site for why (confidence/uncertainty/drift continuity across
+            # restart/reload for covers without reliable position feedback).
+            "assumed_state": {
+                cid: self.assumed_state_manager.export_for_restore(cid)
+                for cid in self.assumed_state_manager.known_cover_ids()
+            },
             "config_snapshot": self._build_config_snapshot(),
             "owner_zone_id": next(iter(self.zones.keys()), None),
             "support_critical_events": list(self._support_critical_events),
@@ -2827,6 +2838,45 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 getattr(_extras, "research_daily_buckets", {}) or {})
                         except Exception:
                             _LOGGER.debug("Learning: P4c store restore skipped (non-fatal)")
+                        # T16: restart-safe AssumedStateManager records. Without
+                        # this, confidence/uncertainty tracking for covers
+                        # without reliable position feedback (Somfy RTS etc.)
+                        # resets to empty on every restart/reload — the manager
+                        # has to rebuild trust from scratch instead of carrying
+                        # over accumulated uncertainty/drift-suspicion state.
+                        # Malformed entries are skipped individually; that
+                        # cover then simply starts with no assumed state, same
+                        # as a fresh install.
+                        try:
+                            _raw_as = getattr(_extras, "assumed_state", {}) or {}
+                            for _cid, _av in _raw_as.items():
+                                try:
+                                    _lkg_raw = _av.get("last_known_good_at")
+                                    _lca_raw = _av.get("last_commanded_at")
+                                    self.assumed_state_manager.initialize_from_restore(
+                                        AssumedPositionState(
+                                            cover_id=_cid,
+                                            assumed_position=int(_av["assumed_position"]),
+                                            assumed_tilt=_av.get("assumed_tilt"),
+                                            last_commanded_at=(
+                                                dt_util.parse_datetime(_lca_raw)
+                                                if _lca_raw else None
+                                            ),
+                                            last_known_good_at=dt_util.parse_datetime(_lkg_raw),
+                                            confidence=0.0,  # recomputed on next get_state()
+                                            position_uncertainty_pct=float(
+                                                _av.get("position_uncertainty_pct", 0.0)),
+                                            is_drift_suspected=False,  # recomputed on next get_state()
+                                            interrupted_travel=bool(
+                                                _av.get("interrupted_travel", False)),
+                                            last_commanded_position=_av.get(
+                                                "last_commanded_position"),
+                                        )
+                                    )
+                                except Exception:
+                                    continue
+                        except Exception:
+                            _LOGGER.debug("Learning: assumed-state restore skipped (non-fatal)")
             except Exception:
                 _LOGGER.warning("Learning: failed to reconcile restore extras (non-fatal)")
                 # F7: this catch can abort partway through P2-P10 reconciliation,
@@ -4893,6 +4943,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     self.guard.can_send_action(window_id, new_state, now)
                     or _min_interval_bypassed
                 )
+                # T16: widen the position-tolerance check instead of trusting
+                # a low-confidence assumed position enough to keep issuing
+                # corrective commands (ARCHITECTURE.md §6.2). No-op for
+                # reliable-feedback covers — their confidence is always 1.0.
+                _position_confidence_low = not self.assumed_state_manager.is_position_trustworthy(
+                    _exec_entity_id, now
+                )
                 _exec_filter_result = CommandFilter().evaluate(
                     target_position_internal=_exec_target_internal,
                     current_position_internal=_exec_snapshot.assumed_position_internal,
@@ -4905,6 +4962,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     invert_position=_exec_cap.invert_position,
                     comfort_hold_allowed=not _comfort_hold_held,
                     fallback_release_allowed=not _fallback_open_release_pending,
+                    position_confidence_low=_position_confidence_low,
                 )
 
             # Cover group + hardware settings — resolved once and shared between

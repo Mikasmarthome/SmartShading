@@ -419,6 +419,24 @@
           "override_night_duration_min": "Limite de segurança para uma substituição noturna. A libertação real ocorre na transição do ciclo matinal.",
           "override_detection_tolerance": "Alteração mínima de posição (em percentagem) antes de um movimento manual ser reconhecido como substituição."
         }
+      },
+      "dispatch": {
+        "title": "Coordenação dos estores",
+        "description": "Configure como o SmartShading espaça os comandos dos estores quando vários estores são decididos no mesmo ciclo.",
+        "data": {
+          "dispatch_mode": "Modo de coordenação",
+          "dispatch_start_interval_s": "Atraso entre inícios",
+          "dispatch_max_travel_wait_s": "Espera máxima para o movimento terminar",
+          "dispatch_post_travel_pause_s": "Pausa após o movimento terminar",
+          "dispatch_zone_batching": "Manter zonas separadas"
+        },
+        "data_description": {
+          "dispatch_mode": "Paralelo inicia cada comando sem atraso. Com intervalo de tempo espera um número fixo de segundos entre os inícios. Um de cada vez espera que cada estore termine de se mover antes de iniciar o seguinte.",
+          "dispatch_start_interval_s": "Usado por \"Com intervalo de tempo\", e como intervalo mínimo entre zonas quando \"Manter zonas separadas\" está ativado.",
+          "dispatch_max_travel_wait_s": "Usado apenas por \"Um de cada vez\" — quanto tempo esperar que um estore termine antes de continuar de qualquer forma.",
+          "dispatch_post_travel_pause_s": "Usado apenas por \"Um de cada vez\" — uma breve pausa de estabilização depois de um estore terminar, antes de o seguinte começar.",
+          "dispatch_zone_batching": "Quando ativado, o atraso entre inícios é sempre aplicado entre divisões/zonas diferentes, mesmo no modo Paralelo, para que as divisões permaneçam visualmente separadas."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "Na próxima proteção solar",
         "first_any_decision": "Na próxima decisão automática",
         "manual": "Apenas limpeza manual"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Paralelo",
+        "spaced": "Com intervalo de tempo",
+        "sequential": "Um de cada vez"
       }
     }
   },

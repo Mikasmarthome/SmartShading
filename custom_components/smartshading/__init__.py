@@ -305,6 +305,7 @@ async def _async_setup_zone_entry(
         override_fixed_until=entry_data.override_policy.fixed_until,
         override_allow_comfort_actions=entry_data.override_policy.allow_comfort_actions,
         override_allow_protection_actions=entry_data.override_policy.allow_protection_actions,
+        dispatch_config=entry_data.dispatch_config,
     )
     # Inject the ForecastLearningStore so the ForecastStrategyModifier can access
     # trust data and current forecast snapshots starting from the first cycle.

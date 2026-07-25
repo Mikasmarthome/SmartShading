@@ -419,6 +419,24 @@
           "override_night_duration_min": "Sikkerhetsgrense for en nattlig overstyring. Den egentlige frigivelsen skjer ved morgenens skjemaovergang.",
           "override_detection_tolerance": "Minste posisjonsendring (i prosent) før en manuell bevegelse gjenkjennes som en overstyring."
         }
+      },
+      "dispatch": {
+        "title": "Koordinering av solskjerming",
+        "description": "Konfigurer hvordan SmartShading fordeler solskjermingskommandoer over tid når flere solskjermer avgjøres i samme syklus.",
+        "data": {
+          "dispatch_mode": "Koordineringsmodus",
+          "dispatch_start_interval_s": "Forsinkelse mellom starter",
+          "dispatch_max_travel_wait_s": "Maksimal ventetid på at bevegelsen avsluttes",
+          "dispatch_post_travel_pause_s": "Pause etter at bevegelsen er avsluttet",
+          "dispatch_zone_batching": "Hold soner atskilt"
+        },
+        "data_description": {
+          "dispatch_mode": "Parallelt starter hver kommando uten forsinkelse. Med tidsavstand venter et fast antall sekunder mellom startene. Én etter én venter til hver solskjerming er ferdig med å bevege seg før den neste starter.",
+          "dispatch_start_interval_s": "Brukes av \"Med tidsavstand\", og som minsteavstand mellom soner når \"Hold soner atskilt\" er aktivert.",
+          "dispatch_max_travel_wait_s": "Brukes kun av \"Én etter én\" — hvor lenge det ventes på at en solskjerming blir ferdig før det fortsettes likevel.",
+          "dispatch_post_travel_pause_s": "Brukes kun av \"Én etter én\" — en kort pause etter at en solskjerming er ferdig, før den neste starter.",
+          "dispatch_zone_batching": "Når aktivert, brukes forsinkelsen mellom startene alltid mellom ulike rom/soner, selv i Parallelt-modus, slik at rom forblir visuelt atskilt."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "Ved neste beskyttende skjerming",
         "first_any_decision": "Ved neste automatiske avgjørelse",
         "manual": "Kun manuell fjerning"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Parallelt",
+        "spaced": "Med tidsavstand",
+        "sequential": "Én etter én"
       }
     }
   },

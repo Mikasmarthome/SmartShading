@@ -58,6 +58,18 @@ from .config_entry_data import (
 )
 from .models.comfort import ComfortConfig
 from .models.config import GlobalDefaults, ShadePositionDefaults
+from .models.dispatch_config import (
+    DEFAULT_MAX_TRAVEL_WAIT_S,
+    DEFAULT_POST_TRAVEL_PAUSE_S,
+    DEFAULT_START_INTERVAL_S,
+    DispatchMode,
+    MAX_TRAVEL_WAIT_S_MAX,
+    MAX_TRAVEL_WAIT_S_MIN,
+    POST_TRAVEL_PAUSE_S_MAX,
+    POST_TRAVEL_PAUSE_S_MIN,
+    START_INTERVAL_S_MAX,
+    START_INTERVAL_S_MIN,
+)
 from .models.manual_override import OverrideReleaseStrategy
 from .models.cover_group import CoverGroup, CoverHardwareType, CoverSyncMode, cover_hardware_type_from_str
 from .models.presence import PresencePolicy
@@ -104,6 +116,11 @@ from .const import (
     CONF_NIGHT_SUN_ELEVATION,
     CONF_NIGHT_TRIGGER,
     CONF_NORMAL_SHADE_POSITION,
+    CONF_DISPATCH_MAX_TRAVEL_WAIT_S,
+    CONF_DISPATCH_MODE,
+    CONF_DISPATCH_POST_TRAVEL_PAUSE_S,
+    CONF_DISPATCH_START_INTERVAL_S,
+    CONF_DISPATCH_ZONE_BATCHING,
     CONF_OUTDOOR_TEMPERATURE_SENSOR_ID,
     CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
     CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS,
@@ -250,6 +267,22 @@ def _safe_positive_int(value: Any, default: int, *, maximum: int) -> int:
     except (TypeError, ValueError):
         return default
     return max(1, min(parsed, maximum))
+
+
+def _safe_float_in_range(value: Any, default: float, *, minimum: float, maximum: float) -> float:
+    """Never raises: missing/None/wrong-type/non-numeric -> default. A
+    numeric value outside [minimum, maximum] is clamped into range rather
+    than stored as-is or rejected — same discipline as _safe_positive_int(),
+    generalized to allow a minimum of 0.0 (T11 dispatch timing fields)."""
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return default
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return default
+    if parsed != parsed or parsed in (float("inf"), float("-inf")):  # NaN/inf guard
+        return default
+    return max(minimum, min(parsed, maximum))
 
 
 def _parse_optional_time_input(value: Any) -> time | None:
@@ -1329,7 +1362,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             return self.async_abort(reason="no_options_for_system_entry")
         return self.async_show_menu(
             step_id="init",
-            menu_options=["weather", "lifecycle", "presence", "comfort", "behavior", "add_window", "edit_window", "remove_window", "lifecycle_profiles", "manual_override"],
+            menu_options=["weather", "lifecycle", "presence", "comfort", "behavior", "add_window", "edit_window", "remove_window", "lifecycle_profiles", "manual_override", "dispatch"],
         )
 
     # -- Weather / sensor entities --
@@ -2311,6 +2344,90 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             }
         )
         return self.async_show_form(step_id="manual_override", data_schema=schema, errors=errors)
+
+    # -- Dispatch strategy (v1.2.0-beta.1, T11) --
+
+    async def async_step_dispatch(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        current = self._config_entry.data
+        stored = current.get("dispatch_config") or {}
+
+        if user_input is not None:
+            try:
+                mode = DispatchMode(user_input.get(CONF_DISPATCH_MODE, DispatchMode.SPACED.value))
+            except ValueError:
+                mode = DispatchMode.SPACED
+            new_config = {
+                "mode": mode.value,
+                "start_interval_s": _safe_float_in_range(
+                    user_input.get(CONF_DISPATCH_START_INTERVAL_S), DEFAULT_START_INTERVAL_S,
+                    minimum=START_INTERVAL_S_MIN, maximum=START_INTERVAL_S_MAX,
+                ),
+                "max_travel_wait_s": _safe_float_in_range(
+                    user_input.get(CONF_DISPATCH_MAX_TRAVEL_WAIT_S), DEFAULT_MAX_TRAVEL_WAIT_S,
+                    minimum=MAX_TRAVEL_WAIT_S_MIN, maximum=MAX_TRAVEL_WAIT_S_MAX,
+                ),
+                "post_travel_pause_s": _safe_float_in_range(
+                    user_input.get(CONF_DISPATCH_POST_TRAVEL_PAUSE_S), DEFAULT_POST_TRAVEL_PAUSE_S,
+                    minimum=POST_TRAVEL_PAUSE_S_MIN, maximum=POST_TRAVEL_PAUSE_S_MAX,
+                ),
+                "zone_batching": bool(user_input.get(CONF_DISPATCH_ZONE_BATCHING, False)),
+            }
+            return self._save_and_reload({"dispatch_config": new_config})
+
+        mode_selector = SelectSelector(
+            SelectSelectorConfig(
+                options=[m.value for m in DispatchMode],
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="dispatch_mode",
+            )
+        )
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_DISPATCH_MODE,
+                    default=stored.get("mode", DispatchMode.SPACED.value),
+                ): mode_selector,
+                # SPACED-only in effect (also the forced inter-zone gap when
+                # zone_batching is on, regardless of mode) — shown
+                # unconditionally, matching the established pattern of not
+                # using per-field conditional visibility in this Flow.
+                vol.Required(
+                    CONF_DISPATCH_START_INTERVAL_S,
+                    default=stored.get("start_interval_s", DEFAULT_START_INTERVAL_S),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=START_INTERVAL_S_MIN, max=START_INTERVAL_S_MAX, step=0.1,
+                        mode=NumberSelectorMode.BOX, unit_of_measurement="s",
+                    )
+                ),
+                # "Nacheinander nach Fahrtende" (SEQUENTIAL) only.
+                vol.Required(
+                    CONF_DISPATCH_MAX_TRAVEL_WAIT_S,
+                    default=stored.get("max_travel_wait_s", DEFAULT_MAX_TRAVEL_WAIT_S),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=MAX_TRAVEL_WAIT_S_MIN, max=MAX_TRAVEL_WAIT_S_MAX, step=1,
+                        mode=NumberSelectorMode.BOX, unit_of_measurement="s",
+                    )
+                ),
+                vol.Required(
+                    CONF_DISPATCH_POST_TRAVEL_PAUSE_S,
+                    default=stored.get("post_travel_pause_s", DEFAULT_POST_TRAVEL_PAUSE_S),
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=POST_TRAVEL_PAUSE_S_MIN, max=POST_TRAVEL_PAUSE_S_MAX, step=0.1,
+                        mode=NumberSelectorMode.BOX, unit_of_measurement="s",
+                    )
+                ),
+                vol.Required(
+                    CONF_DISPATCH_ZONE_BATCHING,
+                    default=stored.get("zone_batching", False),
+                ): BooleanSelector(),
+            }
+        )
+        return self.async_show_form(step_id="dispatch", data_schema=schema)
 
     # -- Behavior / shade-position defaults --
 

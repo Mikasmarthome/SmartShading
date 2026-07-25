@@ -419,6 +419,24 @@
           "override_night_duration_min": "Turvaraja yön ohitukselle. Todellinen vapautus tapahtuu aamun aikataulusiirtymässä.",
           "override_detection_tolerance": "Pienin sallittu asennon muutos (prosentteina) ennen kuin manuaalinen liike tunnistetaan ohitukseksi."
         }
+      },
+      "dispatch": {
+        "title": "Varjostimien ajoitus",
+        "description": "Määritä, miten SmartShading ajoittaa varjostinkomennot, kun useita varjostimia ratkaistaan samassa syklissä.",
+        "data": {
+          "dispatch_mode": "Ajoitustapa",
+          "dispatch_start_interval_s": "Viive käynnistysten välillä",
+          "dispatch_max_travel_wait_s": "Enimmäisodotus liikkeen päättymiselle",
+          "dispatch_post_travel_pause_s": "Tauko liikkeen päätyttyä",
+          "dispatch_zone_batching": "Pidä vyöhykkeet erillään"
+        },
+        "data_description": {
+          "dispatch_mode": "Rinnakkain käynnistää jokaisen komennon ilman viivettä. Aikavälillä odottaa kiinteän sekuntimäärän käynnistysten välillä. Peräkkäin odottaa, että kukin varjostin lopettaa liikkeensä, ennen kuin seuraava käynnistyy.",
+          "dispatch_start_interval_s": "Käytetään tilassa \"Aikavälillä\" sekä vyöhykkeiden välisenä vähimmäisvälinä, kun \"Pidä vyöhykkeet erillään\" on käytössä.",
+          "dispatch_max_travel_wait_s": "Käytetään vain tilassa \"Peräkkäin\" — kuinka kauan odotetaan varjostimen lopettavan liikkeensä, ennen kuin jatketaan joka tapauksessa.",
+          "dispatch_post_travel_pause_s": "Käytetään vain tilassa \"Peräkkäin\" — lyhyt asettumistauko sen jälkeen, kun varjostin on lopettanut liikkeensä, ennen kuin seuraava käynnistyy.",
+          "dispatch_zone_batching": "Kun käytössä, käynnistysten välinen viive kohdistetaan aina eri huoneiden/vyöhykkeiden välille, myös Rinnakkain-tilassa, jotta huoneet pysyvät visuaalisesti erillään."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "Seuraavassa suojaavassa varjostuksessa",
         "first_any_decision": "Seuraavassa automaattisessa päätöksessä",
         "manual": "Vain manuaalinen tyhjennys"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Rinnakkain",
+        "spaced": "Aikavälillä",
+        "sequential": "Peräkkäin"
       }
     }
   },

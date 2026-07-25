@@ -541,6 +541,13 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                         "global_wait_overrun_ms": pe.get("global_wait_overrun_ms"),
                         "required_global_interval_ms": pe.get(
                             "required_global_interval_ms"),
+                        # T11: active dispatch strategy + SEQUENTIAL-mode
+                        # travel-completion outcome for this event.
+                        "dispatch_mode": pe.get("dispatch_mode"),
+                        "zone_batching_enabled": pe.get("zone_batching_enabled"),
+                        "completion_method": pe.get("completion_method"),
+                        "completion_wait_s": pe.get("completion_wait_s"),
+                        "completion_timed_out": pe.get("completion_timed_out"),
                     },
                 })
         # Sort newest-first so non-critical fill-up keeps the most recent records.

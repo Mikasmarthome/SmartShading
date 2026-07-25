@@ -419,6 +419,24 @@
           "override_night_duration_min": "Limite di sicurezza per un override notturno. Il vero rilascio avviene alla transizione del ciclo mattutino.",
           "override_detection_tolerance": "Variazione minima di posizione (in percentuale) prima che un movimento manuale sia riconosciuto come override."
         }
+      },
+      "dispatch": {
+        "title": "Coordinamento delle tapparelle",
+        "description": "Configura come SmartShading distanzia nel tempo i comandi delle tapparelle quando più tapparelle vengono decise nello stesso ciclo.",
+        "data": {
+          "dispatch_mode": "Modalità di coordinamento",
+          "dispatch_start_interval_s": "Ritardo tra gli avvii",
+          "dispatch_max_travel_wait_s": "Attesa massima per il termine del movimento",
+          "dispatch_post_travel_pause_s": "Pausa dopo il termine del movimento",
+          "dispatch_zone_batching": "Mantieni le zone separate"
+        },
+        "data_description": {
+          "dispatch_mode": "Parallelo avvia ogni comando senza ritardo. Con intervallo attende un numero fisso di secondi tra gli avvii. Una alla volta attende che ogni tapparella finisca di muoversi prima di avviare la successiva.",
+          "dispatch_start_interval_s": "Usato da \"Con intervallo\", e come intervallo minimo tra le zone quando \"Mantieni le zone separate\" è attivo.",
+          "dispatch_max_travel_wait_s": "Usato solo da \"Una alla volta\" — quanto attendere che una tapparella finisca prima di continuare comunque.",
+          "dispatch_post_travel_pause_s": "Usato solo da \"Una alla volta\" — una breve pausa di assestamento dopo che una tapparella finisce, prima che parta la successiva.",
+          "dispatch_zone_batching": "Se attivo, il ritardo tra gli avvii viene sempre applicato tra stanze/zone diverse, anche in modalità Parallelo, così le stanze restano visivamente separate."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "Alla successiva protezione solare",
         "first_any_decision": "Alla successiva decisione automatica",
         "manual": "Solo cancellazione manuale"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Parallelo",
+        "spaced": "Con intervallo",
+        "sequential": "Una alla volta"
       }
     }
   },

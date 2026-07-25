@@ -419,6 +419,24 @@
           "override_night_duration_min": "Safety-net cap for a night-time override. The real release is the morning schedule transition.",
           "override_detection_tolerance": "Minimum position change (in percent) before a manual movement is recognized as an override."
         }
+      },
+      "dispatch": {
+        "title": "Cover Dispatch",
+        "description": "Configure how SmartShading paces cover commands when several covers are decided in the same cycle.",
+        "data": {
+          "dispatch_mode": "Dispatch mode",
+          "dispatch_start_interval_s": "Delay between starts",
+          "dispatch_max_travel_wait_s": "Maximum wait for travel to finish",
+          "dispatch_post_travel_pause_s": "Pause after travel finishes",
+          "dispatch_zone_batching": "Keep zones apart"
+        },
+        "data_description": {
+          "dispatch_mode": "Parallel starts every command without delay. With a time gap waits a fixed number of seconds between starts. One after another waits for each cover to finish moving before starting the next.",
+          "dispatch_start_interval_s": "Used by \"With a time gap\", and as the minimum gap between zones when \"Keep zones apart\" is enabled.",
+          "dispatch_max_travel_wait_s": "Only used by \"One after another\" — how long to wait for a cover to finish before continuing anyway.",
+          "dispatch_post_travel_pause_s": "Only used by \"One after another\" — a short settle pause after a cover finishes, before the next one starts.",
+          "dispatch_zone_batching": "When enabled, the delay between starts is always applied between different rooms/zones, even in Parallel mode, so rooms stay visually separated."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "On the next protective shading",
         "first_any_decision": "On the next automatic decision",
         "manual": "Manually cleared only"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Parallel",
+        "spaced": "With a time gap",
+        "sequential": "One after another"
       }
     }
   },

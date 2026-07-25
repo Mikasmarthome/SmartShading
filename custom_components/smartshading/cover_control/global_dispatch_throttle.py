@@ -131,7 +131,9 @@ class GlobalDispatchThrottle:
         not used for elapsed-time calculation."""
         return self._last_dispatch_at
 
-    def time_until_next_allowed(self) -> timedelta:
+    def time_until_next_allowed(
+        self, min_interval_override: timedelta | None = None
+    ) -> timedelta:
         """Return the remaining wait before the next dispatch is allowed.
 
         Uses the injectable monotonic clock so the result is immune to
@@ -144,11 +146,22 @@ class GlobalDispatchThrottle:
 
         Returns a positive ``timedelta`` when the minimum interval has not yet
         elapsed and the caller must sleep before dispatching.
+
+        min_interval_override (v1.2.0-beta.1, T11): when given, used instead
+        of the interval configured at construction — lets the caller apply a
+        per-dispatch interval computed from the configured DispatchMode
+        (cover_control/dispatch_orchestrator.py) without needing a
+        differently-configured GlobalDispatchThrottle instance per mode.
+        The tracked last-dispatch timestamp (shared, cross-zone) is
+        unaffected either way.
         """
         if self._last_dispatch_mono is None:
             return timedelta(0)
+        effective_interval = (
+            min_interval_override if min_interval_override is not None else self._min_interval
+        )
         elapsed = self._mono_clock() - self._last_dispatch_mono
-        remaining = self._min_interval.total_seconds() - elapsed
+        remaining = effective_interval.total_seconds() - elapsed
         return timedelta(seconds=remaining) if remaining > 0 else timedelta(0)
 
     def record_dispatch(self, now: datetime) -> None:
@@ -203,9 +216,14 @@ class GlobalSerialDispatch:
             self._lock = asyncio.Lock()
         return self._lock
 
-    def time_until_next_allowed(self) -> timedelta:
-        """Return the remaining wait before the next dispatch is allowed."""
-        return self._throttle.time_until_next_allowed()
+    def time_until_next_allowed(
+        self, min_interval_override: timedelta | None = None
+    ) -> timedelta:
+        """Return the remaining wait before the next dispatch is allowed.
+
+        min_interval_override: see GlobalDispatchThrottle.time_until_next_allowed().
+        """
+        return self._throttle.time_until_next_allowed(min_interval_override)
 
     def record_dispatch(self, now: datetime) -> None:
         """Record a confirmed SENT dispatch."""

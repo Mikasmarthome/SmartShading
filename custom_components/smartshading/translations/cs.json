@@ -419,6 +419,24 @@
           "override_night_duration_min": "Bezpečnostní limit pro noční přepsání. Skutečné uvolnění nastává při ranním přechodu plánu.",
           "override_detection_tolerance": "Minimální změna polohy (v procentech), než je ruční pohyb rozpoznán jako přepsání."
         }
+      },
+      "dispatch": {
+        "title": "Koordinace stínění",
+        "description": "Nastavte, jak SmartShading rozkládá v čase příkazy pro stínění, když je ve stejném cyklu rozhodnuto o více stíněních.",
+        "data": {
+          "dispatch_mode": "Režim koordinace",
+          "dispatch_start_interval_s": "Prodleva mezi starty",
+          "dispatch_max_travel_wait_s": "Maximální čekání na dokončení pohybu",
+          "dispatch_post_travel_pause_s": "Pauza po dokončení pohybu",
+          "dispatch_zone_batching": "Oddělovat zóny"
+        },
+        "data_description": {
+          "dispatch_mode": "Souběžně spustí každý příkaz bez prodlevy. S časovou mezerou čeká pevný počet sekund mezi starty. Postupně čeká, až stínění dokončí pohyb, než spustí další.",
+          "dispatch_start_interval_s": "Používá se u \"S časovou mezerou\" a jako minimální mezera mezi zónami, když je zapnuto \"Oddělovat zóny\".",
+          "dispatch_max_travel_wait_s": "Používá se pouze u \"Postupně\" — jak dlouho čekat na dokončení pohybu stínění, než se přesto pokračuje dál.",
+          "dispatch_post_travel_pause_s": "Používá se pouze u \"Postupně\" — krátká klidová pauza po dokončení pohybu stínění, než se spustí další.",
+          "dispatch_zone_batching": "Je-li zapnuto, prodleva mezi starty se vždy uplatní mezi různými místnostmi/zónami, i v režimu Souběžně, aby zůstaly místnosti vizuálně oddělené."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "Při dalším ochranném stínění",
         "first_any_decision": "Při dalším automatickém rozhodnutí",
         "manual": "Pouze ruční zrušení"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Souběžně",
+        "spaced": "S časovou mezerou",
+        "sequential": "Postupně"
       }
     }
   },

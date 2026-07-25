@@ -338,6 +338,30 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         return {"material_decisions_by_zone": per_zone,
                 "no_dispatch_decisions": no_dispatch}
 
+    def _dispatch_strategy_summary():
+        # PUBLIC: configuration + aggregate counts only — no window/cover ids.
+        # Answers T11 §11's "which dispatch mode is active" at the same
+        # counts-only granularity the rest of this contract already uses;
+        # per-event completion detail lives in the (already-existing) support
+        # export timeline, not here.
+        dc = getattr(c, "_dispatch_config", None)
+        events = list(getattr(c, "_support_critical_events", []) or [])
+        timeouts = sum(1 for e in events if e.get("completion_timed_out"))
+        completion_counts: dict = {}
+        for e in events:
+            method = e.get("completion_method")
+            if method:
+                completion_counts[method] = completion_counts.get(method, 0) + 1
+        return {
+            "mode": dc.mode.value if dc is not None else None,
+            "start_interval_s": dc.start_interval_s if dc is not None else None,
+            "max_travel_wait_s": dc.max_travel_wait_s if dc is not None else None,
+            "post_travel_pause_s": dc.post_travel_pause_s if dc is not None else None,
+            "zone_batching": dc.zone_batching if dc is not None else None,
+            "completion_method_counts": completion_counts,
+            "completion_timeout_count": timeouts,
+        }
+
     contract = {
         "schema_version": DIAGNOSTICS_SCHEMA_VERSION,
         "generated_at_utc": _iso(now),
@@ -348,6 +372,8 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         "lifecycle_profile_summary": _safe(_lifecycle_profile_summary, errors, "lifecycle_profile"),
         "heat_protection_summary": _safe(_heat_protection_summary, errors, "heat_protection"),
         "manual_override_summary": _safe(_manual_override_summary, errors, "manual_override"),
+        "dispatch_strategy_summary": _safe(
+            _dispatch_strategy_summary, errors, "dispatch_strategy"),
         "learning_authority_summary": _safe(
             _learning_authority_summary, errors, "learning_authority"),
         "decisions": _safe(_decisions, errors, "decisions"),

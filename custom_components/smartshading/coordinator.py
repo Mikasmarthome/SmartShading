@@ -119,6 +119,7 @@ from .models.window import WindowBehaviorMode, WindowConfig
 from .models.zone import ZoneConfig
 from .models.zone_execution_config import ZoneExecutionConfig
 from .evaluators.tier_orchestrator import TierOrchestrator
+from .models.dispatch_config import DispatchConfig
 from .models.manual_override import OverrideReleaseStrategy
 from .models.window_decision import WindowDecision
 from .models.window_decision_input import build_window_decision_input
@@ -367,6 +368,11 @@ from .cover_control.execution_result import (
     build_blocked_result,
     build_execution_plan_result,
     build_not_attempted_result,
+)
+from .cover_control.dispatch_completion import wait_for_travel_completion
+from .cover_control.dispatch_orchestrator import (
+    effective_interval_s,
+    requires_completion_wait,
 )
 from .cover_control.global_dispatch_throttle import GlobalDispatchThrottle, GlobalSerialDispatch
 from .cover_control.ha_service_adapter import dispatch_cover_intent
@@ -1071,6 +1077,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         ema_enabled: bool = False,
         ema_alpha: float = 0.3,
         global_serial_dispatch: GlobalSerialDispatch | None = None,
+        dispatch_config: DispatchConfig | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -1410,6 +1417,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # so that callers/tests that reference _global_dispatch_throttle still
         # resolve to the throttle object inside the serial dispatch.
         self._global_dispatch_throttle = self._serial_dispatch
+
+        # Dispatch strategy (v1.2.0-beta.1, T11): consulted by the Pass-2
+        # dispatch loop below via cover_control/dispatch_orchestrator.py.
+        # Default reproduces the pre-T11 fixed 2.0s global interval exactly.
+        self._dispatch_config: DispatchConfig = dispatch_config or DispatchConfig()
 
         # Zone control overrides (Step 9G11): zone switch entities write here;
         # effective_zone_execution() reads them with fallback to zone.execution.
@@ -5185,6 +5197,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             ),
         )
 
+        # T11: zone-boundary tracker for DispatchConfig.zone_batching — reset
+        # fresh every cycle (a coordinator cycle is the natural "one batch"
+        # scope; see dispatch_orchestrator.effective_interval_s()).
+        _dispatch_prev_zone_id: str | None = None
+
         # For harmonized windows, the filter result is replaced with a new one
         # carrying the group's harmonized target_position_ha before plan building.
         for window_id, s in _ordered_window_states:
@@ -5269,7 +5286,21 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         # POSITION INVARIANT: dispatch_cover_intent uses
                         # target_position_ha, never target_position_internal.
                         async with self._serial_dispatch.lock:
-                            _wait = self._serial_dispatch.time_until_next_allowed()
+                            # T11: DispatchConfig-driven per-dispatch interval
+                            # (PARALLEL=0, SPACED=start_interval_s, SEQUENTIAL=0
+                            # except at a zone boundary under zone_batching) —
+                            # see cover_control/dispatch_orchestrator.py.
+                            _is_first_in_zone_group = (
+                                s.window.zone_id != _dispatch_prev_zone_id
+                            )
+                            _dispatch_prev_zone_id = s.window.zone_id
+                            _interval_s = effective_interval_s(
+                                self._dispatch_config,
+                                is_first_in_zone_group=_is_first_in_zone_group,
+                            )
+                            _wait = self._serial_dispatch.time_until_next_allowed(
+                                min_interval_override=timedelta(seconds=_interval_s)
+                            )
                             if _wait.total_seconds() > 0:
                                 _dispatch_throttled = True
                                 # PLANNED wait = value returned BEFORE the sleep.
@@ -5348,6 +5379,66 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         _intent_result.entity_id,
                                         _intent_result.error,
                                         _intent_result.failure_exception_type,
+                                    )
+                            # T11: SEQUENTIAL mode — hold the same lock through
+                            # the completion wait, so the NEXT intent (this
+                            # window or any other, any zone) genuinely cannot
+                            # start until this cover's travel is detected done
+                            # (or times out). Never applies to PARALLEL/SPACED.
+                            if (
+                                _intent_result.status is ExecutionStatus.SENT
+                                and requires_completion_wait(self._dispatch_config)
+                            ):
+                                _completion = await wait_for_travel_completion(
+                                    self.hass,
+                                    entity_id=_intent.cover_entity_id,
+                                    target_position_ha=_intent.target_position_ha,
+                                    invert_position=(
+                                        s.exec_cap.invert_position
+                                        if s.exec_cap is not None else False
+                                    ),
+                                    has_reliable_position_feedback=(
+                                        s.exec_cap.has_reliable_position_feedback
+                                        if s.exec_cap is not None else False
+                                    ),
+                                    start_position_ha=(
+                                        s.exec_snapshot.current_position_ha
+                                        if s.exec_snapshot is not None else None
+                                    ),
+                                    travel_time_open_s=(
+                                        s.exec_cap.travel_time_open_s
+                                        if s.exec_cap is not None else 30.0
+                                    ),
+                                    travel_time_close_s=(
+                                        s.exec_cap.travel_time_close_s
+                                        if s.exec_cap is not None else 30.0
+                                    ),
+                                    max_wait_s=self._dispatch_config.max_travel_wait_s,
+                                )
+                                _intent_result = replace(
+                                    _intent_result,
+                                    completion_method=_completion.method.value,
+                                    completion_wait_s=round(_completion.elapsed_s, 3),
+                                    completion_timed_out=_completion.timed_out,
+                                )
+                                if _completion.timed_out:
+                                    _LOGGER.warning(
+                                        "SmartShading: cover travel completion timed "
+                                        "out entity=%s after %.1fs (sequential dispatch "
+                                        "mode) — continuing the dispatch queue",
+                                        _intent.cover_entity_id, _completion.elapsed_s,
+                                    )
+                                elif self._debug_logging_enabled:
+                                    _LOGGER.debug(
+                                        "SmartShading: dispatch completion cover=%s "
+                                        "method=%s elapsed=%.1fs",
+                                        _intent.cover_entity_id,
+                                        _completion.method.value,
+                                        _completion.elapsed_s,
+                                    )
+                                if self._dispatch_config.post_travel_pause_s > 0:
+                                    await asyncio.sleep(
+                                        self._dispatch_config.post_travel_pause_s
                                     )
                         _exec_results.append(_intent_result)
                 _exec_plan_result = build_execution_plan_result(window_id, _exec_results)
@@ -5680,7 +5771,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     planned_ms=_planned_global_wait_ms, actual_ms=_actual_global_wait_ms,
                     started_mono=_global_wait_started_mono,
                     slot_granted_mono=_global_slot_granted_mono,
-                    timing_status=_global_timing_recording_status)
+                    timing_status=_global_timing_recording_status,
+                    exec_result=_last_exec_result)
                 try:
                     self._record_decision_trace(
                         window_id, s, harm, _dispatch_prov, _last_exec_result, now,
@@ -6130,6 +6222,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "actual_global_interval_wait_ms": _ctx.get("actual_global_interval_wait_ms"),
             "global_wait_overrun_ms": _ctx.get("global_wait_overrun_ms"),
             "required_global_interval_ms": _ctx.get("required_global_interval_ms"),
+            # T11: dispatch strategy + SEQUENTIAL-mode completion outcome.
+            "dispatch_mode": _ctx.get("dispatch_mode"),
+            "zone_batching_enabled": _ctx.get("zone_batching_enabled"),
+            "completion_method": _ctx.get("completion_method"),
+            "completion_wait_s": _ctx.get("completion_wait_s"),
+            "completion_timed_out": _ctx.get("completion_timed_out"),
         })
         if len(self._support_critical_events) > 500:
             self._support_critical_events = self._support_critical_events[-500:]
@@ -6190,7 +6288,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     def _dispatch_context(self, s, *, throttled=False, planned_ms=None, actual_ms=None,
                           started_mono=None, slot_granted_mono=None,
-                          timing_status="recorded") -> dict:
+                          timing_status="recorded", exec_result=None) -> dict:
         """P11: read-only global-interval + movement + position-before context from
         ALREADY-COMPUTED runtime data (this-cycle snapshot + throttle observation).
         No new polling/state read; honest not_recorded where data is absent.
@@ -6211,6 +6309,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "queue_slot_granted_at_monotonic": None,
             "queue_wait_ms": None,
             "queue_recording_status": "not_recorded",
+            # T11: which dispatch strategy is active and whether this cycle's
+            # completion wait (SEQUENTIAL only) detected a timeout — reuses
+            # this same dispatch_context structure rather than a new one.
+            "dispatch_mode": self._dispatch_config.mode.value,
+            "zone_batching_enabled": self._dispatch_config.zone_batching,
+            "completion_method": getattr(exec_result, "completion_method", None),
+            "completion_wait_s": getattr(exec_result, "completion_wait_s", None),
+            "completion_timed_out": bool(getattr(exec_result, "completion_timed_out", False)),
             # Real global serial min-interval wait (planned vs measured).
             "global_wait_required": bool(throttled),
             "planned_global_interval_wait_ms": (planned_ms if throttled else 0),

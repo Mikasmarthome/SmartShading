@@ -419,6 +419,24 @@
           "override_night_duration_min": "Limit bezpieczeństwa dla nocnego zastąpienia. Rzeczywiste zwolnienie następuje przy porannym przejściu harmonogramu.",
           "override_detection_tolerance": "Minimalna zmiana pozycji (w procentach), zanim ręczny ruch zostanie rozpoznany jako zastąpienie."
         }
+      },
+      "dispatch": {
+        "title": "Koordynacja osłon",
+        "description": "Skonfiguruj, jak SmartShading rozkłada w czasie polecenia dla osłon, gdy w tym samym cyklu podejmowane są decyzje dla kilku osłon.",
+        "data": {
+          "dispatch_mode": "Tryb koordynacji",
+          "dispatch_start_interval_s": "Opóźnienie między startami",
+          "dispatch_max_travel_wait_s": "Maksymalny czas oczekiwania na zakończenie ruchu",
+          "dispatch_post_travel_pause_s": "Pauza po zakończeniu ruchu",
+          "dispatch_zone_batching": "Rozdzielaj strefy"
+        },
+        "data_description": {
+          "dispatch_mode": "Równolegle uruchamia każde polecenie bez opóźnienia. Z odstępem czasu czeka określoną liczbę sekund między startami. Jedna po drugiej czeka, aż każda osłona zakończy ruch, zanim uruchomi kolejną.",
+          "dispatch_start_interval_s": "Używane przez \"Z odstępem czasu\", a także jako minimalny odstęp między strefami, gdy włączone jest \"Rozdzielaj strefy\".",
+          "dispatch_max_travel_wait_s": "Używane tylko przez \"Jedna po drugiej\" — jak długo czekać na zakończenie ruchu osłony, zanim mimo to nastąpi kontynuacja.",
+          "dispatch_post_travel_pause_s": "Używane tylko przez \"Jedna po drugiej\" — krótka pauza uspokajająca po zakończeniu ruchu osłony, zanim uruchomi się kolejna.",
+          "dispatch_zone_batching": "Gdy włączone, opóźnienie między startami jest zawsze stosowane między różnymi pomieszczeniami/strefami, nawet w trybie Równolegle, dzięki czemu pomieszczenia pozostają wizualnie oddzielone."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "Przy następnym zacienieniu ochronnym",
         "first_any_decision": "Przy następnej automatycznej decyzji",
         "manual": "Tylko ręczne wyczyszczenie"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Równolegle",
+        "spaced": "Z odstępem czasu",
+        "sequential": "Jedna po drugiej"
       }
     }
   },

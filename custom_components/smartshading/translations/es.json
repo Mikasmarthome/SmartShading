@@ -419,6 +419,24 @@
           "override_night_duration_min": "Límite de seguridad para una anulación nocturna. La liberación real ocurre en la transición del ciclo matutino.",
           "override_detection_tolerance": "Cambio mínimo de posición (en porcentaje) antes de que un movimiento manual se reconozca como anulación."
         }
+      },
+      "dispatch": {
+        "title": "Coordinación de persianas",
+        "description": "Configura cómo SmartShading espacía las órdenes a las persianas cuando se deciden varias persianas en el mismo ciclo.",
+        "data": {
+          "dispatch_mode": "Modo de coordinación",
+          "dispatch_start_interval_s": "Retraso entre inicios",
+          "dispatch_max_travel_wait_s": "Espera máxima para que termine el movimiento",
+          "dispatch_post_travel_pause_s": "Pausa tras terminar el movimiento",
+          "dispatch_zone_batching": "Mantener zonas separadas"
+        },
+        "data_description": {
+          "dispatch_mode": "Paralelo inicia cada orden sin retraso. Con intervalo espera un número fijo de segundos entre inicios. Una tras otra espera a que cada persiana termine de moverse antes de iniciar la siguiente.",
+          "dispatch_start_interval_s": "Se usa con \"Con intervalo\", y como separación mínima entre zonas cuando \"Mantener zonas separadas\" está activado.",
+          "dispatch_max_travel_wait_s": "Solo se usa con \"Una tras otra\" — cuánto tiempo esperar a que una persiana termine antes de continuar de todos modos.",
+          "dispatch_post_travel_pause_s": "Solo se usa con \"Una tras otra\" — una breve pausa de asentamiento tras terminar una persiana, antes de que empiece la siguiente.",
+          "dispatch_zone_batching": "Si está activado, el retraso entre inicios se aplica siempre entre habitaciones/zonas distintas, incluso en modo Paralelo, para que las habitaciones se mantengan visualmente separadas."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "En la siguiente protección solar",
         "first_any_decision": "En la siguiente decisión automática",
         "manual": "Solo borrado manual"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Paralelo",
+        "spaced": "Con intervalo",
+        "sequential": "Una tras otra"
       }
     }
   },

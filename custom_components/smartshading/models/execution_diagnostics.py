@@ -145,8 +145,12 @@ class WindowExecutionDiagnostics:
     False when no throttle wait was applied:
       - First dispatch in this coordinator session (no previous SENT recorded).
       - Minimum inter-dispatch interval had already elapsed.
-      - Safety command (STORM_SAFE / WIND_SAFE): bypasses the throttle wait.
       - Command was BLOCKED, NOT_ATTEMPTED, or startup-grace suppressed (no dispatch).
+
+    Safety commands (STORM_SAFE / WIND_SAFE) do NOT bypass the throttle wait
+    (v1.0.8 hardening) — they only sort first among a cycle's intents (see
+    coordinator.py's zone-ordered dispatch sequencing / F18) and are exempt
+    from the stale-generation cancellation, never from the timing gate.
 
     See throttle_wait_ms for the actual delay duration."""
 

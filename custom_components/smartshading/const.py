@@ -358,6 +358,13 @@ CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED = "override_safety_timeout_enabled"
 CONF_OVERRIDE_DURATION_MIN = "override_duration_min"
 CONF_OVERRIDE_NIGHT_DURATION_MIN = "override_night_duration_min"
 CONF_OVERRIDE_DETECTION_TOLERANCE = "override_detection_tolerance"
+
+# Dispatch strategy (v1.2.0-beta.1, T11).
+CONF_DISPATCH_MODE = "dispatch_mode"
+CONF_DISPATCH_START_INTERVAL_S = "dispatch_start_interval_s"
+CONF_DISPATCH_MAX_TRAVEL_WAIT_S = "dispatch_max_travel_wait_s"
+CONF_DISPATCH_POST_TRAVEL_PAUSE_S = "dispatch_post_travel_pause_s"
+CONF_DISPATCH_ZONE_BATCHING = "dispatch_zone_batching"
 DEFAULT_OVERRIDE_DURATION_MIN = 120
 DEFAULT_OVERRIDE_NIGHT_DURATION_MIN = 720
 DEFAULT_OVERRIDE_DETECTION_TOLERANCE = 10

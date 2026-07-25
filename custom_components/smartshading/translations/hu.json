@@ -419,6 +419,24 @@
           "override_night_duration_min": "Biztonsági korlát az éjszakai felülbírálásra. A valódi felszabadulás a reggeli ütemezésváltáskor történik.",
           "override_detection_tolerance": "Minimális pozícióváltozás (százalékban), mielőtt egy kézi mozgást felülbírálásként ismer fel a rendszer."
         }
+      },
+      "dispatch": {
+        "title": "Árnyékolók ütemezése",
+        "description": "Állítsd be, hogyan ütemezi a SmartShading az árnyékolóknak küldött parancsokat, amikor egy ciklusban több árnyékolóról születik döntés.",
+        "data": {
+          "dispatch_mode": "Ütemezési mód",
+          "dispatch_start_interval_s": "Késleltetés az indítások között",
+          "dispatch_max_travel_wait_s": "Maximális várakozás a mozgás befejezésére",
+          "dispatch_post_travel_pause_s": "Szünet a mozgás befejezése után",
+          "dispatch_zone_batching": "Zónák elkülönítése"
+        },
+        "data_description": {
+          "dispatch_mode": "Párhuzamos minden parancsot késleltetés nélkül indít el. Időréssel fix másodpercet vár az indítások között. Egymás után megvárja, amíg az egyik árnyékoló befejezi a mozgást, mielőtt a következő elindul.",
+          "dispatch_start_interval_s": "Az \"Időréssel\" módnál használatos, valamint a zónák közötti minimális résként, ha a \"Zónák elkülönítése\" engedélyezve van.",
+          "dispatch_max_travel_wait_s": "Csak az \"Egymás után\" módnál használatos — mennyi ideig várjon egy árnyékoló befejezésére, mielőtt mindenképp folytatja.",
+          "dispatch_post_travel_pause_s": "Csak az \"Egymás után\" módnál használatos — rövid megnyugvási szünet azután, hogy egy árnyékoló befejezte a mozgást, mielőtt a következő elindul.",
+          "dispatch_zone_batching": "Ha engedélyezve van, az indítások közötti késleltetés mindig érvényesül a különböző szobák/zónák között, még Párhuzamos módban is, hogy a szobák vizuálisan elkülönüljenek."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "A következő védelmi árnyékolás esetén",
         "first_any_decision": "A következő automatikus döntés esetén",
         "manual": "Csak kézi törlés"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Párhuzamos",
+        "spaced": "Időréssel",
+        "sequential": "Egymás után"
       }
     }
   },

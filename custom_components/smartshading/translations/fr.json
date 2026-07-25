@@ -419,6 +419,24 @@
           "override_night_duration_min": "Limite de sécurité pour une dérogation nocturne. La véritable libération se fait à la transition matinale du cycle.",
           "override_detection_tolerance": "Changement de position minimal (en pourcentage) avant qu'un mouvement manuel soit reconnu comme une dérogation."
         }
+      },
+      "dispatch": {
+        "title": "Coordination des volets",
+        "description": "Configurez la façon dont SmartShading espace les commandes des volets lorsque plusieurs volets sont décidés dans le même cycle.",
+        "data": {
+          "dispatch_mode": "Mode de coordination",
+          "dispatch_start_interval_s": "Délai entre les démarrages",
+          "dispatch_max_travel_wait_s": "Attente maximale de fin de mouvement",
+          "dispatch_post_travel_pause_s": "Pause après la fin du mouvement",
+          "dispatch_zone_batching": "Séparer les zones"
+        },
+        "data_description": {
+          "dispatch_mode": "Parallèle démarre chaque commande sans délai. Avec un intervalle attend un nombre fixe de secondes entre les démarrages. Un par un attend que chaque volet termine son mouvement avant de démarrer le suivant.",
+          "dispatch_start_interval_s": "Utilisé par \"Avec un intervalle\", et comme intervalle minimal entre les zones lorsque \"Séparer les zones\" est activé.",
+          "dispatch_max_travel_wait_s": "Utilisé uniquement par \"Un par un\" — combien de temps attendre qu'un volet termine avant de continuer quand même.",
+          "dispatch_post_travel_pause_s": "Utilisé uniquement par \"Un par un\" — une courte pause de stabilisation après qu'un volet termine, avant que le suivant démarre.",
+          "dispatch_zone_batching": "Si activé, le délai entre les démarrages est toujours appliqué entre différentes pièces/zones, même en mode Parallèle, afin que les pièces restent visuellement séparées."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "À la prochaine protection solaire",
         "first_any_decision": "À la prochaine décision automatique",
         "manual": "Effacement manuel uniquement"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Parallèle",
+        "spaced": "Avec un intervalle",
+        "sequential": "Un par un"
       }
     }
   },

@@ -215,6 +215,22 @@ class ExecutionResult:
     """The exception CLASS NAME only (privacy-safe, no message/payload) when the
     service call raised.  None on success.  Diagnostics only."""
 
+    # --- T11: SEQUENTIAL-mode travel-completion diagnostics (additive) ---
+    completion_method: str | None = None
+    """cover_control.dispatch_completion.CompletionMethod.value ("position",
+    "movement_state", "time_estimate", "timeout") when this dispatch was
+    made under DispatchMode.SEQUENTIAL and a completion wait was performed.
+    None for PARALLEL/SPACED dispatches, or when status is not SENT."""
+
+    completion_wait_s: float | None = None
+    """Seconds actually spent waiting for travel completion (SEQUENTIAL
+    mode only). None when no completion wait was performed."""
+
+    completion_timed_out: bool = False
+    """True when the SEQUENTIAL completion wait hit max_travel_wait_s
+    without detecting completion — the queue still continues (see
+    cover_control/dispatch_completion.py module docstring)."""
+
 
 # ---------------------------------------------------------------------------
 # ExecutionPlanResult

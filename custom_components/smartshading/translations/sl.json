@@ -419,6 +419,24 @@
           "override_night_duration_min": "Varnostna zgornja meja za nočno preglasitev. Dejanska sprostitev se zgodi ob jutranjem prehodu urnika.",
           "override_detection_tolerance": "Najmanjša sprememba položaja (v odstotkih), preden je ročni premik prepoznan kot preglasitev."
         }
+      },
+      "dispatch": {
+        "title": "Usklajevanje senčil",
+        "description": "Nastavite, kako SmartShading časovno razporeja ukaze senčilom, kadar je v istem ciklu odločeno o več senčilih.",
+        "data": {
+          "dispatch_mode": "Način usklajevanja",
+          "dispatch_start_interval_s": "Zamik med zagoni",
+          "dispatch_max_travel_wait_s": "Največje čakanje na konec premika",
+          "dispatch_post_travel_pause_s": "Premor po koncu premika",
+          "dispatch_zone_batching": "Ločuj območja"
+        },
+        "data_description": {
+          "dispatch_mode": "Sočasno zažene vsak ukaz brez zamika. S časovnim zamikom čaka določeno število sekund med zagoni. Zaporedno počaka, da vsako senčilo konča premik, preden zažene naslednje.",
+          "dispatch_start_interval_s": "Uporablja se pri \"S časovnim zamikom\", in kot najmanjši razmik med območji, kadar je omogočeno \"Ločuj območja\".",
+          "dispatch_max_travel_wait_s": "Uporablja se samo pri \"Zaporedno\" — kako dolgo čakati na konec premika senčila, preden se kljub temu nadaljuje.",
+          "dispatch_post_travel_pause_s": "Uporablja se samo pri \"Zaporedno\" — kratek premor po koncu premika senčila, preden se zažene naslednje.",
+          "dispatch_zone_batching": "Če je omogočeno, se zamik med zagoni vedno uporabi med različnimi prostori/območji, tudi v načinu Sočasno, tako da prostori ostanejo vizualno ločeni."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "Ob naslednjem zaščitnem senčenju",
         "first_any_decision": "Ob naslednji samodejni odločitvi",
         "manual": "Samo ročno počiščenje"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Sočasno",
+        "spaced": "S časovnim zamikom",
+        "sequential": "Zaporedno"
       }
     }
   },

@@ -31,6 +31,13 @@ from .models.lifecycle import (
 from .models.lifecycle_profile import LifecycleProfile
 from .models.manual_override import LEGACY_DURATION_MODE_MIGRATION, OverrideReleaseStrategy
 from .models.obstruction import ObstructionZone
+from .models.dispatch_config import (
+    DEFAULT_MAX_TRAVEL_WAIT_S,
+    DEFAULT_POST_TRAVEL_PAUSE_S,
+    DEFAULT_START_INTERVAL_S,
+    DispatchConfig,
+    DispatchMode,
+)
 from .models.override_policy import OverridePolicyConfig
 from .models.presence import PresencePolicy
 from .models.window import WindowBehaviorMode, WindowConfig
@@ -93,6 +100,9 @@ class SmartShadingConfigEntryData:
     # Manual Override policy (v1.2.0-beta.1, T7). Every field defaults to
     # exactly the pre-T7 legacy behavior — see models/override_policy.py.
     override_policy: OverridePolicyConfig = field(default_factory=OverridePolicyConfig)
+    # Cover dispatch strategy (v1.2.0-beta.1, T11). Defaults reproduce the
+    # pre-T11 fixed 2.0s global interval exactly — see models/dispatch_config.py.
+    dispatch_config: DispatchConfig = field(default_factory=DispatchConfig)
 
 
 def _time_to_storage(value: time | None) -> str | None:
@@ -321,6 +331,13 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             "night_duration_min": data.override_policy.night_duration_min,
             "detection_tolerance": data.override_policy.detection_tolerance,
             "safety_timeout_enabled": data.override_policy.safety_timeout_enabled,
+        },
+        "dispatch_config": {
+            "mode": data.dispatch_config.mode.value,
+            "start_interval_s": data.dispatch_config.start_interval_s,
+            "max_travel_wait_s": data.dispatch_config.max_travel_wait_s,
+            "post_travel_pause_s": data.dispatch_config.post_travel_pause_s,
+            "zone_batching": data.dispatch_config.zone_batching,
         },
     }
 
@@ -570,6 +587,56 @@ def _safe_int(value: Any, default: int) -> int:
         return default
 
 
+def _safe_float(value: Any, default: float, *, minimum: float, maximum: float) -> float:
+    """Never raises: missing/non-numeric/out-of-range stored value -> the
+    given default (T11 dispatch timing fields — a malformed or manually-
+    edited ConfigEntry must never crash setup, same discipline as
+    _safe_int())."""
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return default
+    try:
+        parsed = float(value)
+    except (ValueError, TypeError):
+        return default
+    if parsed != parsed or parsed in (float("inf"), float("-inf")):  # NaN/inf guard
+        return default
+    if parsed < minimum or parsed > maximum:
+        return default
+    return parsed
+
+
+def _dispatch_config_from_storage(raw: dict[str, Any] | None) -> DispatchConfig:
+    """Backwards compatible: a ConfigEntry without a dispatch_config key
+    (every pre-T11 config) falls back to DispatchConfig defaults — mode=
+    SPACED at start_interval_s=2.0, reproducing the previously hardcoded,
+    always-on DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS exactly. No
+    migration, no rewrite: an invalid/unknown stored value falls back
+    field-by-field, never raising and never crashing the whole ConfigEntry.
+    """
+    if not raw:
+        return DispatchConfig()
+    try:
+        mode = DispatchMode(raw.get("mode", DispatchMode.SPACED.value))
+    except ValueError:
+        mode = DispatchMode.SPACED
+    return DispatchConfig(
+        mode=mode,
+        start_interval_s=_safe_float(
+            raw.get("start_interval_s"), DEFAULT_START_INTERVAL_S,
+            minimum=0.0, maximum=30.0,
+        ),
+        max_travel_wait_s=_safe_float(
+            raw.get("max_travel_wait_s"), DEFAULT_MAX_TRAVEL_WAIT_S,
+            minimum=5.0, maximum=300.0,
+        ),
+        post_travel_pause_s=_safe_float(
+            raw.get("post_travel_pause_s"), DEFAULT_POST_TRAVEL_PAUSE_S,
+            minimum=0.0, maximum=10.0,
+        ),
+        zone_batching=bool(raw.get("zone_batching", False)),
+    )
+
+
 def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
     """Reconstruct typed dataclasses from a stored ConfigEntry.data dict."""
     return SmartShadingConfigEntryData(
@@ -605,4 +672,5 @@ def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
         indoor_temperature_sensor_ids=_read_indoor_sensor_ids(raw),
         comfort_config=_comfort_config_from_storage(raw.get("comfort_config")),
         override_policy=_override_policy_from_storage(raw.get("override_policy")),
+        dispatch_config=_dispatch_config_from_storage(raw.get("dispatch_config")),
     )

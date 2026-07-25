@@ -419,6 +419,24 @@
           "override_night_duration_min": "Limită de siguranță pentru o suprascriere de noapte. Eliberarea reală are loc la tranziția programului de dimineață.",
           "override_detection_tolerance": "Schimbare minimă de poziție (în procente) înainte ca o mișcare manuală să fie recunoscută ca suprascriere."
         }
+      },
+      "dispatch": {
+        "title": "Coordonarea umbrarelor",
+        "description": "Configurează cum SmartShading eșalonează comenzile către umbrare atunci când mai multe umbrare sunt decise în același ciclu.",
+        "data": {
+          "dispatch_mode": "Mod de coordonare",
+          "dispatch_start_interval_s": "Întârziere între porniri",
+          "dispatch_max_travel_wait_s": "Așteptare maximă pentru finalizarea mișcării",
+          "dispatch_post_travel_pause_s": "Pauză după finalizarea mișcării",
+          "dispatch_zone_batching": "Menține zonele separate"
+        },
+        "data_description": {
+          "dispatch_mode": "Paralel pornește fiecare comandă fără întârziere. Cu interval de timp așteaptă un număr fix de secunde între porniri. Unul după altul așteaptă ca fiecare umbrar să termine mișcarea înainte de a-l porni pe următorul.",
+          "dispatch_start_interval_s": "Folosit de \"Cu interval de timp\", și ca interval minim între zone atunci când \"Menține zonele separate\" este activat.",
+          "dispatch_max_travel_wait_s": "Folosit doar de \"Unul după altul\" — cât timp se așteaptă ca un umbrar să termine înainte de a continua oricum.",
+          "dispatch_post_travel_pause_s": "Folosit doar de \"Unul după altul\" — o scurtă pauză de stabilizare după ce un umbrar termină, înainte ca următorul să pornească.",
+          "dispatch_zone_batching": "Dacă este activat, întârzierea între porniri se aplică întotdeauna între camere/zone diferite, chiar și în modul Paralel, astfel încât camerele să rămână separate vizual."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "La următoarea umbrire de protecție",
         "first_any_decision": "La următoarea decizie automată",
         "manual": "Doar ștergere manuală"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Paralel",
+        "spaced": "Cu interval de timp",
+        "sequential": "Unul după altul"
       }
     }
   },

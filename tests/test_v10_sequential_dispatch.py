@@ -6,7 +6,9 @@ Verifies:
   - Throttle state is shared through the same GlobalSerialDispatch instance
   - Per-coordinator fallback (GlobalSerialDispatch() without shared instance)
   - Cross-zone burst prevention (two coordinators share the same lock)
-  - Safety commands acquire the lock but skip the throttle sleep
+  - Safety commands acquire the lock and are subject to the throttle sleep
+    exactly like non-safety commands (v1.0.8 hardening — no timing bypass;
+    safety's only privilege is cycle-ordering priority, see coordinator.py)
   - Non-safety commands sleep until the throttle allows the next dispatch
   - const.py exports DATA_GLOBAL_DISPATCH, DATA_DEBUG_LOGGING, CONF_DEBUG_LOGGING
   - Coordinator constructor accepts global_serial_dispatch parameter
@@ -269,8 +271,9 @@ class TestCrossZoneBurstPrevention:
 
 
 class TestSafetyDispatchLogic:
-    """Safety commands must acquire the lock but skip the throttle sleep.
-    Non-safety commands must sleep until the throttle allows."""
+    """Safety commands must acquire the lock and are subject to the throttle
+    sleep exactly like non-safety commands (v1.0.8 hardening) — Non-safety
+    commands must sleep until the throttle allows."""
 
     def _utc(self) -> datetime:
         return datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)

@@ -419,6 +419,24 @@
           "override_night_duration_min": "Límit de seguretat per a una anul·lació nocturna. L'alliberament real es produeix en la transició de cicle matinal.",
           "override_detection_tolerance": "Canvi mínim de posició (en percentatge) abans que un moviment manual es reconegui com una anul·lació."
         }
+      },
+      "dispatch": {
+        "title": "Coordinació de les persianes",
+        "description": "Configura com SmartShading espaia les ordres a les persianes quan es decideixen diverses persianes en el mateix cicle.",
+        "data": {
+          "dispatch_mode": "Mode de coordinació",
+          "dispatch_start_interval_s": "Retard entre inicis",
+          "dispatch_max_travel_wait_s": "Espera màxima perquè acabi el moviment",
+          "dispatch_post_travel_pause_s": "Pausa després que acabi el moviment",
+          "dispatch_zone_batching": "Mantén les zones separades"
+        },
+        "data_description": {
+          "dispatch_mode": "Simultani inicia totes les ordres sense retard. Amb interval espera un nombre fix de segons entre inicis. Una darrere l'altra espera que cada persiana acabi de moure's abans d'iniciar la següent.",
+          "dispatch_start_interval_s": "S'utilitza amb \"Amb interval\", i com a interval mínim entre zones quan \"Mantén les zones separades\" està activat.",
+          "dispatch_max_travel_wait_s": "Només s'utilitza amb \"Una darrere l'altra\" — quant de temps s'espera que una persiana acabi abans de continuar igualment.",
+          "dispatch_post_travel_pause_s": "Només s'utilitza amb \"Una darrere l'altra\" — una breu pausa d'assentament després que una persiana acabi, abans que comenci la següent.",
+          "dispatch_zone_batching": "Si està activat, el retard entre inicis s'aplica sempre entre diferents habitacions/zones, fins i tot en mode Simultani, perquè les habitacions es mantinguin visualment separades."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "En la següent protecció solar",
         "first_any_decision": "En la següent decisió automàtica",
         "manual": "Només esborrat manual"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Simultani",
+        "spaced": "Amb interval",
+        "sequential": "Una darrere l'altra"
       }
     }
   },

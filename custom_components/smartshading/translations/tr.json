@@ -419,6 +419,24 @@
           "override_night_duration_min": "Bir gece geçersiz kılması için güvenlik sınırı. Gerçek serbest bırakma sabah program geçişinde gerçekleşir.",
           "override_detection_tolerance": "Manuel bir hareketin geçersiz kılma olarak tanınmasından önceki minimum konum değişikliği (yüzde olarak)."
         }
+      },
+      "dispatch": {
+        "title": "Gölgelik Koordinasyonu",
+        "description": "Aynı döngüde birden fazla gölgelik için karar verildiğinde SmartShading'in gölgelik komutlarını nasıl zamanladığını yapılandırın.",
+        "data": {
+          "dispatch_mode": "Koordinasyon modu",
+          "dispatch_start_interval_s": "Başlangıçlar arası gecikme",
+          "dispatch_max_travel_wait_s": "Hareketin bitmesi için maksimum bekleme",
+          "dispatch_post_travel_pause_s": "Hareket bittikten sonraki duraklama",
+          "dispatch_zone_batching": "Bölgeleri ayrı tut"
+        },
+        "data_description": {
+          "dispatch_mode": "Paralel her komutu gecikmeden başlatır. Zaman aralıklı, başlangıçlar arasında sabit bir saniye bekler. Sırayla, bir sonrakini başlatmadan önce her gölgeliğin hareketini bitirmesini bekler.",
+          "dispatch_start_interval_s": "\"Zaman aralıklı\" tarafından kullanılır, ayrıca \"Bölgeleri ayrı tut\" etkinken bölgeler arasındaki minimum aralık olarak da kullanılır.",
+          "dispatch_max_travel_wait_s": "Yalnızca \"Sırayla\" tarafından kullanılır — yine de devam etmeden önce bir gölgeliğin bitmesinin ne kadar bekleneceği.",
+          "dispatch_post_travel_pause_s": "Yalnızca \"Sırayla\" tarafından kullanılır — bir gölgelik bittikten sonra, bir sonraki başlamadan önceki kısa bir yatışma duraklaması.",
+          "dispatch_zone_batching": "Etkinleştirildiğinde, başlangıçlar arasındaki gecikme, Paralel modda bile, farklı odalar/bölgeler arasında her zaman uygulanır; böylece odalar görsel olarak ayrı kalır."
+        }
       }
     },
     "error": {
@@ -710,6 +728,13 @@
         "first_protection": "Bir sonraki koruyucu gölgelemede",
         "first_any_decision": "Bir sonraki otomatik kararda",
         "manual": "Yalnızca manuel temizleme"
+      }
+    },
+    "dispatch_mode": {
+      "options": {
+        "parallel": "Paralel",
+        "spaced": "Zaman aralıklı",
+        "sequential": "Sırayla"
       }
     }
   },

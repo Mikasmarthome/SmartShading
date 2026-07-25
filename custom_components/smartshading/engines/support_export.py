@@ -33,6 +33,7 @@ from .diagnostics_privacy import (
 )
 from . import learning_trace_builder as ltb
 from . import reason_codes as rc
+from .explainability import build_decision_explanation
 from ..models.runtime_mode import derive_authority
 
 SUPPORT_EXPORT_SCHEMA_VERSION: int = 3
@@ -401,6 +402,54 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             },
         }
 
+    def _latest_decision_by_window() -> dict:
+        dec_snap_raw = getattr(c, "decision_trace_snapshot", lambda: {})() or {}
+        latest: dict = {}
+        for _zid, z in (dec_snap_raw or {}).items():
+            for r in z.get("records", []) or []:
+                wid = r.get("window_id")
+                if wid:
+                    latest[wid] = r  # records are oldest->newest; last wins
+        return latest
+
+    def _heat_diag_for(wid: str) -> dict | None:
+        diag = (getattr(getattr(c, "data", None), "execution_diagnostics", None) or {}).get(wid)
+        if diag is None:
+            return None
+        return {
+            "active": bool(getattr(diag, "heat_hysteresis_active", False)),
+            "reason": getattr(diag, "heat_hysteresis_reason", None),
+        }
+
+    def _explainability():
+        # T13: one structured "why" per window — synthesized from the same
+        # already-computed decision-trace/heat/adaptation data the other
+        # sections already export, not a new parallel reason system.
+        latest = _latest_decision_by_window()
+        out: dict = {}
+        for wid in (getattr(c, "windows", {}) or {}):
+            try:
+                rec = latest.get(wid)
+                heat_diag = _heat_diag_for(wid)
+                adapt = _adaptation_trace(c, wid)
+                if not isinstance(adapt, dict) or adapt.get("section_status") == "not_recorded":
+                    adapt = None
+                explanation = build_decision_explanation(
+                    rec, heat_diag=heat_diag, adaptation_trace=adapt,
+                )
+                d = explanation.to_dict()
+                d.pop("window_id", None)
+                d["window_ref"] = _wref(wid)
+                if d.get("decision_id") is not None:
+                    d["decision_ref"] = pz.ref(NS_DECISION, d.pop("decision_id"))
+                else:
+                    d.pop("decision_id", None)
+                out[_wref(wid)] = d
+            except Exception:
+                errors.setdefault("explainability", {"count": 0, "reason_codes": ["window_builder_failed"]})
+                errors["explainability"]["count"] += 1
+        return out
+
     def _pseudo_position(coord, wid):
         tr = ltb.build_position_learning_trace(coord, wid)
         for intensity in tr.get("intensities", {}).values():
@@ -626,8 +675,26 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 noise_same_pos += 1
                 continue
 
+            # T13: a dispatch that was attempted (not blocked, not skipped as
+            # unnecessary) but did not succeed is a genuine failure — already
+            # recorded via dispatch_authority.applied/blocked, just never
+            # classified into its own timeline event type before.
+            _disp_auth = (r.get("authorities") or {}).get("dispatch_authority") or {}
+            _is_dispatch_failed = (
+                command_sent is False
+                and _disp_auth.get("applied") is False
+                and _disp_auth.get("blocked") is False
+                and (no_disp.get("recommendation_exists") is True)
+                and primary not in (
+                    "active_control_off", "dispatch_not_required",
+                    "command_filter_suppressed",
+                )
+            )
+
             if command_sent is True:
                 evt_type = "dispatch_sent"
+            elif _is_dispatch_failed:
+                evt_type = "dispatch_failed"
             elif primary == "active_control_off":
                 evt_type = "recommendation_only"
             elif state in ("storm_safe", "wind_safe", "rain_safe"):
@@ -899,6 +966,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         "strategy_learning": _safe(_strategy_learning, errors, "strategy_learning"),
         "adaptation_trace": _safe(
             lambda: _per_window(_adaptation_trace), errors, "adaptation_trace"),
+        "explainability": _safe(_explainability, errors, "explainability"),
         "current_decisions": {},  # filled below (latest record per zone)
         "recent_decisions": recent_dec,
         "recent_dispatches": _safe(_recent_dispatches, errors, "recent_dispatches"),

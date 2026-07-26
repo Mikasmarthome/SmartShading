@@ -15,7 +15,6 @@ from dataclasses import dataclass, field
 R_OWNER_MISMATCH = "owner_mismatch"
 R_MISSING_SOURCE_EXPERIMENTS = "missing_source_experiments"
 R_MISSING_SOURCE_EXPERIMENT = "missing_source_experiment"
-R_MISSING_DECISION_LINK = "missing_decision_link"
 R_DUPLICATE_ID = "duplicate_id"
 
 
@@ -83,21 +82,3 @@ def validate_adoptions(
         valid.append(aid)
     return ReferenceValidationResult(
         valid_ids=tuple(valid), invalid_ids=tuple(invalid), reason_codes=reasons, owner_ok=True)
-
-
-def validate_experiments(experiments: list) -> ReferenceValidationResult:
-    """Terminal experiments require an exact decision link (hard reference)."""
-    valid: list[str] = []
-    suspended: list[str] = []
-    reasons: dict = {}
-    for e in experiments:
-        eid = getattr(e, "experiment_id", None)
-        is_terminal = getattr(e, "is_terminal", False)
-        decision = getattr(e, "experiment_decision_id", None) or getattr(e, "decision_id", None)
-        if is_terminal and not decision:
-            suspended.append(eid)
-            reasons[eid] = R_MISSING_DECISION_LINK
-        else:
-            valid.append(eid)
-    return ReferenceValidationResult(
-        valid_ids=tuple(valid), suspended_ids=tuple(suspended), reason_codes=reasons)

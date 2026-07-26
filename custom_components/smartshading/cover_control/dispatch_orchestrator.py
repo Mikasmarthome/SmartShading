@@ -32,8 +32,6 @@ unit-testable without HA or asyncio.
 """
 from __future__ import annotations
 
-from datetime import timedelta
-
 from ..models.dispatch_config import DispatchConfig, DispatchMode
 
 
@@ -56,26 +54,6 @@ def effective_interval_s(
     # PARALLEL and SEQUENTIAL both start the next command immediately once
     # their own gating (none, or the completion-wait) is satisfied.
     return 0.0
-
-
-def resolve_pre_dispatch_wait(
-    config: DispatchConfig,
-    *,
-    is_first_in_zone_group: bool,
-    time_since_last_dispatch_s: float | None,
-) -> timedelta:
-    """How long to sleep before dispatching this intent.
-
-    time_since_last_dispatch_s is None for the very first dispatch of the
-    coordinator's lifetime (or after a fresh GlobalDispatchThrottle) — always
-    an immediate dispatch, matching GlobalDispatchThrottle's own "first
-    dispatch is always immediate" contract.
-    """
-    interval = effective_interval_s(config, is_first_in_zone_group=is_first_in_zone_group)
-    if interval <= 0 or time_since_last_dispatch_s is None:
-        return timedelta(0)
-    remaining = interval - time_since_last_dispatch_s
-    return timedelta(seconds=remaining) if remaining > 0 else timedelta(0)
 
 
 def requires_completion_wait(config: DispatchConfig) -> bool:

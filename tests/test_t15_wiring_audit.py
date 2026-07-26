@@ -250,7 +250,12 @@ class TestEventDrivenRefreshTasksAreEntryTracked:
             f"never cancelled on unload."
         )
 
-    def test_all_three_callbacks_use_async_create_background_task(self) -> None:
+    def test_all_three_callbacks_use_tracked_background_task_helper(self) -> None:
+        """T17: the three callbacks now go through _create_tracked_background_task
+        (which itself calls entry.async_create_background_task — see
+        TestCreateTrackedBackgroundTaskWrapsEntryTracking below) instead of
+        calling entry.async_create_background_task directly, so the task is
+        ALSO coordinator-tracked for shutdown cancellation."""
         source = _source("coordinator.py")
         tree = ast.parse(source)
         found: set[str] = set()
@@ -263,7 +268,20 @@ class TestEventDrivenRefreshTasksAreEntryTracked:
                 if (
                     isinstance(call, ast.Call)
                     and isinstance(call.func, ast.Attribute)
-                    and call.func.attr == "async_create_background_task"
+                    and call.func.attr == "_create_tracked_background_task"
                 ):
                     found.add(node.name)
         assert found == {"_on_presence_change", "_on_contact_change", "_on_boundary"}
+
+    def test_create_tracked_background_task_wraps_entry_tracking(self) -> None:
+        """_create_tracked_background_task itself must still call
+        entry.async_create_background_task — it must not become a second,
+        competing task-tracking mechanism that bypasses HA's own."""
+        source = _source("coordinator.py")
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == "_create_tracked_background_task":
+                body_src = ast.get_source_segment(source, node) or ""
+                assert "async_create_background_task" in body_src
+                return
+        raise AssertionError("_create_tracked_background_task not found in coordinator.py")

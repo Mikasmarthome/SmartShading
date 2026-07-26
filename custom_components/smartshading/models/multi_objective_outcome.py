@@ -46,11 +46,9 @@ DIRECTION_UNKNOWN: str = "unknown"
 # Attribution quality labels.  window_isolated is FORBIDDEN in P3 (needs P5).
 ATTRIBUTION_UNKNOWN: str = "unknown"
 ATTRIBUTION_ZONE_SHARED: str = "zone_shared"
-ATTRIBUTION_WINDOW_CANDIDATE: str = "window_candidate"
 ATTRIBUTION_WINDOW_ISOLATED: str = "window_isolated"  # never set before P5
 
 # Reconstruction quality labels (per dimension).
-RECON_EXACT: str = "exact"
 RECON_PARTIAL: str = "partial"
 RECON_UNAVAILABLE: str = "unavailable"
 

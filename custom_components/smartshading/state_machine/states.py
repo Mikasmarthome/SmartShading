@@ -80,11 +80,6 @@ def priority(state: ShadingState) -> int:
     return STATE_PRIORITY[state]
 
 
-def is_higher_priority(state_a: ShadingState, state_b: ShadingState) -> bool:
-    """True if state_a outranks state_b (lower rank number = higher priority)."""
-    return priority(state_a) < priority(state_b)
-
-
 # Tier 1 Safety Guard states (v1.2.0-beta.1, T8). A single shared definition
 # for "is this ANY safety state" — used wherever code needs to treat Storm,
 # Wind, and Rain uniformly (override-clear, movement-cause classification,

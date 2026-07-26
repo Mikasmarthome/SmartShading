@@ -65,13 +65,6 @@ def glare_exposure_wm2(wdi: WindowDecisionInput) -> float:
     return max(exposure.effective_exposure, _low_angle_glare_value(wdi))
 
 
-def is_low_angle_direct_sun(wdi: WindowDecisionInput) -> bool:
-    """True when low-angle direct sun alone would trigger glare on a vertical
-    window (real low east/west beam clears the glare threshold even though the
-    horizontal-projected effective exposure does not).  Diagnostic helper."""
-    return _low_angle_glare_value(wdi) >= wdi.effective_behavior.glare_min_exposure_wm2
-
-
 class GlareEvaluator:
     """Tier 4 Protection Floor: glare shading at LIGHT/NORMAL/STRONG intensity.
 

@@ -269,27 +269,3 @@ class ForecastTrustSummary:
     computed_at_utc:      datetime
 
 
-# ---------------------------------------------------------------------------
-# Utility accessors (pure functions — no computation)
-# ---------------------------------------------------------------------------
-
-def get_bucket_result(
-    result: ForecastTrustResult,
-    bucket: HorizonBucket,
-) -> ForecastTrustBucketResult | None:
-    """Return the ForecastTrustBucketResult for *bucket*, or None if absent."""
-    for br in result.bucket_results:
-        if br.horizon_bucket is bucket:
-            return br
-    return None
-
-
-def get_variable_result(
-    summary: ForecastTrustSummary,
-    variable: ForecastVariable,
-) -> ForecastTrustResult | None:
-    """Return the ForecastTrustResult for *variable*, or None if absent."""
-    for r in summary.results:
-        if r.variable is variable:
-            return r
-    return None

@@ -13,7 +13,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import math
-from datetime import datetime
 
 # ---------------------------------------------------------------------------
 # field classification (deny-by-default)
@@ -65,13 +64,9 @@ NS_ENTRY = "entry"
 NS_ZONE = "zone"
 NS_WINDOW = "window"
 NS_COVER = "cover"
-NS_SENSOR = "sensor"
 NS_DECISION = "decision"
-NS_OUTCOME = "outcome"
 NS_EXPERIMENT = "experiment"
 NS_ADOPTION = "adoption"
-NS_HARMONIZATION = "harmonization_context"
-NS_FORECAST_SOURCE = "forecast_source"
 
 
 class Pseudonymizer:
@@ -171,11 +166,3 @@ def cap_records(records: list, max_records: int) -> tuple[list, dict]:
     kept = records[-max_records:]
     return (kept, {"truncated": True, "total": total, "kept": len(kept),
                    "dropped": total - len(kept)})
-
-
-def iso_utc(dt: datetime | None) -> str | None:
-    """Serialize a datetime to an ISO UTC string, else None (never raises)."""
-    try:
-        return dt.isoformat() if dt is not None else None
-    except Exception:
-        return None

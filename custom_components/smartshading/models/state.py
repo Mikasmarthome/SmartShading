@@ -9,11 +9,7 @@ only holds data *about* a state instance, not the state space itself.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
-
-from ..state_machine.states import ShadingState
 
 
 class ReasonCode(Enum):
@@ -42,35 +38,3 @@ class ReasonCode(Enum):
     GLARE_PROTECTION = "glare_protection"
     SOLAR_GAIN = "solar_gain"
     COMFORT_NEUTRAL = "comfort_neutral"
-
-
-class LockReason(Enum):
-    """ARCHITECTURE.md §3.5 StateLock.lock_reason."""
-
-    MINIMUM_DURATION = "minimum_duration"
-    POSITION_LOCK = "position_lock"
-    COMMAND_COOLDOWN = "command_cooldown"
-
-
-@dataclass
-class ShadeState:
-    """Current shading state of one window (ARCHITECTURE.md §3.5)."""
-
-    state: ShadingState
-    cover_position: int  # 0 = closed, 100 = open
-    tilt_position: int | None
-    entered_at: datetime
-    reason: str  # human-readable, surfaced as an HA attribute later
-    reason_code: ReasonCode
-    confidence: float = 1.0  # 0.0-1.0
-
-
-@dataclass
-class StateLock:
-    """Guard lock status for one window (ARCHITECTURE.md §3.5)."""
-
-    locked: bool
-    lock_reason: LockReason | None
-    locked_until: datetime | None
-    locked_position: int | None
-    escalation_allowed: bool = True

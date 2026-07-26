@@ -67,7 +67,7 @@ _OVERRIDE_WAITING_ON = {
 _CRITICAL_EVENT_TYPES = frozenset({
     "dispatch_sent", "dispatch_failed", "command_blocked", "recommendation_only",
     "safety", "manual_override", "absence", "night_transition", "presence_hold",
-    "behavior_hold", "contact_event", "min_interval_bypass",
+    "behavior_hold",
 })
 
 # Decision no_dispatch.primary_reason values that are same-position noise.

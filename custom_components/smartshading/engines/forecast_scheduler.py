@@ -7,13 +7,17 @@ Wires the Forecast Learning collection pipeline to the Home Assistant lifecycle.
       Returns None for absent, unavailable, unknown, or non-numeric states.
       Never raises.
 
-  async_setup_forecast_learning(hass, store, adapter, *, ...)
+  async_setup_forecast_learning(hass, entry, store, adapter, *, ...)
       Register one hourly Forecast timer and one 30-minute Reality timer via
       async_track_time_interval.  Fire an immediate first run for each via
-      hass.async_create_task so that collection starts without waiting for the
-      first interval to elapse.
+      entry.async_create_background_task so that collection starts without
+      waiting for the first interval to elapse, AND so the task is tied to
+      the config entry's own lifecycle tracking (T17 — a bare
+      hass.async_create_task here was previously untracked by HA's entry
+      unload machinery entirely and could keep running indefinitely past
+      unload/removal).
       Return (cancel_forecast, cancel_reality) so that async_unload_entry can
-      stop both timers cleanly.
+      stop both timers AND cancel the corresponding startup task cleanly.
       Return None when forecast_entity_id is falsy — Forecast Learning is then
       silently inactive and no timers or tasks are created.
 
@@ -91,6 +95,7 @@ def _read_sensor(hass: Any, entity_id: str | None) -> float | None:
 
 async def async_setup_forecast_learning(
     hass: Any,
+    entry: Any,
     store: ForecastLearningStore,
     adapter: Any,
     *,
@@ -99,6 +104,7 @@ async def async_setup_forecast_learning(
     cloud_entity_id: str | None,
     solar_entity_id: str | None,
     _track_interval: Callable | None = None,
+    _create_background_task: Callable | None = None,
 ) -> tuple[Callable[[], None], Callable[[], None]] | None:
     """Register Forecast and Reality collection timers and fire initial runs.
 
@@ -106,6 +112,12 @@ async def async_setup_forecast_learning(
     ----------
     hass:
         Home Assistant core object (duck-typed).
+    entry:
+        The owning config entry (duck-typed: needs async_create_background_task).
+        T17: the two immediate startup tasks below are tied to it, the same way
+        coordinator.py already ties its own event-triggered refresh tasks to
+        the entry, so HA's entry-unload machinery tracks and can cancel/await
+        them instead of them being invisible bare hass tasks.
     store, adapter:
         Restored ForecastLearningStore and its duck-typed persistence adapter.
     forecast_entity_id:
@@ -118,11 +130,15 @@ async def async_setup_forecast_learning(
         Injection point for tests.  When None (production), the HA function
         homeassistant.helpers.event.async_track_time_interval is imported lazily
         so that this module never imports HA at load time.
+    _create_background_task:
+        Injection point for tests.  When None (production),
+        entry.async_create_background_task is used.
 
     Returns
     -------
     tuple[Callable, Callable] | None
-        (cancel_forecast, cancel_reality) when Learning is active.
+        (cancel_forecast, cancel_reality) when Learning is active. Each also
+        cancels the corresponding startup task (T17).
         None when forecast_entity_id is falsy (Learning inactive).
     """
     if not forecast_entity_id:
@@ -135,6 +151,10 @@ async def async_setup_forecast_learning(
     if _track_interval is None:
         from homeassistant.helpers.event import async_track_time_interval  # lazy HA import
         _track_interval = async_track_time_interval
+
+    if _create_background_task is None:
+        def _create_background_task(coro, name):
+            return entry.async_create_background_task(hass, coro, name)
 
     # ------------------------------------------------------------------
     # Forecast callback — runs every hour and at startup
@@ -175,10 +195,23 @@ async def async_setup_forecast_learning(
     cancel_reality  = _track_interval(hass, _reality_callback,  timedelta(minutes=30))
 
     # ------------------------------------------------------------------
-    # Immediate first runs — do not wait for the first interval to elapse
+    # Immediate first runs — do not wait for the first interval to elapse.
+    # T17: entry-tracked (see _create_background_task above) instead of a
+    # bare hass.async_create_task, so unload/removal can cancel them instead
+    # of leaving them to run indefinitely, untracked by anything.
     # ------------------------------------------------------------------
 
-    hass.async_create_task(_forecast_callback())
-    hass.async_create_task(_reality_callback())
+    startup_forecast_task = _create_background_task(
+        _forecast_callback(), "smartshading_forecast_startup")
+    startup_reality_task = _create_background_task(
+        _reality_callback(), "smartshading_forecast_reality_startup")
 
-    return cancel_forecast, cancel_reality
+    def _cancel_forecast() -> None:
+        cancel_forecast()
+        startup_forecast_task.cancel()
+
+    def _cancel_reality() -> None:
+        cancel_reality()
+        startup_reality_task.cancel()
+
+    return _cancel_forecast, _cancel_reality

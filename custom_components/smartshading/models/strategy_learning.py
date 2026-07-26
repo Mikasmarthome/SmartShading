@@ -33,16 +33,6 @@ FAMILY_TIER_CHOICE: str = "tier_choice"
 FAMILY_MINIMUM_HOLD: str = "minimum_hold"
 FAMILY_HYSTERESIS: str = "hysteresis"
 
-ALL_FAMILIES: tuple[str, ...] = (
-    FAMILY_ENTRY_TIMING, FAMILY_EXIT_TIMING, FAMILY_ENTRY_THRESHOLD,
-    FAMILY_EXIT_THRESHOLD, FAMILY_TIER_CHOICE, FAMILY_MINIMUM_HOLD, FAMILY_HYSTERESIS,
-)
-
-# Families whose effect is realised in P9B runtime via the Unified Solar
-# Threshold Resolver (clean, single-clamp, fully reversible injection point).
-THRESHOLD_FAMILIES: frozenset[str] = frozenset({FAMILY_ENTRY_THRESHOLD, FAMILY_EXIT_THRESHOLD})
-
-
 @dataclass(frozen=True)
 class FamilyBounds:
     step: float          # exactly-one-experiment bounded step magnitude
@@ -88,8 +78,6 @@ REDUCE_DEGRADED_MIN: int = 2
 REDUCE_DEGRADED_DISTINCT_DAYS: int = 2
 ROLLBACK_COOLDOWN_DAYS: int = 30
 
-AGE_CAP_DAYS: int = 365
-EXPERIMENT_HISTORY_PER_KEY: int = 20
 ADOPTION_HISTORY_PER_KEY: int = 20
 
 # --- experiment state machine ---
@@ -134,8 +122,6 @@ EVAL_NO_DEGRADATION: str = "no_degradation"
 EVAL_DEGRADED: str = "degraded"
 EVAL_PREFERENCE_REJECTED: str = "preference_rejected"
 EVAL_INCONCLUSIVE: str = "inconclusive"
-EVAL_UNAVAILABLE: str = "unavailable"
-EVAL_CONFOUNDED: str = "confounded"
 
 # --- monitoring actions ---
 ACTION_RETAIN: str = "retain"
@@ -150,7 +136,6 @@ TIER_OPEN: str = "open"
 TIER_LIGHT: str = "light"
 TIER_NORMAL: str = "normal"
 TIER_STRONG: str = "strong"
-TIER_ORDER: tuple[str, ...] = (TIER_OPEN, TIER_LIGHT, TIER_NORMAL, TIER_STRONG)
 
 
 def _iso(dt: datetime | None) -> str | None:

@@ -34,7 +34,6 @@ EXPERIMENT_SCHEMA_VERSION: int = 2       # v2: bounded staged experiments (stage
 
 # --- bounded parameters (HA percentage points) ---
 EXPERIMENT_STEP_HA: int = 5              # single fixed close-more step magnitude (Stage 1)
-EXPERIMENT_DELTA_HA: int = -EXPERIMENT_STEP_HA   # signed close-more delta (lower HA)
 EXPERIMENT_CUMULATIVE_CAP_HA: int = 10   # max cumulative deviation vs config base
 EXPERIMENT_MATERIALITY_HA: int = 3       # below this an effective delta is not material
 
@@ -59,7 +58,6 @@ ZONE_COOLDOWN_S: int = 24 * 3600         # >=1 day between activations per zone
 WINDOW_CONTEXT_COOLDOWN_DAYS: int = 7    # >=7 days between same (window,intensity,context)
 MAX_EXPERIMENTS_PER_WINDOW_PER_30D: int = 3
 REJECTION_COOLDOWN_DAYS: int = 30        # long block after rejection/degraded
-EXPERIMENT_AGE_CAP_DAYS: int = 365
 EXPERIMENT_HISTORY_PER_WINDOW: int = 30
 
 # --- P8 adoption preparation gates (snapshot only) ---

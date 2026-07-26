@@ -13,16 +13,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 # categories
-CAT_DECISION = "decision"
-CAT_AUTHORITY = "authority_gate"
-CAT_EXPERIMENT = "experiment_eligibility"
 CAT_ADOPTION = "adoption_gate"
-CAT_ROLLBACK = "rollback_reduction"
 CAT_STORAGE = "storage_validation"
 CAT_MIGRATION = "restore_migration"
-CAT_DISPATCH = "dispatch_filter"
 CAT_NO_DISPATCH = "no_dispatch"
-CAT_OVERRIDE = "manual_override"
 CAT_FORECAST = "forecast_trust"
 CAT_HEALTH = "health"
 
@@ -30,12 +24,10 @@ CAT_HEALTH = "health"
 SEV_INFO = "info"
 SEV_OPERATIONAL = "operational"
 SEV_DEGRADED = "degraded"
-SEV_ERROR = "error"
 
 # product visibility flags
 VIS_DIAGNOSTICS = "diagnostics"
 VIS_SUPPORT = "support"
-VIS_RESEARCH = "research"
 
 
 @dataclass(frozen=True)
@@ -95,30 +87,12 @@ _REGISTRY: dict[str, ReasonCode] = {r.code: r for r in (
     # --- no-dispatch (P11) ---
     _r("active_control_off", CAT_NO_DISPATCH, "active control disabled",
        "No cover command: active control is off (recommendation-only).", SEV_OPERATIONAL),
-    _r("learning_only", CAT_NO_DISPATCH, "learning without active control",
-       "No cover command: learning/observation only.", SEV_OPERATIONAL),
-    _r("same_target", CAT_NO_DISPATCH, "target equals current",
-       "No cover command: target equals current position.", SEV_INFO),
-    _r("within_position_tolerance", CAT_NO_DISPATCH, "delta within tolerance",
-       "No cover command: target within position tolerance.", SEV_INFO),
-    _r("state_guard_locked", CAT_NO_DISPATCH, "minimum-hold lock active",
-       "No cover command: state guard minimum-hold lock active.", SEV_INFO),
-    _r("minimum_action_interval", CAT_NO_DISPATCH, "per-window min interval",
-       "No cover command: minimum action interval not elapsed.", SEV_INFO),
-    _r("global_dispatch_wait", CAT_NO_DISPATCH, "global serial dispatch wait",
-       "No cover command yet: waiting for the global dispatch interval.", SEV_INFO),
     _r("cover_unavailable", CAT_NO_DISPATCH, "cover unavailable",
        "No cover command: cover entity unavailable.", SEV_DEGRADED),
-    _r("missing_position_feedback", CAT_NO_DISPATCH, "no reliable position feedback",
-       "No cover command: reliable position feedback missing.", SEV_OPERATIONAL),
     _r("behavior_mode_hold", CAT_NO_DISPATCH, "behavior mode holds",
        "No cover command: behavior mode holds the cover.", SEV_INFO),
     _r("startup_grace", CAT_NO_DISPATCH, "startup grace period",
        "No cover command: startup grace period active.", SEV_INFO),
-    _r("manual_override_hold", CAT_NO_DISPATCH, "manual override active",
-       "No cover command: manual override active.", SEV_OPERATIONAL),
-    _r("safety_hold", CAT_NO_DISPATCH, "safety state holds",
-       "No cover command: safety state holds the cover.", SEV_OPERATIONAL),
     _r("dispatch_not_required", CAT_NO_DISPATCH, "no change required",
        "No cover command required this cycle.", SEV_INFO),
     # --- command-filter block reasons (cover_control/command_filter.py) ---
@@ -140,9 +114,6 @@ _REGISTRY: dict[str, ReasonCode] = {r.code: r for r in (
        "so the daytime fallback holds instead of opening fully until presence is "
        "known.", SEV_INFO),
     # --- health (P11) ---
-    _r("missing_optional_input", CAT_HEALTH, "optional input missing",
-       "An optional input is missing; deterministic control unaffected.", SEV_OPERATIONAL,
-       (VIS_DIAGNOSTICS, VIS_SUPPORT)),
     _r("forecast_unavailable", CAT_HEALTH, "forecast unavailable",
        "Forecast planning unavailable; current measured control unaffected.", SEV_OPERATIONAL),
     _r("storage_save_failure", CAT_HEALTH, "learning save failed",
@@ -150,10 +121,6 @@ _REGISTRY: dict[str, ReasonCode] = {r.code: r for r in (
     _r("restore_validation_rejects", CAT_HEALTH, "restore rejected records",
        "Restore rejected one or more records during validation.", SEV_OPERATIONAL),
 )}
-
-
-def get(code: str) -> ReasonCode | None:
-    return _REGISTRY.get(code)
 
 
 def describe(code: str) -> dict:
@@ -175,7 +142,3 @@ def registry_for_codes(codes) -> dict:
         if c and c not in seen:
             seen[c] = describe(c)
     return seen
-
-
-def all_codes() -> tuple[str, ...]:
-    return tuple(_REGISTRY.keys())

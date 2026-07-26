@@ -30,11 +30,6 @@ def is_finite_number(value: object) -> bool:
     return False
 
 
-def safe_number(value: object, default: float | None = None) -> float | None:
-    """Return value as float if finite, else default (rejects NaN/Inf/bool/str)."""
-    return float(value) if is_finite_number(value) else default
-
-
 def payload_has_nan_or_inf(obj: object) -> bool:
     """Recursively detect any NaN/±Infinity float in a JSON-like structure."""
     if isinstance(obj, float):
@@ -60,38 +55,3 @@ def parse_utc(iso: object) -> datetime | None:
     return d.replace(tzinfo=timezone.utc) if d.tzinfo is None else d.astimezone(timezone.utc)
 
 
-def normalise_timestamp(iso: object, now: datetime) -> tuple[datetime | None, bool]:
-    """Return (utc_datetime, valid).  A far-future timestamp (> now + tolerance)
-    is invalid (clock artefact).  None / unparseable → (None, False)."""
-    dt = parse_utc(iso)
-    if dt is None:
-        return (None, False)
-    if dt > now + FUTURE_TOLERANCE:
-        return (dt, False)
-    return (dt, True)
-
-
-def is_valid_count(value: object) -> bool:
-    """True for a non-negative int (rejects bool, floats, negatives)."""
-    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
-
-
-def delta_within_bounds(delta: object, cap: float) -> bool:
-    """True when |delta| is finite and ≤ cap (family bound check)."""
-    return is_finite_number(delta) and abs(float(delta)) <= cap + 1e-9
-
-
-def dedupe_by_id(records: list, *, id_key: str) -> tuple[list, list]:
-    """Deterministically keep the FIRST occurrence of each id; return
-    (unique_records, duplicate_ids).  Stable order preserved."""
-    seen: set = set()
-    unique: list = []
-    dups: list = []
-    for r in records:
-        rid = r.get(id_key) if isinstance(r, dict) else getattr(r, id_key, None)
-        if rid in seen:
-            dups.append(rid)
-            continue
-        seen.add(rid)
-        unique.append(r)
-    return (unique, dups)

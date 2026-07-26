@@ -1236,7 +1236,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # P10 completion: coalescing near-immediate save scheduler handle.
         self._pending_save_unsub = None
         # P10: once unloading, no NEW important-save callbacks are scheduled.
+        # T17: also gates _create_tracked_background_task() below — once set,
+        # no new event-triggered refresh task (presence/contact/lifecycle
+        # boundary) is created, closing the same "new work after shutdown
+        # started" gap for those tasks that it already closed for saves.
         self._unloading: bool = False
+        # T17: event-triggered background refresh tasks (presence/contact/
+        # lifecycle-boundary), tracked per-coordinator-instance so they are
+        # inherently entry-isolated (each zone entry owns exactly one
+        # coordinator). Populated by _create_tracked_background_task(),
+        # drained by async_shutdown() so an in-flight refresh cannot keep
+        # running concurrently with our own unload teardown/flush — see
+        # async_shutdown() docstring for the race this closes.
+        self._background_tasks: set[asyncio.Task] = set()
         # P11: ephemeral (RAM-only, never persisted) dispatch-trace ring per zone +
         # small incremental per-cover state for retarget diagnostics.  Read-only.
         self._dispatch_trace: dict[str, deque] = {}
@@ -1765,6 +1777,94 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         }
 
     # ------------------------------------------------------------------
+    # T17: task-handle tracking for event-triggered background refreshes
+    # ------------------------------------------------------------------
+
+    def _create_tracked_background_task(
+        self, entry: ConfigEntry, coro, name: str
+    ) -> None:
+        """Create an event-triggered refresh task, tracked for shutdown cancellation.
+
+        Used by the presence/contact/lifecycle-boundary listener callbacks
+        below instead of calling entry.async_create_background_task directly.
+        Two differences from the bare call:
+
+        1. Refuses to schedule new work once self._unloading is set (shutdown
+           already started) — the un-awaited coroutine is closed explicitly to
+           avoid a "coroutine was never awaited" warning, matching the same
+           guard _request_important_save() already applies to saves.
+        2. The returned task is kept in self._background_tasks so
+           async_shutdown() can cancel and await it directly, rather than
+           relying on HA's own entry-level background-task bookkeeping, which
+           only cancels/awaits these tasks AFTER our async_unload_entry has
+           already returned (see async_shutdown() docstring).
+
+        Still uses entry.async_create_background_task under the hood — this
+        does not duplicate HA's task tracking, it only keeps a second,
+        short-lived reference to the same real Task object for our own
+        synchronous shutdown ordering.
+        """
+        if self._unloading:
+            coro.close()
+            return
+        task = entry.async_create_background_task(self.hass, coro, name)
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
+
+    async def async_shutdown(self) -> None:
+        """Extend base shutdown: block new background tasks, cancel in-flight ones.
+
+        Base DataUpdateCoordinator.async_shutdown() (called via super() below)
+        unsubscribes the periodic-refresh timer and the debouncer's pending
+        timer, but does not touch a refresh already past its own internal
+        shutdown-flag check, nor any of our event-triggered background tasks
+        (presence/contact/lifecycle-boundary refresh — see
+        _create_tracked_background_task()). Those are additionally created via
+        entry.async_create_background_task, which HA only cancels/awaits
+        AFTER __init__.py's async_unload_entry has already returned — meaning
+        without this override, one of those refreshes could still be
+        executing while async_unload_entry tears down listeners and flushes
+        learning data below it.
+
+        Setting self._unloading = True FIRST (before anything else) ensures no
+        NEW such task can be created from this point on, even by a listener
+        callback that is still subscribed until async_teardown_*() runs.
+        Cancelling and awaiting every already-tracked task then closes the
+        remaining window for tasks that were already in flight.
+
+        Idempotent: HA also invokes this via entry.async_on_unload after our
+        own async_unload_entry returns; a second call is a no-op (empty task
+        set, _unloading already True, base class's own methods are themselves
+        idempotent).
+
+        Residual, deliberately NOT closed here: HA-core's own internal
+        periodic-refresh background task (created inside
+        DataUpdateCoordinator's private interval-timer wrapper) is not
+        reachable from integration code without relying on HA-core internals
+        — attempting to cancel it directly would be disproportionately risky
+        for a private implementation detail. The flag set below still
+        prevents it from *starting* new work past this point; only a refresh
+        already mid-execution at the exact moment shutdown begins remains a
+        narrow, accepted residual race, unchanged from the T16 audit.
+        """
+        self._unloading = True
+        await super().async_shutdown()
+        tasks = list(self._background_tasks)
+        for task in tasks:
+            task.cancel()
+        for task in tasks:
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                _LOGGER.debug(
+                    "SmartShading: background task raised during shutdown cancellation",
+                    exc_info=True,
+                )
+        self._background_tasks.clear()
+
+    # ------------------------------------------------------------------
     # Presence listener fan-out
     # ------------------------------------------------------------------
 
@@ -1804,8 +1904,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # T15: tied to the config entry (not a bare hass task) so HA
             # cancels it automatically on unload — a plain hass.async_create_task
             # here would be untracked and could keep running after unload.
-            entry.async_create_background_task(
-                self.hass, self.async_request_refresh(), "smartshading_presence_refresh",
+            # T17: also coordinator-tracked so async_shutdown() can cancel and
+            # await it synchronously, closing the race documented there.
+            self._create_tracked_background_task(
+                entry, self.async_request_refresh(), "smartshading_presence_refresh",
             )
 
         for entity_id in self._presence_entity_ids:
@@ -1868,8 +1970,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # newer generation and self-cancel, then re-evaluate immediately.
             self._dispatch_generation += 1
             # T15: tied to the config entry so HA cancels it on unload.
-            entry.async_create_background_task(
-                self.hass, self.async_request_refresh(), "smartshading_contact_refresh",
+            # T17: also coordinator-tracked (see async_shutdown()).
+            self._create_tracked_background_task(
+                entry, self.async_request_refresh(), "smartshading_contact_refresh",
             )
 
         for entity_id in contact_ids:
@@ -1971,8 +2074,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Bump generation so any stale queued intent self-cancels, refresh now.
             self._dispatch_generation += 1
             # T15: tied to the config entry so HA cancels it on unload.
-            self.config_entry.async_create_background_task(
-                self.hass, self.async_request_refresh(), "smartshading_lifecycle_boundary_refresh",
+            # T17: also coordinator-tracked (see async_shutdown()).
+            self._create_tracked_background_task(
+                self.config_entry, self.async_request_refresh(),
+                "smartshading_lifecycle_boundary_refresh",
             )
             # Schedule the following boundary (exceptions must not break the chain).
             try:
@@ -6304,7 +6409,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         _CRITICAL_SE = frozenset({
             "dispatch_sent", "dispatch_failed", "command_blocked", "recommendation_only",
             "safety", "manual_override", "absence", "night_transition", "presence_hold",
-            "behavior_hold", "contact_event", "min_interval_bypass",
+            "behavior_hold",
         })
         if evt_type not in _CRITICAL_SE:
             return
@@ -6843,33 +6948,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         prev = next(iter(self._thermal_prev_zone_temp.values()), None)
         reading = aggregate_zone_temperature(values, previous_value=prev)
         return reading
-
-    def thermal_diagnostics(self, zone_id: str) -> dict:
-        """Privacy-safe per-zone thermal diagnostics for the Support Export.
-
-        No raw entity IDs.  Reflects current source classification, model state
-        and the gate reason for the selected observation window.
-        """
-        reading = self._read_zone_temperature()
-        model = self._thermal_models.get(zone_id)
-        ctx = thermal_context_key(dt_util.utcnow(), None, None)
-        window, reason = select_observation_window(
-            model, ctx, temperature_available=reading.available
-        )
-        return {
-            "configured_temperature_sensor_count": reading.configured_count,
-            "valid_temperature_sensor_count": reading.valid_count,
-            "temperature_source_available": reading.available,
-            "temperature_source_kind": reading.source_kind,
-            "aggregation_method": reading.aggregation_method,
-            "temperature_value": reading.value,
-            "thermal_model_active": bool(model and model.effective_observation_minutes is not None),
-            "thermal_model_confidence": round(model.confidence, 3) if model else 0.0,
-            "thermal_model_sample_count": model.sample_count if model else 0,
-            "thermal_model_distinct_days": model.distinct_days if model else 0,
-            "thermal_model_gate_reason": reason,
-            "selected_observation_window_min": window,
-        }
 
     # ------------------------------------------------------------------
     # P7 — Bounded experiment lifecycle (real cover movement, gated)
@@ -7416,51 +7494,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         a = self._adoptions_active.get((window_id, intensity))
         return getattr(a, "stage", None) if a is not None else None
 
-    def experiment_diagnostics(self, window_id: str) -> dict:
-        """Privacy-safe per-window experiment diagnostics.  p8_adoption_eligible
-        is a snapshot only; P8 must re-derive from current data."""
-        window = self.windows.get(window_id)
-        zone_id = window.zone_id if window is not None else ""
-        exec_cfg = self.effective_zone_execution(zone_id) if zone_id else ZoneExecutionConfig()
-        gate = None
-        if not exec_cfg.authority.experiments_allowed:
-            gate = (
-                "learning_mode_required"
-                if not exec_cfg.learning_enabled
-                else "active_control_required"
-            )
-        exp = self._experiments_active.get(zone_id)
-        if exp is None or exp.window_id != window_id:
-            latest = next(
-                (e for e in reversed(self._experiment_history) if e.window_id == window_id),
-                None,
-            )
-            return {
-                "experiment_status": (latest.status if latest else "none"),
-                "experiment_id": (latest.experiment_id if latest else None),
-                "source_shadow_id": (latest.source_shadow_id if latest else None),
-                "evaluation_class": (latest.evaluation.decision if latest else None),
-                "p8_adoption_eligible": (latest.evaluation.p8_adoption_eligible if latest else False),
-                "active_experiment_zone_lock": exp is not None,
-                "activation_gate": gate,
-                "latest_abort_reason": (latest.abort_reason if latest else None),
-                "rollback_status": (latest.rollback_state if latest else "none"),
-                **self._experiment_staged_diag(latest, window_id),
-            }
-        return {
-            "experiment_status": exp.status, "experiment_id": exp.experiment_id,
-            "source_shadow_id": exp.source_shadow_id,
-            "experiment_target_ha": exp.expected_final_candidate_target_ha,
-            "effective_delta_ha": exp.delta_ha,
-            "active_experiment_zone_lock": True, "activation_gate": gate,
-            "latest_abort_reason": exp.abort_reason, "rollback_status": exp.rollback_state,
-            "outcome_status": exp.confirmation,
-            "evaluation_class": exp.evaluation.decision,
-            "p8_adoption_eligible": exp.evaluation.p8_adoption_eligible,
-            "cooldown_remaining": None,
-            **self._experiment_staged_diag(exp, window_id),
-        }
-
     def _experiments_storage(self) -> list:
         out = [e.to_dict() for e in self._experiments_active.values()]
         out.extend(e.to_dict() for e in self._retain_terminal_history(self._experiment_history))
@@ -7942,35 +7975,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             load_duration_long=False, outdoor_or_internal_dominant=False))
         self._last_thermal_cause[outcome.window_id] = (cause, follow_up)
 
-    def strategy_diagnostics(self, window_id: str) -> dict:
-        """Privacy-safe per-window strategy candidate snapshot (observe/recommend)."""
-        cand = self._strategy_candidates.get(window_id)
-        if cand is None:
-            return {"strategy_available": False}
-        d = cand.to_dict()
-        d["strategy_available"] = True
-        cause = self._last_thermal_cause.get(window_id)
-        if cause is not None:
-            d["thermal_insufficiency_cause"] = cause[0]
-            d["thermal_insufficiency_follow_up"] = cause[1]
-        return d
-
-    def solar_threshold_diagnostics(self, window_id: str) -> dict:
-        res = self._cycle_solar_resolution.get(window_id)
-        return res.to_dict() if res is not None else {"available": False}
-
-    def tier_order_diagnostics(self, window_id: str) -> dict:
-        proj = self._cycle_tier_order.get(window_id)
-        return proj.to_dict() if proj is not None else {"projected": False}
-
     # ------------------------------------------------------------------
     # P9B — Bounded strategy learning (threshold family live; all modeled)
     # ------------------------------------------------------------------
-
-    def _zone_experiment_locked(self, zone_id: str) -> bool:
-        """Unified zone-experiment authority: at most one active experiment per
-        zone across P7 position experiments AND P9B strategy experiments."""
-        return zone_id in self._experiments_active or zone_id in self._strategy_experiments_active
 
     def _strategy_consumed_ids(self, key: tuple) -> set:
         ids: set = set()
@@ -8050,7 +8057,36 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     def _maybe_adopt_strategy(self, window_id: str, family: str, zone_id: str, now: datetime) -> None:
         """Create/upgrade a persistent strategy adoption from multiple fresh, exact,
-        non-consumed terminal strategy experiments (mirror of P8, generalized)."""
+        non-consumed terminal strategy experiments (mirror of P8, generalized).
+
+        T17 status (audited, deliberately unwired — not a small gap): this
+        function, its evidence collector (_strategy_experiment_evidence),
+        and _strategy_adoptions_active's write side are all fully
+        implemented, but there is no caller anywhere. That is not simply a
+        missing call site: unlike P7 (_experiment_try_inject creates
+        BoundedPositionExperiment records that _experiment_finalize_from_outcome
+        later completes and hands to _maybe_adopt), there is no equivalent
+        injection engine for P9B strategy experiments anywhere in this
+        codebase — nothing ever constructs a BoundedStrategyExperiment and
+        assigns it into self._strategy_experiments_active (the only writes to
+        that dict are `.pop()` calls; the only append to
+        self._strategy_experiment_history is _enforce_ledger_integrity()
+        force-aborting a RESTORED one). _strategy_observe() only computes a
+        non-authoritative diagnostic ShadingStrategyCandidate — it does not
+        arm or inject anything.
+
+        Building that injection engine (context-family gating, a supported-
+        proposal search, an intensity/delta arm-and-inject step, a completion/
+        evaluate-outcome path mirroring _experiment_finalize_from_outcome) is
+        a genuinely new subsystem, not a wiring fix — it fails the "ist
+        vollständige Verdrahtung überschaubar?" test and would mean adding a
+        second real experiment mechanism during a hardening ticket. Per T17's
+        own decision criteria this is deliberately left as a named,
+        documented architecture reserve for a future feature ticket, not
+        silently-dead code and not something finished here. The already-built
+        adoption/monitoring/rollback/persistence machinery below is kept as-is
+        so that future ticket does not have to rebuild it.
+        """
         # P10 acceptance fix: never activate adaptive authority while the strategy
         # consumed-ledger namespace is unsafe (consumed evidence integrity unknown).
         if not self._ledger_namespace_safe(_LEDGER_STRATEGY):
@@ -8516,61 +8552,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         out = [a.to_dict() for a in self._strategy_adoptions_active.values()]
         out.extend(a.to_dict() for a in self._retain_terminal_history(self._strategy_adoption_history))
         return out
-
-    def window_contribution_diagnostics(self, window_id: str) -> dict:
-        """Privacy-safe per-window contribution diagnostics.  Eligibility is
-        derived from the CURRENT model + config generation (not a stale bool)."""
-        window = self.windows.get(window_id)
-        model = self._contribution_models.get(window_id)
-        zone_id = window.zone_id if window is not None else ""
-        current_gen = self._thermal_config_generation(zone_id) if zone_id else 0
-        shadow_elig, exp_elig = derive_eligibility(model, current_gen)
-        ev = self._contribution_evidence.get(window_id, [])
-        latest_disq = None
-        return {
-            "attribution_quality": (ev[-1].attribution_quality if ev else "unknown"),
-            "contribution_index": (
-                model.normalized_relative_contribution_index if model else None
-            ),
-            "contribution_confidence": round(model.confidence, 3) if model else 0.0,
-            "isolated_sample_count": model.isolated_sample_count if model else 0,
-            "candidate_sample_count": model.candidate_sample_count if model else 0,
-            "shared_sample_count": model.shared_sample_count if model else 0,
-            "distinct_days": model.distinct_days if model else 0,
-            "prior_source": model.prior_source if model else "neutral",
-            "latest_disqualifier": latest_disq,
-            "shadow_contribution_eligible": shadow_elig,
-            "experiment_contribution_eligible": exp_elig,
-        }
-
-    def shadow_diagnostics(self, window_id: str) -> dict:
-        """Privacy-safe per-window shadow diagnostics (latest active proposal).
-
-        experiment_candidate_ready is a diagnostic SNAPSHOT only — P7 must
-        re-derive eligibility from current data.
-        """
-        latest = None
-        for key, p in self._shadow_active.items():
-            if key[0] == window_id:
-                if latest is None or p.updated_at > latest.updated_at:
-                    latest = p
-        if latest is None:
-            return {"shadow_status": "none"}
-        ev = latest.evaluation
-        return {
-            "shadow_status": latest.status,
-            "shadow_candidate_target_ha": latest.shadow_final_candidate_target_ha,
-            "shadow_candidate_delta_ha": latest.net_shadow_delta_vs_real_ha,
-            "shadow_reason": latest.proposal_reason,
-            "shadow_confidence": round(ev.confidence, 3),
-            "shadow_context": latest.context_family,
-            "comparable_outcome_count": ev.comparable_baseline_outcomes,
-            "distinct_days": ev.distinct_days,
-            "preference_veto": ev.preference_veto,
-            "attribution_quality": latest.attribution_quality,
-            "experiment_candidate_ready": latest.experiment_candidate_ready,
-            "latest_block_reason": latest.block_reason,
-        }
 
     def _shadow_proposals_storage(self) -> list:
         out = [p.to_dict() for p in self._shadow_active.values()]

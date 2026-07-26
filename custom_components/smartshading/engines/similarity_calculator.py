@@ -88,12 +88,3 @@ def calculate_similarity(a: NormalizedSituation, b: NormalizedSituation) -> floa
     # Divide by total_weight re-normalizes the remaining weights to 1.0
     weighted_distance = weighted_sum / total_weight
     return max(0.0, min(1.0, 1.0 - weighted_distance))
-
-
-def calculate_distance(a: NormalizedSituation, b: NormalizedSituation) -> float:
-    """Return 1.0 - calculate_similarity(a, b).
-
-    A distance of 0.0 means identical; 1.0 means maximally different.
-    Satisfies the same filter and None-handling rules as calculate_similarity.
-    """
-    return 1.0 - calculate_similarity(a, b)

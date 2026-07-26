@@ -146,8 +146,3 @@ def normalize_situation(situation: SituationRecord) -> NormalizedSituation:
             if raw_outdoor is not None else None
         ),
     )
-
-
-def normalize_situations(situations: list[SituationRecord]) -> list[NormalizedSituation]:
-    """Normalize a list of SituationRecords, preserving order."""
-    return [normalize_situation(s) for s in situations]

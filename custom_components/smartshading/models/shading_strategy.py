@@ -23,7 +23,6 @@ STATE_OPEN: str = "open"
 STATE_LIGHT: str = "light"
 STATE_NORMAL: str = "normal"
 STATE_STRONG: str = "strong"
-STRATEGY_STATES: tuple[str, ...] = (STATE_OPEN, STATE_LIGHT, STATE_NORMAL, STATE_STRONG)
 
 
 @dataclass(frozen=True)

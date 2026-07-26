@@ -231,6 +231,7 @@ async def _async_setup_zone_entry(
         await async_run_startup_matching(_fl_store, _fl_adapter)
         _fl_cancel  = await async_setup_forecast_learning(
             hass,
+            entry,
             _fl_store,
             _fl_adapter,
             forecast_entity_id=entry_data.weather_entity_id,

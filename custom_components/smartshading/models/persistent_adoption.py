@@ -64,7 +64,6 @@ REDUCE_DEGRADED_DISTINCT_DAYS: int = 2
 
 # --- cooldown / retention ---
 ROLLBACK_COOLDOWN_DAYS: int = 30
-ADOPTION_AGE_CAP_DAYS: int = 365
 ADOPTION_HISTORY_PER_WINDOW: int = 20
 
 # --- state machine ---

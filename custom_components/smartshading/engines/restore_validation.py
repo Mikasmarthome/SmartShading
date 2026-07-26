@@ -42,7 +42,6 @@ R_INVALID_ID = "invalid_id"
 R_WINDOW_MISMATCH = "window_mismatch"
 R_ZONE_MISMATCH = "zone_mismatch"
 R_OUT_OF_RANGE = "out_of_range"
-R_INVALID_CONFIG_GENERATION = "invalid_config_generation"
 
 
 @dataclass

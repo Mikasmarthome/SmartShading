@@ -70,12 +70,6 @@ def _parse(ts: str | None) -> datetime | None:
     return d.replace(tzinfo=timezone.utc) if d.tzinfo is None else d
 
 
-def _clamp01(v: float | None) -> float | None:
-    if v is None:
-        return None
-    return max(0.0, min(1.0, v))
-
-
 def event_weight_for(attribution_quality: str) -> float:
     return {
         ATTR_WINDOW_ISOLATED: WEIGHT_ISOLATED,

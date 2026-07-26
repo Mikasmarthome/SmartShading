@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Датчик наружной температуры",
           "cloud_cover_sensor_id": "Датчик облачности (0–100 %)",
           "wind_speed_sensor_id": "Датчик скорости ветра (м/с) — для маркиз/screen используйте порывы ветра, если доступно",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Датчик дождя (бинарный вкл/выкл или числовое значение мм/ч) – необязательно",
           "ema_enabled": "Сглаживать показания датчиков (EMA)",
           "ema_alpha": "Коэффициент сглаживания EMA (0,05–1,0) — ниже = более плавно, выше = более отзывчиво"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Включить защиту от тепла",
           "glare_protection_enabled": "Включить защиту от бликов",
           "solar_gain_enabled": "Включить солнечный приток (зимнее солнце)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Минимальная освещённость для защиты от бликов",
           "heat_protection_hysteresis_c": "Запас освобождения тепловой защиты"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Выбранное окно: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Солнечный сектор и зоны затенения",
+          "edit_window_contact": "Контакт окна и ночная вентиляция"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Солнечный сектор и зоны затенения",
         "data": {
           "manual_sun_sector_enabled": "Включить ручное переопределение солнечного сектора",
           "manual_sun_sector_start_deg": "Начальный азимут солнечного сектора (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Контакт окна и ночная вентиляция",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "Невозможно удалить последнее окно. В зоне должно быть хотя бы одно окно.",
       "obstruction_elevation_range_invalid": "«Блокируется от высоты» не должно быть больше, чем «Блокируется до высоты».",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Для варианта A требуется выбрать контактный датчик.",
+      "contact_sensor_required_for_lift": "Для варианта B требуется выбрать контактный датчик.",
+      "invalid_glare_min_exposure": "Введите минимальную освещённость для защиты от бликов от 0 до 500 Вт/м².",
       "invalid_heat_hysteresis": "Введите запас освобождения от 0 до 5 °C.",
       "night_clamp_window_invalid": "Самый ранний ночной триггер не должен быть позже самого позднего.",
       "morning_clamp_window_invalid": "Самый ранний утренний триггер не должен быть позже самого позднего.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Датчик наружной температуры",
           "cloud_cover_sensor_id": "Датчик облачности (0–100 %)",
           "wind_speed_sensor_id": "Датчик скорости ветра (м/с) — для маркиз/screen используйте порывы ветра, если доступно",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Датчик дождя (бинарный вкл/выкл или числовое значение мм/ч) – необязательно",
           "ema_enabled": "Сглаживать показания датчиков (EMA)",
           "ema_alpha": "Коэффициент сглаживания EMA (0,05–1,0) — ниже = более плавно, выше = более отзывчиво"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Включить защиту от тепла",
           "glare_protection_enabled": "Включить защиту от бликов",
           "solar_gain_enabled": "Включить солнечный приток (зимнее солнце)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Минимальная освещённость для защиты от бликов",
           "heat_protection_hysteresis_c": "Запас освобождения тепловой защиты"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Выберите хотя бы один объект шторы для этого окна.",
       "empty_zone_name": "Имя зоны обязательно.",
       "obstruction_elevation_range_invalid": "«Блокируется от высоты» не должно быть больше, чем «Блокируется до высоты».",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Для варианта A требуется выбрать контактный датчик.",
+      "contact_sensor_required_for_lift": "Для варианта B требуется выбрать контактный датчик.",
+      "invalid_glare_min_exposure": "Введите минимальную освещённость для защиты от бликов от 0 до 500 Вт/м².",
       "invalid_heat_hysteresis": "Введите запас освобождения от 0 до 5 °C.",
       "night_clamp_window_invalid": "Самый ранний ночной триггер не должен быть позже самого позднего.",
       "morning_clamp_window_invalid": "Самый ранний утренний триггер не должен быть позже самого позднего."

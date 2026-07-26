@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Capteur de température extérieure",
           "cloud_cover_sensor_id": "Capteur de nébulosité (0–100 %)",
           "wind_speed_sensor_id": "Capteur de vitesse du vent (m/s) — utilisez les rafales pour les stores bannes/screens si disponible",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Capteur de pluie (binaire marche/arrêt ou taux numérique mm/h) – facultatif",
           "ema_enabled": "Lisser les valeurs des capteurs (EMA)",
           "ema_alpha": "Facteur de lissage EMA (0,05–1,0) — plus bas = plus lisse, plus haut = plus réactif"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Activer la protection contre la chaleur",
           "glare_protection_enabled": "Activer la protection contre l'éblouissement",
           "solar_gain_enabled": "Activer l'apport solaire (soleil d'hiver)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Exposition minimale pour la protection contre l'éblouissement",
           "heat_protection_hysteresis_c": "Marge de relâchement de la protection thermique"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Fenêtre sélectionnée : {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Secteur solaire et zones d'obstruction",
+          "edit_window_contact": "Contact de fenêtre et ventilation nocturne"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Secteur solaire et zones d'obstruction",
         "data": {
           "manual_sun_sector_enabled": "Activer le remplacement manuel du secteur solaire",
           "manual_sun_sector_start_deg": "Azimut de début du secteur solaire (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Contact de fenêtre et ventilation nocturne",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "Impossible de supprimer la dernière fenêtre. Une zone doit comporter au moins une fenêtre.",
       "obstruction_elevation_range_invalid": "« Bloquée à partir de l'élévation » ne doit pas être supérieure à « Bloquée jusqu'à l'élévation ».",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "L'option A nécessite la sélection d'un capteur de contact.",
+      "contact_sensor_required_for_lift": "L'option B nécessite la sélection d'un capteur de contact.",
+      "invalid_glare_min_exposure": "Entrez une exposition minimale d'éblouissement entre 0 et 500 W/m².",
       "invalid_heat_hysteresis": "Entrez une marge de relâchement entre 0 et 5 °C.",
       "night_clamp_window_invalid": "Le déclencheur nocturne au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
       "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Capteur de température extérieure",
           "cloud_cover_sensor_id": "Capteur de nébulosité (0–100 %)",
           "wind_speed_sensor_id": "Capteur de vitesse du vent (m/s) — utilisez les rafales pour les stores bannes/screens si disponible",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Capteur de pluie (binaire marche/arrêt ou taux numérique mm/h) – facultatif",
           "ema_enabled": "Lisser les valeurs des capteurs (EMA)",
           "ema_alpha": "Facteur de lissage EMA (0,05–1,0) — plus bas = plus lisse, plus haut = plus réactif"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Activer la protection contre la chaleur",
           "glare_protection_enabled": "Activer la protection contre l'éblouissement",
           "solar_gain_enabled": "Activer l'apport solaire (soleil d'hiver)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Exposition minimale pour la protection contre l'éblouissement",
           "heat_protection_hysteresis_c": "Marge de relâchement de la protection thermique"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Sélectionnez au moins une entité de volet pour cette fenêtre.",
       "empty_zone_name": "Le nom de la zone est obligatoire.",
       "obstruction_elevation_range_invalid": "« Bloquée à partir de l'élévation » ne doit pas être supérieure à « Bloquée jusqu'à l'élévation ».",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "L'option A nécessite la sélection d'un capteur de contact.",
+      "contact_sensor_required_for_lift": "L'option B nécessite la sélection d'un capteur de contact.",
+      "invalid_glare_min_exposure": "Entrez une exposition minimale d'éblouissement entre 0 et 500 W/m².",
       "invalid_heat_hysteresis": "Entrez une marge de relâchement entre 0 et 5 °C.",
       "night_clamp_window_invalid": "Le déclencheur nocturne au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
       "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard."

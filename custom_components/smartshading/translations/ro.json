@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Senzor de temperatură exterioară",
           "cloud_cover_sensor_id": "Senzor de nebulozitate (0–100 %)",
           "wind_speed_sensor_id": "Senzor de viteză a vântului (m/s) — folosiți rafalele de vânt pentru copertine/screenuri dacă sunt disponibile",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Senzor de ploaie (binar pornit/oprit sau valoare numerică mm/h) – opțional",
           "ema_enabled": "Netezeste citirile senzorilor (EMA)",
           "ema_alpha": "Factor de netezire EMA (0,05–1,0) — mai mic = mai neted, mai mare = mai reactiv"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Activați protecția împotriva căldurii",
           "glare_protection_enabled": "Activați protecția împotriva strălucirii",
           "solar_gain_enabled": "Activați câștigul solar (soare de iarnă)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Expunere minimă pentru protecția la orbire",
           "heat_protection_hysteresis_c": "Marja de eliberare a protecției termice"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Fereastră selectată: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Sector solar și zone de obstrucție",
+          "edit_window_contact": "Contact fereastră și ventilație nocturnă"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Sector solar și zone de obstrucție",
         "data": {
           "manual_sun_sector_enabled": "Activați suprascrierea manuală a sectorului solar",
           "manual_sun_sector_start_deg": "Azimut de start al sectorului solar (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Contact fereastră și ventilație nocturnă",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "Nu se poate elimina ultima fereastră. O zonă trebuie să aibă cel puțin o fereastră.",
       "obstruction_elevation_range_invalid": "„Blocată de la înălțimea” nu trebuie să fie mai mare decât „Blocată până la înălțimea”.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Opțiunea A necesită selectarea unui senzor de contact.",
+      "contact_sensor_required_for_lift": "Opțiunea B necesită selectarea unui senzor de contact.",
+      "invalid_glare_min_exposure": "Introduceți o expunere minimă la orbire între 0 și 500 W/m².",
       "invalid_heat_hysteresis": "Introduceți o marjă de eliberare între 0 și 5 °C.",
       "night_clamp_window_invalid": "Declanșatorul de noapte cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
       "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Senzor de temperatură exterioară",
           "cloud_cover_sensor_id": "Senzor de nebulozitate (0–100 %)",
           "wind_speed_sensor_id": "Senzor de viteză a vântului (m/s) — folosiți rafalele de vânt pentru copertine/screenuri dacă sunt disponibile",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Senzor de ploaie (binar pornit/oprit sau valoare numerică mm/h) – opțional",
           "ema_enabled": "Netezeste citirile senzorilor (EMA)",
           "ema_alpha": "Factor de netezire EMA (0,05–1,0) — mai mic = mai neted, mai mare = mai reactiv"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Activați protecția împotriva căldurii",
           "glare_protection_enabled": "Activați protecția împotriva strălucirii",
           "solar_gain_enabled": "Activați câștigul solar (soare de iarnă)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Expunere minimă pentru protecția la orbire",
           "heat_protection_hysteresis_c": "Marja de eliberare a protecției termice"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Selectați cel puțin o entitate de umbrar pentru această fereastră.",
       "empty_zone_name": "Numele zonei este obligatoriu.",
       "obstruction_elevation_range_invalid": "„Blocată de la înălțimea” nu trebuie să fie mai mare decât „Blocată până la înălțimea”.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Opțiunea A necesită selectarea unui senzor de contact.",
+      "contact_sensor_required_for_lift": "Opțiunea B necesită selectarea unui senzor de contact.",
+      "invalid_glare_min_exposure": "Introduceți o expunere minimă la orbire între 0 și 500 W/m².",
       "invalid_heat_hysteresis": "Introduceți o marjă de eliberare între 0 și 5 °C.",
       "night_clamp_window_invalid": "Declanșatorul de noapte cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
       "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu."

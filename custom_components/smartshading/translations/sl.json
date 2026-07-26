@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Senzor zunanje temperature",
           "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
           "wind_speed_sensor_id": "Senzor hitrosti vetra (m/s) — za tende/screene uporabite sunke vetra, če so na voljo",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Senzor dežja (binarno vklop/izklop ali številčna vrednost mm/h) – neobvezno",
           "ema_enabled": "Glajenje odčitkov senzorjev (EMA)",
           "ema_alpha": "Faktor glajenja EMA (0,05–1,0) — nižje = bolj gladko, višje = bolj odzivno"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Omogoči zaščito pred vročino",
           "glare_protection_enabled": "Omogoči zaščito pred bleščanjem",
           "solar_gain_enabled": "Omogoči sončni dobitek (zimsko sonce)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Najmanjša osvetljenost za zaščito pred bleščanjem",
           "heat_protection_hysteresis_c": "Razpon sprostitve toplotne zaščite"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Izbrano okno: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Sončni sektor in cone zasenčenja",
+          "edit_window_contact": "Kontakt okna in nočno prezračevanje"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Sončni sektor in cone zasenčenja",
         "data": {
           "manual_sun_sector_enabled": "Omogoči ročno preglasitev sončnega sektorja",
           "manual_sun_sector_start_deg": "Začetni azimut sončnega sektorja (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Kontakt okna in nočno prezračevanje",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "Zadnjega okna ni mogoče odstraniti. Območje mora imeti vsaj eno okno.",
       "obstruction_elevation_range_invalid": "»Blokirano od višine« ne sme biti večje od »Blokirano do višine«.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Možnost A zahteva izbiro kontaktnega senzorja.",
+      "contact_sensor_required_for_lift": "Možnost B zahteva izbiro kontaktnega senzorja.",
+      "invalid_glare_min_exposure": "Vnesite najmanjšo osvetljenost za bleščanje med 0 in 500 W/m².",
       "invalid_heat_hysteresis": "Vnesite razpon sprostitve med 0 in 5 °C.",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
       "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Senzor zunanje temperature",
           "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
           "wind_speed_sensor_id": "Senzor hitrosti vetra (m/s) — za tende/screene uporabite sunke vetra, če so na voljo",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Senzor dežja (binarno vklop/izklop ali številčna vrednost mm/h) – neobvezno",
           "ema_enabled": "Glajenje odčitkov senzorjev (EMA)",
           "ema_alpha": "Faktor glajenja EMA (0,05–1,0) — nižje = bolj gladko, višje = bolj odzivno"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Omogoči zaščito pred vročino",
           "glare_protection_enabled": "Omogoči zaščito pred bleščanjem",
           "solar_gain_enabled": "Omogoči sončni dobitek (zimsko sonce)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Najmanjša osvetljenost za zaščito pred bleščanjem",
           "heat_protection_hysteresis_c": "Razpon sprostitve toplotne zaščite"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Izberite vsaj eno entiteto senčila za to okno.",
       "empty_zone_name": "Ime območja je obvezno.",
       "obstruction_elevation_range_invalid": "»Blokirano od višine« ne sme biti večje od »Blokirano do višine«.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Možnost A zahteva izbiro kontaktnega senzorja.",
+      "contact_sensor_required_for_lift": "Možnost B zahteva izbiro kontaktnega senzorja.",
+      "invalid_glare_min_exposure": "Vnesite najmanjšo osvetljenost za bleščanje med 0 in 500 W/m².",
       "invalid_heat_hysteresis": "Vnesite razpon sprostitve med 0 in 5 °C.",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
       "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega."

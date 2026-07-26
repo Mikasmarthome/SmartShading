@@ -4,8 +4,7 @@
 
 | Version | Supported |
 | --- | --- |
-| Latest stable release (currently the v1.0.x line) | ✅ |
-| Current pre-release line (currently the v1.1.0-beta line) | ✅ |
+| Latest stable release (currently the v1.1.x line) | ✅ |
 | Older releases | ❌ |
 
 ## Reporting a vulnerability

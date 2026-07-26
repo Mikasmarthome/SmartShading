@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Senzor venkovní teploty",
           "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
           "wind_speed_sensor_id": "Senzor rychlosti větru (m/s) — pro markýzy/screeny použijte nárazy větru, pokud jsou k dispozici",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Snímač deště (binární zap/vyp nebo číselná hodnota mm/h) – volitelné",
           "ema_enabled": "Vyhlazovat hodnoty senzorů (EMA)",
           "ema_alpha": "Faktor vyhlazení EMA (0,05–1,0) — nižší = hladkéjší, vyšší = citlivější"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Povolit ochranu před teplem",
           "glare_protection_enabled": "Povolit ochranu před oslněním",
           "solar_gain_enabled": "Povolit solární zisk (zimní slunce)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Minimální osvit pro ochranu proti oslnení",
           "heat_protection_hysteresis_c": "Rozpětí uvolnění tepelné ochrany"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Vybrané okno: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Sluneční sektor a zóny zastínění",
+          "edit_window_contact": "Kontakt okna a noční větrání"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Sluneční sektor a zóny zastínění",
         "data": {
           "manual_sun_sector_enabled": "Povolit ruční přepsání slunečního sektoru",
           "manual_sun_sector_start_deg": "Počáteční azimut slunečního sektoru (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Kontakt okna a noční větrání",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "Poslední okno nelze odebrat. Zóna musí mít alespoň jedno okno.",
       "obstruction_elevation_range_invalid": "„Blokována od výšky“ nesmí být větší než „Blokována do výšky“.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Možnost A vyžaduje výběr kontaktního senzoru.",
+      "contact_sensor_required_for_lift": "Možnost B vyžaduje výběr kontaktního senzoru.",
+      "invalid_glare_min_exposure": "Zadejte minimální osvit pro oslnení mezi 0 a 500 W/m².",
       "invalid_heat_hysteresis": "Zadejte rozpětí uvolnění mezi 0 a 5 °C.",
       "night_clamp_window_invalid": "Nejdřívější noční spuštění nesmí být pozdější než nejpozdější.",
       "morning_clamp_window_invalid": "Nejdřívější ranní spuštění nesmí být pozdější než nejpozdější.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Senzor venkovní teploty",
           "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
           "wind_speed_sensor_id": "Senzor rychlosti větru (m/s) — pro markýzy/screeny použijte nárazy větru, pokud jsou k dispozici",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Snímač deště (binární zap/vyp nebo číselná hodnota mm/h) – volitelné",
           "ema_enabled": "Vyhlazovat hodnoty senzorů (EMA)",
           "ema_alpha": "Faktor vyhlazení EMA (0,05–1,0) — nižší = hladkéjší, vyšší = citlivější"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Povolit ochranu před teplem",
           "glare_protection_enabled": "Povolit ochranu před oslněním",
           "solar_gain_enabled": "Povolit solární zisk (zimní slunce)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Minimální osvit pro ochranu proti oslnení",
           "heat_protection_hysteresis_c": "Rozpětí uvolnění tepelné ochrany"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Vyberte alespoň jednu entitu stínění pro toto okno.",
       "empty_zone_name": "Název zóny je povinný.",
       "obstruction_elevation_range_invalid": "„Blokována od výšky“ nesmí být větší než „Blokována do výšky“.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Možnost A vyžaduje výběr kontaktního senzoru.",
+      "contact_sensor_required_for_lift": "Možnost B vyžaduje výběr kontaktního senzoru.",
+      "invalid_glare_min_exposure": "Zadejte minimální osvit pro oslnení mezi 0 a 500 W/m².",
       "invalid_heat_hysteresis": "Zadejte rozpětí uvolnění mezi 0 a 5 °C.",
       "night_clamp_window_invalid": "Nejdřívější noční spuštění nesmí být pozdější než nejpozdější.",
       "morning_clamp_window_invalid": "Nejdřívější ranní spuštění nesmí být pozdější než nejpozdější."

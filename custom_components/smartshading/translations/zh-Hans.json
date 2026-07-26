@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "室外温度传感器",
           "cloud_cover_sensor_id": "云量传感器（0–100 %）",
           "wind_speed_sensor_id": "风速传感器（m/s）— 如有可用，遮阳篷/卷帘请使用阵风",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "雨量传感器（开关型或数值型 mm/h）——可选",
           "ema_enabled": "平滑传感器读数（EMA）",
           "ema_alpha": "EMA 平滑系数（0.05–1.0）— 越低越平滑，越高越灵敏"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "启用隔热保护",
           "glare_protection_enabled": "启用防眩光保护",
           "solar_gain_enabled": "启用太阳得热（冬季阳光）",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "眼光防护的最小辐照度",
           "heat_protection_hysteresis_c": "热保护释放余量"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "已选窗户：{window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "太阳方位扇区与遮挡区域",
+          "edit_window_contact": "窗户接触器与夜间通风"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "太阳方位扇区与遮挡区域",
         "data": {
           "manual_sun_sector_enabled": "启用太阳扇区的手动覆盖",
           "manual_sun_sector_start_deg": "太阳扇区起始方位角（°）",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "窗户接触器与夜间通风",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "无法移除最后一个窗户。一个区域必须至少有一个窗户。",
       "obstruction_elevation_range_invalid": "“从该高度起被遮挡”不得大于“至该高度止被遮挡”。",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "选项 A 需要选择一个接触传感器。",
+      "contact_sensor_required_for_lift": "选项 B 需要选择一个接触传感器。",
+      "invalid_glare_min_exposure": "请输入 0 到 500 W/m² 之间的眼光最小辐照度。",
       "invalid_heat_hysteresis": "请输入 0 到 5 °C 之间的释放余量。",
       "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
       "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "室外温度传感器",
           "cloud_cover_sensor_id": "云量传感器（0–100 %）",
           "wind_speed_sensor_id": "风速传感器（m/s）— 如有可用，遮阳篷/卷帘请使用阵风",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "雨量传感器（开关型或数值型 mm/h）——可选",
           "ema_enabled": "平滑传感器读数（EMA）",
           "ema_alpha": "EMA 平滑系数（0.05–1.0）— 越低越平滑，越高越灵敏"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "启用隔热保护",
           "glare_protection_enabled": "启用防眩光保护",
           "solar_gain_enabled": "启用太阳得热（冬季阳光）",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "眼光防护的最小辐照度",
           "heat_protection_hysteresis_c": "热保护释放余量"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "请为该窗户至少选择一个遮阳帘实体。",
       "empty_zone_name": "区域名称为必填项。",
       "obstruction_elevation_range_invalid": "“从该高度起被遮挡”不得大于“至该高度止被遮挡”。",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "选项 A 需要选择一个接触传感器。",
+      "contact_sensor_required_for_lift": "选项 B 需要选择一个接触传感器。",
+      "invalid_glare_min_exposure": "请输入 0 到 500 W/m² 之间的眼光最小辐照度。",
       "invalid_heat_hysteresis": "请输入 0 到 5 °C 之间的释放余量。",
       "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
       "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。"

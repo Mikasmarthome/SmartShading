@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Czujnik temperatury zewnętrznej",
           "cloud_cover_sensor_id": "Czujnik zachmurzenia (0–100 %)",
           "wind_speed_sensor_id": "Czujnik prędkości wiatru (m/s) — w przypadku markiz/rolet zewnętrznych użyj porywów wiatru, jeśli są dostępne",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Czujnik deszczu (binarny wł./wył. lub wartość liczbowa mm/h) – opcjonalnie",
           "ema_enabled": "Wygładzaj odczyty czujników (EMA)",
           "ema_alpha": "Współczynnik wygładzania EMA (0,05–1,0) — niższy = gładszy, wyższy = bardziej responsywny"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Włącz ochronę przed ciepłem",
           "glare_protection_enabled": "Włącz ochronę przed olśnieniem",
           "solar_gain_enabled": "Włącz zysk słoneczny (zimowe słońce)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Minimalne natężenie dla ochrony przed olśnieniem",
           "heat_protection_hysteresis_c": "Margines zwolnienia ochrony przed upałem"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Wybrane okno: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Sektor słoneczny i strefy przesłonięcia",
+          "edit_window_contact": "Kontakt okienny i wentylacja nocna"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Sektor słoneczny i strefy przesłonięcia",
         "data": {
           "manual_sun_sector_enabled": "Włącz ręczne zastąpienie sektora słonecznego",
           "manual_sun_sector_start_deg": "Azymut początkowy sektora słonecznego (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Kontakt okienny i wentylacja nocna",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "Nie można usunąć ostatniego okna. Strefa musi mieć co najmniej jedno okno.",
       "obstruction_elevation_range_invalid": "„Blokowana od wysokości” nie może być większa niż „Blokowana do wysokości”.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Opcja A wymaga wybrania czujnika kontaktowego.",
+      "contact_sensor_required_for_lift": "Opcja B wymaga wybrania czujnika kontaktowego.",
+      "invalid_glare_min_exposure": "Wprowadź minimalne natężenie olśnienia w zakresie od 0 do 500 W/m².",
       "invalid_heat_hysteresis": "Podaj margines zwolnienia od 0 do 5 °C.",
       "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
       "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Czujnik temperatury zewnętrznej",
           "cloud_cover_sensor_id": "Czujnik zachmurzenia (0–100 %)",
           "wind_speed_sensor_id": "Czujnik prędkości wiatru (m/s) — w przypadku markiz/rolet zewnętrznych użyj porywów wiatru, jeśli są dostępne",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Czujnik deszczu (binarny wł./wył. lub wartość liczbowa mm/h) – opcjonalnie",
           "ema_enabled": "Wygładzaj odczyty czujników (EMA)",
           "ema_alpha": "Współczynnik wygładzania EMA (0,05–1,0) — niższy = gładszy, wyższy = bardziej responsywny"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Włącz ochronę przed ciepłem",
           "glare_protection_enabled": "Włącz ochronę przed olśnieniem",
           "solar_gain_enabled": "Włącz zysk słoneczny (zimowe słońce)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Minimalne natężenie dla ochrony przed olśnieniem",
           "heat_protection_hysteresis_c": "Margines zwolnienia ochrony przed upałem"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Wybierz co najmniej jedną encję osłony dla tego okna.",
       "empty_zone_name": "Nazwa strefy jest wymagana.",
       "obstruction_elevation_range_invalid": "„Blokowana od wysokości” nie może być większa niż „Blokowana do wysokości”.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Opcja A wymaga wybrania czujnika kontaktowego.",
+      "contact_sensor_required_for_lift": "Opcja B wymaga wybrania czujnika kontaktowego.",
+      "invalid_glare_min_exposure": "Wprowadź minimalne natężenie olśnienia w zakresie od 0 do 500 W/m².",
       "invalid_heat_hysteresis": "Podaj margines zwolnienia od 0 do 5 °C.",
       "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
       "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy."

@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Sensore di temperatura esterna",
           "cloud_cover_sensor_id": "Sensore di nuvolosità (0–100 %)",
           "wind_speed_sensor_id": "Sensore di velocità del vento (m/s) — usa le raffiche per tende da sole/screen se disponibili",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Sensore di pioggia (binario on/off o valore numerico mm/h) – opzionale",
           "ema_enabled": "Attenua le letture dei sensori (EMA)",
           "ema_alpha": "Fattore di attenuazione EMA (0,05–1,0) — più basso = più fluido, più alto = più reattivo"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Abilita protezione dal caldo",
           "glare_protection_enabled": "Abilita protezione dall'abbagliamento",
           "solar_gain_enabled": "Abilita guadagno solare (sole invernale)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Esposizione minima per la protezione dall'abbagliamento",
           "heat_protection_hysteresis_c": "Margine di rilascio della protezione dal calore"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Finestra selezionata: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Settore solare e zone di ostruzione",
+          "edit_window_contact": "Contatto finestra e ventilazione notturna"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Settore solare e zone di ostruzione",
         "data": {
           "manual_sun_sector_enabled": "Abilita sostituzione manuale del settore solare",
           "manual_sun_sector_start_deg": "Azimut iniziale del settore solare (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Contatto finestra e ventilazione notturna",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "Impossibile rimuovere l'ultima finestra. Una zona deve avere almeno una finestra.",
       "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione».",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "L'opzione A richiede la selezione di un sensore di contatto.",
+      "contact_sensor_required_for_lift": "L'opzione B richiede la selezione di un sensore di contatto.",
+      "invalid_glare_min_exposure": "Inserire un'esposizione minima di abbagliamento tra 0 e 500 W/m².",
       "invalid_heat_hysteresis": "Inserisci un margine di rilascio tra 0 e 5 °C.",
       "night_clamp_window_invalid": "L'attivazione notturna più presto non deve essere successiva a quella più tardi.",
       "morning_clamp_window_invalid": "L'attivazione mattutina più presto non deve essere successiva a quella più tardi.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Sensore di temperatura esterna",
           "cloud_cover_sensor_id": "Sensore di nuvolosità (0–100 %)",
           "wind_speed_sensor_id": "Sensore di velocità del vento (m/s) — usa le raffiche per tende da sole/screen se disponibili",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Sensore di pioggia (binario on/off o valore numerico mm/h) – opzionale",
           "ema_enabled": "Attenua le letture dei sensori (EMA)",
           "ema_alpha": "Fattore di attenuazione EMA (0,05–1,0) — più basso = più fluido, più alto = più reattivo"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Abilita protezione dal caldo",
           "glare_protection_enabled": "Abilita protezione dall'abbagliamento",
           "solar_gain_enabled": "Abilita guadagno solare (sole invernale)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Esposizione minima per la protezione dall'abbagliamento",
           "heat_protection_hysteresis_c": "Margine di rilascio della protezione dal calore"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Seleziona almeno un'entità tapparella per questa finestra.",
       "empty_zone_name": "Il nome della zona è obbligatorio.",
       "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione».",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "L'opzione A richiede la selezione di un sensore di contatto.",
+      "contact_sensor_required_for_lift": "L'opzione B richiede la selezione di un sensore di contatto.",
+      "invalid_glare_min_exposure": "Inserire un'esposizione minima di abbagliamento tra 0 e 500 W/m².",
       "invalid_heat_hysteresis": "Inserisci un margine di rilascio tra 0 e 5 °C.",
       "night_clamp_window_invalid": "L'attivazione notturna più presto non deve essere successiva a quella più tardi.",
       "morning_clamp_window_invalid": "L'attivazione mattutina più presto non deve essere successiva a quella più tardi."

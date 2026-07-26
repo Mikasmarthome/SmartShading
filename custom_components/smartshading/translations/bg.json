@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Сензор за външна температура",
           "cloud_cover_sensor_id": "Сензор за облачност (0–100 %)",
           "wind_speed_sensor_id": "Сензор за скорост на вятъра (m/s) — за тенти/екрани използвайте поривите на вятъра, ако са налични",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Сензор за дъжд (двоичен вкл/изкл или числова стойност mm/h) – по избор",
           "ema_enabled": "Изглаждане на показанията на сензорите (EMA)",
           "ema_alpha": "Коефициент на изглаждане EMA (0,05–1,0) — по-нисък = по-гладко, по-висок = по-отзивчиво"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Активиране на защита от топлина",
           "glare_protection_enabled": "Активиране на защита от заслепяване",
           "solar_gain_enabled": "Активиране на слънчево усилване (зимно слънце)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Минимална осветеност за защита от заслепяване",
           "heat_protection_hysteresis_c": "Марж за освобождаване на топлинната защита"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Избран прозорец: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Слънчев сектор и зони на засенчване",
+          "edit_window_contact": "Контакт на прозорец и нощна вентилация"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Слънчев сектор и зони на засенчване",
         "data": {
           "manual_sun_sector_enabled": "Активиране на ръчно заместване на слънчевия сектор",
           "manual_sun_sector_start_deg": "Начален азимут на слънчевия сектор (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Контакт на прозорец и нощна вентилация",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "Последният прозорец не може да бъде премахнат. Зоната трябва да има поне един прозорец.",
       "obstruction_elevation_range_invalid": "„Блокирана от височина“ не трябва да е по-голяма от „Блокирана до височина“.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Опция A изисква избор на контактен сензор.",
+      "contact_sensor_required_for_lift": "Опция B изисква избор на контактен сензор.",
+      "invalid_glare_min_exposure": "Въведете минимална осветеност за заслепяване между 0 и 500 W/m².",
       "invalid_heat_hysteresis": "Въведете марж за освобождаване между 0 и 5 °C.",
       "night_clamp_window_invalid": "Най-ранният нощен тригер не трябва да бъде по-късен от най-късния.",
       "morning_clamp_window_invalid": "Най-ранният сутрешен тригер не трябва да бъде по-късен от най-късния.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Сензор за външна температура",
           "cloud_cover_sensor_id": "Сензор за облачност (0–100 %)",
           "wind_speed_sensor_id": "Сензор за скорост на вятъра (m/s) — за тенти/екрани използвайте поривите на вятъра, ако са налични",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Сензор за дъжд (двоичен вкл/изкл или числова стойност mm/h) – по избор",
           "ema_enabled": "Изглаждане на показанията на сензорите (EMA)",
           "ema_alpha": "Коефициент на изглаждане EMA (0,05–1,0) — по-нисък = по-гладко, по-висок = по-отзивчиво"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Активиране на защита от топлина",
           "glare_protection_enabled": "Активиране на защита от заслепяване",
           "solar_gain_enabled": "Активиране на слънчево усилване (зимно слънце)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Минимална осветеност за защита от заслепяване",
           "heat_protection_hysteresis_c": "Марж за освобождаване на топлинната защита"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Изберете поне един обект щора за този прозорец.",
       "empty_zone_name": "Името на зоната е задължително.",
       "obstruction_elevation_range_invalid": "„Блокирана от височина“ не трябва да е по-голяма от „Блокирана до височина“.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Опция A изисква избор на контактен сензор.",
+      "contact_sensor_required_for_lift": "Опция B изисква избор на контактен сензор.",
+      "invalid_glare_min_exposure": "Въведете минимална осветеност за заслепяване между 0 и 500 W/m².",
       "invalid_heat_hysteresis": "Въведете марж за освобождаване между 0 и 5 °C.",
       "night_clamp_window_invalid": "Най-ранният нощен тригер не трябва да бъде по-късен от най-късния.",
       "morning_clamp_window_invalid": "Най-ранният сутрешен тригер не трябва да бъде по-късен от най-късния."

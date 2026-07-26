@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Kültéri hőmérséklet-érzékelő",
           "cloud_cover_sensor_id": "Felhőzet-érzékelő (0–100 %)",
           "wind_speed_sensor_id": "Szélsebesség-érzékelő (m/s) — napellenzőkhöz/screenekhez használjon széllökést, ha elérhető",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Esőérzékelő (bináris be/ki vagy numerikus mm/h érték) – opcionális",
           "ema_enabled": "Érzékelőértékek simítása (EMA)",
           "ema_alpha": "EMA simítási tényező (0,05–1,0) — alacsonyabb = simább, magasabb = érzékenyebb"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Hővédelem engedélyezése",
           "glare_protection_enabled": "Vakításvédelem engedélyezése",
           "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Minimális megvilágítás a vakításvédelemhez",
           "heat_protection_hysteresis_c": "Hővédelem feloldási tartománya"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Kiválasztott ablak: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Napszektor és árnyékoló zónák",
+          "edit_window_contact": "Ablakkontaktus és éjszakai széllőztetés"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Napszektor és árnyékoló zónák",
         "data": {
           "manual_sun_sector_enabled": "Napszektor kézi felülírásának engedélyezése",
           "manual_sun_sector_start_deg": "Napszektor kezdő azimutja (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Ablakkontaktus és éjszakai széllőztetés",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "Az utolsó ablak nem távolítható el. Egy zónának legalább egy ablakkal kell rendelkeznie.",
       "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Az A lehetőséghez kontaktusérzékelő kiválasztása szükséges.",
+      "contact_sensor_required_for_lift": "A B lehetőséghez kontaktusérzékelő kiválasztása szükséges.",
+      "invalid_glare_min_exposure": "Adjon meg egy 0 és 500 W/m² közötti minimális vakítási megvilágítást.",
       "invalid_heat_hysteresis": "Adjon meg egy feloldási tartományt 0 és 5 °C között.",
       "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",
       "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Kültéri hőmérséklet-érzékelő",
           "cloud_cover_sensor_id": "Felhőzet-érzékelő (0–100 %)",
           "wind_speed_sensor_id": "Szélsebesség-érzékelő (m/s) — napellenzőkhöz/screenekhez használjon széllökést, ha elérhető",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Esőérzékelő (bináris be/ki vagy numerikus mm/h érték) – opcionális",
           "ema_enabled": "Érzékelőértékek simítása (EMA)",
           "ema_alpha": "EMA simítási tényező (0,05–1,0) — alacsonyabb = simább, magasabb = érzékenyebb"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Hővédelem engedélyezése",
           "glare_protection_enabled": "Vakításvédelem engedélyezése",
           "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Minimális megvilágítás a vakításvédelemhez",
           "heat_protection_hysteresis_c": "Hővédelem feloldási tartománya"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Válasszon legalább egy árnyékoló entitást ehhez az ablakhoz.",
       "empty_zone_name": "A zóna neve kötelező.",
       "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”.",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Az A lehetőséghez kontaktusérzékelő kiválasztása szükséges.",
+      "contact_sensor_required_for_lift": "A B lehetőséghez kontaktusérzékelő kiválasztása szükséges.",
+      "invalid_glare_min_exposure": "Adjon meg egy 0 és 500 W/m² közötti minimális vakítási megvilágítást.",
       "invalid_heat_hysteresis": "Adjon meg egy feloldási tartományt 0 és 5 °C között.",
       "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",
       "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél."

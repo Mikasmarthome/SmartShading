@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Buitentemperatuursensor",
           "cloud_cover_sensor_id": "Bewolkingssensor (0–100 %)",
           "wind_speed_sensor_id": "Windsnelheidssensor (m/s) — gebruik windstoten voor zonneschermen/screens indien beschikbaar",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Regensensor (binair aan/uit of numerieke mm/u-waarde) – optioneel",
           "ema_enabled": "Sensorwaarden afvlakken (EMA)",
           "ema_alpha": "EMA-afvlakkingsfactor (0,05–1,0) — lager = vlakker, hoger = responsiever"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Hittebescherming inschakelen",
           "glare_protection_enabled": "Verblindingsbescherming inschakelen",
           "solar_gain_enabled": "Zonnewinst inschakelen (winterzon)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Minimale blootstelling voor verblindingsbescherming",
           "heat_protection_hysteresis_c": "Vrijgavemarge van de hittebescherming"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Geselecteerd raam: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Zonsector & obstructiezones",
+          "edit_window_contact": "Raamcontact & nachtventilatie"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Zonsector & obstructiezones",
         "data": {
           "manual_sun_sector_enabled": "Handmatige overschrijving van de zonsector inschakelen",
           "manual_sun_sector_start_deg": "Startazimut zonsector (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Raamcontact & nachtventilatie",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "Kan het laatste venster niet verwijderen. Een zone moet minstens één venster hebben.",
       "obstruction_elevation_range_invalid": "\"Geblokkeerd vanaf hoogte\" mag niet groter zijn dan \"Geblokkeerd tot hoogte\".",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Optie A vereist dat er een contactsensor is geselecteerd.",
+      "contact_sensor_required_for_lift": "Optie B vereist dat er een contactsensor is geselecteerd.",
+      "invalid_glare_min_exposure": "Voer een minimale verblindingsblootstelling tussen 0 en 500 W/m² in.",
       "invalid_heat_hysteresis": "Voer een vrijgavemarge in tussen 0 en 5 °C.",
       "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
       "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Buitentemperatuursensor",
           "cloud_cover_sensor_id": "Bewolkingssensor (0–100 %)",
           "wind_speed_sensor_id": "Windsnelheidssensor (m/s) — gebruik windstoten voor zonneschermen/screens indien beschikbaar",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Regensensor (binair aan/uit of numerieke mm/u-waarde) – optioneel",
           "ema_enabled": "Sensorwaarden afvlakken (EMA)",
           "ema_alpha": "EMA-afvlakkingsfactor (0,05–1,0) — lager = vlakker, hoger = responsiever"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Hittebescherming inschakelen",
           "glare_protection_enabled": "Verblindingsbescherming inschakelen",
           "solar_gain_enabled": "Zonnewinst inschakelen (winterzon)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Minimale blootstelling voor verblindingsbescherming",
           "heat_protection_hysteresis_c": "Vrijgavemarge van de hittebescherming"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Selecteer ten minste één zonweringsentiteit voor dit venster.",
       "empty_zone_name": "Zonenaam is vereist.",
       "obstruction_elevation_range_invalid": "\"Geblokkeerd vanaf hoogte\" mag niet groter zijn dan \"Geblokkeerd tot hoogte\".",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "Optie A vereist dat er een contactsensor is geselecteerd.",
+      "contact_sensor_required_for_lift": "Optie B vereist dat er een contactsensor is geselecteerd.",
+      "invalid_glare_min_exposure": "Voer een minimale verblindingsblootstelling tussen 0 en 500 W/m² in.",
       "invalid_heat_hysteresis": "Voer een vrijgavemarge in tussen 0 en 5 °C.",
       "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
       "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste."

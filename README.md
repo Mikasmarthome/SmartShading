@@ -328,6 +328,7 @@ adjust most runtime settings through the integration's options (three-dot menu �
 | Presence entities and absence delay | Options → Presence settings |
 | Comfort goals and temperature thresholds | Options → Comfort settings |
 | Shade-position defaults | Options → Shading behavior |
+| Cover dispatch pacing (parallel / spaced / sequential, zone batching) | Options → Cover Dispatch |
 | Learning Mode per zone | Zone switch entity |
 | Active Control per zone | Zone switch entity |
 
@@ -345,6 +346,15 @@ Editing a window is organized into four focused pages, reached from a menu after
 Each page saves only its own settings and keeps the others untouched. A window can use **multiple contact
 sensors**; the night/ventilation logic then reacts to the aggregated contact state (open if any selected
 sensor is open). Existing single-contact configurations remain compatible.
+
+### Cover dispatch pacing
+
+When several covers are decided in the same cycle, **Options → Cover Dispatch** controls how their commands
+are paced: **Parallel** starts every command without delay, **With a time gap** waits a fixed number of
+seconds between starts, and **One after another** waits for each cover to finish moving before starting the
+next (with a configurable maximum wait and settle pause). **Keep zones apart** additionally enforces the
+start delay between different rooms/zones even in Parallel mode, so rooms stay visually separated. The
+default (**With a time gap**, 2 seconds, no zone batching) reproduces the pre-1.2 behavior.
 
 When referring to covers or sensors, use your own entity IDs. Generic examples:
 

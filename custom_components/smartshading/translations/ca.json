@@ -27,7 +27,7 @@
           "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
           "cloud_cover_sensor_id": "Sensor de nuvolositat (0–100 %)",
           "wind_speed_sensor_id": "Sensor de velocitat del vent (m/s) — fes servir la ratxa de vent per a tendals/screens si està disponible",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Sensor de pluja (binari encès/apagat o valor numèric mm/h) – opcional",
           "ema_enabled": "Suavitza les lectures dels sensors (EMA)",
           "ema_alpha": "Factor de suavitzat EMA (0,05–1,0) — més baix = més suau, més alt = més reactiu"
         }
@@ -110,7 +110,7 @@
           "heat_protection_enabled": "Activa la protecció contra la calor",
           "glare_protection_enabled": "Activa la protecció contra l'enlluernament",
           "solar_gain_enabled": "Activa el guany solar (sol d'hivern)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Exposició mínima per a la protecció contra enlluernament",
           "heat_protection_hysteresis_c": "Marge d'alliberament de la protecció contra calor"
         },
         "data_description": {
@@ -172,12 +172,12 @@
       },
       "edit_window_menu": {
         "title": "Edit window",
-        "description": "Selected window: {window_name}",
+        "description": "Finestra seleccionada: {window_name}",
         "menu_options": {
           "edit_window_basics": "Basics & cover",
           "edit_window_shading": "Shading behaviour",
-          "edit_window_solar": "Sun sector & obstruction zones",
-          "edit_window_contact": "Window contact & night ventilation"
+          "edit_window_solar": "Sector solar i zones d'obstrucció",
+          "edit_window_contact": "Contacte de finestra i ventilació nocturna"
         }
       },
       "edit_window_basics": {
@@ -214,7 +214,7 @@
         }
       },
       "edit_window_solar": {
-        "title": "Sun sector & obstruction zones",
+        "title": "Sector solar i zones d'obstrucció",
         "data": {
           "manual_sun_sector_enabled": "Activa la substitució manual del sector solar",
           "manual_sun_sector_start_deg": "Azimut d'inici del sector solar (°)",
@@ -249,7 +249,7 @@
         }
       },
       "edit_window_contact": {
-        "title": "Window contact & night ventilation",
+        "title": "Contacte de finestra i ventilació nocturna",
         "data": {
           "contact_sensor_entity_ids": "Window contact sensor (optional)",
           "night_block_on_window_open": "Block night move while window is open (Option A)",
@@ -443,9 +443,9 @@
     "error": {
       "cannot_remove_last_window": "No es pot eliminar l'última finestra. Una zona ha de tenir almenys una finestra.",
       "obstruction_elevation_range_invalid": "«Bloquejada des de l'elevació» no pot ser més gran que «Bloquejada fins a l'elevació».",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "L'opció A requereix seleccionar un sensor de contacte.",
+      "contact_sensor_required_for_lift": "L'opció B requereix seleccionar un sensor de contacte.",
+      "invalid_glare_min_exposure": "Introduïu una exposició mínima d'enlluernament entre 0 i 500 W/m².",
       "invalid_heat_hysteresis": "Introdueix un marge d'alliberament entre 0 i 5 °C.",
       "night_clamp_window_invalid": "L'activador nocturn més aviat no pot ser posterior al més tard.",
       "morning_clamp_window_invalid": "L'activador matinal més aviat no pot ser posterior al més tard.",
@@ -477,7 +477,7 @@
           "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
           "cloud_cover_sensor_id": "Sensor de nuvolositat (0–100 %)",
           "wind_speed_sensor_id": "Sensor de velocitat del vent (m/s) — fes servir la ratxa de vent per a tendals/screens si està disponible",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
+          "rain_sensor_id": "Sensor de pluja (binari encès/apagat o valor numèric mm/h) – opcional",
           "ema_enabled": "Suavitza les lectures dels sensors (EMA)",
           "ema_alpha": "Factor de suavitzat EMA (0,05–1,0) — més baix = més suau, més alt = més reactiu"
         }
@@ -582,7 +582,7 @@
           "heat_protection_enabled": "Activa la protecció contra la calor",
           "glare_protection_enabled": "Activa la protecció contra l'enlluernament",
           "solar_gain_enabled": "Activa el guany solar (sol d'hivern)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
+          "glare_min_exposure_wm2": "Exposició mínima per a la protecció contra enlluernament",
           "heat_protection_hysteresis_c": "Marge d'alliberament de la protecció contra calor"
         },
         "data_description": {
@@ -600,9 +600,9 @@
       "no_covers_selected": "Selecciona almenys una entitat de persiana per a aquesta finestra.",
       "empty_zone_name": "El nom de la zona és obligatori.",
       "obstruction_elevation_range_invalid": "«Bloquejada des de l'elevació» no pot ser més gran que «Bloquejada fins a l'elevació».",
-      "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
-      "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
+      "contact_sensor_required_for_block": "L'opció A requereix seleccionar un sensor de contacte.",
+      "contact_sensor_required_for_lift": "L'opció B requereix seleccionar un sensor de contacte.",
+      "invalid_glare_min_exposure": "Introduïu una exposició mínima d'enlluernament entre 0 i 500 W/m².",
       "invalid_heat_hysteresis": "Introdueix un marge d'alliberament entre 0 i 5 °C.",
       "night_clamp_window_invalid": "L'activador nocturn més aviat no pot ser posterior al més tard.",
       "morning_clamp_window_invalid": "L'activador matinal més aviat no pot ser posterior al més tard."

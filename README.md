@@ -279,6 +279,16 @@ anonymous — please review before sharing.
 
 ## Installation
 
+### Stable vs. beta
+
+The `main` branch always contains the current **stable** release; the `develop` branch is where
+the next version is developed and pre-released as a **beta**. The default HACS installation (and
+the "Install" button HACS shows for this repository) always installs the latest **stable**
+release from `main` — you will not end up on `develop` or a beta by accident. If you want to try a
+beta, choose its version explicitly (e.g. HACS's "Redownload" → select a specific, tagged
+pre-release version) rather than tracking `develop` directly. If you just want the stable
+experience, no extra step is needed — follow the instructions below as-is.
+
 ### HACS (custom repository)
 
 1. Add the SmartShading repository (`https://github.com/Mikasmarthome/SmartShading`) as a **custom

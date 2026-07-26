@@ -38,9 +38,22 @@ class TestManifestConsistency:
         )
 
     def test_manifest_version_matches_readme_badge(self) -> None:
+        """The README's badge is explicitly labelled "Stable release" and
+        links to /releases/latest — it represents whatever the actual
+        published stable release is, not necessarily this branch's
+        manifest.json version. On develop, manifest.json legitimately moves
+        ahead to a pre-release version (e.g. "1.2.0-beta.1") while the
+        stable badge correctly keeps pointing at the last real stable tag
+        (e.g. "1.1.9") — the two are only required to match when
+        manifest.json itself is NOT a pre-release version (i.e. on a
+        release/main-track commit), which is when a drift between them
+        would actually be a bug."""
         manifest = json.loads((_COMPONENT / "manifest.json").read_text(encoding="utf-8"))
         readme = (_REPO_ROOT / "README.md").read_text(encoding="utf-8")
         version = manifest["version"]
+        assert "stable-v" in readme, "README.md is missing its stable-version badge"
+        if any(marker in version for marker in ("beta", "alpha", "rc")):
+            return  # pre-release manifest version — badge legitimately differs
         assert f"stable-v{version}" in readme, (
             f"README.md's stable-version badge does not mention v{version} — "
             "manifest.json and README have drifted apart."

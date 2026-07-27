@@ -186,7 +186,10 @@ class TestMenuReachability:
         flow = _make_options_flow(data={})
         result = asyncio.run(flow.async_step_init(user_input=None))
         assert result["type"] == "menu"
-        assert "manual_override" in result["menu_options"]
+        assert "advanced" in result["menu_options"]
+        advanced = asyncio.run(flow.async_step_advanced(user_input=None))
+        assert advanced["type"] == "menu"
+        assert "manual_override" in advanced["menu_options"]
 
 
 class TestDefaultsPreselected:
@@ -341,7 +344,7 @@ class TestTranslationCompleteness:
         for path in files:
             data = json.loads(path.read_text(encoding="utf-8"))
             opt = data["options"]
-            assert "manual_override" in opt["step"]["init"]["menu_options"], path.name
+            assert "manual_override" in opt["step"]["advanced"]["menu_options"], path.name
             assert "manual_override" in opt["step"], path.name
             assert opt["step"]["manual_override"]["title"], path.name
             for key in (
@@ -372,7 +375,7 @@ class TestTranslationCompleteness:
     def test_no_english_leftovers_in_translations(self):
         en = json.loads((_INTEGRATION_ROOT / "translations" / "en.json").read_text(encoding="utf-8"))
         en_strings = {
-            en["options"]["step"]["init"]["menu_options"]["manual_override"],
+            en["options"]["step"]["advanced"]["menu_options"]["manual_override"],
             en["options"]["step"]["manual_override"]["title"],
             en["options"]["error"]["override_fixed_until_required"],
         }
@@ -382,7 +385,7 @@ class TestTranslationCompleteness:
             data = json.loads(path.read_text(encoding="utf-8"))
             opt = data["options"]
             strings = {
-                opt["step"]["init"]["menu_options"]["manual_override"],
+                opt["step"]["advanced"]["menu_options"]["manual_override"],
                 opt["step"]["manual_override"]["title"],
                 opt["error"]["override_fixed_until_required"],
             }

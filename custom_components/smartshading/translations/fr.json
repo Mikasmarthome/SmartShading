@@ -10,12 +10,8 @@
           "presence": "Réglages de présence",
           "comfort": "Réglages de confort",
           "behavior": "Comportement d'ombrage",
-          "add_window": "Ajouter une fenêtre",
-          "edit_window": "Modifier une fenêtre",
-          "remove_window": "Supprimer une fenêtre",
-          "lifecycle_profiles": "Profils de planning",
-          "manual_override": "Dérogation manuelle",
-          "dispatch": "Coordination des volets"
+          "windows": "Fenêtres",
+          "advanced": "Avancé"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Utilisé uniquement par \"Un par un\" — combien de temps attendre qu'un volet termine avant de continuer quand même.",
           "dispatch_post_travel_pause_s": "Utilisé uniquement par \"Un par un\" — une courte pause de stabilisation après qu'un volet termine, avant que le suivant démarre.",
           "dispatch_zone_batching": "Si activé, le délai entre les démarrages est toujours appliqué entre différentes pièces/zones, même en mode Parallèle, afin que les pièces restent visuellement séparées."
+        }
+      },
+      "windows": {
+        "title": "Fenêtres",
+        "description": "Ajouter, modifier ou supprimer des fenêtres dans cette zone.",
+        "menu_options": {
+          "add_window": "Ajouter une fenêtre",
+          "edit_window": "Modifier une fenêtre",
+          "remove_window": "Supprimer une fenêtre"
+        }
+      },
+      "advanced": {
+        "title": "Avancé",
+        "description": "Profils de cycle de vie, comportement de la prise de contrôle manuelle et timing d'envoi des volets — des réglages que la plupart des installations n'ont pas besoin de modifier.",
+        "menu_options": {
+          "lifecycle_profiles": "Profils de planning",
+          "manual_override": "Dérogation manuelle",
+          "dispatch": "Coordination des volets"
         }
       }
     },

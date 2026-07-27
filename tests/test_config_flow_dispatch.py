@@ -161,7 +161,10 @@ class TestMenuReachability:
         flow = _make_options_flow(data={})
         result = asyncio.run(flow.async_step_init(user_input=None))
         assert result["type"] == "menu"
-        assert "dispatch" in result["menu_options"]
+        assert "advanced" in result["menu_options"]
+        advanced = asyncio.run(flow.async_step_advanced(user_input=None))
+        assert advanced["type"] == "menu"
+        assert "dispatch" in advanced["menu_options"]
 
 
 class TestDefaultsPreselected:

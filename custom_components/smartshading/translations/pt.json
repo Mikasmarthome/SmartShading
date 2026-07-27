@@ -10,12 +10,8 @@
           "presence": "Definições de presença",
           "comfort": "Definições de conforto",
           "behavior": "Comportamento de sombreamento",
-          "add_window": "Adicionar janela",
-          "edit_window": "Editar janela",
-          "remove_window": "Remover janela",
-          "lifecycle_profiles": "Perfis de horário",
-          "manual_override": "Substituição manual",
-          "dispatch": "Coordenação dos estores"
+          "windows": "Janelas",
+          "advanced": "Avançado"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Usado apenas por \"Um de cada vez\" — quanto tempo esperar que um estore termine antes de continuar de qualquer forma.",
           "dispatch_post_travel_pause_s": "Usado apenas por \"Um de cada vez\" — uma breve pausa de estabilização depois de um estore terminar, antes de o seguinte começar.",
           "dispatch_zone_batching": "Quando ativado, o atraso entre inícios é sempre aplicado entre divisões/zonas diferentes, mesmo no modo Paralelo, para que as divisões permaneçam visualmente separadas."
+        }
+      },
+      "windows": {
+        "title": "Janelas",
+        "description": "Adicione, edite ou remova janelas nesta zona.",
+        "menu_options": {
+          "add_window": "Adicionar janela",
+          "edit_window": "Editar janela",
+          "remove_window": "Remover janela"
+        }
+      },
+      "advanced": {
+        "title": "Avançado",
+        "description": "Perfis de ciclo de vida, comportamento de substituição manual e temporização do envio de estores — definições que a maioria das instalações não precisa de alterar.",
+        "menu_options": {
+          "lifecycle_profiles": "Perfis de horário",
+          "manual_override": "Substituição manual",
+          "dispatch": "Coordenação dos estores"
         }
       }
     },

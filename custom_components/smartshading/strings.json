@@ -3,19 +3,15 @@
     "step": {
       "init": {
         "title": "Edit SmartShading settings",
-        "description": "Here you can edit the weather, comfort, schedule, presence, and shading settings for this zone, and add, edit, or remove windows.",
+        "description": "Here you can edit the weather, comfort, schedule, presence, and shading settings for this zone, manage windows, and access advanced settings.",
         "menu_options": {
           "weather": "Weather and solar inputs",
           "lifecycle": "Schedule settings",
           "presence": "Presence settings",
           "comfort": "Comfort settings",
           "behavior": "Shading behavior",
-          "add_window": "Add window",
-          "edit_window": "Edit window",
-          "remove_window": "Remove window",
-          "lifecycle_profiles": "Lifecycle profiles",
-          "manual_override": "Manual Override",
-          "dispatch": "Cover Dispatch"
+          "windows": "Windows",
+          "advanced": "Advanced"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Only used by \"One after another\" — how long to wait for a cover to finish before continuing anyway.",
           "dispatch_post_travel_pause_s": "Only used by \"One after another\" — a short settle pause after a cover finishes, before the next one starts.",
           "dispatch_zone_batching": "When enabled, the delay between starts is always applied between different rooms/zones, even in Parallel mode, so rooms stay visually separated."
+        }
+      },
+      "windows": {
+        "title": "Windows",
+        "description": "Add, edit, or remove windows in this zone.",
+        "menu_options": {
+          "add_window": "Add window",
+          "edit_window": "Edit window",
+          "remove_window": "Remove window"
+        }
+      },
+      "advanced": {
+        "title": "Advanced",
+        "description": "Lifecycle profiles, manual override behavior, and cover dispatch timing — settings most installations do not need to change.",
+        "menu_options": {
+          "lifecycle_profiles": "Lifecycle profiles",
+          "manual_override": "Manual Override",
+          "dispatch": "Cover Dispatch"
         }
       }
     },

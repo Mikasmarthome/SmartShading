@@ -10,12 +10,8 @@
           "presence": "Ajustes de presencia",
           "comfort": "Ajustes de confort",
           "behavior": "Comportamiento de sombreado",
-          "add_window": "Añadir ventana",
-          "edit_window": "Editar ventana",
-          "remove_window": "Eliminar ventana",
-          "lifecycle_profiles": "Perfiles de horario",
-          "manual_override": "Anulación manual",
-          "dispatch": "Coordinación de persianas"
+          "windows": "Ventanas",
+          "advanced": "Avanzado"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Solo se usa con \"Una tras otra\" — cuánto tiempo esperar a que una persiana termine antes de continuar de todos modos.",
           "dispatch_post_travel_pause_s": "Solo se usa con \"Una tras otra\" — una breve pausa de asentamiento tras terminar una persiana, antes de que empiece la siguiente.",
           "dispatch_zone_batching": "Si está activado, el retraso entre inicios se aplica siempre entre habitaciones/zonas distintas, incluso en modo Paralelo, para que las habitaciones se mantengan visualmente separadas."
+        }
+      },
+      "windows": {
+        "title": "Ventanas",
+        "description": "Añade, edita o elimina ventanas en esta zona.",
+        "menu_options": {
+          "add_window": "Añadir ventana",
+          "edit_window": "Editar ventana",
+          "remove_window": "Eliminar ventana"
+        }
+      },
+      "advanced": {
+        "title": "Avanzado",
+        "description": "Perfiles de ciclo de vida, comportamiento de la anulación manual y temporización del despacho de toldos — ajustes que la mayoría de las instalaciones no necesitan cambiar.",
+        "menu_options": {
+          "lifecycle_profiles": "Perfiles de horario",
+          "manual_override": "Anulación manual",
+          "dispatch": "Coordinación de persianas"
         }
       }
     },

@@ -10,12 +10,8 @@
           "presence": "Nastavenia prítomnosti",
           "comfort": "Nastavenia komfortu",
           "behavior": "Správanie tienenia",
-          "add_window": "Pridať okno",
-          "edit_window": "Upraviť okno",
-          "remove_window": "Odobrať okno",
-          "lifecycle_profiles": "Profily plánu",
-          "manual_override": "Ručné prepísanie",
-          "dispatch": "Koordinácia tienenia"
+          "windows": "Okná",
+          "advanced": "Pokročilé"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Používa sa iba pri \"Postupne\" — ako dlho čakať na dokončenie pohybu tienenia, kým sa aj tak pokračuje ďalej.",
           "dispatch_post_travel_pause_s": "Používa sa iba pri \"Postupne\" — krátka pokojová pauza po dokončení pohybu tienenia, kým sa spustí ďalšie.",
           "dispatch_zone_batching": "Ak je zapnuté, oneskorenie medzi štartmi sa vždy uplatní medzi rôznymi miestnosťami/zónami, aj v režime Súbežne, aby miestnosti zostali vizuálne oddelené."
+        }
+      },
+      "windows": {
+        "title": "Okná",
+        "description": "Pridanie, úprava alebo odstránenie okien v tejto zóne.",
+        "menu_options": {
+          "add_window": "Pridať okno",
+          "edit_window": "Upraviť okno",
+          "remove_window": "Odobrať okno"
+        }
+      },
+      "advanced": {
+        "title": "Pokročilé",
+        "description": "Profily životného cyklu, správanie ručného prepísania a časovanie odosielania žalúzií — nastavenia, ktoré väčšina inštalácií nemusí meniť.",
+        "menu_options": {
+          "lifecycle_profiles": "Profily plánu",
+          "manual_override": "Ručné prepísanie",
+          "dispatch": "Koordinácia tienenia"
         }
       }
     },

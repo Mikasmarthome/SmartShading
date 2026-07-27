@@ -10,12 +10,8 @@
           "presence": "Impostazioni di presenza",
           "comfort": "Impostazioni di comfort",
           "behavior": "Comportamento di ombreggiatura",
-          "add_window": "Aggiungi finestra",
-          "edit_window": "Modifica finestra",
-          "remove_window": "Rimuovi finestra",
-          "lifecycle_profiles": "Profili di programmazione",
-          "manual_override": "Override manuale",
-          "dispatch": "Coordinamento delle tapparelle"
+          "windows": "Finestre",
+          "advanced": "Avanzate"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Usato solo da \"Una alla volta\" — quanto attendere che una tapparella finisca prima di continuare comunque.",
           "dispatch_post_travel_pause_s": "Usato solo da \"Una alla volta\" — una breve pausa di assestamento dopo che una tapparella finisce, prima che parta la successiva.",
           "dispatch_zone_batching": "Se attivo, il ritardo tra gli avvii viene sempre applicato tra stanze/zone diverse, anche in modalità Parallelo, così le stanze restano visivamente separate."
+        }
+      },
+      "windows": {
+        "title": "Finestre",
+        "description": "Aggiungi, modifica o rimuovi finestre in questa zona.",
+        "menu_options": {
+          "add_window": "Aggiungi finestra",
+          "edit_window": "Modifica finestra",
+          "remove_window": "Rimuovi finestra"
+        }
+      },
+      "advanced": {
+        "title": "Avanzate",
+        "description": "Profili del ciclo di vita, comportamento dell'override manuale e tempistica di invio delle tapparelle — impostazioni che la maggior parte delle installazioni non deve modificare.",
+        "menu_options": {
+          "lifecycle_profiles": "Profili di programmazione",
+          "manual_override": "Override manuale",
+          "dispatch": "Coordinamento delle tapparelle"
         }
       }
     },

@@ -10,12 +10,8 @@
           "presence": "Präsenz-Einstellungen",
           "comfort": "Komforteinstellungen",
           "behavior": "Beschattungsverhalten",
-          "add_window": "Fenster hinzufügen",
-          "edit_window": "Fenster bearbeiten",
-          "remove_window": "Fenster entfernen",
-          "lifecycle_profiles": "Zeitplan-Profile",
-          "manual_override": "Manuelle Übersteuerung",
-          "dispatch": "Rollladen-Ansteuerung"
+          "windows": "Fenster",
+          "advanced": "Erweitert"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Nur bei \"Nacheinander\" verwendet — wie lange auf das Fahrtende eines Rollladens gewartet wird, bevor trotzdem fortgefahren wird.",
           "dispatch_post_travel_pause_s": "Nur bei \"Nacheinander\" verwendet — eine kurze Ruhepause nach Fahrtende, bevor der nächste Rollladen startet.",
           "dispatch_zone_batching": "Wenn aktiviert, wird der Abstand zwischen den Starts immer zwischen verschiedenen Räumen/Zonen eingehalten, auch im Modus \"Gleichzeitig\", damit Zonen sichtbar getrennt bleiben."
+        }
+      },
+      "windows": {
+        "title": "Fenster",
+        "description": "Fenster in dieser Zone hinzufügen, bearbeiten oder entfernen.",
+        "menu_options": {
+          "add_window": "Fenster hinzufügen",
+          "edit_window": "Fenster bearbeiten",
+          "remove_window": "Fenster entfernen"
+        }
+      },
+      "advanced": {
+        "title": "Erweitert",
+        "description": "Lifecycle-Profile, Verhalten der manuellen Übersteuerung und Timing des Beschattungs-Dispatch — Einstellungen, die die meisten Installationen nicht ändern müssen.",
+        "menu_options": {
+          "lifecycle_profiles": "Zeitplan-Profile",
+          "manual_override": "Manuelle Übersteuerung",
+          "dispatch": "Rollladen-Ansteuerung"
         }
       }
     },

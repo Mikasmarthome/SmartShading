@@ -10,12 +10,8 @@
           "presence": "Närvaroinställningar",
           "comfort": "Komfortinställningar",
           "behavior": "Solskyddsbeteende",
-          "add_window": "Lägg till fönster",
-          "edit_window": "Redigera fönster",
-          "remove_window": "Ta bort fönster",
-          "lifecycle_profiles": "Schemaprofiler",
-          "manual_override": "Manuell åsidosättning",
-          "dispatch": "Samordning av solskydd"
+          "windows": "Fönster",
+          "advanced": "Avancerat"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Används endast av \"En i taget\" — hur länge det väntas på att ett solskydd blir klart innan det ändå fortsätter.",
           "dispatch_post_travel_pause_s": "Används endast av \"En i taget\" — en kort paus efter att ett solskydd är klart, innan nästa startar.",
           "dispatch_zone_batching": "När aktiverat tillämpas fördröjningen mellan starter alltid mellan olika rum/zoner, även i läget Parallellt, så att rum förblir visuellt separerade."
+        }
+      },
+      "windows": {
+        "title": "Fönster",
+        "description": "Lägg till, redigera eller ta bort fönster i denna zon.",
+        "menu_options": {
+          "add_window": "Lägg till fönster",
+          "edit_window": "Redigera fönster",
+          "remove_window": "Ta bort fönster"
+        }
+      },
+      "advanced": {
+        "title": "Avancerat",
+        "description": "Livscykelprofiler, beteende för manuell åsidosättning och tidsstyrning av markisutskick — inställningar som de flesta installationer inte behöver ändra.",
+        "menu_options": {
+          "lifecycle_profiles": "Schemaprofiler",
+          "manual_override": "Manuell åsidosättning",
+          "dispatch": "Samordning av solskydd"
         }
       }
     },

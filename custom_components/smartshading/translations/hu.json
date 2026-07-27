@@ -10,12 +10,8 @@
           "presence": "Jelenléti beállítások",
           "comfort": "Komfortbeállítások",
           "behavior": "Árnyékolási viselkedés",
-          "add_window": "Ablak hozzáadása",
-          "edit_window": "Ablak szerkesztése",
-          "remove_window": "Ablak eltávolítása",
-          "lifecycle_profiles": "Ütemezési profilok",
-          "manual_override": "Kézi felülbírálás",
-          "dispatch": "Árnyékolók ütemezése"
+          "windows": "Ablakok",
+          "advanced": "Speciális"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Csak az \"Egymás után\" módnál használatos — mennyi ideig várjon egy árnyékoló befejezésére, mielőtt mindenképp folytatja.",
           "dispatch_post_travel_pause_s": "Csak az \"Egymás után\" módnál használatos — rövid megnyugvási szünet azután, hogy egy árnyékoló befejezte a mozgást, mielőtt a következő elindul.",
           "dispatch_zone_batching": "Ha engedélyezve van, az indítások közötti késleltetés mindig érvényesül a különböző szobák/zónák között, még Párhuzamos módban is, hogy a szobák vizuálisan elkülönüljenek."
+        }
+      },
+      "windows": {
+        "title": "Ablakok",
+        "description": "Ablakok hozzáadása, szerkesztése vagy eltávolítása ebben a zónában.",
+        "menu_options": {
+          "add_window": "Ablak hozzáadása",
+          "edit_window": "Ablak szerkesztése",
+          "remove_window": "Ablak eltávolítása"
+        }
+      },
+      "advanced": {
+        "title": "Speciális",
+        "description": "Életciklus-profilok, a kézi felülbírálás viselkedése és az árnyékolás-vezérlés időzítése — olyan beállítások, amelyeket a legtöbb telepítésnél nem kell módosítani.",
+        "menu_options": {
+          "lifecycle_profiles": "Ütemezési profilok",
+          "manual_override": "Kézi felülbírálás",
+          "dispatch": "Árnyékolók ütemezése"
         }
       }
     },

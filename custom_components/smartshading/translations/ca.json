@@ -10,12 +10,8 @@
           "presence": "Configuració de presència",
           "comfort": "Configuració de confort",
           "behavior": "Comportament d'ombreig",
-          "add_window": "Afegeix una finestra",
-          "edit_window": "Edita la finestra",
-          "remove_window": "Elimina la finestra",
-          "lifecycle_profiles": "Perfils d'horari",
-          "manual_override": "Anul·lació manual",
-          "dispatch": "Coordinació de les persianes"
+          "windows": "Finestres",
+          "advanced": "Avançat"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Només s'utilitza amb \"Una darrere l'altra\" — quant de temps s'espera que una persiana acabi abans de continuar igualment.",
           "dispatch_post_travel_pause_s": "Només s'utilitza amb \"Una darrere l'altra\" — una breu pausa d'assentament després que una persiana acabi, abans que comenci la següent.",
           "dispatch_zone_batching": "Si està activat, el retard entre inicis s'aplica sempre entre diferents habitacions/zones, fins i tot en mode Simultani, perquè les habitacions es mantinguin visualment separades."
+        }
+      },
+      "windows": {
+        "title": "Finestres",
+        "description": "Afegeix, edita o elimina finestres en aquesta zona.",
+        "menu_options": {
+          "add_window": "Afegeix una finestra",
+          "edit_window": "Edita la finestra",
+          "remove_window": "Elimina la finestra"
+        }
+      },
+      "advanced": {
+        "title": "Avançat",
+        "description": "Perfils de cicle de vida, comportament de la substitució manual i temporització del control de tendals — configuracions que la majoria d'instal·lacions no necessiten canviar.",
+        "menu_options": {
+          "lifecycle_profiles": "Perfils d'horari",
+          "manual_override": "Anul·lació manual",
+          "dispatch": "Coordinació de les persianes"
         }
       }
     },

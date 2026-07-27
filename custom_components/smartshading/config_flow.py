@@ -1374,7 +1374,30 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             return self.async_abort(reason="no_options_for_system_entry")
         return self.async_show_menu(
             step_id="init",
-            menu_options=["weather", "lifecycle", "presence", "comfort", "behavior", "add_window", "edit_window", "remove_window", "lifecycle_profiles", "manual_override", "dispatch"],
+            menu_options=["weather", "lifecycle", "presence", "comfort", "behavior", "windows", "advanced"],
+        )
+
+    # -- Windows: grouping submenu for add/edit/remove (T21 Phase C: reduces
+    # the top-level menu from 11 to 7 items; each sub-step below is otherwise
+    # completely unchanged). --
+
+    async def async_step_windows(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        return self.async_show_menu(
+            step_id="windows",
+            menu_options=["add_window", "edit_window", "remove_window"],
+        )
+
+    # -- Advanced: grouping submenu for the less-frequently-used sections
+    # (T21 Phase C). --
+
+    async def async_step_advanced(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        return self.async_show_menu(
+            step_id="advanced",
+            menu_options=["lifecycle_profiles", "manual_override", "dispatch"],
         )
 
     # -- Weather / sensor entities --

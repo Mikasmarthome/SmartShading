@@ -10,12 +10,8 @@
           "presence": "在场设置",
           "comfort": "舒适度设置",
           "behavior": "遮阳行为",
-          "add_window": "添加窗户",
-          "edit_window": "编辑窗户",
-          "remove_window": "移除窗户",
-          "lifecycle_profiles": "生命周期配置文件",
-          "manual_override": "手动覆盖",
-          "dispatch": "遮阳帘调度"
+          "windows": "窗户",
+          "advanced": "高级"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "仅用于\"依次执行\"模式——在继续执行前，等待遮阳帘完成运行的最长时间。",
           "dispatch_post_travel_pause_s": "仅用于\"依次执行\"模式——遮阳帘完成运行后、下一个启动前的短暂缓冲暂停。",
           "dispatch_zone_batching": "启用后，即使在并行模式下，不同房间/区域之间也始终应用启动间隔延迟，使房间在视觉上保持分隔。"
+        }
+      },
+      "windows": {
+        "title": "窗户",
+        "description": "在此区域添加、编辑或移除窗户。",
+        "menu_options": {
+          "add_window": "添加窗户",
+          "edit_window": "编辑窗户",
+          "remove_window": "移除窗户"
+        }
+      },
+      "advanced": {
+        "title": "高级",
+        "description": "生命周期配置文件、手动覆盖行为和遮阳调度时序——大多数安装不需要更改的设置。",
+        "menu_options": {
+          "lifecycle_profiles": "生命周期配置文件",
+          "manual_override": "手动覆盖",
+          "dispatch": "遮阳帘调度"
         }
       }
     },

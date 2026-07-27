@@ -533,7 +533,7 @@ class TestTranslationCompleteness:
         for path in files:
             data = json.loads(path.read_text(encoding="utf-8"))
             opt = data["options"]
-            assert "lifecycle_profiles" in opt["step"]["init"]["menu_options"], path.name
+            assert "lifecycle_profiles" in opt["step"]["advanced"]["menu_options"], path.name
             for step in (
                 "lifecycle_profiles", "add_lifecycle_profile", "edit_lifecycle_profile",
                 "edit_lifecycle_profile_detail", "remove_lifecycle_profile",

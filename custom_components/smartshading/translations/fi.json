@@ -10,12 +10,8 @@
           "presence": "Läsnäoloasetukset",
           "comfort": "Mukavuusasetukset",
           "behavior": "Varjostuskäyttäytyminen",
-          "add_window": "Lisää ikkuna",
-          "edit_window": "Muokkaa ikkunaa",
-          "remove_window": "Poista ikkuna",
-          "lifecycle_profiles": "Aikatauluprofiilit",
-          "manual_override": "Manuaalinen ohitus",
-          "dispatch": "Varjostimien ajoitus"
+          "windows": "Ikkunat",
+          "advanced": "Lisäasetukset"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Käytetään vain tilassa \"Peräkkäin\" — kuinka kauan odotetaan varjostimen lopettavan liikkeensä, ennen kuin jatketaan joka tapauksessa.",
           "dispatch_post_travel_pause_s": "Käytetään vain tilassa \"Peräkkäin\" — lyhyt asettumistauko sen jälkeen, kun varjostin on lopettanut liikkeensä, ennen kuin seuraava käynnistyy.",
           "dispatch_zone_batching": "Kun käytössä, käynnistysten välinen viive kohdistetaan aina eri huoneiden/vyöhykkeiden välille, myös Rinnakkain-tilassa, jotta huoneet pysyvät visuaalisesti erillään."
+        }
+      },
+      "windows": {
+        "title": "Ikkunat",
+        "description": "Lisää, muokkaa tai poista ikkunoita tässä vyöhykkeessä.",
+        "menu_options": {
+          "add_window": "Lisää ikkuna",
+          "edit_window": "Muokkaa ikkunaa",
+          "remove_window": "Poista ikkuna"
+        }
+      },
+      "advanced": {
+        "title": "Lisäasetukset",
+        "description": "Elinkaariprofiilit, manuaalisen ohituksen käyttäytyminen ja verhojen lähetyksen ajoitus — asetuksia, joita useimpien asennusten ei tarvitse muuttaa.",
+        "menu_options": {
+          "lifecycle_profiles": "Aikatauluprofiilit",
+          "manual_override": "Manuaalinen ohitus",
+          "dispatch": "Varjostimien ajoitus"
         }
       }
     },

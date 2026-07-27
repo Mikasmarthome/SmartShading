@@ -116,26 +116,38 @@ class TestMenuOptionsCompleteness:
     (config_flow.py's menu_options list) but strings.json's
     options.step.init.menu_options never had a label for it."""
 
-    _EXPECTED_MENU_KEYS = {
+    # T21 Phase C: the top-level "init" menu was reduced from 11 flat items
+    # to 7 by grouping window CRUD under "windows" and the less-frequently
+    # used sections under "advanced" (both themselves menu steps).
+    _EXPECTED_INIT_MENU_KEYS = {
         "weather", "lifecycle", "presence", "comfort", "behavior",
-        "add_window", "edit_window", "remove_window", "lifecycle_profiles",
-        "manual_override", "dispatch",
+        "windows", "advanced",
     }
+    _EXPECTED_WINDOWS_MENU_KEYS = {"add_window", "edit_window", "remove_window"}
+    _EXPECTED_ADVANCED_MENU_KEYS = {"lifecycle_profiles", "manual_override", "dispatch"}
 
     def test_strings_json_menu_options_has_all_expected_keys(self) -> None:
         data = _load(_STRINGS_PATH)
-        menu = data["options"]["step"]["init"]["menu_options"]
-        assert self._EXPECTED_MENU_KEYS <= set(menu.keys())
+        step = data["options"]["step"]
+        assert self._EXPECTED_INIT_MENU_KEYS <= set(step["init"]["menu_options"].keys())
+        assert self._EXPECTED_WINDOWS_MENU_KEYS <= set(step["windows"]["menu_options"].keys())
+        assert self._EXPECTED_ADVANCED_MENU_KEYS <= set(step["advanced"]["menu_options"].keys())
 
     def test_every_menu_option_has_a_non_empty_label_in_every_language(self) -> None:
         for path in _all_translation_files():
             data = _load(path)
-            menu = data["options"]["step"]["init"]["menu_options"]
-            for key in self._EXPECTED_MENU_KEYS:
-                assert key in menu, f"{path.name} menu_options missing '{key}'"
-                assert isinstance(menu[key], str) and menu[key].strip(), (
-                    f"{path.name} menu_options['{key}'] is empty"
-                )
+            step = data["options"]["step"]
+            for step_id, expected_keys in (
+                ("init", self._EXPECTED_INIT_MENU_KEYS),
+                ("windows", self._EXPECTED_WINDOWS_MENU_KEYS),
+                ("advanced", self._EXPECTED_ADVANCED_MENU_KEYS),
+            ):
+                menu = step[step_id]["menu_options"]
+                for key in expected_keys:
+                    assert key in menu, f"{path.name} {step_id}.menu_options missing '{key}'"
+                    assert isinstance(menu[key], str) and menu[key].strip(), (
+                        f"{path.name} {step_id}.menu_options['{key}'] is empty"
+                    )
 
     def test_dispatch_menu_step_id_matches_a_real_step(self) -> None:
         # "dispatch" must actually be a defined options.step (not just a

@@ -10,12 +10,8 @@
           "presence": "Tilstedeværelsesindstillinger",
           "comfort": "Komfortindstillinger",
           "behavior": "Afskærmningsadfærd",
-          "add_window": "Tilføj vindue",
-          "edit_window": "Rediger vindue",
-          "remove_window": "Fjern vindue",
-          "lifecycle_profiles": "Skemaprofiler",
-          "manual_override": "Manuel tilsidesættelse",
-          "dispatch": "Koordinering af afskærmninger"
+          "windows": "Vinduer",
+          "advanced": "Avanceret"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Bruges kun af \"En ad gangen\" — hvor længe der ventes på, at en afskærmning bliver færdig, før der fortsættes alligevel.",
           "dispatch_post_travel_pause_s": "Bruges kun af \"En ad gangen\" — en kort pause efter en afskærmning er færdig, før den næste starter.",
           "dispatch_zone_batching": "Når aktiveret, anvendes forsinkelsen mellem starter altid mellem forskellige rum/zoner, selv i tilstanden Samtidig, så rum forbliver visuelt adskilte."
+        }
+      },
+      "windows": {
+        "title": "Vinduer",
+        "description": "Tilføj, rediger eller fjern vinduer i denne zone.",
+        "menu_options": {
+          "add_window": "Tilføj vindue",
+          "edit_window": "Rediger vindue",
+          "remove_window": "Fjern vindue"
+        }
+      },
+      "advanced": {
+        "title": "Avanceret",
+        "description": "Livscyklusprofiler, manuel tilsidesættelsesadfærd og timing for skærmafsendelse — indstillinger, som de fleste installationer ikke behøver at ændre.",
+        "menu_options": {
+          "lifecycle_profiles": "Skemaprofiler",
+          "manual_override": "Manuel tilsidesættelse",
+          "dispatch": "Koordinering af afskærmninger"
         }
       }
     },

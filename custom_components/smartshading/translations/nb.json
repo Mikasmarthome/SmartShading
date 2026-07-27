@@ -10,12 +10,8 @@
           "presence": "Tilstedeværelsesinnstillinger",
           "comfort": "Komfortinnstillinger",
           "behavior": "Solskjermingsatferd",
-          "add_window": "Legg til vindu",
-          "edit_window": "Rediger vindu",
-          "remove_window": "Fjern vindu",
-          "lifecycle_profiles": "Tidsplanprofiler",
-          "manual_override": "Manuell overstyring",
-          "dispatch": "Koordinering av solskjerming"
+          "windows": "Vinduer",
+          "advanced": "Avansert"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Brukes kun av \"Én etter én\" — hvor lenge det ventes på at en solskjerming blir ferdig før det fortsettes likevel.",
           "dispatch_post_travel_pause_s": "Brukes kun av \"Én etter én\" — en kort pause etter at en solskjerming er ferdig, før den neste starter.",
           "dispatch_zone_batching": "Når aktivert, brukes forsinkelsen mellom startene alltid mellom ulike rom/soner, selv i Parallelt-modus, slik at rom forblir visuelt atskilt."
+        }
+      },
+      "windows": {
+        "title": "Vinduer",
+        "description": "Legg til, rediger eller fjern vinduer i denne sonen.",
+        "menu_options": {
+          "add_window": "Legg til vindu",
+          "edit_window": "Rediger vindu",
+          "remove_window": "Fjern vindu"
+        }
+      },
+      "advanced": {
+        "title": "Avansert",
+        "description": "Livssyklusprofiler, oppførsel for manuell overstyring og timing for skjermutsendelse — innstillinger de fleste installasjoner ikke trenger å endre.",
+        "menu_options": {
+          "lifecycle_profiles": "Tidsplanprofiler",
+          "manual_override": "Manuell overstyring",
+          "dispatch": "Koordinering av solskjerming"
         }
       }
     },

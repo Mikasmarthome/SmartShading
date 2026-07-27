@@ -10,12 +10,8 @@
           "presence": "Ustawienia obecności",
           "comfort": "Ustawienia komfortu",
           "behavior": "Zachowanie zacieniania",
-          "add_window": "Dodaj okno",
-          "edit_window": "Edytuj okno",
-          "remove_window": "Usuń okno",
-          "lifecycle_profiles": "Profile harmonogramu",
-          "manual_override": "Ręczne zastąpienie",
-          "dispatch": "Koordynacja osłon"
+          "windows": "Okna",
+          "advanced": "Zaawansowane"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Używane tylko przez \"Jedna po drugiej\" — jak długo czekać na zakończenie ruchu osłony, zanim mimo to nastąpi kontynuacja.",
           "dispatch_post_travel_pause_s": "Używane tylko przez \"Jedna po drugiej\" — krótka pauza uspokajająca po zakończeniu ruchu osłony, zanim uruchomi się kolejna.",
           "dispatch_zone_batching": "Gdy włączone, opóźnienie między startami jest zawsze stosowane między różnymi pomieszczeniami/strefami, nawet w trybie Równolegle, dzięki czemu pomieszczenia pozostają wizualnie oddzielone."
+        }
+      },
+      "windows": {
+        "title": "Okna",
+        "description": "Dodawanie, edytowanie lub usuwanie okien w tej strefie.",
+        "menu_options": {
+          "add_window": "Dodaj okno",
+          "edit_window": "Edytuj okno",
+          "remove_window": "Usuń okno"
+        }
+      },
+      "advanced": {
+        "title": "Zaawansowane",
+        "description": "Profile cyklu życia, zachowanie ręcznego zastąpienia i harmonogram wysyłania rolet — ustawienia, których większość instalacji nie musi zmieniać.",
+        "menu_options": {
+          "lifecycle_profiles": "Profile harmonogramu",
+          "manual_override": "Ręczne zastąpienie",
+          "dispatch": "Koordynacja osłon"
         }
       }
     },

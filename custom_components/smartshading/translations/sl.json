@@ -10,12 +10,8 @@
           "presence": "Nastavitve prisotnosti",
           "comfort": "Nastavitve udobja",
           "behavior": "Vedenje senčenja",
-          "add_window": "Dodaj okno",
-          "edit_window": "Uredi okno",
-          "remove_window": "Odstrani okno",
-          "lifecycle_profiles": "Profili urnika",
-          "manual_override": "Ročna preglasitev",
-          "dispatch": "Usklajevanje senčil"
+          "windows": "Okna",
+          "advanced": "Napredno"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Uporablja se samo pri \"Zaporedno\" — kako dolgo čakati na konec premika senčila, preden se kljub temu nadaljuje.",
           "dispatch_post_travel_pause_s": "Uporablja se samo pri \"Zaporedno\" — kratek premor po koncu premika senčila, preden se zažene naslednje.",
           "dispatch_zone_batching": "Če je omogočeno, se zamik med zagoni vedno uporabi med različnimi prostori/območji, tudi v načinu Sočasno, tako da prostori ostanejo vizualno ločeni."
+        }
+      },
+      "windows": {
+        "title": "Okna",
+        "description": "Dodajanje, urejanje ali odstranjevanje oken v tej coni.",
+        "menu_options": {
+          "add_window": "Dodaj okno",
+          "edit_window": "Uredi okno",
+          "remove_window": "Odstrani okno"
+        }
+      },
+      "advanced": {
+        "title": "Napredno",
+        "description": "Profili življenjskega cikla, obnašanje ročnega preglasitve in časovna razporeditev pošiljanja senčil — nastavitve, ki jih večina namestitev ne potrebuje spreminjati.",
+        "menu_options": {
+          "lifecycle_profiles": "Profili urnika",
+          "manual_override": "Ročna preglasitev",
+          "dispatch": "Usklajevanje senčil"
         }
       }
     },

@@ -10,12 +10,8 @@
           "presence": "Mevcudiyet ayarları",
           "comfort": "Konfor ayarları",
           "behavior": "Gölgeleme davranışı",
-          "add_window": "Pencere ekle",
-          "edit_window": "Pencereyi düzenle",
-          "remove_window": "Pencereyi kaldır",
-          "lifecycle_profiles": "Zamanlama profilleri",
-          "manual_override": "Manuel geçersiz kılma",
-          "dispatch": "Gölgelik Koordinasyonu"
+          "windows": "Pencereler",
+          "advanced": "Gelişmiş"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Yalnızca \"Sırayla\" tarafından kullanılır — yine de devam etmeden önce bir gölgeliğin bitmesinin ne kadar bekleneceği.",
           "dispatch_post_travel_pause_s": "Yalnızca \"Sırayla\" tarafından kullanılır — bir gölgelik bittikten sonra, bir sonraki başlamadan önceki kısa bir yatışma duraklaması.",
           "dispatch_zone_batching": "Etkinleştirildiğinde, başlangıçlar arasındaki gecikme, Paralel modda bile, farklı odalar/bölgeler arasında her zaman uygulanır; böylece odalar görsel olarak ayrı kalır."
+        }
+      },
+      "windows": {
+        "title": "Pencereler",
+        "description": "Bu bölgedeki pencereleri ekleyin, düzenleyin veya kaldırın.",
+        "menu_options": {
+          "add_window": "Pencere ekle",
+          "edit_window": "Pencereyi düzenle",
+          "remove_window": "Pencereyi kaldır"
+        }
+      },
+      "advanced": {
+        "title": "Gelişmiş",
+        "description": "Yaşam döngüsü profilleri, manuel geçersiz kılma davranışı ve perde gönderim zamanlaması — çoğu kurulumun değiştirmesi gerekmeyen ayarlar.",
+        "menu_options": {
+          "lifecycle_profiles": "Zamanlama profilleri",
+          "manual_override": "Manuel geçersiz kılma",
+          "dispatch": "Gölgelik Koordinasyonu"
         }
       }
     },

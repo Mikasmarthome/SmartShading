@@ -10,12 +10,8 @@
           "presence": "Nastavení přítomnosti",
           "comfort": "Nastavení komfortu",
           "behavior": "Chování stínění",
-          "add_window": "Přidat okno",
-          "edit_window": "Upravit okno",
-          "remove_window": "Odebrat okno",
-          "lifecycle_profiles": "Profily plánu",
-          "manual_override": "Ruční přepsání",
-          "dispatch": "Koordinace stínění"
+          "windows": "Okna",
+          "advanced": "Pokročilé"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Používá se pouze u \"Postupně\" — jak dlouho čekat na dokončení pohybu stínění, než se přesto pokračuje dál.",
           "dispatch_post_travel_pause_s": "Používá se pouze u \"Postupně\" — krátká klidová pauza po dokončení pohybu stínění, než se spustí další.",
           "dispatch_zone_batching": "Je-li zapnuto, prodleva mezi starty se vždy uplatní mezi různými místnostmi/zónami, i v režimu Souběžně, aby zůstaly místnosti vizuálně oddělené."
+        }
+      },
+      "windows": {
+        "title": "Okna",
+        "description": "Přidání, úprava nebo odebrání oken v této zóně.",
+        "menu_options": {
+          "add_window": "Přidat okno",
+          "edit_window": "Upravit okno",
+          "remove_window": "Odebrat okno"
+        }
+      },
+      "advanced": {
+        "title": "Pokročilé",
+        "description": "Profily životního cyklu, chování ručního přepsání a časování dispečinku žaluzií — nastavení, která většina instalací nepotřebuje měnit.",
+        "menu_options": {
+          "lifecycle_profiles": "Profily plánu",
+          "manual_override": "Ruční přepsání",
+          "dispatch": "Koordinace stínění"
         }
       }
     },

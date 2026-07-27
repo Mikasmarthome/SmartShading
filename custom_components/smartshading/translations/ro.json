@@ -10,12 +10,8 @@
           "presence": "Setări de prezență",
           "comfort": "Setări de confort",
           "behavior": "Comportament de umbrire",
-          "add_window": "Adăugați fereastră",
-          "edit_window": "Editați fereastra",
-          "remove_window": "Eliminați fereastra",
-          "lifecycle_profiles": "Profiluri de program",
-          "manual_override": "Suprascriere manuală",
-          "dispatch": "Coordonarea umbrarelor"
+          "windows": "Ferestre",
+          "advanced": "Avansat"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Folosit doar de \"Unul după altul\" — cât timp se așteaptă ca un umbrar să termine înainte de a continua oricum.",
           "dispatch_post_travel_pause_s": "Folosit doar de \"Unul după altul\" — o scurtă pauză de stabilizare după ce un umbrar termină, înainte ca următorul să pornească.",
           "dispatch_zone_batching": "Dacă este activat, întârzierea între porniri se aplică întotdeauna între camere/zone diferite, chiar și în modul Paralel, astfel încât camerele să rămână separate vizual."
+        }
+      },
+      "windows": {
+        "title": "Ferestre",
+        "description": "Adăugați, editați sau eliminați ferestre din această zonă.",
+        "menu_options": {
+          "add_window": "Adăugați fereastră",
+          "edit_window": "Editați fereastra",
+          "remove_window": "Eliminați fereastra"
+        }
+      },
+      "advanced": {
+        "title": "Avansat",
+        "description": "Profiluri de ciclu de viață, comportamentul suprascrierii manuale și temporizarea trimiterii jaluzelelor — setări pe care majoritatea instalațiilor nu trebuie să le modifice.",
+        "menu_options": {
+          "lifecycle_profiles": "Profiluri de program",
+          "manual_override": "Suprascriere manuală",
+          "dispatch": "Coordonarea umbrarelor"
         }
       }
     },

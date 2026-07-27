@@ -10,12 +10,8 @@
           "presence": "Aanwezigheidsinstellingen",
           "comfort": "Comfortinstellingen",
           "behavior": "Zonweringsgedrag",
-          "add_window": "Venster toevoegen",
-          "edit_window": "Venster bewerken",
-          "remove_window": "Venster verwijderen",
-          "lifecycle_profiles": "Schemaprofielen",
-          "manual_override": "Handmatige overschrijving",
-          "dispatch": "Coördinatie van zonweringen"
+          "windows": "Ramen",
+          "advanced": "Geavanceerd"
         }
       },
       "weather": {
@@ -441,6 +437,24 @@
           "dispatch_max_travel_wait_s": "Wordt alleen gebruikt door \"Na elkaar\" — hoe lang gewacht wordt tot een zonwering klaar is voordat er toch wordt doorgegaan.",
           "dispatch_post_travel_pause_s": "Wordt alleen gebruikt door \"Na elkaar\" — een korte rustpauze nadat een zonwering klaar is, voordat de volgende start.",
           "dispatch_zone_batching": "Indien ingeschakeld, wordt de vertraging tussen starts altijd toegepast tussen verschillende kamers/zones, ook in de modus Gelijktijdig, zodat kamers visueel gescheiden blijven."
+        }
+      },
+      "windows": {
+        "title": "Ramen",
+        "description": "Ramen toevoegen, bewerken of verwijderen in deze zone.",
+        "menu_options": {
+          "add_window": "Venster toevoegen",
+          "edit_window": "Venster bewerken",
+          "remove_window": "Venster verwijderen"
+        }
+      },
+      "advanced": {
+        "title": "Geavanceerd",
+        "description": "Levenscyclusprofielen, gedrag van handmatige overschrijving en timing van het verzenden van zonwering — instellingen die de meeste installaties niet hoeven te wijzigen.",
+        "menu_options": {
+          "lifecycle_profiles": "Schemaprofielen",
+          "manual_override": "Handmatige overschrijving",
+          "dispatch": "Coördinatie van zonweringen"
         }
       }
     },

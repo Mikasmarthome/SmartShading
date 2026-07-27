@@ -1,9 +1,13 @@
-"""Tests for T12's recent_outcomes / recent_learning_transitions support
-export sections — engines/support_export.py build_support_export_v3().
+"""Tests for T12's recent_outcomes support export section —
+engines/support_export.py build_support_export_v3().
 
-Before T12 these sections were hard-stubbed "not_recorded" even though the
-underlying LearningStore ring buffers existed and were populated. T12 wires
-them up: bounded, pseudonymized, newest-first.
+Before T12 this section was hard-stubbed "not_recorded" even though the
+underlying LearningStore ring buffer existed and was populated. T12 wires it
+up: bounded, pseudonymized, newest-first. (recent_learning_transitions, also
+added in T12, was removed in the T21 Final Correction — it duplicated the
+same decided_by/state-change values already fully covered by
+recent_decisions + support_timeline; see
+tests/test_t21_final_single_support_export.py.)
 """
 from __future__ import annotations
 
@@ -82,7 +86,7 @@ def _transition(*, minutes_ago: int) -> StateTransitionRecord:
 
 class TestRecentOutcomesSection:
     def test_empty_store_yields_empty_records_not_stub(self) -> None:
-        export = build_support_export_v3(_Coord(), now=_NOW, detail_level="extended")
+        export = build_support_export_v3(_Coord(), now=_NOW)
         section = export["recent_outcomes"]
         assert section.get("section_status") != "not_recorded"
         assert section["records"] == []
@@ -91,7 +95,7 @@ class TestRecentOutcomesSection:
         store = LearningStore()
         store.record_outcome(_outcome(minutes_ago=60, score=-0.5))
         store.record_outcome(_outcome(minutes_ago=10, score=0.5))
-        export = build_support_export_v3(_Coord(store=store), now=_NOW, detail_level="extended")
+        export = build_support_export_v3(_Coord(store=store), now=_NOW)
         recs = export["recent_outcomes"]["records"]
         assert len(recs) == 2
         assert recs[0]["outcome_score"] == 0.5
@@ -100,7 +104,7 @@ class TestRecentOutcomesSection:
     def test_window_id_is_pseudonymized(self) -> None:
         store = LearningStore()
         store.record_outcome(_outcome(minutes_ago=5, score=0.1))
-        export = build_support_export_v3(_Coord(store=store), now=_NOW, detail_level="extended")
+        export = build_support_export_v3(_Coord(store=store), now=_NOW)
         rec = export["recent_outcomes"]["records"][0]
         assert rec["window_ref"] != "w1"
         assert "window_id" not in rec
@@ -117,7 +121,7 @@ class TestRecentOutcomesSection:
         )
         store = LearningStore()
         store.record_outcome(outcome)
-        export = build_support_export_v3(_Coord(store=store), now=_NOW, detail_level="extended")
+        export = build_support_export_v3(_Coord(store=store), now=_NOW)
         rec = export["recent_outcomes"]["records"][0]
         assert rec["multi_objective"]["thermal_available"] is True
         assert rec["multi_objective"]["thermal_score"] == 0.6
@@ -126,7 +130,7 @@ class TestRecentOutcomesSection:
         store = LearningStore()
         for i in range(MAX_SUPPORT_OUTCOMES_PER_ZONE + 20):
             store.record_outcome(_outcome(minutes_ago=i, score=0.0))
-        export = build_support_export_v3(_Coord(store=store), now=_NOW, detail_level="extended")
+        export = build_support_export_v3(_Coord(store=store), now=_NOW)
         section = export["recent_outcomes"]
         assert len(section["records"]) <= MAX_SUPPORT_OUTCOMES_PER_ZONE
         assert section["truncation"]["truncated"] is True
@@ -134,32 +138,20 @@ class TestRecentOutcomesSection:
     def test_missing_learning_store_fails_open_with_honest_status(self) -> None:
         coord = _Coord()
         del coord.learning_store
-        export = build_support_export_v3(coord, now=_NOW, detail_level="extended")
+        export = build_support_export_v3(coord, now=_NOW)
         assert export["recent_outcomes"]["section_status"] == "not_recorded"
 
 
-class TestRecentLearningTransitionsSection:
-    def test_empty_store_yields_empty_records_not_stub(self) -> None:
-        export = build_support_export_v3(_Coord(), now=_NOW, detail_level="extended")
-        section = export["recent_learning_transitions"]
-        assert section.get("section_status") != "not_recorded"
-        assert section["records"] == []
+class TestRecentLearningTransitionsRemoved:
+    """T21 Final Correction: recent_learning_transitions was removed from the
+    Support Export — the same decided_by/state-change values it carried are
+    already fully covered by recent_decisions + support_timeline."""
 
-    def test_transitions_are_surfaced_newest_first(self) -> None:
-        store = LearningStore()
-        store.record_transition(_transition(minutes_ago=45))
-        store.record_transition(_transition(minutes_ago=5))
-        export = build_support_export_v3(_Coord(store=store), now=_NOW, detail_level="extended")
-        recs = export["recent_learning_transitions"]["records"]
-        assert len(recs) == 2
-        assert recs[0]["timestamp_utc"] > recs[1]["timestamp_utc"]
-
-    def test_window_id_is_pseudonymized(self) -> None:
+    def test_key_absent_from_export(self) -> None:
         store = LearningStore()
         store.record_transition(_transition(minutes_ago=5))
-        export = build_support_export_v3(_Coord(store=store), now=_NOW, detail_level="extended")
-        rec = export["recent_learning_transitions"]["records"][0]
-        assert rec["window_ref"] != "w1"
+        export = build_support_export_v3(_Coord(store=store), now=_NOW)
+        assert "recent_learning_transitions" not in export
 
     def test_export_never_raises_on_malformed_store(self) -> None:
         class _BrokenStore:
@@ -169,14 +161,13 @@ class TestRecentLearningTransitionsSection:
             def get_transitions(self, *a, **kw):
                 raise RuntimeError("boom")
 
-        export = build_support_export_v3(_Coord(store=_BrokenStore()), now=_NOW, detail_level="extended")
+        export = build_support_export_v3(_Coord(store=_BrokenStore()), now=_NOW)
         assert export["recent_outcomes"]["records"] == []
-        assert export["recent_learning_transitions"]["records"] == []
 
 
 class TestAdaptationTraceSection:
     def test_no_trace_yet_is_honest_not_recorded(self) -> None:
-        export = build_support_export_v3(_Coord(), now=_NOW, detail_level="extended")
+        export = build_support_export_v3(_Coord(), now=_NOW)
         section = export["adaptation_trace"][next(iter(export["adaptation_trace"]))]
         assert section["section_status"] == "not_recorded"
 
@@ -200,7 +191,7 @@ class TestAdaptationTraceSection:
                 reason="very_high confidence, thresholds adapted",
             ),
         }
-        export = build_support_export_v3(coord, now=_NOW, detail_level="extended")
+        export = build_support_export_v3(coord, now=_NOW)
         section = export["adaptation_trace"][next(iter(export["adaptation_trace"]))]
         assert section["confidence_level"] == "very_high"
         assert section["adaptation_strength"] == 0.4

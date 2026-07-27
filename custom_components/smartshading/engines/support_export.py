@@ -7,44 +7,69 @@ caps + byte cap with deterministic oldest-first truncation; never-raise per
 section.  Never mutates runtime state, never triggers a save, never recomputes a
 decision.
 
-Schema v4 (T21 Phase D3/D4) — quick reference for anyone reading an export:
-  support_export_schema_version: 4 (bumped from 3 in D3 — Standard's shape is
-    a structural change, not just added fields; Extended is the old v3 shape
-    renamed, not shrunk).
-  detail_level: "standard" (default) | "extended". A service call that never
-    passes it gets "standard" — pre-D3 callers keep working unchanged.
-  Guaranteed in BOTH levels: system, configuration, health, current_snapshot
-    (compacted in standard — see below), support_timeline (aggregated +
-    severity-tagged, T21 Phase D1), inputs (compacted in standard),
-    position_learning (compacted in standard), current_decisions (the
-    canonical per-zone Decision Record view — decided_by/resolved_target_ha/
-    target_chain/dispatch_action, all via engines/decision_record.py),
+Schema v4 (T21 Phase D3/D4/Final Correction) — quick reference for anyone
+reading an export:
+  support_export_schema_version: 4 (unchanged since D3 — the Final
+    Correction below only reverses D3's Standard/Extended split; it does not
+    introduce a new structural shape beyond what v4 already documented, so
+    no v5 bump for an in-development, unpublished intermediate stage).
+  ONE Support Export shape — no detail_level, no standard/extended split.
+    T21 Phase D3 introduced a selectable detail_level (standard default,
+    extended optional); the Final Correction removed it entirely. The
+    product model is exactly two exports: this one (short-term fault
+    diagnosis) and the separate Research Export (long-term analysis, see
+    research_export_v3.py). There is no third/hidden/selectable path.
+  Guaranteed blocks (always present — this export answers "what just
+    happened, to which zone/cover, why, and did the command succeed"):
+    system, configuration, health, current_snapshot (compact — see below),
+    support_timeline (aggregated + severity-tagged, T21 Phase D1),
+    inputs (compact solar/threshold/forecast provenance — see below),
+    position_learning (compact — see below), explainability,
+    current_decisions + recent_decisions (the canonical per-zone Decision
+    Record view — decided_by/resolved_target_ha/target_chain/dispatch_action,
+    all via engines/decision_record.py), recent_dispatches,
+    recent_no_dispatches, recent_outcomes, adaptation_trace (per-cycle, not
+    history), storage (error/health-relevant diagnostics), assumed_state,
     history_metadata, reason_codes (via reason_codes.collect_reason_codes_
     from_contract — the SAME collector research_export_v3.py uses),
     section_errors, pseudonymization.
-  Extended-only (dropped from standard entirely — deep/debug detail whose
-    essential facts are already covered compactly elsewhere): explainability,
-    recent_decisions, recent_dispatches, recent_no_dispatches, recent_outcomes,
-    recent_learning_transitions, storage, adaptation_trace.
-  Standard compaction rules (pure post-hoc projection of the SAME already-
-    built contract — never a second computation, see _compact_for_standard):
-    position_learning -> {summary, active_effects, blocked_effects, integrity}
-      (no per-intensity present:false/null padding, irrelevant intensities
-      absent); inputs.solar/threshold -> only selected source, raw/effective
-      values, quality, sector result, non-zero learned/forecast deltas,
-      fallback/glare reason (no unmodified seasonal_factor==1.0, no null
-      provenance fields); current_snapshot -> only genuine current-state
-      fields not already owned by current_decisions (position, target,
-      availability, contact, lifecycle, safety-active, last action + age,
-      recommendation-only) — decided_by/target-chain/dispatch metrics/solar
-      provenance dropped since current_decisions already has them.
+  Deliberately NOT included (redundant with the above, or long-term-only —
+    see Research Export instead): recent_learning_transitions (the same
+    decided_by/state-change information is already fully covered by
+    recent_decisions + support_timeline — kept it would have been a
+    redundant third view of the same values); full/raw (uncompacted)
+    input provenance and position-learning family structures (the compact
+    projections below already carry everything a fault diagnosis needs;
+    the raw form only ever existed as the D3 "Extended" shape); any
+    multi-day/week aggregate statistics (Research Export's job).
+  Compaction rules (always applied — not a detail-level choice, just how
+    this export is built): position_learning -> {summary, active_effects,
+    blocked_effects, integrity} (no per-intensity present:false/null
+    padding, irrelevant intensities absent); inputs.solar/threshold -> only
+    selected source, raw/effective values, quality, sector result, non-zero
+    learned/forecast deltas, fallback/glare reason (no unmodified
+    seasonal_factor==1.0, no null provenance fields); current_snapshot ->
+    only genuine current-state fields not already owned by
+    current_decisions (position, target, availability, contact, lifecycle,
+    safety-active, last action + age, recommendation-only) —
+    decided_by/target-chain/dispatch metrics/solar provenance dropped since
+    current_decisions already has them.
     Null/empty suppression is targeted, never a blind falsy-strip: `None` is
     dropped, but `target_position_ha: 0`, `cover_available: false`, etc.
     survive (see test_meaningful_falsy_values_survive_snapshot_compaction).
+  Timeline window: support_timeline covers the runtime-recent decision ring
+    (resets on restart/reload — see history_metadata.store_scope /
+    since_restart_only), capped at MAX_SUPPORT_TIMELINE_EVENTS with critical
+    events (dispatch_sent/dispatch_failed/safety/manual_override/absence/
+    night_transition) guaranteed to survive the cap, everything else
+    aggregated into occurrence-count records first (T21 Phase D1) — never
+    months of raw history, by design.
   Backward compatibility: only export SERIALIZATION changed. ConfigEntry/
     Timeline/Learning/Diagnostics storage formats, pseudonymization stability,
     and old (pre-D1) timeline event records are untouched and still normalize/
-    aggregate/classify-severity through the same code path.
+    aggregate/classify-severity through the same code path. detail_level was
+    introduced and removed within the same unpublished development phase, so
+    no compatibility shim for it was needed or added.
 """
 from __future__ import annotations
 
@@ -78,22 +103,6 @@ from .explainability import build_decision_explanation
 from ..models.runtime_mode import derive_authority
 
 SUPPORT_EXPORT_SCHEMA_VERSION: int = 4
-
-# T21 Phase D3: two supported detail levels for the support export.
-# "standard" (default) is a compacted, support-case-oriented view; "extended"
-# retains the full internal detail the export has always produced (renamed,
-# not shrunk, from what was previously the only shape — see
-# _compact_for_standard()). Both project the SAME already-built canonical
-# data; Standard is never a second independently-computed truth.
-_DETAIL_LEVELS = frozenset({"standard", "extended"})
-
-
-def _normalize_detail_level(detail_level) -> str:
-    """Never raises, never rejects a service call: an unrecognized/absent
-    value quietly falls back to "standard" rather than erroring out — a
-    service call made without detail_level (pre-D3 behaviour) must keep
-    working and yield the Standard export."""
-    return detail_level if detail_level in _DETAIL_LEVELS else "standard"
 
 # beta.10: raised so a support export can carry roughly the last 24 h of decisions
 # and no-dispatch holds per zone (≈1 decision / 5 min per window), which is what a
@@ -224,7 +233,6 @@ _SAME_POS_REASONS = frozenset({"same_position", "same_position_no_change"})
 MAX_SUPPORT_DISPATCHES_PER_ZONE = 200
 MAX_SUPPORT_NO_DISPATCHES_PER_ZONE = 300
 MAX_SUPPORT_OUTCOMES_PER_ZONE = 100
-MAX_SUPPORT_LEARNING_TRANSITIONS_PER_ZONE = 100
 MAX_SUPPORT_STORAGE_EVENTS_PER_ZONE = 50
 MAX_SUPPORT_EXPORT_BYTES = 2_000_000
 MAX_SUPPORT_STRING_LENGTH = MAX_STRING_LENGTH
@@ -233,7 +241,7 @@ MAX_SUPPORT_NESTED_DEPTH = MAX_NESTED_DEPTH
 # Truncation order: history sections shed oldest-first BEFORE current snapshots.
 _HISTORY_SECTIONS = (
     "recent_decisions", "recent_dispatches", "recent_no_dispatches",
-    "recent_outcomes", "recent_learning_transitions",
+    "recent_outcomes",
 )
 
 
@@ -467,24 +475,16 @@ def _compact_snapshot_entry(entry: dict) -> dict:
     return {k: entry.get(k) for k in keep}
 
 
-# Sections that are deep/debug-only detail — present in Extended, absent from
-# Standard entirely (their essential facts are already surfaced compactly
-# elsewhere: current_decisions/support_timeline cover explainability's role;
-# position_learning's compact summary covers adaptation_trace's "what
-# changed").
-_STANDARD_DROPPED_SECTIONS = (
-    "explainability", "recent_decisions", "recent_dispatches", "recent_no_dispatches",
-    "recent_outcomes", "recent_learning_transitions", "storage", "adaptation_trace",
-)
-
-
-def _compact_for_standard(contract: dict) -> dict:
-    """Project the already-assembled (Extended-shaped) contract down to the
-    Standard shape. Pure post-hoc projection of the same canonical data —
-    never recomputes anything, so Standard can never disagree with Extended
-    about a shared value."""
-    for key in _STANDARD_DROPPED_SECTIONS:
-        contract.pop(key, None)
+def _apply_compaction(contract: dict) -> dict:
+    """T21 Final Correction: there is exactly one Support Export shape now —
+    this always projects inputs/position_learning/current_snapshot down to
+    their compact form (previously only applied for the now-removed
+    "standard" detail_level). No section is ever dropped here; the blocks
+    that used to be Extended-only (explainability, recent_decisions,
+    recent_dispatches, recent_no_dispatches, recent_outcomes, storage,
+    adaptation_trace) are simply always present — see the module docstring's
+    "Guaranteed blocks" list for why each earns its place in short-term
+    fault diagnosis."""
     inputs = contract.get("inputs")
     if isinstance(inputs, dict):
         contract["inputs"] = {k: _compact_input_entry(v) for k, v in inputs.items()}
@@ -501,12 +501,9 @@ def _compact_for_standard(contract: dict) -> dict:
     return contract
 
 
-def build_support_export_v3(
-    coordinator, *, now=None, integration_version="unknown", detail_level="standard",
-) -> dict:
+def build_support_export_v3(coordinator, *, now=None, integration_version="unknown") -> dict:
     """Build the v3 support export for one config entry / its zone."""
     now = now or datetime.now(timezone.utc)
-    detail_level = _normalize_detail_level(detail_level)
     c = coordinator
     entry_id = getattr(getattr(c, "config_entry", None), "entry_id", None)
     pz = Pseudonymizer(entry_id)
@@ -1246,41 +1243,6 @@ def build_support_export_v3(
             "truncation": meta,
         }
 
-    def _pseudo_transition(wid: str, t) -> dict:
-        return {
-            "window_ref": _wref(wid),
-            "timestamp_utc": _iso_s(getattr(t, "timestamp", None)),
-            "from_state": str(getattr(t, "from_state", None)),
-            "to_state": str(getattr(t, "to_state", None)),
-            "decided_by": getattr(t, "decided_by", None),
-            "lifecycle_state": getattr(t, "lifecycle_state", None),
-        }
-
-    def _recent_learning_transitions():
-        store = getattr(c, "learning_store", None)
-        if store is None:
-            return {"section_status": "not_recorded", "reason": "learning_store_unavailable"}
-        recs = []
-        for wid in (getattr(c, "windows", {}) or {}):
-            try:
-                # Per-window read is unbounded here — the combined cap below
-                # is what actually bounds the exported total across windows.
-                for t in store.get_transitions(wid, limit=MAX_SUPPORT_LEARNING_TRANSITIONS_PER_ZONE * 4):
-                    recs.append((getattr(t, "timestamp", None), wid, t))
-            except Exception:
-                continue
-        # cap_records keeps the newest via records[-N:] — feed oldest-first.
-        recs.sort(key=lambda tpl: tpl[0] or now)
-        capped, meta = cap_records(
-            [{"timestamp": ts, "wid": wid, "t": t} for ts, wid, t in recs],
-            MAX_SUPPORT_LEARNING_TRANSITIONS_PER_ZONE,
-        )
-        capped = list(reversed(capped))  # newest-first for display
-        return {
-            "records": [_pseudo_transition(r["wid"], r["t"]) for r in capped],
-            "truncation": meta,
-        }
-
     def _recent_dispatches():
         snap = (getattr(c, "dispatch_trace_snapshot", lambda: {})() or {}).get("zones", {})
         recs = []
@@ -1319,7 +1281,6 @@ def build_support_export_v3(
 
     contract: dict = {
         "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
-        "detail_level": detail_level,
         "generated_at_utc": _iso_s(now),
         "generated_at_local": _iso_local(now, home_tz),
         "home_timezone": home_tz_name,
@@ -1346,12 +1307,12 @@ def build_support_export_v3(
         "recent_dispatches": _safe(_recent_dispatches, errors, "recent_dispatches"),
         "recent_no_dispatches": _safe(lambda: _no_dispatches(recent_dec), errors,
                                       "recent_no_dispatches"),
-        # T12: LearningStore's outcome/transition ring buffers are now
-        # surfaced here (bounded, pseudonymized) — see _recent_outcomes /
-        # _recent_learning_transitions.
+        # T12: LearningStore's outcome ring buffer is surfaced here (bounded,
+        # pseudonymized) — see _recent_outcomes. T21 Final Correction:
+        # recent_learning_transitions was removed — it duplicated the same
+        # decided_by/state-change values already fully covered by
+        # recent_decisions + support_timeline.
         "recent_outcomes": _safe(_recent_outcomes, errors, "recent_outcomes"),
-        "recent_learning_transitions": _safe(
-            _recent_learning_transitions, errors, "recent_learning_transitions"),
         "storage": _safe(_storage, errors, "storage"),
         "history_metadata": _safe(
             lambda: _support_history_metadata(recent_dec, dec_trunc), errors,
@@ -1366,15 +1327,13 @@ def build_support_export_v3(
             cur[pz.ref(NS_ZONE, zid)] = _pseudo_decision(recs[-1])
     contract["current_decisions"] = cur
 
-    # T21 Phase D3: Standard is a pure post-hoc projection of this same
-    # already-built contract — computed AFTER current_decisions so Standard
-    # and Extended can never disagree about the canonical decision values.
-    if detail_level == "standard":
-        contract = _compact_for_standard(contract)
+    # T21 Final Correction: compaction always applies — there is exactly one
+    # Support Export shape. Computed AFTER current_decisions so the compact
+    # inputs/position_learning/current_snapshot views can never disagree with
+    # the canonical Decision Record values.
+    contract = _apply_compaction(contract)
 
-    # reason-code registry for codes actually present (computed per detail
-    # level, after compaction, so it only lists codes actually visible in
-    # this export — never a superset of what the reader can see).
+    # reason-code registry for codes actually present in this export.
     contract["reason_codes"] = _collect_reason_codes(contract)
 
     # bounded depth + string caps.
@@ -1420,7 +1379,7 @@ def _aggregate_history_metadata(zones) -> dict:
 
 
 def build_support_export_all_zones(coordinators, *, now=None,
-                                   integration_version="unknown", detail_level="standard") -> dict:
+                                   integration_version="unknown") -> dict:
     """Aggregate Support Export across ALL active zone coordinators.
 
     Builds the per-zone v3 support export for every active zone and nests them
@@ -1429,19 +1388,12 @@ def build_support_export_all_zones(coordinators, *, now=None,
     captured as a per-zone section_error and degrades ``overall_status`` without
     aborting the whole export.  No active zone → an honest no-zone status, never
     a misleading healthy empty export.
-
-    T21 Phase D3: ``detail_level`` ("standard"/"extended", default "standard")
-    is threaded through to every per-zone build — an existing caller that
-    never passes it (the export button, any pre-D3 code) keeps getting the
-    Standard export, unchanged behaviour.
     """
     now = now or datetime.now(timezone.utc)
-    detail_level = _normalize_detail_level(detail_level)
     coords = [c for c in (coordinators or []) if c is not None]
     if not coords:
         return {
             "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
-            "detail_level": detail_level,
             "generated_at_utc": _iso_s(now),
             "integration_version": integration_version,
             "export_scope": "system_all_zones",
@@ -1459,8 +1411,7 @@ def build_support_export_all_zones(coordinators, *, now=None,
     degraded = False
     for c in coords:
         try:
-            z = build_support_export_v3(
-                c, now=now, integration_version=integration_version, detail_level=detail_level)
+            z = build_support_export_v3(c, now=now, integration_version=integration_version)
         except Exception:
             z = {"section_errors": {"zone": {"count": 1,
                                              "reason_codes": ["zone_builder_failed"]}}}
@@ -1481,7 +1432,6 @@ def build_support_export_all_zones(coordinators, *, now=None,
     _first_zone = zones[0] if zones and isinstance(zones[0], dict) else {}
     contract = {
         "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
-        "detail_level": detail_level,
         "generated_at_utc": _iso_s(now),
         "generated_at_local": _first_zone.get("generated_at_local"),
         "home_timezone": _first_zone.get("home_timezone"),

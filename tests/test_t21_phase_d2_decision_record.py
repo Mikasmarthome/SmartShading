@@ -204,8 +204,7 @@ def _rec_with_dispatch(ts, *, target=0.6):
 class TestExplainabilityAndSupportExportShareTheSameSource:
     def test_decided_by_and_target_match_between_explainability_and_timeline(self):
         rec = _rec_with_dispatch(_NOW.isoformat(), target=0.75)
-        export = build_support_export_v3(
-            _Coord(ring_records=[rec]), now=_NOW, detail_level="extended")
+        export = build_support_export_v3(_Coord(ring_records=[rec]), now=_NOW)
 
         expl_entry = next(iter(export["explainability"].values()))
         assert expl_entry["winning_rule"] == "Adaptive"

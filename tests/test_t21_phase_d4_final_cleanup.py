@@ -83,7 +83,7 @@ class TestExplainabilityDeadDescriptionsRemoved:
 
 class TestSharedHelpersBetweenExports:
     def test_both_exports_use_the_same_reason_codes_collector(self) -> None:
-        support = build_support_export_v3(_Coord(), now=_NOW, detail_level="extended")
+        support = build_support_export_v3(_Coord(), now=_NOW)
         research = build_research_export_v3(_Coord(), now=_NOW)
         assert isinstance(support["reason_codes"], dict)
         assert isinstance(research["reason_codes"], dict)

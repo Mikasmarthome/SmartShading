@@ -6,6 +6,45 @@ Deny-by-default allowlist builders; HMAC pseudonymization of every raw id; recor
 caps + byte cap with deterministic oldest-first truncation; never-raise per
 section.  Never mutates runtime state, never triggers a save, never recomputes a
 decision.
+
+Schema v4 (T21 Phase D3/D4) — quick reference for anyone reading an export:
+  support_export_schema_version: 4 (bumped from 3 in D3 — Standard's shape is
+    a structural change, not just added fields; Extended is the old v3 shape
+    renamed, not shrunk).
+  detail_level: "standard" (default) | "extended". A service call that never
+    passes it gets "standard" — pre-D3 callers keep working unchanged.
+  Guaranteed in BOTH levels: system, configuration, health, current_snapshot
+    (compacted in standard — see below), support_timeline (aggregated +
+    severity-tagged, T21 Phase D1), inputs (compacted in standard),
+    position_learning (compacted in standard), current_decisions (the
+    canonical per-zone Decision Record view — decided_by/resolved_target_ha/
+    target_chain/dispatch_action, all via engines/decision_record.py),
+    history_metadata, reason_codes (via reason_codes.collect_reason_codes_
+    from_contract — the SAME collector research_export_v3.py uses),
+    section_errors, pseudonymization.
+  Extended-only (dropped from standard entirely — deep/debug detail whose
+    essential facts are already covered compactly elsewhere): explainability,
+    recent_decisions, recent_dispatches, recent_no_dispatches, recent_outcomes,
+    recent_learning_transitions, storage, adaptation_trace.
+  Standard compaction rules (pure post-hoc projection of the SAME already-
+    built contract — never a second computation, see _compact_for_standard):
+    position_learning -> {summary, active_effects, blocked_effects, integrity}
+      (no per-intensity present:false/null padding, irrelevant intensities
+      absent); inputs.solar/threshold -> only selected source, raw/effective
+      values, quality, sector result, non-zero learned/forecast deltas,
+      fallback/glare reason (no unmodified seasonal_factor==1.0, no null
+      provenance fields); current_snapshot -> only genuine current-state
+      fields not already owned by current_decisions (position, target,
+      availability, contact, lifecycle, safety-active, last action + age,
+      recommendation-only) — decided_by/target-chain/dispatch metrics/solar
+      provenance dropped since current_decisions already has them.
+    Null/empty suppression is targeted, never a blind falsy-strip: `None` is
+    dropped, but `target_position_ha: 0`, `cover_available: false`, etc.
+    survive (see test_meaningful_falsy_values_survive_snapshot_compaction).
+  Backward compatibility: only export SERIALIZATION changed. ConfigEntry/
+    Timeline/Learning/Diagnostics storage formats, pseudonymization stability,
+    and old (pre-D1) timeline event records are untouched and still normalize/
+    aggregate/classify-severity through the same code path.
 """
 from __future__ import annotations
 

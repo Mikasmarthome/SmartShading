@@ -11,6 +11,21 @@ counterfactual, no current snapshot used as history):
   persisted adoption terminal history.
 
 Never mutates runtime, never dispatches, never saves, never resolves an outcome.
+
+T21 Phase D4 audit note — what IS and IS NOT shared with support_export.py:
+shared: the reason-code registry/collector (reason_codes.py), the
+pseudonymization helper (diagnostics_privacy.pseudonymization_metadata),
+runtime_mode derivation (models.runtime_mode.derive_authority). NOT shared:
+decision_record.py's resolve_target_ha/resolve_active_influences/
+resolve_dispatch_action/resolve_target_chain — those operate on the
+coordinator's live decision-trace RING record shape (authorities map,
+target_chain stages, no_dispatch dict) for a single cycle's explanation.
+This module reads persisted LearningStore ProvenanceSummary/DecisionOutcome
+objects instead — a different shape answering a different question
+(baseline-vs-adapted attribution across history, not "what happened this
+cycle"). Building an adapter to force the ring-shaped resolvers onto
+ProvenanceSummary data would fabricate fields that were never recorded that
+way; deliberately kept separate rather than doing that.
 """
 from __future__ import annotations
 
@@ -426,7 +441,14 @@ def build_research_export_all_zones(coordinators, *, now=None,
         "integration_version": integration_version,
         "export_scope": "system_all_zones",
         "overall_status": ("degraded" if errors else "ok"),
-        "pseudonymization": pseudonymization_metadata(stability_scope="export"),
+        # T21 Phase D4: was the vague/undocumented "export" — this export
+        # shares ONE Pseudonymizer instance (seeded by the FIRST zone's
+        # entry_id) across every zone's refs, unlike support_export.py's
+        # all-zones aggregate (each zone gets its own per-zone-seeded
+        # Pseudonymizer, "per_zone_config_entry"). Different, genuine
+        # semantics — not consolidated, just named honestly.
+        "pseudonymization": pseudonymization_metadata(
+            stability_scope="shared_seed_all_zones"),
         "system": {
             "zone_count": len(coords),
             "window_count": total_windows,

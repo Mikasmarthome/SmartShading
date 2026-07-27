@@ -39,22 +39,21 @@ from . import reason_codes as _rc
 # table now only needs entries for codes reason_codes.py doesn't have (heat
 # hysteresis reasons, command-filter suppression, presence-hold variants),
 # avoiding two independently-maintained descriptions for the same code.
+#
+# T21 Phase D4: confirmed-duplicate audit — 9 codes that used to live here
+# (active_control_off, dispatch_not_required, same_position,
+# no_target_position, recommendation_only, guard_action_interval,
+# presence_uncertain, behavior_mode_hold, startup_grace) are also in
+# reason_codes.py's registry, which _describe() always checks first — those
+# entries were dead (never actually reached) and have been removed. Only
+# codes reason_codes.py genuinely does not cover remain below.
 # ---------------------------------------------------------------------------
 
 _REASON_DESCRIPTIONS: dict[str, str] = {
-    "active_control_off": "Learning/observation mode only — real dispatch is disabled for this window.",
-    "dispatch_not_required": "The resolved target already matches the current position — no command needed.",
     "command_filter_suppressed": "The command filter suppressed dispatch (see contributing reasons).",
-    "same_position": "Target position unchanged from the current position.",
     "same_position_no_change": "Target position unchanged from the current position.",
-    "no_target_position": "No target position was resolved this cycle.",
-    "recommendation_only": "Recommendation-only mode — no real cover command is sent.",
-    "guard_action_interval": "The minimum action interval since the last command has not elapsed yet.",
-    "presence_uncertain": "Presence status is uncertain; the guarded action was withheld.",
     "min_interval_not_elapsed": "The minimum action interval since the last command has not elapsed yet.",
-    "behavior_mode_hold": "The window's behavior mode is holding this position.",
     "presence_uncertain_hold": "Presence status is uncertain; the position is being held.",
-    "startup_grace": "Startup grace period — dispatch is suppressed briefly after (re)start.",
     "not_recorded": "No specific reason was recorded for this cycle.",
     "held_missing_data": "Heat hysteresis held: required sensor data is missing.",
     "insufficient_data": "Heat hysteresis held: not enough data to evaluate the thresholds yet.",

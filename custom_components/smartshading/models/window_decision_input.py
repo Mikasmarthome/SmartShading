@@ -85,7 +85,7 @@ class WindowDecisionInput:
 
     # Active manual override, or None when no override is in effect (Tier 2).
     # Populated each cycle by OverrideDetector (engines/override_detector.py);
-    # consumed by ManualOverrideEvaluator (evaluators/manual_override_evaluator.py).
+    # consumed by evaluate_manual_override_policy (engines/manual_override_policy.py).
     # In-memory only — not persisted across HA restarts (Phase 2 extension).
     active_override: ManualOverride | None = None
 

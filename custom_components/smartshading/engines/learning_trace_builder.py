@@ -2,7 +2,7 @@
 
 Read-only, HA-free (duck-typed coordinator).  Aggregates ALREADY-COMPUTED runtime
 values + existing per-window diagnostics getters into the consolidated contract
-sections: inputs / source_provenance / position_learning / strategy_learning /
+sections: inputs / source_provenance / position_learning /
 learning_authority.  Never re-runs an evaluator, never recomputes a decision,
 never mutates state.  Honest status model: missing data → not_recorded (never
 fabricated, never silently 0/false).
@@ -19,17 +19,6 @@ S_NOT_CONFIGURED = "not_configured"
 S_NOT_RECORDED = "not_recorded"
 
 POSITION_INTENSITIES = ("light", "normal", "strong")
-STRATEGY_FAMILIES = (
-    "entry_threshold", "exit_threshold", "entry_timing", "exit_timing",
-    "tier_choice", "minimum_hold", "hysteresis",
-)
-# Code-grounded family units (FAMILY_BOUNDS in models/strategy_learning.py).
-STRATEGY_FAMILY_UNITS = {
-    "entry_threshold": "w_m2", "exit_threshold": "w_m2",
-    "entry_timing": "minutes", "exit_timing": "minutes",
-    "minimum_hold": "minutes", "hysteresis": "w_m2",
-    "tier_choice": "semantic_tier",
-}
 
 
 def _call(coord, name, *args):
@@ -220,7 +209,6 @@ def build_threshold_provenance(coord, window_id: str) -> dict:
     if snap is None or res is None:
         return {"recording_status": S_NOT_RECORDED}
     exp = snap.get("exposure")
-    strat_delta = _num(snap.get("strategy_threshold_delta_wm2")) or 0.0
     entry = {}
     for tier in ("light", "normal", "strong"):
         configured = _num(snap.get(f"configured_{tier}_wm2"))
@@ -231,7 +219,6 @@ def build_threshold_provenance(coord, window_id: str) -> dict:
             "configured_entry_threshold_w_m2": configured,
             "entry_learned_delta_w_m2": learned,
             "entry_forecast_delta_w_m2": forecast,
-            "entry_strategy_delta_w_m2": strat_delta,
             # equals the actual evaluator threshold input (the resolver output that
             # was written into the adapted BehaviorConfig used for tier evaluation).
             "effective_entry_threshold_w_m2": effective,
@@ -361,46 +348,6 @@ def _position_experiment_delta(coord, window_id: str, intensity: str):
 
 
 # ---------------------------------------------------------------------------
-# strategy learning trace
-# ---------------------------------------------------------------------------
-
-def build_strategy_learning_trace(coord, window_id: str) -> dict:
-    sad = _call(coord, "strategy_adoption_diagnostics", window_id) or {}
-    fam_map = sad.get("families", {})
-    cycle_applied = getattr(coord, "_cycle_strategy_applied", {}).get(window_id, {})
-    out: dict = {"families": {}, "ledger_integrity_state": _ledger_state(coord, "strategy")}
-    for family in STRATEGY_FAMILIES:
-        a = fam_map.get(family, {})
-        applied = family in cycle_applied
-        out["families"][family] = {
-            "family": family,
-            "unit": STRATEGY_FAMILY_UNITS[family],
-            "context_family": a.get("context_family"),
-            "adopted_delta": a.get("adopted_delta"),
-            "effective_learning_delta": a.get("adopted_delta"),
-            "effective_value": a.get("effective_value"),
-            "active_adoption": {
-                "present": bool(a),
-                "adoption_id_internal": a.get("adoption_id"),
-                "status": a.get("adoption_status"),
-                "suspended": a.get("suspended"),
-                "gate_reason": a.get("current_gate_reason"),
-                "rollback_reason": a.get("rollback_reason"),
-                "monitoring_count": a.get("monitoring_count"),
-                "degraded_count": a.get("degraded_count"),
-                "preference_rejection_count": a.get("preference_rejection_count"),
-                "cooldown_remaining_days": a.get("cooldown_remaining_days"),
-                "confidence": a.get("confidence"),
-                "reliability": a.get("reliability"),
-            },
-            "applied_this_decision": applied,
-            "applied_source": ("adoption" if applied else None),
-            "blocked_reason": (a.get("current_gate_reason") if a.get("suspended") else None),
-        }
-    return out
-
-
-# ---------------------------------------------------------------------------
 # learning authority matrix
 # ---------------------------------------------------------------------------
 
@@ -413,7 +360,6 @@ def build_learning_authority(coord, window_id: str) -> dict:
     pos_safe = _ledger_state(coord, "position")["safe_for_learning"]
     strat_safe = _ledger_state(coord, "strategy")["safe_for_learning"]
     pos_applied = window_id in getattr(coord, "_cycle_adoption_applied", {})
-    strat_applied = window_id in getattr(coord, "_cycle_strategy_applied", {})
     blocking: list = []
     if not learning:
         blocking.append("learning_mode_off")
@@ -428,9 +374,6 @@ def build_learning_authority(coord, window_id: str) -> dict:
         "active_control_enabled": active,
         "position_experiments_allowed": learning and active and pos_safe,
         "position_adoptions_allowed": learning and pos_safe,
-        "strategy_experiments_allowed": learning and active and strat_safe,
-        "strategy_adoptions_allowed": learning and strat_safe,
         "position_adoption_applied": pos_applied,
-        "strategy_adoption_applied": strat_applied,
         "blocking_reasons": blocking,
     }

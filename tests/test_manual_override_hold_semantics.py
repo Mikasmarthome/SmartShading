@@ -51,14 +51,8 @@ from dataclasses import replace
 from datetime import datetime, timezone
 
 from custom_components.smartshading.engines.manual_override_policy import evaluate_manual_override_policy
-from custom_components.smartshading.evaluators.manual_override_evaluator import ManualOverrideEvaluator
 from custom_components.smartshading.models.manual_override import ManualOverride
 from custom_components.smartshading.models.window_decision import WindowDecision
-from custom_components.smartshading.models.window_decision_input import build_window_decision_input
-from custom_components.smartshading.models.config import GlobalDefaults, ShadePositionDefaults
-from custom_components.smartshading.models.lifecycle import LifecycleState, NightDayLifecycleConfig
-from custom_components.smartshading.models.window import WindowConfig
-from custom_components.smartshading.models.zone import ZoneConfig
 from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 _NOW = datetime(2026, 6, 17, 14, 0, tzinfo=timezone.utc)
@@ -81,23 +75,22 @@ def _presence_uncertain_hold_candidate() -> WindowDecision:
 
 class TestBlockedHoldMatchesPreT7ManualOverrideEvaluatorExactly:
     def test_field_by_field_comparison(self) -> None:
-        """Directly constructs what the OLD (still-existing, still-tested,
-        just no-longer-wired-into-the-pipeline) ManualOverrideEvaluator
-        would have produced for the same active_override, and compares it
-        field-by-field against the NEW policy's blocked-candidate output."""
+        """Compares the NEW policy's blocked-candidate output against the
+        exact, deterministic shape the pre-T7 ManualOverrideEvaluator class
+        always produced (unconditionally: MANUAL_OVERRIDE at the override's
+        own position, decided_by="ManualOverrideEvaluator", no tilt). The
+        class itself was removed in T21 (confirmed zero production callers
+        since T7) — this hardcodes its known, simple, single-branch contract
+        rather than invoking it, so the field-by-field regression check
+        survives the removal."""
         override = _override(55)
-        wdi = build_window_decision_input(
-            window=WindowConfig(id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0, cover_group_id="cg1"),
-            zone=ZoneConfig(id="z1", name="Zone"),
-            global_defaults=GlobalDefaults(), shade_position_defaults=ShadePositionDefaults(),
-            lifecycle_config=NightDayLifecycleConfig(id="default"),
-            lifecycle_state=LifecycleState.DAY, absence_active=False,
-            current_shading_state=ShadingState.OPEN,
-            outdoor_temp_c=None, indoor_temp_c=None, exposure=None, is_in_solar_sector=False,
-            active_override=override,
+        legacy_result = WindowDecision(
+            window_id="w1",
+            shading_state=ShadingState.MANUAL_OVERRIDE,
+            target_position=override.override_position,
+            decided_by="ManualOverrideEvaluator",
+            category=DecisionCategory.HOLD,
         )
-        legacy_result = ManualOverrideEvaluator().evaluate(wdi)
-        assert legacy_result is not None
 
         new_result = evaluate_manual_override_policy(
             active_override=override, candidate=_presence_uncertain_hold_candidate(),

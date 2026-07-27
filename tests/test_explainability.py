@@ -30,7 +30,6 @@ def _rec(**overrides) -> dict:
             "lifecycle_authority": {"active": False},
             "absence_authority": {"active": False},
             "position_learning_authority": {"applied": False},
-            "strategy_learning_authority": {"applied": False},
             "harmonization_authority": {"applied": False},
             "command_filter_authority": {"blocked": False, "reason_code": None},
             "dispatch_authority": {"applied": False, "blocked": False, "reason_code": None},
@@ -71,13 +70,11 @@ class TestInfluencesFromAuthorities:
         assert exp.influences.lifecycle is True
         assert exp.influences.presence_absence is True
 
-    def test_learning_influences_from_position_and_strategy_authorities(self) -> None:
+    def test_learning_influences_from_position_authority(self) -> None:
         rec = _rec()
         rec["authorities"]["position_learning_authority"]["applied"] = True
-        rec["authorities"]["strategy_learning_authority"]["applied"] = True
         exp = build_decision_explanation(rec)
         assert exp.influences.learning_position is True
-        assert exp.influences.learning_strategy is True
 
     def test_heat_protection_influence_from_heat_diag(self) -> None:
         exp = build_decision_explanation(_rec(), heat_diag={"active": True, "reason": "entered"})

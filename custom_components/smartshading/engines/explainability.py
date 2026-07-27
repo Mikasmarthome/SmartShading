@@ -92,7 +92,6 @@ class DecisionInfluences:
     presence_absence: bool = False
     heat_protection: bool = False
     learning_position: bool = False
-    learning_strategy: bool = False
     harmonization: bool = False
     adaptation: bool = False
 
@@ -104,7 +103,6 @@ class DecisionInfluences:
             "presence_absence": self.presence_absence,
             "heat_protection": self.heat_protection,
             "learning_position": self.learning_position,
-            "learning_strategy": self.learning_strategy,
             "harmonization": self.harmonization,
             "adaptation": self.adaptation,
         }
@@ -174,7 +172,6 @@ def build_decision_explanation(
     lifecycle_active = bool(_auth("lifecycle_authority").get("active"))
     absence_active = bool(_auth("absence_authority").get("active"))
     position_learning_applied = bool(_auth("position_learning_authority").get("applied"))
-    strategy_learning_applied = bool(_auth("strategy_learning_authority").get("applied"))
     harmonization_applied = bool(_auth("harmonization_authority").get("applied"))
 
     heat_active = bool((heat_diag or {}).get("active"))
@@ -187,7 +184,6 @@ def build_decision_explanation(
         presence_absence=absence_active,
         heat_protection=heat_active,
         learning_position=position_learning_applied,
-        learning_strategy=strategy_learning_applied,
         harmonization=harmonization_applied,
         adaptation=adaptation_active,
     )

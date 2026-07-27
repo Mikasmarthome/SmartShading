@@ -58,10 +58,6 @@ class TestDeadSymbolsRemainRemoved:
         ("models/multi_objective_outcome.py", {"ATTRIBUTION_WINDOW_CANDIDATE", "RECON_EXACT"}),
         ("models/persistent_adoption.py", {"ADOPTION_AGE_CAP_DAYS"}),
         ("models/shading_strategy.py", {"STRATEGY_STATES"}),
-        ("models/strategy_learning.py", {
-            "ALL_FAMILIES", "THRESHOLD_FAMILIES", "AGE_CAP_DAYS",
-            "EXPERIMENT_HISTORY_PER_KEY", "EVAL_UNAVAILABLE", "EVAL_CONFOUNDED", "TIER_ORDER",
-        }),
         ("models/window_contribution.py", {"_clamp01"}),
         ("models/state.py", {"ShadeState", "StateLock", "LockReason"}),
         ("entities/button.py", {"_collect_zone_entries", "_resolve_zone_coordinator"}),
@@ -163,23 +159,3 @@ class TestCompatAndReservedSymbolsStillPresent:
         assert "class ReasonCode" in source
         for member in ("MANUAL_OVERRIDE_CLEARED", "STORM_CLEARED", "PRESENCE_DETECTED"):
             assert member in source
-
-
-# ---------------------------------------------------------------------------
-# _maybe_adopt_strategy: documented architecture reserve, not removed
-# ---------------------------------------------------------------------------
-
-class TestStrategyAdoptionPromotionDocumentedNotRemoved:
-    """T17 audited this path in depth: it's fully implemented but has zero
-    callers because the entire P9B strategy-experiment INJECTION engine
-    (mirroring _experiment_try_inject for P7) was never built — not a small
-    wiring gap. Kept as a named, documented architecture reserve rather than
-    removed or silently left stale."""
-
-    def test_maybe_adopt_strategy_kept_with_honest_docstring(self) -> None:
-        source = _source("coordinator.py")
-        assert "def _maybe_adopt_strategy" in source
-        idx = source.index("def _maybe_adopt_strategy")
-        window = source[idx:idx + 2200]
-        assert "T17" in window
-        assert "architecture reserve" in window

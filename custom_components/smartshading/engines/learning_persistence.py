@@ -53,10 +53,6 @@ from ..models.pending_outcome import PendingOutcome
 from ..models.thermal_response import ThermalResponseModel, ThermalResponseObservation
 from ..models.bounded_experiment import BoundedExperiment
 from ..models.persistent_adoption import PersistentTargetAdoption
-from ..models.strategy_learning import (
-    BoundedStrategyExperiment,
-    PersistentStrategyAdoption,
-)
 from ..models.shadow_proposal import ShadowProposal
 from ..models.window_contribution import (
     WindowContributionEvidence,
@@ -472,8 +468,6 @@ def serialize_learning_store(
     shadow_proposals: list | None = None,
     bounded_experiments: list | None = None,
     persistent_adoptions: list | None = None,
-    strategy_experiments: list | None = None,
-    persistent_strategy_adoptions: list | None = None,
     consumed_experiment_ledger: dict | None = None,
     shadow_tombstones: list | None = None,
     active_overrides: list | None = None,
@@ -574,9 +568,6 @@ def serialize_learning_store(
         "bounded_experiments": bounded_experiments or [],
         # P8 — persistent target adoptions (active + terminal history; additive).
         "persistent_adoptions": persistent_adoptions or [],
-        # P9B — bounded strategy experiments + persistent strategy adoptions.
-        "strategy_experiments": strategy_experiments or [],
-        "persistent_strategy_adoptions": persistent_strategy_adoptions or [],
         # P10 — permanent consumed-experiment ledger + ownership (v3 additive).
         "consumed_experiment_ledger": consumed_experiment_ledger or {},
         # P10 — compact shadow provenance tombstones (no full time series).
@@ -790,8 +781,6 @@ class RestoreExtras:
     shadow_proposals: list  # list[ShadowProposal]
     bounded_experiments: list  # list[BoundedExperiment]
     persistent_adoptions: list  # list[PersistentTargetAdoption]
-    strategy_experiments: list  # list[BoundedStrategyExperiment]
-    persistent_strategy_adoptions: list  # list[PersistentStrategyAdoption]
     consumed_experiment_ledger: dict  # ConsumedExperimentLedger payload
     shadow_tombstones: list  # list[ShadowTombstone]
     owner_entry_id: str | None
@@ -1097,26 +1086,6 @@ def deserialize_into_learning_store(
         except Exception as _exc:
             _LOGGER.warning("Learning: skipping malformed persistent adoption #%d (%s: %s)", i, type(_exc).__name__, _exc)
 
-    # --- P9B strategy experiments + adoptions (additive, optional) ---
-    _sv["strategy_experiments"] = validate_records(
-        data.get("strategy_experiments", []), now=now, id_key="experiment_id",
-        timestamp_fields=("created_at", "updated_at", "completed_at"))
-    strategy_experiments: list = []
-    for i, raw in enumerate(_sv["strategy_experiments"].valid_records):
-        try:
-            strategy_experiments.append(BoundedStrategyExperiment.from_dict(raw))
-        except Exception as _exc:
-            _LOGGER.warning("Learning: skipping malformed strategy experiment #%d (%s: %s)", i, type(_exc).__name__, _exc)
-    _sv["strategy_adoptions"] = validate_records(
-        data.get("persistent_strategy_adoptions", []), now=now, id_key="adoption_id",
-        timestamp_fields=("created_at", "updated_at"), reject_negative_counts=True)
-    persistent_strategy_adoptions: list = []
-    for i, raw in enumerate(_sv["strategy_adoptions"].valid_records):
-        try:
-            persistent_strategy_adoptions.append(PersistentStrategyAdoption.from_dict(raw))
-        except Exception as _exc:
-            _LOGGER.warning("Learning: skipping malformed strategy adoption #%d (%s: %s)", i, type(_exc).__name__, _exc)
-
     # --- P10 shadow provenance tombstones (additive, optional) ---
     from ..models.shadow_tombstone import ShadowTombstone
     _sv["position_tombstones"] = validate_records(
@@ -1178,8 +1147,6 @@ def deserialize_into_learning_store(
         shadow_proposals=shadow_proposals,
         bounded_experiments=bounded_experiments,
         persistent_adoptions=persistent_adoptions,
-        strategy_experiments=strategy_experiments,
-        persistent_strategy_adoptions=persistent_strategy_adoptions,
         consumed_experiment_ledger=(data.get("consumed_experiment_ledger") or {}),
         shadow_tombstones=shadow_tombstones,
         owner_entry_id=data.get("owner_entry_id"),
@@ -1342,8 +1309,6 @@ class LearningPersistenceAdapter:
         shadow_proposals: list | None = None,
         bounded_experiments: list | None = None,
         persistent_adoptions: list | None = None,
-        strategy_experiments: list | None = None,
-        persistent_strategy_adoptions: list | None = None,
         consumed_experiment_ledger: dict | None = None,
         shadow_tombstones: list | None = None,
         active_overrides: list | None = None,
@@ -1373,8 +1338,6 @@ class LearningPersistenceAdapter:
                 shadow_proposals=shadow_proposals,
                 bounded_experiments=bounded_experiments,
                 persistent_adoptions=persistent_adoptions,
-                strategy_experiments=strategy_experiments,
-                persistent_strategy_adoptions=persistent_strategy_adoptions,
                 consumed_experiment_ledger=consumed_experiment_ledger,
                 shadow_tombstones=shadow_tombstones,
                 active_overrides=active_overrides,

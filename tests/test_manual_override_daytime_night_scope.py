@@ -34,12 +34,13 @@ from custom_components.smartshading.engines.override_detector import OverrideDet
 from custom_components.smartshading.engines.lifecycle_guard import (
     lifecycle_should_break_override,
 )
-from custom_components.smartshading.evaluators.manual_override_evaluator import (
-    ManualOverrideEvaluator,
+from custom_components.smartshading.engines.manual_override_policy import (
+    evaluate_manual_override_policy,
 )
 from custom_components.smartshading.models.lifecycle import LifecycleState
 from custom_components.smartshading.models.manual_override import ManualOverride
-from custom_components.smartshading.state_machine.states import ShadingState
+from custom_components.smartshading.models.window_decision import WindowDecision
+from custom_components.smartshading.state_machine.states import DecisionCategory, ShadingState
 
 _NOW = datetime(2026, 7, 5, 14, 0, tzinfo=timezone.utc)
 _TOLERANCE = 10
@@ -94,17 +95,18 @@ class TestDaytimeOverrideBlocksImmediately:
             now=_NOW, scope="daytime",
         )
         active = d.get(_WINDOW, _NOW)
-        from custom_components.smartshading.models.window_decision_input import (
-            WindowDecisionInput,
+        # Real production path (engines/manual_override_policy.py) instead of
+        # the pre-T7 ManualOverrideEvaluator class (removed in T21 — zero
+        # production callers since T7's migration to this policy function).
+        candidate = WindowDecision(
+            window_id=_WINDOW, shading_state=ShadingState.LIGHT_SHADE,
+            target_position=_TARGET, decided_by="SolarEvaluator",
+            category=DecisionCategory.COMFORT,
         )
-        # ManualOverrideEvaluator only reads wdi.active_override — build a
-        # minimal stand-in rather than a full WindowDecisionInput.
-        class _WDI:
-            def __init__(self, override, wid):
-                self.active_override = override
-                self.window_config = type("WC", (), {"id": wid})()
-        decision = ManualOverrideEvaluator().evaluate(_WDI(active, _WINDOW))
-        assert decision is not None
+        decision = evaluate_manual_override_policy(
+            active_override=active, candidate=candidate,
+            allow_comfort=False, allow_protection=False,
+        )
         assert decision.shading_state is ShadingState.MANUAL_OVERRIDE
         assert decision.target_position == _USER_POS
 
@@ -151,18 +153,19 @@ class TestNormalControlResumesAfterExpiry:
         after_expiry = _NOW + timedelta(minutes=_DAYTIME_DURATION_MIN + 1)
         active = d.get(_WINDOW, after_expiry)
         assert active is None
-        # ManualOverrideEvaluator is Tier 2 — with active_override=None it
-        # returns None, which is exactly what lets Tier 4/5 (Absence/Heat/
-        # Glare/Solar) produce the real decision for this cycle.
-        from custom_components.smartshading.models.window_decision_input import (
-            WindowDecisionInput,
+        # With active_override=None, the policy passes the Tier 3/4/5
+        # (Absence/Heat/Glare/Solar) candidate through unchanged — which is
+        # exactly what lets normal automatic control resume for this cycle.
+        candidate = WindowDecision(
+            window_id=_WINDOW, shading_state=ShadingState.LIGHT_SHADE,
+            target_position=_TARGET, decided_by="SolarEvaluator",
+            category=DecisionCategory.COMFORT,
         )
-        class _WDI:
-            def __init__(self, override, wid):
-                self.active_override = override
-                self.window_config = type("WC", (), {"id": wid})()
-        decision = ManualOverrideEvaluator().evaluate(_WDI(active, _WINDOW))
-        assert decision is None
+        decision = evaluate_manual_override_policy(
+            active_override=active, candidate=candidate,
+            allow_comfort=False, allow_protection=False,
+        )
+        assert decision is candidate
 
 
 # ===========================================================================
@@ -300,9 +303,14 @@ class TestSafetyStillOverridesManualOverrideRegardlessOfScope:
 
 class TestManualOverrideScopeDoesNotAffectOtherPriorityPaths:
     def test_manual_override_evaluator_is_scope_agnostic(self):
-        # The evaluator decision does not depend on `scope` at all -- proves
+        # The policy decision does not depend on `scope` at all -- proves
         # this v1.1.3 addition cannot change MANUAL_OVERRIDE dispatch
         # behavior, only how long the override state persists.
+        candidate = WindowDecision(
+            window_id=_WINDOW, shading_state=ShadingState.LIGHT_SHADE,
+            target_position=_TARGET, decided_by="SolarEvaluator",
+            category=DecisionCategory.COMFORT,
+        )
         for scope in ("daytime", "night"):
             ov = ManualOverride(
                 window_id=_WINDOW, override_position=_USER_POS, started_at=_NOW,
@@ -310,14 +318,10 @@ class TestManualOverrideScopeDoesNotAffectOtherPriorityPaths:
                 source="position_delta", overridden_state=_PREV_STATE,
                 overridden_position=_TARGET, scope=scope,
             )
-            from custom_components.smartshading.models.window_decision_input import (
-                WindowDecisionInput,
+            decision = evaluate_manual_override_policy(
+                active_override=ov, candidate=candidate,
+                allow_comfort=False, allow_protection=False,
             )
-            class _WDI:
-                def __init__(self, override, wid):
-                    self.active_override = override
-                    self.window_config = type("WC", (), {"id": wid})()
-            decision = ManualOverrideEvaluator().evaluate(_WDI(ov, _WINDOW))
             assert decision.shading_state is ShadingState.MANUAL_OVERRIDE
             assert decision.target_position == _USER_POS
 

@@ -1,7 +1,7 @@
 """Active manual override for one window.
 
 Produced by OverrideDetector (engines/override_detector.py), consumed by
-ManualOverrideEvaluator (evaluators/manual_override_evaluator.py, Tier 2).
+evaluate_manual_override_policy (engines/manual_override_policy.py, Tier 2).
 
 An active override is now persisted across HA restart/reload (to_dict/from_dict
 below) so a manual movement is not silently re-asserted after a restart.  Stale

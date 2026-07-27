@@ -803,21 +803,15 @@ def _development_summary(eligible_records, coords) -> dict:
 
     # Active adoptions (live runtime — may differ from terminal history).
     active_pos = 0
-    active_strat = 0
     for c in coords:
         active_pos += len(getattr(c, "_adoptions_active", None) or {})
-        active_strat += len(getattr(c, "_strategy_adoptions_active", None) or {})
 
     # Terminal adoption history (survivorship guard — no bias).
     terminal_pos: dict = {}
-    terminal_strat: dict = {}
     for c in coords:
         for a in getattr(c, "_adoption_history", None) or []:
             st = str(getattr(a, "status", "unknown") or "unknown")
             terminal_pos[st] = terminal_pos.get(st, 0) + 1
-        for a in getattr(c, "_strategy_adoption_history", None) or []:
-            st = str(getattr(a, "status", "unknown") or "unknown")
-            terminal_strat[st] = terminal_strat.get(st, 0) + 1
 
     # Learning age from the oldest eligible record.
     learning_age_days: float | None = None
@@ -843,9 +837,7 @@ def _development_summary(eligible_records, coords) -> dict:
         "outcomes_resolved": resolved,
         "outcomes_thermal_improved": improved,
         "active_position_adoptions": active_pos,
-        "active_strategy_adoptions": active_strat,
         "terminal_position_adoptions_by_status": dict(sorted(terminal_pos.items())),
-        "terminal_strategy_adoptions_by_status": dict(sorted(terminal_strat.items())),
         "store_retention_per_window": {
             "decisions": 5000,
             "outcomes": 5000,
@@ -862,7 +854,7 @@ def _confidence_buckets(coords) -> dict:
     out = {name: 0 for _lo, _hi, name in _CONFIDENCE_BUCKETS}
     sample = 0
     for coord in coords:
-        for hist_attr in ("_adoption_history", "_strategy_adoption_history"):
+        for hist_attr in ("_adoption_history",):
             for a in getattr(coord, hist_attr, []) or []:
                 cv = _num(getattr(a, "confidence", None))
                 if cv is None:
@@ -883,7 +875,7 @@ def _survivorship(coords) -> dict:
     terminal = {"rolled_back", "rejected", "invalidated", "expired", "reduced"}
     counts: dict = {}
     for coord in coords:
-        for hist_attr in ("_adoption_history", "_strategy_adoption_history"):
+        for hist_attr in ("_adoption_history",):
             for a in getattr(coord, hist_attr, []) or []:
                 st = getattr(a, "status", None)
                 if st in terminal:
@@ -893,9 +885,9 @@ def _survivorship(coords) -> dict:
 
 
 def _adoption_timeline(coords, pz) -> dict:
-    """Timestamped history of position and strategy adoption lifecycle events.
+    """Timestamped history of position adoption lifecycle events.
 
-    Reads the already-persisted _adoption_history and _strategy_adoption_history
+    Reads the already-persisted _adoption_history
     from each coordinator (retained up to 200 entries / 365 days by
     _retain_terminal_history, written on every status change).  This is the only
     source that spans months: raw decision/outcome records rotate out after ~3-5
@@ -927,7 +919,6 @@ def _adoption_timeline(coords, pz) -> dict:
     for coord in coords:
         for hist_attr, atype in (
             ("_adoption_history", "position"),
-            ("_strategy_adoption_history", "strategy"),
         ):
             for a in getattr(coord, hist_attr, None) or []:
                 wid = getattr(a, "window_id", None)

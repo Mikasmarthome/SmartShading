@@ -355,9 +355,6 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
     def _position_learning():
         return _per_window(_pseudo_position)
 
-    def _strategy_learning():
-        return _per_window(ltb.build_strategy_learning_trace)
-
     def _adaptation_trace(coord, wid):
         # T12: per-cycle audit trail of what learning actually changed —
         # confidence, old/new value per parameter, strength, reason, when.
@@ -987,7 +984,6 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                                   "support_timeline"),
         "inputs": _safe(_inputs, errors, "inputs"),
         "position_learning": _safe(_position_learning, errors, "position_learning"),
-        "strategy_learning": _safe(_strategy_learning, errors, "strategy_learning"),
         "adaptation_trace": _safe(
             lambda: _per_window(_adaptation_trace), errors, "adaptation_trace"),
         "assumed_state": _safe(

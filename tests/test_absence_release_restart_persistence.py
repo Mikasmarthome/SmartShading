@@ -266,7 +266,6 @@ class TestCurrentStatesPersistenceRoundtrip:
             thermal_observations={}, window_contribution_models={},
             window_contribution_evidence={}, shadow_proposals=[],
             bounded_experiments=[], persistent_adoptions=[],
-            strategy_experiments=[], persistent_strategy_adoptions=[],
             consumed_experiment_ledger={}, shadow_tombstones=[],
             owner_entry_id=None, owner_zone_id=None, restore_diagnostics={},
             config_snapshot={},

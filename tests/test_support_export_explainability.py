@@ -53,7 +53,6 @@ class _Coord:
         self._adoption_history = []
         self._strategy_adoption_history = []
         self._adoptions_active = {}
-        self._strategy_adoptions_active = {}
         self._pending_outcomes = type("PO", (), {"all_pending": lambda s: []})()
         self._support_critical_events = []
         self._research_daily_buckets = {}

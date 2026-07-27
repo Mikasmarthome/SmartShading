@@ -94,12 +94,14 @@ class TestExplainabilitySection:
         assert entry["influences"]["safety"] is True
 
     def test_heat_diag_feeds_influence_and_why_not(self) -> None:
+        # T21 Phase D2: influences is now compact — an INACTIVE influence
+        # (heat_protection here) is simply absent, not a "false" entry.
         diag = {"w1": type("D", (), {
             "heat_hysteresis_active": False, "heat_hysteresis_reason": "not_needed",
         })()}
         export = build_support_export_v3(_Coord(diag=diag), now=_NOW)
         entry = next(iter(export["explainability"].values()))
-        assert entry["influences"]["heat_protection"] is False
+        assert "heat_protection" not in entry["influences"]
         assert any(r["category"] == "heat_protection" for r in entry["why_not"])
 
     def test_adaptation_trace_feeds_influence(self) -> None:
@@ -145,12 +147,13 @@ class TestExplainabilitySection:
 
     def test_never_raises_on_sparse_record(self) -> None:
         # Minimal record missing most optional keys — must not raise, and
-        # must yield defensive (all-False) influences rather than crash.
+        # must yield an empty (T21 Phase D2: compact) influences dict rather
+        # than crash.
         export = build_support_export_v3(
             _Coord(records=[{"window_id": "w1"}]), now=_NOW,
         )
         entry = next(iter(export["explainability"].values()))
-        assert entry["influences"]["safety"] is False
+        assert entry["influences"] == {}
 
 
 class TestDispatchFailedTimelineEvent:

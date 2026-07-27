@@ -6102,11 +6102,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "proposed_state": _sv(getattr(s, "baseline_state", None)),
             "proposed_position_ha": getattr(s, "normal_cfg_ha_for_prov", None),
         }
-        not_recorded = [
-            {"candidate_type": t, "recording_status": "not_recorded"}
-            for t in ("safety", "manual_override", "lifecycle", "absence",
-                      "heat", "glare", "solar", "position_learning", "strategy_learning")
-        ]
+        # T21 Phase D2: no longer append a fixed 9-entry "not_recorded" filler
+        # for candidate categories that were never actually evaluated for
+        # this decision — evaluators don't retain rejected candidate values
+        # today, so those 9 entries always carried zero information beyond
+        # "this category exists". The honest candidate trace is winner +
+        # baseline only, matching what is genuinely recorded.
         # --- authority map: actual runtime influence only ---
         pos_applied = window_id in self._cycle_adoption_applied
         cf_blocked = bool(filt is not None and not filt.allowed)
@@ -6173,7 +6174,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "decided_by": decided_by,
             "config_generation": getattr(s, "config_generation", 0),
             "adapt_confidence_level": getattr(s, "adapt_confidence_level", None),
-            "candidates": [winner, baseline] + not_recorded,
+            "candidates": [winner, baseline],
             "authorities": authorities,
             "target_chain": {
                 "recommendation_position_ha": getattr(s, "normal_cfg_ha_for_prov", None),

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from . import decision_record as _dr
 from . import reason_codes as _rc
 
 # ---------------------------------------------------------------------------
@@ -108,15 +109,25 @@ class DecisionInfluences:
     adaptation: bool = False
 
     def to_dict(self) -> dict:
+        # T21 Phase D2: compact — only influences that were actually active
+        # are present at all ("nur tatsächlich relevante Einflüsse, nicht
+        # standardmäßig alle als false"). The dataclass itself still carries
+        # all 8 fields (so in-process callers can keep using attribute
+        # access like `explanation.influences.safety`); only the exported
+        # dict shape dropped the redundant False entries.
         return {
-            "safety": self.safety,
-            "manual_override": self.manual_override,
-            "lifecycle": self.lifecycle,
-            "presence_absence": self.presence_absence,
-            "heat_protection": self.heat_protection,
-            "learning_position": self.learning_position,
-            "harmonization": self.harmonization,
-            "adaptation": self.adaptation,
+            name: True
+            for name, value in (
+                ("safety", self.safety),
+                ("manual_override", self.manual_override),
+                ("lifecycle", self.lifecycle),
+                ("presence_absence", self.presence_absence),
+                ("heat_protection", self.heat_protection),
+                ("learning_position", self.learning_position),
+                ("harmonization", self.harmonization),
+                ("adaptation", self.adaptation),
+            )
+            if value
         }
 
 
@@ -179,25 +190,23 @@ def build_decision_explanation(
         v = authorities.get(key)
         return v if isinstance(v, dict) else {}
 
-    safety_active = bool(_auth("safety_authority").get("active"))
-    override_active = bool(_auth("manual_override_authority").get("active"))
-    lifecycle_active = bool(_auth("lifecycle_authority").get("active"))
-    absence_active = bool(_auth("absence_authority").get("active"))
-    position_learning_applied = bool(_auth("position_learning_authority").get("applied"))
-    harmonization_applied = bool(_auth("harmonization_authority").get("applied"))
-
     heat_active = bool((heat_diag or {}).get("active"))
     adaptation_active = bool((adaptation_trace or {}).get("learning_active"))
 
+    # T21 Phase D2: computed once, shared with support_export.py's
+    # current_decisions/target-chain views — see engines/decision_record.py.
+    _active = _dr.resolve_active_influences(
+        authorities, heat_active=heat_active, adaptation_active=adaptation_active,
+    )
     influences = DecisionInfluences(
-        safety=safety_active,
-        manual_override=override_active,
-        lifecycle=lifecycle_active,
-        presence_absence=absence_active,
-        heat_protection=heat_active,
-        learning_position=position_learning_applied,
-        harmonization=harmonization_applied,
-        adaptation=adaptation_active,
+        safety=_active.get("safety", False),
+        manual_override=_active.get("manual_override", False),
+        lifecycle=_active.get("lifecycle", False),
+        presence_absence=_active.get("presence_absence", False),
+        heat_protection=_active.get("heat_protection", False),
+        learning_position=_active.get("learning_position", False),
+        harmonization=_active.get("harmonization", False),
+        adaptation=_active.get("adaptation", False),
     )
 
     why_not: list[WhyNotReason] = []

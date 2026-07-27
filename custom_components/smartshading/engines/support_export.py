@@ -32,6 +32,7 @@ from .diagnostics_privacy import (
     pseudonymization_metadata,
     truncate_strings,
 )
+from . import decision_record as dr
 from . import learning_trace_builder as ltb
 from . import reason_codes as rc
 from .explainability import build_decision_explanation
@@ -772,14 +773,14 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             no_disp = r.get("no_dispatch") or {}
             command_sent = no_disp.get("command_sent")
             primary = no_disp.get("primary_reason") or ""
-            tc = r.get("target_chain") or {}
-            # F31a: prefer the real resolved/held target over the static
-            # config-baseline recommendation — the baseline is only used as
-            # a last-resort fallback for older/malformed records that
-            # predate this field.
-            target_ha = (tc.get("final_dispatched_target_ha")
-                         or tc.get("resolved_target_position_ha")
-                         or tc.get("recommendation_position_ha"))
+            # T21 Phase D2: dr.resolve_target_ha() is the single shared
+            # target-resolution helper (also used by _pseudo_decision() for
+            # current_decisions/recent_decisions) — prefers the real
+            # resolved/held target over the static config-baseline
+            # recommendation, the same preference order everywhere a target
+            # value is needed, so a timeline event can never disagree with
+            # current_decisions/explainability about what the target was.
+            target_ha = dr.resolve_target_ha(r)
 
             # Suppress same-position noise before classifying anything else.
             if primary in _SAME_POS_REASONS:
@@ -911,6 +912,11 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         return [_pseudo_decision(r) for r in kept], meta
 
     def _pseudo_decision(r):
+        # T21 Phase D2: target_chain is only present when the target
+        # actually changed somewhere along the pipeline (resolve_target_chain);
+        # a routine decision where every stage agrees on the same position no
+        # longer repeats that one value across 5 identical fields. The single
+        # resolved value is always available as "resolved_target_ha" instead.
         out = {
             "decision_ref": pz.ref(NS_DECISION, r.get("decision_id")),
             "window_ref": _wref(r.get("window_id")),
@@ -921,7 +927,9 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             "decided_by": r.get("decided_by"),
             "config_generation": r.get("config_generation"),
             "candidates": r.get("candidates"),
-            "target_chain": r.get("target_chain"),
+            "resolved_target_ha": dr.resolve_target_ha(r),
+            "target_chain": dr.resolve_target_chain(r.get("target_chain")),
+            "dispatch_action": dr.resolve_dispatch_action(r),
             "no_dispatch": r.get("no_dispatch"),
             "authorities": _pseudo_authorities(r.get("authorities", {})),
         }

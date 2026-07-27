@@ -36,6 +36,7 @@ from .diagnostics_privacy import (
 )
 from ..models.runtime_mode import derive_authority
 from ..models.decision_provenance import ProvenanceSummary
+from . import reason_codes as rc
 
 RESEARCH_EXPORT_SCHEMA_VERSION: int = 3
 
@@ -263,7 +264,10 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
         },
         "section_errors": errors,
     }
-    contract["reason_codes"] = {}
+    # T21 Phase D3: was an unconditional {} — now uses the same shared
+    # collector/registry support_export.py uses, so a code present in this
+    # export is actually described instead of silently omitted.
+    contract["reason_codes"] = rc.collect_reason_codes_from_contract(contract)
     contract = enforce_depth(truncate_strings(contract, max_len=MAX_STRING_LENGTH),
                              max_depth=MAX_NESTED_DEPTH)
     contract = _byte_cap(contract, rec_trunc)

@@ -75,13 +75,13 @@ class _Coord:
 
 class TestExplainabilitySection:
     def test_present_for_every_window(self) -> None:
-        export = build_support_export_v3(_Coord(), now=_NOW)
+        export = build_support_export_v3(_Coord(), now=_NOW, detail_level="extended")
         assert "w1" not in export["explainability"]  # keys are pseudonymized
         assert len(export["explainability"]) == 1
 
     def test_reflects_latest_decision_record(self) -> None:
         rec = _decision_record(decided_by="StormEvaluator", resolved_state="storm_safe")
-        export = build_support_export_v3(_Coord(records=[rec]), now=_NOW)
+        export = build_support_export_v3(_Coord(records=[rec]), now=_NOW, detail_level="extended")
         entry = next(iter(export["explainability"].values()))
         assert entry["winning_rule"] == "StormEvaluator"
         assert entry["decided_state"] == "storm_safe"
@@ -89,7 +89,7 @@ class TestExplainabilitySection:
     def test_safety_influence_surfaced(self) -> None:
         rec = _decision_record()
         rec["authorities"]["safety_authority"]["active"] = True
-        export = build_support_export_v3(_Coord(records=[rec]), now=_NOW)
+        export = build_support_export_v3(_Coord(records=[rec]), now=_NOW, detail_level="extended")
         entry = next(iter(export["explainability"].values()))
         assert entry["influences"]["safety"] is True
 
@@ -99,7 +99,7 @@ class TestExplainabilitySection:
         diag = {"w1": type("D", (), {
             "heat_hysteresis_active": False, "heat_hysteresis_reason": "not_needed",
         })()}
-        export = build_support_export_v3(_Coord(diag=diag), now=_NOW)
+        export = build_support_export_v3(_Coord(diag=diag), now=_NOW, detail_level="extended")
         entry = next(iter(export["explainability"].values()))
         assert "heat_protection" not in entry["influences"]
         assert any(r["category"] == "heat_protection" for r in entry["why_not"])
@@ -118,7 +118,7 @@ class TestExplainabilitySection:
             exposure_factor_recorded=1.0, exposure_adaptation_applied=True,
             reason="very_high confidence",
         )
-        export = build_support_export_v3(_Coord(adaptation_traces={"w1": trace}), now=_NOW)
+        export = build_support_export_v3(_Coord(adaptation_traces={"w1": trace}), now=_NOW, detail_level="extended")
         entry = next(iter(export["explainability"].values()))
         assert entry["influences"]["adaptation"] is True
         assert not any(r["category"] == "adaptation" for r in entry["why_not"])
@@ -128,19 +128,19 @@ class TestExplainabilitySection:
             "recommendation_exists": True, "command_sent": False,
             "primary_reason": "min_interval_not_elapsed", "contributing_reasons": [],
         })
-        export = build_support_export_v3(_Coord(records=[rec]), now=_NOW)
+        export = build_support_export_v3(_Coord(records=[rec]), now=_NOW, detail_level="extended")
         entry = next(iter(export["explainability"].values()))
         assert entry["dispatched"] is False
         assert any(r["code"] == "min_interval_not_elapsed" for r in entry["why_not"])
 
     def test_decision_ref_pseudonymized_not_raw_id(self) -> None:
-        export = build_support_export_v3(_Coord(), now=_NOW)
+        export = build_support_export_v3(_Coord(), now=_NOW, detail_level="extended")
         entry = next(iter(export["explainability"].values()))
         assert entry.get("decision_ref") != "dec-1"
         assert "decision_id" not in entry
 
     def test_no_records_yields_honest_empty_explanation(self) -> None:
-        export = build_support_export_v3(_Coord(records=[]), now=_NOW)
+        export = build_support_export_v3(_Coord(records=[]), now=_NOW, detail_level="extended")
         entry = next(iter(export["explainability"].values()))
         assert entry["winning_rule"] is None
         assert entry["dispatched"] is False
@@ -150,7 +150,7 @@ class TestExplainabilitySection:
         # must yield an empty (T21 Phase D2: compact) influences dict rather
         # than crash.
         export = build_support_export_v3(
-            _Coord(records=[{"window_id": "w1"}]), now=_NOW,
+            _Coord(records=[{"window_id": "w1"}]), now=_NOW, detail_level="extended",
         )
         entry = next(iter(export["explainability"].values()))
         assert entry["influences"] == {}

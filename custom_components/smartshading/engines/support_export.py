@@ -38,7 +38,23 @@ from . import reason_codes as rc
 from .explainability import build_decision_explanation
 from ..models.runtime_mode import derive_authority
 
-SUPPORT_EXPORT_SCHEMA_VERSION: int = 3
+SUPPORT_EXPORT_SCHEMA_VERSION: int = 4
+
+# T21 Phase D3: two supported detail levels for the support export.
+# "standard" (default) is a compacted, support-case-oriented view; "extended"
+# retains the full internal detail the export has always produced (renamed,
+# not shrunk, from what was previously the only shape — see
+# _compact_for_standard()). Both project the SAME already-built canonical
+# data; Standard is never a second independently-computed truth.
+_DETAIL_LEVELS = frozenset({"standard", "extended"})
+
+
+def _normalize_detail_level(detail_level) -> str:
+    """Never raises, never rejects a service call: an unrecognized/absent
+    value quietly falls back to "standard" rather than erroring out — a
+    service call made without detail_level (pre-D3 behaviour) must keep
+    working and yield the Standard export."""
+    return detail_level if detail_level in _DETAIL_LEVELS else "standard"
 
 # beta.10: raised so a support export can carry roughly the last 24 h of decisions
 # and no-dispatch holds per zone (≈1 decision / 5 min per window), which is what a
@@ -266,9 +282,192 @@ def _support_history_metadata(recent_dec, dec_trunc) -> dict:
     }
 
 
-def build_support_export_v3(coordinator, *, now=None, integration_version="unknown") -> dict:
+# ---------------------------------------------------------------------------
+# T21 Phase D3: Standard-detail compaction — pure post-hoc projections of the
+# already-built (Extended-shaped) contract sections. These never recompute or
+# re-derive anything; they only drop fields the D3 ticket classified as
+# redundant/duplicate/deep-debug-only for a support-case reader, so Standard
+# and Extended can never disagree about a shared value (both read the exact
+# same canonical data the rest of this module already produced).
+# ---------------------------------------------------------------------------
+
+def _compact_solar_provenance(solar: dict) -> dict:
+    if not isinstance(solar, dict):
+        return {}
+    out: dict = {}
+    for key in (
+        "selected_solar_source", "raw_measured_solar_w_m2", "effective_exposure_w_m2",
+        "solar_source_quality", "fallback_used", "solar_fallback_reason",
+        "cloud_not_applied_reason", "direct_exposure_blocked",
+        "geometrically_in_solar_sector", "glare_active", "glare_suppressed_reason",
+    ):
+        v = solar.get(key)
+        if v is not None:
+            out[key] = v
+    sector = solar.get("manual_sector_result")
+    if sector is not None and sector != "not_recorded":
+        out["sun_sector_result"] = sector
+    seasonal = solar.get("seasonal_factor")
+    if seasonal is not None and seasonal != 1.0:
+        out["seasonal_factor"] = seasonal
+    return out
+
+
+def _compact_threshold_provenance(threshold: dict) -> dict:
+    if not isinstance(threshold, dict):
+        return {}
+    if threshold.get("recording_status") == "not_recorded":
+        return {"recording_status": "not_recorded"}
+    entries: dict = {}
+    for tier, e in (threshold.get("entry_thresholds") or {}).items():
+        if not isinstance(e, dict):
+            continue
+        compact = {"effective_entry_threshold_w_m2": e.get("effective_entry_threshold_w_m2")}
+        learned = e.get("entry_learned_delta_w_m2")
+        if learned:
+            compact["entry_learned_delta_w_m2"] = learned
+        forecast = e.get("entry_forecast_delta_w_m2")
+        if forecast:
+            compact["entry_forecast_delta_w_m2"] = forecast
+        entries[tier] = compact
+    out = {
+        "exposure_value_compared_w_m2": threshold.get("exposure_value_compared_w_m2"),
+        "entry_thresholds": entries,
+    }
+    if threshold.get("forecast_trust_level") is not None:
+        out["forecast_trust_level"] = threshold["forecast_trust_level"]
+    return out
+
+
+def _compact_input_entry(entry: dict) -> dict:
+    if not isinstance(entry, dict):
+        return entry
+    out: dict = {}
+    if entry.get("window_ref") is not None:
+        out["window_ref"] = entry["window_ref"]
+    indoor = entry.get("indoor_temperature") or {}
+    if indoor.get("value_c") is not None:
+        out["indoor_temperature_c"] = indoor["value_c"]
+    outdoor = entry.get("outdoor_temperature") or {}
+    if outdoor.get("value_c") is not None:
+        out["outdoor_temperature_c"] = outdoor["value_c"]
+    out["solar"] = _compact_solar_provenance(entry.get("solar") or {})
+    out["threshold"] = _compact_threshold_provenance(entry.get("threshold_provenance") or {})
+    # contact/rain/heat/manual_override are already compact and carry
+    # meaningful falsy values (active: false etc.) — kept verbatim.
+    for key in ("contact", "rain", "heat", "manual_override"):
+        if key in entry:
+            out[key] = entry[key]
+    return out
+
+
+def _compact_position_learning_entry(entry: dict) -> dict:
+    """Standard shape: summary / active_effects / blocked_effects / integrity
+    — replaces the always-full-3-intensity present:false / null-field
+    structure with only the intensities that actually have something to
+    report (T21 Phase D3: 'irrelevante Intensitäten fehlen')."""
+    if not isinstance(entry, dict):
+        return entry
+    intensities = entry.get("intensities") or {}
+    active_effects: dict = {}
+    blocked_effects: dict = {}
+    for name, intensity in intensities.items():
+        if not isinstance(intensity, dict):
+            continue
+        adoption = intensity.get("active_adoption") or {}
+        if adoption.get("present"):
+            eff = {
+                "status": adoption.get("status"),
+                "effective_delta_ha": adoption.get("effective_delta_ha"),
+                "confidence": adoption.get("confidence"),
+                "reliability": adoption.get("reliability"),
+            }
+            exp_delta = intensity.get("experiment_delta_ha")
+            if exp_delta:
+                eff["experiment_delta_ha"] = exp_delta
+            active_effects[name] = {k: v for k, v in eff.items() if v is not None}
+        blocked = intensity.get("blocked_reason")
+        if blocked:
+            blocked_effects[name] = {
+                "gate_reason": blocked,
+                "rollback_reason": adoption.get("rollback_reason"),
+            }
+    return {
+        "summary": {
+            "intensities_with_active_effect": sorted(active_effects),
+            "intensities_with_blocked_effect": sorted(blocked_effects),
+        },
+        "active_effects": active_effects,
+        "blocked_effects": blocked_effects,
+        "integrity": entry.get("ledger_integrity_state"),
+    }
+
+
+def _compact_snapshot_entry(entry: dict) -> dict:
+    """Runtime Snapshot cleanup (T21 Phase D3): keep only genuine
+    current-state fields not already owned by the Decision Record
+    (current_decisions/target_chain) — decided_by, target-chain stages,
+    dispatch metrics, and solar provenance are dropped here since they are
+    already exported (compactly) elsewhere for Standard."""
+    if not isinstance(entry, dict):
+        return entry
+    if not entry.get("data_available"):
+        return {
+            "window_ref": entry.get("window_ref"),
+            "data_available": False,
+            "reason": entry.get("reason"),
+            "current_state_age_seconds": entry.get("current_state_age_seconds"),
+            "last_dispatch_age_seconds": entry.get("last_dispatch_age_seconds"),
+        }
+    keep = (
+        "window_ref", "data_available", "actual_position_ha", "target_position_ha",
+        "cover_available", "contact_status", "night_contact_blocked", "lifecycle_state",
+        "is_safety", "rain_safe_active", "last_command_status", "is_recommendation_only",
+        "current_state_age_seconds", "last_dispatch_age_seconds",
+    )
+    return {k: entry.get(k) for k in keep}
+
+
+# Sections that are deep/debug-only detail — present in Extended, absent from
+# Standard entirely (their essential facts are already surfaced compactly
+# elsewhere: current_decisions/support_timeline cover explainability's role;
+# position_learning's compact summary covers adaptation_trace's "what
+# changed").
+_STANDARD_DROPPED_SECTIONS = (
+    "explainability", "recent_decisions", "recent_dispatches", "recent_no_dispatches",
+    "recent_outcomes", "recent_learning_transitions", "storage", "adaptation_trace",
+)
+
+
+def _compact_for_standard(contract: dict) -> dict:
+    """Project the already-assembled (Extended-shaped) contract down to the
+    Standard shape. Pure post-hoc projection of the same canonical data —
+    never recomputes anything, so Standard can never disagree with Extended
+    about a shared value."""
+    for key in _STANDARD_DROPPED_SECTIONS:
+        contract.pop(key, None)
+    inputs = contract.get("inputs")
+    if isinstance(inputs, dict):
+        contract["inputs"] = {k: _compact_input_entry(v) for k, v in inputs.items()}
+    pl = contract.get("position_learning")
+    if isinstance(pl, dict):
+        contract["position_learning"] = {
+            k: _compact_position_learning_entry(v) for k, v in pl.items()
+        }
+    snap = contract.get("current_snapshot")
+    if isinstance(snap, dict):
+        contract["current_snapshot"] = {
+            k: _compact_snapshot_entry(v) for k, v in snap.items()
+        }
+    return contract
+
+
+def build_support_export_v3(
+    coordinator, *, now=None, integration_version="unknown", detail_level="standard",
+) -> dict:
     """Build the v3 support export for one config entry / its zone."""
     now = now or datetime.now(timezone.utc)
+    detail_level = _normalize_detail_level(detail_level)
     c = coordinator
     entry_id = getattr(getattr(c, "config_entry", None), "entry_id", None)
     pz = Pseudonymizer(entry_id)
@@ -1081,6 +1280,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
 
     contract: dict = {
         "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
+        "detail_level": detail_level,
         "generated_at_utc": _iso_s(now),
         "generated_at_local": _iso_local(now, home_tz),
         "home_timezone": home_tz_name,
@@ -1127,7 +1327,15 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             cur[pz.ref(NS_ZONE, zid)] = _pseudo_decision(recs[-1])
     contract["current_decisions"] = cur
 
-    # reason-code registry for codes actually present.
+    # T21 Phase D3: Standard is a pure post-hoc projection of this same
+    # already-built contract — computed AFTER current_decisions so Standard
+    # and Extended can never disagree about the canonical decision values.
+    if detail_level == "standard":
+        contract = _compact_for_standard(contract)
+
+    # reason-code registry for codes actually present (computed per detail
+    # level, after compaction, so it only lists codes actually visible in
+    # this export — never a superset of what the reader can see).
     contract["reason_codes"] = _collect_reason_codes(contract)
 
     # bounded depth + string caps.
@@ -1173,7 +1381,7 @@ def _aggregate_history_metadata(zones) -> dict:
 
 
 def build_support_export_all_zones(coordinators, *, now=None,
-                                   integration_version="unknown") -> dict:
+                                   integration_version="unknown", detail_level="standard") -> dict:
     """Aggregate Support Export across ALL active zone coordinators.
 
     Builds the per-zone v3 support export for every active zone and nests them
@@ -1182,12 +1390,19 @@ def build_support_export_all_zones(coordinators, *, now=None,
     captured as a per-zone section_error and degrades ``overall_status`` without
     aborting the whole export.  No active zone → an honest no-zone status, never
     a misleading healthy empty export.
+
+    T21 Phase D3: ``detail_level`` ("standard"/"extended", default "standard")
+    is threaded through to every per-zone build — an existing caller that
+    never passes it (the export button, any pre-D3 code) keeps getting the
+    Standard export, unchanged behaviour.
     """
     now = now or datetime.now(timezone.utc)
+    detail_level = _normalize_detail_level(detail_level)
     coords = [c for c in (coordinators or []) if c is not None]
     if not coords:
         return {
             "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
+            "detail_level": detail_level,
             "generated_at_utc": _iso_s(now),
             "integration_version": integration_version,
             "export_scope": "system_all_zones",
@@ -1205,7 +1420,8 @@ def build_support_export_all_zones(coordinators, *, now=None,
     degraded = False
     for c in coords:
         try:
-            z = build_support_export_v3(c, now=now, integration_version=integration_version)
+            z = build_support_export_v3(
+                c, now=now, integration_version=integration_version, detail_level=detail_level)
         except Exception:
             z = {"section_errors": {"zone": {"count": 1,
                                              "reason_codes": ["zone_builder_failed"]}}}
@@ -1226,6 +1442,7 @@ def build_support_export_all_zones(coordinators, *, now=None,
     _first_zone = zones[0] if zones and isinstance(zones[0], dict) else {}
     contract = {
         "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
+        "detail_level": detail_level,
         "generated_at_utc": _iso_s(now),
         "generated_at_local": _first_zone.get("generated_at_local"),
         "home_timezone": _first_zone.get("home_timezone"),
@@ -1257,21 +1474,9 @@ def build_support_export_all_zones(coordinators, *, now=None,
 
 
 def _collect_reason_codes(contract) -> dict:
-    codes: set = set()
-
-    def _scan(o):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if isinstance(v, str) and (k.endswith("reason_code") or k == "primary_reason"
-                                           or k == "blocked_reason" or k == "gate_reason"):
-                    codes.add(v)
-                else:
-                    _scan(v)
-        elif isinstance(o, (list, tuple)):
-            for v in o:
-                _scan(v)
-    _scan(contract)
-    return rc.registry_for_codes(c for c in codes if c)
+    # T21 Phase D3: delegates to the shared collector in reason_codes.py —
+    # research_export_v3.py now uses the exact same function.
+    return rc.collect_reason_codes_from_contract(contract)
 
 
 def _enforce_byte_cap(contract: dict) -> dict:

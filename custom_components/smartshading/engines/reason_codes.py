@@ -153,3 +153,34 @@ def registry_for_codes(codes) -> dict:
         if c and c not in seen:
             seen[c] = describe(c)
     return seen
+
+
+# Field names whose string value is treated as a reason code when scanning an
+# already-built export contract for "which codes are actually present".
+_REASON_CODE_FIELD_NAMES = frozenset({"primary_reason", "blocked_reason", "gate_reason"})
+
+
+def collect_reason_codes_from_contract(contract) -> dict:
+    """T21 Phase D3: the single shared reason-code collector — walks an
+    already-assembled export contract (dict/list tree) and returns the
+    registry section for every code actually present in it. Both
+    support_export.py and research_export_v3.py use this so the two exports
+    can never independently drift on what counts as a "reason code field" or
+    how a code gets described."""
+    codes: set = set()
+
+    def _scan(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if isinstance(v, str) and (
+                    k.endswith("reason_code") or k in _REASON_CODE_FIELD_NAMES
+                ):
+                    codes.add(v)
+                else:
+                    _scan(v)
+        elif isinstance(o, (list, tuple)):
+            for v in o:
+                _scan(v)
+
+    _scan(contract)
+    return registry_for_codes(c for c in codes if c)

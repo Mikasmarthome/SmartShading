@@ -2,7 +2,7 @@
 v1.2.0-beta.1, T9.
 
 Same pattern as CFMO-08 / CFLP-14 (test_config_flow_manual_override.py /
-test_config_flow_lifecycle_profile.py): iterate strings.json + all 24
+test_config_flow_manual_override.py): iterate strings.json + all 24
 translations/*.json and assert the new keys are present with a non-empty
 value in both the initial ConfigFlow ("config") and OptionsFlow ("options")
 comfort step, plus the new validation error key.

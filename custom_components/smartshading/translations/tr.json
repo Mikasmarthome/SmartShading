@@ -85,17 +85,18 @@
         }
       },
       "presence": {
-        "title": "Mevcudiyet ayarları",
-        "description": "İsteğe bağlı. Kimse seçilmezse, SmartShading her zaman birinin mevcut olduğunu varsayar ve yokluk nedeniyle asla kapatma tetiklemez.",
+        "title": "Bulunma",
+        "description": "Bu bölgenin hangi bulunma varlıklarını kullandığını ve sistemin yokluk gecikmesi varsayılanını mı izleyeceğini yoksa kendi değerini mi kullanacağını tanımlar.",
         "data": {
           "presence_entity_ids": "Mevcudiyet varlıkları",
-          "absence_delay_min": "Yokluk gecikmesi",
           "absence_position": "Yokluk konumu",
-          "presence_policy": "Bulunma değerlendirme politikası"
+          "presence_policy": "Bulunma değerlendirme politikası",
+          "absence_delay_use_system_default": "Sistem varsayılanını kullan"
         },
         "data_description": {
           "absence_position": "Daha güçlü bir koruma kararı geçerli olmadıkça, bölge boşken gölgeliğin konumu (0 = tamamen kapalı, 100 = tamamen açık). Bu bölgedeki tüm pencerelere uygulanır.",
-          "presence_policy": "Birden fazla bulunma varlığının tek bir sinyalde nasıl birleştirileceğini belirler. Biri evde (varsayılan): seçilen kişilerden biri evde olur olmaz bulunuluyor sayılır. Herkes evde: yalnızca seçilen tüm kişiler evdeyken bulunuluyor sayılır. Ters çevrilmiş: \"biri evde\" anlamını tersine çevirir — yalnızca birinin dışarıda olduğu doğrulanınca bulunuluyor sayılır."
+          "presence_policy": "Birden fazla bulunma varlığının tek bir sinyalde nasıl birleştirileceğini belirler. Biri evde (varsayılan): seçilen kişilerden biri evde olur olmaz bulunuluyor sayılır. Herkes evde: yalnızca seçilen tüm kişiler evdeyken bulunuluyor sayılır. Ters çevrilmiş: \"biri evde\" anlamını tersine çevirir — yalnızca birinin dışarıda olduğu doğrulanınca bulunuluyor sayılır.",
+          "absence_delay_use_system_default": "Etkinleştirildiğinde, bu bölge sistem girişinde yapılandırılan yokluk gecikmesi varsayılanını izler. Devre dışı bırakıldığında, bir sonraki ekranda bu bölgenin kendi değerini yapılandırırsınız."
         }
       },
       "comfort": {
@@ -273,126 +274,6 @@
           "remove_confirmed": "Evet, bu pencereyi kaldır"
         }
       },
-      "lifecycle_profiles": {
-        "title": "Zamanlama profilleri",
-        "description": "Adlandırılmış zamanlamaları yönetin ve hangisinin etkin olduğunu seçin.",
-        "menu_options": {
-          "add_lifecycle_profile": "Profil ekle",
-          "edit_lifecycle_profile": "Profili düzenle",
-          "remove_lifecycle_profile": "Profili kaldır",
-          "select_active_lifecycle_profile": "Etkin profili seç"
-        }
-      },
-      "add_lifecycle_profile": {
-        "title": "Zamanlama profili ekle",
-        "description": "Yeni adlandırılmış bir zamanlama oluşturur. Ana Zamanlama ayarlarıyla tamamen aynı şekilde çalışır, ancak yalnızca etkin profil olarak seçildiğinde uygulanır.",
-        "data": {
-          "profile_display_name": "Profil adı",
-          "night_trigger": "Gece tetikleyicisi",
-          "morning_trigger": "Sabah tetikleyicisi",
-          "night_fixed_time": "Gece saati",
-          "night_sun_elevation": "Özel gece yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
-          "morning_fixed_time": "Sabah saati",
-          "morning_sun_elevation": "Özel sabah yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
-          "night_position": "Gece konumu",
-          "morning_position": "Sabah konumu",
-          "active_months": "Aktif aylar (gelişmiş)",
-          "night_sun_event": "Gece güneş olayı (isteğe bağlı)",
-          "morning_sun_event": "Sabah güneş olayı (isteğe bağlı)",
-          "night_not_before": "Gece: en erken tetikleyici (isteğe bağlı)",
-          "night_not_after": "Gece: en geç tetikleyici (isteğe bağlı)",
-          "morning_not_before": "Sabah: en erken tetikleyici (isteğe bağlı)",
-          "morning_not_after": "Sabah: en geç tetikleyici (isteğe bağlı)",
-          "schedule_mode": "Zamanlama modu",
-          "weekday_night_fixed_time": "Hafta içi gece saati (Pzt–Cum)",
-          "weekday_night_position": "Hafta içi gece konumu (Pzt–Cum)",
-          "weekday_morning_fixed_time": "Hafta içi sabah saati (Pzt–Cum)",
-          "weekday_morning_position": "Hafta içi sabah konumu (Pzt–Cum)",
-          "weekend_night_fixed_time": "Hafta sonu gece saati (Cmt–Paz)",
-          "weekend_night_position": "Hafta sonu gece konumu (Cmt–Paz)",
-          "weekend_morning_fixed_time": "Hafta sonu sabah saati (Cmt–Paz)",
-          "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)"
-        },
-        "data_description": {
-          "active_months": "Bu programin her ay uygulanmasi icin bos birakin. Kisitlamak icin belirli aylari secin — ornegin kis programi icin Eylul'den Mart'a kadar.",
-          "night_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki gece saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
-          "morning_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki sabah saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
-          "night_not_before": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
-          "night_not_after": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
-          "morning_not_before": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
-          "morning_not_after": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
-          "schedule_mode": "„Her gün aynı“ tüm hafta için tek bir zamanlama kullanır. „Hafta içi / Hafta sonu“, Pzt–Cum ve Cmt–Paz için farklı saatler ve konumlar ayarlamanıza olanak tanır."
-        }
-      },
-      "edit_lifecycle_profile": {
-        "title": "Zamanlama profilini düzenle",
-        "description": "Düzenlenecek profili seçin.",
-        "data": {
-          "profile_id": "Profil"
-        }
-      },
-      "edit_lifecycle_profile_detail": {
-        "title": "Zamanlama profilini düzenle",
-        "description": "Bu profilin zamanlamasını güncelleyin.",
-        "data": {
-          "profile_display_name": "Profil adı",
-          "night_trigger": "Gece tetikleyicisi",
-          "morning_trigger": "Sabah tetikleyicisi",
-          "night_fixed_time": "Gece saati",
-          "night_sun_elevation": "Özel gece yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
-          "morning_fixed_time": "Sabah saati",
-          "morning_sun_elevation": "Özel sabah yüksekliği (°) — yalnızca Özel seçildiğinde kullanılır",
-          "night_position": "Gece konumu",
-          "morning_position": "Sabah konumu",
-          "active_months": "Aktif aylar (gelişmiş)",
-          "night_sun_event": "Gece güneş olayı (isteğe bağlı)",
-          "morning_sun_event": "Sabah güneş olayı (isteğe bağlı)",
-          "night_not_before": "Gece: en erken tetikleyici (isteğe bağlı)",
-          "night_not_after": "Gece: en geç tetikleyici (isteğe bağlı)",
-          "morning_not_before": "Sabah: en erken tetikleyici (isteğe bağlı)",
-          "morning_not_after": "Sabah: en geç tetikleyici (isteğe bağlı)",
-          "schedule_mode": "Zamanlama modu",
-          "weekday_night_fixed_time": "Hafta içi gece saati (Pzt–Cum)",
-          "weekday_night_position": "Hafta içi gece konumu (Pzt–Cum)",
-          "weekday_morning_fixed_time": "Hafta içi sabah saati (Pzt–Cum)",
-          "weekday_morning_position": "Hafta içi sabah konumu (Pzt–Cum)",
-          "weekend_night_fixed_time": "Hafta sonu gece saati (Cmt–Paz)",
-          "weekend_night_position": "Hafta sonu gece konumu (Cmt–Paz)",
-          "weekend_morning_fixed_time": "Hafta sonu sabah saati (Cmt–Paz)",
-          "weekend_morning_position": "Hafta sonu sabah konumu (Cmt–Paz)"
-        },
-        "data_description": {
-          "active_months": "Bu programin her ay uygulanmasi icin bos birakin. Kisitlamak icin belirli aylari secin — ornegin kis programi icin Eylul'den Mart'a kadar.",
-          "night_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki gece saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
-          "morning_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki sabah saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
-          "night_not_before": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
-          "night_not_after": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
-          "morning_not_before": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
-          "morning_not_after": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
-          "schedule_mode": "„Her gün aynı“ tüm hafta için tek bir zamanlama kullanır. „Hafta içi / Hafta sonu“, Pzt–Cum ve Cmt–Paz için farklı saatler ve konumlar ayarlamanıza olanak tanır."
-        }
-      },
-      "remove_lifecycle_profile": {
-        "title": "Zamanlama profilini kaldır",
-        "description": "Kaldırılacak profili seçin. Bu işlem geri alınamaz.",
-        "data": {
-          "profile_id": "Kaldırılacak profil"
-        }
-      },
-      "remove_lifecycle_profile_confirm": {
-        "title": "Kaldırmayı onayla",
-        "description": "\"{profile_name}\" profili kaldırılsın mı? Bu işlem geri alınamaz. Bu etkin profilse, zamanlama varsayılana döner.",
-        "data": {
-          "remove_confirmed": "Evet, bu profili kaldır"
-        }
-      },
-      "select_active_lifecycle_profile": {
-        "title": "Etkin profili seç",
-        "description": "Hangi zamanlama profilinin etkin olduğunu seçin. \"Varsayılan\" Zamanlama ayarlarında yapılandırılan zamanlamayı kullanır.",
-        "data": {
-          "active_lifecycle_profile_id": "Etkin profil"
-        }
-      },
       "manual_override": {
         "title": "Manuel geçersiz kılma",
         "description": "Bu bölgenin sistemin manuel geçersiz kılma varsayılanını mı izleyeceğini yoksa kendi ayarlarını mı kullanacağını seçin.",
@@ -418,7 +299,6 @@
         "title": "Gelişmiş",
         "description": "Yaşam döngüsü profilleri, manuel geçersiz kılma davranışı ve perde gönderim zamanlaması — çoğu kurulumun değiştirmesi gerekmeyen ayarlar.",
         "menu_options": {
-          "lifecycle_profiles": "Zamanlama profilleri",
           "manual_override": "Manuel geçersiz kılma",
           "dispatch": "Gölgelik Koordinasyonu"
         }
@@ -498,7 +378,28 @@
         "description": "Kendi ayarlarını kullanmadığı sürece her bölgenin izlediği genel varsayılanlar ve sistem genelinde perde gönderim zamanlaması.",
         "menu_options": {
           "system_manual_override": "Manuel geçersiz kılma varsayılanları",
-          "system_dispatch": "Perde gönderimi"
+          "system_dispatch": "Perde gönderimi",
+          "system_presence": "Bulunma varsayılanı"
+        }
+      },
+      "presence_custom": {
+        "title": "Bulunma — bu bölgenin yokluk gecikmesi",
+        "description": "Bu bölgenin boş sayılması için yokluğun ne kadar sürmesi gerektiği.",
+        "data": {
+          "absence_delay_min": "Yokluk gecikmesi"
+        },
+        "data_description": {
+          "absence_delay_min": ""
+        }
+      },
+      "system_presence": {
+        "title": "Bulunma varsayılanı",
+        "description": "Kendi değerini kullanmadığı sürece her bölgenin izlediği yokluk gecikmesi: evin boş sayılması için yokluğun ne kadar sürmesi gerektiği.",
+        "data": {
+          "absence_delay_min": "Yokluk gecikmesi"
+        },
+        "data_description": {
+          "absence_delay_min": ""
         }
       }
     },
@@ -516,9 +417,7 @@
       "no_covers_selected": "Bu pencere için en az bir gölgelik varlığı seçin."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading Sistem girişinin yapılandırılabilir seçeneği yoktur.",
-      "no_lifecycle_profiles": "Henüz bir zamanlama profili oluşturulmadı. Önce bir tane ekleyin.",
-      "lifecycle_profile_not_found": "Bu zamanlama profili bulunamadı. Kaldırılmış olabilir."
+      "no_options_for_system_entry": "SmartShading Sistem girişinin yapılandırılabilir seçeneği yoktur."
     }
   },
   "config": {
@@ -735,11 +634,6 @@
       "options": {
         "same_every_day": "Her gün aynı",
         "weekday_weekend": "Hafta içi / Hafta sonu"
-      }
-    },
-    "active_lifecycle_profile": {
-      "options": {
-        "legacy_default": "Varsayılan"
       }
     },
     "active_months": {

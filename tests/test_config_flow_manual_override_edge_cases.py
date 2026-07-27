@@ -308,10 +308,8 @@ class TestInitialConfigFlowNeverWritesOverridePolicy:
 
 
 class TestSaveDoesNotTouchUnrelatedFeatureKeys:
-    def test_unrelated_t5_t6_t4_keys_untouched(self) -> None:
+    def test_unrelated_t5_t4_keys_untouched(self) -> None:
         original = {
-            "lifecycle_profiles": {"p1": {"display_name": "Weekend", "config": {"id": "p1"}}},
-            "active_lifecycle_profile_id": "p1",
             "presence_policy": "all_home",
             "presence_entity_ids": ["person.alice"],
             "ema_enabled": True,
@@ -324,6 +322,23 @@ class TestSaveDoesNotTouchUnrelatedFeatureKeys:
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         for key, value in original.items():
             assert kwargs["data"][key] == value, f"{key} was unexpectedly modified"
+
+    def test_t6_lifecycle_profile_keys_are_migrated_and_dropped_by_any_save(self) -> None:
+        # T21 Phase C3: a pre-C3 install's active-profile keys are NOT just
+        # "left untouched" — they are migrated into "lifecycle_config" (the
+        # active profile wins over the stale flat field) and then dropped,
+        # by ANY subsequent OptionsFlow save, not just a lifecycle-specific one.
+        flow = _make_options_flow(data={
+            "lifecycle_profiles": {"p1": {"display_name": "Weekend", "config": {"id": "p1", "night_position": 77}}},
+            "active_lifecycle_profile_id": "p1",
+            "lifecycle_config": {"id": "default", "night_position": 55},
+        })
+        _opt_out_of_system_default(flow)
+        asyncio.run(flow.async_step_manual_override_custom(user_input=dict(_BASE_TIME_BASED_INPUT)))
+        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
+        assert "lifecycle_profiles" not in kwargs["data"]
+        assert "active_lifecycle_profile_id" not in kwargs["data"]
+        assert kwargs["data"]["lifecycle_config"]["night_position"] == 77
 
 
 class TestNumberSelectorBounds:

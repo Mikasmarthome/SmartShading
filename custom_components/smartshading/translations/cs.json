@@ -85,17 +85,18 @@
         }
       },
       "presence": {
-        "title": "Nastavení přítomnosti",
-        "description": "Volitelné. Pokud není nikdo vybrán, SmartShading vždy předpokládá přítomnost a nikdy nespustí zavírání kvůli nepřítomnosti.",
+        "title": "Přítomnost",
+        "description": "Určuje, které entity přítomnosti tato zóna používá a zda se řídí systémovým výchozím zpožděním nepřítomnosti, nebo používá vlastní hodnotu.",
         "data": {
           "presence_entity_ids": "Entity přítomnosti",
-          "absence_delay_min": "Zpoždění nepřítomnosti",
           "absence_position": "Poloha při nepřítomnosti",
-          "presence_policy": "Zásada vyhodnocení přítomnosti"
+          "presence_policy": "Zásada vyhodnocení přítomnosti",
+          "absence_delay_use_system_default": "Použít systémové výchozí nastavení"
         },
         "data_description": {
           "absence_position": "Poloha stínění, když je zóna neobsazená, pokud neplatí silnější ochranné rozhodnutí (0 = zcela zavřeno, 100 = zcela otevřeno). Platí pro všechna okna v této zóně.",
-          "presence_policy": "Určuje, jak se více entit přítomnosti kombinuje do jednoho signálu. Někdo doma (výchozí): přítomnost, jakmile je doma jedna vybraná osoba. Všichni doma: přítomnost pouze, když jsou doma všechny vybrané osoby. Invertováno: obrací význam „nněkdo doma“ — přítomnost až po potvrzení, že je někdo pryč."
+          "presence_policy": "Určuje, jak se více entit přítomnosti kombinuje do jednoho signálu. Někdo doma (výchozí): přítomnost, jakmile je doma jedna vybraná osoba. Všichni doma: přítomnost pouze, když jsou doma všechny vybrané osoby. Invertováno: obrací význam „nněkdo doma“ — přítomnost až po potvrzení, že je někdo pryč.",
+          "absence_delay_use_system_default": "Když je zapnuto, tato zóna se řídí výchozím zpožděním nepřítomnosti nastaveným v systémovém záznamu. Když je vypnuto, na další obrazovce nastavíte vlastní hodnotu této zóny."
         }
       },
       "comfort": {
@@ -273,126 +274,6 @@
           "remove_confirmed": "Ano, odebrat toto okno"
         }
       },
-      "lifecycle_profiles": {
-        "title": "Profily plánu",
-        "description": "Spravujte pojmenované plány a vyberte, který je aktivní.",
-        "menu_options": {
-          "add_lifecycle_profile": "Přidat profil",
-          "edit_lifecycle_profile": "Upravit profil",
-          "remove_lifecycle_profile": "Odebrat profil",
-          "select_active_lifecycle_profile": "Vybrat aktivní profil"
-        }
-      },
-      "add_lifecycle_profile": {
-        "title": "Přidat profil plánu",
-        "description": "Vytvoří nový pojmenovaný plán. Chová se přesně jako hlavní nastavení plánu, ale uplatní se až po výběru jako aktivní profil.",
-        "data": {
-          "profile_display_name": "Název profilu",
-          "night_trigger": "Spouštěč noci",
-          "morning_trigger": "Spouštěč rána",
-          "night_fixed_time": "Čas noci",
-          "night_sun_elevation": "Vlastní noční výška (°) — použije se pouze při výběru Vlastní",
-          "morning_fixed_time": "Čas rána",
-          "morning_sun_elevation": "Vlastní ranní výška (°) — použije se pouze při výběru Vlastní",
-          "night_position": "Noční poloha",
-          "morning_position": "Ranní poloha",
-          "active_months": "Aktivní měsíce (pokročilé)",
-          "night_sun_event": "Noční sluneční událost (volitelné)",
-          "morning_sun_event": "Ranní sluneční událost (volitelné)",
-          "night_not_before": "Noc: nejdřívější spuštění (volitelné)",
-          "night_not_after": "Noc: nejpozdější spuštění (volitelné)",
-          "morning_not_before": "Ráno: nejdřívější spuštění (volitelné)",
-          "morning_not_after": "Ráno: nejpozdější spuštění (volitelné)",
-          "schedule_mode": "Režim plánu",
-          "weekday_night_fixed_time": "Čas noci v pracovní dny (po–pá)",
-          "weekday_night_position": "Noční poloha v pracovní dny (po–pá)",
-          "weekday_morning_fixed_time": "Čas rána v pracovní dny (po–pá)",
-          "weekday_morning_position": "Ranní poloha v pracovní dny (po–pá)",
-          "weekend_night_fixed_time": "Čas noci o víkendu (so–ne)",
-          "weekend_night_position": "Noční poloha o víkendu (so–ne)",
-          "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
-          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)"
-        },
-        "data_description": {
-          "active_months": "Ponechte prázdné, pokud se má tento plán použít v každém měsíci. Vyberte konkrétní měsíce pro jeho omezení — například září až březen pro zimní plán.",
-          "night_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený noční čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
-          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
-          "night_not_before": "Volitelné. Pokud by vypočtené noční spuštění nastalo dříve než tento čas, je místo toho odloženo na tento čas.",
-          "night_not_after": "Volitelné. Pokud by vypočtené noční spuštění nastalo později než tento čas, je místo toho posunuto na tento čas.",
-          "morning_not_before": "Volitelné. Pokud by vypočtené ranní spuštění nastalo dříve než tento čas, je místo toho odloženo na tento čas.",
-          "morning_not_after": "Volitelné. Pokud by vypočtené ranní spuštění nastalo později než tento čas, je místo toho posunuto na tento čas.",
-          "schedule_mode": "„Stejně každý den“ používá jeden plán pro celý týden. „Pracovní den / Víkend“ umožňuje nastavit různé časy a polohy pro po–pá a so–ne."
-        }
-      },
-      "edit_lifecycle_profile": {
-        "title": "Upravit profil plánu",
-        "description": "Vyberte profil k úpravě.",
-        "data": {
-          "profile_id": "Profil"
-        }
-      },
-      "edit_lifecycle_profile_detail": {
-        "title": "Upravit profil plánu",
-        "description": "Aktualizujte plán tohoto profilu.",
-        "data": {
-          "profile_display_name": "Název profilu",
-          "night_trigger": "Spouštěč noci",
-          "morning_trigger": "Spouštěč rána",
-          "night_fixed_time": "Čas noci",
-          "night_sun_elevation": "Vlastní noční výška (°) — použije se pouze při výběru Vlastní",
-          "morning_fixed_time": "Čas rána",
-          "morning_sun_elevation": "Vlastní ranní výška (°) — použije se pouze při výběru Vlastní",
-          "night_position": "Noční poloha",
-          "morning_position": "Ranní poloha",
-          "active_months": "Aktivní měsíce (pokročilé)",
-          "night_sun_event": "Noční sluneční událost (volitelné)",
-          "morning_sun_event": "Ranní sluneční událost (volitelné)",
-          "night_not_before": "Noc: nejdřívější spuštění (volitelné)",
-          "night_not_after": "Noc: nejpozdější spuštění (volitelné)",
-          "morning_not_before": "Ráno: nejdřívější spuštění (volitelné)",
-          "morning_not_after": "Ráno: nejpozdější spuštění (volitelné)",
-          "schedule_mode": "Režim plánu",
-          "weekday_night_fixed_time": "Čas noci v pracovní dny (po–pá)",
-          "weekday_night_position": "Noční poloha v pracovní dny (po–pá)",
-          "weekday_morning_fixed_time": "Čas rána v pracovní dny (po–pá)",
-          "weekday_morning_position": "Ranní poloha v pracovní dny (po–pá)",
-          "weekend_night_fixed_time": "Čas noci o víkendu (so–ne)",
-          "weekend_night_position": "Noční poloha o víkendu (so–ne)",
-          "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
-          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)"
-        },
-        "data_description": {
-          "active_months": "Ponechte prázdné, pokud se má tento plán použít v každém měsíci. Vyberte konkrétní měsíce pro jeho omezení — například září až březen pro zimní plán.",
-          "night_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený noční čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
-          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
-          "night_not_before": "Volitelné. Pokud by vypočtené noční spuštění nastalo dříve než tento čas, je místo toho odloženo na tento čas.",
-          "night_not_after": "Volitelné. Pokud by vypočtené noční spuštění nastalo později než tento čas, je místo toho posunuto na tento čas.",
-          "morning_not_before": "Volitelné. Pokud by vypočtené ranní spuštění nastalo dříve než tento čas, je místo toho odloženo na tento čas.",
-          "morning_not_after": "Volitelné. Pokud by vypočtené ranní spuštění nastalo později než tento čas, je místo toho posunuto na tento čas.",
-          "schedule_mode": "„Stejně každý den“ používá jeden plán pro celý týden. „Pracovní den / Víkend“ umožňuje nastavit různé časy a polohy pro po–pá a so–ne."
-        }
-      },
-      "remove_lifecycle_profile": {
-        "title": "Odebrat profil plánu",
-        "description": "Vyberte profil k odebrání. Tuto akci nelze vrátit zpět.",
-        "data": {
-          "profile_id": "Profil k odebrání"
-        }
-      },
-      "remove_lifecycle_profile_confirm": {
-        "title": "Potvrdit odebrání",
-        "description": "Odebrat profil „{profile_name}“? Tuto akci nelze vrátit zpět. Pokud je to aktivní profil, znovu se použije výchozí plán.",
-        "data": {
-          "remove_confirmed": "Ano, odebrat tento profil"
-        }
-      },
-      "select_active_lifecycle_profile": {
-        "title": "Vybrat aktivní profil",
-        "description": "Vyberte, který profil plánu je aktivní. „Výchozí“ použije plán nastavený v nastavení plánu.",
-        "data": {
-          "active_lifecycle_profile_id": "Aktivní profil"
-        }
-      },
       "manual_override": {
         "title": "Ruční přepsání",
         "description": "Vyberte, zda se tato zóna řídí systémovým výchozím nastavením ručního přepsání, nebo používá vlastní nastavení.",
@@ -418,7 +299,6 @@
         "title": "Pokročilé",
         "description": "Profily životního cyklu, chování ručního přepsání a časování dispečinku žaluzií — nastavení, která většina instalací nepotřebuje měnit.",
         "menu_options": {
-          "lifecycle_profiles": "Profily plánu",
           "manual_override": "Ruční přepsání",
           "dispatch": "Koordinace stínění"
         }
@@ -498,7 +378,28 @@
         "description": "Globální výchozí hodnoty, kterými se řídí každá zóna, pokud nepoužívá vlastní nastavení, a systémové časování ovládání žaluzií.",
         "menu_options": {
           "system_manual_override": "Výchozí nastavení ručního přepsání",
-          "system_dispatch": "Ovládání žaluzií"
+          "system_dispatch": "Ovládání žaluzií",
+          "system_presence": "Výchozí nastavení přítomnosti"
+        }
+      },
+      "presence_custom": {
+        "title": "Přítomnost — zpoždění nepřítomnosti této zóny",
+        "description": "Jak dlouho musí nepřítomnost trvat, než je tato zóna považována za prázdnou.",
+        "data": {
+          "absence_delay_min": "Zpoždění nepřítomnosti"
+        },
+        "data_description": {
+          "absence_delay_min": ""
+        }
+      },
+      "system_presence": {
+        "title": "Výchozí nastavení přítomnosti",
+        "description": "Zpoždění nepřítomnosti, kterým se řídí každá zóna, pokud nepoužívá vlastní hodnotu: jak dlouho musí nepřítomnost trvat, než je dům považován za prázdný.",
+        "data": {
+          "absence_delay_min": "Zpoždění nepřítomnosti"
+        },
+        "data_description": {
+          "absence_delay_min": ""
         }
       }
     },
@@ -516,9 +417,7 @@
       "no_covers_selected": "Vyberte alespoň jednu entitu stínění pro toto okno."
     },
     "abort": {
-      "no_options_for_system_entry": "Systémová položka SmartShading nemá žádné konfigurovatelné možnosti.",
-      "no_lifecycle_profiles": "Zatím nebyl vytvořen žádný profil plánu. Nejprve nějaký přidejte.",
-      "lifecycle_profile_not_found": "Tento profil plánu nebyl nalezen. Možná byl odebrán."
+      "no_options_for_system_entry": "Systémová položka SmartShading nemá žádné konfigurovatelné možnosti."
     }
   },
   "config": {
@@ -735,11 +634,6 @@
       "options": {
         "same_every_day": "Stejně každý den",
         "weekday_weekend": "Pracovní den / Víkend"
-      }
-    },
-    "active_lifecycle_profile": {
-      "options": {
-        "legacy_default": "Výchozí"
       }
     },
     "active_months": {

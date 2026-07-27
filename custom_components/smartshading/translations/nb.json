@@ -85,17 +85,18 @@
         }
       },
       "presence": {
-        "title": "Tilstedeværelsesinnstillinger",
-        "description": "Valgfritt. Hvis ingen er valgt, antar SmartShading alltid at noen er til stede, og utløser aldri lukking på grunn av fravær.",
+        "title": "Tilstedeværelse",
+        "description": "Angir hvilke tilstedeværelsesenheter denne sonen bruker, og om den følger systemets standard for fraværsforsinkelse, eller bruker sin egen verdi.",
         "data": {
           "presence_entity_ids": "Tilstedeværelsesentiteter",
-          "absence_delay_min": "Fraværsforsinkelse",
           "absence_position": "Fraværsposisjon",
-          "presence_policy": "Policy for tilstedeværelsesevaluering"
+          "presence_policy": "Policy for tilstedeværelsesevaluering",
+          "absence_delay_use_system_default": "Bruk systemstandard"
         },
         "data_description": {
           "absence_position": "Solskjermingens posisjon mens sonen er ubebodd, med mindre en sterkere beskyttelsesbeslutning gjelder (0 = helt lukket, 100 = helt åpen). Gjelder alle vinduer i denne sonen.",
-          "presence_policy": "Styrer hvordan flere tilstedeværelsesenheter kombineres til ett signal. Noen hjemme (standard): til stede så snart én valgt person er hjemme. Alle hjemme: til stede bare når alle valgte personer er hjemme. Invertert: snur betydningen av \"noen hjemme\" — til stede først når noen er bekreftet borte."
+          "presence_policy": "Styrer hvordan flere tilstedeværelsesenheter kombineres til ett signal. Noen hjemme (standard): til stede så snart én valgt person er hjemme. Alle hjemme: til stede bare når alle valgte personer er hjemme. Invertert: snur betydningen av \"noen hjemme\" — til stede først når noen er bekreftet borte.",
+          "absence_delay_use_system_default": "Når aktivert, følger denne sonen standarden for fraværsforsinkelse konfigurert på systeminnføringen. Når deaktivert, konfigurerer du sonens egen verdi på neste skjerm."
         }
       },
       "comfort": {
@@ -273,126 +274,6 @@
           "remove_confirmed": "Ja, fjern dette vinduet"
         }
       },
-      "lifecycle_profiles": {
-        "title": "Tidsplanprofiler",
-        "description": "Administrer navngitte tidsplaner og velg hvilken som er aktiv.",
-        "menu_options": {
-          "add_lifecycle_profile": "Legg til profil",
-          "edit_lifecycle_profile": "Rediger profil",
-          "remove_lifecycle_profile": "Fjern profil",
-          "select_active_lifecycle_profile": "Velg aktiv profil"
-        }
-      },
-      "add_lifecycle_profile": {
-        "title": "Legg til tidsplanprofil",
-        "description": "Oppretter en ny navngitt tidsplan. Den fungerer akkurat som hovedtidsplaninnstillingene, men gjelder først når den velges som aktiv profil.",
-        "data": {
-          "profile_display_name": "Profilnavn",
-          "night_trigger": "Nattutløser",
-          "morning_trigger": "Morgenutløser",
-          "night_fixed_time": "Nattid",
-          "night_sun_elevation": "Tilpasset natthøyde (°) — brukes bare når Tilpasset er valgt",
-          "morning_fixed_time": "Morgentid",
-          "morning_sun_elevation": "Tilpasset morgenhøyde (°) — brukes bare når Tilpasset er valgt",
-          "night_position": "Nattposisjon",
-          "morning_position": "Morgenposisjon",
-          "active_months": "Aktive måneder (avansert)",
-          "night_sun_event": "Nattens solhendelse (valgfri)",
-          "morning_sun_event": "Morgenens solhendelse (valgfri)",
-          "night_not_before": "Natt: tidligste utløser (valgfritt)",
-          "night_not_after": "Natt: seneste utløser (valgfritt)",
-          "morning_not_before": "Morgen: tidligste utløser (valgfritt)",
-          "morning_not_after": "Morgen: seneste utløser (valgfritt)",
-          "schedule_mode": "Tidsplanmodus",
-          "weekday_night_fixed_time": "Nattid på hverdager (man–fre)",
-          "weekday_night_position": "Nattposisjon på hverdager (man–fre)",
-          "weekday_morning_fixed_time": "Morgentid på hverdager (man–fre)",
-          "weekday_morning_position": "Morgenposisjon på hverdager (man–fre)",
-          "weekend_night_fixed_time": "Nattid i helgen (lør–søn)",
-          "weekend_night_position": "Nattposisjon i helgen (lør–søn)",
-          "weekend_morning_fixed_time": "Morgentid i helgen (lør–søn)",
-          "weekend_morning_position": "Morgenposisjon i helgen (lør–søn)"
-        },
-        "data_description": {
-          "active_months": "La stå tomt for å bruke denne tidsplanen hver måned. Velg bestemte måneder for å begrense den — for eksempel september til mars for en vintertidsplan.",
-          "night_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen nattetidspunktet ovenfor. Demring og skumring bruker borgerlig skumring (solen ved -6°).",
-          "morning_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen morgentidspunktet ovenfor. Demring og skumring bruker borgerlig skumring (solen ved -6°).",
-          "night_not_before": "Valgfritt. Hvis den beregnede nattutløseren ville inntreffe tidligere enn dette tidspunktet, utsettes den til dette tidspunktet i stedet.",
-          "night_not_after": "Valgfritt. Hvis den beregnede nattutlöseren ville inntreffe senere enn dette tidspunktet, fremskyndes den til dette tidspunktet i stedet.",
-          "morning_not_before": "Valgfritt. Hvis den beregnede morgenutløseren ville inntreffe tidligere enn dette tidspunktet, utsettes den til dette tidspunktet i stedet.",
-          "morning_not_after": "Valgfritt. Hvis den beregnede morgenutløseren ville inntreffe senere enn dette tidspunktet, fremskyndes den til dette tidspunktet i stedet.",
-          "schedule_mode": "\"Likt hver dag\" bruker én tidsplan for hele uken. \"Hverdag / Helg\" lar deg angi ulike tider og posisjoner for man–fre og lør–søn."
-        }
-      },
-      "edit_lifecycle_profile": {
-        "title": "Rediger tidsplanprofil",
-        "description": "Velg hvilken profil som skal redigeres.",
-        "data": {
-          "profile_id": "Profil"
-        }
-      },
-      "edit_lifecycle_profile_detail": {
-        "title": "Rediger tidsplanprofil",
-        "description": "Oppdater denne profilens tidsplan.",
-        "data": {
-          "profile_display_name": "Profilnavn",
-          "night_trigger": "Nattutløser",
-          "morning_trigger": "Morgenutløser",
-          "night_fixed_time": "Nattid",
-          "night_sun_elevation": "Tilpasset natthøyde (°) — brukes bare når Tilpasset er valgt",
-          "morning_fixed_time": "Morgentid",
-          "morning_sun_elevation": "Tilpasset morgenhøyde (°) — brukes bare når Tilpasset er valgt",
-          "night_position": "Nattposisjon",
-          "morning_position": "Morgenposisjon",
-          "active_months": "Aktive måneder (avansert)",
-          "night_sun_event": "Nattens solhendelse (valgfri)",
-          "morning_sun_event": "Morgenens solhendelse (valgfri)",
-          "night_not_before": "Natt: tidligste utløser (valgfritt)",
-          "night_not_after": "Natt: seneste utløser (valgfritt)",
-          "morning_not_before": "Morgen: tidligste utløser (valgfritt)",
-          "morning_not_after": "Morgen: seneste utløser (valgfritt)",
-          "schedule_mode": "Tidsplanmodus",
-          "weekday_night_fixed_time": "Nattid på hverdager (man–fre)",
-          "weekday_night_position": "Nattposisjon på hverdager (man–fre)",
-          "weekday_morning_fixed_time": "Morgentid på hverdager (man–fre)",
-          "weekday_morning_position": "Morgenposisjon på hverdager (man–fre)",
-          "weekend_night_fixed_time": "Nattid i helgen (lør–søn)",
-          "weekend_night_position": "Nattposisjon i helgen (lør–søn)",
-          "weekend_morning_fixed_time": "Morgentid i helgen (lør–søn)",
-          "weekend_morning_position": "Morgenposisjon i helgen (lør–søn)"
-        },
-        "data_description": {
-          "active_months": "La stå tomt for å bruke denne tidsplanen hver måned. Velg bestemte måneder for å begrense den — for eksempel september til mars for en vintertidsplan.",
-          "night_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen nattetidspunktet ovenfor. Demring og skumring bruker borgerlig skumring (solen ved -6°).",
-          "morning_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen morgentidspunktet ovenfor. Demring og skumring bruker borgerlig skumring (solen ved -6°).",
-          "night_not_before": "Valgfritt. Hvis den beregnede nattutløseren ville inntreffe tidligere enn dette tidspunktet, utsettes den til dette tidspunktet i stedet.",
-          "night_not_after": "Valgfritt. Hvis den beregnede nattutlöseren ville inntreffe senere enn dette tidspunktet, fremskyndes den til dette tidspunktet i stedet.",
-          "morning_not_before": "Valgfritt. Hvis den beregnede morgenutløseren ville inntreffe tidligere enn dette tidspunktet, utsettes den til dette tidspunktet i stedet.",
-          "morning_not_after": "Valgfritt. Hvis den beregnede morgenutløseren ville inntreffe senere enn dette tidspunktet, fremskyndes den til dette tidspunktet i stedet.",
-          "schedule_mode": "\"Likt hver dag\" bruker én tidsplan for hele uken. \"Hverdag / Helg\" lar deg angi ulike tider og posisjoner for man–fre og lør–søn."
-        }
-      },
-      "remove_lifecycle_profile": {
-        "title": "Fjern tidsplanprofil",
-        "description": "Velg profilen som skal fjernes. Dette kan ikke angres.",
-        "data": {
-          "profile_id": "Profil som skal fjernes"
-        }
-      },
-      "remove_lifecycle_profile_confirm": {
-        "title": "Bekreft fjerning",
-        "description": "Fjerne profilen \"{profile_name}\"? Dette kan ikke angres. Hvis dette er den aktive profilen, brukes standardtidsplanen igjen.",
-        "data": {
-          "remove_confirmed": "Ja, fjern denne profilen"
-        }
-      },
-      "select_active_lifecycle_profile": {
-        "title": "Velg aktiv profil",
-        "description": "Velg hvilken tidsplanprofil som er aktiv. \"Standard\" bruker tidsplanen fra tidsplaninnstillingene.",
-        "data": {
-          "active_lifecycle_profile_id": "Aktiv profil"
-        }
-      },
       "manual_override": {
         "title": "Manuell overstyring",
         "description": "Velg om denne sonen følger systemets standard for manuell overstyring, eller bruker sine egne innstillinger.",
@@ -418,7 +299,6 @@
         "title": "Avansert",
         "description": "Livssyklusprofiler, oppførsel for manuell overstyring og timing for skjermutsendelse — innstillinger de fleste installasjoner ikke trenger å endre.",
         "menu_options": {
-          "lifecycle_profiles": "Tidsplanprofiler",
           "manual_override": "Manuell overstyring",
           "dispatch": "Koordinering av solskjerming"
         }
@@ -498,7 +378,28 @@
         "description": "Globale standarder som hver sone følger med mindre den bruker sine egne innstillinger, pluss systemomfattende timing for skjermutsendelse.",
         "menu_options": {
           "system_manual_override": "Standarder for manuell overstyring",
-          "system_dispatch": "Skjermutsendelse"
+          "system_dispatch": "Skjermutsendelse",
+          "system_presence": "Standard for tilstedeværelse"
+        }
+      },
+      "presence_custom": {
+        "title": "Tilstedeværelse — denne sonens fraværsforsinkelse",
+        "description": "Hvor lenge et fravær må vare før denne sonen anses som tom.",
+        "data": {
+          "absence_delay_min": "Fraværsforsinkelse"
+        },
+        "data_description": {
+          "absence_delay_min": ""
+        }
+      },
+      "system_presence": {
+        "title": "Standard for tilstedeværelse",
+        "description": "Fraværsforsinkelsen som hver sone følger med mindre den bruker sin egen verdi: hvor lenge et fravær må vare før huset anses som tomt.",
+        "data": {
+          "absence_delay_min": "Fraværsforsinkelse"
+        },
+        "data_description": {
+          "absence_delay_min": ""
         }
       }
     },
@@ -516,9 +417,7 @@
       "no_covers_selected": "Velg minst én solskjermingsentitet for dette vinduet."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading-systemoppføringen har ingen konfigurerbare alternativer.",
-      "no_lifecycle_profiles": "Det er ikke opprettet noen tidsplanprofiler ennå. Legg til en først.",
-      "lifecycle_profile_not_found": "Denne tidsplanprofilen ble ikke funnet. Den kan ha blitt fjernet."
+      "no_options_for_system_entry": "SmartShading-systemoppføringen har ingen konfigurerbare alternativer."
     }
   },
   "config": {
@@ -735,11 +634,6 @@
       "options": {
         "same_every_day": "Likt hver dag",
         "weekday_weekend": "Hverdag / Helg"
-      }
-    },
-    "active_lifecycle_profile": {
-      "options": {
-        "legacy_default": "Standard"
       }
     },
     "active_months": {

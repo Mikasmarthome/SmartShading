@@ -28,7 +28,6 @@ from .models.lifecycle import (
     NightTrigger,
     SunEvent,
 )
-from .models.lifecycle_profile import LifecycleProfile
 from .models.manual_override import LEGACY_DURATION_MODE_MIGRATION, OverrideReleaseStrategy
 from .models.obstruction import ObstructionZone
 from .models.dispatch_config import (
@@ -80,14 +79,12 @@ class SmartShadingConfigEntryData:
     lifecycle_config: NightDayLifecycleConfig = field(
         default_factory=lambda: NightDayLifecycleConfig(id="default")
     )
-    # Lifecycle profiles (v1.2.0-beta.1, T6): additive, optional. Empty dict
-    # (the default, and what every pre-T6 config has) means the profile
-    # system is not engaged at all — lifecycle_config above is used exactly
-    # as before, byte-for-byte. See engines/lifecycle_resolver.py.
-    lifecycle_profiles: dict[str, LifecycleProfile] = field(default_factory=dict)
-    active_lifecycle_profile_id: str | None = None
     presence_entity_ids: list[str] = field(default_factory=list)
     absence_delay_min: int = 30
+    # T21 Phase C3: a zone may defer absence_delay_min to the System entry's
+    # global default. True only when the zone never explicitly configured
+    # its own value — see config_flow.py's async_step_presence gate.
+    absence_delay_use_system_default: bool = False
     # Presence evaluation policy (v1.2.0-beta.1, T5). ANY_HOME reproduces
     # pre-T5 behavior exactly — see models/presence.py.
     presence_policy: PresencePolicy = PresencePolicy.ANY_HOME
@@ -211,13 +208,10 @@ def _sun_event_from_storage(value: Any) -> SunEvent | None:
 
 def _lifecycle_config_to_storage_dict(lifecycle: NightDayLifecycleConfig) -> dict[str, Any]:
     """Convert one NightDayLifecycleConfig to a plain, JSON-serializable
-    dict. Factored out (T6) so the exact same conversion is used for both
-    the legacy flat `lifecycle_config` key AND each stored profile's
-    `config` sub-dict — a T6 profile IS a NightDayLifecycleConfig (see
-    models/lifecycle_profile.py), so it round-trips through this identical
-    shape, letting _lifecycle_config_from_storage() (below) parse a
-    profile's config exactly like the legacy field, with the same
-    per-field safe-default guarantees."""
+    dict — the single conversion used for the flat `lifecycle_config` key
+    (Lifecycle Profiles, T6, were removed in T21 Phase C3; see
+    _resolve_lifecycle_config_dict() for how a pre-C3 install's active
+    profile is transparently migrated into this same shape on load)."""
     return {
         "id": lifecycle.id,
         "schedule_mode": lifecycle.schedule_mode.value,
@@ -296,20 +290,9 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
         "ema_enabled": data.ema_enabled,
         "ema_alpha": data.ema_alpha,
         "lifecycle_config": _lifecycle_config_to_storage_dict(lifecycle),
-        # Lifecycle profiles (v1.2.0-beta.1, T6): empty dict = profile system
-        # not engaged (every pre-T6 config). Each profile's config uses the
-        # identical _lifecycle_config_to_storage_dict() shape as the legacy
-        # field above.
-        "lifecycle_profiles": {
-            profile_id: {
-                "display_name": profile.display_name,
-                "config": _lifecycle_config_to_storage_dict(profile.config),
-            }
-            for profile_id, profile in data.lifecycle_profiles.items()
-        },
-        "active_lifecycle_profile_id": data.active_lifecycle_profile_id,
         "presence_entity_ids": data.presence_entity_ids,
         "absence_delay_min": data.absence_delay_min,
+        "absence_delay_use_system_default": data.absence_delay_use_system_default,
         "presence_policy": data.presence_policy.value,
         "indoor_temperature_sensor_ids": data.indoor_temperature_sensor_ids,
         "comfort_config": {
@@ -412,42 +395,29 @@ def _lifecycle_config_from_storage(raw: dict[str, Any] | None) -> NightDayLifecy
     )
 
 
-def _lifecycle_profiles_from_storage(raw: Any) -> dict[str, LifecycleProfile]:
-    """Never raises: missing/non-dict `lifecycle_profiles` -> empty dict
-    (profile system not engaged, byte-for-byte pre-T6 behavior — see
-    engines/lifecycle_resolver.py). A malformed INDIVIDUAL profile entry
-    (not a dict, or missing "config") is skipped rather than aborting the
-    whole dict or the whole ConfigEntry load — one damaged profile must
-    never take down every other profile or the legacy fallback path.
-    Each profile's own NightDayLifecycleConfig is parsed via the exact same
-    _lifecycle_config_from_storage() used for the legacy flat field, so
-    every individual field already has its own safe-default guarantee.
+def _resolve_lifecycle_config_dict(raw_entry: dict[str, Any]) -> dict[str, Any] | None:
+    """T21 Phase C3: Lifecycle Profiles (T6) were removed — the named-profile
+    CRUD/selection UI added no field beyond another instance of
+    NightDayLifecycleConfig, was never automatically switched, and the
+    Coordinator only ever saw a single resolved config either way (see the
+    T21 Phase C3 ownership analysis). This transparently resolves a pre-C3
+    install's active profile (if any) into the plain "lifecycle_config" dict
+    IN MEMORY on every load — never rewriting storage, never raising, and
+    an unknown/malformed active_lifecycle_profile_id falls back to the
+    legacy flat config exactly like resolve_lifecycle_config() (T6) did.
+    to_storage_dict() no longer writes "lifecycle_profiles"/
+    "active_lifecycle_profile_id" at all, so a config entry naturally stops
+    carrying them forward the next time any OptionsFlow step saves.
     """
-    if not isinstance(raw, dict):
-        return {}
-    profiles: dict[str, LifecycleProfile] = {}
-    for profile_id, entry in raw.items():
-        if not isinstance(profile_id, str) or not isinstance(entry, dict):
-            continue
-        config_raw = entry.get("config")
-        if not isinstance(config_raw, dict):
-            continue
-        display_name = entry.get("display_name")
-        if not isinstance(display_name, str) or not display_name:
-            display_name = profile_id
-        profiles[profile_id] = LifecycleProfile(
-            profile_id=profile_id,
-            display_name=display_name,
-            config=_lifecycle_config_from_storage(config_raw),
-        )
-    return profiles
-
-
-def _active_lifecycle_profile_id_from_storage(raw: Any) -> str | None:
-    """Never raises: anything other than a non-empty string -> None (falls
-    back to the legacy config via resolve_lifecycle_config() — an unknown
-    or malformed stored ID is handled centrally there, not here)."""
-    return raw if isinstance(raw, str) and raw else None
+    active_id = raw_entry.get("active_lifecycle_profile_id")
+    profiles = raw_entry.get("lifecycle_profiles")
+    if not isinstance(active_id, str) or not active_id or not isinstance(profiles, dict):
+        return raw_entry.get("lifecycle_config")
+    profile = profiles.get(active_id)
+    if not isinstance(profile, dict):
+        return raw_entry.get("lifecycle_config")
+    config_raw = profile.get("config")
+    return config_raw if isinstance(config_raw, dict) else raw_entry.get("lifecycle_config")
 
 
 def _read_indoor_sensor_ids(raw: dict[str, Any]) -> list[str]:
@@ -613,6 +583,26 @@ def resolve_zone_dispatch_config(
     return _dispatch_config_from_storage(system_stored)
 
 
+def resolve_zone_absence_delay_min(
+    zone_raw: dict[str, Any], system_raw: dict[str, Any] | None
+) -> int:
+    """T21 Phase C3: a zone whose stored "absence_delay_use_system_default"
+    is True defers to the System entry's global default; otherwise its own
+    stored absence_delay_min (unchanged since before T21) wins. Migration:
+    every existing zone already has a concrete absence_delay_min value
+    (a required field, always written by to_storage_dict()) — there is no
+    "never configured" signal to key a byte-for-byte-safe default off of
+    the way there was for override_policy/dispatch_config, so the flag
+    itself defaults to False (use my own stored value) unless explicitly
+    set True, which is exactly what "no behavior change for any existing
+    install" requires."""
+    zone_value = _safe_int(zone_raw.get("absence_delay_min"), 30)
+    if not bool(zone_raw.get("absence_delay_use_system_default", False)):
+        return zone_value
+    system_stored = (system_raw or {}).get("system_absence_delay_min")
+    return _safe_int(system_stored, 30)
+
+
 def _safe_int(value: Any, default: int) -> int:
     """Never raises: missing/non-numeric stored value -> the given default."""
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
@@ -697,13 +687,10 @@ def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
         rain_sensor_id=raw.get("rain_sensor_id"),
         ema_enabled=bool(raw.get("ema_enabled", False)),
         ema_alpha=_ema_alpha_from_storage(raw.get("ema_alpha")),
-        lifecycle_config=_lifecycle_config_from_storage(raw.get("lifecycle_config")),
-        lifecycle_profiles=_lifecycle_profiles_from_storage(raw.get("lifecycle_profiles")),
-        active_lifecycle_profile_id=_active_lifecycle_profile_id_from_storage(
-            raw.get("active_lifecycle_profile_id")
-        ),
+        lifecycle_config=_lifecycle_config_from_storage(_resolve_lifecycle_config_dict(raw)),
         presence_entity_ids=raw.get("presence_entity_ids", []),
         absence_delay_min=raw.get("absence_delay_min", 30),
+        absence_delay_use_system_default=bool(raw.get("absence_delay_use_system_default", False)),
         presence_policy=_presence_policy_from_storage(raw.get("presence_policy")),
         indoor_temperature_sensor_ids=_read_indoor_sensor_ids(raw),
         comfort_config=_comfort_config_from_storage(raw.get("comfort_config")),

@@ -281,12 +281,15 @@ class TestInitialConfigFlowSubmission:
 
 class TestOptionsFlowSubmission:
     def test_submitted_value_reaches_async_update_entry(self):
+        # T21 Phase C3: async_step_presence is now the gate step —
+        # absence_delay_use_system_default=True saves immediately without
+        # advancing to async_step_presence_custom (which owns absence_delay_min).
         entry = _make_entry(data={})
         flow = SmartShadingOptionsFlow(entry)
         flow.hass = MagicMock()
         asyncio.run(flow.async_step_presence(user_input={
             "presence_entity_ids": [],
-            "absence_delay_min": 30,
+            "absence_delay_use_system_default": True,
             CONF_PRESENCE_POLICY: "inverted_any_home",
         }))
         assert flow.hass.config_entries.async_update_entry.called
@@ -299,7 +302,7 @@ class TestOptionsFlowSubmission:
         flow.hass = MagicMock()
         asyncio.run(flow.async_step_presence(user_input={
             "presence_entity_ids": [],
-            "absence_delay_min": 30,
+            "absence_delay_use_system_default": True,
             CONF_PRESENCE_POLICY: "vacation_mode_bogus",
         }))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args

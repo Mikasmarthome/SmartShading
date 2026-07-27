@@ -2,7 +2,7 @@
 field on the "comfort" step — v1.2.0-beta.1, T9.
 
 Same real-selector-stub technique established in
-tests/test_config_flow_manual_override.py (T7) / test_config_flow_lifecycle_profile.py (T6).
+tests/test_config_flow_manual_override.py (T7).
 
 Coverage:
   CFHH-01  Default (1.0 °C) pre-selected when nothing stored.

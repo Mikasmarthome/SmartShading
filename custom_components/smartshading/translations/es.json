@@ -85,17 +85,18 @@
         }
       },
       "presence": {
-        "title": "Ajustes de presencia",
-        "description": "Opcional. Si no se selecciona a nadie, SmartShading siempre asume que hay alguien presente y nunca activa el cierre por ausencia.",
+        "title": "Presencia",
+        "description": "Define qué entidades de presencia usa esta zona y si sigue el valor predeterminado de retardo de ausencia de la entrada del sistema, o usa su propio valor.",
         "data": {
           "presence_entity_ids": "Entidades de presencia",
-          "absence_delay_min": "Retardo de ausencia",
           "absence_position": "Posición de ausencia",
-          "presence_policy": "Política de evaluación de presencia"
+          "presence_policy": "Política de evaluación de presencia",
+          "absence_delay_use_system_default": "Usar valor predeterminado del sistema"
         },
         "data_description": {
           "absence_position": "Posición de la persiana mientras la zona está desocupada, salvo que aplique una decisión de protección más fuerte (0 = totalmente cerrada, 100 = totalmente abierta). Se aplica a todas las ventanas de esta zona.",
-          "presence_policy": "Controla cómo se combinan varias entidades de presencia en una sola señal. Alguien en casa (predeterminado): presente en cuanto una persona seleccionada está en casa. Todos en casa: presente solo cuando todas las personas seleccionadas están en casa. Invertido: invierte el significado de «alguien en casa» — presente solo cuando se confirma que alguien está ausente."
+          "presence_policy": "Controla cómo se combinan varias entidades de presencia en una sola señal. Alguien en casa (predeterminado): presente en cuanto una persona seleccionada está en casa. Todos en casa: presente solo cuando todas las personas seleccionadas están en casa. Invertido: invierte el significado de «alguien en casa» — presente solo cuando se confirma que alguien está ausente.",
+          "absence_delay_use_system_default": "Cuando está activado, esta zona sigue el valor predeterminado de retardo de ausencia configurado en la entrada del sistema. Cuando está desactivado, configurará el valor propio de esta zona en la siguiente pantalla."
         }
       },
       "comfort": {
@@ -273,126 +274,6 @@
           "remove_confirmed": "Sí, eliminar esta ventana"
         }
       },
-      "lifecycle_profiles": {
-        "title": "Perfiles de horario",
-        "description": "Gestiona horarios con nombre y elige cuál está activo.",
-        "menu_options": {
-          "add_lifecycle_profile": "Añadir perfil",
-          "edit_lifecycle_profile": "Editar perfil",
-          "remove_lifecycle_profile": "Eliminar perfil",
-          "select_active_lifecycle_profile": "Seleccionar perfil activo"
-        }
-      },
-      "add_lifecycle_profile": {
-        "title": "Añadir perfil de horario",
-        "description": "Crea un nuevo horario con nombre. Se comporta igual que los ajustes de horario principales, pero solo se aplica al seleccionarlo como perfil activo.",
-        "data": {
-          "profile_display_name": "Nombre del perfil",
-          "night_trigger": "Disparador de noche",
-          "morning_trigger": "Disparador de mañana",
-          "night_fixed_time": "Hora de noche",
-          "night_sun_elevation": "Elevación nocturna personalizada (°) — solo se usa cuando se selecciona Personalizada",
-          "morning_fixed_time": "Hora de mañana",
-          "morning_sun_elevation": "Elevación matinal personalizada (°) — solo se usa cuando se selecciona Personalizada",
-          "night_position": "Posición de noche",
-          "morning_position": "Posición de mañana",
-          "active_months": "Meses activos (avanzado)",
-          "night_sun_event": "Evento solar nocturno (opcional)",
-          "morning_sun_event": "Evento solar matutino (opcional)",
-          "night_not_before": "Noche: activador más temprano (opcional)",
-          "night_not_after": "Noche: activador más tardío (opcional)",
-          "morning_not_before": "Mañana: activador más temprano (opcional)",
-          "morning_not_after": "Mañana: activador más tardío (opcional)",
-          "schedule_mode": "Modo de horario",
-          "weekday_night_fixed_time": "Hora de noche entre semana (lun–vie)",
-          "weekday_night_position": "Posición de noche entre semana (lun–vie)",
-          "weekday_morning_fixed_time": "Hora de mañana entre semana (lun–vie)",
-          "weekday_morning_position": "Posición de mañana entre semana (lun–vie)",
-          "weekend_night_fixed_time": "Hora de noche en fin de semana (sáb–dom)",
-          "weekend_night_position": "Posición de noche en fin de semana (sáb–dom)",
-          "weekend_morning_fixed_time": "Hora de mañana en fin de semana (sáb–dom)",
-          "weekend_morning_position": "Posición de mañana en fin de semana (sáb–dom)"
-        },
-        "data_description": {
-          "active_months": "Déjelo vacío para aplicar este horario todos los meses. Seleccione meses concretos para restringirlo — por ejemplo, de septiembre a marzo para un horario de invierno.",
-          "night_sun_event": "Opcional. Si se establece, este evento astronómico reemplaza la hora nocturna anterior. El amanecer y el anochecer usan el crepúsculo civil (sol a -6°).",
-          "morning_sun_event": "Opcional. Si se establece, este evento astronómico reemplaza la hora matutina anterior. El amanecer y el anochecer usan el crepúsculo civil (sol a -6°).",
-          "night_not_before": "Opcional. Si el activador nocturno resuelto ocurriera antes de esta hora, se retrasa hasta esta hora.",
-          "night_not_after": "Opcional. Si el activador nocturno resuelto ocurriera después de esta hora, se adelanta hasta esta hora.",
-          "morning_not_before": "Opcional. Si el activador matutino resuelto ocurriera antes de esta hora, se retrasa hasta esta hora.",
-          "morning_not_after": "Opcional. Si el activador matutino resuelto ocurriera después de esta hora, se adelanta hasta esta hora.",
-          "schedule_mode": "«Igual cada día» usa un único horario para toda la semana. «Entre semana / Fin de semana» permite fijar horas y posiciones distintas para lunes–viernes y sábado–domingo."
-        }
-      },
-      "edit_lifecycle_profile": {
-        "title": "Editar perfil de horario",
-        "description": "Selecciona el perfil que quieres editar.",
-        "data": {
-          "profile_id": "Perfil"
-        }
-      },
-      "edit_lifecycle_profile_detail": {
-        "title": "Editar perfil de horario",
-        "description": "Actualiza el horario de este perfil.",
-        "data": {
-          "profile_display_name": "Nombre del perfil",
-          "night_trigger": "Disparador de noche",
-          "morning_trigger": "Disparador de mañana",
-          "night_fixed_time": "Hora de noche",
-          "night_sun_elevation": "Elevación nocturna personalizada (°) — solo se usa cuando se selecciona Personalizada",
-          "morning_fixed_time": "Hora de mañana",
-          "morning_sun_elevation": "Elevación matinal personalizada (°) — solo se usa cuando se selecciona Personalizada",
-          "night_position": "Posición de noche",
-          "morning_position": "Posición de mañana",
-          "active_months": "Meses activos (avanzado)",
-          "night_sun_event": "Evento solar nocturno (opcional)",
-          "morning_sun_event": "Evento solar matutino (opcional)",
-          "night_not_before": "Noche: activador más temprano (opcional)",
-          "night_not_after": "Noche: activador más tardío (opcional)",
-          "morning_not_before": "Mañana: activador más temprano (opcional)",
-          "morning_not_after": "Mañana: activador más tardío (opcional)",
-          "schedule_mode": "Modo de horario",
-          "weekday_night_fixed_time": "Hora de noche entre semana (lun–vie)",
-          "weekday_night_position": "Posición de noche entre semana (lun–vie)",
-          "weekday_morning_fixed_time": "Hora de mañana entre semana (lun–vie)",
-          "weekday_morning_position": "Posición de mañana entre semana (lun–vie)",
-          "weekend_night_fixed_time": "Hora de noche en fin de semana (sáb–dom)",
-          "weekend_night_position": "Posición de noche en fin de semana (sáb–dom)",
-          "weekend_morning_fixed_time": "Hora de mañana en fin de semana (sáb–dom)",
-          "weekend_morning_position": "Posición de mañana en fin de semana (sáb–dom)"
-        },
-        "data_description": {
-          "active_months": "Déjelo vacío para aplicar este horario todos los meses. Seleccione meses concretos para restringirlo — por ejemplo, de septiembre a marzo para un horario de invierno.",
-          "night_sun_event": "Opcional. Si se establece, este evento astronómico reemplaza la hora nocturna anterior. El amanecer y el anochecer usan el crepúsculo civil (sol a -6°).",
-          "morning_sun_event": "Opcional. Si se establece, este evento astronómico reemplaza la hora matutina anterior. El amanecer y el anochecer usan el crepúsculo civil (sol a -6°).",
-          "night_not_before": "Opcional. Si el activador nocturno resuelto ocurriera antes de esta hora, se retrasa hasta esta hora.",
-          "night_not_after": "Opcional. Si el activador nocturno resuelto ocurriera después de esta hora, se adelanta hasta esta hora.",
-          "morning_not_before": "Opcional. Si el activador matutino resuelto ocurriera antes de esta hora, se retrasa hasta esta hora.",
-          "morning_not_after": "Opcional. Si el activador matutino resuelto ocurriera después de esta hora, se adelanta hasta esta hora.",
-          "schedule_mode": "«Igual cada día» usa un único horario para toda la semana. «Entre semana / Fin de semana» permite fijar horas y posiciones distintas para lunes–viernes y sábado–domingo."
-        }
-      },
-      "remove_lifecycle_profile": {
-        "title": "Eliminar perfil de horario",
-        "description": "Selecciona el perfil a eliminar. Esta acción no se puede deshacer.",
-        "data": {
-          "profile_id": "Perfil a eliminar"
-        }
-      },
-      "remove_lifecycle_profile_confirm": {
-        "title": "Confirmar eliminación",
-        "description": "¿Eliminar el perfil «{profile_name}»? Esta acción no se puede deshacer. Si es el perfil activo, se usará de nuevo el horario predeterminado.",
-        "data": {
-          "remove_confirmed": "Sí, eliminar este perfil"
-        }
-      },
-      "select_active_lifecycle_profile": {
-        "title": "Seleccionar perfil activo",
-        "description": "Elige qué perfil de horario está activo. «Predeterminado» usa el horario configurado en los ajustes de horario.",
-        "data": {
-          "active_lifecycle_profile_id": "Perfil activo"
-        }
-      },
       "manual_override": {
         "title": "Anulación manual",
         "description": "Elija si esta zona sigue el valor predeterminado de anulación manual del sistema, o usa su propia configuración.",
@@ -418,7 +299,6 @@
         "title": "Avanzado",
         "description": "Perfiles de ciclo de vida, comportamiento de la anulación manual y temporización del despacho de toldos — ajustes que la mayoría de las instalaciones no necesitan cambiar.",
         "menu_options": {
-          "lifecycle_profiles": "Perfiles de horario",
           "manual_override": "Anulación manual",
           "dispatch": "Coordinación de persianas"
         }
@@ -498,7 +378,28 @@
         "description": "Valores predeterminados globales que sigue cada zona a menos que use su propia configuración, además de la temporización del sistema para el envío de órdenes a los toldos.",
         "menu_options": {
           "system_manual_override": "Valores predeterminados de anulación manual",
-          "system_dispatch": "Control de toldos"
+          "system_dispatch": "Control de toldos",
+          "system_presence": "Valor predeterminado de presencia"
+        }
+      },
+      "presence_custom": {
+        "title": "Presencia — retardo de ausencia de esta zona",
+        "description": "Cuánto debe durar una ausencia antes de que esta zona se considere vacía.",
+        "data": {
+          "absence_delay_min": "Retardo de ausencia"
+        },
+        "data_description": {
+          "absence_delay_min": ""
+        }
+      },
+      "system_presence": {
+        "title": "Valor predeterminado de presencia",
+        "description": "El retardo de ausencia que sigue cada zona a menos que use su propio valor: cuánto debe durar una ausencia antes de que la casa se considere vacía.",
+        "data": {
+          "absence_delay_min": "Retardo de ausencia"
+        },
+        "data_description": {
+          "absence_delay_min": ""
         }
       }
     },
@@ -516,9 +417,7 @@
       "no_covers_selected": "Selecciona al menos una entidad de persiana para esta ventana."
     },
     "abort": {
-      "no_options_for_system_entry": "La entrada de Sistema de SmartShading no tiene opciones configurables.",
-      "no_lifecycle_profiles": "Todavía no se ha creado ningún perfil de horario. Añade uno primero.",
-      "lifecycle_profile_not_found": "No se encontró este perfil de horario. Puede que se haya eliminado."
+      "no_options_for_system_entry": "La entrada de Sistema de SmartShading no tiene opciones configurables."
     }
   },
   "config": {
@@ -735,11 +634,6 @@
       "options": {
         "same_every_day": "Igual cada día",
         "weekday_weekend": "Entre semana / Fin de semana"
-      }
-    },
-    "active_lifecycle_profile": {
-      "options": {
-        "legacy_default": "Predeterminado"
       }
     },
     "active_months": {

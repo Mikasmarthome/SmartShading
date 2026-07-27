@@ -124,7 +124,7 @@ class TestMenuOptionsCompleteness:
         "windows", "advanced",
     }
     _EXPECTED_WINDOWS_MENU_KEYS = {"add_window", "edit_window", "remove_window"}
-    _EXPECTED_ADVANCED_MENU_KEYS = {"lifecycle_profiles", "manual_override", "dispatch"}
+    _EXPECTED_ADVANCED_MENU_KEYS = {"manual_override"}
 
     def test_strings_json_menu_options_has_all_expected_keys(self) -> None:
         data = _load(_STRINGS_PATH)

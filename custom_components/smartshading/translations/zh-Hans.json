@@ -85,17 +85,18 @@
         }
       },
       "presence": {
-        "title": "在场设置",
-        "description": "可选。如果未选择任何人，SmartShading 将始终假定有人在场，且绝不会因离开而触发关闭。",
+        "title": "在场状态",
+        "description": "设置此区域使用哪些在场状态实体，以及是否遵循系统的离开延迟默认值，还是使用自己的值。",
         "data": {
           "presence_entity_ids": "在场实体",
-          "absence_delay_min": "离开延迟",
           "absence_position": "离开位置",
-          "presence_policy": "在家状态评估策略"
+          "presence_policy": "在家状态评估策略",
+          "absence_delay_use_system_default": "使用系统默认值"
         },
         "data_description": {
           "absence_position": "区域无人时遮阳帘的位置，除非有更强的保护决策适用（0 = 完全关闭，100 = 完全打开）。适用于该区域的所有窗户。",
-          "presence_policy": "控制多个在家状态实体如何合并为一个信号。有人在家（默认）：只要所选人员中有一人在家即视为在家。所有人在家：仅当所选人员全部在家时才视为在家。反转：反转“有人在家”的含义——仅当确认有人离开时才视为在家。"
+          "presence_policy": "控制多个在家状态实体如何合并为一个信号。有人在家（默认）：只要所选人员中有一人在家即视为在家。所有人在家：仅当所选人员全部在家时才视为在家。反转：反转“有人在家”的含义——仅当确认有人离开时才视为在家。",
+          "absence_delay_use_system_default": "启用后，此区域将遵循系统条目上配置的离开延迟默认值。禁用后，您将在下一屏幕中配置此区域自己的值。"
         }
       },
       "comfort": {
@@ -273,126 +274,6 @@
           "remove_confirmed": "是，移除该窗户"
         }
       },
-      "lifecycle_profiles": {
-        "title": "生命周期配置文件",
-        "description": "管理已命名的日程配置文件，并选择当前激活的配置文件。",
-        "menu_options": {
-          "add_lifecycle_profile": "添加配置文件",
-          "edit_lifecycle_profile": "编辑配置文件",
-          "remove_lifecycle_profile": "删除配置文件",
-          "select_active_lifecycle_profile": "选择激活的配置文件"
-        }
-      },
-      "add_lifecycle_profile": {
-        "title": "添加日程配置文件",
-        "description": "创建一个新的命名日程。其行为与主日程设置完全相同，但仅在被选为激活配置文件后才会生效。",
-        "data": {
-          "profile_display_name": "配置文件名称",
-          "night_trigger": "夜间触发",
-          "morning_trigger": "早晨触发",
-          "night_fixed_time": "夜间时间",
-          "night_sun_elevation": "自定义夜间高度（°）— 仅在选择“自定义”时使用",
-          "morning_fixed_time": "早晨时间",
-          "morning_sun_elevation": "自定义早晨高度（°）— 仅在选择“自定义”时使用",
-          "night_position": "夜间位置",
-          "morning_position": "早晨位置",
-          "active_months": "活跃月份（高级）",
-          "night_sun_event": "夜间太阳事件（可选）",
-          "morning_sun_event": "早晨太阳事件（可选）",
-          "night_not_before": "夜间：最早触发时间（可选）",
-          "night_not_after": "夜间：最晚触发时间（可选）",
-          "morning_not_before": "早晨：最早触发时间（可选）",
-          "morning_not_after": "早晨：最晚触发时间（可选）",
-          "schedule_mode": "计划模式",
-          "weekday_night_fixed_time": "工作日夜间时间（周一至周五）",
-          "weekday_night_position": "工作日夜间位置（周一至周五）",
-          "weekday_morning_fixed_time": "工作日早晨时间（周一至周五）",
-          "weekday_morning_position": "工作日早晨位置（周一至周五）",
-          "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
-          "weekend_night_position": "周末夜间位置（周六至周日）",
-          "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
-          "weekend_morning_position": "周末早晨位置（周六至周日）"
-        },
-        "data_description": {
-          "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。",
-          "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
-          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
-          "night_not_before": "可选。若解析后的夜间触发时间早于此时间，将推迟到此时间。",
-          "night_not_after": "可选。若解析后的夜间触发时间晚于此时间，将提前到此时间。",
-          "morning_not_before": "可选。若解析后的早晨触发时间早于此时间，将推迟到此时间。",
-          "morning_not_after": "可选。若解析后的早晨触发时间晚于此时间，将提前到此时间。",
-          "schedule_mode": "“每天相同”对整周使用一个计划。“工作日 / 周末”可让您为周一至周五和周六至周日设置不同的时间和位置。"
-        }
-      },
-      "edit_lifecycle_profile": {
-        "title": "编辑日程配置文件",
-        "description": "选择要编辑的配置文件。",
-        "data": {
-          "profile_id": "配置文件"
-        }
-      },
-      "edit_lifecycle_profile_detail": {
-        "title": "编辑日程配置文件",
-        "description": "更新此配置文件的日程。",
-        "data": {
-          "profile_display_name": "配置文件名称",
-          "night_trigger": "夜间触发",
-          "morning_trigger": "早晨触发",
-          "night_fixed_time": "夜间时间",
-          "night_sun_elevation": "自定义夜间高度（°）— 仅在选择“自定义”时使用",
-          "morning_fixed_time": "早晨时间",
-          "morning_sun_elevation": "自定义早晨高度（°）— 仅在选择“自定义”时使用",
-          "night_position": "夜间位置",
-          "morning_position": "早晨位置",
-          "active_months": "活跃月份（高级）",
-          "night_sun_event": "夜间太阳事件（可选）",
-          "morning_sun_event": "早晨太阳事件（可选）",
-          "night_not_before": "夜间：最早触发时间（可选）",
-          "night_not_after": "夜间：最晚触发时间（可选）",
-          "morning_not_before": "早晨：最早触发时间（可选）",
-          "morning_not_after": "早晨：最晚触发时间（可选）",
-          "schedule_mode": "计划模式",
-          "weekday_night_fixed_time": "工作日夜间时间（周一至周五）",
-          "weekday_night_position": "工作日夜间位置（周一至周五）",
-          "weekday_morning_fixed_time": "工作日早晨时间（周一至周五）",
-          "weekday_morning_position": "工作日早晨位置（周一至周五）",
-          "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
-          "weekend_night_position": "周末夜间位置（周六至周日）",
-          "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
-          "weekend_morning_position": "周末早晨位置（周六至周日）"
-        },
-        "data_description": {
-          "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。",
-          "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
-          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
-          "night_not_before": "可选。若解析后的夜间触发时间早于此时间，将推迟到此时间。",
-          "night_not_after": "可选。若解析后的夜间触发时间晚于此时间，将提前到此时间。",
-          "morning_not_before": "可选。若解析后的早晨触发时间早于此时间，将推迟到此时间。",
-          "morning_not_after": "可选。若解析后的早晨触发时间晚于此时间，将提前到此时间。",
-          "schedule_mode": "“每天相同”对整周使用一个计划。“工作日 / 周末”可让您为周一至周五和周六至周日设置不同的时间和位置。"
-        }
-      },
-      "remove_lifecycle_profile": {
-        "title": "删除日程配置文件",
-        "description": "选择要删除的配置文件。此操作无法撤销。",
-        "data": {
-          "profile_id": "要删除的配置文件"
-        }
-      },
-      "remove_lifecycle_profile_confirm": {
-        "title": "确认删除",
-        "description": "删除配置文件“{profile_name}”？此操作无法撤销。如果这是当前激活的配置文件，日程将恢复为默认设置。",
-        "data": {
-          "remove_confirmed": "是，删除此配置文件"
-        }
-      },
-      "select_active_lifecycle_profile": {
-        "title": "选择激活的配置文件",
-        "description": "选择哪个日程配置文件处于激活状态。“默认”使用日程设置中配置的日程。",
-        "data": {
-          "active_lifecycle_profile_id": "激活的配置文件"
-        }
-      },
       "manual_override": {
         "title": "手动覆盖",
         "description": "选择此区域是遵循系统的手动覆盖默认值，还是使用自己的设置。",
@@ -418,7 +299,6 @@
         "title": "高级",
         "description": "生命周期配置文件、手动覆盖行为和遮阳调度时序——大多数安装不需要更改的设置。",
         "menu_options": {
-          "lifecycle_profiles": "生命周期配置文件",
           "manual_override": "手动覆盖",
           "dispatch": "遮阳帘调度"
         }
@@ -498,7 +378,28 @@
         "description": "除非某区域使用自己的设置，否则每个区域都遵循的全局默认值，以及系统级的遮阳帘调度时序。",
         "menu_options": {
           "system_manual_override": "手动覆盖默认值",
-          "system_dispatch": "遮阳帘调度"
+          "system_dispatch": "遮阳帘调度",
+          "system_presence": "在场状态默认值"
+        }
+      },
+      "presence_custom": {
+        "title": "在场状态——此区域的离开延迟",
+        "description": "在此区域被视为空置之前，离开状态必须持续多长时间。",
+        "data": {
+          "absence_delay_min": "离开延迟"
+        },
+        "data_description": {
+          "absence_delay_min": ""
+        }
+      },
+      "system_presence": {
+        "title": "在场状态默认值",
+        "description": "除非某区域使用自己的值，否则每个区域都遵循的离开延迟：在住宅被视为空置之前，离开状态必须持续多长时间。",
+        "data": {
+          "absence_delay_min": "离开延迟"
+        },
+        "data_description": {
+          "absence_delay_min": ""
         }
       }
     },
@@ -516,9 +417,7 @@
       "no_covers_selected": "请为该窗户至少选择一个遮阳帘实体。"
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading 系统条目没有可配置的选项。",
-      "no_lifecycle_profiles": "尚未创建任何日程配置文件。请先添加一个。",
-      "lifecycle_profile_not_found": "未找到此日程配置文件。它可能已被删除。"
+      "no_options_for_system_entry": "SmartShading 系统条目没有可配置的选项。"
     }
   },
   "config": {
@@ -735,11 +634,6 @@
       "options": {
         "same_every_day": "每天相同",
         "weekday_weekend": "工作日 / 周末"
-      }
-    },
-    "active_lifecycle_profile": {
-      "options": {
-        "legacy_default": "默认"
       }
     },
     "active_months": {

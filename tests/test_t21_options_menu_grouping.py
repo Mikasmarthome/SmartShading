@@ -112,9 +112,9 @@ from custom_components.smartshading.const import CONF_ENTRY_TYPE, ENTRY_TYPE_SYS
 _INTEGRATION_ROOT = Path(__file__).parent.parent / "custom_components" / "smartshading"
 
 _WINDOWS_LEAF_STEPS = {"add_window", "edit_window", "remove_window"}
-_ADVANCED_LEAF_STEPS = {"lifecycle_profiles", "manual_override"}
+_ADVANCED_LEAF_STEPS = {"manual_override"}
 _DIRECT_LEAF_STEPS = {"weather", "lifecycle", "presence", "comfort", "behavior"}
-_SYSTEM_INIT_LEAF_STEPS = {"system_manual_override", "system_dispatch"}
+_SYSTEM_INIT_LEAF_STEPS = {"system_manual_override", "system_dispatch", "system_presence"}
 
 
 def _make_entry(data: dict | None = None):
@@ -188,11 +188,15 @@ class TestNoStepWasDroppedDuringRegrouping:
     entry (T21 Phase C2, "dispatch" -> "system_dispatch") — the regrouping/
     relocation must not have silently orphaned a step."""
 
+    # T21 Phase C3: "lifecycle_profiles" has no successor step at all — the
+    # entire named-profile CRUD/selection feature was removed (see the
+    # Phase C3 ownership analysis), so it is deliberately absent from this
+    # map rather than mapped to a renamed/relocated step.
     _ORIGINAL_ELEVEN_TO_CURRENT_STEP_ID = {
         "weather": "weather", "lifecycle": "lifecycle", "presence": "presence",
         "comfort": "comfort", "behavior": "behavior",
         "add_window": "add_window", "edit_window": "edit_window", "remove_window": "remove_window",
-        "lifecycle_profiles": "lifecycle_profiles", "manual_override": "manual_override",
+        "manual_override": "manual_override",
         "dispatch": "system_dispatch",
     }
 

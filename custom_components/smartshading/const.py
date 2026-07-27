@@ -228,16 +228,14 @@ CONF_NIGHT_NOT_AFTER = "night_not_after"
 CONF_MORNING_NOT_BEFORE = "morning_not_before"
 CONF_MORNING_NOT_AFTER = "morning_not_after"
 
-# Lifecycle profiles (v1.2.0-beta.1, T6): OptionsFlow-only CRUD, additive.
-# See engines/lifecycle_resolver.py and models/lifecycle_profile.py.
-CONF_ACTIVE_LIFECYCLE_PROFILE_ID = "active_lifecycle_profile_id"
-CONF_PROFILE_ID = "profile_id"
-CONF_PROFILE_DISPLAY_NAME = "profile_display_name"
-# Sentinel value for "no active profile" (use the legacy flat config) in the
-# active-profile SelectSelector — never a real profile_id (those are uuid4
-# hex strings, which never equal this literal).
-LEGACY_PROFILE_SENTINEL = "legacy_default"
-PROFILE_DISPLAY_NAME_MAX_LEN = 60
+# Lifecycle profiles (v1.2.0-beta.1, T6) were removed in T21 Phase C3: the
+# named-profile CRUD/selection UI added no field beyond another instance of
+# NightDayLifecycleConfig, was never automatically switched, and the
+# Coordinator only ever saw a single resolved config — see T21 Phase C3's
+# ownership analysis. On load, config_entry_data.py's _lifecycle_config_from_storage()
+# transparently resolves a pre-C3 install's active profile (if any) into the
+# plain "lifecycle_config" in-memory, exactly like every other legacy-payload
+# migration in this module — no rewrite of storage, no crash on old data.
 
 CONF_PRESENCE_ENTITY_IDS = "presence_entity_ids"
 CONF_ABSENCE_DELAY_MIN = "absence_delay_min"

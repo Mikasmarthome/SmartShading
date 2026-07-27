@@ -1,7 +1,7 @@
 """Diagnostics coverage for manual_override_summary — T7.
 
 Same real-Coordinator-construction technique established in
-tests/test_coordinator_lifecycle_profile.py (T6): a minimal HA stub set lets
+tests/test_config_flow_manual_override.py (T7): a minimal HA stub set lets
 coordinator.py actually import and construct, so these tests exercise the
 real build_consolidated_diagnostics() output, not a hand-built fixture.
 
@@ -28,7 +28,7 @@ from unittest.mock import MagicMock
 import pytest
 
 # ---------------------------------------------------------------------------
-# HA stubs — identical technique to test_coordinator_lifecycle_profile.py.
+# HA stubs — identical technique to test_config_flow_manual_override.py.
 # ---------------------------------------------------------------------------
 
 def _stub(name: str, **attrs: Any) -> types.ModuleType:

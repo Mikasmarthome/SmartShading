@@ -85,17 +85,18 @@
         }
       },
       "presence": {
-        "title": "Nastavitve prisotnosti",
-        "description": "Neobvezno. Če ni izbran nihče, SmartShading vedno predpostavlja prisotnost in nikoli ne sproži zapiranja zaradi odsotnosti.",
+        "title": "Prisotnost",
+        "description": "Določa, katere entitete prisotnosti uporablja ta cona in ali sledi sistemski privzeti vrednosti zamika odsotnosti, ali uporablja lastno vrednost.",
         "data": {
           "presence_entity_ids": "Entitete prisotnosti",
-          "absence_delay_min": "Zakasnitev odsotnosti",
           "absence_position": "Položaj ob odsotnosti",
-          "presence_policy": "Pravilnik za ocenjevanje prisotnosti"
+          "presence_policy": "Pravilnik za ocenjevanje prisotnosti",
+          "absence_delay_use_system_default": "Uporabi sistemsko privzeto vrednost"
         },
         "data_description": {
           "absence_position": "Položaj senčila, ko je območje nezasedeno, razen če velja močnejša zaščitna odločitev (0 = popolnoma zaprto, 100 = popolnoma odprto). Velja za vsa okna v tem območju.",
-          "presence_policy": "Nadzoruje, kako se več entitet prisotnosti združi v en signal. Nekdo doma (privzeto): prisotnost, takoj ko je doma ena izbrana oseba. Vsi doma: prisotnost samo, ko so doma vse izbrane osebe. Obrnjeno: obrne pomen \"nekdo doma\" — prisotnost šele, ko je potrjeno, da je nekdo odsoten."
+          "presence_policy": "Nadzoruje, kako se več entitet prisotnosti združi v en signal. Nekdo doma (privzeto): prisotnost, takoj ko je doma ena izbrana oseba. Vsi doma: prisotnost samo, ko so doma vse izbrane osebe. Obrnjeno: obrne pomen \"nekdo doma\" — prisotnost šele, ko je potrjeno, da je nekdo odsoten.",
+          "absence_delay_use_system_default": "Če je omogočeno, ta cona sledi privzeti vrednosti zamika odsotnosti, nastavljeni na sistemskem vnosu. Če je onemogočeno, boste na naslednjem zaslonu nastavili lastno vrednost te cone."
         }
       },
       "comfort": {
@@ -273,126 +274,6 @@
           "remove_confirmed": "Da, odstrani to okno"
         }
       },
-      "lifecycle_profiles": {
-        "title": "Profili urnika",
-        "description": "Upravljajte poimenovane urnike in izberite, kateri je aktiven.",
-        "menu_options": {
-          "add_lifecycle_profile": "Dodaj profil",
-          "edit_lifecycle_profile": "Uredi profil",
-          "remove_lifecycle_profile": "Odstrani profil",
-          "select_active_lifecycle_profile": "Izberi aktivni profil"
-        }
-      },
-      "add_lifecycle_profile": {
-        "title": "Dodaj profil urnika",
-        "description": "Ustvari nov poimenovan urnik. Deluje popolnoma enako kot glavne nastavitve urnika, vendar velja šele, ko je izbran kot aktivni profil.",
-        "data": {
-          "profile_display_name": "Ime profila",
-          "night_trigger": "Sprožilec noči",
-          "morning_trigger": "Sprožilec jutra",
-          "night_fixed_time": "Čas noči",
-          "night_sun_elevation": "Lastna nočna višina (°) — uporablja se samo, ko je izbrano Po meri",
-          "morning_fixed_time": "Čas jutra",
-          "morning_sun_elevation": "Lastna jutranja višina (°) — uporablja se samo, ko je izbrano Po meri",
-          "night_position": "Nočni položaj",
-          "morning_position": "Jutranji položaj",
-          "active_months": "Aktivni meseci (napredno)",
-          "night_sun_event": "Nočni sončni dogodek (neobvezno)",
-          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)",
-          "night_not_before": "Noč: najzgodnejši sprožilec (neobvezno)",
-          "night_not_after": "Noč: najkasnejši sprožilec (neobvezno)",
-          "morning_not_before": "Jutro: najzgodnejši sprožilec (neobvezno)",
-          "morning_not_after": "Jutro: najkasnejši sprožilec (neobvezno)",
-          "schedule_mode": "Način urnika",
-          "weekday_night_fixed_time": "Čas noči ob delavnikih (pon–pet)",
-          "weekday_night_position": "Nočni položaj ob delavnikih (pon–pet)",
-          "weekday_morning_fixed_time": "Čas jutra ob delavnikih (pon–pet)",
-          "weekday_morning_position": "Jutranji položaj ob delavnikih (pon–pet)",
-          "weekend_night_fixed_time": "Čas noči ob vikendih (sob–ned)",
-          "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)",
-          "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
-          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)"
-        },
-        "data_description": {
-          "active_months": "Pustite prazno, če naj ta urnik velja vsak mesec. Izberite določene mesece za omejitev — na primer od septembra do marca za zimski urnik.",
-          "night_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji nočni čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
-          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
-          "night_not_before": "Neobvezno. Če bi razrešeni nočni sprožilec nastopil prej kot ob tem času, se namesto tega zamakne na ta čas.",
-          "night_not_after": "Neobvezno. Če bi razrešeni nočni sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas.",
-          "morning_not_before": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil prej kot ob tem času, se namesto tega zamakne na ta čas.",
-          "morning_not_after": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas.",
-          "schedule_mode": "»Enako vsak dan« uporablja en urnik za cel teden. »Delavnik / Vikend« omogoča nastavitev različnih časov in položajev za pon–pet in sob–ned."
-        }
-      },
-      "edit_lifecycle_profile": {
-        "title": "Uredi profil urnika",
-        "description": "Izberite profil za urejanje.",
-        "data": {
-          "profile_id": "Profil"
-        }
-      },
-      "edit_lifecycle_profile_detail": {
-        "title": "Uredi profil urnika",
-        "description": "Posodobite urnik tega profila.",
-        "data": {
-          "profile_display_name": "Ime profila",
-          "night_trigger": "Sprožilec noči",
-          "morning_trigger": "Sprožilec jutra",
-          "night_fixed_time": "Čas noči",
-          "night_sun_elevation": "Lastna nočna višina (°) — uporablja se samo, ko je izbrano Po meri",
-          "morning_fixed_time": "Čas jutra",
-          "morning_sun_elevation": "Lastna jutranja višina (°) — uporablja se samo, ko je izbrano Po meri",
-          "night_position": "Nočni položaj",
-          "morning_position": "Jutranji položaj",
-          "active_months": "Aktivni meseci (napredno)",
-          "night_sun_event": "Nočni sončni dogodek (neobvezno)",
-          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)",
-          "night_not_before": "Noč: najzgodnejši sprožilec (neobvezno)",
-          "night_not_after": "Noč: najkasnejši sprožilec (neobvezno)",
-          "morning_not_before": "Jutro: najzgodnejši sprožilec (neobvezno)",
-          "morning_not_after": "Jutro: najkasnejši sprožilec (neobvezno)",
-          "schedule_mode": "Način urnika",
-          "weekday_night_fixed_time": "Čas noči ob delavnikih (pon–pet)",
-          "weekday_night_position": "Nočni položaj ob delavnikih (pon–pet)",
-          "weekday_morning_fixed_time": "Čas jutra ob delavnikih (pon–pet)",
-          "weekday_morning_position": "Jutranji položaj ob delavnikih (pon–pet)",
-          "weekend_night_fixed_time": "Čas noči ob vikendih (sob–ned)",
-          "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)",
-          "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
-          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)"
-        },
-        "data_description": {
-          "active_months": "Pustite prazno, če naj ta urnik velja vsak mesec. Izberite določene mesece za omejitev — na primer od septembra do marca za zimski urnik.",
-          "night_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji nočni čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
-          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
-          "night_not_before": "Neobvezno. Če bi razrešeni nočni sprožilec nastopil prej kot ob tem času, se namesto tega zamakne na ta čas.",
-          "night_not_after": "Neobvezno. Če bi razrešeni nočni sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas.",
-          "morning_not_before": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil prej kot ob tem času, se namesto tega zamakne na ta čas.",
-          "morning_not_after": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas.",
-          "schedule_mode": "»Enako vsak dan« uporablja en urnik za cel teden. »Delavnik / Vikend« omogoča nastavitev različnih časov in položajev za pon–pet in sob–ned."
-        }
-      },
-      "remove_lifecycle_profile": {
-        "title": "Odstrani profil urnika",
-        "description": "Izberite profil za odstranitev. Tega ni mogoče razveljaviti.",
-        "data": {
-          "profile_id": "Profil za odstranitev"
-        }
-      },
-      "remove_lifecycle_profile_confirm": {
-        "title": "Potrdi odstranitev",
-        "description": "Ali želite odstraniti profil »{profile_name}«? Tega ni mogoče razveljaviti. Če je to aktivni profil, se znova uporabi privzeti urnik.",
-        "data": {
-          "remove_confirmed": "Da, odstrani ta profil"
-        }
-      },
-      "select_active_lifecycle_profile": {
-        "title": "Izberi aktivni profil",
-        "description": "Izberite, kateri profil urnika je aktiven. »Privzeto« uporabi urnik, nastavljen v nastavitvah urnika.",
-        "data": {
-          "active_lifecycle_profile_id": "Aktivni profil"
-        }
-      },
       "manual_override": {
         "title": "Ročna preglasitev",
         "description": "Izberite, ali ta cona sledi sistemski privzeti vrednosti ročne preglasitve ali uporablja lastne nastavitve.",
@@ -418,7 +299,6 @@
         "title": "Napredno",
         "description": "Profili življenjskega cikla, obnašanje ročnega preglasitve in časovna razporeditev pošiljanja senčil — nastavitve, ki jih večina namestitev ne potrebuje spreminjati.",
         "menu_options": {
-          "lifecycle_profiles": "Profili urnika",
           "manual_override": "Ročna preglasitev",
           "dispatch": "Usklajevanje senčil"
         }
@@ -498,7 +378,28 @@
         "description": "Globalne privzete vrednosti, ki jim sledi vsaka cona, razen če uporablja lastne nastavitve, ter sistemsko časovno usklajevanje pošiljanja ukazov senčilom.",
         "menu_options": {
           "system_manual_override": "Privzete vrednosti ročne preglasitve",
-          "system_dispatch": "Pošiljanje ukazov senčilom"
+          "system_dispatch": "Pošiljanje ukazov senčilom",
+          "system_presence": "Privzeta vrednost prisotnosti"
+        }
+      },
+      "presence_custom": {
+        "title": "Prisotnost — zamik odsotnosti te cone",
+        "description": "Kako dolgo mora trajati odsotnost, preden se ta cona šteje za prazno.",
+        "data": {
+          "absence_delay_min": "Zakasnitev odsotnosti"
+        },
+        "data_description": {
+          "absence_delay_min": ""
+        }
+      },
+      "system_presence": {
+        "title": "Privzeta vrednost prisotnosti",
+        "description": "Zamik odsotnosti, ki mu sledi vsaka cona, razen če uporablja lastno vrednost: kako dolgo mora trajati odsotnost, preden se hiša šteje za prazno.",
+        "data": {
+          "absence_delay_min": "Zakasnitev odsotnosti"
+        },
+        "data_description": {
+          "absence_delay_min": ""
         }
       }
     },
@@ -516,9 +417,7 @@
       "no_covers_selected": "Izberite vsaj eno entiteto senčila za to okno."
     },
     "abort": {
-      "no_options_for_system_entry": "Sistemski vnos SmartShading nima nastavljivih možnosti.",
-      "no_lifecycle_profiles": "Še ni ustvarjenega nobenega profila urnika. Najprej ga dodajte.",
-      "lifecycle_profile_not_found": "Tega profila urnika ni bilo mogoče najti. Morda je bil odstranjen."
+      "no_options_for_system_entry": "Sistemski vnos SmartShading nima nastavljivih možnosti."
     }
   },
   "config": {
@@ -735,11 +634,6 @@
       "options": {
         "same_every_day": "Enako vsak dan",
         "weekday_weekend": "Delavnik / Vikend"
-      }
-    },
-    "active_lifecycle_profile": {
-      "options": {
-        "legacy_default": "Privzeto"
       }
     },
     "active_months": {

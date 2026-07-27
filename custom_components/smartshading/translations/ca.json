@@ -85,17 +85,18 @@
         }
       },
       "presence": {
-        "title": "Configuració de presència",
-        "description": "Opcional. Si no se selecciona ningú, SmartShading sempre assumeix que hi ha algú present i mai no activa el tancament per absència.",
+        "title": "Presència",
+        "description": "Defineix quines entitats de presència utilitza aquesta zona i si segueix el valor predeterminat de retard d'absència de l'entrada del sistema, o utilitza un valor propi.",
         "data": {
           "presence_entity_ids": "Entitats de presència",
-          "absence_delay_min": "Retard d'absència",
           "absence_position": "Posició d'absència",
-          "presence_policy": "Política d'avaluació de presència"
+          "presence_policy": "Política d'avaluació de presència",
+          "absence_delay_use_system_default": "Utilitza el valor predeterminat del sistema"
         },
         "data_description": {
           "absence_position": "Posició de la persiana mentre la zona està desocupada, llevat que s'apliqui una decisió de protecció més forta (0 = totalment tancada, 100 = totalment oberta). S'aplica a totes les finestres d'aquesta zona.",
-          "presence_policy": "Controla com es combinen diverses entitats de presència en un sol senyal. Algú a casa (per defecte): present tan bon punt una persona seleccionada és a casa. Tothom a casa: present només quan totes les persones seleccionades són a casa. Invertit: inverteix el significat d'\"algú a casa\" — present només quan es confirma que algú és absent."
+          "presence_policy": "Controla com es combinen diverses entitats de presència en un sol senyal. Algú a casa (per defecte): present tan bon punt una persona seleccionada és a casa. Tothom a casa: present només quan totes les persones seleccionades són a casa. Invertit: inverteix el significat d'\"algú a casa\" — present només quan es confirma que algú és absent.",
+          "absence_delay_use_system_default": "Quan està activat, aquesta zona segueix el valor predeterminat de retard d'absència configurat a l'entrada del sistema. Quan està desactivat, configurareu el valor propi d'aquesta zona a la pantalla següent."
         }
       },
       "comfort": {
@@ -273,126 +274,6 @@
           "remove_confirmed": "Sí, elimina aquesta finestra"
         }
       },
-      "lifecycle_profiles": {
-        "title": "Perfils d'horari",
-        "description": "Gestiona horaris amb nom i tria quin està actiu.",
-        "menu_options": {
-          "add_lifecycle_profile": "Afegeix un perfil",
-          "edit_lifecycle_profile": "Edita el perfil",
-          "remove_lifecycle_profile": "Elimina el perfil",
-          "select_active_lifecycle_profile": "Selecciona el perfil actiu"
-        }
-      },
-      "add_lifecycle_profile": {
-        "title": "Afegeix un perfil d'horari",
-        "description": "Crea un nou horari amb nom. Es comporta exactament com la configuració principal d'horari, però només s'aplica quan se selecciona com a perfil actiu.",
-        "data": {
-          "profile_display_name": "Nom del perfil",
-          "night_trigger": "Activador de nit",
-          "morning_trigger": "Activador de matí",
-          "night_fixed_time": "Hora de nit",
-          "night_sun_elevation": "Elevació nocturna personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
-          "morning_fixed_time": "Hora de matí",
-          "morning_sun_elevation": "Elevació matinal personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
-          "night_position": "Posició de nit",
-          "morning_position": "Posició de matí",
-          "active_months": "Mesos actius (avançat)",
-          "night_sun_event": "Esdeveniment solar nocturn (opcional)",
-          "morning_sun_event": "Esdeveniment solar matinal (opcional)",
-          "night_not_before": "Nit: activador més aviat (opcional)",
-          "night_not_after": "Nit: activador més tard (opcional)",
-          "morning_not_before": "Matí: activador més aviat (opcional)",
-          "morning_not_after": "Matí: activador més tard (opcional)",
-          "schedule_mode": "Mode d'horari",
-          "weekday_night_fixed_time": "Hora de nit entre setmana (dl–dv)",
-          "weekday_night_position": "Posició de nit entre setmana (dl–dv)",
-          "weekday_morning_fixed_time": "Hora de matí entre setmana (dl–dv)",
-          "weekday_morning_position": "Posició de matí entre setmana (dl–dv)",
-          "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
-          "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)",
-          "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
-          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)"
-        },
-        "data_description": {
-          "active_months": "Deixeu-ho buit per aplicar aquest horari cada mes. Seleccioneu mesos concrets per restringir-lo — per exemple, de setembre a març per a un horari d'hivern.",
-          "night_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora nocturna anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
-          "morning_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora matinal anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
-          "night_not_before": "Opcional. Si l'activador nocturn resolt es produís abans d'aquesta hora, s'ajorna fins a aquesta hora.",
-          "night_not_after": "Opcional. Si l'activador nocturn resolt es produís després d'aquesta hora, s'avança a aquesta hora.",
-          "morning_not_before": "Opcional. Si l'activador matinal resolt es produís abans d'aquesta hora, s'ajorna fins a aquesta hora.",
-          "morning_not_after": "Opcional. Si l'activador matinal resolt es produís després d'aquesta hora, s'avança a aquesta hora.",
-          "schedule_mode": "«Igual cada dia» fa servir un únic horari per a tota la setmana. «Entre setmana / Cap de setmana» permet definir hores i posicions diferents per a dl–dv i ds–dg."
-        }
-      },
-      "edit_lifecycle_profile": {
-        "title": "Edita el perfil d'horari",
-        "description": "Selecciona quin perfil vols editar.",
-        "data": {
-          "profile_id": "Perfil"
-        }
-      },
-      "edit_lifecycle_profile_detail": {
-        "title": "Edita el perfil d'horari",
-        "description": "Actualitza l'horari d'aquest perfil.",
-        "data": {
-          "profile_display_name": "Nom del perfil",
-          "night_trigger": "Activador de nit",
-          "morning_trigger": "Activador de matí",
-          "night_fixed_time": "Hora de nit",
-          "night_sun_elevation": "Elevació nocturna personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
-          "morning_fixed_time": "Hora de matí",
-          "morning_sun_elevation": "Elevació matinal personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
-          "night_position": "Posició de nit",
-          "morning_position": "Posició de matí",
-          "active_months": "Mesos actius (avançat)",
-          "night_sun_event": "Esdeveniment solar nocturn (opcional)",
-          "morning_sun_event": "Esdeveniment solar matinal (opcional)",
-          "night_not_before": "Nit: activador més aviat (opcional)",
-          "night_not_after": "Nit: activador més tard (opcional)",
-          "morning_not_before": "Matí: activador més aviat (opcional)",
-          "morning_not_after": "Matí: activador més tard (opcional)",
-          "schedule_mode": "Mode d'horari",
-          "weekday_night_fixed_time": "Hora de nit entre setmana (dl–dv)",
-          "weekday_night_position": "Posició de nit entre setmana (dl–dv)",
-          "weekday_morning_fixed_time": "Hora de matí entre setmana (dl–dv)",
-          "weekday_morning_position": "Posició de matí entre setmana (dl–dv)",
-          "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
-          "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)",
-          "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
-          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)"
-        },
-        "data_description": {
-          "active_months": "Deixeu-ho buit per aplicar aquest horari cada mes. Seleccioneu mesos concrets per restringir-lo — per exemple, de setembre a març per a un horari d'hivern.",
-          "night_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora nocturna anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
-          "morning_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora matinal anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
-          "night_not_before": "Opcional. Si l'activador nocturn resolt es produís abans d'aquesta hora, s'ajorna fins a aquesta hora.",
-          "night_not_after": "Opcional. Si l'activador nocturn resolt es produís després d'aquesta hora, s'avança a aquesta hora.",
-          "morning_not_before": "Opcional. Si l'activador matinal resolt es produís abans d'aquesta hora, s'ajorna fins a aquesta hora.",
-          "morning_not_after": "Opcional. Si l'activador matinal resolt es produís després d'aquesta hora, s'avança a aquesta hora.",
-          "schedule_mode": "«Igual cada dia» fa servir un únic horari per a tota la setmana. «Entre setmana / Cap de setmana» permet definir hores i posicions diferents per a dl–dv i ds–dg."
-        }
-      },
-      "remove_lifecycle_profile": {
-        "title": "Elimina el perfil d'horari",
-        "description": "Selecciona el perfil a eliminar. Aquesta acció no es pot desfer.",
-        "data": {
-          "profile_id": "Perfil a eliminar"
-        }
-      },
-      "remove_lifecycle_profile_confirm": {
-        "title": "Confirma l'eliminació",
-        "description": "Vols eliminar el perfil «{profile_name}»? Aquesta acció no es pot desfer. Si és el perfil actiu, es tornarà a utilitzar l'horari per defecte.",
-        "data": {
-          "remove_confirmed": "Sí, elimina aquest perfil"
-        }
-      },
-      "select_active_lifecycle_profile": {
-        "title": "Selecciona el perfil actiu",
-        "description": "Tria quin perfil d'horari està actiu. «Per defecte» utilitza l'horari configurat als ajustos d'horari.",
-        "data": {
-          "active_lifecycle_profile_id": "Perfil actiu"
-        }
-      },
       "manual_override": {
         "title": "Anul·lació manual",
         "description": "Trieu si aquesta zona segueix el valor predeterminat de substitució manual de l'entrada del sistema, o utilitza la seva pròpia configuració.",
@@ -418,7 +299,6 @@
         "title": "Avançat",
         "description": "Perfils de cicle de vida, comportament de la substitució manual i temporització del control de tendals — configuracions que la majoria d'instal·lacions no necessiten canviar.",
         "menu_options": {
-          "lifecycle_profiles": "Perfils d'horari",
           "manual_override": "Anul·lació manual",
           "dispatch": "Coordinació de les persianes"
         }
@@ -498,7 +378,28 @@
         "description": "Valors predeterminats globals que segueix cada zona llevat que utilitzi la seva pròpia configuració, més el temporitzat del sistema per a l'enviament d'ordres a les persianes.",
         "menu_options": {
           "system_manual_override": "Valors predeterminats de substitució manual",
-          "system_dispatch": "Control de persianes"
+          "system_dispatch": "Control de persianes",
+          "system_presence": "Valor predeterminat de presència"
+        }
+      },
+      "presence_custom": {
+        "title": "Presència — retard d'absència d'aquesta zona",
+        "description": "Quant temps ha de durar una absència abans que aquesta zona es consideri buida.",
+        "data": {
+          "absence_delay_min": "Retard d'absència"
+        },
+        "data_description": {
+          "absence_delay_min": ""
+        }
+      },
+      "system_presence": {
+        "title": "Valor predeterminat de presència",
+        "description": "El retard d'absència que segueix cada zona llevat que utilitzi un valor propi: quant temps ha de durar una absència abans que la casa es consideri buida.",
+        "data": {
+          "absence_delay_min": "Retard d'absència"
+        },
+        "data_description": {
+          "absence_delay_min": ""
         }
       }
     },
@@ -516,9 +417,7 @@
       "no_covers_selected": "Selecciona almenys una entitat de persiana per a aquesta finestra."
     },
     "abort": {
-      "no_options_for_system_entry": "L'entrada de Sistema de SmartShading no té opcions configurables.",
-      "no_lifecycle_profiles": "Encara no s'ha creat cap perfil d'horari. Afegeix-ne un primer.",
-      "lifecycle_profile_not_found": "No s'ha trobat aquest perfil d'horari. És possible que s'hagi eliminat."
+      "no_options_for_system_entry": "L'entrada de Sistema de SmartShading no té opcions configurables."
     }
   },
   "config": {
@@ -735,11 +634,6 @@
       "options": {
         "same_every_day": "Igual cada dia",
         "weekday_weekend": "Entre setmana / Cap de setmana"
-      }
-    },
-    "active_lifecycle_profile": {
-      "options": {
-        "legacy_default": "Per defecte"
       }
     },
     "active_months": {

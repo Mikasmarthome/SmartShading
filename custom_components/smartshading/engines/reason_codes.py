@@ -123,6 +123,17 @@ _REGISTRY: dict[str, ReasonCode] = {r.code: r for r in (
 )}
 
 
+def description_for(code: str) -> str | None:
+    """T21 Phase D: the plain human-readable description for a registered
+    code, or None if `code` isn't in this registry — lets other display
+    layers (e.g. explainability.py) treat this registry as the single
+    canonical description source, falling back to their own text only for
+    codes this registry doesn't know about, instead of maintaining a second
+    independent description table for codes both already cover."""
+    rc = _REGISTRY.get(code)
+    return rc.description if rc is not None else None
+
+
 def describe(code: str) -> dict:
     """Privacy-safe registry description for a code (export-ready); unknown codes
     get a stable 'unknown' fallback so exports never break on a new runtime code."""

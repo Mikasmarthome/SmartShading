@@ -25,11 +25,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from . import reason_codes as _rc
+
 # ---------------------------------------------------------------------------
 # Human-readable translations for machine reason codes already produced
 # elsewhere (CommandFilterResult.blocked_reason, dispatch_filter_reason,
 # heat_hysteresis reasons). Purely a display layer — the underlying codes
 # are untouched; this table only makes them readable without code access.
+#
+# T21 Phase D: reason_codes.py's registry is the canonical description
+# source for any code it covers (_describe() below checks it first) — this
+# table now only needs entries for codes reason_codes.py doesn't have (heat
+# hysteresis reasons, command-filter suppression, presence-hold variants),
+# avoiding two independently-maintained descriptions for the same code.
 # ---------------------------------------------------------------------------
 
 _REASON_DESCRIPTIONS: dict[str, str] = {
@@ -58,7 +66,11 @@ _REASON_DESCRIPTIONS: dict[str, str] = {
 def _describe(code: str | None) -> str | None:
     if not code:
         return None
-    return _REASON_DESCRIPTIONS.get(code, code.replace("_", " "))
+    return (
+        _rc.description_for(code)
+        or _REASON_DESCRIPTIONS.get(code)
+        or code.replace("_", " ")
+    )
 
 
 # ---------------------------------------------------------------------------

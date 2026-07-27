@@ -88,6 +88,24 @@ class Pseudonymizer:
         return digest[:PSEUDO_HEX_LEN]
 
 
+# T21 Phase D: single shared source for the pseudonymization metadata block —
+# previously four independent literal-dict copies across support_export.py
+# and research_export_v3.py (same algorithm/output_bits/namespace_separated
+# values, only stability_scope/security_note varying per export contract).
+def pseudonymization_metadata(
+    *, stability_scope: str, security_note: str | None = None,
+) -> dict:
+    meta = {
+        "algorithm": "hmac_sha256",
+        "output_bits": 64,
+        "namespace_separated": True,
+        "stability_scope": stability_scope,
+    }
+    if security_note is not None:
+        meta["security_note"] = security_note
+    return meta
+
+
 # ---------------------------------------------------------------------------
 # recursive JSON-safety + privacy validation
 # ---------------------------------------------------------------------------

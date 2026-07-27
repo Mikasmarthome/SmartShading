@@ -31,6 +31,7 @@ from .diagnostics_privacy import (
     contains_forbidden_substring,
     enforce_depth,
     is_json_safe,
+    pseudonymization_metadata,
     truncate_strings,
 )
 from ..models.runtime_mode import derive_authority
@@ -205,11 +206,10 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
             "attribution": "attributable only when adapted, single learning source, "
                            "no confounder, outcome resolved complete",
         },
-        "pseudonymization": _safe(lambda: {
-            "algorithm": "hmac_sha256", "output_bits": 64, "namespace_separated": True,
-            "stability_scope": "config_entry",
-            "security_note": "deterministic pseudonymization, NOT strong anonymization "
-                             "against an actor who knows the config entry id"},
+        "pseudonymization": _safe(lambda: pseudonymization_metadata(
+            stability_scope="config_entry",
+            security_note="deterministic pseudonymization, NOT strong anonymization "
+                          "against an actor who knows the config entry id"),
             errors, "pseudonymization"),
         "system": _safe(lambda: {
             "entry_ref": pz.ref(NS_ENTRY, entry_id),
@@ -422,8 +422,7 @@ def build_research_export_all_zones(coordinators, *, now=None,
         "integration_version": integration_version,
         "export_scope": "system_all_zones",
         "overall_status": ("degraded" if errors else "ok"),
-        "pseudonymization": {"algorithm": "hmac_sha256", "output_bits": 64,
-                             "namespace_separated": True, "stability_scope": "export"},
+        "pseudonymization": pseudonymization_metadata(stability_scope="export"),
         "system": {
             "zone_count": len(coords),
             "window_count": total_windows,

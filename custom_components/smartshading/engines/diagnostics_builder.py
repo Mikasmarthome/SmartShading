@@ -94,12 +94,6 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
                 "real_control_allowed": auth.real_control_allowed,
                 "experiments_allowed": auth.experiments_allowed,
                 "outcomes_allowed": auth.outcomes_allowed,
-                # Legacy aliases (kept for existing diagnostics consumers).
-                "observation_active": auth.learning_allowed,
-                "shadow_evaluation_active": auth.shadow_evaluation_allowed,
-                "real_experiments_allowed": auth.experiments_allowed,
-                "adoptions_allowed": auth.learning_allowed,
-                "cover_commands_allowed": auth.real_control_allowed,
             }
         return out
 

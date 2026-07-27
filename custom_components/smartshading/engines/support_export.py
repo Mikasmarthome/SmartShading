@@ -29,6 +29,7 @@ from .diagnostics_privacy import (
     contains_forbidden_substring,
     enforce_depth,
     is_json_safe,
+    pseudonymization_metadata,
     truncate_strings,
 )
 from . import learning_trace_builder as ltb
@@ -63,12 +64,104 @@ _OVERRIDE_WAITING_ON = {
     "manual": "explicit manual clear",
 }
 
-# Event types that constitute "critical" support events (non-noise).
-_CRITICAL_EVENT_TYPES = frozenset({
-    "dispatch_sent", "dispatch_failed", "command_blocked", "recommendation_only",
-    "safety", "manual_override", "absence", "night_transition", "presence_hold",
-    "behavior_hold",
+# T21 Phase D: event types GUARANTEED to survive the MAX_SUPPORT_TIMELINE_EVENTS
+# cap (filled into the cap first, before any non-guaranteed event) — a genuine
+# one-shot occurrence a support reader must never lose to truncation. Narrower
+# than the old _CRITICAL_EVENT_TYPES: repeated identical holds (behavior_hold,
+# presence_hold) were previously guaranteed too, which is exactly the noise
+# T21 Phase D's timeline aggregation exists to fix — an actual hold->something-else
+# transition already produces its own event with a different aggregation key
+# (see _aggregate_repeated_events()), so it survives without needing a blanket
+# guarantee on the whole event_type.
+_GUARANTEED_EVENT_TYPES = frozenset({
+    "dispatch_sent", "dispatch_failed", "safety", "manual_override",
+    "absence", "night_transition",
 })
+
+# Event types that must never be collapsed into an occurrence-count aggregate,
+# even if two consecutive ones happen to share an identical aggregation key —
+# each is a genuine one-shot occurrence, not a repeated "still holding" state.
+_NEVER_AGGREGATE_EVENT_TYPES = frozenset({"dispatch_sent", "dispatch_failed"})
+
+# T21 Phase D severity model (see ARCHITECTURE / T21 Phase D report): a small,
+# explicit event_type -> severity mapping instead of a single is_critical bool.
+# "critical" is reserved for genuine safety-relevant/system-wide failures that
+# do not exist among today's decision-trace-derived event types (none of the
+# current classifications rise to that bar per the T21 Phase D ownership
+# analysis) — never emitted by _classify_severity() today, listed here only so
+# the full 5-level model is documented in one place.
+_EVENT_SEVERITY = {
+    "dispatch_sent": "info",
+    "dispatch_failed": "error",
+    "safety": "state_change",
+    "manual_override": "state_change",
+    "absence": "state_change",
+    "night_transition": "state_change",
+    "command_blocked": "warning",
+    "recommendation_only": "info",
+    "behavior_hold": "info",
+    "presence_hold": "info",
+    "min_interval": "info",
+    "startup_grace": "info",
+    "no_change": "info",
+}
+
+
+def _classify_severity(event_type: str) -> str:
+    """Never raises: an unrecognized event_type (e.g. a future addition this
+    table hasn't caught up with yet) defaults to "info" rather than silently
+    escalating to something alarming."""
+    return _EVENT_SEVERITY.get(event_type, "info")
+
+
+def _aggregate_repeated_events(events_newest_first: list[dict]) -> list[dict]:
+    """T21 Phase D: collapse consecutive events sharing an identical
+    (window_ref, event_type, decided_by, reason, target_ha, shading_state) key
+    into one record carrying first_seen/last_seen/occurrence_count, instead of
+    emitting one nearly-identical record per evaluation cycle.
+
+    `events_newest_first` must already be sorted newest-first (the caller's
+    existing order). A run breaks — and aggregation starts fresh — the moment
+    any key field differs, so an actual state change (different reason/
+    decided_by/target/shading_state) is never folded into a prior hold's
+    aggregate; it always produces its own separate event. Events whose
+    event_type is in _NEVER_AGGREGATE_EVENT_TYPES are never collapsed, even
+    if adjacent ones happen to share a key.
+    """
+    def _key(evt: dict):
+        return (
+            evt.get("window_ref"), evt.get("event_type"), evt.get("decided_by"),
+            evt.get("reason"), evt.get("target_ha"), evt.get("shading_state"),
+        )
+
+    out: list[dict] = []
+    i = 0
+    n = len(events_newest_first)
+    while i < n:
+        evt = events_newest_first[i]
+        if evt.get("event_type") in _NEVER_AGGREGATE_EVENT_TYPES:
+            out.append(evt)
+            i += 1
+            continue
+        run_key = _key(evt)
+        j = i + 1
+        while j < n and _key(events_newest_first[j]) == run_key:
+            j += 1
+        run = events_newest_first[i:j]
+        if len(run) == 1:
+            out.append(evt)
+        else:
+            # run is newest-first: run[0] is last_seen, run[-1] is first_seen.
+            aggregated = dict(run[0])
+            aggregated["occurrence_count"] = len(run)
+            aggregated["first_seen"] = run[-1].get("ts")
+            aggregated["first_seen_local"] = run[-1].get("local_ts")
+            aggregated["last_seen"] = run[0].get("ts")
+            aggregated["last_seen_local"] = run[0].get("local_ts")
+            out.append(aggregated)
+        i = j
+    return out
+
 
 # Decision no_dispatch.primary_reason values that are same-position noise.
 _SAME_POS_REASONS = frozenset({"same_position", "same_position_no_change"})
@@ -185,10 +278,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         return pz.ref(NS_WINDOW, wid)
 
     def _meta():
-        return {
-            "algorithm": "hmac_sha256", "output_bits": 64,
-            "namespace_separated": True, "stability_scope": "config_entry",
-        }
+        return pseudonymization_metadata(stability_scope="config_entry")
 
     def _system():
         return {
@@ -750,7 +840,8 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 "reason": primary or None,
                 "target_ha": target_ha,
                 "is_recommendation_only": (evt_type == "recommendation_only"),
-                "is_critical": evt_type in _CRITICAL_EVENT_TYPES,
+                "is_critical": evt_type in _GUARANTEED_EVENT_TYPES,
+                "severity": _classify_severity(evt_type),
                 # F31a: real post-throttle dispatch timestamp — distinct from
                 # "ts" above, which is the shared per-cycle decision time.
                 # None when nothing was actually dispatched this event.
@@ -771,10 +862,18 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             else:
                 non_critical_evts.append(evt)
 
-        # Merge: all critical events + newest non-critical up to cap.
-        # non_critical_evts is already newest-first (ring was sorted that way).
+        # T21 Phase D: collapse repeated identical non-critical events (e.g. a
+        # BehaviorMode hold re-evaluated every cycle with nothing changed)
+        # into occurrence-count aggregates BEFORE capping — this is what
+        # actually removes the noise, rather than just truncating it earlier.
+        # non_critical_evts is already newest-first (ring was sorted that
+        # way), which _aggregate_repeated_events() requires.
+        aggregated_non_critical = _aggregate_repeated_events(non_critical_evts)
+        aggregated_away = len(non_critical_evts) - len(aggregated_non_critical)
+
+        # Merge: all guaranteed events + newest aggregated non-critical up to cap.
         remaining_slots = max(0, MAX_SUPPORT_TIMELINE_EVENTS - len(critical_evts))
-        events = critical_evts + non_critical_evts[:remaining_slots]
+        events = critical_evts + aggregated_non_critical[:remaining_slots]
         # Re-sort merged list newest-first for output.
         events.sort(key=lambda e: e.get("ts") or "", reverse=True)
 
@@ -792,10 +891,15 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
             "events": events,
             "event_count": len(events),
             "same_position_noise_suppressed": noise_same_pos,
+            # T21 Phase D: individual repeated-hold records collapsed away by
+            # _aggregate_repeated_events() (folded into an occurrence_count
+            # aggregate elsewhere in `events`, not lost — see each aggregate's
+            # own occurrence_count/first_seen/last_seen for the true tally).
+            "repeated_events_aggregated": aggregated_away,
             "critical_event_count": critical_count,
             "non_critical_event_count": non_critical_count,
             "critical_events_guaranteed": True,
-            "truncated_at_cap": len(non_critical_evts) > remaining_slots,
+            "truncated_at_cap": len(aggregated_non_critical) > remaining_slots,
         }
 
     def _decision_records(ring_snapshot, cap):
@@ -1121,9 +1225,7 @@ def build_support_export_all_zones(coordinators, *, now=None,
         "integration_version": integration_version,
         "export_scope": "system_all_zones",
         "overall_status": ("degraded" if degraded else "ok"),
-        "pseudonymization": {"algorithm": "hmac_sha256", "output_bits": 64,
-                             "namespace_separated": True,
-                             "stability_scope": "per_zone_config_entry"},
+        "pseudonymization": pseudonymization_metadata(stability_scope="per_zone_config_entry"),
         "system": {
             "zone_count": len(coords),
             "total_window_count": total_windows,

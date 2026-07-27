@@ -401,7 +401,9 @@
         "title": "Kézi felülbírálás",
         "description": "Meghatározza az aktív kézi felülbírálás viselkedését: mennyi ideig tart, és hogy a kényelmi vagy védelmi műveletek futhatnak-e még, amíg aktív.",
         "data": {
-          "override_release_strategy": "Feloldási stratégia",
+          "override_release_mode": "Hogyan ér véget a felülbírálás",
+          "override_time_based_kind": "Időzítő típusa",
+          "override_decision_filter": "Mely döntések oldják fel",
           "override_fixed_until": "Rögzített befejezési idő",
           "override_allow_comfort_actions": "Kényelmi műveletek engedélyezése felülbírálás alatt",
           "override_allow_protection_actions": "Védelmi műveletek engedélyezése felülbírálás alatt",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Érzékelési tolerancia"
         },
         "data_description": {
-          "override_release_strategy": "Meghatározza, hogyan ér véget a felülbírálás: fix időtartam után, fix időpontban, a következő ütemezésváltáskor, a következő automatikus döntéskor, vagy csak kézi törléssel.",
-          "override_fixed_until": "Csak akkor használatos, ha a feloldási stratégia \"Rögzített idő\"-re van állítva. Ha az idő ma már elmúlt, a felülbírálás holnap ekkor ér véget.",
+          "override_release_mode": "Válassza ki a feloldási koncepciót: időzítő/óra, a következő ütemezési átmenet, a következő automatikus döntés, vagy csak kézi törlés.",
+          "override_time_based_kind": "Csak akkor releváns, ha a fenti feloldási mód időzítő/óra opcióra van állítva: feloldás rögzített időtartam után vagy rögzített időpontban.",
+          "override_decision_filter": "Csak akkor releváns, ha a fenti feloldási mód a következő döntés opcióra van állítva: feloldás bármely döntésnél, csak kényelmi döntéseknél, vagy csak védelmi döntéseknél.",
+          "override_fixed_until": "Csak akkor releváns, ha a feloldási mód időzítő/óra opció, és az időzítő típusa rögzített időpont. Ha ez az időpont ma már elmúlt, a felülbírálás holnap ekkor ér véget.",
           "override_allow_comfort_actions": "Ha engedélyezve van, a szokásos kényelmi árnyékolás továbbra is futhat aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
           "override_allow_protection_actions": "Ha engedélyezve van, a védelmi műveletek (távollét, hőség, vakítás) továbbra is futhatnak aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
           "override_safety_timeout_enabled": "Opcionális maximális időtartam biztonsági hálóként a nyitott végű stratégiákhoz, hogy a felülbírálás sose maradjon véglegesen elfeledve.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Fordított (valaki otthon = távol)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Fix időtartam után",
-        "fixed_time": "Rögzített idő",
-        "lifecycle": "A nappal/éjszaka ciklus végén",
-        "first_comfort": "A következő automatikus kényelmi művelet esetén",
-        "first_protection": "A következő védelmi árnyékolás esetén",
-        "first_any_decision": "A következő automatikus döntés esetén",
-        "manual": "Csak kézi törlés"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Párhuzamos",
         "spaced": "Időréssel",
         "sequential": "Egymás után"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Időzítő vagy óra után",
+        "lifecycle": "A következő ütemezési átmenetkor",
+        "next_decision": "A következő automatikus döntésnél",
+        "manual": "Csak kézi törlés"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Rögzített időtartam után",
+        "fixed_time": "Rögzített időpontban"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Bármely automatikus döntés",
+        "comfort": "Csak kényelmi döntések",
+        "protection": "Csak védelmi döntések"
       }
     }
   },

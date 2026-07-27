@@ -76,6 +76,103 @@ LEGACY_DURATION_MODE_MIGRATION = {
 }
 
 
+class OverrideReleaseMode(Enum):
+    """Simplified, user-facing release CONCEPT (v1.2.0-beta.1, T21 Phase B).
+
+    T20's product-value audit found the 7-value OverrideReleaseStrategy
+    presents 3 of its 7 values (FIRST_COMFORT / FIRST_PROTECTION /
+    FIRST_ANY_DECISION) as separate top-level choices when they are
+    mechanically ONE mechanism ("release on the next qualifying automatic
+    decision") parameterized by a category filter — inflating the visible
+    option count without adding a distinct behavior. This enum is the
+    reduced, 4-concept model the OptionsFlow now presents to the user:
+
+    TIME_BASED     — a clock/timer-based release. Which timer (a fixed
+                     duration vs. a fixed clock time) is a second-level
+                     choice — see TIME_BASED_KIND_* below — not a separate
+                     top-level concept.
+    LIFECYCLE      — released at the next lifecycle transition. Unchanged
+                     1:1 mapping onto OverrideReleaseStrategy.LIFECYCLE.
+    NEXT_DECISION  — released on the next qualifying automatic decision.
+                     WHICH decisions qualify (any / comfort-only /
+                     protection-only) is a second-level filter — see
+                     DECISION_FILTER_* below — not three separate concepts.
+    MANUAL         — no automatic release; unchanged 1:1 mapping onto
+                     OverrideReleaseStrategy.MANUAL.
+
+    This enum and its mapping functions are a presentation-layer
+    simplification ONLY. The internal decision engine
+    (engines/override_release.py), the persisted ManualOverride.release_strategy
+    format, and OverridePolicyConfig.release_strategy all continue to operate
+    on the original, unchanged, fully-tested OverrideReleaseStrategy — nothing
+    about real-time override behavior, persistence format, or migration of
+    existing data changes. See release_strategy_to_mode() / release_mode_to_strategy()
+    for the exact (lossless, bijective) mapping between the two.
+    """
+
+    TIME_BASED = "time_based"
+    LIFECYCLE = "lifecycle"
+    NEXT_DECISION = "next_decision"
+    MANUAL = "manual"
+
+
+# Second-level choice for OverrideReleaseMode.TIME_BASED.
+TIME_BASED_KIND_DURATION = "duration"
+TIME_BASED_KIND_FIXED_TIME = "fixed_time"
+
+# Second-level choice for OverrideReleaseMode.NEXT_DECISION.
+DECISION_FILTER_ANY = "any"
+DECISION_FILTER_COMFORT = "comfort"
+DECISION_FILTER_PROTECTION = "protection"
+
+
+def release_strategy_to_mode(
+    strategy: OverrideReleaseStrategy,
+) -> tuple[OverrideReleaseMode, str | None]:
+    """The unchanged internal OverrideReleaseStrategy -> the simplified UI
+    concept (mode) plus its second-level sub-choice (None when the mode has
+    none). Used to pre-fill the OptionsFlow form from stored/legacy data."""
+    if strategy is OverrideReleaseStrategy.DURATION:
+        return OverrideReleaseMode.TIME_BASED, TIME_BASED_KIND_DURATION
+    if strategy is OverrideReleaseStrategy.FIXED_TIME:
+        return OverrideReleaseMode.TIME_BASED, TIME_BASED_KIND_FIXED_TIME
+    if strategy is OverrideReleaseStrategy.LIFECYCLE:
+        return OverrideReleaseMode.LIFECYCLE, None
+    if strategy is OverrideReleaseStrategy.FIRST_COMFORT:
+        return OverrideReleaseMode.NEXT_DECISION, DECISION_FILTER_COMFORT
+    if strategy is OverrideReleaseStrategy.FIRST_PROTECTION:
+        return OverrideReleaseMode.NEXT_DECISION, DECISION_FILTER_PROTECTION
+    if strategy is OverrideReleaseStrategy.FIRST_ANY_DECISION:
+        return OverrideReleaseMode.NEXT_DECISION, DECISION_FILTER_ANY
+    return OverrideReleaseMode.MANUAL, None
+
+
+def release_mode_to_strategy(
+    mode: OverrideReleaseMode, sub_choice: str | None
+) -> OverrideReleaseStrategy:
+    """Inverse of release_strategy_to_mode() — the simplified UI selection ->
+    the unchanged internal OverrideReleaseStrategy that gets persisted and
+    that engines/override_release.py continues to act on. An unrecognized
+    sub_choice degrades to the same defaults the OptionsFlow already used
+    before this change (DURATION for TIME_BASED, FIRST_ANY_DECISION for
+    NEXT_DECISION) rather than raising."""
+    if mode is OverrideReleaseMode.TIME_BASED:
+        return (
+            OverrideReleaseStrategy.FIXED_TIME
+            if sub_choice == TIME_BASED_KIND_FIXED_TIME
+            else OverrideReleaseStrategy.DURATION
+        )
+    if mode is OverrideReleaseMode.LIFECYCLE:
+        return OverrideReleaseStrategy.LIFECYCLE
+    if mode is OverrideReleaseMode.NEXT_DECISION:
+        if sub_choice == DECISION_FILTER_COMFORT:
+            return OverrideReleaseStrategy.FIRST_COMFORT
+        if sub_choice == DECISION_FILTER_PROTECTION:
+            return OverrideReleaseStrategy.FIRST_PROTECTION
+        return OverrideReleaseStrategy.FIRST_ANY_DECISION
+    return OverrideReleaseStrategy.MANUAL
+
+
 @dataclass(frozen=True)
 class ManualOverride:
     """A user-initiated override that keeps a window at a manually chosen position.

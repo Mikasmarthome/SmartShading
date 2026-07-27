@@ -401,7 +401,9 @@
         "title": "Manuell åsidosättning",
         "description": "Bestämmer beteendet för en aktiv manuell åsidosättning: hur länge den varar och om komfort- eller skyddsåtgärder fortfarande får köras medan den är aktiv.",
         "data": {
-          "override_release_strategy": "Frisläppningsstrategi",
+          "override_release_mode": "Hur åsidosättningen avslutas",
+          "override_time_based_kind": "Timertyp",
+          "override_decision_filter": "Vilka beslut som släpper den",
           "override_fixed_until": "Fast sluttid",
           "override_allow_comfort_actions": "Tillåt komfortåtgärder under åsidosättning",
           "override_allow_protection_actions": "Tillåt skyddsåtgärder under åsidosättning",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Detekteringstolerans"
         },
         "data_description": {
-          "override_release_strategy": "Styr hur åsidosättningen avslutas: efter en fast varaktighet, vid en fast tid, vid nästa schemaövergång, vid nästa automatiska beslut, eller endast genom manuell rensning.",
-          "override_fixed_until": "Används endast när frisläppningsstrategi är satt till \"Fast tid\". Om tiden redan har passerat idag avslutas åsidosättningen vid den tiden imorgon.",
+          "override_release_mode": "Välj frisläppningskonceptet: en timer/klocka, nästa schemaövergång, nästa automatiska beslut, eller endast manuell rensning.",
+          "override_time_based_kind": "Endast relevant när frisläppningsläget ovan är inställt på ett timer-/klockalternativ: frisläppning efter en fast varaktighet eller vid en fast klockslag.",
+          "override_decision_filter": "Endast relevant när frisläppningsläget ovan är inställt på alternativet nästa beslut: frisläppning vid vilket beslut som helst, endast komfortbeslut, eller endast skyddsbeslut.",
+          "override_fixed_until": "Endast relevant när frisläppningsläget är ett timer-/klockalternativ och timertypen är ett fast klockslag. Om klockslaget redan har passerat idag avslutas åsidosättningen imorgon vid denna tid.",
           "override_allow_comfort_actions": "När aktiverad kan vanlig komfortskuggning fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
           "override_allow_protection_actions": "När aktiverad kan skyddsåtgärder (frånvaro, värme, bländning) fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
           "override_safety_timeout_enabled": "Valfri maximal varaktighet som säkerhetsnät för öppna strategier, så att en åsidosättning aldrig glöms bort permanent.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Inverterad (någon hemma = borta)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Efter en fast varaktighet",
-        "fixed_time": "Fast tid",
-        "lifecycle": "Vid slutet av dag-/nattcykeln",
-        "first_comfort": "Vid nästa automatiska komfortåtgärd",
-        "first_protection": "Vid nästa skyddande skuggning",
-        "first_any_decision": "Vid nästa automatiska beslut",
-        "manual": "Endast manuell rensning"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Parallellt",
         "spaced": "Med tidsintervall",
         "sequential": "En i taget"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Efter en timer eller ett klockslag",
+        "lifecycle": "Vid nästa schemaövergång",
+        "next_decision": "Vid nästa automatiska beslut",
+        "manual": "Endast manuell rensning"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Efter en fast varaktighet",
+        "fixed_time": "Vid ett fast klockslag"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Alla automatiska beslut",
+        "comfort": "Endast komfortbeslut",
+        "protection": "Endast skyddsbeslut"
       }
     }
   },

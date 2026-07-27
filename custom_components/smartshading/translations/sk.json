@@ -401,7 +401,9 @@
         "title": "Ručné prepísanie",
         "description": "Určuje správanie aktívneho ručného prepísania: ako dlho trvá a či môžu akcie komfortu alebo ochrany naďalej prebiehať, kým je aktívne.",
         "data": {
-          "override_release_strategy": "Stratégia ukončenia",
+          "override_release_mode": "Ako sa prepísanie ukončí",
+          "override_time_based_kind": "Typ časovača",
+          "override_decision_filter": "Ktoré rozhodnutia ho uvoľnia",
           "override_fixed_until": "Pevný čas ukončenia",
           "override_allow_comfort_actions": "Povoliť akcie komfortu počas prepísania",
           "override_allow_protection_actions": "Povoliť ochranné akcie počas prepísania",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Tolerancia detekcie"
         },
         "data_description": {
-          "override_release_strategy": "Určuje, ako sa prepísanie skončí: po pevnej dobe trvania, o pevnom čase, pri ďalšom prechode plánu, pri ďalšom automatickom rozhodnutí alebo iba ručným zrušením.",
-          "override_fixed_until": "Použije sa iba, keď je stratégia ukončenia nastavená na \"Pevný čas\". Ak čas dnes už uplynul, prepísanie sa skončí zajtra o tomto čase.",
+          "override_release_mode": "Vyberte koncept uvoľnenia: časovač/hodiny, ďalší prechod plánu, ďalšie automatické rozhodnutie, alebo iba manuálne vymazanie.",
+          "override_time_based_kind": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť časovač/hodiny: uvoľnenie po pevnej dobe trvania alebo v pevnom čase.",
+          "override_decision_filter": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť ďalšie rozhodnutie: uvoľnenie pri akomkoľvek rozhodnutí, len komfortných rozhodnutiach, alebo len ochranných rozhodnutiach.",
+          "override_fixed_until": "Relevantné len ak je režim uvoľnenia možnosť časovač/hodiny a typ časovača je pevný čas. Ak už dnes tento čas uplynul, prepísanie sa skončí zajtra v tomto čase.",
           "override_allow_comfort_actions": "Ak je povolené, bežné komfortné tienenie môže naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
           "override_allow_protection_actions": "Ak je povolené, ochranné akcie (neprítomnosť, teplo, oslnenie) môžu naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
           "override_safety_timeout_enabled": "Voliteľná maximálna doba ako poistka pre otvorené stratégie, aby prepísanie nezostalo natrvalo zabudnuté.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Invertované (niekto doma = preč)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Po pevnej dobe trvania",
-        "fixed_time": "Pevný čas",
-        "lifecycle": "Na konci denného/nočného cyklu",
-        "first_comfort": "Pri ďalšej automatickej komfortnej akcii",
-        "first_protection": "Pri ďalšom ochrannom tienení",
-        "first_any_decision": "Pri ďalšom automatickom rozhodnutí",
-        "manual": "Iba ručné zrušenie"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Súbežne",
         "spaced": "S časovým odstupom",
         "sequential": "Postupne"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Po časovači alebo v určenom čase",
+        "lifecycle": "Pri ďalšom prechode plánu",
+        "next_decision": "Pri ďalšom automatickom rozhodnutí",
+        "manual": "Iba manuálne vymazanie"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Po pevnej dobe trvania",
+        "fixed_time": "V pevnom čase"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Akékoľvek automatické rozhodnutie",
+        "comfort": "Len komfortné rozhodnutia",
+        "protection": "Len ochranné rozhodnutia"
       }
     }
   },

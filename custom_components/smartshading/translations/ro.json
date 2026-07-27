@@ -401,7 +401,9 @@
         "title": "Suprascriere manuală",
         "description": "Definește comportamentul unei suprascrieri manuale active: cât durează și dacă acțiunile de confort sau protecție mai pot rula în timp ce este activă.",
         "data": {
-          "override_release_strategy": "Strategie de încheiere",
+          "override_release_mode": "Cum se termină suprascrierea",
+          "override_time_based_kind": "Tip de temporizator",
+          "override_decision_filter": "Ce decizii o eliberează",
           "override_fixed_until": "Oră de încheiere fixă",
           "override_allow_comfort_actions": "Permite acțiuni de confort în timpul suprascrierii",
           "override_allow_protection_actions": "Permite acțiuni de protecție în timpul suprascrierii",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Toleranță de detectare"
         },
         "data_description": {
-          "override_release_strategy": "Controlează cum se încheie suprascrierea: după o durată fixă, la o oră fixă, la următoarea tranziție a programului, la următoarea decizie automată, sau doar prin ștergere manuală.",
-          "override_fixed_until": "Folosit doar când strategia de încheiere este setată pe \"Oră fixă\". Dacă ora a trecut deja azi, suprascrierea se încheie la acea oră mâine.",
+          "override_release_mode": "Alegeți conceptul de eliberare: un temporizator/ceas, următoarea tranziție de program, următoarea decizie automată, sau doar ștergere manuală.",
+          "override_time_based_kind": "Relevant doar când modul de eliberare de mai sus este setat la o opțiune temporizator/ceas: eliberare după o durată fixă sau la o oră fixă.",
+          "override_decision_filter": "Relevant doar când modul de eliberare de mai sus este setat la opțiunea următoarea decizie: eliberare la orice decizie, doar la deciziile de confort, sau doar la deciziile de protecție.",
+          "override_fixed_until": "Relevant doar când modul de eliberare este o opțiune temporizator/ceas, iar tipul de temporizator este o oră fixă. Dacă a trecut deja azi, suprascrierea se încheie mâine la această oră.",
           "override_allow_comfort_actions": "Dacă este activat, umbrirea obișnuită de confort poate rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
           "override_allow_protection_actions": "Dacă este activat, acțiunile de protecție (absență, căldură, orbire) pot rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
           "override_safety_timeout_enabled": "Durată maximă opțională ca plasă de siguranță pentru strategiile deschise, astfel încât o suprascriere să nu fie niciodată uitată permanent.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Inversat (cineva acasă = plecat)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "După o durată fixă",
-        "fixed_time": "Oră fixă",
-        "lifecycle": "La sfârșitul ciclului zi/noapte",
-        "first_comfort": "La următoarea acțiune automată de confort",
-        "first_protection": "La următoarea umbrire de protecție",
-        "first_any_decision": "La următoarea decizie automată",
-        "manual": "Doar ștergere manuală"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Paralel",
         "spaced": "Cu interval de timp",
         "sequential": "Unul după altul"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "După un temporizator sau o oră",
+        "lifecycle": "La următoarea tranziție de program",
+        "next_decision": "La următoarea decizie automată",
+        "manual": "Doar ștergere manuală"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "După o durată fixă",
+        "fixed_time": "La o oră fixă"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Orice decizie automată",
+        "comfort": "Doar deciziile de confort",
+        "protection": "Doar deciziile de protecție"
       }
     }
   },

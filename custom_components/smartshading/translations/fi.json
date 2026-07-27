@@ -401,7 +401,9 @@
         "title": "Manuaalinen ohitus",
         "description": "Määrittää aktiivisen manuaalisen ohituksen käyttäytymisen: kuinka kauan se kestää ja voivatko mukavuus- tai suojaustoiminnot silti käydä sen ollessa aktiivinen.",
         "data": {
-          "override_release_strategy": "Vapautusstrategia",
+          "override_release_mode": "Miten ohitus päättyy",
+          "override_time_based_kind": "Ajastimen tyyppi",
+          "override_decision_filter": "Mitkä päätökset vapauttavat sen",
           "override_fixed_until": "Kiinteä lopetusaika",
           "override_allow_comfort_actions": "Salli mukavuustoiminnot ohituksen aikana",
           "override_allow_protection_actions": "Salli suojaustoiminnot ohituksen aikana",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Tunnistustoleranssi"
         },
         "data_description": {
-          "override_release_strategy": "Määrittää, miten ohitus päättyy: kiinteän keston jälkeen, kiinteänä ajankohtana, seuraavassa aikataulusiirtymässä, seuraavassa automaattisessa päätöksessä tai vain manuaalisesti tyhjentämällä.",
-          "override_fixed_until": "Käytetään vain, kun vapautusstrategia on asetettu \"Kiinteä aika\"-tilaan. Jos aika on jo ohi tänään, ohitus päättyy tähän aikaan huomenna.",
+          "override_release_mode": "Valitse vapautuskonsepti: ajastin/kello, seuraava aikataulusiirtymä, seuraava automaattinen päätös tai vain manuaalinen tyhjennys.",
+          "override_time_based_kind": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu ajastin-/kelloasetukseen: vapautus kiinteän keston jälkeen tai kiinteänä kellonaikana.",
+          "override_decision_filter": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu seuraava päätös -asetukseen: vapautus millä tahansa päätöksellä, vain mukavuuspäätöksillä tai vain suojauspäätöksillä.",
+          "override_fixed_until": "Merkityksellinen vain, kun vapautustila on ajastin-/kelloasetus ja ajastimen tyyppi on kiinteä kellonaika. Jos kellonaika on jo tänään ohi, ohitus päättyy huomenna tähän aikaan.",
           "override_allow_comfort_actions": "Kun käytössä, tavallinen mukavuusvarjostus voi silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
           "override_allow_protection_actions": "Kun käytössä, suojaustoiminnot (poissaolo, kuumuus, häikäisy) voivat silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
           "override_safety_timeout_enabled": "Valinnainen enimmäiskesto turvaverkkona avoimille strategioille, jotta ohitus ei jää pysyvästi unohduksiin.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Käänteinen (joku kotona = poissa)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Kiinteän keston jälkeen",
-        "fixed_time": "Kiinteä aika",
-        "lifecycle": "Päivä-/yösyklin lopussa",
-        "first_comfort": "Seuraavassa automaattisessa mukavuustoiminnossa",
-        "first_protection": "Seuraavassa suojaavassa varjostuksessa",
-        "first_any_decision": "Seuraavassa automaattisessa päätöksessä",
-        "manual": "Vain manuaalinen tyhjennys"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Rinnakkain",
         "spaced": "Aikavälillä",
         "sequential": "Peräkkäin"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Ajastimen tai kellonajan jälkeen",
+        "lifecycle": "Seuraavassa aikataulusiirtymässä",
+        "next_decision": "Seuraavassa automaattisessa päätöksessä",
+        "manual": "Vain manuaalinen tyhjennys"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Kiinteän keston jälkeen",
+        "fixed_time": "Kiinteänä kellonaikana"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Mikä tahansa automaattinen päätös",
+        "comfort": "Vain mukavuuspäätökset",
+        "protection": "Vain suojauspäätökset"
       }
     }
   },

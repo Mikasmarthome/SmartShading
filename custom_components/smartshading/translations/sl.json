@@ -401,7 +401,9 @@
         "title": "Ročna preglasitev",
         "description": "Določa obnašanje aktivne ročne preglasitve: kako dolgo traja in ali lahko dejanja udobja ali zaščite še vedno potekajo, ko je aktivna.",
         "data": {
-          "override_release_strategy": "Strategija zaključka",
+          "override_release_mode": "Kako se preglasitev konča",
+          "override_time_based_kind": "Vrsta časovnika",
+          "override_decision_filter": "Katere odločitve jo sprostijo",
           "override_fixed_until": "Fiksni čas zaključka",
           "override_allow_comfort_actions": "Dovoli dejanja udobja med preglasitvijo",
           "override_allow_protection_actions": "Dovoli zaščitna dejanja med preglasitvijo",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Toleranca zaznavanja"
         },
         "data_description": {
-          "override_release_strategy": "Nadzoruje, kako se preglasitev konča: po fiksnem trajanju, ob fiksnem času, ob naslednjem prehodu urnika, ob naslednji samodejni odločitvi ali le z ročnim počiščenjem.",
-          "override_fixed_until": "Uporabljeno samo, ko je strategija zaključka nastavljena na \"Fiksni čas\". Če je ura danes že minila, se preglasitev zaključi jutri ob tej uri.",
+          "override_release_mode": "Izberite koncept sprostitve: časovnik/ura, naslednji prehod urnika, naslednja samodejna odločitev ali samo ročna izbris.",
+          "override_time_based_kind": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost časovnika/ure: sprostitev po fiksnem trajanju ali ob fiksni uri.",
+          "override_decision_filter": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost naslednje odločitve: sprostitev ob kateri koli odločitvi, samo pri odločitvah udobja ali samo pri zaščitnih odločitvah.",
+          "override_fixed_until": "Pomembno samo, če je način sprostitve možnost časovnika/ure in je vrsta časovnika fiksna ura. Če je ta ura danes že minila, se preglasitev konča jutri ob tej uri.",
           "override_allow_comfort_actions": "Če je omogočeno, lahko običajno senčenje udobja še vedno poteka med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
           "override_allow_protection_actions": "Če je omogočeno, lahko zaščitna dejanja (odsotnost, vročina, bleščanje) še vedno potekajo med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
           "override_safety_timeout_enabled": "Neobvezno največje trajanje kot varnostna mreža za odprte strategije, da preglasitev nikoli ni trajno pozabljena.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Obrnjeno (nekdo doma = odsoten)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Po fiksnem trajanju",
-        "fixed_time": "Fiksni čas",
-        "lifecycle": "Ob koncu dnevnega/nočnega cikla",
-        "first_comfort": "Ob naslednjem samodejnem udobnem dejanju",
-        "first_protection": "Ob naslednjem zaščitnem senčenju",
-        "first_any_decision": "Ob naslednji samodejni odločitvi",
-        "manual": "Samo ročno počiščenje"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Sočasno",
         "spaced": "S časovnim zamikom",
         "sequential": "Zaporedno"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Po časovniku ali ob določeni uri",
+        "lifecycle": "Ob naslednjem prehodu urnika",
+        "next_decision": "Ob naslednji samodejni odločitvi",
+        "manual": "Samo ročni izbris"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Po fiksnem trajanju",
+        "fixed_time": "Ob fiksni uri"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Katera koli samodejna odločitev",
+        "comfort": "Samo odločitve udobja",
+        "protection": "Samo zaščitne odločitve"
       }
     }
   },

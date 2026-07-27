@@ -343,8 +343,15 @@ DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C = 12.0
 DEFAULT_GLARE_MIN_EXPOSURE_WM2 = 100.0
 GLARE_MIN_EXPOSURE_MAX_WM2 = 500.0
 
-# Manual Override policy (v1.2.0-beta.1, T7; release-strategy architecture T10).
-CONF_OVERRIDE_RELEASE_STRATEGY = "override_release_strategy"
+# Manual Override policy (v1.2.0-beta.1, T7; release-strategy architecture T10;
+# simplified 4-concept release-mode UI T21 Phase B — see
+# models/manual_override.py's OverrideReleaseMode for the full rationale).
+# CONF_OVERRIDE_RELEASE_STRATEGY (T10's flat 7-value form field) was removed
+# in T21 — the persisted "release_strategy" storage key and its 7 possible
+# values are UNCHANGED, only the OptionsFlow's form fields changed.
+CONF_OVERRIDE_RELEASE_MODE = "override_release_mode"
+CONF_OVERRIDE_TIME_BASED_KIND = "override_time_based_kind"
+CONF_OVERRIDE_DECISION_FILTER = "override_decision_filter"
 CONF_OVERRIDE_FIXED_UNTIL = "override_fixed_until"
 CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS = "override_allow_comfort_actions"
 CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS = "override_allow_protection_actions"

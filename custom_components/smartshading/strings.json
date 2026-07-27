@@ -401,7 +401,9 @@
         "title": "Manual Override",
         "description": "Configure how an active Manual Override behaves: how long it lasts, and whether Comfort or Protection actions may still run while it is active.",
         "data": {
-          "override_release_strategy": "Release strategy",
+          "override_release_mode": "How the override ends",
+          "override_time_based_kind": "Timer type",
+          "override_decision_filter": "Which decisions release it",
           "override_fixed_until": "Fixed end time",
           "override_allow_comfort_actions": "Allow comfort actions during override",
           "override_allow_protection_actions": "Allow protection actions during override",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Detection tolerance"
         },
         "data_description": {
-          "override_release_strategy": "Controls how the override ends: after a fixed duration, at a fixed time, at the next schedule transition, on the next automatic decision, or only when cleared manually.",
-          "override_fixed_until": "Only used when release strategy is set to \"Until a fixed time\". If already passed today, the override ends at this time tomorrow.",
+          "override_release_mode": "Choose the release concept: a timer/clock, the next schedule transition, the next automatic decision, or manual clearing only.",
+          "override_time_based_kind": "Only relevant when the release mode above is set to a timer/clock option: release after a fixed duration, or at a fixed clock time.",
+          "override_decision_filter": "Only relevant when the release mode above is set to the next-decision option: release on any decision, comfort decisions only, or protection decisions only.",
+          "override_fixed_until": "Only relevant when the release mode is a timer/clock option and the timer type is a fixed clock time. If already passed today, the override ends at this time tomorrow.",
           "override_allow_comfort_actions": "When enabled, regular comfort shading may still run while an override is active. The override itself stays active.",
           "override_allow_protection_actions": "When enabled, protection actions (absence, heat, glare) may still run while an override is active. The override itself stays active.",
           "override_safety_timeout_enabled": "Optional maximum duration as a safety net for open-ended strategies, so an override is never permanently forgotten.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Inverted (anyone home = away)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "After a fixed duration",
-        "fixed_time": "Until a fixed time",
-        "lifecycle": "At the end of the day/night cycle",
-        "first_comfort": "On the next automatic comfort action",
-        "first_protection": "On the next protective shading",
-        "first_any_decision": "On the next automatic decision",
-        "manual": "Manually cleared only"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Parallel",
         "spaced": "With a time gap",
         "sequential": "One after another"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "After a timer or clock time",
+        "lifecycle": "At the next schedule transition",
+        "next_decision": "On the next automatic decision",
+        "manual": "Manually cleared only"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "After a fixed duration",
+        "fixed_time": "At a fixed clock time"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Any automatic decision",
+        "comfort": "Comfort decisions only",
+        "protection": "Protection decisions only"
       }
     }
   },

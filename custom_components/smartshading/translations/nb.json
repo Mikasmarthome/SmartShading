@@ -401,7 +401,9 @@
         "title": "Manuell overstyring",
         "description": "Bestemmer oppførselen til en aktiv manuell overstyring: hvor lenge den varer, og om komfort- eller beskyttelseshandlinger fortsatt kan kjøre mens den er aktiv.",
         "data": {
-          "override_release_strategy": "Frigjøringsstrategi",
+          "override_release_mode": "Hvordan overstyringen avsluttes",
+          "override_time_based_kind": "Timertype",
+          "override_decision_filter": "Hvilke beslutninger som frigir den",
           "override_fixed_until": "Fast sluttidspunkt",
           "override_allow_comfort_actions": "Tillat komforthandlinger under overstyring",
           "override_allow_protection_actions": "Tillat beskyttelseshandlinger under overstyring",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Deteksjonstoleranse"
         },
         "data_description": {
-          "override_release_strategy": "Styrer hvordan overstyringen avsluttes: etter en fast varighet, på et fast klokkeslett, ved neste skjemaovergang, ved neste automatiske avgjørelse, eller kun ved manuell fjerning.",
-          "override_fixed_until": "Brukes kun når frigjøringsstrategi er satt til \"Fast tid\". Hvis tidspunktet allerede er passert i dag, avsluttes overstyringen på dette tidspunktet i morgen.",
+          "override_release_mode": "Velg frigivelseskonseptet: en timer/klokke, neste tidsplanovergang, neste automatiske beslutning, eller kun manuell fjerning.",
+          "override_time_based_kind": "Kun relevant når frigivelsesmodusen ovenfor er satt til et timer-/klokkealternativ: frigivelse etter en fast varighet eller på et fast klokkeslett.",
+          "override_decision_filter": "Kun relevant når frigivelsesmodusen ovenfor er satt til alternativet neste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
+          "override_fixed_until": "Kun relevant når frigivelsesmodusen er et timer-/klokkealternativ og timertypen er et fast klokkeslett. Hvis klokkeslettet allerede er passert i dag, avsluttes overstyringen i morgen på dette tidspunktet.",
           "override_allow_comfort_actions": "Når aktivert, kan vanlig komfortskygging fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
           "override_allow_protection_actions": "Når aktivert, kan beskyttelseshandlinger (fravær, varme, blending) fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
           "override_safety_timeout_enabled": "Valgfri maksimal varighet som sikkerhetsnett for åpne strategier, slik at en overstyring aldri blir permanent glemt.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Invertert (noen hjemme = borte)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Etter en fast varighet",
-        "fixed_time": "Fast tid",
-        "lifecycle": "Ved slutten av dag-/nattsyklusen",
-        "first_comfort": "Ved neste automatiske komforthandling",
-        "first_protection": "Ved neste beskyttende skjerming",
-        "first_any_decision": "Ved neste automatiske avgjørelse",
-        "manual": "Kun manuell fjerning"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Parallelt",
         "spaced": "Med tidsavstand",
         "sequential": "Én etter én"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Etter en timer eller et klokkeslett",
+        "lifecycle": "Ved neste tidsplanovergang",
+        "next_decision": "Ved neste automatiske beslutning",
+        "manual": "Kun manuell fjerning"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Etter en fast varighet",
+        "fixed_time": "På et fast klokkeslett"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Enhver automatisk beslutning",
+        "comfort": "Kun komfortbeslutninger",
+        "protection": "Kun beskyttelsesbeslutninger"
       }
     }
   },

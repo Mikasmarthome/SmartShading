@@ -401,7 +401,9 @@
         "title": "Ruční přepsání",
         "description": "Určuje chování aktivního ručního přepsání: jak dlouho trvá a zda mohou akce komfortu nebo ochrany stále probíhat, když je aktivní.",
         "data": {
-          "override_release_strategy": "Strategie ukončení",
+          "override_release_mode": "Jak přepsání končí",
+          "override_time_based_kind": "Typ časovače",
+          "override_decision_filter": "Které rozhodnutí je uvolní",
           "override_fixed_until": "Pevný čas ukončení",
           "override_allow_comfort_actions": "Povolit akce komfortu během přepsání",
           "override_allow_protection_actions": "Povolit ochranné akce během přepsání",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Tolerance detekce"
         },
         "data_description": {
-          "override_release_strategy": "Určuje, jak přepsání skončí: po pevné době trvání, v pevný čas, při dalším přechodu plánu, při dalším automatickém rozhodnutí nebo pouze ručním zrušením.",
-          "override_fixed_until": "Použije se pouze, když je strategie ukončení nastavena na \"Pevný čas\". Pokud čas dnes již uplynul, přepsání skončí zítra v tuto dobu.",
+          "override_release_mode": "Vyberte koncept uvolnění: časovač/hodiny, další přechod plánu, další automatické rozhodnutí, nebo pouze ruční vymazání.",
+          "override_time_based_kind": "Relevantní pouze pokud je výše uvedený režim uvolnění nastaven na možnost časovač/hodiny: uvolnění po pevné době trvání nebo v pevný čas.",
+          "override_decision_filter": "Relevantní pouze pokud je výše uvedený režim uvolnění nastaven na možnost další rozhodnutí: uvolnění při jakémkoli rozhodnutí, pouze komfortních rozhodnutích, nebo pouze ochranných rozhodnutích.",
+          "override_fixed_until": "Relevantní pouze pokud je režim uvolnění možnost časovač/hodiny a typ časovače je pevný čas. Pokud už dnes tento čas uplynul, přepsání skončí zítra v tomto čase.",
           "override_allow_comfort_actions": "Je-li povoleno, běžné komfortní stínění může stále probíhat během aktivního přepsání. Samotné přepsání zůstává aktivní.",
           "override_allow_protection_actions": "Je-li povoleno, ochranné akce (nepřítomnost, horko, oslnění) mohou stále probíhat během aktivního přepsání. Samotné přepsání zůstává aktivní.",
           "override_safety_timeout_enabled": "Volitelná maximální doba jako pojistka pro otevřené strategie, aby přepsání nezůstalo trvale zapomenuto.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Invertováno (někdo doma = pryč)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Po pevné době trvání",
-        "fixed_time": "Pevný čas",
-        "lifecycle": "Na konci denního/nočního cyklu",
-        "first_comfort": "Při dalším automatickém komfortním zásahu",
-        "first_protection": "Při dalším ochranném stínění",
-        "first_any_decision": "Při dalším automatickém rozhodnutí",
-        "manual": "Pouze ruční zrušení"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Souběžně",
         "spaced": "S časovou mezerou",
         "sequential": "Postupně"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Po časovači nebo v určený čas",
+        "lifecycle": "Při dalším přechodu plánu",
+        "next_decision": "Při dalším automatickém rozhodnutí",
+        "manual": "Pouze ruční vymazání"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Po pevné době trvání",
+        "fixed_time": "V pevný čas"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Jakékoli automatické rozhodnutí",
+        "comfort": "Pouze komfortní rozhodnutí",
+        "protection": "Pouze ochranná rozhodnutí"
       }
     }
   },

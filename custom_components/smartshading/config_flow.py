@@ -70,7 +70,17 @@ from .models.dispatch_config import (
     START_INTERVAL_S_MAX,
     START_INTERVAL_S_MIN,
 )
-from .models.manual_override import OverrideReleaseStrategy
+from .models.manual_override import (
+    DECISION_FILTER_ANY,
+    DECISION_FILTER_COMFORT,
+    DECISION_FILTER_PROTECTION,
+    TIME_BASED_KIND_DURATION,
+    TIME_BASED_KIND_FIXED_TIME,
+    OverrideReleaseMode,
+    OverrideReleaseStrategy,
+    release_mode_to_strategy,
+    release_strategy_to_mode,
+)
 from .models.cover_group import CoverGroup, CoverHardwareType, CoverSyncMode, cover_hardware_type_from_str
 from .models.presence import PresencePolicy
 from .models.lifecycle_profile import LifecycleProfile
@@ -127,7 +137,9 @@ from .const import (
     CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
     CONF_OVERRIDE_DETECTION_TOLERANCE,
     CONF_OVERRIDE_DURATION_MIN,
-    CONF_OVERRIDE_RELEASE_STRATEGY,
+    CONF_OVERRIDE_RELEASE_MODE,
+    CONF_OVERRIDE_TIME_BASED_KIND,
+    CONF_OVERRIDE_DECISION_FILTER,
     CONF_OVERRIDE_FIXED_UNTIL,
     CONF_OVERRIDE_NIGHT_DURATION_MIN,
     DEFAULT_OVERRIDE_DETECTION_TOLERANCE,
@@ -2226,12 +2238,26 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            # T21 Phase B: the OptionsFlow now collects a simplified 4-concept
+            # "release mode" plus an optional second-level sub-choice (which
+            # timer for TIME_BASED, which category filter for NEXT_DECISION)
+            # instead of a flat 7-value strategy dropdown — release_mode_to_strategy()
+            # maps that pair back onto the unchanged, fully-tested
+            # OverrideReleaseStrategy that gets persisted and that
+            # engines/override_release.py continues to act on unmodified.
             try:
-                release_strategy = OverrideReleaseStrategy(
-                    user_input.get(CONF_OVERRIDE_RELEASE_STRATEGY, OverrideReleaseStrategy.LIFECYCLE.value)
+                release_mode = OverrideReleaseMode(
+                    user_input.get(CONF_OVERRIDE_RELEASE_MODE, OverrideReleaseMode.LIFECYCLE.value)
                 )
             except ValueError:
-                release_strategy = OverrideReleaseStrategy.LIFECYCLE
+                release_mode = OverrideReleaseMode.LIFECYCLE
+            if release_mode is OverrideReleaseMode.TIME_BASED:
+                sub_choice = user_input.get(CONF_OVERRIDE_TIME_BASED_KIND, TIME_BASED_KIND_DURATION)
+            elif release_mode is OverrideReleaseMode.NEXT_DECISION:
+                sub_choice = user_input.get(CONF_OVERRIDE_DECISION_FILTER, DECISION_FILTER_ANY)
+            else:
+                sub_choice = None
+            release_strategy = release_mode_to_strategy(release_mode, sub_choice)
             fixed_until = _parse_optional_time_input(user_input.get(CONF_OVERRIDE_FIXED_UNTIL))
             # Fixed-time strategy requires a configured clock time — same
             # deterministic-fallback rule as loading a malformed stored
@@ -2277,23 +2303,64 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 }
                 return self._save_and_reload({"override_policy": new_policy})
 
-        release_strategy_selector = SelectSelector(
+        # Pre-fill the simplified mode/sub-choice fields from whatever
+        # OverrideReleaseStrategy value is actually stored (including a
+        # value persisted by a pre-T21 install — release_strategy_to_mode()
+        # covers all 7 legacy values losslessly).
+        try:
+            _stored_strategy = OverrideReleaseStrategy(
+                stored.get("release_strategy", OverrideReleaseStrategy.LIFECYCLE.value)
+            )
+        except ValueError:
+            _stored_strategy = OverrideReleaseStrategy.LIFECYCLE
+        _stored_mode, _stored_sub = release_strategy_to_mode(_stored_strategy)
+        _stored_time_based_kind = (
+            _stored_sub if _stored_mode is OverrideReleaseMode.TIME_BASED else TIME_BASED_KIND_DURATION
+        )
+        _stored_decision_filter = (
+            _stored_sub if _stored_mode is OverrideReleaseMode.NEXT_DECISION else DECISION_FILTER_ANY
+        )
+
+        release_mode_selector = SelectSelector(
             SelectSelectorConfig(
-                options=[s.value for s in OverrideReleaseStrategy],
+                options=[m.value for m in OverrideReleaseMode],
                 mode=SelectSelectorMode.DROPDOWN,
-                translation_key="override_release_strategy",
+                translation_key="override_release_mode",
+            )
+        )
+        time_based_kind_selector = SelectSelector(
+            SelectSelectorConfig(
+                options=[TIME_BASED_KIND_DURATION, TIME_BASED_KIND_FIXED_TIME],
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="override_time_based_kind",
+            )
+        )
+        decision_filter_selector = SelectSelector(
+            SelectSelectorConfig(
+                options=[DECISION_FILTER_ANY, DECISION_FILTER_COMFORT, DECISION_FILTER_PROTECTION],
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="override_decision_filter",
             )
         )
         schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_OVERRIDE_RELEASE_STRATEGY,
-                    default=stored.get("release_strategy", OverrideReleaseStrategy.LIFECYCLE.value),
-                ): release_strategy_selector,
-                # Fixed-time-only field: shown unconditionally (no per-field
+                    CONF_OVERRIDE_RELEASE_MODE,
+                    default=_stored_mode.value,
+                ): release_mode_selector,
+                # Second-level fields: shown unconditionally (no per-field
                 # conditional visibility in this Flow — matches the established
                 # pattern from the T6 lifecycle-profile form) but only used
-                # fachlich when release_strategy=fixed_time; ignored otherwise.
+                # fachlich when release_mode is TIME_BASED / NEXT_DECISION
+                # respectively; ignored otherwise.
+                vol.Required(
+                    CONF_OVERRIDE_TIME_BASED_KIND,
+                    default=_stored_time_based_kind,
+                ): time_based_kind_selector,
+                vol.Required(
+                    CONF_OVERRIDE_DECISION_FILTER,
+                    default=_stored_decision_filter,
+                ): decision_filter_selector,
                 vol.Optional(
                     CONF_OVERRIDE_FIXED_UNTIL,
                     description={"suggested_value": stored.get("fixed_until")},

@@ -401,7 +401,9 @@
         "title": "Ręczne zastąpienie",
         "description": "Określa zachowanie aktywnego ręcznego zastąpienia: jak długo trwa i czy działania komfortu lub ochrony mogą nadal być wykonywane, gdy jest aktywne.",
         "data": {
-          "override_release_strategy": "Strategia zakończenia",
+          "override_release_mode": "Jak kończy się nadpisanie",
+          "override_time_based_kind": "Typ zegara",
+          "override_decision_filter": "Które decyzje je zwalniają",
           "override_fixed_until": "Stała godzina zakończenia",
           "override_allow_comfort_actions": "Zezwól na działania komfortu podczas zastąpienia",
           "override_allow_protection_actions": "Zezwól na działania ochrony podczas zastąpienia",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Tolerancja wykrywania"
         },
         "data_description": {
-          "override_release_strategy": "Określa, jak kończy się zastąpienie: po stałym czasie, o stałej godzinie, przy następnym przejściu harmonogramu, przy następnej automatycznej decyzji lub tylko przez ręczne wyczyszczenie.",
-          "override_fixed_until": "Używane tylko, gdy strategia zakończenia jest ustawiona na \"Stała godzina\". Jeśli godzina już minęła dzisiaj, zastąpienie kończy się o tej godzinie jutro.",
+          "override_release_mode": "Wybierz koncepcję zwolnienia: zegar/czas, następne przejście harmonogramu, następną automatyczną decyzję lub tylko ręczne wyczyszczenie.",
+          "override_time_based_kind": "Istotne tylko wtedy, gdy powyższy tryb zwolnienia jest ustawiony na opcję zegara/czasu: zwolnienie po stałym czasie trwania lub o stałej godzinie.",
+          "override_decision_filter": "Istotne tylko wtedy, gdy powyższy tryb zwolnienia jest ustawiony na opcję następnej decyzji: zwolnienie przy dowolnej decyzji, tylko decyzjach komfortu lub tylko decyzjach ochrony.",
+          "override_fixed_until": "Istotne tylko wtedy, gdy tryb zwolnienia to opcja zegara/czasu, a typ zegara to stała godzina. Jeśli ta godzina już dziś minęła, nadpisanie kończy się o tej godzinie jutro.",
           "override_allow_comfort_actions": "Jeśli włączone, zwykłe zacienianie komfortowe może nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
           "override_allow_protection_actions": "Jeśli włączone, działania ochronne (nieobecność, upał, olśnienie) mogą nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
           "override_safety_timeout_enabled": "Opcjonalny maksymalny czas jako zabezpieczenie dla otwartych strategii, aby zastąpienie nigdy nie zostało trwale zapomniane.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Odwrócone (ktoś w domu = nieobecny)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Po stałym czasie",
-        "fixed_time": "Stała godzina",
-        "lifecycle": "Na końcu cyklu dnia/nocy",
-        "first_comfort": "Przy następnym automatycznym działaniu komfortu",
-        "first_protection": "Przy następnym zacienieniu ochronnym",
-        "first_any_decision": "Przy następnej automatycznej decyzji",
-        "manual": "Tylko ręczne wyczyszczenie"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Równolegle",
         "spaced": "Z odstępem czasu",
         "sequential": "Jedna po drugiej"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Po zegarze lub o określonej godzinie",
+        "lifecycle": "Przy następnym przejściu harmonogramu",
+        "next_decision": "Przy następnej automatycznej decyzji",
+        "manual": "Tylko ręczne wyczyszczenie"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Po stałym czasie trwania",
+        "fixed_time": "O stałej godzinie"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Dowolna automatyczna decyzja",
+        "comfort": "Tylko decyzje komfortu",
+        "protection": "Tylko decyzje ochrony"
       }
     }
   },

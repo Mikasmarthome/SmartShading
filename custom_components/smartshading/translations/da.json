@@ -401,7 +401,9 @@
         "title": "Manuel tilsidesættelse",
         "description": "Bestemmer adfærden for en aktiv manuel tilsidesættelse: hvor længe den varer, og om komfort- eller beskyttelseshandlinger stadig må køre, mens den er aktiv.",
         "data": {
-          "override_release_strategy": "Frigørelsesstrategi",
+          "override_release_mode": "Hvordan tilsidesættelsen slutter",
+          "override_time_based_kind": "Timertype",
+          "override_decision_filter": "Hvilke beslutninger frigiver den",
           "override_fixed_until": "Fast sluttidspunkt",
           "override_allow_comfort_actions": "Tillad komforthandlinger under tilsidesættelse",
           "override_allow_protection_actions": "Tillad beskyttelseshandlinger under tilsidesættelse",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Detektionstolerance"
         },
         "data_description": {
-          "override_release_strategy": "Styrer hvordan tilsidesættelsen slutter: efter en fast varighed, på et fast tidspunkt, ved næste skemaovergang, ved næste automatiske beslutning, eller kun ved manuel rydning.",
-          "override_fixed_until": "Bruges kun, når frigørelsesstrategi er sat til \"Fast tid\". Hvis tidspunktet allerede er passeret i dag, slutter tilsidesættelsen på dette tidspunkt i morgen.",
+          "override_release_mode": "Vælg frigivelseskonceptet: en timer/et klokkeslæt, den næste tidsplanovergang, den næste automatiske beslutning, eller kun manuel rydning.",
+          "override_time_based_kind": "Kun relevant når frigivelsestilstanden ovenfor er sat til en timer-/klokkeslætsindstilling: frigivelse efter en fast varighed eller på et fast klokkeslæt.",
+          "override_decision_filter": "Kun relevant når frigivelsestilstanden ovenfor er sat til indstillingen næste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
+          "override_fixed_until": "Kun relevant når frigivelsestilstanden er en timer-/klokkeslætsindstilling, og timertypen er et fast klokkeslæt. Hvis klokkeslættet allerede er passeret i dag, slutter tilsidesættelsen i morgen på dette tidspunkt.",
           "override_allow_comfort_actions": "Når aktiveret, kan almindelig komfortafskærmning stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
           "override_allow_protection_actions": "Når aktiveret, kan beskyttelseshandlinger (fravær, varme, blænding) stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
           "override_safety_timeout_enabled": "Valgfri maksimal varighed som sikkerhedsnet for åbne strategier, så en tilsidesættelse aldrig bliver permanent glemt.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Inverteret (nogen hjemme = væk)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Efter en fast varighed",
-        "fixed_time": "Fast tid",
-        "lifecycle": "Ved slutningen af dag-/natcyklussen",
-        "first_comfort": "Ved næste automatiske komforthandling",
-        "first_protection": "Ved næste beskyttende afskærmning",
-        "first_any_decision": "Ved næste automatiske beslutning",
-        "manual": "Kun manuel rydning"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Samtidig",
         "spaced": "Med tidsmellemrum",
         "sequential": "En ad gangen"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Efter en timer eller et klokkeslæt",
+        "lifecycle": "Ved den næste tidsplanovergang",
+        "next_decision": "Ved den næste automatiske beslutning",
+        "manual": "Kun manuel rydning"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Efter en fast varighed",
+        "fixed_time": "På et fast klokkeslæt"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Enhver automatisk beslutning",
+        "comfort": "Kun komfortbeslutninger",
+        "protection": "Kun beskyttelsesbeslutninger"
       }
     }
   },

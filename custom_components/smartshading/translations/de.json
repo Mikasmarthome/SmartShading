@@ -401,18 +401,22 @@
         "title": "Manuelle Übersteuerung",
         "description": "Legt fest, wie eine aktive manuelle Übersteuerung sich verhält: wie lange sie dauert und ob Komfort- oder Schutzaktionen währenddessen weiterhin ausgeführt werden dürfen.",
         "data": {
-          "override_release_strategy": "Freigabestrategie",
+          "override_time_based_kind": "Timer-Art",
+          "override_decision_filter": "Welche Entscheidungen sie freigeben",
           "override_fixed_until": "Feste Endzeit",
           "override_allow_comfort_actions": "Komfortaktionen während der Übersteuerung erlauben",
           "override_allow_protection_actions": "Schutzaktionen während der Übersteuerung erlauben",
           "override_safety_timeout_enabled": "Sicherheits-Timeout",
           "override_duration_min": "Legacy-Dauer der Übersteuerung (Minuten)",
           "override_night_duration_min": "Dauer der Nacht-Übersteuerung (Minuten)",
-          "override_detection_tolerance": "Erkennungstoleranz"
+          "override_detection_tolerance": "Erkennungstoleranz",
+          "override_release_mode": "Wie die Übersteuerung endet"
         },
         "data_description": {
-          "override_release_strategy": "Legt fest, wie die Übersteuerung endet: nach einer festen Dauer, zu einer festen Uhrzeit, beim nächsten Zeitplan-Übergang, bei der nächsten automatischen Entscheidung oder nur durch manuelles Löschen.",
-          "override_fixed_until": "Nur wirksam, wenn die Freigabestrategie auf \"Feste Uhrzeit\" gesetzt ist. Ist die Uhrzeit heute bereits vorbei, endet die Übersteuerung morgen zu dieser Uhrzeit.",
+          "override_release_mode": "Wählen Sie das Freigabekonzept: ein Timer/eine Uhrzeit, der nächste Zeitplan-Übergang, die nächste automatische Entscheidung oder nur manuelles Löschen.",
+          "override_time_based_kind": "Nur relevant, wenn oben als Freigabe-Modus eine Timer-/Uhrzeit-Option gewählt ist: Freigabe nach einer festen Dauer oder zu einer festen Uhrzeit.",
+          "override_decision_filter": "Nur relevant, wenn oben als Freigabe-Modus die Option „nächste Entscheidung“ gewählt ist: Freigabe bei jeder Entscheidung, nur bei Komfortentscheidungen oder nur bei Schutzentscheidungen.",
+          "override_fixed_until": "Nur relevant, wenn der Freigabe-Modus eine Timer-/Uhrzeit-Option ist und als Timer-Art eine feste Uhrzeit gewählt ist. Ist die Uhrzeit heute bereits vorbei, endet die Übersteuerung morgen zu dieser Uhrzeit.",
           "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
           "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
           "override_safety_timeout_enabled": "Optionale maximale Dauer als Sicherheitsnetz für offene Strategien, damit eine Übersteuerung niemals dauerhaft vergessen wird.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Invertiert (jemand zuhause = abwesend)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Nach einer festen Dauer",
-        "fixed_time": "Feste Uhrzeit",
-        "lifecycle": "Am Ende des Tag-/Nacht-Zyklus",
-        "first_comfort": "Bei der nächsten automatischen Komfort-Aktion",
-        "first_protection": "Bei der nächsten Schutzbeschattung",
-        "first_any_decision": "Bei der nächsten automatischen Entscheidung",
-        "manual": "Nur manuell löschen"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Gleichzeitig",
         "spaced": "Mit Zeitabstand",
         "sequential": "Nacheinander"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Nach einem Timer oder einer Uhrzeit",
+        "lifecycle": "Am Ende des Tag-/Nacht-Zyklus",
+        "next_decision": "Bei der nächsten automatischen Entscheidung",
+        "manual": "Nur manuell löschen"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Nach einer festen Dauer",
+        "fixed_time": "Zu einer festen Uhrzeit"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Jede automatische Entscheidung",
+        "comfort": "Nur Komfortentscheidungen",
+        "protection": "Nur Schutzentscheidungen"
       }
     }
   },

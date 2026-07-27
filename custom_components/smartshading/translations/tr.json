@@ -401,7 +401,9 @@
         "title": "Manuel geçersiz kılma",
         "description": "Aktif bir manuel geçersiz kılmanın davranışını tanımlar: ne kadar sürdüğünü ve aktifken konfor veya koruma eylemlerinin hâlâ çalışıp çalışamayacağını.",
         "data": {
-          "override_release_strategy": "Serbest bırakma stratejisi",
+          "override_release_mode": "Geçersiz kılmanın nasıl sona erdiği",
+          "override_time_based_kind": "Zamanlayıcı türü",
+          "override_decision_filter": "Hangi kararların onu serbest bıraktığı",
           "override_fixed_until": "Sabit bitiş saati",
           "override_allow_comfort_actions": "Geçersiz kılma sırasında konfor eylemlerine izin ver",
           "override_allow_protection_actions": "Geçersiz kılma sırasında koruma eylemlerine izin ver",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Algılama toleransı"
         },
         "data_description": {
-          "override_release_strategy": "Geçersiz kılmanın nasıl sona ereceğini kontrol eder: sabit bir süre sonra, sabit bir saatte, bir sonraki program geçişinde, bir sonraki otomatik kararda veya yalnızca manuel temizlemeyle.",
-          "override_fixed_until": "Yalnızca serbest bırakma stratejisi \"Sabit saat\" olarak ayarlandığında kullanılır. Saat bugün zaten geçtiyse, geçersiz kılma yarın bu saatte sona erer.",
+          "override_release_mode": "Serbest bırakma kavramını seçin: bir zamanlayıcı/saat, bir sonraki program geçişi, bir sonraki otomatik karar veya yalnızca manuel temizleme.",
+          "override_time_based_kind": "Yalnızca yukarıdaki serbest bırakma modu bir zamanlayıcı/saat seçeneğine ayarlandığında geçerlidir: sabit bir süre sonra veya sabit bir saatte serbest bırakma.",
+          "override_decision_filter": "Yalnızca yukarıdaki serbest bırakma modu bir sonraki karar seçeneğine ayarlandığında geçerlidir: herhangi bir kararda, yalnızca konfor kararlarında veya yalnızca koruma kararlarında serbest bırakma.",
+          "override_fixed_until": "Yalnızca serbest bırakma modu bir zamanlayıcı/saat seçeneği ve zamanlayıcı türü sabit bir saat olduğunda geçerlidir. Bu saat bugün zaten geçtiyse, geçersiz kılma yarın bu saatte sona erer.",
           "override_allow_comfort_actions": "Etkinleştirildiğinde, normal konfor gölgelemesi aktif bir geçersiz kılma sırasında hâlâ çalışabilir. Geçersiz kılmanın kendisi aktif kalır.",
           "override_allow_protection_actions": "Etkinleştirildiğinde, koruma eylemleri (yokluk, sıcaklık, parlama) aktif bir geçersiz kılma sırasında hâlâ çalışabilir. Geçersiz kılmanın kendisi aktif kalır.",
           "override_safety_timeout_enabled": "Açık uçlu stratejiler için güvenlik ağı olarak isteğe bağlı maksimum süre, böylece bir geçersiz kılma asla kalıcı olarak unutulmaz.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Ters çevrilmiş (biri evde = dışarıda)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Sabit bir süre sonra",
-        "fixed_time": "Sabit saat",
-        "lifecycle": "Gündüz/gece döngüsünün sonunda",
-        "first_comfort": "Bir sonraki otomatik konfor eyleminde",
-        "first_protection": "Bir sonraki koruyucu gölgelemede",
-        "first_any_decision": "Bir sonraki otomatik kararda",
-        "manual": "Yalnızca manuel temizleme"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Paralel",
         "spaced": "Zaman aralıklı",
         "sequential": "Sırayla"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Bir zamanlayıcı veya saatten sonra",
+        "lifecycle": "Bir sonraki program geçişinde",
+        "next_decision": "Bir sonraki otomatik kararda",
+        "manual": "Yalnızca manuel temizleme"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Sabit bir süre sonra",
+        "fixed_time": "Sabit bir saatte"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Herhangi bir otomatik karar",
+        "comfort": "Yalnızca konfor kararları",
+        "protection": "Yalnızca koruma kararları"
       }
     }
   },

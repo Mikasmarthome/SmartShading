@@ -401,7 +401,9 @@
         "title": "Anul·lació manual",
         "description": "Defineix el comportament d'una anul·lació manual activa: quant dura i si les accions de confort o protecció poden continuar executant-se mentre és activa.",
         "data": {
-          "override_release_strategy": "Estratègia de finalització",
+          "override_release_mode": "Com finalitza la substitució",
+          "override_time_based_kind": "Tipus de temporitzador",
+          "override_decision_filter": "Quines decisions l'alliberen",
           "override_fixed_until": "Hora de finalització fixa",
           "override_allow_comfort_actions": "Permet accions de confort durant l'anul·lació",
           "override_allow_protection_actions": "Permet accions de protecció durant l'anul·lació",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Tolerància de detecció"
         },
         "data_description": {
-          "override_release_strategy": "Controla com finalitza l'anul·lació: després d'una durada fixa, a una hora fixa, en la següent transició de cicle, en la següent decisió automàtica, o només quan s'esborri manualment.",
-          "override_fixed_until": "Només s'utilitza quan l'estratègia de finalització s'estableix a \"Hora fixa\". Si l'hora ja ha passat avui, l'anul·lació acaba a aquesta hora demà.",
+          "override_release_mode": "Trieu el concepte d'alliberament: un temporitzador/rellotge, la propera transició d'horari, la propera decisió automàtica, o només esborrat manual.",
+          "override_time_based_kind": "Només rellevant quan el mode d'alliberament de dalt està configurat en una opció de temporitzador/rellotge: alliberament després d'una durada fixa o a una hora fixa.",
+          "override_decision_filter": "Només rellevant quan el mode d'alliberament de dalt està configurat en l'opció de propera decisió: alliberament en qualsevol decisió, només decisions de confort, o només decisions de protecció.",
+          "override_fixed_until": "Només rellevant quan el mode d'alliberament és una opció de temporitzador/rellotge i el tipus de temporitzador és una hora fixa. Si aquesta hora ja ha passat avui, la substitució finalitza demà a aquesta hora.",
           "override_allow_comfort_actions": "Si està activat, l'ombreig de confort habitual pot continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
           "override_allow_protection_actions": "Si està activat, les accions de protecció (absència, calor, enlluernament) poden continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
           "override_safety_timeout_enabled": "Durada màxima opcional com a xarxa de seguretat per a estratègies obertes, perquè una anul·lació mai quedi oblidada permanentment.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Invertit (algú a casa = absent)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Després d'una durada fixa",
-        "fixed_time": "Hora fixa",
-        "lifecycle": "Al final del cicle de dia/nit",
-        "first_comfort": "En la següent acció automàtica de confort",
-        "first_protection": "En la següent protecció solar",
-        "first_any_decision": "En la següent decisió automàtica",
-        "manual": "Només esborrat manual"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Simultani",
         "spaced": "Amb interval",
         "sequential": "Una darrere l'altra"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Després d'un temporitzador o una hora",
+        "lifecycle": "A la propera transició d'horari",
+        "next_decision": "A la propera decisió automàtica",
+        "manual": "Només esborrat manual"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Després d'una durada fixa",
+        "fixed_time": "A una hora fixa"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Qualsevol decisió automàtica",
+        "comfort": "Només decisions de confort",
+        "protection": "Només decisions de protecció"
       }
     }
   },

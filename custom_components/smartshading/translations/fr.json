@@ -401,7 +401,9 @@
         "title": "Dérogation manuelle",
         "description": "Définit le comportement d'une dérogation manuelle active : sa durée et si les actions de confort ou de protection peuvent encore s'exécuter pendant qu'elle est active.",
         "data": {
-          "override_release_strategy": "Stratégie de fin",
+          "override_release_mode": "Comment se termine la dérogation",
+          "override_time_based_kind": "Type de minuteur",
+          "override_decision_filter": "Quelles décisions la libèrent",
           "override_fixed_until": "Heure de fin fixe",
           "override_allow_comfort_actions": "Autoriser les actions de confort pendant la dérogation",
           "override_allow_protection_actions": "Autoriser les actions de protection pendant la dérogation",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Tolérance de détection"
         },
         "data_description": {
-          "override_release_strategy": "Contrôle la fin de la dérogation : après une durée fixe, à une heure fixe, à la prochaine transition de cycle, à la prochaine décision automatique, ou uniquement par effacement manuel.",
-          "override_fixed_until": "Utilisé uniquement si la stratégie de fin est \"Heure fixe\". Si l'heure est déjà passée aujourd'hui, la dérogation se termine à cette heure demain.",
+          "override_release_mode": "Choisissez le concept de libération : une minuterie/horloge, la prochaine transition d'horaire, la prochaine décision automatique, ou un effacement manuel uniquement.",
+          "override_time_based_kind": "Pertinent uniquement si le mode de libération ci-dessus est réglé sur une option minuterie/horloge : libération après une durée fixe ou à une heure fixe.",
+          "override_decision_filter": "Pertinent uniquement si le mode de libération ci-dessus est réglé sur l'option « prochaine décision » : libération sur n'importe quelle décision, uniquement sur les décisions de confort, ou uniquement sur les décisions de protection.",
+          "override_fixed_until": "Pertinent uniquement si le mode de libération est une option minuterie/horloge et que le type de minuterie est une heure fixe. Si l'heure est déjà passée aujourd'hui, la dérogation se termine à cette heure demain.",
           "override_allow_comfort_actions": "Si activé, les mouvements de confort réguliers peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
           "override_allow_protection_actions": "Si activé, les actions de protection (absence, chaleur, éblouissement) peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
           "override_safety_timeout_enabled": "Durée maximale optionnelle comme filet de sécurité pour les stratégies ouvertes, afin qu'une dérogation ne soit jamais oubliée définitivement.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Inversé (quelqu'un à la maison = absent)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Après une durée fixe",
-        "fixed_time": "Heure fixe",
-        "lifecycle": "À la fin du cycle jour/nuit",
-        "first_comfort": "À la prochaine action automatique de confort",
-        "first_protection": "À la prochaine protection solaire",
-        "first_any_decision": "À la prochaine décision automatique",
-        "manual": "Effacement manuel uniquement"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Parallèle",
         "spaced": "Avec un intervalle",
         "sequential": "Un par un"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Après une minuterie ou une heure",
+        "lifecycle": "À la prochaine transition d'horaire",
+        "next_decision": "À la prochaine décision automatique",
+        "manual": "Effacement manuel uniquement"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Après une durée fixe",
+        "fixed_time": "À une heure fixe"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Toute décision automatique",
+        "comfort": "Décisions de confort uniquement",
+        "protection": "Décisions de protection uniquement"
       }
     }
   },

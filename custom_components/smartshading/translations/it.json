@@ -401,7 +401,9 @@
         "title": "Override manuale",
         "description": "Configura il comportamento di un override manuale attivo: la sua durata e se le azioni di comfort o protezione possono continuare a essere eseguite mentre è attivo.",
         "data": {
-          "override_release_strategy": "Strategia di fine",
+          "override_release_mode": "Come termina la sostituzione manuale",
+          "override_time_based_kind": "Tipo di timer",
+          "override_decision_filter": "Quali decisioni la rilasciano",
           "override_fixed_until": "Ora di fine fissa",
           "override_allow_comfort_actions": "Consenti azioni di comfort durante l'override",
           "override_allow_protection_actions": "Consenti azioni di protezione durante l'override",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Tolleranza di rilevamento"
         },
         "data_description": {
-          "override_release_strategy": "Controlla come termina l'override: dopo una durata fissa, a un'ora fissa, alla successiva transizione del ciclo, alla successiva decisione automatica, o solo con cancellazione manuale.",
-          "override_fixed_until": "Usato solo quando la strategia di fine è impostata su \"Ora fissa\". Se l'orario è già passato oggi, l'override termina a quell'ora domani.",
+          "override_release_mode": "Scegli il concetto di rilascio: un timer/orario, la prossima transizione di pianificazione, la prossima decisione automatica o solo cancellazione manuale.",
+          "override_time_based_kind": "Rilevante solo se la modalità di rilascio sopra è impostata su un'opzione timer/orario: rilascio dopo una durata fissa o a un orario fisso.",
+          "override_decision_filter": "Rilevante solo se la modalità di rilascio sopra è impostata sull'opzione prossima decisione: rilascio su qualsiasi decisione, solo decisioni di comfort o solo decisioni di protezione.",
+          "override_fixed_until": "Rilevante solo se la modalità di rilascio è un'opzione timer/orario e il tipo di timer è un orario fisso. Se l'orario è già passato oggi, la sostituzione termina domani a quest'ora.",
           "override_allow_comfort_actions": "Se abilitato, l'ombreggiatura di comfort regolare può continuare durante un override attivo. L'override stesso rimane attivo.",
           "override_allow_protection_actions": "Se abilitato, le azioni di protezione (assenza, calore, abbagliamento) possono continuare durante un override attivo. L'override stesso rimane attivo.",
           "override_safety_timeout_enabled": "Durata massima opzionale come rete di sicurezza per le strategie aperte, così un override non resta mai dimenticato permanentemente.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Invertito (qualcuno a casa = assente)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Dopo una durata fissa",
-        "fixed_time": "Ora fissa",
-        "lifecycle": "Alla fine del ciclo giorno/notte",
-        "first_comfort": "Alla successiva azione automatica di comfort",
-        "first_protection": "Alla successiva protezione solare",
-        "first_any_decision": "Alla successiva decisione automatica",
-        "manual": "Solo cancellazione manuale"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Parallelo",
         "spaced": "Con intervallo",
         "sequential": "Una alla volta"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Dopo un timer o un orario",
+        "lifecycle": "Alla prossima transizione di pianificazione",
+        "next_decision": "Alla prossima decisione automatica",
+        "manual": "Solo cancellazione manuale"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Dopo una durata fissa",
+        "fixed_time": "A un orario fisso"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Qualsiasi decisione automatica",
+        "comfort": "Solo decisioni di comfort",
+        "protection": "Solo decisioni di protezione"
       }
     }
   },

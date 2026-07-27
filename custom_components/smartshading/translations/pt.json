@@ -401,7 +401,9 @@
         "title": "Substituição manual",
         "description": "Define o comportamento de uma substituição manual ativa: quanto tempo dura e se as ações de conforto ou proteção ainda podem ser executadas enquanto está ativa.",
         "data": {
-          "override_release_strategy": "Estratégia de finalização",
+          "override_release_mode": "Como a substituição termina",
+          "override_time_based_kind": "Tipo de temporizador",
+          "override_decision_filter": "Quais decisões a libertam",
           "override_fixed_until": "Hora de término fixa",
           "override_allow_comfort_actions": "Permitir ações de conforto durante a substituição",
           "override_allow_protection_actions": "Permitir ações de proteção durante a substituição",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "Tolerância de deteção"
         },
         "data_description": {
-          "override_release_strategy": "Controla como a substituição termina: após uma duração fixa, a uma hora fixa, na próxima transição de ciclo, na próxima decisão automática, ou apenas por limpeza manual.",
-          "override_fixed_until": "Usado apenas quando a estratégia de finalização está definida como \"Hora fixa\". Se a hora já passou hoje, a substituição termina a essa hora amanhã.",
+          "override_release_mode": "Escolha o conceito de libertação: um temporizador/relógio, a próxima transição de horário, a próxima decisão automática, ou apenas limpeza manual.",
+          "override_time_based_kind": "Apenas relevante quando o modo de libertação acima está definido como uma opção de temporizador/relógio: libertar após uma duração fixa ou a uma hora fixa.",
+          "override_decision_filter": "Apenas relevante quando o modo de libertação acima está definido como a opção de próxima decisão: libertar em qualquer decisão, apenas decisões de conforto, ou apenas decisões de proteção.",
+          "override_fixed_until": "Apenas relevante quando o modo de libertação é uma opção de temporizador/relógio e o tipo de temporizador é uma hora fixa. Se já tiver passado hoje, a substituição termina amanhã a esta hora.",
           "override_allow_comfort_actions": "Quando ativado, o sombreamento de conforto normal ainda pode ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
           "override_allow_protection_actions": "Quando ativado, as ações de proteção (ausência, calor, encandeamento) ainda podem ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
           "override_safety_timeout_enabled": "Duração máxima opcional como rede de segurança para estratégias abertas, para que uma substituição nunca fique permanentemente esquecida.",
@@ -720,22 +724,32 @@
         "inverted_any_home": "Invertido (alguém em casa = ausente)"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "Após uma duração fixa",
-        "fixed_time": "Hora fixa",
-        "lifecycle": "No final do ciclo dia/noite",
-        "first_comfort": "Na próxima ação automática de conforto",
-        "first_protection": "Na próxima proteção solar",
-        "first_any_decision": "Na próxima decisão automática",
-        "manual": "Apenas limpeza manual"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "Paralelo",
         "spaced": "Com intervalo de tempo",
         "sequential": "Um de cada vez"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "Após um temporizador ou hora",
+        "lifecycle": "Na próxima transição de horário",
+        "next_decision": "Na próxima decisão automática",
+        "manual": "Apenas limpeza manual"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "Após uma duração fixa",
+        "fixed_time": "A uma hora fixa"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "Qualquer decisão automática",
+        "comfort": "Apenas decisões de conforto",
+        "protection": "Apenas decisões de proteção"
       }
     }
   },

@@ -401,7 +401,9 @@
         "title": "手动覆盖",
         "description": "配置激活的手动覆盖的行为：持续多长时间，以及在其激活期间是否仍允许执行舒适或保护动作。",
         "data": {
-          "override_release_strategy": "释放策略",
+          "override_release_mode": "覆盖如何结束",
+          "override_time_based_kind": "计时器类型",
+          "override_decision_filter": "哪些决策会释放它",
           "override_fixed_until": "固定结束时间",
           "override_allow_comfort_actions": "覆盖期间允许舒适动作",
           "override_allow_protection_actions": "覆盖期间允许保护动作",
@@ -411,8 +413,10 @@
           "override_detection_tolerance": "检测容差"
         },
         "data_description": {
-          "override_release_strategy": "控制覆盖如何结束：固定时长后、固定时间、下一次计划转换时、下一次自动决策时，或仅手动清除。",
-          "override_fixed_until": "仅当释放策略设置为\"固定时间\"时使用。如果该时间今天已过，覆盖将于明天此时结束。",
+          "override_release_mode": "选择释放方式:定时器/时钟、下一次日程切换、下一次自动决策,或仅手动清除。",
+          "override_time_based_kind": "仅当上方释放模式设置为定时器/时钟选项时才有意义:在固定时长后释放,或在固定时间释放。",
+          "override_decision_filter": "仅当上方释放模式设置为“下一次决策”选项时才有意义:在任意决策时释放、仅在舒适度决策时释放,或仅在保护决策时释放。",
+          "override_fixed_until": "仅当释放模式为定时器/时钟选项且计时器类型为固定时间时才有意义。如果今天该时间已过,覆盖将在明天此时结束。",
           "override_allow_comfort_actions": "启用后，常规舒适遮阳仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
           "override_allow_protection_actions": "启用后，保护动作（离家、高温、眩光）仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
           "override_safety_timeout_enabled": "为开放式策略提供的可选最大时长安全网，确保覆盖不会被永久遗忘。",
@@ -720,22 +724,32 @@
         "inverted_any_home": "反转（有人在家=离开）"
       }
     },
-    "override_release_strategy": {
-      "options": {
-        "duration": "固定时长后",
-        "fixed_time": "固定时间",
-        "lifecycle": "在日/夜周期结束时",
-        "first_comfort": "在下一次自动舒适动作时",
-        "first_protection": "在下一次保护性遮阳时",
-        "first_any_decision": "在下一次自动决策时",
-        "manual": "仅手动清除"
-      }
-    },
     "dispatch_mode": {
       "options": {
         "parallel": "并行",
         "spaced": "有时间间隔",
         "sequential": "依次执行"
+      }
+    },
+    "override_release_mode": {
+      "options": {
+        "time_based": "定时器或时间之后",
+        "lifecycle": "在下一次日程切换时",
+        "next_decision": "在下一次自动决策时",
+        "manual": "仅手动清除"
+      }
+    },
+    "override_time_based_kind": {
+      "options": {
+        "duration": "固定时长后",
+        "fixed_time": "固定时间"
+      }
+    },
+    "override_decision_filter": {
+      "options": {
+        "any": "任意自动决策",
+        "comfort": "仅舒适度决策",
+        "protection": "仅保护决策"
       }
     }
   },

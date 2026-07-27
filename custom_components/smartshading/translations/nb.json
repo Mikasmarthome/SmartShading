@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Manuell overstyring",
-        "description": "Bestemmer oppførselen til en aktiv manuell overstyring: hvor lenge den varer, og om komfort- eller beskyttelseshandlinger fortsatt kan kjøre mens den er aktiv.",
+        "description": "Velg om denne sonen følger systemets standard for manuell overstyring, eller bruker sine egne innstillinger.",
         "data": {
-          "override_release_mode": "Hvordan overstyringen avsluttes",
-          "override_time_based_kind": "Timertype",
-          "override_decision_filter": "Hvilke beslutninger som frigir den",
-          "override_fixed_until": "Fast sluttidspunkt",
-          "override_allow_comfort_actions": "Tillat komforthandlinger under overstyring",
-          "override_allow_protection_actions": "Tillat beskyttelseshandlinger under overstyring",
-          "override_safety_timeout_enabled": "Sikkerhetstidsavbrudd",
-          "override_duration_min": "Klassisk overstyringsvarighet (minutter)",
-          "override_night_duration_min": "Nattlig overstyringsvarighet (minutter)",
+          "override_use_system_default": "Bruk systemstandard",
           "override_detection_tolerance": "Deteksjonstoleranse"
         },
         "data_description": {
-          "override_release_mode": "Velg frigivelseskonseptet: en timer/klokke, neste tidsplanovergang, neste automatiske beslutning, eller kun manuell fjerning.",
-          "override_time_based_kind": "Kun relevant når frigivelsesmodusen ovenfor er satt til et timer-/klokkealternativ: frigivelse etter en fast varighet eller på et fast klokkeslett.",
-          "override_decision_filter": "Kun relevant når frigivelsesmodusen ovenfor er satt til alternativet neste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
-          "override_fixed_until": "Kun relevant når frigivelsesmodusen er et timer-/klokkealternativ og timertypen er et fast klokkeslett. Hvis klokkeslettet allerede er passert i dag, avsluttes overstyringen i morgen på dette tidspunktet.",
-          "override_allow_comfort_actions": "Når aktivert, kan vanlig komfortskygging fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
-          "override_allow_protection_actions": "Når aktivert, kan beskyttelseshandlinger (fravær, varme, blending) fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
-          "override_safety_timeout_enabled": "Valgfri maksimal varighet som sikkerhetsnett for åpne strategier, slik at en overstyring aldri blir permanent glemt.",
-          "override_duration_min": "Hvor lenge en dagovertyring varer før SmartShading gjenopptar normal styring (klassisk varighetsmodus).",
-          "override_night_duration_min": "Sikkerhetsgrense for en nattlig overstyring. Den egentlige frigivelsen skjer ved morgenens skjemaovergang.",
+          "override_use_system_default": "Når aktivert, følger denne sonen standarden for manuell overstyring konfigurert på systeminnføringen. Når deaktivert, konfigurerer du sonens egne innstillinger på neste skjerm.",
           "override_detection_tolerance": "Minste posisjonsendring (i prosent) før en manuell bevegelse gjenkjennes som en overstyring."
-        }
-      },
-      "dispatch": {
-        "title": "Koordinering av solskjerming",
-        "description": "Konfigurer hvordan SmartShading fordeler solskjermingskommandoer over tid når flere solskjermer avgjøres i samme syklus.",
-        "data": {
-          "dispatch_mode": "Koordineringsmodus",
-          "dispatch_start_interval_s": "Forsinkelse mellom starter",
-          "dispatch_max_travel_wait_s": "Maksimal ventetid på at bevegelsen avsluttes",
-          "dispatch_post_travel_pause_s": "Pause etter at bevegelsen er avsluttet",
-          "dispatch_zone_batching": "Hold soner atskilt"
-        },
-        "data_description": {
-          "dispatch_mode": "Parallelt starter hver kommando uten forsinkelse. Med tidsavstand venter et fast antall sekunder mellom startene. Én etter én venter til hver solskjerming er ferdig med å bevege seg før den neste starter.",
-          "dispatch_start_interval_s": "Brukes av \"Med tidsavstand\", og som minsteavstand mellom soner når \"Hold soner atskilt\" er aktivert.",
-          "dispatch_max_travel_wait_s": "Brukes kun av \"Én etter én\" — hvor lenge det ventes på at en solskjerming blir ferdig før det fortsettes likevel.",
-          "dispatch_post_travel_pause_s": "Brukes kun av \"Én etter én\" — en kort pause etter at en solskjerming er ferdig, før den neste starter.",
-          "dispatch_zone_batching": "Når aktivert, brukes forsinkelsen mellom startene alltid mellom ulike rom/soner, selv i Parallelt-modus, slik at rom forblir visuelt atskilt."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Tidsplanprofiler",
           "manual_override": "Manuell overstyring",
           "dispatch": "Koordinering av solskjerming"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Manuell overstyring — denne sonens innstillinger",
+        "description": "Angir hvordan en aktiv manuell overstyring oppfører seg i denne sonen: hvor lenge den varer, og om komfort- eller beskyttelseshandlinger fortsatt kan kjøre mens den er aktiv.",
+        "data": {
+          "override_release_mode": "Hvordan overstyringen avsluttes",
+          "override_time_based_kind": "Timertype",
+          "override_decision_filter": "Hvilke beslutninger som frigir den",
+          "override_fixed_until": "Fast sluttidspunkt",
+          "override_allow_comfort_actions": "Tillat komforthandlinger under overstyring",
+          "override_allow_protection_actions": "Tillat beskyttelseshandlinger under overstyring",
+          "override_safety_timeout_enabled": "Sikkerhetstidsavbrudd",
+          "override_duration_min": "Klassisk overstyringsvarighet (minutter)",
+          "override_night_duration_min": "Nattlig overstyringsvarighet (minutter)"
+        },
+        "data_description": {
+          "override_release_mode": "Velg frigivelseskonseptet: en timer/klokke, neste tidsplanovergang, neste automatiske beslutning, eller kun manuell fjerning.",
+          "override_time_based_kind": "Kun relevant når frigivelsesmodusen ovenfor er satt til et timer-/klokkealternativ: frigivelse etter en fast varighet eller på et fast klokkeslett.",
+          "override_decision_filter": "Kun relevant når frigivelsesmodusen ovenfor er satt til alternativet neste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
+          "override_fixed_until": "Kun relevant når frigivelsesmodusen er et timer-/klokkealternativ og timertypen er et fast klokkeslett. Hvis klokkeslettet allerede er passert i dag, avsluttes overstyringen i morgen på dette tidspunktet.",
+          "override_allow_comfort_actions": "Når aktivert, kan vanlig komfortskygging fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
+          "override_allow_protection_actions": "Når aktivert, kan beskyttelseshandlinger (fravær, varme, blending) fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
+          "override_safety_timeout_enabled": "Valgfri maksimal varighet som sikkerhetsnett for åpne strategier, slik at en overstyring aldri blir permanent glemt.",
+          "override_duration_min": "Hvor lenge en dagovertyring varer før SmartShading gjenopptar normal styring (klassisk varighetsmodus).",
+          "override_night_duration_min": "Sikkerhetsgrense for en nattlig overstyring. Den egentlige frigivelsen skjer ved morgenens skjemaovergang."
+        }
+      },
+      "system_manual_override": {
+        "title": "Standarder for manuell overstyring",
+        "description": "Oppførselen for manuell overstyring som hver sone følger med mindre den bruker sine egne innstillinger: hvor lenge en overstyring varer, og om komfort- eller beskyttelseshandlinger fortsatt kan kjøre mens en er aktiv.",
+        "data": {
+          "override_release_mode": "Hvordan overstyringen avsluttes",
+          "override_time_based_kind": "Timertype",
+          "override_decision_filter": "Hvilke beslutninger som frigir den",
+          "override_fixed_until": "Fast sluttidspunkt",
+          "override_allow_comfort_actions": "Tillat komforthandlinger under overstyring",
+          "override_allow_protection_actions": "Tillat beskyttelseshandlinger under overstyring",
+          "override_safety_timeout_enabled": "Sikkerhetstidsavbrudd",
+          "override_duration_min": "Klassisk overstyringsvarighet (minutter)",
+          "override_night_duration_min": "Nattlig overstyringsvarighet (minutter)"
+        },
+        "data_description": {
+          "override_release_mode": "Velg frigivelseskonseptet: en timer/klokke, neste tidsplanovergang, neste automatiske beslutning, eller kun manuell fjerning.",
+          "override_time_based_kind": "Kun relevant når frigivelsesmodusen ovenfor er satt til et timer-/klokkealternativ: frigivelse etter en fast varighet eller på et fast klokkeslett.",
+          "override_decision_filter": "Kun relevant når frigivelsesmodusen ovenfor er satt til alternativet neste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
+          "override_fixed_until": "Kun relevant når frigivelsesmodusen er et timer-/klokkealternativ og timertypen er et fast klokkeslett. Hvis klokkeslettet allerede er passert i dag, avsluttes overstyringen i morgen på dette tidspunktet.",
+          "override_allow_comfort_actions": "Når aktivert, kan vanlig komfortskygging fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
+          "override_allow_protection_actions": "Når aktivert, kan beskyttelseshandlinger (fravær, varme, blending) fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
+          "override_safety_timeout_enabled": "Valgfri maksimal varighet som sikkerhetsnett for åpne strategier, slik at en overstyring aldri blir permanent glemt.",
+          "override_duration_min": "Hvor lenge en dagovertyring varer før SmartShading gjenopptar normal styring (klassisk varighetsmodus).",
+          "override_night_duration_min": "Sikkerhetsgrense for en nattlig overstyring. Den egentlige frigivelsen skjer ved morgenens skjemaovergang."
+        }
+      },
+      "system_dispatch": {
+        "title": "Koordinering av solskjerming",
+        "description": "Angir hvordan SmartShading fordeler skjermkommandoer på tvers av alle soner når flere skjermer avgjøres i samme syklus. Dette er en egenskap ved maskinvaren/radiogatewayen din, delt for hele huset.",
+        "data": {
+          "dispatch_mode": "Koordineringsmodus",
+          "dispatch_start_interval_s": "Forsinkelse mellom starter",
+          "dispatch_max_travel_wait_s": "Maksimal ventetid på at bevegelsen avsluttes",
+          "dispatch_post_travel_pause_s": "Pause etter at bevegelsen er avsluttet",
+          "dispatch_zone_batching": "Hold soner atskilt"
+        },
+        "data_description": {
+          "dispatch_mode": "Parallelt starter hver kommando uten forsinkelse. Med tidsavstand venter et fast antall sekunder mellom startene. Én etter én venter til hver solskjerming er ferdig med å bevege seg før den neste starter.",
+          "dispatch_start_interval_s": "Brukes av \"Med tidsavstand\", og som minsteavstand mellom soner når \"Hold soner atskilt\" er aktivert.",
+          "dispatch_max_travel_wait_s": "Brukes kun av \"Én etter én\" — hvor lenge det ventes på at en solskjerming blir ferdig før det fortsettes likevel.",
+          "dispatch_post_travel_pause_s": "Brukes kun av \"Én etter én\" — en kort pause etter at en solskjerming er ferdig, før den neste starter.",
+          "dispatch_zone_batching": "Når aktivert, brukes forsinkelsen mellom startene alltid mellom ulike rom/soner, selv i Parallelt-modus, slik at rom forblir visuelt atskilt."
+        }
+      },
+      "system_init": {
+        "title": "SmartShading systeminnstillinger",
+        "description": "Globale standarder som hver sone følger med mindre den bruker sine egne innstillinger, pluss systemomfattende timing for skjermutsendelse.",
+        "menu_options": {
+          "system_manual_override": "Standarder for manuell overstyring",
+          "system_dispatch": "Skjermutsendelse"
         }
       }
     },

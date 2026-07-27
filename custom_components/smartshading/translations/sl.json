@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Ročna preglasitev",
-        "description": "Določa obnašanje aktivne ročne preglasitve: kako dolgo traja in ali lahko dejanja udobja ali zaščite še vedno potekajo, ko je aktivna.",
+        "description": "Izberite, ali ta cona sledi sistemski privzeti vrednosti ročne preglasitve ali uporablja lastne nastavitve.",
         "data": {
-          "override_release_mode": "Kako se preglasitev konča",
-          "override_time_based_kind": "Vrsta časovnika",
-          "override_decision_filter": "Katere odločitve jo sprostijo",
-          "override_fixed_until": "Fiksni čas zaključka",
-          "override_allow_comfort_actions": "Dovoli dejanja udobja med preglasitvijo",
-          "override_allow_protection_actions": "Dovoli zaščitna dejanja med preglasitvijo",
-          "override_safety_timeout_enabled": "Varnostna časovna omejitev",
-          "override_duration_min": "Klasično trajanje preglasitve (minute)",
-          "override_night_duration_min": "Nočno trajanje preglasitve (minute)",
+          "override_use_system_default": "Uporabi sistemsko privzeto vrednost",
           "override_detection_tolerance": "Toleranca zaznavanja"
         },
         "data_description": {
-          "override_release_mode": "Izberite koncept sprostitve: časovnik/ura, naslednji prehod urnika, naslednja samodejna odločitev ali samo ročna izbris.",
-          "override_time_based_kind": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost časovnika/ure: sprostitev po fiksnem trajanju ali ob fiksni uri.",
-          "override_decision_filter": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost naslednje odločitve: sprostitev ob kateri koli odločitvi, samo pri odločitvah udobja ali samo pri zaščitnih odločitvah.",
-          "override_fixed_until": "Pomembno samo, če je način sprostitve možnost časovnika/ure in je vrsta časovnika fiksna ura. Če je ta ura danes že minila, se preglasitev konča jutri ob tej uri.",
-          "override_allow_comfort_actions": "Če je omogočeno, lahko običajno senčenje udobja še vedno poteka med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
-          "override_allow_protection_actions": "Če je omogočeno, lahko zaščitna dejanja (odsotnost, vročina, bleščanje) še vedno potekajo med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
-          "override_safety_timeout_enabled": "Neobvezno največje trajanje kot varnostna mreža za odprte strategije, da preglasitev nikoli ni trajno pozabljena.",
-          "override_duration_min": "Kako dolgo traja dnevna preglasitev, preden SmartShading nadaljuje običajno upravljanje (klasični način trajanja).",
-          "override_night_duration_min": "Varnostna zgornja meja za nočno preglasitev. Dejanska sprostitev se zgodi ob jutranjem prehodu urnika.",
+          "override_use_system_default": "Če je omogočeno, ta cona sledi privzeti vrednosti ročne preglasitve, nastavljeni na sistemskem vnosu. Če je onemogočeno, boste na naslednjem zaslonu nastavili lastne nastavitve te cone.",
           "override_detection_tolerance": "Najmanjša sprememba položaja (v odstotkih), preden je ročni premik prepoznan kot preglasitev."
-        }
-      },
-      "dispatch": {
-        "title": "Usklajevanje senčil",
-        "description": "Nastavite, kako SmartShading časovno razporeja ukaze senčilom, kadar je v istem ciklu odločeno o več senčilih.",
-        "data": {
-          "dispatch_mode": "Način usklajevanja",
-          "dispatch_start_interval_s": "Zamik med zagoni",
-          "dispatch_max_travel_wait_s": "Največje čakanje na konec premika",
-          "dispatch_post_travel_pause_s": "Premor po koncu premika",
-          "dispatch_zone_batching": "Ločuj območja"
-        },
-        "data_description": {
-          "dispatch_mode": "Sočasno zažene vsak ukaz brez zamika. S časovnim zamikom čaka določeno število sekund med zagoni. Zaporedno počaka, da vsako senčilo konča premik, preden zažene naslednje.",
-          "dispatch_start_interval_s": "Uporablja se pri \"S časovnim zamikom\", in kot najmanjši razmik med območji, kadar je omogočeno \"Ločuj območja\".",
-          "dispatch_max_travel_wait_s": "Uporablja se samo pri \"Zaporedno\" — kako dolgo čakati na konec premika senčila, preden se kljub temu nadaljuje.",
-          "dispatch_post_travel_pause_s": "Uporablja se samo pri \"Zaporedno\" — kratek premor po koncu premika senčila, preden se zažene naslednje.",
-          "dispatch_zone_batching": "Če je omogočeno, se zamik med zagoni vedno uporabi med različnimi prostori/območji, tudi v načinu Sočasno, tako da prostori ostanejo vizualno ločeni."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Profili urnika",
           "manual_override": "Ročna preglasitev",
           "dispatch": "Usklajevanje senčil"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Ročna preglasitev — nastavitve te cone",
+        "description": "Določa vedenje aktivne ročne preglasitve v tej coni: kako dolgo traja in ali lahko dejanja udobja ali zaščite še vedno tečejo, ko je aktivna.",
+        "data": {
+          "override_release_mode": "Kako se preglasitev konča",
+          "override_time_based_kind": "Vrsta časovnika",
+          "override_decision_filter": "Katere odločitve jo sprostijo",
+          "override_fixed_until": "Fiksni čas zaključka",
+          "override_allow_comfort_actions": "Dovoli dejanja udobja med preglasitvijo",
+          "override_allow_protection_actions": "Dovoli zaščitna dejanja med preglasitvijo",
+          "override_safety_timeout_enabled": "Varnostna časovna omejitev",
+          "override_duration_min": "Klasično trajanje preglasitve (minute)",
+          "override_night_duration_min": "Nočno trajanje preglasitve (minute)"
+        },
+        "data_description": {
+          "override_release_mode": "Izberite koncept sprostitve: časovnik/ura, naslednji prehod urnika, naslednja samodejna odločitev ali samo ročna izbris.",
+          "override_time_based_kind": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost časovnika/ure: sprostitev po fiksnem trajanju ali ob fiksni uri.",
+          "override_decision_filter": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost naslednje odločitve: sprostitev ob kateri koli odločitvi, samo pri odločitvah udobja ali samo pri zaščitnih odločitvah.",
+          "override_fixed_until": "Pomembno samo, če je način sprostitve možnost časovnika/ure in je vrsta časovnika fiksna ura. Če je ta ura danes že minila, se preglasitev konča jutri ob tej uri.",
+          "override_allow_comfort_actions": "Če je omogočeno, lahko običajno senčenje udobja še vedno poteka med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
+          "override_allow_protection_actions": "Če je omogočeno, lahko zaščitna dejanja (odsotnost, vročina, bleščanje) še vedno potekajo med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
+          "override_safety_timeout_enabled": "Neobvezno največje trajanje kot varnostna mreža za odprte strategije, da preglasitev nikoli ni trajno pozabljena.",
+          "override_duration_min": "Kako dolgo traja dnevna preglasitev, preden SmartShading nadaljuje običajno upravljanje (klasični način trajanja).",
+          "override_night_duration_min": "Varnostna zgornja meja za nočno preglasitev. Dejanska sprostitev se zgodi ob jutranjem prehodu urnika."
+        }
+      },
+      "system_manual_override": {
+        "title": "Privzete vrednosti ročne preglasitve",
+        "description": "Vedenje ročne preglasitve, ki mu sledi vsaka cona, razen če uporablja lastne nastavitve: kako dolgo traja preglasitev in ali lahko dejanja udobja ali zaščite še vedno tečejo, ko je aktivna.",
+        "data": {
+          "override_release_mode": "Kako se preglasitev konča",
+          "override_time_based_kind": "Vrsta časovnika",
+          "override_decision_filter": "Katere odločitve jo sprostijo",
+          "override_fixed_until": "Fiksni čas zaključka",
+          "override_allow_comfort_actions": "Dovoli dejanja udobja med preglasitvijo",
+          "override_allow_protection_actions": "Dovoli zaščitna dejanja med preglasitvijo",
+          "override_safety_timeout_enabled": "Varnostna časovna omejitev",
+          "override_duration_min": "Klasično trajanje preglasitve (minute)",
+          "override_night_duration_min": "Nočno trajanje preglasitve (minute)"
+        },
+        "data_description": {
+          "override_release_mode": "Izberite koncept sprostitve: časovnik/ura, naslednji prehod urnika, naslednja samodejna odločitev ali samo ročna izbris.",
+          "override_time_based_kind": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost časovnika/ure: sprostitev po fiksnem trajanju ali ob fiksni uri.",
+          "override_decision_filter": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost naslednje odločitve: sprostitev ob kateri koli odločitvi, samo pri odločitvah udobja ali samo pri zaščitnih odločitvah.",
+          "override_fixed_until": "Pomembno samo, če je način sprostitve možnost časovnika/ure in je vrsta časovnika fiksna ura. Če je ta ura danes že minila, se preglasitev konča jutri ob tej uri.",
+          "override_allow_comfort_actions": "Če je omogočeno, lahko običajno senčenje udobja še vedno poteka med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
+          "override_allow_protection_actions": "Če je omogočeno, lahko zaščitna dejanja (odsotnost, vročina, bleščanje) še vedno potekajo med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
+          "override_safety_timeout_enabled": "Neobvezno največje trajanje kot varnostna mreža za odprte strategije, da preglasitev nikoli ni trajno pozabljena.",
+          "override_duration_min": "Kako dolgo traja dnevna preglasitev, preden SmartShading nadaljuje običajno upravljanje (klasični način trajanja).",
+          "override_night_duration_min": "Varnostna zgornja meja za nočno preglasitev. Dejanska sprostitev se zgodi ob jutranjem prehodu urnika."
+        }
+      },
+      "system_dispatch": {
+        "title": "Usklajevanje senčil",
+        "description": "Določa, kako SmartShading razporeja ukaze senčil po vseh conah, ko je v istem ciklu odločenih več senčil. To je lastnost vaše strojne opreme/radijskega prehoda, skupna za celo hišo.",
+        "data": {
+          "dispatch_mode": "Način usklajevanja",
+          "dispatch_start_interval_s": "Zamik med zagoni",
+          "dispatch_max_travel_wait_s": "Največje čakanje na konec premika",
+          "dispatch_post_travel_pause_s": "Premor po koncu premika",
+          "dispatch_zone_batching": "Ločuj območja"
+        },
+        "data_description": {
+          "dispatch_mode": "Sočasno zažene vsak ukaz brez zamika. S časovnim zamikom čaka določeno število sekund med zagoni. Zaporedno počaka, da vsako senčilo konča premik, preden zažene naslednje.",
+          "dispatch_start_interval_s": "Uporablja se pri \"S časovnim zamikom\", in kot najmanjši razmik med območji, kadar je omogočeno \"Ločuj območja\".",
+          "dispatch_max_travel_wait_s": "Uporablja se samo pri \"Zaporedno\" — kako dolgo čakati na konec premika senčila, preden se kljub temu nadaljuje.",
+          "dispatch_post_travel_pause_s": "Uporablja se samo pri \"Zaporedno\" — kratek premor po koncu premika senčila, preden se zažene naslednje.",
+          "dispatch_zone_batching": "Če je omogočeno, se zamik med zagoni vedno uporabi med različnimi prostori/območji, tudi v načinu Sočasno, tako da prostori ostanejo vizualno ločeni."
+        }
+      },
+      "system_init": {
+        "title": "Sistemske nastavitve SmartShading",
+        "description": "Globalne privzete vrednosti, ki jim sledi vsaka cona, razen če uporablja lastne nastavitve, ter sistemsko časovno usklajevanje pošiljanja ukazov senčilom.",
+        "menu_options": {
+          "system_manual_override": "Privzete vrednosti ročne preglasitve",
+          "system_dispatch": "Pošiljanje ukazov senčilom"
         }
       }
     },

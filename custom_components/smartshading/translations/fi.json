@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Manuaalinen ohitus",
-        "description": "Määrittää aktiivisen manuaalisen ohituksen käyttäytymisen: kuinka kauan se kestää ja voivatko mukavuus- tai suojaustoiminnot silti käydä sen ollessa aktiivinen.",
+        "description": "Valitse, noudattaako tämä vyöhyke järjestelmän manuaalisen ohituksen oletusta vai käyttääkö se omia asetuksiaan.",
         "data": {
-          "override_release_mode": "Miten ohitus päättyy",
-          "override_time_based_kind": "Ajastimen tyyppi",
-          "override_decision_filter": "Mitkä päätökset vapauttavat sen",
-          "override_fixed_until": "Kiinteä lopetusaika",
-          "override_allow_comfort_actions": "Salli mukavuustoiminnot ohituksen aikana",
-          "override_allow_protection_actions": "Salli suojaustoiminnot ohituksen aikana",
-          "override_safety_timeout_enabled": "Turva-aikakatkaisu",
-          "override_duration_min": "Perinteinen ohituksen kesto (minuuttia)",
-          "override_night_duration_min": "Yön ohituksen kesto (minuuttia)",
+          "override_use_system_default": "Käytä järjestelmän oletusta",
           "override_detection_tolerance": "Tunnistustoleranssi"
         },
         "data_description": {
-          "override_release_mode": "Valitse vapautuskonsepti: ajastin/kello, seuraava aikataulusiirtymä, seuraava automaattinen päätös tai vain manuaalinen tyhjennys.",
-          "override_time_based_kind": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu ajastin-/kelloasetukseen: vapautus kiinteän keston jälkeen tai kiinteänä kellonaikana.",
-          "override_decision_filter": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu seuraava päätös -asetukseen: vapautus millä tahansa päätöksellä, vain mukavuuspäätöksillä tai vain suojauspäätöksillä.",
-          "override_fixed_until": "Merkityksellinen vain, kun vapautustila on ajastin-/kelloasetus ja ajastimen tyyppi on kiinteä kellonaika. Jos kellonaika on jo tänään ohi, ohitus päättyy huomenna tähän aikaan.",
-          "override_allow_comfort_actions": "Kun käytössä, tavallinen mukavuusvarjostus voi silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
-          "override_allow_protection_actions": "Kun käytössä, suojaustoiminnot (poissaolo, kuumuus, häikäisy) voivat silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
-          "override_safety_timeout_enabled": "Valinnainen enimmäiskesto turvaverkkona avoimille strategioille, jotta ohitus ei jää pysyvästi unohduksiin.",
-          "override_duration_min": "Kuinka kauan päiväohitus kestää ennen kuin SmartShading jatkaa normaalia ohjausta (perinteinen kestomoodi).",
-          "override_night_duration_min": "Turvaraja yön ohitukselle. Todellinen vapautus tapahtuu aamun aikataulusiirtymässä.",
+          "override_use_system_default": "Kun käytössä, tämä vyöhyke noudattaa järjestelmämerkinnässä määritettyä manuaalisen ohituksen oletusta. Kun pois käytöstä, määrität tämän vyöhykkeen omat asetukset seuraavalla näytöllä.",
           "override_detection_tolerance": "Pienin sallittu asennon muutos (prosentteina) ennen kuin manuaalinen liike tunnistetaan ohitukseksi."
-        }
-      },
-      "dispatch": {
-        "title": "Varjostimien ajoitus",
-        "description": "Määritä, miten SmartShading ajoittaa varjostinkomennot, kun useita varjostimia ratkaistaan samassa syklissä.",
-        "data": {
-          "dispatch_mode": "Ajoitustapa",
-          "dispatch_start_interval_s": "Viive käynnistysten välillä",
-          "dispatch_max_travel_wait_s": "Enimmäisodotus liikkeen päättymiselle",
-          "dispatch_post_travel_pause_s": "Tauko liikkeen päätyttyä",
-          "dispatch_zone_batching": "Pidä vyöhykkeet erillään"
-        },
-        "data_description": {
-          "dispatch_mode": "Rinnakkain käynnistää jokaisen komennon ilman viivettä. Aikavälillä odottaa kiinteän sekuntimäärän käynnistysten välillä. Peräkkäin odottaa, että kukin varjostin lopettaa liikkeensä, ennen kuin seuraava käynnistyy.",
-          "dispatch_start_interval_s": "Käytetään tilassa \"Aikavälillä\" sekä vyöhykkeiden välisenä vähimmäisvälinä, kun \"Pidä vyöhykkeet erillään\" on käytössä.",
-          "dispatch_max_travel_wait_s": "Käytetään vain tilassa \"Peräkkäin\" — kuinka kauan odotetaan varjostimen lopettavan liikkeensä, ennen kuin jatketaan joka tapauksessa.",
-          "dispatch_post_travel_pause_s": "Käytetään vain tilassa \"Peräkkäin\" — lyhyt asettumistauko sen jälkeen, kun varjostin on lopettanut liikkeensä, ennen kuin seuraava käynnistyy.",
-          "dispatch_zone_batching": "Kun käytössä, käynnistysten välinen viive kohdistetaan aina eri huoneiden/vyöhykkeiden välille, myös Rinnakkain-tilassa, jotta huoneet pysyvät visuaalisesti erillään."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Aikatauluprofiilit",
           "manual_override": "Manuaalinen ohitus",
           "dispatch": "Varjostimien ajoitus"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Manuaalinen ohitus — tämän vyöhykkeen asetukset",
+        "description": "Määrittää, miten aktiivinen manuaalinen ohitus käyttäytyy tässä vyöhykkeessä: kuinka kauan se kestää ja voivatko mukavuus- tai suojaustoiminnot silti toimia sen aikana.",
+        "data": {
+          "override_release_mode": "Miten ohitus päättyy",
+          "override_time_based_kind": "Ajastimen tyyppi",
+          "override_decision_filter": "Mitkä päätökset vapauttavat sen",
+          "override_fixed_until": "Kiinteä lopetusaika",
+          "override_allow_comfort_actions": "Salli mukavuustoiminnot ohituksen aikana",
+          "override_allow_protection_actions": "Salli suojaustoiminnot ohituksen aikana",
+          "override_safety_timeout_enabled": "Turva-aikakatkaisu",
+          "override_duration_min": "Perinteinen ohituksen kesto (minuuttia)",
+          "override_night_duration_min": "Yön ohituksen kesto (minuuttia)"
+        },
+        "data_description": {
+          "override_release_mode": "Valitse vapautuskonsepti: ajastin/kello, seuraava aikataulusiirtymä, seuraava automaattinen päätös tai vain manuaalinen tyhjennys.",
+          "override_time_based_kind": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu ajastin-/kelloasetukseen: vapautus kiinteän keston jälkeen tai kiinteänä kellonaikana.",
+          "override_decision_filter": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu seuraava päätös -asetukseen: vapautus millä tahansa päätöksellä, vain mukavuuspäätöksillä tai vain suojauspäätöksillä.",
+          "override_fixed_until": "Merkityksellinen vain, kun vapautustila on ajastin-/kelloasetus ja ajastimen tyyppi on kiinteä kellonaika. Jos kellonaika on jo tänään ohi, ohitus päättyy huomenna tähän aikaan.",
+          "override_allow_comfort_actions": "Kun käytössä, tavallinen mukavuusvarjostus voi silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
+          "override_allow_protection_actions": "Kun käytössä, suojaustoiminnot (poissaolo, kuumuus, häikäisy) voivat silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
+          "override_safety_timeout_enabled": "Valinnainen enimmäiskesto turvaverkkona avoimille strategioille, jotta ohitus ei jää pysyvästi unohduksiin.",
+          "override_duration_min": "Kuinka kauan päiväohitus kestää ennen kuin SmartShading jatkaa normaalia ohjausta (perinteinen kestomoodi).",
+          "override_night_duration_min": "Turvaraja yön ohitukselle. Todellinen vapautus tapahtuu aamun aikataulusiirtymässä."
+        }
+      },
+      "system_manual_override": {
+        "title": "Manuaalisen ohituksen oletukset",
+        "description": "Manuaalisen ohituksen käyttäytyminen, jota jokainen vyöhyke noudattaa, ellei se käytä omia asetuksiaan: kuinka kauan ohitus kestää ja voivatko mukavuus- tai suojaustoiminnot silti toimia sen aikana.",
+        "data": {
+          "override_release_mode": "Miten ohitus päättyy",
+          "override_time_based_kind": "Ajastimen tyyppi",
+          "override_decision_filter": "Mitkä päätökset vapauttavat sen",
+          "override_fixed_until": "Kiinteä lopetusaika",
+          "override_allow_comfort_actions": "Salli mukavuustoiminnot ohituksen aikana",
+          "override_allow_protection_actions": "Salli suojaustoiminnot ohituksen aikana",
+          "override_safety_timeout_enabled": "Turva-aikakatkaisu",
+          "override_duration_min": "Perinteinen ohituksen kesto (minuuttia)",
+          "override_night_duration_min": "Yön ohituksen kesto (minuuttia)"
+        },
+        "data_description": {
+          "override_release_mode": "Valitse vapautuskonsepti: ajastin/kello, seuraava aikataulusiirtymä, seuraava automaattinen päätös tai vain manuaalinen tyhjennys.",
+          "override_time_based_kind": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu ajastin-/kelloasetukseen: vapautus kiinteän keston jälkeen tai kiinteänä kellonaikana.",
+          "override_decision_filter": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu seuraava päätös -asetukseen: vapautus millä tahansa päätöksellä, vain mukavuuspäätöksillä tai vain suojauspäätöksillä.",
+          "override_fixed_until": "Merkityksellinen vain, kun vapautustila on ajastin-/kelloasetus ja ajastimen tyyppi on kiinteä kellonaika. Jos kellonaika on jo tänään ohi, ohitus päättyy huomenna tähän aikaan.",
+          "override_allow_comfort_actions": "Kun käytössä, tavallinen mukavuusvarjostus voi silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
+          "override_allow_protection_actions": "Kun käytössä, suojaustoiminnot (poissaolo, kuumuus, häikäisy) voivat silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
+          "override_safety_timeout_enabled": "Valinnainen enimmäiskesto turvaverkkona avoimille strategioille, jotta ohitus ei jää pysyvästi unohduksiin.",
+          "override_duration_min": "Kuinka kauan päiväohitus kestää ennen kuin SmartShading jatkaa normaalia ohjausta (perinteinen kestomoodi).",
+          "override_night_duration_min": "Turvaraja yön ohitukselle. Todellinen vapautus tapahtuu aamun aikataulusiirtymässä."
+        }
+      },
+      "system_dispatch": {
+        "title": "Varjostimien ajoitus",
+        "description": "Määrittää, miten SmartShading ajoittaa verhokomentoja kaikissa vyöhykkeissä, kun useita verhoja päätetään samassa syklissä. Tämä on laitteistosi/radioyhdyskäytäväsi ominaisuus, joka on jaettu koko talolle.",
+        "data": {
+          "dispatch_mode": "Ajoitustapa",
+          "dispatch_start_interval_s": "Viive käynnistysten välillä",
+          "dispatch_max_travel_wait_s": "Enimmäisodotus liikkeen päättymiselle",
+          "dispatch_post_travel_pause_s": "Tauko liikkeen päätyttyä",
+          "dispatch_zone_batching": "Pidä vyöhykkeet erillään"
+        },
+        "data_description": {
+          "dispatch_mode": "Rinnakkain käynnistää jokaisen komennon ilman viivettä. Aikavälillä odottaa kiinteän sekuntimäärän käynnistysten välillä. Peräkkäin odottaa, että kukin varjostin lopettaa liikkeensä, ennen kuin seuraava käynnistyy.",
+          "dispatch_start_interval_s": "Käytetään tilassa \"Aikavälillä\" sekä vyöhykkeiden välisenä vähimmäisvälinä, kun \"Pidä vyöhykkeet erillään\" on käytössä.",
+          "dispatch_max_travel_wait_s": "Käytetään vain tilassa \"Peräkkäin\" — kuinka kauan odotetaan varjostimen lopettavan liikkeensä, ennen kuin jatketaan joka tapauksessa.",
+          "dispatch_post_travel_pause_s": "Käytetään vain tilassa \"Peräkkäin\" — lyhyt asettumistauko sen jälkeen, kun varjostin on lopettanut liikkeensä, ennen kuin seuraava käynnistyy.",
+          "dispatch_zone_batching": "Kun käytössä, käynnistysten välinen viive kohdistetaan aina eri huoneiden/vyöhykkeiden välille, myös Rinnakkain-tilassa, jotta huoneet pysyvät visuaalisesti erillään."
+        }
+      },
+      "system_init": {
+        "title": "SmartShading-järjestelmäasetukset",
+        "description": "Yleiset oletukset, joita jokainen vyöhyke noudattaa, ellei se käytä omia asetuksiaan, sekä järjestelmänlaajuinen verhojen lähetyksen ajoitus.",
+        "menu_options": {
+          "system_manual_override": "Manuaalisen ohituksen oletukset",
+          "system_dispatch": "Verhojen lähetys"
         }
       }
     },

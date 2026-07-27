@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Ručné prepísanie",
-        "description": "Určuje správanie aktívneho ručného prepísania: ako dlho trvá a či môžu akcie komfortu alebo ochrany naďalej prebiehať, kým je aktívne.",
+        "description": "Vyberte, či sa táto zóna riadi systémovým predvoleným nastavením ručného prepísania, alebo používa vlastné nastavenia.",
         "data": {
-          "override_release_mode": "Ako sa prepísanie ukončí",
-          "override_time_based_kind": "Typ časovača",
-          "override_decision_filter": "Ktoré rozhodnutia ho uvoľnia",
-          "override_fixed_until": "Pevný čas ukončenia",
-          "override_allow_comfort_actions": "Povoliť akcie komfortu počas prepísania",
-          "override_allow_protection_actions": "Povoliť ochranné akcie počas prepísania",
-          "override_safety_timeout_enabled": "Bezpečnostný časový limit",
-          "override_duration_min": "Klasické trvanie prepísania (minúty)",
-          "override_night_duration_min": "Nočné trvanie prepísania (minúty)",
+          "override_use_system_default": "Použiť systémové predvolené nastavenie",
           "override_detection_tolerance": "Tolerancia detekcie"
         },
         "data_description": {
-          "override_release_mode": "Vyberte koncept uvoľnenia: časovač/hodiny, ďalší prechod plánu, ďalšie automatické rozhodnutie, alebo iba manuálne vymazanie.",
-          "override_time_based_kind": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť časovač/hodiny: uvoľnenie po pevnej dobe trvania alebo v pevnom čase.",
-          "override_decision_filter": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť ďalšie rozhodnutie: uvoľnenie pri akomkoľvek rozhodnutí, len komfortných rozhodnutiach, alebo len ochranných rozhodnutiach.",
-          "override_fixed_until": "Relevantné len ak je režim uvoľnenia možnosť časovač/hodiny a typ časovača je pevný čas. Ak už dnes tento čas uplynul, prepísanie sa skončí zajtra v tomto čase.",
-          "override_allow_comfort_actions": "Ak je povolené, bežné komfortné tienenie môže naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
-          "override_allow_protection_actions": "Ak je povolené, ochranné akcie (neprítomnosť, teplo, oslnenie) môžu naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
-          "override_safety_timeout_enabled": "Voliteľná maximálna doba ako poistka pre otvorené stratégie, aby prepísanie nezostalo natrvalo zabudnuté.",
-          "override_duration_min": "Ako dlho trvá denné prepísanie, kým SmartShading obnoví normálne ovládanie (klasický režim trvania).",
-          "override_night_duration_min": "Bezpečnostný limit pre nočné prepísanie. Skutočné uvoľnenie nastáva pri rannom prechode plánu.",
+          "override_use_system_default": "Keď je zapnuté, táto zóna sa riadi predvoleným ručným prepísaním nastaveným v systémovom zázname. Keď je vypnuté, na ďalšej obrazovke nastavíte vlastné nastavenia tejto zóny.",
           "override_detection_tolerance": "Minimálna zmena polohy (v percentách), kým je ručný pohyb rozpoznaný ako prepísanie."
-        }
-      },
-      "dispatch": {
-        "title": "Koordinácia tienenia",
-        "description": "Nastavte, ako SmartShading rozkladá v čase príkazy pre tienenie, keď je v rovnakom cykle rozhodnuté o viacerých tieneniach.",
-        "data": {
-          "dispatch_mode": "Režim koordinácie",
-          "dispatch_start_interval_s": "Oneskorenie medzi štartmi",
-          "dispatch_max_travel_wait_s": "Maximálne čakanie na dokončenie pohybu",
-          "dispatch_post_travel_pause_s": "Pauza po dokončení pohybu",
-          "dispatch_zone_batching": "Oddeľovať zóny"
-        },
-        "data_description": {
-          "dispatch_mode": "Súbežne spustí každý príkaz bez oneskorenia. S časovým odstupom čaká pevný počet sekúnd medzi štartmi. Postupne čaká, kým tienenie dokončí pohyb, kým spustí ďalšie.",
-          "dispatch_start_interval_s": "Používa sa pri \"S časovým odstupom\" a ako minimálny odstup medzi zónami, keď je zapnuté \"Oddeľovať zóny\".",
-          "dispatch_max_travel_wait_s": "Používa sa iba pri \"Postupne\" — ako dlho čakať na dokončenie pohybu tienenia, kým sa aj tak pokračuje ďalej.",
-          "dispatch_post_travel_pause_s": "Používa sa iba pri \"Postupne\" — krátka pokojová pauza po dokončení pohybu tienenia, kým sa spustí ďalšie.",
-          "dispatch_zone_batching": "Ak je zapnuté, oneskorenie medzi štartmi sa vždy uplatní medzi rôznymi miestnosťami/zónami, aj v režime Súbežne, aby miestnosti zostali vizuálne oddelené."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Profily plánu",
           "manual_override": "Ručné prepísanie",
           "dispatch": "Koordinácia tienenia"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Ručné prepísanie — nastavenia tejto zóny",
+        "description": "Určuje správanie aktívneho ručného prepísania v tejto zóne: ako dlho trvá a či môžu komfortné alebo ochranné akcie bežať aj počas neho.",
+        "data": {
+          "override_release_mode": "Ako sa prepísanie ukončí",
+          "override_time_based_kind": "Typ časovača",
+          "override_decision_filter": "Ktoré rozhodnutia ho uvoľnia",
+          "override_fixed_until": "Pevný čas ukončenia",
+          "override_allow_comfort_actions": "Povoliť akcie komfortu počas prepísania",
+          "override_allow_protection_actions": "Povoliť ochranné akcie počas prepísania",
+          "override_safety_timeout_enabled": "Bezpečnostný časový limit",
+          "override_duration_min": "Klasické trvanie prepísania (minúty)",
+          "override_night_duration_min": "Nočné trvanie prepísania (minúty)"
+        },
+        "data_description": {
+          "override_release_mode": "Vyberte koncept uvoľnenia: časovač/hodiny, ďalší prechod plánu, ďalšie automatické rozhodnutie, alebo iba manuálne vymazanie.",
+          "override_time_based_kind": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť časovač/hodiny: uvoľnenie po pevnej dobe trvania alebo v pevnom čase.",
+          "override_decision_filter": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť ďalšie rozhodnutie: uvoľnenie pri akomkoľvek rozhodnutí, len komfortných rozhodnutiach, alebo len ochranných rozhodnutiach.",
+          "override_fixed_until": "Relevantné len ak je režim uvoľnenia možnosť časovač/hodiny a typ časovača je pevný čas. Ak už dnes tento čas uplynul, prepísanie sa skončí zajtra v tomto čase.",
+          "override_allow_comfort_actions": "Ak je povolené, bežné komfortné tienenie môže naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
+          "override_allow_protection_actions": "Ak je povolené, ochranné akcie (neprítomnosť, teplo, oslnenie) môžu naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
+          "override_safety_timeout_enabled": "Voliteľná maximálna doba ako poistka pre otvorené stratégie, aby prepísanie nezostalo natrvalo zabudnuté.",
+          "override_duration_min": "Ako dlho trvá denné prepísanie, kým SmartShading obnoví normálne ovládanie (klasický režim trvania).",
+          "override_night_duration_min": "Bezpečnostný limit pre nočné prepísanie. Skutočné uvoľnenie nastáva pri rannom prechode plánu."
+        }
+      },
+      "system_manual_override": {
+        "title": "Predvolené nastavenia ručného prepísania",
+        "description": "Správanie ručného prepísania, ktorým sa riadi každá zóna, pokiaľ nepoužíva vlastné nastavenia: ako dlho prepísanie trvá a či môžu komfortné alebo ochranné akcie bežať aj počas neho.",
+        "data": {
+          "override_release_mode": "Ako sa prepísanie ukončí",
+          "override_time_based_kind": "Typ časovača",
+          "override_decision_filter": "Ktoré rozhodnutia ho uvoľnia",
+          "override_fixed_until": "Pevný čas ukončenia",
+          "override_allow_comfort_actions": "Povoliť akcie komfortu počas prepísania",
+          "override_allow_protection_actions": "Povoliť ochranné akcie počas prepísania",
+          "override_safety_timeout_enabled": "Bezpečnostný časový limit",
+          "override_duration_min": "Klasické trvanie prepísania (minúty)",
+          "override_night_duration_min": "Nočné trvanie prepísania (minúty)"
+        },
+        "data_description": {
+          "override_release_mode": "Vyberte koncept uvoľnenia: časovač/hodiny, ďalší prechod plánu, ďalšie automatické rozhodnutie, alebo iba manuálne vymazanie.",
+          "override_time_based_kind": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť časovač/hodiny: uvoľnenie po pevnej dobe trvania alebo v pevnom čase.",
+          "override_decision_filter": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť ďalšie rozhodnutie: uvoľnenie pri akomkoľvek rozhodnutí, len komfortných rozhodnutiach, alebo len ochranných rozhodnutiach.",
+          "override_fixed_until": "Relevantné len ak je režim uvoľnenia možnosť časovač/hodiny a typ časovača je pevný čas. Ak už dnes tento čas uplynul, prepísanie sa skončí zajtra v tomto čase.",
+          "override_allow_comfort_actions": "Ak je povolené, bežné komfortné tienenie môže naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
+          "override_allow_protection_actions": "Ak je povolené, ochranné akcie (neprítomnosť, teplo, oslnenie) môžu naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
+          "override_safety_timeout_enabled": "Voliteľná maximálna doba ako poistka pre otvorené stratégie, aby prepísanie nezostalo natrvalo zabudnuté.",
+          "override_duration_min": "Ako dlho trvá denné prepísanie, kým SmartShading obnoví normálne ovládanie (klasický režim trvania).",
+          "override_night_duration_min": "Bezpečnostný limit pre nočné prepísanie. Skutočné uvoľnenie nastáva pri rannom prechode plánu."
+        }
+      },
+      "system_dispatch": {
+        "title": "Koordinácia tienenia",
+        "description": "Určuje, ako SmartShading časovo rozvrhuje príkazy žalúzií vo všetkých zónach, keď sa v rovnakom cykle rozhoduje o viacerých žalúziách. Ide o vlastnosť vášho hardvéru/rádiovej brány, spoločnú pre celý dom.",
+        "data": {
+          "dispatch_mode": "Režim koordinácie",
+          "dispatch_start_interval_s": "Oneskorenie medzi štartmi",
+          "dispatch_max_travel_wait_s": "Maximálne čakanie na dokončenie pohybu",
+          "dispatch_post_travel_pause_s": "Pauza po dokončení pohybu",
+          "dispatch_zone_batching": "Oddeľovať zóny"
+        },
+        "data_description": {
+          "dispatch_mode": "Súbežne spustí každý príkaz bez oneskorenia. S časovým odstupom čaká pevný počet sekúnd medzi štartmi. Postupne čaká, kým tienenie dokončí pohyb, kým spustí ďalšie.",
+          "dispatch_start_interval_s": "Používa sa pri \"S časovým odstupom\" a ako minimálny odstup medzi zónami, keď je zapnuté \"Oddeľovať zóny\".",
+          "dispatch_max_travel_wait_s": "Používa sa iba pri \"Postupne\" — ako dlho čakať na dokončenie pohybu tienenia, kým sa aj tak pokračuje ďalej.",
+          "dispatch_post_travel_pause_s": "Používa sa iba pri \"Postupne\" — krátka pokojová pauza po dokončení pohybu tienenia, kým sa spustí ďalšie.",
+          "dispatch_zone_batching": "Ak je zapnuté, oneskorenie medzi štartmi sa vždy uplatní medzi rôznymi miestnosťami/zónami, aj v režime Súbežne, aby miestnosti zostali vizuálne oddelené."
+        }
+      },
+      "system_init": {
+        "title": "Systémové nastavenia SmartShading",
+        "description": "Globálne predvolené hodnoty, ktorými sa riadi každá zóna, pokiaľ nepoužíva vlastné nastavenia, a systémové časovanie odosielania príkazov žalúziám.",
+        "menu_options": {
+          "system_manual_override": "Predvolené nastavenia ručného prepísania",
+          "system_dispatch": "Ovládanie žalúzií"
         }
       }
     },

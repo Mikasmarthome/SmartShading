@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Handmatige overschrijving",
-        "description": "Bepaalt het gedrag van een actieve handmatige overschrijving: hoe lang deze duurt en of comfort- of beschermingsacties nog mogen plaatsvinden terwijl deze actief is.",
+        "description": "Kies of deze zone de systeemstandaard voor handmatige overschrijving volgt, of eigen instellingen gebruikt.",
         "data": {
-          "override_release_mode": "Hoe de overschrijving eindigt",
-          "override_time_based_kind": "Type timer",
-          "override_decision_filter": "Welke beslissingen deze vrijgeven",
-          "override_fixed_until": "Vaste eindtijd",
-          "override_allow_comfort_actions": "Comfortacties toestaan tijdens overschrijving",
-          "override_allow_protection_actions": "Beschermingsacties toestaan tijdens overschrijving",
-          "override_safety_timeout_enabled": "Veiligheidstime-out",
-          "override_duration_min": "Klassieke overschrijvingsduur (minuten)",
-          "override_night_duration_min": "Nacht-overschrijvingsduur (minuten)",
+          "override_use_system_default": "Systeemstandaard gebruiken",
           "override_detection_tolerance": "Detectietolerantie"
         },
         "data_description": {
-          "override_release_mode": "Kies het vrijgaveconcept: een timer/klok, de volgende schemaovergang, de volgende automatische beslissing, of alleen handmatig wissen.",
-          "override_time_based_kind": "Alleen relevant als de vrijgavemodus hierboven is ingesteld op een timer-/kloktijdoptie: vrijgave na een vaste duur of op een vast tijdstip.",
-          "override_decision_filter": "Alleen relevant als de vrijgavemodus hierboven is ingesteld op de optie 'volgende beslissing': vrijgave bij elke beslissing, alleen comfortbeslissingen, of alleen beschermingsbeslissingen.",
-          "override_fixed_until": "Alleen relevant als de vrijgavemodus een timer-/kloktijdoptie is en het type timer een vast tijdstip is. Als dit tijdstip vandaag al voorbij is, eindigt de overschrijving morgen op dit tijdstip.",
-          "override_allow_comfort_actions": "Indien ingeschakeld, kan de reguliere comfortbeschaduwing nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
-          "override_allow_protection_actions": "Indien ingeschakeld, kunnen beschermingsacties (afwezigheid, hitte, verblinding) nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
-          "override_safety_timeout_enabled": "Optionele maximale duur als vangnet voor open strategieën, zodat een overschrijving nooit permanent vergeten wordt.",
-          "override_duration_min": "Hoe lang een dag-overschrijving duurt voordat SmartShading de normale besturing hervat (klassieke duurmodus).",
-          "override_night_duration_min": "Veiligheidslimiet voor een nacht-overschrijving. De echte vrijgave gebeurt bij de ochtendlijke schemaovergang.",
+          "override_use_system_default": "Indien ingeschakeld, volgt deze zone de handmatige-overschrijving-standaard die is ingesteld op de systeeminvoer. Indien uitgeschakeld, stelt u op het volgende scherm de eigen instellingen van deze zone in.",
           "override_detection_tolerance": "Minimale positieverandering (in procenten) voordat een handmatige beweging als overschrijving wordt herkend."
-        }
-      },
-      "dispatch": {
-        "title": "Coördinatie van zonweringen",
-        "description": "Stel in hoe SmartShading zonweringcommando's over tijd spreidt wanneer meerdere zonweringen in dezelfde cyclus worden beslist.",
-        "data": {
-          "dispatch_mode": "Coördinatiemodus",
-          "dispatch_start_interval_s": "Vertraging tussen starts",
-          "dispatch_max_travel_wait_s": "Maximale wachttijd op einde beweging",
-          "dispatch_post_travel_pause_s": "Pauze na einde beweging",
-          "dispatch_zone_batching": "Zones gescheiden houden"
-        },
-        "data_description": {
-          "dispatch_mode": "Gelijktijdig start elk commando zonder vertraging. Met tijdsinterval wacht een vast aantal seconden tussen de starts. Na elkaar wacht tot elke zonwering klaar is met bewegen voordat de volgende start.",
-          "dispatch_start_interval_s": "Wordt gebruikt door \"Met tijdsinterval\", en als minimale afstand tussen zones wanneer \"Zones gescheiden houden\" is ingeschakeld.",
-          "dispatch_max_travel_wait_s": "Wordt alleen gebruikt door \"Na elkaar\" — hoe lang gewacht wordt tot een zonwering klaar is voordat er toch wordt doorgegaan.",
-          "dispatch_post_travel_pause_s": "Wordt alleen gebruikt door \"Na elkaar\" — een korte rustpauze nadat een zonwering klaar is, voordat de volgende start.",
-          "dispatch_zone_batching": "Indien ingeschakeld, wordt de vertraging tussen starts altijd toegepast tussen verschillende kamers/zones, ook in de modus Gelijktijdig, zodat kamers visueel gescheiden blijven."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Schemaprofielen",
           "manual_override": "Handmatige overschrijving",
           "dispatch": "Coördinatie van zonweringen"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Handmatige overschrijving — instellingen van deze zone",
+        "description": "Bepaalt hoe een actieve handmatige overschrijving zich gedraagt in deze zone: hoe lang deze duurt en of comfort- of beschermingsacties nog mogen doorlopen terwijl deze actief is.",
+        "data": {
+          "override_release_mode": "Hoe de overschrijving eindigt",
+          "override_time_based_kind": "Type timer",
+          "override_decision_filter": "Welke beslissingen deze vrijgeven",
+          "override_fixed_until": "Vaste eindtijd",
+          "override_allow_comfort_actions": "Comfortacties toestaan tijdens overschrijving",
+          "override_allow_protection_actions": "Beschermingsacties toestaan tijdens overschrijving",
+          "override_safety_timeout_enabled": "Veiligheidstime-out",
+          "override_duration_min": "Klassieke overschrijvingsduur (minuten)",
+          "override_night_duration_min": "Nacht-overschrijvingsduur (minuten)"
+        },
+        "data_description": {
+          "override_release_mode": "Kies het vrijgaveconcept: een timer/klok, de volgende schemaovergang, de volgende automatische beslissing, of alleen handmatig wissen.",
+          "override_time_based_kind": "Alleen relevant als de vrijgavemodus hierboven is ingesteld op een timer-/kloktijdoptie: vrijgave na een vaste duur of op een vast tijdstip.",
+          "override_decision_filter": "Alleen relevant als de vrijgavemodus hierboven is ingesteld op de optie 'volgende beslissing': vrijgave bij elke beslissing, alleen comfortbeslissingen, of alleen beschermingsbeslissingen.",
+          "override_fixed_until": "Alleen relevant als de vrijgavemodus een timer-/kloktijdoptie is en het type timer een vast tijdstip is. Als dit tijdstip vandaag al voorbij is, eindigt de overschrijving morgen op dit tijdstip.",
+          "override_allow_comfort_actions": "Indien ingeschakeld, kan de reguliere comfortbeschaduwing nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
+          "override_allow_protection_actions": "Indien ingeschakeld, kunnen beschermingsacties (afwezigheid, hitte, verblinding) nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
+          "override_safety_timeout_enabled": "Optionele maximale duur als vangnet voor open strategieën, zodat een overschrijving nooit permanent vergeten wordt.",
+          "override_duration_min": "Hoe lang een dag-overschrijving duurt voordat SmartShading de normale besturing hervat (klassieke duurmodus).",
+          "override_night_duration_min": "Veiligheidslimiet voor een nacht-overschrijving. De echte vrijgave gebeurt bij de ochtendlijke schemaovergang."
+        }
+      },
+      "system_manual_override": {
+        "title": "Standaardinstellingen handmatige overschrijving",
+        "description": "Het gedrag van handmatige overschrijving dat elke zone volgt, tenzij deze eigen instellingen gebruikt: hoe lang een overschrijving duurt en of comfort- of beschermingsacties nog mogen doorlopen terwijl er een actief is.",
+        "data": {
+          "override_release_mode": "Hoe de overschrijving eindigt",
+          "override_time_based_kind": "Type timer",
+          "override_decision_filter": "Welke beslissingen deze vrijgeven",
+          "override_fixed_until": "Vaste eindtijd",
+          "override_allow_comfort_actions": "Comfortacties toestaan tijdens overschrijving",
+          "override_allow_protection_actions": "Beschermingsacties toestaan tijdens overschrijving",
+          "override_safety_timeout_enabled": "Veiligheidstime-out",
+          "override_duration_min": "Klassieke overschrijvingsduur (minuten)",
+          "override_night_duration_min": "Nacht-overschrijvingsduur (minuten)"
+        },
+        "data_description": {
+          "override_release_mode": "Kies het vrijgaveconcept: een timer/klok, de volgende schemaovergang, de volgende automatische beslissing, of alleen handmatig wissen.",
+          "override_time_based_kind": "Alleen relevant als de vrijgavemodus hierboven is ingesteld op een timer-/kloktijdoptie: vrijgave na een vaste duur of op een vast tijdstip.",
+          "override_decision_filter": "Alleen relevant als de vrijgavemodus hierboven is ingesteld op de optie 'volgende beslissing': vrijgave bij elke beslissing, alleen comfortbeslissingen, of alleen beschermingsbeslissingen.",
+          "override_fixed_until": "Alleen relevant als de vrijgavemodus een timer-/kloktijdoptie is en het type timer een vast tijdstip is. Als dit tijdstip vandaag al voorbij is, eindigt de overschrijving morgen op dit tijdstip.",
+          "override_allow_comfort_actions": "Indien ingeschakeld, kan de reguliere comfortbeschaduwing nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
+          "override_allow_protection_actions": "Indien ingeschakeld, kunnen beschermingsacties (afwezigheid, hitte, verblinding) nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
+          "override_safety_timeout_enabled": "Optionele maximale duur als vangnet voor open strategieën, zodat een overschrijving nooit permanent vergeten wordt.",
+          "override_duration_min": "Hoe lang een dag-overschrijving duurt voordat SmartShading de normale besturing hervat (klassieke duurmodus).",
+          "override_night_duration_min": "Veiligheidslimiet voor een nacht-overschrijving. De echte vrijgave gebeurt bij de ochtendlijke schemaovergang."
+        }
+      },
+      "system_dispatch": {
+        "title": "Coördinatie van zonweringen",
+        "description": "Bepaalt hoe SmartShading zonwering-commando's over alle zones spreidt wanneer meerdere zonweringen in dezelfde cyclus worden beslist. Dit is een eigenschap van uw hardware/radiogateway, gedeeld voor het hele huis.",
+        "data": {
+          "dispatch_mode": "Coördinatiemodus",
+          "dispatch_start_interval_s": "Vertraging tussen starts",
+          "dispatch_max_travel_wait_s": "Maximale wachttijd op einde beweging",
+          "dispatch_post_travel_pause_s": "Pauze na einde beweging",
+          "dispatch_zone_batching": "Zones gescheiden houden"
+        },
+        "data_description": {
+          "dispatch_mode": "Gelijktijdig start elk commando zonder vertraging. Met tijdsinterval wacht een vast aantal seconden tussen de starts. Na elkaar wacht tot elke zonwering klaar is met bewegen voordat de volgende start.",
+          "dispatch_start_interval_s": "Wordt gebruikt door \"Met tijdsinterval\", en als minimale afstand tussen zones wanneer \"Zones gescheiden houden\" is ingeschakeld.",
+          "dispatch_max_travel_wait_s": "Wordt alleen gebruikt door \"Na elkaar\" — hoe lang gewacht wordt tot een zonwering klaar is voordat er toch wordt doorgegaan.",
+          "dispatch_post_travel_pause_s": "Wordt alleen gebruikt door \"Na elkaar\" — een korte rustpauze nadat een zonwering klaar is, voordat de volgende start.",
+          "dispatch_zone_batching": "Indien ingeschakeld, wordt de vertraging tussen starts altijd toegepast tussen verschillende kamers/zones, ook in de modus Gelijktijdig, zodat kamers visueel gescheiden blijven."
+        }
+      },
+      "system_init": {
+        "title": "SmartShading-systeeminstellingen",
+        "description": "Algemene standaardinstellingen die elke zone volgt, tenzij deze eigen instellingen gebruikt, plus systeembrede timing voor het verzenden van zonwering-commando's.",
+        "menu_options": {
+          "system_manual_override": "Standaardinstellingen handmatige overschrijving",
+          "system_dispatch": "Zonwering-verzending"
         }
       }
     },

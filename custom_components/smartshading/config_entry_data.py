@@ -10,7 +10,7 @@ integration setup phase converts back via from_storage_dict().
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import time
 from typing import Any
 
@@ -575,6 +575,42 @@ def _override_policy_from_storage(raw: dict[str, Any] | None) -> OverridePolicyC
         detection_tolerance=_safe_int(raw.get("detection_tolerance"), 10),
         safety_timeout_enabled=bool(raw.get("safety_timeout_enabled", True)),
     )
+
+
+def resolve_zone_override_policy(
+    zone_raw: dict[str, Any], system_raw: dict[str, Any] | None
+) -> OverridePolicyConfig:
+    """T21 Phase C2: a zone whose stored override_policy explicitly opts
+    into "use_system_default" — or never configured this step at all, the
+    same migration-safe default config_flow.py's gate step uses — defers to
+    the System entry's default policy; otherwise its own explicit policy
+    (unchanged since T7/T10) wins. detection_tolerance is always the zone's
+    own stored value regardless (hardware-noise property of this zone's own
+    covers, stays zone-only — see the Phase C2 ownership analysis)."""
+    stored = zone_raw.get("override_policy") or {}
+    use_system_default = bool(stored.get("use_system_default", "release_strategy" not in stored))
+    zone_policy = _override_policy_from_storage(stored)
+    if not use_system_default:
+        return zone_policy
+    system_stored = (system_raw or {}).get("system_override_policy")
+    system_policy = _override_policy_from_storage(system_stored)
+    return replace(system_policy, detection_tolerance=zone_policy.detection_tolerance)
+
+
+def resolve_zone_dispatch_config(
+    zone_raw: dict[str, Any], system_raw: dict[str, Any] | None
+) -> DispatchConfig:
+    """T21 Phase C2: a zone that already has its own explicit dispatch_config
+    (any pre-C2 install that visited the old zone-level Dispatch step) keeps
+    using it unchanged, byte-for-byte; every other zone (new, or one that
+    never touched Dispatch) uses the System entry's default — Cover Dispatch
+    is a hardware/RF-pacing property of the shared dispatch pipeline, not a
+    per-zone concern (see the Phase C2 ownership analysis)."""
+    stored = zone_raw.get("dispatch_config")
+    if stored:
+        return _dispatch_config_from_storage(stored)
+    system_stored = (system_raw or {}).get("system_dispatch_config")
+    return _dispatch_config_from_storage(system_stored)
 
 
 def _safe_int(value: Any, default: int) -> int:

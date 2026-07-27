@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Ręczne zastąpienie",
-        "description": "Określa zachowanie aktywnego ręcznego zastąpienia: jak długo trwa i czy działania komfortu lub ochrony mogą nadal być wykonywane, gdy jest aktywne.",
+        "description": "Wybierz, czy ta strefa korzysta z systemowego ustawienia domyślnego ręcznego zastąpienia, czy używa własnych ustawień.",
         "data": {
-          "override_release_mode": "Jak kończy się nadpisanie",
-          "override_time_based_kind": "Typ zegara",
-          "override_decision_filter": "Które decyzje je zwalniają",
-          "override_fixed_until": "Stała godzina zakończenia",
-          "override_allow_comfort_actions": "Zezwól na działania komfortu podczas zastąpienia",
-          "override_allow_protection_actions": "Zezwól na działania ochrony podczas zastąpienia",
-          "override_safety_timeout_enabled": "Limit czasu bezpieczeństwa",
-          "override_duration_min": "Klasyczny czas trwania zastąpienia (minuty)",
-          "override_night_duration_min": "Nocny czas trwania zastąpienia (minuty)",
+          "override_use_system_default": "Użyj ustawienia systemowego",
           "override_detection_tolerance": "Tolerancja wykrywania"
         },
         "data_description": {
-          "override_release_mode": "Wybierz koncepcję zwolnienia: zegar/czas, następne przejście harmonogramu, następną automatyczną decyzję lub tylko ręczne wyczyszczenie.",
-          "override_time_based_kind": "Istotne tylko wtedy, gdy powyższy tryb zwolnienia jest ustawiony na opcję zegara/czasu: zwolnienie po stałym czasie trwania lub o stałej godzinie.",
-          "override_decision_filter": "Istotne tylko wtedy, gdy powyższy tryb zwolnienia jest ustawiony na opcję następnej decyzji: zwolnienie przy dowolnej decyzji, tylko decyzjach komfortu lub tylko decyzjach ochrony.",
-          "override_fixed_until": "Istotne tylko wtedy, gdy tryb zwolnienia to opcja zegara/czasu, a typ zegara to stała godzina. Jeśli ta godzina już dziś minęła, nadpisanie kończy się o tej godzinie jutro.",
-          "override_allow_comfort_actions": "Jeśli włączone, zwykłe zacienianie komfortowe może nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
-          "override_allow_protection_actions": "Jeśli włączone, działania ochronne (nieobecność, upał, olśnienie) mogą nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
-          "override_safety_timeout_enabled": "Opcjonalny maksymalny czas jako zabezpieczenie dla otwartych strategii, aby zastąpienie nigdy nie zostało trwale zapomniane.",
-          "override_duration_min": "Jak długo trwa dzienne zastąpienie, zanim SmartShading wznowi normalne sterowanie (klasyczny tryb czasu trwania).",
-          "override_night_duration_min": "Limit bezpieczeństwa dla nocnego zastąpienia. Rzeczywiste zwolnienie następuje przy porannym przejściu harmonogramu.",
+          "override_use_system_default": "Gdy włączone, ta strefa korzysta z domyślnego ręcznego zastąpienia skonfigurowanego we wpisie systemowym. Gdy wyłączone, na następnym ekranie skonfigurujesz własne ustawienia tej strefy.",
           "override_detection_tolerance": "Minimalna zmiana pozycji (w procentach), zanim ręczny ruch zostanie rozpoznany jako zastąpienie."
-        }
-      },
-      "dispatch": {
-        "title": "Koordynacja osłon",
-        "description": "Skonfiguruj, jak SmartShading rozkłada w czasie polecenia dla osłon, gdy w tym samym cyklu podejmowane są decyzje dla kilku osłon.",
-        "data": {
-          "dispatch_mode": "Tryb koordynacji",
-          "dispatch_start_interval_s": "Opóźnienie między startami",
-          "dispatch_max_travel_wait_s": "Maksymalny czas oczekiwania na zakończenie ruchu",
-          "dispatch_post_travel_pause_s": "Pauza po zakończeniu ruchu",
-          "dispatch_zone_batching": "Rozdzielaj strefy"
-        },
-        "data_description": {
-          "dispatch_mode": "Równolegle uruchamia każde polecenie bez opóźnienia. Z odstępem czasu czeka określoną liczbę sekund między startami. Jedna po drugiej czeka, aż każda osłona zakończy ruch, zanim uruchomi kolejną.",
-          "dispatch_start_interval_s": "Używane przez \"Z odstępem czasu\", a także jako minimalny odstęp między strefami, gdy włączone jest \"Rozdzielaj strefy\".",
-          "dispatch_max_travel_wait_s": "Używane tylko przez \"Jedna po drugiej\" — jak długo czekać na zakończenie ruchu osłony, zanim mimo to nastąpi kontynuacja.",
-          "dispatch_post_travel_pause_s": "Używane tylko przez \"Jedna po drugiej\" — krótka pauza uspokajająca po zakończeniu ruchu osłony, zanim uruchomi się kolejna.",
-          "dispatch_zone_batching": "Gdy włączone, opóźnienie między startami jest zawsze stosowane między różnymi pomieszczeniami/strefami, nawet w trybie Równolegle, dzięki czemu pomieszczenia pozostają wizualnie oddzielone."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Profile harmonogramu",
           "manual_override": "Ręczne zastąpienie",
           "dispatch": "Koordynacja osłon"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Ręczne zastąpienie — ustawienia tej strefy",
+        "description": "Określa zachowanie aktywnego ręcznego zastąpienia w tej strefie: jak długo trwa i czy akcje komfortu lub ochrony mogą nadal działać, gdy jest aktywne.",
+        "data": {
+          "override_release_mode": "Jak kończy się nadpisanie",
+          "override_time_based_kind": "Typ zegara",
+          "override_decision_filter": "Które decyzje je zwalniają",
+          "override_fixed_until": "Stała godzina zakończenia",
+          "override_allow_comfort_actions": "Zezwól na działania komfortu podczas zastąpienia",
+          "override_allow_protection_actions": "Zezwól na działania ochrony podczas zastąpienia",
+          "override_safety_timeout_enabled": "Limit czasu bezpieczeństwa",
+          "override_duration_min": "Klasyczny czas trwania zastąpienia (minuty)",
+          "override_night_duration_min": "Nocny czas trwania zastąpienia (minuty)"
+        },
+        "data_description": {
+          "override_release_mode": "Wybierz koncepcję zwolnienia: zegar/czas, następne przejście harmonogramu, następną automatyczną decyzję lub tylko ręczne wyczyszczenie.",
+          "override_time_based_kind": "Istotne tylko wtedy, gdy powyższy tryb zwolnienia jest ustawiony na opcję zegara/czasu: zwolnienie po stałym czasie trwania lub o stałej godzinie.",
+          "override_decision_filter": "Istotne tylko wtedy, gdy powyższy tryb zwolnienia jest ustawiony na opcję następnej decyzji: zwolnienie przy dowolnej decyzji, tylko decyzjach komfortu lub tylko decyzjach ochrony.",
+          "override_fixed_until": "Istotne tylko wtedy, gdy tryb zwolnienia to opcja zegara/czasu, a typ zegara to stała godzina. Jeśli ta godzina już dziś minęła, nadpisanie kończy się o tej godzinie jutro.",
+          "override_allow_comfort_actions": "Jeśli włączone, zwykłe zacienianie komfortowe może nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
+          "override_allow_protection_actions": "Jeśli włączone, działania ochronne (nieobecność, upał, olśnienie) mogą nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
+          "override_safety_timeout_enabled": "Opcjonalny maksymalny czas jako zabezpieczenie dla otwartych strategii, aby zastąpienie nigdy nie zostało trwale zapomniane.",
+          "override_duration_min": "Jak długo trwa dzienne zastąpienie, zanim SmartShading wznowi normalne sterowanie (klasyczny tryb czasu trwania).",
+          "override_night_duration_min": "Limit bezpieczeństwa dla nocnego zastąpienia. Rzeczywiste zwolnienie następuje przy porannym przejściu harmonogramu."
+        }
+      },
+      "system_manual_override": {
+        "title": "Ustawienia domyślne ręcznego zastąpienia",
+        "description": "Zachowanie ręcznego zastąpienia, którego przestrzega każda strefa, chyba że używa własnych ustawień: jak długo trwa zastąpienie i czy akcje komfortu lub ochrony mogą nadal działać, gdy jest aktywne.",
+        "data": {
+          "override_release_mode": "Jak kończy się nadpisanie",
+          "override_time_based_kind": "Typ zegara",
+          "override_decision_filter": "Które decyzje je zwalniają",
+          "override_fixed_until": "Stała godzina zakończenia",
+          "override_allow_comfort_actions": "Zezwól na działania komfortu podczas zastąpienia",
+          "override_allow_protection_actions": "Zezwól na działania ochrony podczas zastąpienia",
+          "override_safety_timeout_enabled": "Limit czasu bezpieczeństwa",
+          "override_duration_min": "Klasyczny czas trwania zastąpienia (minuty)",
+          "override_night_duration_min": "Nocny czas trwania zastąpienia (minuty)"
+        },
+        "data_description": {
+          "override_release_mode": "Wybierz koncepcję zwolnienia: zegar/czas, następne przejście harmonogramu, następną automatyczną decyzję lub tylko ręczne wyczyszczenie.",
+          "override_time_based_kind": "Istotne tylko wtedy, gdy powyższy tryb zwolnienia jest ustawiony na opcję zegara/czasu: zwolnienie po stałym czasie trwania lub o stałej godzinie.",
+          "override_decision_filter": "Istotne tylko wtedy, gdy powyższy tryb zwolnienia jest ustawiony na opcję następnej decyzji: zwolnienie przy dowolnej decyzji, tylko decyzjach komfortu lub tylko decyzjach ochrony.",
+          "override_fixed_until": "Istotne tylko wtedy, gdy tryb zwolnienia to opcja zegara/czasu, a typ zegara to stała godzina. Jeśli ta godzina już dziś minęła, nadpisanie kończy się o tej godzinie jutro.",
+          "override_allow_comfort_actions": "Jeśli włączone, zwykłe zacienianie komfortowe może nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
+          "override_allow_protection_actions": "Jeśli włączone, działania ochronne (nieobecność, upał, olśnienie) mogą nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
+          "override_safety_timeout_enabled": "Opcjonalny maksymalny czas jako zabezpieczenie dla otwartych strategii, aby zastąpienie nigdy nie zostało trwale zapomniane.",
+          "override_duration_min": "Jak długo trwa dzienne zastąpienie, zanim SmartShading wznowi normalne sterowanie (klasyczny tryb czasu trwania).",
+          "override_night_duration_min": "Limit bezpieczeństwa dla nocnego zastąpienia. Rzeczywiste zwolnienie następuje przy porannym przejściu harmonogramu."
+        }
+      },
+      "system_dispatch": {
+        "title": "Koordynacja osłon",
+        "description": "Określa, jak SmartShading rozkłada w czasie polecenia dla rolet we wszystkich strefach, gdy w tym samym cyklu decyduje się o kilku roletach. Jest to właściwość Twojego sprzętu/bramki radiowej, wspólna dla całego domu.",
+        "data": {
+          "dispatch_mode": "Tryb koordynacji",
+          "dispatch_start_interval_s": "Opóźnienie między startami",
+          "dispatch_max_travel_wait_s": "Maksymalny czas oczekiwania na zakończenie ruchu",
+          "dispatch_post_travel_pause_s": "Pauza po zakończeniu ruchu",
+          "dispatch_zone_batching": "Rozdzielaj strefy"
+        },
+        "data_description": {
+          "dispatch_mode": "Równolegle uruchamia każde polecenie bez opóźnienia. Z odstępem czasu czeka określoną liczbę sekund między startami. Jedna po drugiej czeka, aż każda osłona zakończy ruch, zanim uruchomi kolejną.",
+          "dispatch_start_interval_s": "Używane przez \"Z odstępem czasu\", a także jako minimalny odstęp między strefami, gdy włączone jest \"Rozdzielaj strefy\".",
+          "dispatch_max_travel_wait_s": "Używane tylko przez \"Jedna po drugiej\" — jak długo czekać na zakończenie ruchu osłony, zanim mimo to nastąpi kontynuacja.",
+          "dispatch_post_travel_pause_s": "Używane tylko przez \"Jedna po drugiej\" — krótka pauza uspokajająca po zakończeniu ruchu osłony, zanim uruchomi się kolejna.",
+          "dispatch_zone_batching": "Gdy włączone, opóźnienie między startami jest zawsze stosowane między różnymi pomieszczeniami/strefami, nawet w trybie Równolegle, dzięki czemu pomieszczenia pozostają wizualnie oddzielone."
+        }
+      },
+      "system_init": {
+        "title": "Ustawienia systemowe SmartShading",
+        "description": "Globalne ustawienia domyślne, których przestrzega każda strefa, chyba że używa własnych ustawień, oraz ogólnosystemowe taktowanie wysyłania poleceń do rolet.",
+        "menu_options": {
+          "system_manual_override": "Ustawienia domyślne ręcznego zastąpienia",
+          "system_dispatch": "Wysyłanie poleceń do rolet"
         }
       }
     },

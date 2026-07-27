@@ -25,7 +25,7 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .config_entry_data import from_storage_dict
+from .config_entry_data import from_storage_dict, resolve_zone_dispatch_config, resolve_zone_override_policy
 from .engines.lifecycle_resolver import resolve_lifecycle_config
 from .const import (
     CONF_DEBUG_LOGGING,
@@ -196,6 +196,15 @@ def _ensure_system_entry(hass: HomeAssistant) -> None:
         )
 
 
+def _system_entry_data(hass: HomeAssistant) -> dict[str, Any] | None:
+    """Return the SmartShading System entry's ConfigEntry.data, or None if
+    it doesn't exist yet (T21 Phase C2 — global defaults source)."""
+    for e in hass.config_entries.async_entries(DOMAIN):
+        if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM:
+            return e.data
+    return None
+
+
 async def _async_setup_zone_entry(
     hass: HomeAssistant, entry: SmartShadingConfigEntry
 ) -> bool:
@@ -206,6 +215,9 @@ async def _async_setup_zone_entry(
     SmartShading System entry exists (creates it if missing).
     """
     entry_data = from_storage_dict(entry.data)
+    _system_raw = _system_entry_data(hass)
+    _effective_override_policy = resolve_zone_override_policy(entry.data, _system_raw)
+    _effective_dispatch_config = resolve_zone_dispatch_config(entry.data, _system_raw)
     zones = {zone.id: zone for zone in entry_data.zones}
     windows = {window.id: window for window in entry_data.windows}
     cover_groups = {cover_group.id: cover_group for cover_group in entry_data.cover_groups}
@@ -309,15 +321,21 @@ async def _async_setup_zone_entry(
         ema_enabled=entry_data.ema_enabled,
         ema_alpha=entry_data.ema_alpha,
         global_serial_dispatch=serial_dispatch,
-        override_duration_min=entry_data.override_policy.duration_min,
-        override_night_duration_min=entry_data.override_policy.night_duration_min,
-        override_detection_tolerance=entry_data.override_policy.detection_tolerance,
-        override_release_strategy=entry_data.override_policy.release_strategy,
-        override_safety_timeout_enabled=entry_data.override_policy.safety_timeout_enabled,
-        override_fixed_until=entry_data.override_policy.fixed_until,
-        override_allow_comfort_actions=entry_data.override_policy.allow_comfort_actions,
-        override_allow_protection_actions=entry_data.override_policy.allow_protection_actions,
-        dispatch_config=entry_data.dispatch_config,
+        # T21 Phase C2: resolved through resolve_zone_override_policy() /
+        # resolve_zone_dispatch_config() above, not entry_data.override_policy /
+        # entry_data.dispatch_config directly — a zone may defer to the System
+        # entry's global default for these two areas (see the ownership
+        # analysis for why exactly these two, and config_entry_data.py's
+        # resolver docstrings for the exact precedence rules).
+        override_duration_min=_effective_override_policy.duration_min,
+        override_night_duration_min=_effective_override_policy.night_duration_min,
+        override_detection_tolerance=_effective_override_policy.detection_tolerance,
+        override_release_strategy=_effective_override_policy.release_strategy,
+        override_safety_timeout_enabled=_effective_override_policy.safety_timeout_enabled,
+        override_fixed_until=_effective_override_policy.fixed_until,
+        override_allow_comfort_actions=_effective_override_policy.allow_comfort_actions,
+        override_allow_protection_actions=_effective_override_policy.allow_protection_actions,
+        dispatch_config=_effective_dispatch_config,
     )
     # Inject the ForecastLearningStore so the ForecastStrategyModifier can access
     # trust data and current forecast snapshots starting from the first cycle.

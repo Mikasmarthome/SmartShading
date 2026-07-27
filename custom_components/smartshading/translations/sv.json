@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Manuell åsidosättning",
-        "description": "Bestämmer beteendet för en aktiv manuell åsidosättning: hur länge den varar och om komfort- eller skyddsåtgärder fortfarande får köras medan den är aktiv.",
+        "description": "Välj om denna zon följer systemets standard för manuell åsidosättning, eller använder egna inställningar.",
         "data": {
-          "override_release_mode": "Hur åsidosättningen avslutas",
-          "override_time_based_kind": "Timertyp",
-          "override_decision_filter": "Vilka beslut som släpper den",
-          "override_fixed_until": "Fast sluttid",
-          "override_allow_comfort_actions": "Tillåt komfortåtgärder under åsidosättning",
-          "override_allow_protection_actions": "Tillåt skyddsåtgärder under åsidosättning",
-          "override_safety_timeout_enabled": "Säkerhetstimeout",
-          "override_duration_min": "Klassisk åsidosättningsvaraktighet (minuter)",
-          "override_night_duration_min": "Nattens åsidosättningsvaraktighet (minuter)",
+          "override_use_system_default": "Använd systemstandard",
           "override_detection_tolerance": "Detekteringstolerans"
         },
         "data_description": {
-          "override_release_mode": "Välj frisläppningskonceptet: en timer/klocka, nästa schemaövergång, nästa automatiska beslut, eller endast manuell rensning.",
-          "override_time_based_kind": "Endast relevant när frisläppningsläget ovan är inställt på ett timer-/klockalternativ: frisläppning efter en fast varaktighet eller vid en fast klockslag.",
-          "override_decision_filter": "Endast relevant när frisläppningsläget ovan är inställt på alternativet nästa beslut: frisläppning vid vilket beslut som helst, endast komfortbeslut, eller endast skyddsbeslut.",
-          "override_fixed_until": "Endast relevant när frisläppningsläget är ett timer-/klockalternativ och timertypen är ett fast klockslag. Om klockslaget redan har passerat idag avslutas åsidosättningen imorgon vid denna tid.",
-          "override_allow_comfort_actions": "När aktiverad kan vanlig komfortskuggning fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
-          "override_allow_protection_actions": "När aktiverad kan skyddsåtgärder (frånvaro, värme, bländning) fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
-          "override_safety_timeout_enabled": "Valfri maximal varaktighet som säkerhetsnät för öppna strategier, så att en åsidosättning aldrig glöms bort permanent.",
-          "override_duration_min": "Hur länge en dagåsidosättning varar innan SmartShading återupptar normal styrning (klassiskt varaktighetsläge).",
-          "override_night_duration_min": "Säkerhetsgräns för en nattåsidosättning. Den verkliga frigivningen sker vid den morgonens schemaövergång.",
+          "override_use_system_default": "När aktiverat följer denna zon standarden för manuell åsidosättning som konfigurerats på systemposten. När inaktiverat konfigurerar du zonens egna inställningar på nästa skärm.",
           "override_detection_tolerance": "Minsta positionsändring (i procent) innan en manuell rörelse känns igen som en åsidosättning."
-        }
-      },
-      "dispatch": {
-        "title": "Samordning av solskydd",
-        "description": "Ställ in hur SmartShading fördelar solskyddskommandon över tid när flera solskydd avgörs i samma cykel.",
-        "data": {
-          "dispatch_mode": "Samordningsläge",
-          "dispatch_start_interval_s": "Fördröjning mellan starter",
-          "dispatch_max_travel_wait_s": "Maximal väntetid på att rörelsen avslutas",
-          "dispatch_post_travel_pause_s": "Paus efter avslutad rörelse",
-          "dispatch_zone_batching": "Håll zoner separerade"
-        },
-        "data_description": {
-          "dispatch_mode": "Parallellt startar varje kommando utan fördröjning. Med tidsintervall väntar ett fast antal sekunder mellan starterna. En i taget väntar tills varje solskydd är klart med rörelsen innan nästa startar.",
-          "dispatch_start_interval_s": "Används av \"Med tidsintervall\", och som minsta avstånd mellan zoner när \"Håll zoner separerade\" är aktiverat.",
-          "dispatch_max_travel_wait_s": "Används endast av \"En i taget\" — hur länge det väntas på att ett solskydd blir klart innan det ändå fortsätter.",
-          "dispatch_post_travel_pause_s": "Används endast av \"En i taget\" — en kort paus efter att ett solskydd är klart, innan nästa startar.",
-          "dispatch_zone_batching": "När aktiverat tillämpas fördröjningen mellan starter alltid mellan olika rum/zoner, även i läget Parallellt, så att rum förblir visuellt separerade."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Schemaprofiler",
           "manual_override": "Manuell åsidosättning",
           "dispatch": "Samordning av solskydd"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Manuell åsidosättning — denna zons inställningar",
+        "description": "Anger hur en aktiv manuell åsidosättning beter sig i denna zon: hur länge den varar och om komfort- eller skyddsåtgärder fortfarande får köras medan den är aktiv.",
+        "data": {
+          "override_release_mode": "Hur åsidosättningen avslutas",
+          "override_time_based_kind": "Timertyp",
+          "override_decision_filter": "Vilka beslut som släpper den",
+          "override_fixed_until": "Fast sluttid",
+          "override_allow_comfort_actions": "Tillåt komfortåtgärder under åsidosättning",
+          "override_allow_protection_actions": "Tillåt skyddsåtgärder under åsidosättning",
+          "override_safety_timeout_enabled": "Säkerhetstimeout",
+          "override_duration_min": "Klassisk åsidosättningsvaraktighet (minuter)",
+          "override_night_duration_min": "Nattens åsidosättningsvaraktighet (minuter)"
+        },
+        "data_description": {
+          "override_release_mode": "Välj frisläppningskonceptet: en timer/klocka, nästa schemaövergång, nästa automatiska beslut, eller endast manuell rensning.",
+          "override_time_based_kind": "Endast relevant när frisläppningsläget ovan är inställt på ett timer-/klockalternativ: frisläppning efter en fast varaktighet eller vid en fast klockslag.",
+          "override_decision_filter": "Endast relevant när frisläppningsläget ovan är inställt på alternativet nästa beslut: frisläppning vid vilket beslut som helst, endast komfortbeslut, eller endast skyddsbeslut.",
+          "override_fixed_until": "Endast relevant när frisläppningsläget är ett timer-/klockalternativ och timertypen är ett fast klockslag. Om klockslaget redan har passerat idag avslutas åsidosättningen imorgon vid denna tid.",
+          "override_allow_comfort_actions": "När aktiverad kan vanlig komfortskuggning fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
+          "override_allow_protection_actions": "När aktiverad kan skyddsåtgärder (frånvaro, värme, bländning) fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
+          "override_safety_timeout_enabled": "Valfri maximal varaktighet som säkerhetsnät för öppna strategier, så att en åsidosättning aldrig glöms bort permanent.",
+          "override_duration_min": "Hur länge en dagåsidosättning varar innan SmartShading återupptar normal styrning (klassiskt varaktighetsläge).",
+          "override_night_duration_min": "Säkerhetsgräns för en nattåsidosättning. Den verkliga frigivningen sker vid den morgonens schemaövergång."
+        }
+      },
+      "system_manual_override": {
+        "title": "Standarder för manuell åsidosättning",
+        "description": "Beteendet för manuell åsidosättning som varje zon följer om den inte använder egna inställningar: hur länge en åsidosättning varar och om komfort- eller skyddsåtgärder fortfarande får köras medan en är aktiv.",
+        "data": {
+          "override_release_mode": "Hur åsidosättningen avslutas",
+          "override_time_based_kind": "Timertyp",
+          "override_decision_filter": "Vilka beslut som släpper den",
+          "override_fixed_until": "Fast sluttid",
+          "override_allow_comfort_actions": "Tillåt komfortåtgärder under åsidosättning",
+          "override_allow_protection_actions": "Tillåt skyddsåtgärder under åsidosättning",
+          "override_safety_timeout_enabled": "Säkerhetstimeout",
+          "override_duration_min": "Klassisk åsidosättningsvaraktighet (minuter)",
+          "override_night_duration_min": "Nattens åsidosättningsvaraktighet (minuter)"
+        },
+        "data_description": {
+          "override_release_mode": "Välj frisläppningskonceptet: en timer/klocka, nästa schemaövergång, nästa automatiska beslut, eller endast manuell rensning.",
+          "override_time_based_kind": "Endast relevant när frisläppningsläget ovan är inställt på ett timer-/klockalternativ: frisläppning efter en fast varaktighet eller vid en fast klockslag.",
+          "override_decision_filter": "Endast relevant när frisläppningsläget ovan är inställt på alternativet nästa beslut: frisläppning vid vilket beslut som helst, endast komfortbeslut, eller endast skyddsbeslut.",
+          "override_fixed_until": "Endast relevant när frisläppningsläget är ett timer-/klockalternativ och timertypen är ett fast klockslag. Om klockslaget redan har passerat idag avslutas åsidosättningen imorgon vid denna tid.",
+          "override_allow_comfort_actions": "När aktiverad kan vanlig komfortskuggning fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
+          "override_allow_protection_actions": "När aktiverad kan skyddsåtgärder (frånvaro, värme, bländning) fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
+          "override_safety_timeout_enabled": "Valfri maximal varaktighet som säkerhetsnät för öppna strategier, så att en åsidosättning aldrig glöms bort permanent.",
+          "override_duration_min": "Hur länge en dagåsidosättning varar innan SmartShading återupptar normal styrning (klassiskt varaktighetsläge).",
+          "override_night_duration_min": "Säkerhetsgräns för en nattåsidosättning. Den verkliga frigivningen sker vid den morgonens schemaövergång."
+        }
+      },
+      "system_dispatch": {
+        "title": "Samordning av solskydd",
+        "description": "Anger hur SmartShading fördelar markiskommandon över alla zoner när flera markiser avgörs i samma cykel. Detta är en egenskap hos din hårdvara/radiogateway, delad för hela huset.",
+        "data": {
+          "dispatch_mode": "Samordningsläge",
+          "dispatch_start_interval_s": "Fördröjning mellan starter",
+          "dispatch_max_travel_wait_s": "Maximal väntetid på att rörelsen avslutas",
+          "dispatch_post_travel_pause_s": "Paus efter avslutad rörelse",
+          "dispatch_zone_batching": "Håll zoner separerade"
+        },
+        "data_description": {
+          "dispatch_mode": "Parallellt startar varje kommando utan fördröjning. Med tidsintervall väntar ett fast antal sekunder mellan starterna. En i taget väntar tills varje solskydd är klart med rörelsen innan nästa startar.",
+          "dispatch_start_interval_s": "Används av \"Med tidsintervall\", och som minsta avstånd mellan zoner när \"Håll zoner separerade\" är aktiverat.",
+          "dispatch_max_travel_wait_s": "Används endast av \"En i taget\" — hur länge det väntas på att ett solskydd blir klart innan det ändå fortsätter.",
+          "dispatch_post_travel_pause_s": "Används endast av \"En i taget\" — en kort paus efter att ett solskydd är klart, innan nästa startar.",
+          "dispatch_zone_batching": "När aktiverat tillämpas fördröjningen mellan starter alltid mellan olika rum/zoner, även i läget Parallellt, så att rum förblir visuellt separerade."
+        }
+      },
+      "system_init": {
+        "title": "SmartShading-systeminställningar",
+        "description": "Globala standarder som varje zon följer om den inte använder egna inställningar, plus systemomfattande timing för markisutskick.",
+        "menu_options": {
+          "system_manual_override": "Standarder för manuell åsidosättning",
+          "system_dispatch": "Markisutskick"
         }
       }
     },

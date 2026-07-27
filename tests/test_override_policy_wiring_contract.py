@@ -1,14 +1,23 @@
 """AST-based structural proof that every override_policy-derived value is
-genuinely wired from `entry_data.override_policy.<field>` into the
+genuinely wired from `_effective_override_policy.<field>` into the
 SmartShadingCoordinator(...) constructor call inside
 _async_setup_zone_entry() — T7 pre-push review point 18 (wiring bug
 injection target).
+
+T21 Phase C2: the wiring source changed from the zone's own
+`entry_data.override_policy` directly to `_effective_override_policy`
+(computed just above via `resolve_zone_override_policy(entry.data,
+_system_raw)`) — a zone may now defer its whole Manual Override policy to
+the System entry's default; see config_entry_data.py's
+resolve_zone_override_policy() for the exact precedence rule. This test's
+purpose (proving no field is silently hardcoded instead of read from the
+resolved config object) still applies unchanged, just against the new name.
 
 Rather than a substring `in source` check (which a subtly different but
 still-"present" expression could fool), this parses __init__.py with Python's
 own `ast` module, finds the SmartShadingCoordinator(...) call, and asserts
 each override_* keyword argument's VALUE expression is EXACTLY
-`entry_data.override_policy.<expected_attr>` (or `.value` for the enum
+`_effective_override_policy.<expected_attr>` (or `.value` for the enum
 field) — a hard-coded literal (e.g. `False`, `120`) in that position is
 exactly the wiring-bug shape this test exists to catch.
 
@@ -82,7 +91,7 @@ class TestEveryOverridePolicyFieldIsWiredNotHardcoded:
                     f"(got {ast.dump(value_node)}) — looks like a hardcoded literal"
                 )
                 continue
-            expected_full = f"entry_data.override_policy.{expected_attr}"
+            expected_full = f"_effective_override_policy.{expected_attr}"
             if dotted != expected_full:
                 violations.append(
                     f"{kwarg_name}={dotted!r}, expected {expected_full!r}"

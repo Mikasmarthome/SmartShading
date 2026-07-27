@@ -150,10 +150,11 @@ class TestMenuOptionsCompleteness:
                     )
 
     def test_dispatch_menu_step_id_matches_a_real_step(self) -> None:
-        # "dispatch" must actually be a defined options.step (not just a
+        # "system_dispatch" (T21 Phase C2: Cover Dispatch moved to the
+        # System entry) must actually be a defined options.step (not just a
         # menu label pointing nowhere).
         data = _load(_STRINGS_PATH)
-        assert "dispatch" in data["options"]["step"]
+        assert "system_dispatch" in data["options"]["step"]
 
 
 class TestGermanOverrideTerminologyConsistency:

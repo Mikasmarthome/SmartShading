@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Substituição manual",
-        "description": "Define o comportamento de uma substituição manual ativa: quanto tempo dura e se as ações de conforto ou proteção ainda podem ser executadas enquanto está ativa.",
+        "description": "Escolha se esta zona segue a predefinição do sistema para substituição manual, ou usa as suas próprias definições.",
         "data": {
-          "override_release_mode": "Como a substituição termina",
-          "override_time_based_kind": "Tipo de temporizador",
-          "override_decision_filter": "Quais decisões a libertam",
-          "override_fixed_until": "Hora de término fixa",
-          "override_allow_comfort_actions": "Permitir ações de conforto durante a substituição",
-          "override_allow_protection_actions": "Permitir ações de proteção durante a substituição",
-          "override_safety_timeout_enabled": "Tempo limite de segurança",
-          "override_duration_min": "Duração de substituição clássica (minutos)",
-          "override_night_duration_min": "Duração de substituição noturna (minutos)",
+          "override_use_system_default": "Usar predefinição do sistema",
           "override_detection_tolerance": "Tolerância de deteção"
         },
         "data_description": {
-          "override_release_mode": "Escolha o conceito de libertação: um temporizador/relógio, a próxima transição de horário, a próxima decisão automática, ou apenas limpeza manual.",
-          "override_time_based_kind": "Apenas relevante quando o modo de libertação acima está definido como uma opção de temporizador/relógio: libertar após uma duração fixa ou a uma hora fixa.",
-          "override_decision_filter": "Apenas relevante quando o modo de libertação acima está definido como a opção de próxima decisão: libertar em qualquer decisão, apenas decisões de conforto, ou apenas decisões de proteção.",
-          "override_fixed_until": "Apenas relevante quando o modo de libertação é uma opção de temporizador/relógio e o tipo de temporizador é uma hora fixa. Se já tiver passado hoje, a substituição termina amanhã a esta hora.",
-          "override_allow_comfort_actions": "Quando ativado, o sombreamento de conforto normal ainda pode ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
-          "override_allow_protection_actions": "Quando ativado, as ações de proteção (ausência, calor, encandeamento) ainda podem ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
-          "override_safety_timeout_enabled": "Duração máxima opcional como rede de segurança para estratégias abertas, para que uma substituição nunca fique permanentemente esquecida.",
-          "override_duration_min": "Quanto tempo dura uma substituição diurna antes de o SmartShading retomar o controlo normal (modo de duração clássico).",
-          "override_night_duration_min": "Limite de segurança para uma substituição noturna. A libertação real ocorre na transição do ciclo matinal.",
+          "override_use_system_default": "Quando ativado, esta zona segue a predefinição de substituição manual configurada na entrada do sistema. Quando desativado, configurará as definições próprias desta zona no ecrã seguinte.",
           "override_detection_tolerance": "Alteração mínima de posição (em percentagem) antes de um movimento manual ser reconhecido como substituição."
-        }
-      },
-      "dispatch": {
-        "title": "Coordenação dos estores",
-        "description": "Configure como o SmartShading espaça os comandos dos estores quando vários estores são decididos no mesmo ciclo.",
-        "data": {
-          "dispatch_mode": "Modo de coordenação",
-          "dispatch_start_interval_s": "Atraso entre inícios",
-          "dispatch_max_travel_wait_s": "Espera máxima para o movimento terminar",
-          "dispatch_post_travel_pause_s": "Pausa após o movimento terminar",
-          "dispatch_zone_batching": "Manter zonas separadas"
-        },
-        "data_description": {
-          "dispatch_mode": "Paralelo inicia cada comando sem atraso. Com intervalo de tempo espera um número fixo de segundos entre os inícios. Um de cada vez espera que cada estore termine de se mover antes de iniciar o seguinte.",
-          "dispatch_start_interval_s": "Usado por \"Com intervalo de tempo\", e como intervalo mínimo entre zonas quando \"Manter zonas separadas\" está ativado.",
-          "dispatch_max_travel_wait_s": "Usado apenas por \"Um de cada vez\" — quanto tempo esperar que um estore termine antes de continuar de qualquer forma.",
-          "dispatch_post_travel_pause_s": "Usado apenas por \"Um de cada vez\" — uma breve pausa de estabilização depois de um estore terminar, antes de o seguinte começar.",
-          "dispatch_zone_batching": "Quando ativado, o atraso entre inícios é sempre aplicado entre divisões/zonas diferentes, mesmo no modo Paralelo, para que as divisões permaneçam visualmente separadas."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Perfis de horário",
           "manual_override": "Substituição manual",
           "dispatch": "Coordenação dos estores"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Substituição manual — definições desta zona",
+        "description": "Define o comportamento de uma substituição manual ativa nesta zona: quanto tempo dura e se as ações de conforto ou proteção podem continuar a ser executadas enquanto está ativa.",
+        "data": {
+          "override_release_mode": "Como a substituição termina",
+          "override_time_based_kind": "Tipo de temporizador",
+          "override_decision_filter": "Quais decisões a libertam",
+          "override_fixed_until": "Hora de término fixa",
+          "override_allow_comfort_actions": "Permitir ações de conforto durante a substituição",
+          "override_allow_protection_actions": "Permitir ações de proteção durante a substituição",
+          "override_safety_timeout_enabled": "Tempo limite de segurança",
+          "override_duration_min": "Duração de substituição clássica (minutos)",
+          "override_night_duration_min": "Duração de substituição noturna (minutos)"
+        },
+        "data_description": {
+          "override_release_mode": "Escolha o conceito de libertação: um temporizador/relógio, a próxima transição de horário, a próxima decisão automática, ou apenas limpeza manual.",
+          "override_time_based_kind": "Apenas relevante quando o modo de libertação acima está definido como uma opção de temporizador/relógio: libertar após uma duração fixa ou a uma hora fixa.",
+          "override_decision_filter": "Apenas relevante quando o modo de libertação acima está definido como a opção de próxima decisão: libertar em qualquer decisão, apenas decisões de conforto, ou apenas decisões de proteção.",
+          "override_fixed_until": "Apenas relevante quando o modo de libertação é uma opção de temporizador/relógio e o tipo de temporizador é uma hora fixa. Se já tiver passado hoje, a substituição termina amanhã a esta hora.",
+          "override_allow_comfort_actions": "Quando ativado, o sombreamento de conforto normal ainda pode ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
+          "override_allow_protection_actions": "Quando ativado, as ações de proteção (ausência, calor, encandeamento) ainda podem ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
+          "override_safety_timeout_enabled": "Duração máxima opcional como rede de segurança para estratégias abertas, para que uma substituição nunca fique permanentemente esquecida.",
+          "override_duration_min": "Quanto tempo dura uma substituição diurna antes de o SmartShading retomar o controlo normal (modo de duração clássico).",
+          "override_night_duration_min": "Limite de segurança para uma substituição noturna. A libertação real ocorre na transição do ciclo matinal."
+        }
+      },
+      "system_manual_override": {
+        "title": "Predefinições de substituição manual",
+        "description": "O comportamento de substituição manual que cada zona segue, a menos que use as suas próprias definições: quanto tempo dura uma substituição e se as ações de conforto ou proteção podem continuar a ser executadas enquanto está ativa.",
+        "data": {
+          "override_release_mode": "Como a substituição termina",
+          "override_time_based_kind": "Tipo de temporizador",
+          "override_decision_filter": "Quais decisões a libertam",
+          "override_fixed_until": "Hora de término fixa",
+          "override_allow_comfort_actions": "Permitir ações de conforto durante a substituição",
+          "override_allow_protection_actions": "Permitir ações de proteção durante a substituição",
+          "override_safety_timeout_enabled": "Tempo limite de segurança",
+          "override_duration_min": "Duração de substituição clássica (minutos)",
+          "override_night_duration_min": "Duração de substituição noturna (minutos)"
+        },
+        "data_description": {
+          "override_release_mode": "Escolha o conceito de libertação: um temporizador/relógio, a próxima transição de horário, a próxima decisão automática, ou apenas limpeza manual.",
+          "override_time_based_kind": "Apenas relevante quando o modo de libertação acima está definido como uma opção de temporizador/relógio: libertar após uma duração fixa ou a uma hora fixa.",
+          "override_decision_filter": "Apenas relevante quando o modo de libertação acima está definido como a opção de próxima decisão: libertar em qualquer decisão, apenas decisões de conforto, ou apenas decisões de proteção.",
+          "override_fixed_until": "Apenas relevante quando o modo de libertação é uma opção de temporizador/relógio e o tipo de temporizador é uma hora fixa. Se já tiver passado hoje, a substituição termina amanhã a esta hora.",
+          "override_allow_comfort_actions": "Quando ativado, o sombreamento de conforto normal ainda pode ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
+          "override_allow_protection_actions": "Quando ativado, as ações de proteção (ausência, calor, encandeamento) ainda podem ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
+          "override_safety_timeout_enabled": "Duração máxima opcional como rede de segurança para estratégias abertas, para que uma substituição nunca fique permanentemente esquecida.",
+          "override_duration_min": "Quanto tempo dura uma substituição diurna antes de o SmartShading retomar o controlo normal (modo de duração clássico).",
+          "override_night_duration_min": "Limite de segurança para uma substituição noturna. A libertação real ocorre na transição do ciclo matinal."
+        }
+      },
+      "system_dispatch": {
+        "title": "Coordenação dos estores",
+        "description": "Define como o SmartShading espaça os comandos dos estores em todas as zonas quando vários estores são decididos no mesmo ciclo. Isto é uma propriedade do seu hardware/gateway de rádio, partilhada por toda a casa.",
+        "data": {
+          "dispatch_mode": "Modo de coordenação",
+          "dispatch_start_interval_s": "Atraso entre inícios",
+          "dispatch_max_travel_wait_s": "Espera máxima para o movimento terminar",
+          "dispatch_post_travel_pause_s": "Pausa após o movimento terminar",
+          "dispatch_zone_batching": "Manter zonas separadas"
+        },
+        "data_description": {
+          "dispatch_mode": "Paralelo inicia cada comando sem atraso. Com intervalo de tempo espera um número fixo de segundos entre os inícios. Um de cada vez espera que cada estore termine de se mover antes de iniciar o seguinte.",
+          "dispatch_start_interval_s": "Usado por \"Com intervalo de tempo\", e como intervalo mínimo entre zonas quando \"Manter zonas separadas\" está ativado.",
+          "dispatch_max_travel_wait_s": "Usado apenas por \"Um de cada vez\" — quanto tempo esperar que um estore termine antes de continuar de qualquer forma.",
+          "dispatch_post_travel_pause_s": "Usado apenas por \"Um de cada vez\" — uma breve pausa de estabilização depois de um estore terminar, antes de o seguinte começar.",
+          "dispatch_zone_batching": "Quando ativado, o atraso entre inícios é sempre aplicado entre divisões/zonas diferentes, mesmo no modo Paralelo, para que as divisões permaneçam visualmente separadas."
+        }
+      },
+      "system_init": {
+        "title": "Definições do sistema SmartShading",
+        "description": "Predefinições globais que cada zona segue, a menos que use as suas próprias definições, além da temporização do sistema para o envio de comandos aos estores.",
+        "menu_options": {
+          "system_manual_override": "Predefinições de substituição manual",
+          "system_dispatch": "Envio de comandos aos estores"
         }
       }
     },

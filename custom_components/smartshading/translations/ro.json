@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Suprascriere manuală",
-        "description": "Definește comportamentul unei suprascrieri manuale active: cât durează și dacă acțiunile de confort sau protecție mai pot rula în timp ce este activă.",
+        "description": "Alegeți dacă această zonă urmează valoarea implicită de sistem pentru suprascrierea manuală, sau utilizează propriile setări.",
         "data": {
-          "override_release_mode": "Cum se termină suprascrierea",
-          "override_time_based_kind": "Tip de temporizator",
-          "override_decision_filter": "Ce decizii o eliberează",
-          "override_fixed_until": "Oră de încheiere fixă",
-          "override_allow_comfort_actions": "Permite acțiuni de confort în timpul suprascrierii",
-          "override_allow_protection_actions": "Permite acțiuni de protecție în timpul suprascrierii",
-          "override_safety_timeout_enabled": "Interval de siguranță",
-          "override_duration_min": "Durata clasică a suprascrierii (minute)",
-          "override_night_duration_min": "Durata suprascrierii de noapte (minute)",
+          "override_use_system_default": "Utilizează valoarea implicită a sistemului",
           "override_detection_tolerance": "Toleranță de detectare"
         },
         "data_description": {
-          "override_release_mode": "Alegeți conceptul de eliberare: un temporizator/ceas, următoarea tranziție de program, următoarea decizie automată, sau doar ștergere manuală.",
-          "override_time_based_kind": "Relevant doar când modul de eliberare de mai sus este setat la o opțiune temporizator/ceas: eliberare după o durată fixă sau la o oră fixă.",
-          "override_decision_filter": "Relevant doar când modul de eliberare de mai sus este setat la opțiunea următoarea decizie: eliberare la orice decizie, doar la deciziile de confort, sau doar la deciziile de protecție.",
-          "override_fixed_until": "Relevant doar când modul de eliberare este o opțiune temporizator/ceas, iar tipul de temporizator este o oră fixă. Dacă a trecut deja azi, suprascrierea se încheie mâine la această oră.",
-          "override_allow_comfort_actions": "Dacă este activat, umbrirea obișnuită de confort poate rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
-          "override_allow_protection_actions": "Dacă este activat, acțiunile de protecție (absență, căldură, orbire) pot rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
-          "override_safety_timeout_enabled": "Durată maximă opțională ca plasă de siguranță pentru strategiile deschise, astfel încât o suprascriere să nu fie niciodată uitată permanent.",
-          "override_duration_min": "Cât durează o suprascriere de zi înainte ca SmartShading să reia controlul normal (mod de durată clasic).",
-          "override_night_duration_min": "Limită de siguranță pentru o suprascriere de noapte. Eliberarea reală are loc la tranziția programului de dimineață.",
+          "override_use_system_default": "Când este activată, această zonă urmează valoarea implicită de suprascriere manuală configurată pe intrarea de sistem. Când este dezactivată, veți configura setările proprii ale acestei zone pe ecranul următor.",
           "override_detection_tolerance": "Schimbare minimă de poziție (în procente) înainte ca o mișcare manuală să fie recunoscută ca suprascriere."
-        }
-      },
-      "dispatch": {
-        "title": "Coordonarea umbrarelor",
-        "description": "Configurează cum SmartShading eșalonează comenzile către umbrare atunci când mai multe umbrare sunt decise în același ciclu.",
-        "data": {
-          "dispatch_mode": "Mod de coordonare",
-          "dispatch_start_interval_s": "Întârziere între porniri",
-          "dispatch_max_travel_wait_s": "Așteptare maximă pentru finalizarea mișcării",
-          "dispatch_post_travel_pause_s": "Pauză după finalizarea mișcării",
-          "dispatch_zone_batching": "Menține zonele separate"
-        },
-        "data_description": {
-          "dispatch_mode": "Paralel pornește fiecare comandă fără întârziere. Cu interval de timp așteaptă un număr fix de secunde între porniri. Unul după altul așteaptă ca fiecare umbrar să termine mișcarea înainte de a-l porni pe următorul.",
-          "dispatch_start_interval_s": "Folosit de \"Cu interval de timp\", și ca interval minim între zone atunci când \"Menține zonele separate\" este activat.",
-          "dispatch_max_travel_wait_s": "Folosit doar de \"Unul după altul\" — cât timp se așteaptă ca un umbrar să termine înainte de a continua oricum.",
-          "dispatch_post_travel_pause_s": "Folosit doar de \"Unul după altul\" — o scurtă pauză de stabilizare după ce un umbrar termină, înainte ca următorul să pornească.",
-          "dispatch_zone_batching": "Dacă este activat, întârzierea între porniri se aplică întotdeauna între camere/zone diferite, chiar și în modul Paralel, astfel încât camerele să rămână separate vizual."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Profiluri de program",
           "manual_override": "Suprascriere manuală",
           "dispatch": "Coordonarea umbrarelor"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Suprascriere manuală — setările acestei zone",
+        "description": "Definește comportamentul unei suprascrieri manuale active în această zonă: cât durează și dacă acțiunile de confort sau protecție pot continua să ruleze cât timp este activă.",
+        "data": {
+          "override_release_mode": "Cum se termină suprascrierea",
+          "override_time_based_kind": "Tip de temporizator",
+          "override_decision_filter": "Ce decizii o eliberează",
+          "override_fixed_until": "Oră de încheiere fixă",
+          "override_allow_comfort_actions": "Permite acțiuni de confort în timpul suprascrierii",
+          "override_allow_protection_actions": "Permite acțiuni de protecție în timpul suprascrierii",
+          "override_safety_timeout_enabled": "Interval de siguranță",
+          "override_duration_min": "Durata clasică a suprascrierii (minute)",
+          "override_night_duration_min": "Durata suprascrierii de noapte (minute)"
+        },
+        "data_description": {
+          "override_release_mode": "Alegeți conceptul de eliberare: un temporizator/ceas, următoarea tranziție de program, următoarea decizie automată, sau doar ștergere manuală.",
+          "override_time_based_kind": "Relevant doar când modul de eliberare de mai sus este setat la o opțiune temporizator/ceas: eliberare după o durată fixă sau la o oră fixă.",
+          "override_decision_filter": "Relevant doar când modul de eliberare de mai sus este setat la opțiunea următoarea decizie: eliberare la orice decizie, doar la deciziile de confort, sau doar la deciziile de protecție.",
+          "override_fixed_until": "Relevant doar când modul de eliberare este o opțiune temporizator/ceas, iar tipul de temporizator este o oră fixă. Dacă a trecut deja azi, suprascrierea se încheie mâine la această oră.",
+          "override_allow_comfort_actions": "Dacă este activat, umbrirea obișnuită de confort poate rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
+          "override_allow_protection_actions": "Dacă este activat, acțiunile de protecție (absență, căldură, orbire) pot rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
+          "override_safety_timeout_enabled": "Durată maximă opțională ca plasă de siguranță pentru strategiile deschise, astfel încât o suprascriere să nu fie niciodată uitată permanent.",
+          "override_duration_min": "Cât durează o suprascriere de zi înainte ca SmartShading să reia controlul normal (mod de durată clasic).",
+          "override_night_duration_min": "Limită de siguranță pentru o suprascriere de noapte. Eliberarea reală are loc la tranziția programului de dimineață."
+        }
+      },
+      "system_manual_override": {
+        "title": "Valori implicite pentru suprascrierea manuală",
+        "description": "Comportamentul suprascrierii manuale pe care îl urmează fiecare zonă, cu excepția cazului în care utilizează propriile setări: cât durează o suprascriere și dacă acțiunile de confort sau protecție pot continua să ruleze cât timp este activă una.",
+        "data": {
+          "override_release_mode": "Cum se termină suprascrierea",
+          "override_time_based_kind": "Tip de temporizator",
+          "override_decision_filter": "Ce decizii o eliberează",
+          "override_fixed_until": "Oră de încheiere fixă",
+          "override_allow_comfort_actions": "Permite acțiuni de confort în timpul suprascrierii",
+          "override_allow_protection_actions": "Permite acțiuni de protecție în timpul suprascrierii",
+          "override_safety_timeout_enabled": "Interval de siguranță",
+          "override_duration_min": "Durata clasică a suprascrierii (minute)",
+          "override_night_duration_min": "Durata suprascrierii de noapte (minute)"
+        },
+        "data_description": {
+          "override_release_mode": "Alegeți conceptul de eliberare: un temporizator/ceas, următoarea tranziție de program, următoarea decizie automată, sau doar ștergere manuală.",
+          "override_time_based_kind": "Relevant doar când modul de eliberare de mai sus este setat la o opțiune temporizator/ceas: eliberare după o durată fixă sau la o oră fixă.",
+          "override_decision_filter": "Relevant doar când modul de eliberare de mai sus este setat la opțiunea următoarea decizie: eliberare la orice decizie, doar la deciziile de confort, sau doar la deciziile de protecție.",
+          "override_fixed_until": "Relevant doar când modul de eliberare este o opțiune temporizator/ceas, iar tipul de temporizator este o oră fixă. Dacă a trecut deja azi, suprascrierea se încheie mâine la această oră.",
+          "override_allow_comfort_actions": "Dacă este activat, umbrirea obișnuită de confort poate rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
+          "override_allow_protection_actions": "Dacă este activat, acțiunile de protecție (absență, căldură, orbire) pot rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
+          "override_safety_timeout_enabled": "Durată maximă opțională ca plasă de siguranță pentru strategiile deschise, astfel încât o suprascriere să nu fie niciodată uitată permanent.",
+          "override_duration_min": "Cât durează o suprascriere de zi înainte ca SmartShading să reia controlul normal (mod de durată clasic).",
+          "override_night_duration_min": "Limită de siguranță pentru o suprascriere de noapte. Eliberarea reală are loc la tranziția programului de dimineață."
+        }
+      },
+      "system_dispatch": {
+        "title": "Coordonarea umbrarelor",
+        "description": "Definește modul în care SmartShading eșalonează comenzile jaluzelelor în toate zonele atunci când mai multe jaluzele sunt decise în același ciclu. Aceasta este o proprietate a hardware-ului/gateway-ului radio, comună pentru întreaga casă.",
+        "data": {
+          "dispatch_mode": "Mod de coordonare",
+          "dispatch_start_interval_s": "Întârziere între porniri",
+          "dispatch_max_travel_wait_s": "Așteptare maximă pentru finalizarea mișcării",
+          "dispatch_post_travel_pause_s": "Pauză după finalizarea mișcării",
+          "dispatch_zone_batching": "Menține zonele separate"
+        },
+        "data_description": {
+          "dispatch_mode": "Paralel pornește fiecare comandă fără întârziere. Cu interval de timp așteaptă un număr fix de secunde între porniri. Unul după altul așteaptă ca fiecare umbrar să termine mișcarea înainte de a-l porni pe următorul.",
+          "dispatch_start_interval_s": "Folosit de \"Cu interval de timp\", și ca interval minim între zone atunci când \"Menține zonele separate\" este activat.",
+          "dispatch_max_travel_wait_s": "Folosit doar de \"Unul după altul\" — cât timp se așteaptă ca un umbrar să termine înainte de a continua oricum.",
+          "dispatch_post_travel_pause_s": "Folosit doar de \"Unul după altul\" — o scurtă pauză de stabilizare după ce un umbrar termină, înainte ca următorul să pornească.",
+          "dispatch_zone_batching": "Dacă este activat, întârzierea între porniri se aplică întotdeauna între camere/zone diferite, chiar și în modul Paralel, astfel încât camerele să rămână separate vizual."
+        }
+      },
+      "system_init": {
+        "title": "Setări de sistem SmartShading",
+        "description": "Valori implicite globale pe care le urmează fiecare zonă, cu excepția cazului în care utilizează propriile setări, plus temporizarea la nivel de sistem pentru trimiterea comenzilor jaluzelelor.",
+        "menu_options": {
+          "system_manual_override": "Valori implicite pentru suprascrierea manuală",
+          "system_dispatch": "Trimiterea comenzilor jaluzelelor"
         }
       }
     },

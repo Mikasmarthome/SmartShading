@@ -242,6 +242,9 @@ PROFILE_DISPLAY_NAME_MAX_LEN = 60
 CONF_PRESENCE_ENTITY_IDS = "presence_entity_ids"
 CONF_ABSENCE_DELAY_MIN = "absence_delay_min"
 CONF_ABSENCE_POSITION = "absence_position"
+# T21 Phase C2: a zone may defer absence_delay_min to the System entry's
+# global default instead of storing its own explicit value.
+CONF_ABSENCE_DELAY_USE_SYSTEM_DEFAULT = "absence_delay_use_system_default"
 
 # Presence evaluation policy (v1.2.0-beta.1, T5): how the selected presence
 # entities are aggregated into one house-wide signal. ANY_HOME is the legacy
@@ -359,6 +362,10 @@ CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED = "override_safety_timeout_enabled"
 CONF_OVERRIDE_DURATION_MIN = "override_duration_min"
 CONF_OVERRIDE_NIGHT_DURATION_MIN = "override_night_duration_min"
 CONF_OVERRIDE_DETECTION_TOLERANCE = "override_detection_tolerance"
+# T21 Phase C2: a zone may defer its whole Manual Override policy (every
+# field above except detection_tolerance, which stays zone-only — see
+# ARCHITECTURE ownership analysis) to the System entry's global default.
+CONF_OVERRIDE_USE_SYSTEM_DEFAULT = "override_use_system_default"
 
 # Dispatch strategy (v1.2.0-beta.1, T11).
 CONF_DISPATCH_MODE = "dispatch_mode"

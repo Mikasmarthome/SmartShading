@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Anulación manual",
-        "description": "Configura el comportamiento de una anulación manual activa: cuánto dura y si las acciones de confort o protección pueden seguir ejecutándose mientras está activa.",
+        "description": "Elija si esta zona sigue el valor predeterminado de anulación manual del sistema, o usa su propia configuración.",
         "data": {
-          "override_release_mode": "Cómo termina la anulación",
-          "override_time_based_kind": "Tipo de temporizador",
-          "override_decision_filter": "Qué decisiones la liberan",
-          "override_fixed_until": "Hora de fin fija",
-          "override_allow_comfort_actions": "Permitir acciones de confort durante la anulación",
-          "override_allow_protection_actions": "Permitir acciones de protección durante la anulación",
-          "override_safety_timeout_enabled": "Tiempo de seguridad",
-          "override_duration_min": "Duración de anulación clásica (minutos)",
-          "override_night_duration_min": "Duración de anulación nocturna (minutos)",
+          "override_use_system_default": "Usar valor predeterminado del sistema",
           "override_detection_tolerance": "Tolerancia de detección"
         },
         "data_description": {
-          "override_release_mode": "Elija el concepto de liberación: un temporizador/reloj, la siguiente transición de horario, la siguiente decisión automática o solo borrado manual.",
-          "override_time_based_kind": "Solo relevante cuando el modo de liberación anterior está establecido en una opción de temporizador/reloj: liberar tras una duración fija o a una hora fija.",
-          "override_decision_filter": "Solo relevante cuando el modo de liberación anterior está establecido en la opción de próxima decisión: liberar en cualquier decisión, solo decisiones de confort o solo decisiones de protección.",
-          "override_fixed_until": "Solo relevante cuando el modo de liberación es una opción de temporizador/reloj y el tipo de temporizador es una hora fija. Si ya ha pasado hoy, la anulación termina a esta hora mañana.",
-          "override_allow_comfort_actions": "Si está activado, el sombreado de confort habitual puede seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
-          "override_allow_protection_actions": "Si está activado, las acciones de protección (ausencia, calor, deslumbramiento) pueden seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
-          "override_safety_timeout_enabled": "Duración máxima opcional como red de seguridad para estrategias abiertas, para que una anulación nunca quede olvidada permanentemente.",
-          "override_duration_min": "Cuánto dura una anulación diurna antes de que SmartShading reanude el control normal (modo de duración clásico).",
-          "override_night_duration_min": "Límite de seguridad para una anulación nocturna. La liberación real ocurre en la transición del ciclo matutino.",
+          "override_use_system_default": "Cuando está activado, esta zona sigue el valor predeterminado de anulación manual configurado en la entrada del sistema. Cuando está desactivado, configurará los ajustes propios de esta zona en la siguiente pantalla.",
           "override_detection_tolerance": "Cambio mínimo de posición (en porcentaje) antes de que un movimiento manual se reconozca como anulación."
-        }
-      },
-      "dispatch": {
-        "title": "Coordinación de persianas",
-        "description": "Configura cómo SmartShading espacía las órdenes a las persianas cuando se deciden varias persianas en el mismo ciclo.",
-        "data": {
-          "dispatch_mode": "Modo de coordinación",
-          "dispatch_start_interval_s": "Retraso entre inicios",
-          "dispatch_max_travel_wait_s": "Espera máxima para que termine el movimiento",
-          "dispatch_post_travel_pause_s": "Pausa tras terminar el movimiento",
-          "dispatch_zone_batching": "Mantener zonas separadas"
-        },
-        "data_description": {
-          "dispatch_mode": "Paralelo inicia cada orden sin retraso. Con intervalo espera un número fijo de segundos entre inicios. Una tras otra espera a que cada persiana termine de moverse antes de iniciar la siguiente.",
-          "dispatch_start_interval_s": "Se usa con \"Con intervalo\", y como separación mínima entre zonas cuando \"Mantener zonas separadas\" está activado.",
-          "dispatch_max_travel_wait_s": "Solo se usa con \"Una tras otra\" — cuánto tiempo esperar a que una persiana termine antes de continuar de todos modos.",
-          "dispatch_post_travel_pause_s": "Solo se usa con \"Una tras otra\" — una breve pausa de asentamiento tras terminar una persiana, antes de que empiece la siguiente.",
-          "dispatch_zone_batching": "Si está activado, el retraso entre inicios se aplica siempre entre habitaciones/zonas distintas, incluso en modo Paralelo, para que las habitaciones se mantengan visualmente separadas."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Perfiles de horario",
           "manual_override": "Anulación manual",
           "dispatch": "Coordinación de persianas"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Anulación manual — configuración de esta zona",
+        "description": "Define cómo se comporta una anulación manual activa en esta zona: cuánto dura y si las acciones de confort o protección pueden seguir ejecutándose mientras está activa.",
+        "data": {
+          "override_release_mode": "Cómo termina la anulación",
+          "override_time_based_kind": "Tipo de temporizador",
+          "override_decision_filter": "Qué decisiones la liberan",
+          "override_fixed_until": "Hora de fin fija",
+          "override_allow_comfort_actions": "Permitir acciones de confort durante la anulación",
+          "override_allow_protection_actions": "Permitir acciones de protección durante la anulación",
+          "override_safety_timeout_enabled": "Tiempo de seguridad",
+          "override_duration_min": "Duración de anulación clásica (minutos)",
+          "override_night_duration_min": "Duración de anulación nocturna (minutos)"
+        },
+        "data_description": {
+          "override_release_mode": "Elija el concepto de liberación: un temporizador/reloj, la siguiente transición de horario, la siguiente decisión automática o solo borrado manual.",
+          "override_time_based_kind": "Solo relevante cuando el modo de liberación anterior está establecido en una opción de temporizador/reloj: liberar tras una duración fija o a una hora fija.",
+          "override_decision_filter": "Solo relevante cuando el modo de liberación anterior está establecido en la opción de próxima decisión: liberar en cualquier decisión, solo decisiones de confort o solo decisiones de protección.",
+          "override_fixed_until": "Solo relevante cuando el modo de liberación es una opción de temporizador/reloj y el tipo de temporizador es una hora fija. Si ya ha pasado hoy, la anulación termina a esta hora mañana.",
+          "override_allow_comfort_actions": "Si está activado, el sombreado de confort habitual puede seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
+          "override_allow_protection_actions": "Si está activado, las acciones de protección (ausencia, calor, deslumbramiento) pueden seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
+          "override_safety_timeout_enabled": "Duración máxima opcional como red de seguridad para estrategias abiertas, para que una anulación nunca quede olvidada permanentemente.",
+          "override_duration_min": "Cuánto dura una anulación diurna antes de que SmartShading reanude el control normal (modo de duración clásico).",
+          "override_night_duration_min": "Límite de seguridad para una anulación nocturna. La liberación real ocurre en la transición del ciclo matutino."
+        }
+      },
+      "system_manual_override": {
+        "title": "Valores predeterminados de anulación manual",
+        "description": "El comportamiento de anulación manual que sigue cada zona a menos que use su propia configuración: cuánto dura una anulación y si las acciones de confort o protección pueden seguir ejecutándose mientras hay una activa.",
+        "data": {
+          "override_release_mode": "Cómo termina la anulación",
+          "override_time_based_kind": "Tipo de temporizador",
+          "override_decision_filter": "Qué decisiones la liberan",
+          "override_fixed_until": "Hora de fin fija",
+          "override_allow_comfort_actions": "Permitir acciones de confort durante la anulación",
+          "override_allow_protection_actions": "Permitir acciones de protección durante la anulación",
+          "override_safety_timeout_enabled": "Tiempo de seguridad",
+          "override_duration_min": "Duración de anulación clásica (minutos)",
+          "override_night_duration_min": "Duración de anulación nocturna (minutos)"
+        },
+        "data_description": {
+          "override_release_mode": "Elija el concepto de liberación: un temporizador/reloj, la siguiente transición de horario, la siguiente decisión automática o solo borrado manual.",
+          "override_time_based_kind": "Solo relevante cuando el modo de liberación anterior está establecido en una opción de temporizador/reloj: liberar tras una duración fija o a una hora fija.",
+          "override_decision_filter": "Solo relevante cuando el modo de liberación anterior está establecido en la opción de próxima decisión: liberar en cualquier decisión, solo decisiones de confort o solo decisiones de protección.",
+          "override_fixed_until": "Solo relevante cuando el modo de liberación es una opción de temporizador/reloj y el tipo de temporizador es una hora fija. Si ya ha pasado hoy, la anulación termina a esta hora mañana.",
+          "override_allow_comfort_actions": "Si está activado, el sombreado de confort habitual puede seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
+          "override_allow_protection_actions": "Si está activado, las acciones de protección (ausencia, calor, deslumbramiento) pueden seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
+          "override_safety_timeout_enabled": "Duración máxima opcional como red de seguridad para estrategias abiertas, para que una anulación nunca quede olvidada permanentemente.",
+          "override_duration_min": "Cuánto dura una anulación diurna antes de que SmartShading reanude el control normal (modo de duración clásico).",
+          "override_night_duration_min": "Límite de seguridad para una anulación nocturna. La liberación real ocurre en la transición del ciclo matutino."
+        }
+      },
+      "system_dispatch": {
+        "title": "Coordinación de persianas",
+        "description": "Define cómo SmartShading espacia las órdenes de los toldos en todas las zonas cuando se deciden varios toldos en el mismo ciclo. Esto es una propiedad de su hardware/pasarela de radio, compartida por toda la casa.",
+        "data": {
+          "dispatch_mode": "Modo de coordinación",
+          "dispatch_start_interval_s": "Retraso entre inicios",
+          "dispatch_max_travel_wait_s": "Espera máxima para que termine el movimiento",
+          "dispatch_post_travel_pause_s": "Pausa tras terminar el movimiento",
+          "dispatch_zone_batching": "Mantener zonas separadas"
+        },
+        "data_description": {
+          "dispatch_mode": "Paralelo inicia cada orden sin retraso. Con intervalo espera un número fijo de segundos entre inicios. Una tras otra espera a que cada persiana termine de moverse antes de iniciar la siguiente.",
+          "dispatch_start_interval_s": "Se usa con \"Con intervalo\", y como separación mínima entre zonas cuando \"Mantener zonas separadas\" está activado.",
+          "dispatch_max_travel_wait_s": "Solo se usa con \"Una tras otra\" — cuánto tiempo esperar a que una persiana termine antes de continuar de todos modos.",
+          "dispatch_post_travel_pause_s": "Solo se usa con \"Una tras otra\" — una breve pausa de asentamiento tras terminar una persiana, antes de que empiece la siguiente.",
+          "dispatch_zone_batching": "Si está activado, el retraso entre inicios se aplica siempre entre habitaciones/zonas distintas, incluso en modo Paralelo, para que las habitaciones se mantengan visualmente separadas."
+        }
+      },
+      "system_init": {
+        "title": "Ajustes del sistema SmartShading",
+        "description": "Valores predeterminados globales que sigue cada zona a menos que use su propia configuración, además de la temporización del sistema para el envío de órdenes a los toldos.",
+        "menu_options": {
+          "system_manual_override": "Valores predeterminados de anulación manual",
+          "system_dispatch": "Control de toldos"
         }
       }
     },

@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Manual Override",
-        "description": "Configure how an active Manual Override behaves: how long it lasts, and whether Comfort or Protection actions may still run while it is active.",
+        "description": "Choose whether this zone follows the System entry's Manual Override default, or uses its own settings.",
         "data": {
-          "override_release_mode": "How the override ends",
-          "override_time_based_kind": "Timer type",
-          "override_decision_filter": "Which decisions release it",
-          "override_fixed_until": "Fixed end time",
-          "override_allow_comfort_actions": "Allow comfort actions during override",
-          "override_allow_protection_actions": "Allow protection actions during override",
-          "override_safety_timeout_enabled": "Safety timeout",
-          "override_duration_min": "Legacy override duration (minutes)",
-          "override_night_duration_min": "Night override duration (minutes)",
+          "override_use_system_default": "Use System default",
           "override_detection_tolerance": "Detection tolerance"
         },
         "data_description": {
-          "override_release_mode": "Choose the release concept: a timer/clock, the next schedule transition, the next automatic decision, or manual clearing only.",
-          "override_time_based_kind": "Only relevant when the release mode above is set to a timer/clock option: release after a fixed duration, or at a fixed clock time.",
-          "override_decision_filter": "Only relevant when the release mode above is set to the next-decision option: release on any decision, comfort decisions only, or protection decisions only.",
-          "override_fixed_until": "Only relevant when the release mode is a timer/clock option and the timer type is a fixed clock time. If already passed today, the override ends at this time tomorrow.",
-          "override_allow_comfort_actions": "When enabled, regular comfort shading may still run while an override is active. The override itself stays active.",
-          "override_allow_protection_actions": "When enabled, protection actions (absence, heat, glare) may still run while an override is active. The override itself stays active.",
-          "override_safety_timeout_enabled": "Optional maximum duration as a safety net for open-ended strategies, so an override is never permanently forgotten.",
-          "override_duration_min": "How long a daytime override lasts before SmartShading resumes normal control (legacy duration mode).",
-          "override_night_duration_min": "Safety-net cap for a night-time override. The real release is the morning schedule transition.",
+          "override_use_system_default": "When enabled, this zone follows the Manual Override default configured on the SmartShading System entry. When disabled, you configure this zone's own Manual Override behavior on the next screen.",
           "override_detection_tolerance": "Minimum position change (in percent) before a manual movement is recognized as an override."
-        }
-      },
-      "dispatch": {
-        "title": "Cover Dispatch",
-        "description": "Configure how SmartShading paces cover commands when several covers are decided in the same cycle.",
-        "data": {
-          "dispatch_mode": "Dispatch mode",
-          "dispatch_start_interval_s": "Delay between starts",
-          "dispatch_max_travel_wait_s": "Maximum wait for travel to finish",
-          "dispatch_post_travel_pause_s": "Pause after travel finishes",
-          "dispatch_zone_batching": "Keep zones apart"
-        },
-        "data_description": {
-          "dispatch_mode": "Parallel starts every command without delay. With a time gap waits a fixed number of seconds between starts. One after another waits for each cover to finish moving before starting the next.",
-          "dispatch_start_interval_s": "Used by \"With a time gap\", and as the minimum gap between zones when \"Keep zones apart\" is enabled.",
-          "dispatch_max_travel_wait_s": "Only used by \"One after another\" — how long to wait for a cover to finish before continuing anyway.",
-          "dispatch_post_travel_pause_s": "Only used by \"One after another\" — a short settle pause after a cover finishes, before the next one starts.",
-          "dispatch_zone_batching": "When enabled, the delay between starts is always applied between different rooms/zones, even in Parallel mode, so rooms stay visually separated."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Lifecycle profiles",
           "manual_override": "Manual Override",
           "dispatch": "Cover Dispatch"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Manual Override — this zone's settings",
+        "description": "Configure how an active Manual Override behaves for this zone: how long it lasts, and whether Comfort or Protection actions may still run while it is active.",
+        "data": {
+          "override_release_mode": "How the override ends",
+          "override_time_based_kind": "Timer type",
+          "override_decision_filter": "Which decisions release it",
+          "override_fixed_until": "Fixed end time",
+          "override_allow_comfort_actions": "Allow comfort actions during override",
+          "override_allow_protection_actions": "Allow protection actions during override",
+          "override_safety_timeout_enabled": "Safety timeout",
+          "override_duration_min": "Legacy override duration (minutes)",
+          "override_night_duration_min": "Night override duration (minutes)"
+        },
+        "data_description": {
+          "override_release_mode": "Choose the release concept: a timer/clock, the next schedule transition, the next automatic decision, or manual clearing only.",
+          "override_time_based_kind": "Only relevant when the release mode above is set to a timer/clock option: release after a fixed duration, or at a fixed clock time.",
+          "override_decision_filter": "Only relevant when the release mode above is set to the next-decision option: release on any decision, comfort decisions only, or protection decisions only.",
+          "override_fixed_until": "Only relevant when the release mode is a timer/clock option and the timer type is a fixed clock time. If already passed today, the override ends at this time tomorrow.",
+          "override_allow_comfort_actions": "When enabled, regular comfort shading may still run while an override is active. The override itself stays active.",
+          "override_allow_protection_actions": "When enabled, protection actions (absence, heat, glare) may still run while an override is active. The override itself stays active.",
+          "override_safety_timeout_enabled": "Optional maximum duration as a safety net for open-ended strategies, so an override is never permanently forgotten.",
+          "override_duration_min": "How long a daytime override lasts before SmartShading resumes normal control (legacy duration mode).",
+          "override_night_duration_min": "Safety-net cap for a night-time override. The real release is the morning schedule transition."
+        }
+      },
+      "system_manual_override": {
+        "title": "Manual Override defaults",
+        "description": "The Manual Override behavior every zone follows unless it opts into its own settings: how long an override lasts, and whether Comfort or Protection actions may still run while one is active.",
+        "data": {
+          "override_release_mode": "How the override ends",
+          "override_time_based_kind": "Timer type",
+          "override_decision_filter": "Which decisions release it",
+          "override_fixed_until": "Fixed end time",
+          "override_allow_comfort_actions": "Allow comfort actions during override",
+          "override_allow_protection_actions": "Allow protection actions during override",
+          "override_safety_timeout_enabled": "Safety timeout",
+          "override_duration_min": "Legacy override duration (minutes)",
+          "override_night_duration_min": "Night override duration (minutes)"
+        },
+        "data_description": {
+          "override_release_mode": "Choose the release concept: a timer/clock, the next schedule transition, the next automatic decision, or manual clearing only.",
+          "override_time_based_kind": "Only relevant when the release mode above is set to a timer/clock option: release after a fixed duration, or at a fixed clock time.",
+          "override_decision_filter": "Only relevant when the release mode above is set to the next-decision option: release on any decision, comfort decisions only, or protection decisions only.",
+          "override_fixed_until": "Only relevant when the release mode is a timer/clock option and the timer type is a fixed clock time. If already passed today, the override ends at this time tomorrow.",
+          "override_allow_comfort_actions": "When enabled, regular comfort shading may still run while an override is active. The override itself stays active.",
+          "override_allow_protection_actions": "When enabled, protection actions (absence, heat, glare) may still run while an override is active. The override itself stays active.",
+          "override_safety_timeout_enabled": "Optional maximum duration as a safety net for open-ended strategies, so an override is never permanently forgotten.",
+          "override_duration_min": "How long a daytime override lasts before SmartShading resumes normal control (legacy duration mode).",
+          "override_night_duration_min": "Safety-net cap for a night-time override. The real release is the morning schedule transition."
+        }
+      },
+      "system_dispatch": {
+        "title": "Cover Dispatch",
+        "description": "Configure how SmartShading paces cover commands across every zone when several covers are decided in the same cycle. This is a property of your cover hardware/RF gateway, shared by the whole house.",
+        "data": {
+          "dispatch_mode": "Dispatch mode",
+          "dispatch_start_interval_s": "Delay between starts",
+          "dispatch_max_travel_wait_s": "Maximum wait for travel to finish",
+          "dispatch_post_travel_pause_s": "Pause after travel finishes",
+          "dispatch_zone_batching": "Keep zones apart"
+        },
+        "data_description": {
+          "dispatch_mode": "Parallel starts every command without delay. With a time gap waits a fixed number of seconds between starts. One after another waits for each cover to finish moving before starting the next.",
+          "dispatch_start_interval_s": "Used by \"With a time gap\", and as the minimum gap between zones when \"Keep zones apart\" is enabled.",
+          "dispatch_max_travel_wait_s": "Only used by \"One after another\" — how long to wait for a cover to finish before continuing anyway.",
+          "dispatch_post_travel_pause_s": "Only used by \"One after another\" — a short settle pause after a cover finishes, before the next one starts.",
+          "dispatch_zone_batching": "When enabled, the delay between starts is always applied between different rooms/zones, even in Parallel mode, so rooms stay visually separated."
+        }
+      },
+      "system_init": {
+        "title": "SmartShading System settings",
+        "description": "Global defaults every zone follows unless it opts into its own settings, plus system-wide Cover Dispatch timing.",
+        "menu_options": {
+          "system_manual_override": "Manual Override defaults",
+          "system_dispatch": "Cover Dispatch"
         }
       }
     },

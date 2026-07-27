@@ -74,12 +74,13 @@ class TestOverridePolicyConfigCarriesTheRealEffectiveLegacyDefault:
 
 class TestEffectiveRuntimeChainUsesOverridePolicyConfigNotBehaviorConfigDefault:
     def test_init_wires_coordinator_from_override_policy_not_behavior_config(self) -> None:
-        """__init__.py passes override_duration_min=entry_data.override_policy.duration_min
-        (120) into SmartShadingCoordinator — never from a BehaviorConfig
-        instance. Verified by source text inspection (no HA-dependent
-        import needed, unlike importing coordinator.py directly)."""
+        """__init__.py passes override_duration_min=_effective_override_policy.duration_min
+        (120 unless a System entry default overrides it — T21 Phase C2) into
+        SmartShadingCoordinator — never from a BehaviorConfig instance.
+        Verified by source text inspection (no HA-dependent import needed,
+        unlike importing coordinator.py directly)."""
         source = (_INTEGRATION_ROOT / "__init__.py").read_text(encoding="utf-8")
-        assert "override_duration_min=entry_data.override_policy.duration_min" in source
+        assert "override_duration_min=_effective_override_policy.duration_min" in source
         assert "BehaviorConfig(" not in source
 
     def test_coordinator_constructor_default_is_still_120_and_720(self) -> None:

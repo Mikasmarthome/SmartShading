@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Manuel tilsidesættelse",
-        "description": "Bestemmer adfærden for en aktiv manuel tilsidesættelse: hvor længe den varer, og om komfort- eller beskyttelseshandlinger stadig må køre, mens den er aktiv.",
+        "description": "Vælg om denne zone følger systemets standard for manuel tilsidesættelse, eller bruger sine egne indstillinger.",
         "data": {
-          "override_release_mode": "Hvordan tilsidesættelsen slutter",
-          "override_time_based_kind": "Timertype",
-          "override_decision_filter": "Hvilke beslutninger frigiver den",
-          "override_fixed_until": "Fast sluttidspunkt",
-          "override_allow_comfort_actions": "Tillad komforthandlinger under tilsidesættelse",
-          "override_allow_protection_actions": "Tillad beskyttelseshandlinger under tilsidesættelse",
-          "override_safety_timeout_enabled": "Sikkerhedstimeout",
-          "override_duration_min": "Klassisk tilsidesættelsesvarighed (minutter)",
-          "override_night_duration_min": "Nattilsidesættelsesvarighed (minutter)",
+          "override_use_system_default": "Brug systemstandard",
           "override_detection_tolerance": "Detektionstolerance"
         },
         "data_description": {
-          "override_release_mode": "Vælg frigivelseskonceptet: en timer/et klokkeslæt, den næste tidsplanovergang, den næste automatiske beslutning, eller kun manuel rydning.",
-          "override_time_based_kind": "Kun relevant når frigivelsestilstanden ovenfor er sat til en timer-/klokkeslætsindstilling: frigivelse efter en fast varighed eller på et fast klokkeslæt.",
-          "override_decision_filter": "Kun relevant når frigivelsestilstanden ovenfor er sat til indstillingen næste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
-          "override_fixed_until": "Kun relevant når frigivelsestilstanden er en timer-/klokkeslætsindstilling, og timertypen er et fast klokkeslæt. Hvis klokkeslættet allerede er passeret i dag, slutter tilsidesættelsen i morgen på dette tidspunkt.",
-          "override_allow_comfort_actions": "Når aktiveret, kan almindelig komfortafskærmning stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
-          "override_allow_protection_actions": "Når aktiveret, kan beskyttelseshandlinger (fravær, varme, blænding) stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
-          "override_safety_timeout_enabled": "Valgfri maksimal varighed som sikkerhedsnet for åbne strategier, så en tilsidesættelse aldrig bliver permanent glemt.",
-          "override_duration_min": "Hvor længe en dagtilsidesættelse varer, før SmartShading genoptager normal styring (klassisk varighedstilstand).",
-          "override_night_duration_min": "Sikkerhedsgrænse for en nattilsidesættelse. Den egentlige frigivelse sker ved morgenens skemaovergang.",
+          "override_use_system_default": "Når aktiveret, følger denne zone den manuelle tilsidesættelsesstandard, der er konfigureret på systemindgangen. Når deaktiveret, konfigurerer du zonens egne indstillinger på næste skærm.",
           "override_detection_tolerance": "Mindste positionsændring (i procent), før en manuel bevægelse genkendes som en tilsidesættelse."
-        }
-      },
-      "dispatch": {
-        "title": "Koordinering af afskærmninger",
-        "description": "Konfigurer hvordan SmartShading fordeler afskærmningskommandoer over tid, når flere afskærmninger besluttes i samme cyklus.",
-        "data": {
-          "dispatch_mode": "Koordineringstilstand",
-          "dispatch_start_interval_s": "Forsinkelse mellem starter",
-          "dispatch_max_travel_wait_s": "Maksimal ventetid på bevægelse færdig",
-          "dispatch_post_travel_pause_s": "Pause efter bevægelse er færdig",
-          "dispatch_zone_batching": "Hold zoner adskilt"
-        },
-        "data_description": {
-          "dispatch_mode": "Samtidig starter hver kommando uden forsinkelse. Med tidsmellemrum venter et fast antal sekunder mellem starter. En ad gangen venter på, at hver afskærmning er færdig med at bevæge sig, før den næste starter.",
-          "dispatch_start_interval_s": "Bruges af \"Med tidsmellemrum\", og som minimumsafstand mellem zoner, når \"Hold zoner adskilt\" er aktiveret.",
-          "dispatch_max_travel_wait_s": "Bruges kun af \"En ad gangen\" — hvor længe der ventes på, at en afskærmning bliver færdig, før der fortsættes alligevel.",
-          "dispatch_post_travel_pause_s": "Bruges kun af \"En ad gangen\" — en kort pause efter en afskærmning er færdig, før den næste starter.",
-          "dispatch_zone_batching": "Når aktiveret, anvendes forsinkelsen mellem starter altid mellem forskellige rum/zoner, selv i tilstanden Samtidig, så rum forbliver visuelt adskilte."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Skemaprofiler",
           "manual_override": "Manuel tilsidesættelse",
           "dispatch": "Koordinering af afskærmninger"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Manuel tilsidesættelse — denne zones indstillinger",
+        "description": "Angiver, hvordan en aktiv manuel tilsidesættelse opfører sig i denne zone: hvor længe den varer, og om komfort- eller beskyttelseshandlinger stadig må køre, mens den er aktiv.",
+        "data": {
+          "override_release_mode": "Hvordan tilsidesættelsen slutter",
+          "override_time_based_kind": "Timertype",
+          "override_decision_filter": "Hvilke beslutninger frigiver den",
+          "override_fixed_until": "Fast sluttidspunkt",
+          "override_allow_comfort_actions": "Tillad komforthandlinger under tilsidesættelse",
+          "override_allow_protection_actions": "Tillad beskyttelseshandlinger under tilsidesættelse",
+          "override_safety_timeout_enabled": "Sikkerhedstimeout",
+          "override_duration_min": "Klassisk tilsidesættelsesvarighed (minutter)",
+          "override_night_duration_min": "Nattilsidesættelsesvarighed (minutter)"
+        },
+        "data_description": {
+          "override_release_mode": "Vælg frigivelseskonceptet: en timer/et klokkeslæt, den næste tidsplanovergang, den næste automatiske beslutning, eller kun manuel rydning.",
+          "override_time_based_kind": "Kun relevant når frigivelsestilstanden ovenfor er sat til en timer-/klokkeslætsindstilling: frigivelse efter en fast varighed eller på et fast klokkeslæt.",
+          "override_decision_filter": "Kun relevant når frigivelsestilstanden ovenfor er sat til indstillingen næste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
+          "override_fixed_until": "Kun relevant når frigivelsestilstanden er en timer-/klokkeslætsindstilling, og timertypen er et fast klokkeslæt. Hvis klokkeslættet allerede er passeret i dag, slutter tilsidesættelsen i morgen på dette tidspunkt.",
+          "override_allow_comfort_actions": "Når aktiveret, kan almindelig komfortafskærmning stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
+          "override_allow_protection_actions": "Når aktiveret, kan beskyttelseshandlinger (fravær, varme, blænding) stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
+          "override_safety_timeout_enabled": "Valgfri maksimal varighed som sikkerhedsnet for åbne strategier, så en tilsidesættelse aldrig bliver permanent glemt.",
+          "override_duration_min": "Hvor længe en dagtilsidesættelse varer, før SmartShading genoptager normal styring (klassisk varighedstilstand).",
+          "override_night_duration_min": "Sikkerhedsgrænse for en nattilsidesættelse. Den egentlige frigivelse sker ved morgenens skemaovergang."
+        }
+      },
+      "system_manual_override": {
+        "title": "Standarder for manuel tilsidesættelse",
+        "description": "Adfærden for manuel tilsidesættelse, som hver zone følger, medmindre den bruger sine egne indstillinger: hvor længe en tilsidesættelse varer, og om komfort- eller beskyttelseshandlinger stadig må køre, mens en er aktiv.",
+        "data": {
+          "override_release_mode": "Hvordan tilsidesættelsen slutter",
+          "override_time_based_kind": "Timertype",
+          "override_decision_filter": "Hvilke beslutninger frigiver den",
+          "override_fixed_until": "Fast sluttidspunkt",
+          "override_allow_comfort_actions": "Tillad komforthandlinger under tilsidesættelse",
+          "override_allow_protection_actions": "Tillad beskyttelseshandlinger under tilsidesættelse",
+          "override_safety_timeout_enabled": "Sikkerhedstimeout",
+          "override_duration_min": "Klassisk tilsidesættelsesvarighed (minutter)",
+          "override_night_duration_min": "Nattilsidesættelsesvarighed (minutter)"
+        },
+        "data_description": {
+          "override_release_mode": "Vælg frigivelseskonceptet: en timer/et klokkeslæt, den næste tidsplanovergang, den næste automatiske beslutning, eller kun manuel rydning.",
+          "override_time_based_kind": "Kun relevant når frigivelsestilstanden ovenfor er sat til en timer-/klokkeslætsindstilling: frigivelse efter en fast varighed eller på et fast klokkeslæt.",
+          "override_decision_filter": "Kun relevant når frigivelsestilstanden ovenfor er sat til indstillingen næste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
+          "override_fixed_until": "Kun relevant når frigivelsestilstanden er en timer-/klokkeslætsindstilling, og timertypen er et fast klokkeslæt. Hvis klokkeslættet allerede er passeret i dag, slutter tilsidesættelsen i morgen på dette tidspunkt.",
+          "override_allow_comfort_actions": "Når aktiveret, kan almindelig komfortafskærmning stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
+          "override_allow_protection_actions": "Når aktiveret, kan beskyttelseshandlinger (fravær, varme, blænding) stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
+          "override_safety_timeout_enabled": "Valgfri maksimal varighed som sikkerhedsnet for åbne strategier, så en tilsidesættelse aldrig bliver permanent glemt.",
+          "override_duration_min": "Hvor længe en dagtilsidesættelse varer, før SmartShading genoptager normal styring (klassisk varighedstilstand).",
+          "override_night_duration_min": "Sikkerhedsgrænse for en nattilsidesættelse. Den egentlige frigivelse sker ved morgenens skemaovergang."
+        }
+      },
+      "system_dispatch": {
+        "title": "Koordinering af afskærmninger",
+        "description": "Angiver, hvordan SmartShading fordeler skærmkommandoer på tværs af alle zoner, når flere skærme besluttes i samme cyklus. Dette er en egenskab ved din hardware/radiogateway, som deles for hele huset.",
+        "data": {
+          "dispatch_mode": "Koordineringstilstand",
+          "dispatch_start_interval_s": "Forsinkelse mellem starter",
+          "dispatch_max_travel_wait_s": "Maksimal ventetid på bevægelse færdig",
+          "dispatch_post_travel_pause_s": "Pause efter bevægelse er færdig",
+          "dispatch_zone_batching": "Hold zoner adskilt"
+        },
+        "data_description": {
+          "dispatch_mode": "Samtidig starter hver kommando uden forsinkelse. Med tidsmellemrum venter et fast antal sekunder mellem starter. En ad gangen venter på, at hver afskærmning er færdig med at bevæge sig, før den næste starter.",
+          "dispatch_start_interval_s": "Bruges af \"Med tidsmellemrum\", og som minimumsafstand mellem zoner, når \"Hold zoner adskilt\" er aktiveret.",
+          "dispatch_max_travel_wait_s": "Bruges kun af \"En ad gangen\" — hvor længe der ventes på, at en afskærmning bliver færdig, før der fortsættes alligevel.",
+          "dispatch_post_travel_pause_s": "Bruges kun af \"En ad gangen\" — en kort pause efter en afskærmning er færdig, før den næste starter.",
+          "dispatch_zone_batching": "Når aktiveret, anvendes forsinkelsen mellem starter altid mellem forskellige rum/zoner, selv i tilstanden Samtidig, så rum forbliver visuelt adskilte."
+        }
+      },
+      "system_init": {
+        "title": "SmartShading systemindstillinger",
+        "description": "Globale standarder, som hver zone følger, medmindre den bruger sine egne indstillinger, plus systemdækkende timing for skærmudsendelse.",
+        "menu_options": {
+          "system_manual_override": "Standarder for manuel tilsidesættelse",
+          "system_dispatch": "Skærmudsendelse"
         }
       }
     },

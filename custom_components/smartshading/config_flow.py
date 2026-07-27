@@ -142,6 +142,7 @@ from .const import (
     CONF_OVERRIDE_DECISION_FILTER,
     CONF_OVERRIDE_FIXED_UNTIL,
     CONF_OVERRIDE_NIGHT_DURATION_MIN,
+    CONF_OVERRIDE_USE_SYSTEM_DEFAULT,
     DEFAULT_OVERRIDE_DETECTION_TOLERANCE,
     DEFAULT_OVERRIDE_DURATION_MIN,
     DEFAULT_OVERRIDE_NIGHT_DURATION_MIN,
@@ -295,6 +296,210 @@ def _safe_float_in_range(value: Any, default: float, *, minimum: float, maximum:
     if parsed != parsed or parsed in (float("inf"), float("-inf")):  # NaN/inf guard
         return default
     return max(minimum, min(parsed, maximum))
+
+
+# T21 Phase C2: Cover Dispatch moved from a per-zone OptionsFlow step to the
+# System entry (see async_step_system_dispatch below) — extracted here so
+# the System entry's step can reuse the exact same schema/parsing logic that
+# the old zone-level async_step_dispatch used, unchanged in substance.
+
+def _dispatch_schema(stored: dict[str, Any]) -> vol.Schema:
+    mode_selector = SelectSelector(
+        SelectSelectorConfig(
+            options=[m.value for m in DispatchMode],
+            mode=SelectSelectorMode.DROPDOWN,
+            translation_key="dispatch_mode",
+        )
+    )
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_DISPATCH_MODE,
+                default=stored.get("mode", DispatchMode.SPACED.value),
+            ): mode_selector,
+            vol.Required(
+                CONF_DISPATCH_START_INTERVAL_S,
+                default=stored.get("start_interval_s", DEFAULT_START_INTERVAL_S),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=START_INTERVAL_S_MIN, max=START_INTERVAL_S_MAX, step=0.1,
+                    mode=NumberSelectorMode.BOX, unit_of_measurement="s",
+                )
+            ),
+            vol.Required(
+                CONF_DISPATCH_MAX_TRAVEL_WAIT_S,
+                default=stored.get("max_travel_wait_s", DEFAULT_MAX_TRAVEL_WAIT_S),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=MAX_TRAVEL_WAIT_S_MIN, max=MAX_TRAVEL_WAIT_S_MAX, step=1,
+                    mode=NumberSelectorMode.BOX, unit_of_measurement="s",
+                )
+            ),
+            vol.Required(
+                CONF_DISPATCH_POST_TRAVEL_PAUSE_S,
+                default=stored.get("post_travel_pause_s", DEFAULT_POST_TRAVEL_PAUSE_S),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=POST_TRAVEL_PAUSE_S_MIN, max=POST_TRAVEL_PAUSE_S_MAX, step=0.1,
+                    mode=NumberSelectorMode.BOX, unit_of_measurement="s",
+                )
+            ),
+            vol.Required(
+                CONF_DISPATCH_ZONE_BATCHING,
+                default=stored.get("zone_batching", False),
+            ): BooleanSelector(),
+        }
+    )
+
+
+def _parse_dispatch_submission(user_input: dict[str, Any]) -> dict[str, Any]:
+    try:
+        mode = DispatchMode(user_input.get(CONF_DISPATCH_MODE, DispatchMode.SPACED.value))
+    except ValueError:
+        mode = DispatchMode.SPACED
+    return {
+        "mode": mode.value,
+        "start_interval_s": _safe_float_in_range(
+            user_input.get(CONF_DISPATCH_START_INTERVAL_S), DEFAULT_START_INTERVAL_S,
+            minimum=START_INTERVAL_S_MIN, maximum=START_INTERVAL_S_MAX,
+        ),
+        "max_travel_wait_s": _safe_float_in_range(
+            user_input.get(CONF_DISPATCH_MAX_TRAVEL_WAIT_S), DEFAULT_MAX_TRAVEL_WAIT_S,
+            minimum=MAX_TRAVEL_WAIT_S_MIN, maximum=MAX_TRAVEL_WAIT_S_MAX,
+        ),
+        "post_travel_pause_s": _safe_float_in_range(
+            user_input.get(CONF_DISPATCH_POST_TRAVEL_PAUSE_S), DEFAULT_POST_TRAVEL_PAUSE_S,
+            minimum=POST_TRAVEL_PAUSE_S_MIN, maximum=POST_TRAVEL_PAUSE_S_MAX,
+        ),
+        "zone_batching": bool(user_input.get(CONF_DISPATCH_ZONE_BATCHING, False)),
+    }
+
+
+# T21 Phase C2: extracted so the System entry's async_step_system_manual_override
+# and the zone's async_step_manual_override_custom (shown only once a zone opts
+# out of the System default) share the exact same 7-field form/parsing logic
+# unchanged from T21 Phase B — detection_tolerance is deliberately NOT part of
+# this shared form (it stays zone-only, see ownership analysis; collected
+# separately by the zone's gate step, async_step_manual_override).
+
+def _manual_override_schema(stored: dict[str, Any]) -> vol.Schema:
+    try:
+        _stored_strategy = OverrideReleaseStrategy(
+            stored.get("release_strategy", OverrideReleaseStrategy.LIFECYCLE.value)
+        )
+    except ValueError:
+        _stored_strategy = OverrideReleaseStrategy.LIFECYCLE
+    _stored_mode, _stored_sub = release_strategy_to_mode(_stored_strategy)
+    _stored_time_based_kind = (
+        _stored_sub if _stored_mode is OverrideReleaseMode.TIME_BASED else TIME_BASED_KIND_DURATION
+    )
+    _stored_decision_filter = (
+        _stored_sub if _stored_mode is OverrideReleaseMode.NEXT_DECISION else DECISION_FILTER_ANY
+    )
+    release_mode_selector = SelectSelector(
+        SelectSelectorConfig(
+            options=[m.value for m in OverrideReleaseMode],
+            mode=SelectSelectorMode.DROPDOWN,
+            translation_key="override_release_mode",
+        )
+    )
+    time_based_kind_selector = SelectSelector(
+        SelectSelectorConfig(
+            options=[TIME_BASED_KIND_DURATION, TIME_BASED_KIND_FIXED_TIME],
+            mode=SelectSelectorMode.DROPDOWN,
+            translation_key="override_time_based_kind",
+        )
+    )
+    decision_filter_selector = SelectSelector(
+        SelectSelectorConfig(
+            options=[DECISION_FILTER_ANY, DECISION_FILTER_COMFORT, DECISION_FILTER_PROTECTION],
+            mode=SelectSelectorMode.DROPDOWN,
+            translation_key="override_decision_filter",
+        )
+    )
+    return vol.Schema(
+        {
+            vol.Required(CONF_OVERRIDE_RELEASE_MODE, default=_stored_mode.value): release_mode_selector,
+            vol.Required(
+                CONF_OVERRIDE_TIME_BASED_KIND, default=_stored_time_based_kind,
+            ): time_based_kind_selector,
+            vol.Required(
+                CONF_OVERRIDE_DECISION_FILTER, default=_stored_decision_filter,
+            ): decision_filter_selector,
+            vol.Optional(
+                CONF_OVERRIDE_FIXED_UNTIL,
+                description={"suggested_value": stored.get("fixed_until")},
+            ): TimeSelector(),
+            vol.Required(
+                CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS, default=stored.get("allow_comfort_actions", False),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS, default=stored.get("allow_protection_actions", False),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED, default=stored.get("safety_timeout_enabled", True),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_OVERRIDE_DURATION_MIN,
+                default=stored.get("duration_min", DEFAULT_OVERRIDE_DURATION_MIN),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=1, max=OVERRIDE_DURATION_MIN_MAX, step=1,
+                    mode=NumberSelectorMode.BOX, unit_of_measurement="min",
+                )
+            ),
+            vol.Required(
+                CONF_OVERRIDE_NIGHT_DURATION_MIN,
+                default=stored.get("night_duration_min", DEFAULT_OVERRIDE_NIGHT_DURATION_MIN),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=1, max=OVERRIDE_DURATION_MIN_MAX, step=1,
+                    mode=NumberSelectorMode.BOX, unit_of_measurement="min",
+                )
+            ),
+        }
+    )
+
+
+def _parse_manual_override_submission(
+    user_input: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, str]]:
+    errors: dict[str, str] = {}
+    try:
+        release_mode = OverrideReleaseMode(
+            user_input.get(CONF_OVERRIDE_RELEASE_MODE, OverrideReleaseMode.LIFECYCLE.value)
+        )
+    except ValueError:
+        release_mode = OverrideReleaseMode.LIFECYCLE
+    if release_mode is OverrideReleaseMode.TIME_BASED:
+        sub_choice = user_input.get(CONF_OVERRIDE_TIME_BASED_KIND, TIME_BASED_KIND_DURATION)
+    elif release_mode is OverrideReleaseMode.NEXT_DECISION:
+        sub_choice = user_input.get(CONF_OVERRIDE_DECISION_FILTER, DECISION_FILTER_ANY)
+    else:
+        sub_choice = None
+    release_strategy = release_mode_to_strategy(release_mode, sub_choice)
+    fixed_until = _parse_optional_time_input(user_input.get(CONF_OVERRIDE_FIXED_UNTIL))
+    if release_strategy is OverrideReleaseStrategy.FIXED_TIME and fixed_until is None:
+        errors["base"] = "override_fixed_until_required"
+    duration_min = _safe_positive_int(
+        user_input.get(CONF_OVERRIDE_DURATION_MIN), DEFAULT_OVERRIDE_DURATION_MIN,
+        maximum=OVERRIDE_DURATION_MIN_MAX,
+    )
+    night_duration_min = _safe_positive_int(
+        user_input.get(CONF_OVERRIDE_NIGHT_DURATION_MIN), DEFAULT_OVERRIDE_NIGHT_DURATION_MIN,
+        maximum=OVERRIDE_DURATION_MIN_MAX,
+    )
+    if errors:
+        return {}, errors
+    return {
+        "release_strategy": release_strategy.value,
+        "fixed_until": fixed_until.isoformat() if fixed_until is not None else None,
+        "allow_comfort_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS, False)),
+        "allow_protection_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS, False)),
+        "duration_min": duration_min,
+        "night_duration_min": night_duration_min,
+        "safety_timeout_enabled": bool(user_input.get(CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED, True)),
+    }, {}
 
 
 def _parse_optional_time_input(value: Any) -> time | None:
@@ -1364,14 +1569,36 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         self._edit_window_id: str | None = None
         # Lifecycle profile flow state (v1.2.0-beta.1, T6)
         self._edit_profile_id: str | None = None
+        # Manual Override gate->custom flow state (T21 Phase C2)
+        self._pending_override_detection_tolerance: int | None = None
 
-    # -- Init: section menu (zone entries only) --
+    # -- Init: section menu — branches into the System entry's own menu
+    # (T21 Phase C2) or the zone menu, depending on entry type. --
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
         if self._config_entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM:
-            return self.async_abort(reason="no_options_for_system_entry")
+            return await self.async_step_system_init()
+        return await self._async_step_zone_init(user_input)
+
+    async def async_step_system_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """T21 Phase C2: the System entry now owns real, global settings —
+        Cover Dispatch (a hardware/RF-pacing property shared by every zone's
+        covers via the one GlobalSerialDispatch instance) and the Manual
+        Override default policy (a house-wide philosophy most zones share).
+        See the T21 Phase C2 ownership analysis for the full per-field
+        reasoning behind exactly these two areas and not others."""
+        return self.async_show_menu(
+            step_id="system_init",
+            menu_options=["system_manual_override", "system_dispatch"],
+        )
+
+    async def _async_step_zone_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
         return self.async_show_menu(
             step_id="init",
             menu_options=["weather", "lifecycle", "presence", "comfort", "behavior", "windows", "advanced"],
@@ -1397,7 +1624,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
     ) -> config_entries.ConfigFlowResult:
         return self.async_show_menu(
             step_id="advanced",
-            menu_options=["lifecycle_profiles", "manual_override", "dispatch"],
+            menu_options=["lifecycle_profiles", "manual_override"],
         )
 
     # -- Weather / sensor entities --
@@ -2256,172 +2483,46 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
     async def async_step_manual_override(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
+        """Gate step (T21 Phase C2): a zone either defers its whole Manual
+        Override policy to the System entry's default, or opts into its own
+        (async_step_manual_override_custom, the unchanged T21 Phase B form).
+        detection_tolerance stays zone-only regardless (hardware-noise
+        property of this zone's own covers — see ownership analysis) and is
+        always collected here.
+
+        Migration: a zone with an explicit pre-C2 "release_strategy" key
+        already stored starts out with its own settings preserved
+        (use_system_default=False) so existing behavior is byte-for-byte
+        unchanged; a zone that never configured this step starts out
+        deferring to the System default (matching its previous behavior of
+        implicitly using the hardcoded OverridePolicyConfig() defaults,
+        which is also what an unconfigured System entry resolves to).
+        """
         current = self._config_entry.data
         stored = current.get("override_policy") or {}
-        errors: dict[str, str] = {}
+        stored_use_system_default = bool(
+            stored.get("use_system_default", "release_strategy" not in stored)
+        )
 
         if user_input is not None:
-            # T21 Phase B: the OptionsFlow now collects a simplified 4-concept
-            # "release mode" plus an optional second-level sub-choice (which
-            # timer for TIME_BASED, which category filter for NEXT_DECISION)
-            # instead of a flat 7-value strategy dropdown — release_mode_to_strategy()
-            # maps that pair back onto the unchanged, fully-tested
-            # OverrideReleaseStrategy that gets persisted and that
-            # engines/override_release.py continues to act on unmodified.
-            try:
-                release_mode = OverrideReleaseMode(
-                    user_input.get(CONF_OVERRIDE_RELEASE_MODE, OverrideReleaseMode.LIFECYCLE.value)
-                )
-            except ValueError:
-                release_mode = OverrideReleaseMode.LIFECYCLE
-            if release_mode is OverrideReleaseMode.TIME_BASED:
-                sub_choice = user_input.get(CONF_OVERRIDE_TIME_BASED_KIND, TIME_BASED_KIND_DURATION)
-            elif release_mode is OverrideReleaseMode.NEXT_DECISION:
-                sub_choice = user_input.get(CONF_OVERRIDE_DECISION_FILTER, DECISION_FILTER_ANY)
-            else:
-                sub_choice = None
-            release_strategy = release_mode_to_strategy(release_mode, sub_choice)
-            fixed_until = _parse_optional_time_input(user_input.get(CONF_OVERRIDE_FIXED_UNTIL))
-            # Fixed-time strategy requires a configured clock time — same
-            # deterministic-fallback rule as loading a malformed stored
-            # value (config_entry_data._override_policy_from_storage()).
-            if release_strategy is OverrideReleaseStrategy.FIXED_TIME and fixed_until is None:
-                errors["base"] = "override_fixed_until_required"
-
-            # Server-side validation for the three numeric fields: NumberSelector
-            # constrains normal UI input, but a malformed/out-of-range/wrong-type
-            # value (e.g. a raw service call bypassing the selector) must never
-            # reach storage — same discipline as async_step_comfort()'s
-            # glare-min-exposure validation.
-            duration_min = _safe_positive_int(
-                user_input.get(CONF_OVERRIDE_DURATION_MIN), DEFAULT_OVERRIDE_DURATION_MIN,
-                maximum=OVERRIDE_DURATION_MIN_MAX,
-            )
-            night_duration_min = _safe_positive_int(
-                user_input.get(CONF_OVERRIDE_NIGHT_DURATION_MIN), DEFAULT_OVERRIDE_NIGHT_DURATION_MIN,
-                maximum=OVERRIDE_DURATION_MIN_MAX,
+            use_system_default = bool(
+                user_input.get(CONF_OVERRIDE_USE_SYSTEM_DEFAULT, stored_use_system_default)
             )
             detection_tolerance = _safe_positive_int(
                 user_input.get(CONF_OVERRIDE_DETECTION_TOLERANCE), DEFAULT_OVERRIDE_DETECTION_TOLERANCE,
                 maximum=OVERRIDE_DETECTION_TOLERANCE_MAX,
             )
-            if not errors:
-                new_policy = {
-                    "release_strategy": release_strategy.value,
-                    # T7 review point 13: fixed_until is deliberately preserved
-                    # regardless of the currently-selected release_strategy (not
-                    # cleared when switching away from fixed_time) — this lets a
-                    # user switch Fixed Time -> Lifecycle -> Fixed Time without
-                    # re-entering the clock time. It has no functional effect
-                    # while release_strategy != "fixed_time" (see
-                    # engines/override_release.py: fixed_until is only ever
-                    # read when the strategy is FIXED_TIME).
-                    "fixed_until": fixed_until.isoformat() if fixed_until is not None else None,
-                    "allow_comfort_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS, False)),
-                    "allow_protection_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS, False)),
-                    "duration_min": duration_min,
-                    "night_duration_min": night_duration_min,
-                    "detection_tolerance": detection_tolerance,
-                    "safety_timeout_enabled": bool(user_input.get(CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED, True)),
-                }
+            if use_system_default:
+                new_policy = {**stored, "use_system_default": True, "detection_tolerance": detection_tolerance}
                 return self._save_and_reload({"override_policy": new_policy})
+            self._pending_override_detection_tolerance = detection_tolerance
+            return await self.async_step_manual_override_custom()
 
-        # Pre-fill the simplified mode/sub-choice fields from whatever
-        # OverrideReleaseStrategy value is actually stored (including a
-        # value persisted by a pre-T21 install — release_strategy_to_mode()
-        # covers all 7 legacy values losslessly).
-        try:
-            _stored_strategy = OverrideReleaseStrategy(
-                stored.get("release_strategy", OverrideReleaseStrategy.LIFECYCLE.value)
-            )
-        except ValueError:
-            _stored_strategy = OverrideReleaseStrategy.LIFECYCLE
-        _stored_mode, _stored_sub = release_strategy_to_mode(_stored_strategy)
-        _stored_time_based_kind = (
-            _stored_sub if _stored_mode is OverrideReleaseMode.TIME_BASED else TIME_BASED_KIND_DURATION
-        )
-        _stored_decision_filter = (
-            _stored_sub if _stored_mode is OverrideReleaseMode.NEXT_DECISION else DECISION_FILTER_ANY
-        )
-
-        release_mode_selector = SelectSelector(
-            SelectSelectorConfig(
-                options=[m.value for m in OverrideReleaseMode],
-                mode=SelectSelectorMode.DROPDOWN,
-                translation_key="override_release_mode",
-            )
-        )
-        time_based_kind_selector = SelectSelector(
-            SelectSelectorConfig(
-                options=[TIME_BASED_KIND_DURATION, TIME_BASED_KIND_FIXED_TIME],
-                mode=SelectSelectorMode.DROPDOWN,
-                translation_key="override_time_based_kind",
-            )
-        )
-        decision_filter_selector = SelectSelector(
-            SelectSelectorConfig(
-                options=[DECISION_FILTER_ANY, DECISION_FILTER_COMFORT, DECISION_FILTER_PROTECTION],
-                mode=SelectSelectorMode.DROPDOWN,
-                translation_key="override_decision_filter",
-            )
-        )
         schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_OVERRIDE_RELEASE_MODE,
-                    default=_stored_mode.value,
-                ): release_mode_selector,
-                # Second-level fields: shown unconditionally (no per-field
-                # conditional visibility in this Flow — matches the established
-                # pattern from the T6 lifecycle-profile form) but only used
-                # fachlich when release_mode is TIME_BASED / NEXT_DECISION
-                # respectively; ignored otherwise.
-                vol.Required(
-                    CONF_OVERRIDE_TIME_BASED_KIND,
-                    default=_stored_time_based_kind,
-                ): time_based_kind_selector,
-                vol.Required(
-                    CONF_OVERRIDE_DECISION_FILTER,
-                    default=_stored_decision_filter,
-                ): decision_filter_selector,
-                vol.Optional(
-                    CONF_OVERRIDE_FIXED_UNTIL,
-                    description={"suggested_value": stored.get("fixed_until")},
-                ): TimeSelector(),
-                vol.Required(
-                    CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
-                    default=stored.get("allow_comfort_actions", False),
+                    CONF_OVERRIDE_USE_SYSTEM_DEFAULT, default=stored_use_system_default,
                 ): BooleanSelector(),
-                vol.Required(
-                    CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS,
-                    default=stored.get("allow_protection_actions", False),
-                ): BooleanSelector(),
-                # Only meaningful for unbounded strategies (LIFECYCLE, FIRST_*,
-                # MANUAL) — a safety-net maximum so an override is never
-                # permanently forgotten. Ignored for DURATION/FIXED_TIME, which
-                # already have their own explicit bound.
-                vol.Required(
-                    CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
-                    default=stored.get("safety_timeout_enabled", True),
-                ): BooleanSelector(),
-                vol.Required(
-                    CONF_OVERRIDE_DURATION_MIN,
-                    default=stored.get("duration_min", DEFAULT_OVERRIDE_DURATION_MIN),
-                ): NumberSelector(
-                    NumberSelectorConfig(
-                        min=1, max=OVERRIDE_DURATION_MIN_MAX, step=1,
-                        mode=NumberSelectorMode.BOX, unit_of_measurement="min",
-                    )
-                ),
-                vol.Required(
-                    CONF_OVERRIDE_NIGHT_DURATION_MIN,
-                    default=stored.get("night_duration_min", DEFAULT_OVERRIDE_NIGHT_DURATION_MIN),
-                ): NumberSelector(
-                    NumberSelectorConfig(
-                        min=1, max=OVERRIDE_DURATION_MIN_MAX, step=1,
-                        mode=NumberSelectorMode.BOX, unit_of_measurement="min",
-                    )
-                ),
                 vol.Required(
                     CONF_OVERRIDE_DETECTION_TOLERANCE,
                     default=stored.get("detection_tolerance", DEFAULT_OVERRIDE_DETECTION_TOLERANCE),
@@ -2433,91 +2534,73 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 ),
             }
         )
-        return self.async_show_form(step_id="manual_override", data_schema=schema, errors=errors)
+        return self.async_show_form(step_id="manual_override", data_schema=schema)
 
-    # -- Dispatch strategy (v1.2.0-beta.1, T11) --
+    async def async_step_manual_override_custom(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Reached only when the gate step (above) is answered with "use my
+        own settings" — the unchanged T21 Phase B 7-field form."""
+        current = self._config_entry.data
+        stored = current.get("override_policy") or {}
+        errors: dict[str, str] = {}
 
-    async def async_step_dispatch(
+        if user_input is not None:
+            new_policy, errors = _parse_manual_override_submission(user_input)
+            if not errors:
+                new_policy["use_system_default"] = False
+                new_policy["detection_tolerance"] = getattr(
+                    self, "_pending_override_detection_tolerance",
+                    stored.get("detection_tolerance", DEFAULT_OVERRIDE_DETECTION_TOLERANCE),
+                )
+                return self._save_and_reload({"override_policy": new_policy})
+
+        schema = _manual_override_schema(stored)
+        return self.async_show_form(step_id="manual_override_custom", data_schema=schema, errors=errors)
+
+    # -- Manual Override policy — System entry default (T21 Phase C2) --
+
+    async def async_step_system_manual_override(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
         current = self._config_entry.data
-        stored = current.get("dispatch_config") or {}
+        stored = current.get("system_override_policy") or {}
+        errors: dict[str, str] = {}
 
         if user_input is not None:
-            try:
-                mode = DispatchMode(user_input.get(CONF_DISPATCH_MODE, DispatchMode.SPACED.value))
-            except ValueError:
-                mode = DispatchMode.SPACED
-            new_config = {
-                "mode": mode.value,
-                "start_interval_s": _safe_float_in_range(
-                    user_input.get(CONF_DISPATCH_START_INTERVAL_S), DEFAULT_START_INTERVAL_S,
-                    minimum=START_INTERVAL_S_MIN, maximum=START_INTERVAL_S_MAX,
-                ),
-                "max_travel_wait_s": _safe_float_in_range(
-                    user_input.get(CONF_DISPATCH_MAX_TRAVEL_WAIT_S), DEFAULT_MAX_TRAVEL_WAIT_S,
-                    minimum=MAX_TRAVEL_WAIT_S_MIN, maximum=MAX_TRAVEL_WAIT_S_MAX,
-                ),
-                "post_travel_pause_s": _safe_float_in_range(
-                    user_input.get(CONF_DISPATCH_POST_TRAVEL_PAUSE_S), DEFAULT_POST_TRAVEL_PAUSE_S,
-                    minimum=POST_TRAVEL_PAUSE_S_MIN, maximum=POST_TRAVEL_PAUSE_S_MAX,
-                ),
-                "zone_batching": bool(user_input.get(CONF_DISPATCH_ZONE_BATCHING, False)),
-            }
-            return self._save_and_reload({"dispatch_config": new_config})
+            new_policy, errors = _parse_manual_override_submission(user_input)
+            if not errors:
+                return self._save_system_default_and_reload({"system_override_policy": new_policy})
 
-        mode_selector = SelectSelector(
-            SelectSelectorConfig(
-                options=[m.value for m in DispatchMode],
-                mode=SelectSelectorMode.DROPDOWN,
-                translation_key="dispatch_mode",
-            )
-        )
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_DISPATCH_MODE,
-                    default=stored.get("mode", DispatchMode.SPACED.value),
-                ): mode_selector,
-                # SPACED-only in effect (also the forced inter-zone gap when
-                # zone_batching is on, regardless of mode) — shown
-                # unconditionally, matching the established pattern of not
-                # using per-field conditional visibility in this Flow.
-                vol.Required(
-                    CONF_DISPATCH_START_INTERVAL_S,
-                    default=stored.get("start_interval_s", DEFAULT_START_INTERVAL_S),
-                ): NumberSelector(
-                    NumberSelectorConfig(
-                        min=START_INTERVAL_S_MIN, max=START_INTERVAL_S_MAX, step=0.1,
-                        mode=NumberSelectorMode.BOX, unit_of_measurement="s",
-                    )
-                ),
-                # "Nacheinander nach Fahrtende" (SEQUENTIAL) only.
-                vol.Required(
-                    CONF_DISPATCH_MAX_TRAVEL_WAIT_S,
-                    default=stored.get("max_travel_wait_s", DEFAULT_MAX_TRAVEL_WAIT_S),
-                ): NumberSelector(
-                    NumberSelectorConfig(
-                        min=MAX_TRAVEL_WAIT_S_MIN, max=MAX_TRAVEL_WAIT_S_MAX, step=1,
-                        mode=NumberSelectorMode.BOX, unit_of_measurement="s",
-                    )
-                ),
-                vol.Required(
-                    CONF_DISPATCH_POST_TRAVEL_PAUSE_S,
-                    default=stored.get("post_travel_pause_s", DEFAULT_POST_TRAVEL_PAUSE_S),
-                ): NumberSelector(
-                    NumberSelectorConfig(
-                        min=POST_TRAVEL_PAUSE_S_MIN, max=POST_TRAVEL_PAUSE_S_MAX, step=0.1,
-                        mode=NumberSelectorMode.BOX, unit_of_measurement="s",
-                    )
-                ),
-                vol.Required(
-                    CONF_DISPATCH_ZONE_BATCHING,
-                    default=stored.get("zone_batching", False),
-                ): BooleanSelector(),
-            }
-        )
-        return self.async_show_form(step_id="dispatch", data_schema=schema)
+        schema = _manual_override_schema(stored)
+        return self.async_show_form(step_id="system_manual_override", data_schema=schema, errors=errors)
+
+    # -- Cover Dispatch — System entry only (T21 Phase C2; see the removed
+    # zone-level async_step_dispatch note further below). --
+
+    async def async_step_system_dispatch(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        current = self._config_entry.data
+        stored = current.get("system_dispatch_config") or {}
+
+        if user_input is not None:
+            new_config = _parse_dispatch_submission(user_input)
+            return self._save_system_default_and_reload({"system_dispatch_config": new_config})
+
+        schema = _dispatch_schema(stored)
+        return self.async_show_form(step_id="system_dispatch", data_schema=schema)
+
+    # -- Dispatch strategy (v1.2.0-beta.1, T11) --
+
+    # async_step_dispatch (zone-level) was removed in T21 Phase C2: Cover
+    # Dispatch is a hardware/RF-pacing property of the shared dispatch
+    # pipeline (GlobalSerialDispatch is already one hass.data[DOMAIN]-scoped
+    # singleton for every zone), not a per-zone concern — see the System
+    # entry's async_step_system_dispatch. A zone ConfigEntry that already has
+    # a stored "dispatch_config" from before this change keeps using it
+    # unchanged (config_entry_data.py's _dispatch_config_from_storage() is
+    # untouched); there is just no OptionsFlow surface to create a new one.
 
     # -- Behavior / shade-position defaults --
 
@@ -3090,6 +3173,26 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         """
         new_data = {**self._config_entry.data, **updates}
         self.hass.config_entries.async_update_entry(self._config_entry, data=new_data)
+        self.hass.async_create_task(
+            self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        )
+        return self.async_create_entry(data={**self._config_entry.options})
+
+    def _save_system_default_and_reload(
+        self, updates: dict[str, Any]
+    ) -> config_entries.ConfigFlowResult:
+        """Like _save_and_reload, but also reloads every zone entry so a
+        changed System-entry global default (T21 Phase C2) takes effect
+        immediately for every zone still deferring to it, instead of only on
+        that zone's own next reload."""
+        new_data = {**self._config_entry.data, **updates}
+        self.hass.config_entries.async_update_entry(self._config_entry, data=new_data)
+        for entry in self.hass.config_entries.async_entries(DOMAIN):
+            if entry.entry_id == self._config_entry.entry_id:
+                continue
+            if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM:
+                continue
+            self.hass.async_create_task(self.hass.config_entries.async_reload(entry.entry_id))
         self.hass.async_create_task(
             self.hass.config_entries.async_reload(self._config_entry.entry_id)
         )

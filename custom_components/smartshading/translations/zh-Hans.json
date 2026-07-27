@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "手动覆盖",
-        "description": "配置激活的手动覆盖的行为：持续多长时间，以及在其激活期间是否仍允许执行舒适或保护动作。",
+        "description": "选择此区域是遵循系统的手动覆盖默认值，还是使用自己的设置。",
         "data": {
-          "override_release_mode": "覆盖如何结束",
-          "override_time_based_kind": "计时器类型",
-          "override_decision_filter": "哪些决策会释放它",
-          "override_fixed_until": "固定结束时间",
-          "override_allow_comfort_actions": "覆盖期间允许舒适动作",
-          "override_allow_protection_actions": "覆盖期间允许保护动作",
-          "override_safety_timeout_enabled": "安全超时",
-          "override_duration_min": "传统覆盖持续时间（分钟）",
-          "override_night_duration_min": "夜间覆盖持续时间（分钟）",
+          "override_use_system_default": "使用系统默认值",
           "override_detection_tolerance": "检测容差"
         },
         "data_description": {
-          "override_release_mode": "选择释放方式:定时器/时钟、下一次日程切换、下一次自动决策,或仅手动清除。",
-          "override_time_based_kind": "仅当上方释放模式设置为定时器/时钟选项时才有意义:在固定时长后释放,或在固定时间释放。",
-          "override_decision_filter": "仅当上方释放模式设置为“下一次决策”选项时才有意义:在任意决策时释放、仅在舒适度决策时释放,或仅在保护决策时释放。",
-          "override_fixed_until": "仅当释放模式为定时器/时钟选项且计时器类型为固定时间时才有意义。如果今天该时间已过,覆盖将在明天此时结束。",
-          "override_allow_comfort_actions": "启用后，常规舒适遮阳仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
-          "override_allow_protection_actions": "启用后，保护动作（离家、高温、眩光）仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
-          "override_safety_timeout_enabled": "为开放式策略提供的可选最大时长安全网，确保覆盖不会被永久遗忘。",
-          "override_duration_min": "在 SmartShading 恢复正常控制之前，白天覆盖持续多长时间（传统持续时间模式）。",
-          "override_night_duration_min": "夜间覆盖的安全上限。真正的释放发生在早晨的计划转换时。",
+          "override_use_system_default": "启用后，此区域将遵循系统条目上配置的手动覆盖默认值。禁用后，您将在下一屏幕中配置此区域自己的设置。",
           "override_detection_tolerance": "手动移动被识别为覆盖之前所需的最小位置变化（百分比）。"
-        }
-      },
-      "dispatch": {
-        "title": "遮阳帘调度",
-        "description": "配置当同一周期内多个遮阳帘做出决策时，SmartShading 如何调节遮阳帘指令的节奏。",
-        "data": {
-          "dispatch_mode": "调度模式",
-          "dispatch_start_interval_s": "启动间隔延迟",
-          "dispatch_max_travel_wait_s": "等待运行完成的最长时间",
-          "dispatch_post_travel_pause_s": "运行完成后的暂停时间",
-          "dispatch_zone_batching": "保持区域分开"
-        },
-        "data_description": {
-          "dispatch_mode": "并行会立即启动每条指令，没有延迟。有时间间隔会在启动之间等待固定的秒数。依次执行会等待每个遮阳帘完成移动后再启动下一个。",
-          "dispatch_start_interval_s": "用于\"有时间间隔\"模式，在启用\"保持区域分开\"时，也作为区域之间的最小间隔。",
-          "dispatch_max_travel_wait_s": "仅用于\"依次执行\"模式——在继续执行前，等待遮阳帘完成运行的最长时间。",
-          "dispatch_post_travel_pause_s": "仅用于\"依次执行\"模式——遮阳帘完成运行后、下一个启动前的短暂缓冲暂停。",
-          "dispatch_zone_batching": "启用后，即使在并行模式下，不同房间/区域之间也始终应用启动间隔延迟，使房间在视觉上保持分隔。"
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "生命周期配置文件",
           "manual_override": "手动覆盖",
           "dispatch": "遮阳帘调度"
+        }
+      },
+      "manual_override_custom": {
+        "title": "手动覆盖——此区域的设置",
+        "description": "设置此区域中活动手动覆盖的行为方式：持续多长时间，以及在其激活期间舒适或保护操作是否仍可运行。",
+        "data": {
+          "override_release_mode": "覆盖如何结束",
+          "override_time_based_kind": "计时器类型",
+          "override_decision_filter": "哪些决策会释放它",
+          "override_fixed_until": "固定结束时间",
+          "override_allow_comfort_actions": "覆盖期间允许舒适动作",
+          "override_allow_protection_actions": "覆盖期间允许保护动作",
+          "override_safety_timeout_enabled": "安全超时",
+          "override_duration_min": "传统覆盖持续时间（分钟）",
+          "override_night_duration_min": "夜间覆盖持续时间（分钟）"
+        },
+        "data_description": {
+          "override_release_mode": "选择释放方式:定时器/时钟、下一次日程切换、下一次自动决策,或仅手动清除。",
+          "override_time_based_kind": "仅当上方释放模式设置为定时器/时钟选项时才有意义:在固定时长后释放,或在固定时间释放。",
+          "override_decision_filter": "仅当上方释放模式设置为“下一次决策”选项时才有意义:在任意决策时释放、仅在舒适度决策时释放,或仅在保护决策时释放。",
+          "override_fixed_until": "仅当释放模式为定时器/时钟选项且计时器类型为固定时间时才有意义。如果今天该时间已过,覆盖将在明天此时结束。",
+          "override_allow_comfort_actions": "启用后，常规舒适遮阳仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
+          "override_allow_protection_actions": "启用后，保护动作（离家、高温、眩光）仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
+          "override_safety_timeout_enabled": "为开放式策略提供的可选最大时长安全网，确保覆盖不会被永久遗忘。",
+          "override_duration_min": "在 SmartShading 恢复正常控制之前，白天覆盖持续多长时间（传统持续时间模式）。",
+          "override_night_duration_min": "夜间覆盖的安全上限。真正的释放发生在早晨的计划转换时。"
+        }
+      },
+      "system_manual_override": {
+        "title": "手动覆盖默认值",
+        "description": "除非某区域使用自己的设置，否则每个区域都遵循的手动覆盖行为：覆盖持续多长时间，以及在其激活期间舒适或保护操作是否仍可运行。",
+        "data": {
+          "override_release_mode": "覆盖如何结束",
+          "override_time_based_kind": "计时器类型",
+          "override_decision_filter": "哪些决策会释放它",
+          "override_fixed_until": "固定结束时间",
+          "override_allow_comfort_actions": "覆盖期间允许舒适动作",
+          "override_allow_protection_actions": "覆盖期间允许保护动作",
+          "override_safety_timeout_enabled": "安全超时",
+          "override_duration_min": "传统覆盖持续时间（分钟）",
+          "override_night_duration_min": "夜间覆盖持续时间（分钟）"
+        },
+        "data_description": {
+          "override_release_mode": "选择释放方式:定时器/时钟、下一次日程切换、下一次自动决策,或仅手动清除。",
+          "override_time_based_kind": "仅当上方释放模式设置为定时器/时钟选项时才有意义:在固定时长后释放,或在固定时间释放。",
+          "override_decision_filter": "仅当上方释放模式设置为“下一次决策”选项时才有意义:在任意决策时释放、仅在舒适度决策时释放,或仅在保护决策时释放。",
+          "override_fixed_until": "仅当释放模式为定时器/时钟选项且计时器类型为固定时间时才有意义。如果今天该时间已过,覆盖将在明天此时结束。",
+          "override_allow_comfort_actions": "启用后，常规舒适遮阳仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
+          "override_allow_protection_actions": "启用后，保护动作（离家、高温、眩光）仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
+          "override_safety_timeout_enabled": "为开放式策略提供的可选最大时长安全网，确保覆盖不会被永久遗忘。",
+          "override_duration_min": "在 SmartShading 恢复正常控制之前，白天覆盖持续多长时间（传统持续时间模式）。",
+          "override_night_duration_min": "夜间覆盖的安全上限。真正的释放发生在早晨的计划转换时。"
+        }
+      },
+      "system_dispatch": {
+        "title": "遮阳帘调度",
+        "description": "设置当同一周期内决定多个遮阳帘时，SmartShading 如何在所有区域间调度遮阳帘命令。这是您的硬件/无线网关的属性，由整个住宅共享。",
+        "data": {
+          "dispatch_mode": "调度模式",
+          "dispatch_start_interval_s": "启动间隔延迟",
+          "dispatch_max_travel_wait_s": "等待运行完成的最长时间",
+          "dispatch_post_travel_pause_s": "运行完成后的暂停时间",
+          "dispatch_zone_batching": "保持区域分开"
+        },
+        "data_description": {
+          "dispatch_mode": "并行会立即启动每条指令，没有延迟。有时间间隔会在启动之间等待固定的秒数。依次执行会等待每个遮阳帘完成移动后再启动下一个。",
+          "dispatch_start_interval_s": "用于\"有时间间隔\"模式，在启用\"保持区域分开\"时，也作为区域之间的最小间隔。",
+          "dispatch_max_travel_wait_s": "仅用于\"依次执行\"模式——在继续执行前，等待遮阳帘完成运行的最长时间。",
+          "dispatch_post_travel_pause_s": "仅用于\"依次执行\"模式——遮阳帘完成运行后、下一个启动前的短暂缓冲暂停。",
+          "dispatch_zone_batching": "启用后，即使在并行模式下，不同房间/区域之间也始终应用启动间隔延迟，使房间在视觉上保持分隔。"
+        }
+      },
+      "system_init": {
+        "title": "SmartShading 系统设置",
+        "description": "除非某区域使用自己的设置，否则每个区域都遵循的全局默认值，以及系统级的遮阳帘调度时序。",
+        "menu_options": {
+          "system_manual_override": "手动覆盖默认值",
+          "system_dispatch": "遮阳帘调度"
         }
       }
     },

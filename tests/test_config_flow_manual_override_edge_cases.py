@@ -136,6 +136,7 @@ from custom_components.smartshading.const import (  # noqa: E402
     CONF_OVERRIDE_RELEASE_MODE,
     CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
     CONF_OVERRIDE_TIME_BASED_KIND,
+    CONF_OVERRIDE_USE_SYSTEM_DEFAULT,
     OVERRIDE_DETECTION_TOLERANCE_MAX,
     OVERRIDE_DURATION_MIN_MAX,
 )
@@ -181,6 +182,16 @@ def _make_config_flow() -> SmartShadingConfigFlow:
     return flow
 
 
+def _opt_out_of_system_default(flow: SmartShadingOptionsFlow, detection_tolerance: int = 10):
+    """T21 Phase C2: the gate step (async_step_manual_override) must be
+    answered with use_system_default=False before the 8-field custom form
+    (async_step_manual_override_custom) is reachable."""
+    return asyncio.run(flow.async_step_manual_override(user_input={
+        CONF_OVERRIDE_USE_SYSTEM_DEFAULT: False,
+        CONF_OVERRIDE_DETECTION_TOLERANCE: detection_tolerance,
+    }))
+
+
 _BASE_TIME_BASED_INPUT = {
     CONF_OVERRIDE_RELEASE_MODE: OverrideReleaseMode.TIME_BASED.value,
     CONF_OVERRIDE_TIME_BASED_KIND: TIME_BASED_KIND_DURATION,
@@ -196,8 +207,10 @@ _BASE_TIME_BASED_INPUT = {
 
 class TestUnknownStoredStrategyPreselectsLifecycle:
     def test_invalid_release_strategy_preselects_lifecycle_mode(self) -> None:
-        flow = _make_options_flow(data={"override_policy": {"release_strategy": "some_future_mode_v99"}})
-        result = asyncio.run(flow.async_step_manual_override(user_input=None))
+        flow = _make_options_flow(data={
+            "override_policy": {"release_strategy": "some_future_mode_v99", "use_system_default": False},
+        })
+        result = _opt_out_of_system_default(flow)
         schema: vol.Schema = result["data_schema"]
         # An unrecognized stored strategy string falls back to LIFECYCLE at
         # the config_flow layer (mirrors config_entry_data.py's storage-level
@@ -214,9 +227,12 @@ class TestUnknownStoredStrategyPreselectsLifecycle:
 class TestFixedUntilPreservedAcrossModeSwitch:
     def test_switching_to_duration_preserves_stored_fixed_until(self) -> None:
         flow = _make_options_flow(data={
-            "override_policy": {"release_strategy": "fixed_time", "fixed_until": "07:15:00"},
+            "override_policy": {
+                "release_strategy": "fixed_time", "fixed_until": "07:15:00", "use_system_default": False,
+            },
         })
-        asyncio.run(flow.async_step_manual_override(user_input={
+        _opt_out_of_system_default(flow)
+        asyncio.run(flow.async_step_manual_override_custom(user_input={
             **_BASE_TIME_BASED_INPUT,
             CONF_OVERRIDE_TIME_BASED_KIND: TIME_BASED_KIND_DURATION,
             CONF_OVERRIDE_FIXED_UNTIL: "07:15:00",  # form still carries the previously-shown value
@@ -228,9 +244,11 @@ class TestFixedUntilPreservedAcrossModeSwitch:
 
     def test_switching_back_to_fixed_time_shows_the_preserved_value(self) -> None:
         flow = _make_options_flow(data={
-            "override_policy": {"release_strategy": "duration", "fixed_until": "07:15:00"},
+            "override_policy": {
+                "release_strategy": "duration", "fixed_until": "07:15:00", "use_system_default": False,
+            },
         })
-        result = asyncio.run(flow.async_step_manual_override(user_input=None))
+        result = _opt_out_of_system_default(flow)
         schema: vol.Schema = result["data_schema"]
         key = _schema_field_key(schema, CONF_OVERRIDE_FIXED_UNTIL)
         # vol.Optional with description={"suggested_value": ...} — inspect
@@ -241,10 +259,13 @@ class TestFixedUntilPreservedAcrossModeSwitch:
 class TestThreeStepModeRoundTrip:
     def test_fixed_time_to_duration_to_fixed_time_preserves_value_throughout(self) -> None:
         flow = _make_options_flow(data={
-            "override_policy": {"release_strategy": "fixed_time", "fixed_until": "06:45:00"},
+            "override_policy": {
+                "release_strategy": "fixed_time", "fixed_until": "06:45:00", "use_system_default": False,
+            },
         })
         # Step 1: save switching to duration (value still present in the form).
-        asyncio.run(flow.async_step_manual_override(user_input={
+        _opt_out_of_system_default(flow)
+        asyncio.run(flow.async_step_manual_override_custom(user_input={
             **_BASE_TIME_BASED_INPUT,
             CONF_OVERRIDE_TIME_BASED_KIND: TIME_BASED_KIND_DURATION,
             CONF_OVERRIDE_FIXED_UNTIL: "06:45:00",
@@ -257,13 +278,13 @@ class TestThreeStepModeRoundTrip:
         # Step 2: reopen a NEW flow instance against the just-saved data
         # (mirrors a real reload) and confirm the field is still shown.
         flow2 = _make_options_flow(data=kwargs1["data"])
-        prefill = asyncio.run(flow2.async_step_manual_override(user_input=None))
+        prefill = _opt_out_of_system_default(flow2)
         schema: vol.Schema = prefill["data_schema"]
         key = _schema_field_key(schema, CONF_OVERRIDE_FIXED_UNTIL)
         assert key.description == {"suggested_value": "06:45:00"}
 
         # Step 3: switch back to fixed_time using that same preserved value.
-        asyncio.run(flow2.async_step_manual_override(user_input={
+        asyncio.run(flow2.async_step_manual_override_custom(user_input={
             **_BASE_TIME_BASED_INPUT,
             CONF_OVERRIDE_TIME_BASED_KIND: TIME_BASED_KIND_FIXED_TIME,
             CONF_OVERRIDE_FIXED_UNTIL: "06:45:00",
@@ -298,7 +319,8 @@ class TestSaveDoesNotTouchUnrelatedFeatureKeys:
             "lifecycle_config": {"id": "default", "night_position": 55},
         }
         flow = _make_options_flow(data=dict(original))
-        asyncio.run(flow.async_step_manual_override(user_input=dict(_BASE_TIME_BASED_INPUT)))
+        _opt_out_of_system_default(flow)
+        asyncio.run(flow.async_step_manual_override_custom(user_input=dict(_BASE_TIME_BASED_INPUT)))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         for key, value in original.items():
             assert kwargs["data"][key] == value, f"{key} was unexpectedly modified"
@@ -307,7 +329,7 @@ class TestSaveDoesNotTouchUnrelatedFeatureKeys:
 class TestNumberSelectorBounds:
     def test_duration_fields_have_sensible_bounds(self) -> None:
         flow = _make_options_flow(data={})
-        result = asyncio.run(flow.async_step_manual_override(user_input=None))
+        result = _opt_out_of_system_default(flow)
         schema: vol.Schema = result["data_schema"]
         for field in (CONF_OVERRIDE_DURATION_MIN, CONF_OVERRIDE_NIGHT_DURATION_MIN):
             key = _schema_field_key(schema, field)
@@ -316,6 +338,7 @@ class TestNumberSelectorBounds:
             assert cfg.max == OVERRIDE_DURATION_MIN_MAX
 
     def test_tolerance_field_has_sensible_bounds(self) -> None:
+        # detection_tolerance stays on the gate step (T21 Phase C2 — zone-only).
         flow = _make_options_flow(data={})
         result = asyncio.run(flow.async_step_manual_override(user_input=None))
         schema: vol.Schema = result["data_schema"]
@@ -328,7 +351,8 @@ class TestNumberSelectorBounds:
 class TestInvalidNumericInputHandledSafely:
     def _submit(self, duration_min_value):
         flow = _make_options_flow(data={})
-        asyncio.run(flow.async_step_manual_override(user_input={
+        _opt_out_of_system_default(flow)
+        asyncio.run(flow.async_step_manual_override_custom(user_input={
             **_BASE_TIME_BASED_INPUT,
             CONF_OVERRIDE_DURATION_MIN: duration_min_value,
         }))
@@ -355,11 +379,11 @@ class TestInvalidNumericInputHandledSafely:
     def test_flow_never_raises_on_any_of_the_above(self) -> None:
         for bad_value in (0, -1, "abc", None, 999999, [], {}, True):
             flow = _make_options_flow(data={})
-            asyncio.run(flow.async_step_manual_override(user_input={
+            _opt_out_of_system_default(flow)
+            asyncio.run(flow.async_step_manual_override_custom(user_input={
                 **_BASE_TIME_BASED_INPUT,
                 CONF_OVERRIDE_DURATION_MIN: bad_value,
                 CONF_OVERRIDE_NIGHT_DURATION_MIN: bad_value,
-                CONF_OVERRIDE_DETECTION_TOLERANCE: bad_value,
             }))  # must not raise
 
 

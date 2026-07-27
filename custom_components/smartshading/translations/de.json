@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Manuelle Übersteuerung",
-        "description": "Legt fest, wie eine aktive manuelle Übersteuerung sich verhält: wie lange sie dauert und ob Komfort- oder Schutzaktionen währenddessen weiterhin ausgeführt werden dürfen.",
+        "description": "Wählen Sie, ob diese Zone dem Übersteuerungs-Systemstandard des System-Eintrags folgt oder eigene Einstellungen verwendet.",
         "data": {
-          "override_time_based_kind": "Timer-Art",
-          "override_decision_filter": "Welche Entscheidungen sie freigeben",
-          "override_fixed_until": "Feste Endzeit",
-          "override_allow_comfort_actions": "Komfortaktionen während der Übersteuerung erlauben",
-          "override_allow_protection_actions": "Schutzaktionen während der Übersteuerung erlauben",
-          "override_safety_timeout_enabled": "Sicherheits-Timeout",
-          "override_duration_min": "Legacy-Dauer der Übersteuerung (Minuten)",
-          "override_night_duration_min": "Dauer der Nacht-Übersteuerung (Minuten)",
-          "override_detection_tolerance": "Erkennungstoleranz",
-          "override_release_mode": "Wie die Übersteuerung endet"
+          "override_use_system_default": "Systemstandard verwenden",
+          "override_detection_tolerance": "Erkennungstoleranz"
         },
         "data_description": {
-          "override_release_mode": "Wählen Sie das Freigabekonzept: ein Timer/eine Uhrzeit, der nächste Zeitplan-Übergang, die nächste automatische Entscheidung oder nur manuelles Löschen.",
-          "override_time_based_kind": "Nur relevant, wenn oben als Freigabe-Modus eine Timer-/Uhrzeit-Option gewählt ist: Freigabe nach einer festen Dauer oder zu einer festen Uhrzeit.",
-          "override_decision_filter": "Nur relevant, wenn oben als Freigabe-Modus die Option „nächste Entscheidung“ gewählt ist: Freigabe bei jeder Entscheidung, nur bei Komfortentscheidungen oder nur bei Schutzentscheidungen.",
-          "override_fixed_until": "Nur relevant, wenn der Freigabe-Modus eine Timer-/Uhrzeit-Option ist und als Timer-Art eine feste Uhrzeit gewählt ist. Ist die Uhrzeit heute bereits vorbei, endet die Übersteuerung morgen zu dieser Uhrzeit.",
-          "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
-          "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
-          "override_safety_timeout_enabled": "Optionale maximale Dauer als Sicherheitsnetz für offene Strategien, damit eine Übersteuerung niemals dauerhaft vergessen wird.",
-          "override_duration_min": "Wie lange eine Tages-Übersteuerung dauert, bevor SmartShading die normale Steuerung fortsetzt (Legacy-Dauermodus).",
-          "override_night_duration_min": "Sicherheitsnetz-Obergrenze für eine Nacht-Übersteuerung. Die eigentliche Freigabe erfolgt beim morgendlichen Zeitplan-Übergang.",
+          "override_use_system_default": "Wenn aktiviert, folgt diese Zone dem auf dem SmartShading-System-Eintrag konfigurierten Übersteuerungs-Systemstandard. Wenn deaktiviert, konfigurieren Sie auf dem nächsten Bildschirm die eigenen Einstellungen dieser Zone.",
           "override_detection_tolerance": "Minimale Positionsänderung (in Prozent), bevor eine manuelle Bewegung als Übersteuerung erkannt wird."
-        }
-      },
-      "dispatch": {
-        "title": "Rollladen-Ansteuerung",
-        "description": "Legt fest, wie SmartShading mehrere Rollladen-Befehle zeitlich staffelt, wenn im selben Zyklus mehrere Entscheidungen anfallen.",
-        "data": {
-          "dispatch_mode": "Ansteuerungsmodus",
-          "dispatch_start_interval_s": "Abstand zwischen den Starts",
-          "dispatch_max_travel_wait_s": "Maximale Wartezeit auf Fahrtende",
-          "dispatch_post_travel_pause_s": "Pause nach Fahrtende",
-          "dispatch_zone_batching": "Zonen getrennt halten"
-        },
-        "data_description": {
-          "dispatch_mode": "Gleichzeitig startet jeden Befehl ohne Verzögerung. Mit Zeitabstand wartet eine feste Anzahl Sekunden zwischen den Starts. Nacheinander wartet, bis ein Rollladen seine Fahrt beendet hat, bevor der nächste startet.",
-          "dispatch_start_interval_s": "Wird bei \"Mit Zeitabstand\" verwendet, sowie als Mindestabstand zwischen Zonen, wenn \"Zonen getrennt halten\" aktiviert ist.",
-          "dispatch_max_travel_wait_s": "Nur bei \"Nacheinander\" verwendet — wie lange auf das Fahrtende eines Rollladens gewartet wird, bevor trotzdem fortgefahren wird.",
-          "dispatch_post_travel_pause_s": "Nur bei \"Nacheinander\" verwendet — eine kurze Ruhepause nach Fahrtende, bevor der nächste Rollladen startet.",
-          "dispatch_zone_batching": "Wenn aktiviert, wird der Abstand zwischen den Starts immer zwischen verschiedenen Räumen/Zonen eingehalten, auch im Modus \"Gleichzeitig\", damit Zonen sichtbar getrennt bleiben."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Zeitplan-Profile",
           "manual_override": "Manuelle Übersteuerung",
           "dispatch": "Rollladen-Ansteuerung"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Manuelle Übersteuerung — Einstellungen dieser Zone",
+        "description": "Legt fest, wie eine aktive manuelle Übersteuerung in dieser Zone sich verhält: wie lange sie dauert und ob Komfort- oder Schutzaktionen währenddessen weiterhin ausgeführt werden dürfen.",
+        "data": {
+          "override_time_based_kind": "Timer-Art",
+          "override_decision_filter": "Welche Entscheidungen sie freigeben",
+          "override_fixed_until": "Feste Endzeit",
+          "override_allow_comfort_actions": "Komfortaktionen während der Übersteuerung erlauben",
+          "override_allow_protection_actions": "Schutzaktionen während der Übersteuerung erlauben",
+          "override_safety_timeout_enabled": "Sicherheits-Timeout",
+          "override_duration_min": "Legacy-Dauer der Übersteuerung (Minuten)",
+          "override_night_duration_min": "Dauer der Nacht-Übersteuerung (Minuten)",
+          "override_release_mode": "Wie die Übersteuerung endet"
+        },
+        "data_description": {
+          "override_release_mode": "Wählen Sie das Freigabekonzept: ein Timer/eine Uhrzeit, der nächste Zeitplan-Übergang, die nächste automatische Entscheidung oder nur manuelles Löschen.",
+          "override_time_based_kind": "Nur relevant, wenn oben als Freigabe-Modus eine Timer-/Uhrzeit-Option gewählt ist: Freigabe nach einer festen Dauer oder zu einer festen Uhrzeit.",
+          "override_decision_filter": "Nur relevant, wenn oben als Freigabe-Modus die Option „nächste Entscheidung“ gewählt ist: Freigabe bei jeder Entscheidung, nur bei Komfortentscheidungen oder nur bei Schutzentscheidungen.",
+          "override_fixed_until": "Nur relevant, wenn der Freigabe-Modus eine Timer-/Uhrzeit-Option ist und als Timer-Art eine feste Uhrzeit gewählt ist. Ist die Uhrzeit heute bereits vorbei, endet die Übersteuerung morgen zu dieser Uhrzeit.",
+          "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
+          "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
+          "override_safety_timeout_enabled": "Optionale maximale Dauer als Sicherheitsnetz für offene Strategien, damit eine Übersteuerung niemals dauerhaft vergessen wird.",
+          "override_duration_min": "Wie lange eine Tages-Übersteuerung dauert, bevor SmartShading die normale Steuerung fortsetzt (Legacy-Dauermodus).",
+          "override_night_duration_min": "Sicherheitsnetz-Obergrenze für eine Nacht-Übersteuerung. Die eigentliche Freigabe erfolgt beim morgendlichen Zeitplan-Übergang."
+        }
+      },
+      "system_manual_override": {
+        "title": "Übersteuerungs-Systemstandard",
+        "description": "Das Verhalten der manuellen Übersteuerung, dem jede Zone folgt, sofern sie keine eigenen Einstellungen verwendet: wie lange eine Übersteuerung dauert und ob Komfort- oder Schutzaktionen währenddessen weiterhin ausgeführt werden dürfen.",
+        "data": {
+          "override_time_based_kind": "Timer-Art",
+          "override_decision_filter": "Welche Entscheidungen sie freigeben",
+          "override_fixed_until": "Feste Endzeit",
+          "override_allow_comfort_actions": "Komfortaktionen während der Übersteuerung erlauben",
+          "override_allow_protection_actions": "Schutzaktionen während der Übersteuerung erlauben",
+          "override_safety_timeout_enabled": "Sicherheits-Timeout",
+          "override_duration_min": "Legacy-Dauer der Übersteuerung (Minuten)",
+          "override_night_duration_min": "Dauer der Nacht-Übersteuerung (Minuten)",
+          "override_release_mode": "Wie die Übersteuerung endet"
+        },
+        "data_description": {
+          "override_release_mode": "Wählen Sie das Freigabekonzept: ein Timer/eine Uhrzeit, der nächste Zeitplan-Übergang, die nächste automatische Entscheidung oder nur manuelles Löschen.",
+          "override_time_based_kind": "Nur relevant, wenn oben als Freigabe-Modus eine Timer-/Uhrzeit-Option gewählt ist: Freigabe nach einer festen Dauer oder zu einer festen Uhrzeit.",
+          "override_decision_filter": "Nur relevant, wenn oben als Freigabe-Modus die Option „nächste Entscheidung“ gewählt ist: Freigabe bei jeder Entscheidung, nur bei Komfortentscheidungen oder nur bei Schutzentscheidungen.",
+          "override_fixed_until": "Nur relevant, wenn der Freigabe-Modus eine Timer-/Uhrzeit-Option ist und als Timer-Art eine feste Uhrzeit gewählt ist. Ist die Uhrzeit heute bereits vorbei, endet die Übersteuerung morgen zu dieser Uhrzeit.",
+          "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
+          "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
+          "override_safety_timeout_enabled": "Optionale maximale Dauer als Sicherheitsnetz für offene Strategien, damit eine Übersteuerung niemals dauerhaft vergessen wird.",
+          "override_duration_min": "Wie lange eine Tages-Übersteuerung dauert, bevor SmartShading die normale Steuerung fortsetzt (Legacy-Dauermodus).",
+          "override_night_duration_min": "Sicherheitsnetz-Obergrenze für eine Nacht-Übersteuerung. Die eigentliche Freigabe erfolgt beim morgendlichen Zeitplan-Übergang."
+        }
+      },
+      "system_dispatch": {
+        "title": "Rollladen-Ansteuerung",
+        "description": "Legt fest, wie SmartShading Rollladenbefehle über alle Zonen hinweg zeitlich staffelt, wenn mehrere Rollläden im selben Zyklus entschieden werden. Dies ist eine Eigenschaft Ihrer Rollladen-Hardware/Funk-Gateway, die für das ganze Haus gilt.",
+        "data": {
+          "dispatch_mode": "Ansteuerungsmodus",
+          "dispatch_start_interval_s": "Abstand zwischen den Starts",
+          "dispatch_max_travel_wait_s": "Maximale Wartezeit auf Fahrtende",
+          "dispatch_post_travel_pause_s": "Pause nach Fahrtende",
+          "dispatch_zone_batching": "Zonen getrennt halten"
+        },
+        "data_description": {
+          "dispatch_mode": "Gleichzeitig startet jeden Befehl ohne Verzögerung. Mit Zeitabstand wartet eine feste Anzahl Sekunden zwischen den Starts. Nacheinander wartet, bis ein Rollladen seine Fahrt beendet hat, bevor der nächste startet.",
+          "dispatch_start_interval_s": "Wird bei \"Mit Zeitabstand\" verwendet, sowie als Mindestabstand zwischen Zonen, wenn \"Zonen getrennt halten\" aktiviert ist.",
+          "dispatch_max_travel_wait_s": "Nur bei \"Nacheinander\" verwendet — wie lange auf das Fahrtende eines Rollladens gewartet wird, bevor trotzdem fortgefahren wird.",
+          "dispatch_post_travel_pause_s": "Nur bei \"Nacheinander\" verwendet — eine kurze Ruhepause nach Fahrtende, bevor der nächste Rollladen startet.",
+          "dispatch_zone_batching": "Wenn aktiviert, wird der Abstand zwischen den Starts immer zwischen verschiedenen Räumen/Zonen eingehalten, auch im Modus \"Gleichzeitig\", damit Zonen sichtbar getrennt bleiben."
+        }
+      },
+      "system_init": {
+        "title": "SmartShading-Systemeinstellungen",
+        "description": "Globale Standardwerte, denen jede Zone folgt, sofern sie keine eigenen Einstellungen verwendet, sowie systemweites Timing für die Rollladenansteuerung.",
+        "menu_options": {
+          "system_manual_override": "Übersteuerungs-Systemstandard",
+          "system_dispatch": "Rollladenansteuerung"
         }
       }
     },

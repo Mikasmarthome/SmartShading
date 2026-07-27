@@ -1,15 +1,19 @@
-"""OptionsFlow schema/save coverage for the Dispatch strategy step —
-v1.2.0-beta.1, T11.
+"""OptionsFlow schema/save coverage for the Cover Dispatch step —
+v1.2.0-beta.1, T11; moved to the System entry in T21 Phase C2 (Cover
+Dispatch is a hardware/RF-pacing property of the shared dispatch pipeline,
+not a per-zone concern — see the Phase C2 ownership analysis).
 
 Same real-selector-stub technique established in
 tests/test_config_flow_manual_override.py (T7/T10).
 
 Coverage:
-  CFD-01  Menu reaches "dispatch" (reachability).
+  CFD-01  System entry menu reaches "system_dispatch" (reachability); the
+          zone menu no longer offers a Dispatch step at all.
   CFD-02  Defaults pre-selected when nothing stored (backward compatibility:
           SPACED at 2.0s).
   CFD-03  Stored values pre-selected on reopen.
-  CFD-04  Saving persists every field into "dispatch_config".
+  CFD-04  Saving persists every field into "system_dispatch_config" on the
+          System entry.
   CFD-05  Out-of-range numeric input is clamped server-side, never stored
           as-is or crashes the save.
   CFD-06  Invalid mode string falls back to SPACED on save.
@@ -118,6 +122,7 @@ from custom_components.smartshading.const import (  # noqa: E402
     CONF_DISPATCH_START_INTERVAL_S,
     CONF_DISPATCH_ZONE_BATCHING,
 )
+from custom_components.smartshading.const import CONF_ENTRY_TYPE, ENTRY_TYPE_SYSTEM
 from custom_components.smartshading.models.dispatch_config import (
     DEFAULT_MAX_TRAVEL_WAIT_S,
     DEFAULT_POST_TRAVEL_PAUSE_S,
@@ -157,20 +162,23 @@ _FULL_INPUT = {
 
 
 class TestMenuReachability:
-    def test_dispatch_in_init_menu(self):
-        flow = _make_options_flow(data={})
+    def test_system_dispatch_in_system_init_menu(self):
+        flow = _make_options_flow(data={CONF_ENTRY_TYPE: ENTRY_TYPE_SYSTEM})
         result = asyncio.run(flow.async_step_init(user_input=None))
         assert result["type"] == "menu"
-        assert "advanced" in result["menu_options"]
+        assert "system_dispatch" in result["menu_options"]
+
+    def test_dispatch_no_longer_in_zone_advanced_menu(self):
+        flow = _make_options_flow(data={})
         advanced = asyncio.run(flow.async_step_advanced(user_input=None))
         assert advanced["type"] == "menu"
-        assert "dispatch" in advanced["menu_options"]
+        assert "dispatch" not in advanced["menu_options"]
 
 
 class TestDefaultsPreselected:
     def test_defaults_when_nothing_stored(self):
         flow = _make_options_flow(data={})
-        result = asyncio.run(flow.async_step_dispatch(user_input=None))
+        result = asyncio.run(flow.async_step_system_dispatch(user_input=None))
         schema: vol.Schema = result["data_schema"]
         assert _schema_field_key(schema, CONF_DISPATCH_MODE).default() == DispatchMode.SPACED.value
         assert _schema_field_key(schema, CONF_DISPATCH_START_INTERVAL_S).default() == DEFAULT_START_INTERVAL_S
@@ -182,22 +190,22 @@ class TestDefaultsPreselected:
 class TestStoredValuesPreselected:
     def test_stored_values_shown_on_reopen(self):
         flow = _make_options_flow(data={
-            "dispatch_config": {
+            "system_dispatch_config": {
                 "mode": "sequential", "start_interval_s": 3.0,
                 "max_travel_wait_s": 60.0, "post_travel_pause_s": 1.0,
                 "zone_batching": True,
             }
         })
-        result = asyncio.run(flow.async_step_dispatch(user_input=None))
+        result = asyncio.run(flow.async_step_system_dispatch(user_input=None))
         schema: vol.Schema = result["data_schema"]
         assert _schema_field_key(schema, CONF_DISPATCH_MODE).default() == "sequential"
         assert _schema_field_key(schema, CONF_DISPATCH_START_INTERVAL_S).default() == 3.0
         assert _schema_field_key(schema, CONF_DISPATCH_ZONE_BATCHING).default() is True
 
     def test_form_render_does_not_mutate_entry(self):
-        flow = _make_options_flow(data={"dispatch_config": {"mode": "parallel"}})
+        flow = _make_options_flow(data={"system_dispatch_config": {"mode": "parallel"}})
         before = dict(flow._config_entry.data)
-        asyncio.run(flow.async_step_dispatch(user_input=None))
+        asyncio.run(flow.async_step_system_dispatch(user_input=None))
         assert flow._config_entry.data == before
         flow.hass.config_entries.async_update_entry.assert_not_called()
 
@@ -205,9 +213,9 @@ class TestStoredValuesPreselected:
 class TestSavePersistsEveryField:
     def test_full_input_saved(self):
         flow = _make_options_flow(data={})
-        asyncio.run(flow.async_step_dispatch(user_input=dict(_FULL_INPUT)))
+        asyncio.run(flow.async_step_system_dispatch(user_input=dict(_FULL_INPUT)))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        saved = kwargs["data"]["dispatch_config"]
+        saved = kwargs["data"]["system_dispatch_config"]
         assert saved["mode"] == "sequential"
         assert saved["start_interval_s"] == 1.5
         assert saved["max_travel_wait_s"] == 45.0
@@ -218,21 +226,21 @@ class TestSavePersistsEveryField:
         flow = _make_options_flow(data={})
         user_input = dict(_FULL_INPUT)
         user_input[CONF_DISPATCH_START_INTERVAL_S] = 0.5
-        asyncio.run(flow.async_step_dispatch(user_input=user_input))
+        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["dispatch_config"]["start_interval_s"] == 0.5
+        assert kwargs["data"]["system_dispatch_config"]["start_interval_s"] == 0.5
 
     def test_zero_start_interval_saved(self):
         flow = _make_options_flow(data={})
         user_input = dict(_FULL_INPUT)
         user_input[CONF_DISPATCH_START_INTERVAL_S] = 0.0
-        asyncio.run(flow.async_step_dispatch(user_input=user_input))
+        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["dispatch_config"]["start_interval_s"] == 0.0
+        assert kwargs["data"]["system_dispatch_config"]["start_interval_s"] == 0.0
 
     def test_unrelated_keys_untouched(self):
         flow = _make_options_flow(data={"weather_entity_id": "weather.home"})
-        asyncio.run(flow.async_step_dispatch(user_input=dict(_FULL_INPUT)))
+        asyncio.run(flow.async_step_system_dispatch(user_input=dict(_FULL_INPUT)))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         assert kwargs["data"]["weather_entity_id"] == "weather.home"
 
@@ -251,31 +259,31 @@ class TestServerSideValidation:
         flow = _make_options_flow(data={})
         user_input = dict(_FULL_INPUT)
         user_input[CONF_DISPATCH_START_INTERVAL_S] = 9999.0
-        asyncio.run(flow.async_step_dispatch(user_input=user_input))
+        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["dispatch_config"]["start_interval_s"] == START_INTERVAL_S_MAX
+        assert kwargs["data"]["system_dispatch_config"]["start_interval_s"] == START_INTERVAL_S_MAX
 
     def test_negative_max_travel_wait_clamped(self):
         from custom_components.smartshading.models.dispatch_config import MAX_TRAVEL_WAIT_S_MIN
         flow = _make_options_flow(data={})
         user_input = dict(_FULL_INPUT)
         user_input[CONF_DISPATCH_MAX_TRAVEL_WAIT_S] = -10.0
-        asyncio.run(flow.async_step_dispatch(user_input=user_input))
+        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["dispatch_config"]["max_travel_wait_s"] == MAX_TRAVEL_WAIT_S_MIN
+        assert kwargs["data"]["system_dispatch_config"]["max_travel_wait_s"] == MAX_TRAVEL_WAIT_S_MIN
 
     def test_invalid_mode_falls_back_to_spaced(self):
         flow = _make_options_flow(data={})
         user_input = dict(_FULL_INPUT)
         user_input[CONF_DISPATCH_MODE] = "warp_speed"
-        asyncio.run(flow.async_step_dispatch(user_input=user_input))
+        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["dispatch_config"]["mode"] == DispatchMode.SPACED.value
+        assert kwargs["data"]["system_dispatch_config"]["mode"] == DispatchMode.SPACED.value
 
     def test_non_numeric_input_falls_back_to_default(self):
         flow = _make_options_flow(data={})
         user_input = dict(_FULL_INPUT)
         user_input[CONF_DISPATCH_START_INTERVAL_S] = "not_a_number"
-        asyncio.run(flow.async_step_dispatch(user_input=user_input))
+        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["dispatch_config"]["start_interval_s"] == DEFAULT_START_INTERVAL_S
+        assert kwargs["data"]["system_dispatch_config"]["start_interval_s"] == DEFAULT_START_INTERVAL_S

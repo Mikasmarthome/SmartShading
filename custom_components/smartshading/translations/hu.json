@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Kézi felülbírálás",
-        "description": "Meghatározza az aktív kézi felülbírálás viselkedését: mennyi ideig tart, és hogy a kényelmi vagy védelmi műveletek futhatnak-e még, amíg aktív.",
+        "description": "Válassza ki, hogy ez a zóna a rendszer kézi felülbírálási alapértelmezését követi-e, vagy saját beállításokat használ.",
         "data": {
-          "override_release_mode": "Hogyan ér véget a felülbírálás",
-          "override_time_based_kind": "Időzítő típusa",
-          "override_decision_filter": "Mely döntések oldják fel",
-          "override_fixed_until": "Rögzített befejezési idő",
-          "override_allow_comfort_actions": "Kényelmi műveletek engedélyezése felülbírálás alatt",
-          "override_allow_protection_actions": "Védelmi műveletek engedélyezése felülbírálás alatt",
-          "override_safety_timeout_enabled": "Biztonsági időkorlát",
-          "override_duration_min": "Klasszikus felülbírálási időtartam (perc)",
-          "override_night_duration_min": "Éjszakai felülbírálási időtartam (perc)",
+          "override_use_system_default": "Rendszer-alapértelmezés használata",
           "override_detection_tolerance": "Érzékelési tolerancia"
         },
         "data_description": {
-          "override_release_mode": "Válassza ki a feloldási koncepciót: időzítő/óra, a következő ütemezési átmenet, a következő automatikus döntés, vagy csak kézi törlés.",
-          "override_time_based_kind": "Csak akkor releváns, ha a fenti feloldási mód időzítő/óra opcióra van állítva: feloldás rögzített időtartam után vagy rögzített időpontban.",
-          "override_decision_filter": "Csak akkor releváns, ha a fenti feloldási mód a következő döntés opcióra van állítva: feloldás bármely döntésnél, csak kényelmi döntéseknél, vagy csak védelmi döntéseknél.",
-          "override_fixed_until": "Csak akkor releváns, ha a feloldási mód időzítő/óra opció, és az időzítő típusa rögzített időpont. Ha ez az időpont ma már elmúlt, a felülbírálás holnap ekkor ér véget.",
-          "override_allow_comfort_actions": "Ha engedélyezve van, a szokásos kényelmi árnyékolás továbbra is futhat aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
-          "override_allow_protection_actions": "Ha engedélyezve van, a védelmi műveletek (távollét, hőség, vakítás) továbbra is futhatnak aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
-          "override_safety_timeout_enabled": "Opcionális maximális időtartam biztonsági hálóként a nyitott végű stratégiákhoz, hogy a felülbírálás sose maradjon véglegesen elfeledve.",
-          "override_duration_min": "Meddig tart egy nappali felülbírálás, mielőtt a SmartShading folytatja a normál vezérlést (klasszikus időtartam mód).",
-          "override_night_duration_min": "Biztonsági korlát az éjszakai felülbírálásra. A valódi felszabadulás a reggeli ütemezésváltáskor történik.",
+          "override_use_system_default": "Ha be van kapcsolva, ez a zóna a rendszerbejegyzésen beállított kézi felülbírálási alapértelmezést követi. Ha ki van kapcsolva, a következő képernyőn beállíthatja a zóna saját beállításait.",
           "override_detection_tolerance": "Minimális pozícióváltozás (százalékban), mielőtt egy kézi mozgást felülbírálásként ismer fel a rendszer."
-        }
-      },
-      "dispatch": {
-        "title": "Árnyékolók ütemezése",
-        "description": "Állítsd be, hogyan ütemezi a SmartShading az árnyékolóknak küldött parancsokat, amikor egy ciklusban több árnyékolóról születik döntés.",
-        "data": {
-          "dispatch_mode": "Ütemezési mód",
-          "dispatch_start_interval_s": "Késleltetés az indítások között",
-          "dispatch_max_travel_wait_s": "Maximális várakozás a mozgás befejezésére",
-          "dispatch_post_travel_pause_s": "Szünet a mozgás befejezése után",
-          "dispatch_zone_batching": "Zónák elkülönítése"
-        },
-        "data_description": {
-          "dispatch_mode": "Párhuzamos minden parancsot késleltetés nélkül indít el. Időréssel fix másodpercet vár az indítások között. Egymás után megvárja, amíg az egyik árnyékoló befejezi a mozgást, mielőtt a következő elindul.",
-          "dispatch_start_interval_s": "Az \"Időréssel\" módnál használatos, valamint a zónák közötti minimális résként, ha a \"Zónák elkülönítése\" engedélyezve van.",
-          "dispatch_max_travel_wait_s": "Csak az \"Egymás után\" módnál használatos — mennyi ideig várjon egy árnyékoló befejezésére, mielőtt mindenképp folytatja.",
-          "dispatch_post_travel_pause_s": "Csak az \"Egymás után\" módnál használatos — rövid megnyugvási szünet azután, hogy egy árnyékoló befejezte a mozgást, mielőtt a következő elindul.",
-          "dispatch_zone_batching": "Ha engedélyezve van, az indítások közötti késleltetés mindig érvényesül a különböző szobák/zónák között, még Párhuzamos módban is, hogy a szobák vizuálisan elkülönüljenek."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Ütemezési profilok",
           "manual_override": "Kézi felülbírálás",
           "dispatch": "Árnyékolók ütemezése"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Kézi felülbírálás — a zóna saját beállításai",
+        "description": "Meghatározza, hogyan viselkedik egy aktív kézi felülbírálás ebben a zónában: mennyi ideig tart, és hogy a komfort- vagy védelmi műveletek futhatnak-e közben.",
+        "data": {
+          "override_release_mode": "Hogyan ér véget a felülbírálás",
+          "override_time_based_kind": "Időzítő típusa",
+          "override_decision_filter": "Mely döntések oldják fel",
+          "override_fixed_until": "Rögzített befejezési idő",
+          "override_allow_comfort_actions": "Kényelmi műveletek engedélyezése felülbírálás alatt",
+          "override_allow_protection_actions": "Védelmi műveletek engedélyezése felülbírálás alatt",
+          "override_safety_timeout_enabled": "Biztonsági időkorlát",
+          "override_duration_min": "Klasszikus felülbírálási időtartam (perc)",
+          "override_night_duration_min": "Éjszakai felülbírálási időtartam (perc)"
+        },
+        "data_description": {
+          "override_release_mode": "Válassza ki a feloldási koncepciót: időzítő/óra, a következő ütemezési átmenet, a következő automatikus döntés, vagy csak kézi törlés.",
+          "override_time_based_kind": "Csak akkor releváns, ha a fenti feloldási mód időzítő/óra opcióra van állítva: feloldás rögzített időtartam után vagy rögzített időpontban.",
+          "override_decision_filter": "Csak akkor releváns, ha a fenti feloldási mód a következő döntés opcióra van állítva: feloldás bármely döntésnél, csak kényelmi döntéseknél, vagy csak védelmi döntéseknél.",
+          "override_fixed_until": "Csak akkor releváns, ha a feloldási mód időzítő/óra opció, és az időzítő típusa rögzített időpont. Ha ez az időpont ma már elmúlt, a felülbírálás holnap ekkor ér véget.",
+          "override_allow_comfort_actions": "Ha engedélyezve van, a szokásos kényelmi árnyékolás továbbra is futhat aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
+          "override_allow_protection_actions": "Ha engedélyezve van, a védelmi műveletek (távollét, hőség, vakítás) továbbra is futhatnak aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
+          "override_safety_timeout_enabled": "Opcionális maximális időtartam biztonsági hálóként a nyitott végű stratégiákhoz, hogy a felülbírálás sose maradjon véglegesen elfeledve.",
+          "override_duration_min": "Meddig tart egy nappali felülbírálás, mielőtt a SmartShading folytatja a normál vezérlést (klasszikus időtartam mód).",
+          "override_night_duration_min": "Biztonsági korlát az éjszakai felülbírálásra. A valódi felszabadulás a reggeli ütemezésváltáskor történik."
+        }
+      },
+      "system_manual_override": {
+        "title": "Kézi felülbírálás alapértelmezései",
+        "description": "A kézi felülbírálás viselkedése, amelyet minden zóna követ, hacsak nem használ saját beállításokat: mennyi ideig tart a felülbírálás, és hogy a komfort- vagy védelmi műveletek futhatnak-e közben.",
+        "data": {
+          "override_release_mode": "Hogyan ér véget a felülbírálás",
+          "override_time_based_kind": "Időzítő típusa",
+          "override_decision_filter": "Mely döntések oldják fel",
+          "override_fixed_until": "Rögzített befejezési idő",
+          "override_allow_comfort_actions": "Kényelmi műveletek engedélyezése felülbírálás alatt",
+          "override_allow_protection_actions": "Védelmi műveletek engedélyezése felülbírálás alatt",
+          "override_safety_timeout_enabled": "Biztonsági időkorlát",
+          "override_duration_min": "Klasszikus felülbírálási időtartam (perc)",
+          "override_night_duration_min": "Éjszakai felülbírálási időtartam (perc)"
+        },
+        "data_description": {
+          "override_release_mode": "Válassza ki a feloldási koncepciót: időzítő/óra, a következő ütemezési átmenet, a következő automatikus döntés, vagy csak kézi törlés.",
+          "override_time_based_kind": "Csak akkor releváns, ha a fenti feloldási mód időzítő/óra opcióra van állítva: feloldás rögzített időtartam után vagy rögzített időpontban.",
+          "override_decision_filter": "Csak akkor releváns, ha a fenti feloldási mód a következő döntés opcióra van állítva: feloldás bármely döntésnél, csak kényelmi döntéseknél, vagy csak védelmi döntéseknél.",
+          "override_fixed_until": "Csak akkor releváns, ha a feloldási mód időzítő/óra opció, és az időzítő típusa rögzített időpont. Ha ez az időpont ma már elmúlt, a felülbírálás holnap ekkor ér véget.",
+          "override_allow_comfort_actions": "Ha engedélyezve van, a szokásos kényelmi árnyékolás továbbra is futhat aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
+          "override_allow_protection_actions": "Ha engedélyezve van, a védelmi műveletek (távollét, hőség, vakítás) továbbra is futhatnak aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
+          "override_safety_timeout_enabled": "Opcionális maximális időtartam biztonsági hálóként a nyitott végű stratégiákhoz, hogy a felülbírálás sose maradjon véglegesen elfeledve.",
+          "override_duration_min": "Meddig tart egy nappali felülbírálás, mielőtt a SmartShading folytatja a normál vezérlést (klasszikus időtartam mód).",
+          "override_night_duration_min": "Biztonsági korlát az éjszakai felülbírálásra. A valódi felszabadulás a reggeli ütemezésváltáskor történik."
+        }
+      },
+      "system_dispatch": {
+        "title": "Árnyékolók ütemezése",
+        "description": "Meghatározza, hogyan ütemezi a SmartShading az árnyékoló parancsokat az összes zónában, amikor több árnyékolóról döntenek ugyanabban a ciklusban. Ez a hardver/rádiós átjáró tulajdonsága, amely az egész házra vonatkozik.",
+        "data": {
+          "dispatch_mode": "Ütemezési mód",
+          "dispatch_start_interval_s": "Késleltetés az indítások között",
+          "dispatch_max_travel_wait_s": "Maximális várakozás a mozgás befejezésére",
+          "dispatch_post_travel_pause_s": "Szünet a mozgás befejezése után",
+          "dispatch_zone_batching": "Zónák elkülönítése"
+        },
+        "data_description": {
+          "dispatch_mode": "Párhuzamos minden parancsot késleltetés nélkül indít el. Időréssel fix másodpercet vár az indítások között. Egymás után megvárja, amíg az egyik árnyékoló befejezi a mozgást, mielőtt a következő elindul.",
+          "dispatch_start_interval_s": "Az \"Időréssel\" módnál használatos, valamint a zónák közötti minimális résként, ha a \"Zónák elkülönítése\" engedélyezve van.",
+          "dispatch_max_travel_wait_s": "Csak az \"Egymás után\" módnál használatos — mennyi ideig várjon egy árnyékoló befejezésére, mielőtt mindenképp folytatja.",
+          "dispatch_post_travel_pause_s": "Csak az \"Egymás után\" módnál használatos — rövid megnyugvási szünet azután, hogy egy árnyékoló befejezte a mozgást, mielőtt a következő elindul.",
+          "dispatch_zone_batching": "Ha engedélyezve van, az indítások közötti késleltetés mindig érvényesül a különböző szobák/zónák között, még Párhuzamos módban is, hogy a szobák vizuálisan elkülönüljenek."
+        }
+      },
+      "system_init": {
+        "title": "SmartShading rendszerbeállítások",
+        "description": "Globális alapértelmezések, amelyeket minden zóna követ, hacsak nem használ saját beállításokat, valamint az árnyékolás-küldés rendszerszintű időzítése.",
+        "menu_options": {
+          "system_manual_override": "Kézi felülbírálás alapértelmezései",
+          "system_dispatch": "Árnyékolás-vezérlés"
         }
       }
     },

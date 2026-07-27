@@ -395,48 +395,14 @@
       },
       "manual_override": {
         "title": "Anul·lació manual",
-        "description": "Defineix el comportament d'una anul·lació manual activa: quant dura i si les accions de confort o protecció poden continuar executant-se mentre és activa.",
+        "description": "Trieu si aquesta zona segueix el valor predeterminat de substitució manual de l'entrada del sistema, o utilitza la seva pròpia configuració.",
         "data": {
-          "override_release_mode": "Com finalitza la substitució",
-          "override_time_based_kind": "Tipus de temporitzador",
-          "override_decision_filter": "Quines decisions l'alliberen",
-          "override_fixed_until": "Hora de finalització fixa",
-          "override_allow_comfort_actions": "Permet accions de confort durant l'anul·lació",
-          "override_allow_protection_actions": "Permet accions de protecció durant l'anul·lació",
-          "override_safety_timeout_enabled": "Temps de seguretat",
-          "override_duration_min": "Durada d'anul·lació clàssica (minuts)",
-          "override_night_duration_min": "Durada d'anul·lació nocturna (minuts)",
+          "override_use_system_default": "Utilitza el valor predeterminat del sistema",
           "override_detection_tolerance": "Tolerància de detecció"
         },
         "data_description": {
-          "override_release_mode": "Trieu el concepte d'alliberament: un temporitzador/rellotge, la propera transició d'horari, la propera decisió automàtica, o només esborrat manual.",
-          "override_time_based_kind": "Només rellevant quan el mode d'alliberament de dalt està configurat en una opció de temporitzador/rellotge: alliberament després d'una durada fixa o a una hora fixa.",
-          "override_decision_filter": "Només rellevant quan el mode d'alliberament de dalt està configurat en l'opció de propera decisió: alliberament en qualsevol decisió, només decisions de confort, o només decisions de protecció.",
-          "override_fixed_until": "Només rellevant quan el mode d'alliberament és una opció de temporitzador/rellotge i el tipus de temporitzador és una hora fixa. Si aquesta hora ja ha passat avui, la substitució finalitza demà a aquesta hora.",
-          "override_allow_comfort_actions": "Si està activat, l'ombreig de confort habitual pot continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
-          "override_allow_protection_actions": "Si està activat, les accions de protecció (absència, calor, enlluernament) poden continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
-          "override_safety_timeout_enabled": "Durada màxima opcional com a xarxa de seguretat per a estratègies obertes, perquè una anul·lació mai quedi oblidada permanentment.",
-          "override_duration_min": "Quant dura una anul·lació diürna abans que SmartShading reprengui el control normal (mode de durada clàssic).",
-          "override_night_duration_min": "Límit de seguretat per a una anul·lació nocturna. L'alliberament real es produeix en la transició de cicle matinal.",
+          "override_use_system_default": "Quan està activat, aquesta zona segueix el valor predeterminat de substitució manual configurat a l'entrada del sistema. Quan està desactivat, configurareu la configuració pròpia d'aquesta zona a la pantalla següent.",
           "override_detection_tolerance": "Canvi mínim de posició (en percentatge) abans que un moviment manual es reconegui com una anul·lació."
-        }
-      },
-      "dispatch": {
-        "title": "Coordinació de les persianes",
-        "description": "Configura com SmartShading espaia les ordres a les persianes quan es decideixen diverses persianes en el mateix cicle.",
-        "data": {
-          "dispatch_mode": "Mode de coordinació",
-          "dispatch_start_interval_s": "Retard entre inicis",
-          "dispatch_max_travel_wait_s": "Espera màxima perquè acabi el moviment",
-          "dispatch_post_travel_pause_s": "Pausa després que acabi el moviment",
-          "dispatch_zone_batching": "Mantén les zones separades"
-        },
-        "data_description": {
-          "dispatch_mode": "Simultani inicia totes les ordres sense retard. Amb interval espera un nombre fix de segons entre inicis. Una darrere l'altra espera que cada persiana acabi de moure's abans d'iniciar la següent.",
-          "dispatch_start_interval_s": "S'utilitza amb \"Amb interval\", i com a interval mínim entre zones quan \"Mantén les zones separades\" està activat.",
-          "dispatch_max_travel_wait_s": "Només s'utilitza amb \"Una darrere l'altra\" — quant de temps s'espera que una persiana acabi abans de continuar igualment.",
-          "dispatch_post_travel_pause_s": "Només s'utilitza amb \"Una darrere l'altra\" — una breu pausa d'assentament després que una persiana acabi, abans que comenci la següent.",
-          "dispatch_zone_batching": "Si està activat, el retard entre inicis s'aplica sempre entre diferents habitacions/zones, fins i tot en mode Simultani, perquè les habitacions es mantinguin visualment separades."
         }
       },
       "windows": {
@@ -455,6 +421,84 @@
           "lifecycle_profiles": "Perfils d'horari",
           "manual_override": "Anul·lació manual",
           "dispatch": "Coordinació de les persianes"
+        }
+      },
+      "manual_override_custom": {
+        "title": "Substitució manual — configuració d'aquesta zona",
+        "description": "Defineix com es comporta una substitució manual activa en aquesta zona: quant dura i si les accions de confort o protecció poden continuar executant-se mentre és activa.",
+        "data": {
+          "override_release_mode": "Com finalitza la substitució",
+          "override_time_based_kind": "Tipus de temporitzador",
+          "override_decision_filter": "Quines decisions l'alliberen",
+          "override_fixed_until": "Hora de finalització fixa",
+          "override_allow_comfort_actions": "Permet accions de confort durant l'anul·lació",
+          "override_allow_protection_actions": "Permet accions de protecció durant l'anul·lació",
+          "override_safety_timeout_enabled": "Temps de seguretat",
+          "override_duration_min": "Durada d'anul·lació clàssica (minuts)",
+          "override_night_duration_min": "Durada d'anul·lació nocturna (minuts)"
+        },
+        "data_description": {
+          "override_release_mode": "Trieu el concepte d'alliberament: un temporitzador/rellotge, la propera transició d'horari, la propera decisió automàtica, o només esborrat manual.",
+          "override_time_based_kind": "Només rellevant quan el mode d'alliberament de dalt està configurat en una opció de temporitzador/rellotge: alliberament després d'una durada fixa o a una hora fixa.",
+          "override_decision_filter": "Només rellevant quan el mode d'alliberament de dalt està configurat en l'opció de propera decisió: alliberament en qualsevol decisió, només decisions de confort, o només decisions de protecció.",
+          "override_fixed_until": "Només rellevant quan el mode d'alliberament és una opció de temporitzador/rellotge i el tipus de temporitzador és una hora fixa. Si aquesta hora ja ha passat avui, la substitució finalitza demà a aquesta hora.",
+          "override_allow_comfort_actions": "Si està activat, l'ombreig de confort habitual pot continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
+          "override_allow_protection_actions": "Si està activat, les accions de protecció (absència, calor, enlluernament) poden continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
+          "override_safety_timeout_enabled": "Durada màxima opcional com a xarxa de seguretat per a estratègies obertes, perquè una anul·lació mai quedi oblidada permanentment.",
+          "override_duration_min": "Quant dura una anul·lació diürna abans que SmartShading reprengui el control normal (mode de durada clàssic).",
+          "override_night_duration_min": "Límit de seguretat per a una anul·lació nocturna. L'alliberament real es produeix en la transició de cicle matinal."
+        }
+      },
+      "system_manual_override": {
+        "title": "Valors predeterminats de substitució manual",
+        "description": "El comportament de la substitució manual que segueix cada zona llevat que utilitzi la seva pròpia configuració: quant dura una substitució i si les accions de confort o protecció poden continuar executant-se mentre n'hi ha una activa.",
+        "data": {
+          "override_release_mode": "Com finalitza la substitució",
+          "override_time_based_kind": "Tipus de temporitzador",
+          "override_decision_filter": "Quines decisions l'alliberen",
+          "override_fixed_until": "Hora de finalització fixa",
+          "override_allow_comfort_actions": "Permet accions de confort durant l'anul·lació",
+          "override_allow_protection_actions": "Permet accions de protecció durant l'anul·lació",
+          "override_safety_timeout_enabled": "Temps de seguretat",
+          "override_duration_min": "Durada d'anul·lació clàssica (minuts)",
+          "override_night_duration_min": "Durada d'anul·lació nocturna (minuts)"
+        },
+        "data_description": {
+          "override_release_mode": "Trieu el concepte d'alliberament: un temporitzador/rellotge, la propera transició d'horari, la propera decisió automàtica, o només esborrat manual.",
+          "override_time_based_kind": "Només rellevant quan el mode d'alliberament de dalt està configurat en una opció de temporitzador/rellotge: alliberament després d'una durada fixa o a una hora fixa.",
+          "override_decision_filter": "Només rellevant quan el mode d'alliberament de dalt està configurat en l'opció de propera decisió: alliberament en qualsevol decisió, només decisions de confort, o només decisions de protecció.",
+          "override_fixed_until": "Només rellevant quan el mode d'alliberament és una opció de temporitzador/rellotge i el tipus de temporitzador és una hora fixa. Si aquesta hora ja ha passat avui, la substitució finalitza demà a aquesta hora.",
+          "override_allow_comfort_actions": "Si està activat, l'ombreig de confort habitual pot continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
+          "override_allow_protection_actions": "Si està activat, les accions de protecció (absència, calor, enlluernament) poden continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
+          "override_safety_timeout_enabled": "Durada màxima opcional com a xarxa de seguretat per a estratègies obertes, perquè una anul·lació mai quedi oblidada permanentment.",
+          "override_duration_min": "Quant dura una anul·lació diürna abans que SmartShading reprengui el control normal (mode de durada clàssic).",
+          "override_night_duration_min": "Límit de seguretat per a una anul·lació nocturna. L'alliberament real es produeix en la transició de cicle matinal."
+        }
+      },
+      "system_dispatch": {
+        "title": "Coordinació de les persianes",
+        "description": "Defineix com SmartShading espaia les ordres de les persianes a totes les zones quan diverses persianes es decideixen en el mateix cicle. Això és una propietat del vostre maquinari/passarel·la de ràdio, compartida per tota la casa.",
+        "data": {
+          "dispatch_mode": "Mode de coordinació",
+          "dispatch_start_interval_s": "Retard entre inicis",
+          "dispatch_max_travel_wait_s": "Espera màxima perquè acabi el moviment",
+          "dispatch_post_travel_pause_s": "Pausa després que acabi el moviment",
+          "dispatch_zone_batching": "Mantén les zones separades"
+        },
+        "data_description": {
+          "dispatch_mode": "Simultani inicia totes les ordres sense retard. Amb interval espera un nombre fix de segons entre inicis. Una darrere l'altra espera que cada persiana acabi de moure's abans d'iniciar la següent.",
+          "dispatch_start_interval_s": "S'utilitza amb \"Amb interval\", i com a interval mínim entre zones quan \"Mantén les zones separades\" està activat.",
+          "dispatch_max_travel_wait_s": "Només s'utilitza amb \"Una darrere l'altra\" — quant de temps s'espera que una persiana acabi abans de continuar igualment.",
+          "dispatch_post_travel_pause_s": "Només s'utilitza amb \"Una darrere l'altra\" — una breu pausa d'assentament després que una persiana acabi, abans que comenci la següent.",
+          "dispatch_zone_batching": "Si està activat, el retard entre inicis s'aplica sempre entre diferents habitacions/zones, fins i tot en mode Simultani, perquè les habitacions es mantinguin visualment separades."
+        }
+      },
+      "system_init": {
+        "title": "Configuració del sistema SmartShading",
+        "description": "Valors predeterminats globals que segueix cada zona llevat que utilitzi la seva pròpia configuració, més el temporitzat del sistema per a l'enviament d'ordres a les persianes.",
+        "menu_options": {
+          "system_manual_override": "Valors predeterminats de substitució manual",
+          "system_dispatch": "Control de persianes"
         }
       }
     },

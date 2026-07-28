@@ -767,6 +767,18 @@ class TestDecisionRefAndReasonPassivity:
         # never dispatched despite whatever the string says.
         assert h.dispatch_calls == []
 
+    @async_test
+    async def test_reason_never_steers_executable_dispatch(self):
+        clock = FakeClock()
+        h = Harness(clock)
+        plan = _plan([_item(cover_entity_id="a", target_ha=100,
+                            target_class=DispatchTargetClass.FULL_OPEN,
+                            reason="skip_me")])
+        result = await _executor().execute_plan(plan=plan, **h.kwargs())
+        # an executable item's dispatch must never depend on its reason text.
+        assert h.dispatch_calls == [("a", 0.0)]
+        assert result.item_results[0].status == "dispatched"
+
 
 # ---------------------------------------------------------------------------
 # Architecture protection
@@ -820,3 +832,9 @@ class TestArchitectureProtection:
         assert "asyncio.Lock(" not in src
         class_names = {n.name.lower() for n in ast.walk(tree) if isinstance(n, ast.ClassDef)}
         assert not any("lock" in n for n in class_names)
+
+    def test_no_direct_asyncio_sleep(self):
+        # All pacing/pause waits must go through the injected SleepPort —
+        # never a literal asyncio.sleep(...) call bypassing it.
+        src = self._source()
+        assert "asyncio.sleep(" not in src

@@ -326,6 +326,12 @@ from .engines.similarity_pipeline import compute_similarity_result
 from .engines.situation_joiner import SituationRecord, build_situations
 from .engines.solar_impact_learning import SolarImpactInput, compute_solar_impact
 from .cover_control.command_filter import (
+    BLOCKED_COMFORT_POSITION_HOLD,
+    BLOCKED_COVER_UNAVAILABLE,
+    BLOCKED_FALLBACK_RELEASE_PENDING,
+    BLOCKED_MANUAL_OVERRIDE,
+    BLOCKED_NO_TARGET_POSITION,
+    BLOCKED_SAME_POSITION,
     CommandFilter,
     CommandFilterResult,
     ExecutionCapability,
@@ -6715,8 +6721,137 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 completion_method=completion.method.value,
             )
 
+        # T22 Phase 5a: blocked_reason -> stable skip reason, per the
+        # BLOCKED_* priority order CommandFilter.evaluate() already
+        # enforces (command_filter.py) — reused verbatim, never
+        # reimplemented here.
+        _BLOCKED_REASON_TO_SKIP_REASON = {
+            BLOCKED_MANUAL_OVERRIDE: "manual_override",
+            BLOCKED_COVER_UNAVAILABLE: "cover_unavailable",
+            BLOCKED_SAME_POSITION: "already_at_target",
+            BLOCKED_COMFORT_POSITION_HOLD: "comfort_position_hold",
+            BLOCKED_FALLBACK_RELEASE_PENDING: "fallback_release_pending",
+            BLOCKED_NO_TARGET_POSITION: "target_no_longer_needed",
+        }
+
         def _validate_item_port(plan_item):
-            # See the "Known limitation" note in this method's docstring.
+            """T22 Phase 5a: real live revalidation, immediately before
+            dispatch. Reuses CommandFilter.evaluate() (pure, side-effect-
+            free, command_filter.py:231) as the single source of truth for
+            manual_override/cover_unavailable/same_position/comfort_hold —
+            never a second, independently-maintained copy of that logic.
+
+            Re-fetches a FRESH CoverEntitySnapshot (self._build_cover_
+            entity_snapshot_for_window, the same helper Pass-1 uses) rather
+            than trusting the Pass-1-frozen `s.exec_snapshot` — this is the
+            actual "live" part.
+
+            Deliberately does NOT re-call ComfortMovementHold.should_delay_
+            fallback_open() — its own docstring documents a load-bearing,
+            once-per-cycle-only side effect (F29 consecutive-cycle counter);
+            re-invoking it here would corrupt that debounce state. Its
+            Pass-1 result is reused instead (`s.comfort_hold_fallback_
+            release_allowed`).
+
+            Night Contact Hold has no live-safe re-query method (audited:
+            it mutates itself via internal tick methods) and is not one of
+            CommandFilter.evaluate()'s parameters at all in today's
+            production pipeline — its Pass-1-computed mirror
+            (`s.night_contact_blocked`) is reused as-is; a from-scratch
+            live re-check is out of this phase's scope (documented
+            limitation, not a silent gap).
+
+            Already-moving-to-target: no "last commanded target" is stored
+            anywhere in this codebase (audited: CoverEntitySnapshot/
+            AssumedStateManager track current/assumed position, never a
+            commanded destination) — so "moving toward THIS EXACT target"
+            cannot be proven. What IS safely checkable: the cover is
+            currently moving (is_opening/is_closing) AND that movement's
+            direction is consistent with the target being further in that
+            same direction from the fresh current position — never based
+            on is_opening/is_closing alone, and never true for an opposing
+            direction. Documented reduced precision, not false confidence.
+            """
+            window_id, s, intent = intent_by_entity[plan_item.cover_entity_id]
+
+            fresh_entity_id, fresh_cap, fresh_snapshot = (
+                self._build_cover_entity_snapshot_for_window(s.window, dt_util.utcnow())
+            )
+            if fresh_snapshot is None or fresh_cap is None or fresh_entity_id is None:
+                return ExecutionValidation(ValidationAction.SKIP, reason="cover_unavailable")
+            if not fresh_snapshot.available:
+                return ExecutionValidation(ValidationAction.SKIP, reason="cover_unavailable")
+
+            if s.night_contact_blocked:
+                return ExecutionValidation(ValidationAction.SKIP, reason="night_hold")
+
+            current_override = self._override_detector.get(window_id, dt_util.utcnow())
+
+            comfort_hold = self._comfort_movement_holds.setdefault(
+                window_id, _ComfortMovementHold()
+            )
+            # is_confirmed_exit defaults to False here (rather than
+            # re-deriving tier_decision/solar-sector internals, which would
+            # edge toward "neue Decision Engine") — False is the
+            # conservative direction: it can only ever WEAKEN an early
+            # release, never cause an under-block. See this method's
+            # docstring / the Phase 5a closing report for the full
+            # rationale.
+            comfort_hold_held = comfort_hold.should_hold(
+                proposed_decided_by=intent.decided_by,
+                proposed_target_ha=intent.target_position_ha,
+                is_strong_escalation=False,
+                is_confirmed_exit=False,
+                now=dt_util.utcnow(),
+            )
+
+            try:
+                execution_mode = ExecutionMode(intent.execution_mode)
+            except ValueError:
+                execution_mode = ExecutionMode.AUTOMATIC
+
+            filt = CommandFilter().evaluate(
+                target_position_internal=intent.target_position_internal,
+                current_position_internal=fresh_snapshot.assumed_position_internal,
+                execution_mode=execution_mode,
+                is_safety=False,
+                is_manual_override=current_override is not None,
+                is_cover_available=fresh_snapshot.available,
+                state_guard_allowed=True,
+                execution_capability=ExecutionCapability(),
+                invert_position=fresh_cap.invert_position,
+                comfort_hold_allowed=not comfort_hold_held,
+                fallback_release_allowed=bool(
+                    s.comfort_hold_fallback_release_allowed
+                    if s.comfort_hold_fallback_release_allowed is not None else True
+                ),
+                position_confidence_low=not self.assumed_state_manager.is_position_trustworthy(
+                    fresh_entity_id, dt_util.utcnow()
+                ),
+            )
+            if not filt.allowed:
+                reason = _BLOCKED_REASON_TO_SKIP_REASON.get(
+                    filt.blocked_reason, "command_filtered"
+                )
+                return ExecutionValidation(ValidationAction.SKIP, reason=reason)
+
+            if (
+                fresh_snapshot.is_moving
+                and fresh_snapshot.assumed_position_internal is not None
+                and intent.target_position_internal is not None
+            ):
+                delta = intent.target_position_internal - fresh_snapshot.assumed_position_internal
+                # internal convention: 0=open, 100=shaded. is_closing moves
+                # toward higher internal values, is_opening toward lower.
+                moving_toward_target = (
+                    (fresh_snapshot.is_closing and delta > 0)
+                    or (fresh_snapshot.is_opening and delta < 0)
+                )
+                if moving_toward_target:
+                    return ExecutionValidation(
+                        ValidationAction.SKIP, reason="already_moving_to_target"
+                    )
+
             return ExecutionValidation(ValidationAction.EXECUTE)
 
         def _is_generation_current_port(plan_item):
@@ -6734,7 +6869,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         executor = DispatchPlanExecutor()
         try:
-            await executor.execute_plan(
+            plan_execution_result = await executor.execute_plan(
                 plan=plan,
                 dispatch_item=_dispatch_item_port,
                 wait_for_completion=_wait_for_completion_port,
@@ -6747,13 +6882,27 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         finally:
             self._active_dispatch_cancellation = None
 
+        # T22 Phase 5a: an item never reaching dispatch_item is not always
+        # generation-staleness anymore — it may be a genuine validate_item
+        # SKIP (already_at_target, manual_override, night_hold, ...). Use
+        # the executor's OWN per-item reason (item_results, keyed by
+        # cover_entity_id) rather than a single blanket fallback string.
+        item_result_by_entity = {
+            item_result.item.cover_entity_id: item_result
+            for item_result in plan_execution_result.item_results
+        }
+
         results: dict[tuple[str, str], object] = {}
         for cover_entity_id, (window_id, s, intent) in intent_by_entity.items():
             exec_result = exec_result_by_entity.get(cover_entity_id)
             if exec_result is None:
-                exec_result = build_not_attempted_result(
-                    intent, reason="stale_presence_superseded",
+                item_result = item_result_by_entity.get(cover_entity_id)
+                reason = (
+                    item_result.reason
+                    if item_result is not None and item_result.reason
+                    else "stale_presence_superseded"
                 )
+                exec_result = build_not_attempted_result(intent, reason=reason)
             results[(window_id, cover_entity_id)] = exec_result
             throttle_by_entity.setdefault(cover_entity_id, {
                 "throttled": False, "planned_ms": None, "actual_ms": None,

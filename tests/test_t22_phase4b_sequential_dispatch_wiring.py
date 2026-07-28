@@ -213,10 +213,16 @@ def _state(
         ),
         exec_mode=ExecutionMode.AUTOMATIC,
         is_safety=is_safety,
-        exec_target_internal=30,
+        exec_target_internal=100 - target_position_ha,
         exec_filter_result=CommandFilterResult(
             allowed=True, blocked_reason=None,
-            target_position_internal=30, target_position_ha=target_position_ha,
+            # target_position_internal must stay consistent with
+            # target_position_ha (100 - ha, no invert) — T22 Phase 5a live
+            # validation compares live current_position_internal against
+            # this same value, so a decoupled hardcoded internal target
+            # would silently defeat same-position detection in tests.
+            target_position_internal=100 - target_position_ha,
+            target_position_ha=target_position_ha,
             execution_mode=ExecutionMode.AUTOMATIC.value, is_safety=is_safety,
         ),
         tier_decided_by="TestEvaluator",
@@ -225,7 +231,10 @@ def _state(
     )
 
 
-def _setup_coord(coord: SmartShadingCoordinator, states: list[_WindowComputeState]) -> None:
+def _setup_coord(
+    coord: SmartShadingCoordinator, states: list[_WindowComputeState],
+    *, ha_state: str = "open", current_position_by_entity: dict | None = None,
+) -> None:
     coord.windows = {s.window.id: s.window for s in states}
     coord.zones = {s.zone.id: s.zone for s in states}
     coord.cover_groups = {
@@ -234,6 +243,21 @@ def _setup_coord(coord: SmartShadingCoordinator, states: list[_WindowComputeStat
         )
         for s in states
     }
+    # T22 Phase 5a: validate_item() re-fetches a FRESH snapshot via
+    # self._build_cover_entity_snapshot_for_window(), which reads
+    # self.hass.states.get() and self._get_or_detect_capability() — both
+    # must return something usable, or every item is skipped as
+    # cover_unavailable before dispatch is ever reached.
+    current_position_by_entity = current_position_by_entity or {}
+    ha_states: dict[str, MagicMock] = {}
+    for s in states:
+        pos = current_position_by_entity.get(s.exec_entity_id, 0)
+        st = MagicMock()
+        st.state = ha_state
+        st.attributes = {"current_position": pos}
+        ha_states[s.exec_entity_id] = st
+        coord._cover_capabilities[s.exec_entity_id] = s.exec_cap
+    coord.hass.states.get = MagicMock(side_effect=lambda eid: ha_states.get(eid))
 
 
 def _ordered(states: list[_WindowComputeState]):
@@ -342,7 +366,7 @@ class TestNoMovementExcluded:
             "w1", "z1", entity_id="cover.w1",
             target_position_ha=40, current_position_ha=40,
         )
-        _setup_coord(coord, [s1])
+        _setup_coord(coord, [s1], current_position_by_entity={"cover.w1": 40})
         calls = []
 
         async def fake(hass, intent, *, now_utc):
@@ -483,7 +507,13 @@ class TestStaleGeneration:
 
         results = asyncio.run(_run())
         assert results[("w1", "cover.w1")].status is ExecutionStatus.NOT_ATTEMPTED
-        assert results[("w1", "cover.w1")].reason == "stale_presence_superseded"
+        # T22 Phase 5a fix: the coordinator now surfaces the EXECUTOR's own
+        # per-item reason ("stale_generation", DispatchPlanExecutor's own
+        # is_generation_current-skip label) instead of a blanket
+        # "stale_presence_superseded" fallback that used to mask every
+        # never-dispatched-item cause (including later, real validate_item
+        # skips like already_at_target/manual_override) under one string.
+        assert results[("w1", "cover.w1")].reason == "stale_generation"
 
 
 class TestOuterLoopRoutingIsMembershipGated:

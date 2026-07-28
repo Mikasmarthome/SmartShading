@@ -86,10 +86,14 @@ class TestParallelPathSafetyExemption:
 class TestExactlyThreeOccurrencesOneNoMoreNoLess:
     def test_stale_presence_superseded_reason_appears_exactly_three_times(self) -> None:
         source = _source()
-        assert source.count('reason="stale_presence_superseded"') == 3, (
+        # Bare-string count (not `reason="..."`-prefixed) so this survives
+        # T22 Phase 5a's refactor of the third site into a ternary
+        # (`reason = (... if ... else "stale_presence_superseded")`)
+        # without weakening the invariant itself.
+        assert source.count('"stale_presence_superseded"') == 3, (
             "Expected exactly three occurrences: the original sequential "
             "dispatch path guard, the T11.1 parallel dispatch path guard, "
-            "and (T22 Phase 4b) _predispatch_sequential_plan()'s own "
+            "and (T22 Phase 4b/5a) _predispatch_sequential_plan()'s own "
             "missing-executor-result fallback for the comfort pre-pass — "
             "see this file's module docstring (SGE-03) for the full "
             "rationale. A different count means a guard was removed, "

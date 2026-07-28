@@ -21,9 +21,17 @@ Coverage:
           gated on `not _intent.is_safety`.
   SGE-02  The parallel-path (_dispatch_one_parallel_item) stale-intent
           cancellation is ALSO gated on `not intent.is_safety`.
-  SGE-03  Exactly two occurrences of "stale_presence_superseded" exist — one
-          per dispatch path — never accidentally duplicated further or
-          collapsed into one shared (and therefore un-audited) path.
+  SGE-03  Exactly three occurrences of "stale_presence_superseded" exist —
+          the original sequential-path and T11.1 parallel-path guards, plus
+          (T22 Phase 4b) the DispatchPlanExecutor comfort pre-pass's own
+          defensive fallback in _predispatch_sequential_plan(), used only
+          when an eligible comfort item never produced an executor result
+          (e.g. generation went stale before dispatch started). Safety is
+          never part of that pre-pass's plan at all (excluded up front), so
+          this third site can never affect a safety intent — it exists
+          purely as the comfort-path's own missing-result guard. Any other
+          count means a guard was removed, merged, or duplicated beyond
+          these three known, audited call sites.
   SGE-04  Neither guard has been replaced with a tautology (e.g. "if True:").
 """
 from __future__ import annotations
@@ -75,14 +83,18 @@ class TestParallelPathSafetyExemption:
         )
 
 
-class TestExactlyTwoOccurrencesOneNoMoreNoLess:
-    def test_stale_presence_superseded_reason_appears_exactly_twice(self) -> None:
+class TestExactlyThreeOccurrencesOneNoMoreNoLess:
+    def test_stale_presence_superseded_reason_appears_exactly_three_times(self) -> None:
         source = _source()
-        assert source.count('reason="stale_presence_superseded"') == 2, (
-            "Expected exactly two occurrences: one in the sequential "
-            "dispatch path, one in the T11.1 parallel dispatch path. A "
-            "different count means a guard was removed, merged, or "
-            "duplicated beyond the two known, audited call sites."
+        assert source.count('reason="stale_presence_superseded"') == 3, (
+            "Expected exactly three occurrences: the original sequential "
+            "dispatch path guard, the T11.1 parallel dispatch path guard, "
+            "and (T22 Phase 4b) _predispatch_sequential_plan()'s own "
+            "missing-executor-result fallback for the comfort pre-pass — "
+            "see this file's module docstring (SGE-03) for the full "
+            "rationale. A different count means a guard was removed, "
+            "merged, or duplicated beyond these three known, audited "
+            "call sites."
         )
 
 

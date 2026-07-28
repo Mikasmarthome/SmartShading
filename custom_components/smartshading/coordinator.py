@@ -18,6 +18,16 @@ import asyncio
 import logging
 import math
 import time
+# T22 Phase 4b: `from datetime import ..., time, ...` below shadows the
+# `time` MODULE (imported above) with `datetime.time` at module scope —
+# a pre-existing condition in this file (any bare `time.monotonic()` call
+# was always actually broken, dormant only because the legacy dispatch
+# throttle code below only reaches it when an actual wait is needed).
+# `_monotonic` keeps a live reference to the real module for code added in
+# Phase 4b, which calls it unconditionally. The pre-existing legacy
+# `time.monotonic()` call sites are left untouched — fixing that dormant
+# bug is out of Phase 4b's scope; see the Phase 4b closing report.
+_monotonic = time.monotonic
 from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -329,11 +339,23 @@ from .cover_control.execution_result import (
     build_execution_plan_result,
     build_not_attempted_result,
 )
+from .cover_control.coordinator_dispatch_adapter import (
+    build_cycle_dispatch_plan,
+    build_dispatch_plan_item,
+    classify_cover_intent,
+)
 from .cover_control.dispatch_batch import DispatchItem, group_into_batches
 from .cover_control.dispatch_completion import wait_for_travel_completion
 from .cover_control.dispatch_orchestrator import (
     effective_interval_s,
     requires_completion_wait,
+)
+from .cover_control.dispatch_plan_executor import (
+    CompletionOutcome,
+    DispatchOutcome,
+    DispatchPlanExecutor,
+    ExecutionValidation,
+    ValidationAction,
 )
 from .cover_control.global_dispatch_throttle import GlobalDispatchThrottle, GlobalSerialDispatch
 from .cover_control.ha_service_adapter import dispatch_cover_intent
@@ -1357,6 +1379,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # plain runtime-only int, reset to 0 on every restart/reload, used
         # only by the two dispatch-time staleness checks in the Pass-2 loop.
         self._dispatch_generation: int = 0
+        # T22 Phase 4b: cancellation signal for the currently-running
+        # DispatchPlanExecutor comfort dispatch (if any). Set on coordinator
+        # unload so an in-flight executor stops promptly instead of racing
+        # shutdown. Recreated fresh at the start of each pre-pass call — a
+        # stale set Event from a finished plan is never reused for the next
+        # one. Cross-cycle safety-preemption (a concurrently-running
+        # coordinator cycle's safety dispatch interrupting THIS cycle's
+        # comfort completion wait) is a known, not-yet-wired limitation of
+        # Phase 4b — see the Phase 4b closing report.
+        self._active_dispatch_cancellation: asyncio.Event | None = None
+        # T22 Phase 4b: per-cycle throttle-timing diagnostics for comfort
+        # items dispatched via the new DispatchPlanExecutor pre-pass, keyed
+        # by cover_entity_id — consumed once by the main loop's
+        # _dispatch_context() call for that cycle, then overwritten next
+        # cycle. Empty dict outside SEQUENTIAL/SPACED mode.
+        self._last_sequential_throttle_by_entity: dict[str, dict] = {}
         # Learning Loop Closure (9F15): per-window AdaptiveProfile cache.
         # Updated each sun-path cycle; carries the last computed profile for
         # windows that hit the no-sun path.
@@ -1766,6 +1804,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         narrow, accepted residual race, unchanged from the T16 audit.
         """
         self._unloading = True
+        # T22 Phase 4b: signal any in-flight comfort DispatchPlanExecutor run
+        # to stop promptly rather than racing shutdown.
+        if self._active_dispatch_cancellation is not None:
+            self._active_dispatch_cancellation.set()
         await super().async_shutdown()
         tasks = list(self._background_tasks)
         for task in tasks:
@@ -5285,6 +5327,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 _ordered_window_states, _harmonization, now, _this_dispatch_gen,
             )
 
+        # T22 Phase 4b: SEQUENTIAL/SPACED comfort dispatch now runs via the
+        # isolated DispatchPlanExecutor, in its own pre-pass — see
+        # _predispatch_sequential_plan() docstring. Safety intents are
+        # excluded from this pre-pass and keep dispatching through the main
+        # loop's own unmodified lock block below (the final `else` branch).
+        _sequential_results: dict[tuple[str, str], object] = {}
+        if self._dispatch_config.mode in (DispatchMode.SEQUENTIAL, DispatchMode.SPACED):
+            _sequential_results = await self._predispatch_sequential_plan(
+                _ordered_window_states, _harmonization, now, _this_dispatch_gen,
+                _zone_order, _window_order_in_zone,
+            )
+
         # For harmonized windows, the filter result is replaced with a new one
         # carrying the group's harmonized target_position_ha before plan building.
         for window_id, s in _ordered_window_states:
@@ -5357,12 +5411,55 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 _intent, reason="parallel_dispatch_result_missing",
                             )
                         _exec_results.append(_result)
+                    elif (
+                        window_id, _intent.cover_entity_id
+                    ) in _sequential_results:
+                        # T22 Phase 4b: this comfort intent was already
+                        # dispatched (with pacing/completion/pause fully
+                        # orchestrated by DispatchPlanExecutor, lock held
+                        # only around the actual dispatch call — not across
+                        # completion/pause) by _predispatch_sequential_plan()
+                        # above, before this loop started. Look up the
+                        # already-computed result. Membership in
+                        # _sequential_results (not just mode/is_safety) is
+                        # the routing condition: safety intents are never
+                        # added to that pre-pass's plan, and neither are
+                        # allowed comfort intents the Phase 1 classification
+                        # found not movement-required (a rare CommandFilter/
+                        # classification tolerance mismatch) — both kinds
+                        # correctly fall through to the unmodified lock
+                        # block below instead of landing here.
+                        _result = _sequential_results[(window_id, _intent.cover_entity_id)]
+                        _exec_results.append(_result)
+                        _throttle_info = self._last_sequential_throttle_by_entity.get(
+                            _intent.cover_entity_id, {}
+                        )
+                        _dispatch_throttled = _throttle_info.get("throttled", False)
+                        _planned_global_wait_ms = _throttle_info.get("planned_ms")
+                        _actual_global_wait_ms = _throttle_info.get("actual_ms")
+                        _global_wait_started_mono = _throttle_info.get("started_mono")
+                        _global_slot_granted_mono = _throttle_info.get("slot_granted_mono")
+                        _global_timing_recording_status = _throttle_info.get(
+                            "timing_status", "recorded"
+                        )
                     else:
                         # Serial Dispatch (Step 10): acquire the integration-wide
                         # lock before every cover command.  The lock is shared
                         # across ALL zone coordinators so commands from different
                         # zones are fully serialised — no two zones can dispatch
                         # at the same time.
+                        #
+                        # T22 Phase 4b: comfort intents in SEQUENTIAL/SPACED mode
+                        # no longer reach this block (they dispatch via
+                        # _predispatch_sequential_plan()'s DispatchPlanExecutor
+                        # pre-pass above, with the lock held only around the
+                        # dispatch call itself). This block now only executes for
+                        # SAFETY intents (any mode) and for PARALLEL-mode intents
+                        # already handled by the elif above never reach here
+                        # either — i.e. effectively safety-only in practice. Left
+                        # otherwise unmodified — this is the "existing, unmodified
+                        # fastlane path" safety keeps per the Phase 4 callsite
+                        # audit.
                         #
                         # While holding the lock:
                         #   1. Throttle: ALL intents (including safety) sleep until
@@ -6375,6 +6472,296 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if len(self._research_daily_buckets) > 365:
             oldest = sorted(self._research_daily_buckets)[0]
             del self._research_daily_buckets[oldest]
+
+    async def _predispatch_sequential_plan(
+        self, ordered_window_states, harmonization, now, this_dispatch_gen,
+        zone_order, window_order_in_zone,
+    ) -> dict:
+        """T22 Phase 4b: comfort-only SEQUENTIAL/SPACED dispatch via the
+        isolated DispatchPlanExecutor (cover_control/dispatch_plan_executor.py).
+
+        Mirrors _predispatch_parallel_batches()'s pre-pass pattern (T11.1):
+        runs BEFORE the main per-window Pass-2 loop as one self-contained
+        pre-pass, producing a (window_id, cover_entity_id)-keyed lookup dict
+        the main loop consumes instead of dispatching again — the loop's
+        600+ lines of per-window diagnostics/learning/StateGuard/etc. stay
+        completely unchanged.
+
+        Safety intents are excluded from the DispatchPlan entirely — they
+        continue to dispatch via the main loop's own unmodified
+        `async with self._serial_dispatch.lock:` block (T22 Phase 4 callsite
+        audit: safety keeps its existing, unmodified fastlane path; a normal
+        DispatchPlan must never contain a safety item).
+
+        Lock ownership fix (the actual point of T22 Phase 4b): the injected
+        dispatch port below acquires `self._serial_dispatch.lock` ONLY
+        around the throttle-wait + `dispatch_cover_intent()` call, never
+        across the completion wait or the post-travel pause — unlike the
+        legacy per-item block this pre-pass replaces for comfort items.
+
+        Known limitation (honestly documented, not silently dropped): full
+        live CommandFilter-equivalent revalidation (same-position/already-
+        moving-to-target re-checks) is not yet implemented here — validate_
+        item always returns EXECUTE, faithfully preserving today's exact
+        production behavior (Pass-1's CommandFilter result is trusted as-is,
+        same as the legacy block it replaces). A richer live-revalidation
+        port is a follow-up increment. Likewise, cross-cycle safety
+        preemption (a *different*, concurrently-running coordinator cycle's
+        safety dispatch interrupting this cycle's comfort completion wait)
+        is not wired — only coordinator unload triggers cancellation.
+        """
+        if self._dispatch_config.mode not in (DispatchMode.SEQUENTIAL, DispatchMode.SPACED):
+            return {}
+
+        plan_items = []
+        # Per-item side channels, keyed by cover_entity_id (unique within one
+        # plan — Phase 2's build_dispatch_plan() rejects true duplicates):
+        # the executor only needs a minimal DispatchOutcome/CompletionOutcome,
+        # but the surrounding per-window loop needs the FULL ExecutionResult
+        # (and throttle-timing) for its unchanged diagnostics/learning code.
+        intent_by_entity: dict[str, tuple] = {}
+        exec_result_by_entity: dict[str, object] = {}
+        throttle_by_entity: dict[str, dict] = {}
+
+        for window_id, s in ordered_window_states:
+            harm = harmonization[window_id]
+            exec_filter_for_dispatch = _harmonized_filter_for_dispatch(
+                s.exec_filter_result, harm, s.exec_cap,
+            )
+            if not (
+                s.exec_entity_id is not None and s.exec_cap is not None
+                and s.exec_snapshot is not None and exec_filter_for_dispatch is not None
+            ):
+                continue
+            exec_plan = build_execution_plan(
+                window_id=window_id,
+                cover_entity_ids=self.cover_groups[s.window.cover_group_id].cover_ids,
+                filter_result=exec_filter_for_dispatch,
+                decided_by=s.tier_decided_by or "unknown",
+                now=now,
+            )
+            zone_idx = zone_order.get(s.window.zone_id, len(zone_order))
+            window_idx = window_order_in_zone.get(window_id, 0)
+            for cover_ordinal, intent in enumerate(exec_plan.intents):
+                if intent.is_safety:
+                    continue  # safety keeps its own unmodified fastlane
+                if not intent.allowed:
+                    continue  # main loop builds the BLOCKED result itself
+                if self._startup_cycles_remaining > 0:
+                    continue  # main loop builds the NOT_ATTEMPTED result itself
+                classification = classify_cover_intent(
+                    intent,
+                    current_position_ha=(
+                        s.exec_snapshot.current_position_ha
+                        if s.exec_snapshot is not None else None
+                    ),
+                )
+                if not classification.movement_required:
+                    # CommandFilter already gated same-position/no-target
+                    # intents to allowed=False (BLOCKED_SAME_POSITION /
+                    # BLOCKED_NO_TARGET_POSITION, both handled above via
+                    # `if not intent.allowed`) before this pre-pass ever
+                    # runs. If classify_cover_intent nonetheless disagrees
+                    # for an allowed=True intent here (e.g. a tolerance-
+                    # scale mismatch between CommandFilter's internal-unit
+                    # tolerance and this module's HA-scale default), do NOT
+                    # silently skip a movement CommandFilter approved —
+                    # leave it out of this plan entirely so it falls through
+                    # to the legacy dispatch_cover_intent() call below
+                    # (same as any other item this pre-pass doesn't own),
+                    # never a synthesized NOT_ATTEMPTED result.
+                    continue
+                item = build_dispatch_plan_item(
+                    zone_id=s.window.zone_id,
+                    zone_index=zone_idx,
+                    cover_index=window_idx * 1000 + cover_ordinal,
+                    intent=intent,
+                    classification=classification,
+                    decision_ref=f"{window_id}:{self._cycle_counter}",
+                    zone_generation=this_dispatch_gen,
+                )
+                plan_items.append(item)
+                intent_by_entity[intent.cover_entity_id] = (window_id, s, intent)
+
+        if not plan_items:
+            return {}
+
+        plan = build_cycle_dispatch_plan(
+            entry_id=self.config_entry.entry_id,
+            cycle_counter=self._cycle_counter,
+            items=plan_items,
+            trigger="coordinator_evaluation",
+            created_at=now,
+        )
+
+        async def _dispatch_item_port(plan_item):
+            window_id, s, intent = intent_by_entity[plan_item.cover_entity_id]
+
+            async def _do_dispatch():
+                async with self._serial_dispatch.lock:
+                    is_first_in_zone_group = (
+                        s.window.zone_id != self._sequential_prev_zone_id
+                    )
+                    self._sequential_prev_zone_id = s.window.zone_id
+                    interval_s = effective_interval_s(
+                        self._dispatch_config,
+                        is_first_in_zone_group=is_first_in_zone_group,
+                    )
+                    wait = self._serial_dispatch.time_until_next_allowed(
+                        min_interval_override=timedelta(seconds=interval_s)
+                    )
+                    throttled = False
+                    planned_ms = 0
+                    actual_ms = 0.0
+                    started_mono = None
+                    slot_granted_mono = None
+                    timing_status = "recorded"
+                    if wait.total_seconds() > 0:
+                        throttled = True
+                        planned_ms = round(wait.total_seconds() * 1000)
+                        try:
+                            started_mono = _monotonic()
+                            await asyncio.sleep(wait.total_seconds())
+                            slot_granted_mono = _monotonic()
+                            actual_ms = max(
+                                0.0, (slot_granted_mono - started_mono) * 1000.0)
+                        except Exception:
+                            timing_status = "not_recorded"
+                            actual_ms = None
+                    throttle_by_entity[plan_item.cover_entity_id] = {
+                        "throttled": throttled, "planned_ms": planned_ms,
+                        "actual_ms": actual_ms, "started_mono": started_mono,
+                        "slot_granted_mono": slot_granted_mono,
+                        "timing_status": timing_status,
+                    }
+                    dispatch_now = dt_util.utcnow()
+                    result = await dispatch_cover_intent(
+                        self.hass, intent, now_utc=dispatch_now
+                    )
+                    if result.status in (ExecutionStatus.SENT, ExecutionStatus.FAILED):
+                        self._serial_dispatch.record_dispatch(dispatch_now)
+                        if self._debug_logging_enabled:
+                            _LOGGER.debug(
+                                "SmartShading: dispatched cover=%s ha_pos=%s safety=%s",
+                                intent.cover_entity_id, intent.target_position_ha,
+                                intent.is_safety,
+                            )
+                        if result.status == ExecutionStatus.FAILED:
+                            _LOGGER.warning(
+                                "SmartShading: cover dispatch FAILED entity=%s "
+                                "error=%s (%s)",
+                                result.entity_id, result.error,
+                                result.failure_exception_type,
+                            )
+                    return result
+
+            result = await _do_dispatch()
+            exec_result_by_entity[plan_item.cover_entity_id] = result
+            return DispatchOutcome(
+                success=result.status in (ExecutionStatus.SENT,),
+                error_type=(
+                    result.failure_exception_type
+                    if result.status is ExecutionStatus.FAILED else None
+                ),
+            )
+
+        async def _wait_for_completion_port(plan_item, cancellation):
+            window_id, s, intent = intent_by_entity[plan_item.cover_entity_id]
+            prior = exec_result_by_entity.get(plan_item.cover_entity_id)
+            if prior is None or not requires_completion_wait(self._dispatch_config):
+                return CompletionOutcome(status="completed")
+            completion = await wait_for_travel_completion(
+                self.hass,
+                entity_id=intent.cover_entity_id,
+                target_position_ha=intent.target_position_ha,
+                invert_position=(
+                    s.exec_cap.invert_position if s.exec_cap is not None else False
+                ),
+                has_reliable_position_feedback=(
+                    s.exec_cap.has_reliable_position_feedback
+                    if s.exec_cap is not None else False
+                ),
+                start_position_ha=(
+                    s.exec_snapshot.current_position_ha
+                    if s.exec_snapshot is not None else None
+                ),
+                travel_time_open_s=(
+                    s.exec_cap.travel_time_open_s if s.exec_cap is not None else 30.0
+                ),
+                travel_time_close_s=(
+                    s.exec_cap.travel_time_close_s if s.exec_cap is not None else 30.0
+                ),
+                max_wait_s=self._dispatch_config.max_travel_wait_s,
+            )
+            exec_result_by_entity[plan_item.cover_entity_id] = replace(
+                prior,
+                completion_method=completion.method.value,
+                completion_wait_s=round(completion.elapsed_s, 3),
+                completion_timed_out=completion.timed_out,
+            )
+            if completion.timed_out:
+                _LOGGER.warning(
+                    "SmartShading: cover travel completion timed out entity=%s "
+                    "after %.1fs (sequential dispatch mode) — continuing the "
+                    "dispatch queue", intent.cover_entity_id, completion.elapsed_s,
+                )
+            elif self._debug_logging_enabled:
+                _LOGGER.debug(
+                    "SmartShading: dispatch completion cover=%s method=%s elapsed=%.1fs",
+                    intent.cover_entity_id, completion.method.value, completion.elapsed_s,
+                )
+            return CompletionOutcome(
+                status="timed_out" if completion.timed_out else "completed",
+                completion_method=completion.method.value,
+            )
+
+        def _validate_item_port(plan_item):
+            # See the "Known limitation" note in this method's docstring.
+            return ExecutionValidation(ValidationAction.EXECUTE)
+
+        def _is_generation_current_port(plan_item):
+            return self._dispatch_generation == this_dispatch_gen
+
+        async def _sleep_port(seconds):
+            await asyncio.sleep(seconds)
+
+        def _clock_port():
+            return _monotonic()
+
+        self._sequential_prev_zone_id: str | None = None
+        cancellation = asyncio.Event()
+        self._active_dispatch_cancellation = cancellation
+
+        executor = DispatchPlanExecutor()
+        try:
+            await executor.execute_plan(
+                plan=plan,
+                dispatch_item=_dispatch_item_port,
+                wait_for_completion=_wait_for_completion_port,
+                validate_item=_validate_item_port,
+                is_generation_current=_is_generation_current_port,
+                cancellation=cancellation,
+                sleep=_sleep_port,
+                clock=_clock_port,
+            )
+        finally:
+            self._active_dispatch_cancellation = None
+
+        results: dict[tuple[str, str], object] = {}
+        for cover_entity_id, (window_id, s, intent) in intent_by_entity.items():
+            exec_result = exec_result_by_entity.get(cover_entity_id)
+            if exec_result is None:
+                exec_result = build_not_attempted_result(
+                    intent, reason="stale_presence_superseded",
+                )
+            results[(window_id, cover_entity_id)] = exec_result
+            throttle_by_entity.setdefault(cover_entity_id, {
+                "throttled": False, "planned_ms": None, "actual_ms": None,
+                "started_mono": None, "slot_granted_mono": None,
+                "timing_status": "recorded",
+            })
+        self._last_sequential_throttle_by_entity = throttle_by_entity
+        return results
 
     async def _predispatch_parallel_batches(
         self, ordered_window_states, harmonization, now, this_dispatch_gen,

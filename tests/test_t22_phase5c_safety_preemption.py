@@ -333,6 +333,29 @@ class TestIdempotentDoublePreemption:
         assert coord._active_comfort_dispatch_task is None
         assert coord._active_dispatch_cancellation is None
 
+    def test_two_preemptions_with_a_real_already_set_cancellation_are_safe(self) -> None:
+        # Unlike the test above (no active plan at all, so the shared
+        # cancellation Event is never actually touched), this registers a
+        # REAL Event that the first preemption sets, then calls preempt()
+        # a second time while that same (now-already-.set()) Event is
+        # still registered as active — proving a duplicate .set() on an
+        # already-set Event is never treated as an error.
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        cancellation = asyncio.Event()
+        coord._active_dispatch_cancellation = cancellation
+
+        async def _run():
+            gen1 = await coord._preempt_active_comfort_plan()
+            assert cancellation.is_set()
+            # Re-register the SAME already-set Event to simulate a second
+            # safety cycle racing in before anything cleared it.
+            coord._active_dispatch_cancellation = cancellation
+            gen2 = await coord._preempt_active_comfort_plan()
+            return gen1, gen2
+
+        gen1, gen2 = asyncio.run(_run())
+        assert gen2 == gen1 + 1
+
 
 class TestNoHardCancel:
     def test_preempt_never_calls_task_cancel(self) -> None:
@@ -604,6 +627,62 @@ class TestSafetyPreemptsDuringFullOpenPacing:
         assert coord._active_dispatch_cancellation is None
 
 
+class TestGlobalLockNotHeldDuringCompletionWaitOrPause:
+    # Audit items #19/#20 ("Lock über Completion gehalten" / "über Pause
+    # gehalten"): the global self._serial_dispatch.lock must be fully
+    # released BEFORE the completion-wait and post-completion-pause begin
+    # — it only wraps the throttle-wait + the dispatch_cover_intent() call
+    # itself (dispatch_plan_executor.py's own module docstring, Phase 3).
+    # Proven at the real lock object's .locked() state while the executor
+    # is genuinely stuck mid-completion-wait / mid-pause, not by source
+    # inspection alone.
+    def test_lock_released_during_completion_wait(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
+        coord.windows = {"w1": s1.window}
+        coord.zones = {"z1": s1.zone}
+        from custom_components.smartshading.models.cover_group import CoverGroup
+        coord.cover_groups = {"cg_w1": CoverGroup(id="cg_w1", window_id="w1", cover_ids=["cover.w1"])}
+        coord._cover_capabilities["cover.w1"] = s1.exec_cap
+        st = MagicMock()
+        st.state = "open"
+        st.attributes = {"current_position": 0}
+        coord.hass.states.get = MagicMock(side_effect=lambda eid: {"cover.w1": st}.get(eid))
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "dispatch_cover_intent", fake_dispatch,
+        )
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "wait_for_travel_completion", _fake_completion_hangs_forever_factory({}),
+        )
+        real_asyncio = coord._predispatch_sequential_plan.__func__.__globals__["asyncio"]
+        monkeypatch.setattr(real_asyncio, "sleep", lambda s: _real_sleep(0))
+
+        async def _run():
+            task_a = asyncio.ensure_future(coord._run_comfort_dispatch_for_cycle(
+                _ordered([s1]), _harm_for(s1),
+                datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc), {"z1": 0}, {"w1": 0},
+            ))
+            await _real_sleep(0)
+            await _real_sleep(0)
+            await _real_sleep(0)
+            assert not task_a.done()
+            assert coord._serial_dispatch.lock.locked() is False, (
+                "the global lock must already be released while stuck in "
+                "the completion-wait — it must not span dispatch + "
+                "completion-wait together"
+            )
+            await coord._preempt_active_comfort_plan()
+            await asyncio.wait_for(task_a, timeout=2.0)
+
+        asyncio.run(_run())
+
+
 class TestSafetyPreemptsDuringIntermediatePostCompletionPause:
     # Ticket §3.2: an INTERMEDIATE item completes, the executor enters its
     # real fixed post-completion pause (`_race_against_cancellation(sleep(
@@ -662,6 +741,10 @@ class TestSafetyPreemptsDuringIntermediatePostCompletionPause:
                 "post-completion pause before item 2 dispatches"
             )
             assert not task_a.done()
+            assert coord._serial_dispatch.lock.locked() is False, (
+                "audit item #20: the global lock must already be released "
+                "while stuck in the post-completion pause"
+            )
 
             gen_b = await asyncio.wait_for(coord._preempt_active_comfort_plan(), timeout=2.0)
             await asyncio.wait_for(task_a, timeout=2.0)
@@ -674,6 +757,289 @@ class TestSafetyPreemptsDuringIntermediatePostCompletionPause:
         )
         assert coord._active_comfort_dispatch_task is None
         assert coord._active_dispatch_cancellation is None
+
+
+class TestSafetyPreemptsDuringGlobalThrottleWait:
+    # T22 Phase 5c final completion: the global-interval throttle-wait
+    # inside _dispatch_item_port's _do_dispatch() (coordinator.py) runs
+    # INSIDE self._serial_dispatch.lock — the SAME lock Safety's own
+    # legacy dispatch path acquires. Before this fix, that wait was a
+    # plain asyncio.sleep(), so a cycle could hold the shared lock for up
+    # to the configured start_interval_s (max 30s) even after Safety had
+    # already signaled preemption, blocking Safety's own dispatch behind
+    # it. This is a real end-to-end proof using the actual dispatch_config
+    # + GlobalSerialDispatch + _do_dispatch() code path, not a source
+    # regex and not an unrealistically-fast fake sleep.
+    def test_safety_preemption_interrupts_the_global_throttle_wait(self, monkeypatch) -> None:
+        import homeassistant.util.dt as dt_util
+        coord = _make_coord(dispatch_config=DispatchConfig(
+            mode=DispatchMode.SPACED, start_interval_s=5.0,
+        ))
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
+        coord.windows = {"w1": s1.window}
+        coord.zones = {"z1": s1.zone}
+        from custom_components.smartshading.models.cover_group import CoverGroup
+        coord.cover_groups = {"cg_w1": CoverGroup(id="cg_w1", window_id="w1", cover_ids=["cover.w1"])}
+        coord._cover_capabilities["cover.w1"] = s1.exec_cap
+        st = MagicMock()
+        st.state = "open"
+        st.attributes = {"current_position": 0}
+        coord.hass.states.get = MagicMock(side_effect=lambda eid: {"cover.w1": st}.get(eid))
+        # Force a genuine positive throttle wait: a dispatch was "just"
+        # recorded (real wall-clock/monotonic timestamps), so
+        # time_until_next_allowed(min_interval_override=5s) returns a real
+        # near-5-second remaining wait for the next dispatch.
+        coord._serial_dispatch.record_dispatch(dt_util.utcnow())
+
+        dispatch_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "dispatch_cover_intent", fake_dispatch,
+        )
+        # Only the throttle-wait's own asyncio.sleep() must be interrupted
+        # by preemption — patch the real module-level sleep used inside
+        # _do_dispatch() to hang unless raced against cancellation, exactly
+        # like the FULL_OPEN pacing / INTERMEDIATE pause tests above.
+        real_asyncio = coord._predispatch_sequential_plan.__func__.__globals__["asyncio"]
+        monkeypatch.setattr(real_asyncio, "sleep", lambda s: asyncio.Event().wait())
+
+        async def _run():
+            task_a = asyncio.ensure_future(coord._run_comfort_dispatch_for_cycle(
+                _ordered([s1]), _harm_for(s1),
+                datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc), {"z1": 0}, {"w1": 0},
+            ))
+            await _real_sleep(0)
+            await _real_sleep(0)
+            await _real_sleep(0)
+            assert dispatch_calls == [], (
+                "the comfort item must be genuinely stuck inside the "
+                "global throttle-wait — dispatch_cover_intent must not "
+                "have been called yet"
+            )
+            assert not task_a.done()
+            assert coord._serial_dispatch.lock.locked(), (
+                "the lock must genuinely be held during the throttle-wait "
+                "for this to be a real test of the lock-contention scenario"
+            )
+
+            gen_b = await asyncio.wait_for(coord._preempt_active_comfort_plan(), timeout=2.0)
+            await asyncio.wait_for(task_a, timeout=2.0)
+            return gen_b
+
+        asyncio.run(_run())
+        assert dispatch_calls == [], (
+            "no comfort service call may fire once safety preemption "
+            "interrupts the global throttle-wait"
+        )
+        assert coord._serial_dispatch.lock.locked() is False, (
+            "the global serial-dispatch lock must be released promptly "
+            "after preemption, not held until the full configured "
+            "interval elapses — this is what would otherwise block "
+            "Safety's own dispatch, which acquires the SAME lock"
+        )
+        assert coord._active_comfort_dispatch_task is None
+        assert coord._active_dispatch_cancellation is None
+
+
+class TestSafetyIntentNeverReassignedBeforeDispatch:
+    # Audit item #14 ("Safety-Ziel wird neu berechnet"): the legacy
+    # per-window loop's safety dispatch call
+    # (`dispatch_cover_intent(self.hass, _intent, now_utc=_dispatch_now)`)
+    # must dispatch the EXACT same CoverIntent object bound by
+    # `for _intent in _exec_plan.intents:` at the top of the loop — never
+    # a reconstructed/overwritten one with a different target. This block
+    # is the pre-existing (pre-T22) legacy fastlane, not itself part of
+    # the T22 Phase 5c diff, and driving a full `_async_update_data()`
+    # cycle to exercise it behaviorally is impractical (an 8000+ line
+    # Tier1-5 evaluation method) — this is the smallest real, targeted
+    # architectural-boundary check: confirm no `_intent = ` reassignment
+    # exists anywhere between the intent's binding and its dispatch call.
+    def test_no_intent_reassignment_between_binding_and_dispatch(self) -> None:
+        import re
+        from pathlib import Path
+        source = (
+            Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
+            / "coordinator.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("for _intent in _exec_plan.intents:")
+        end = source.index(
+            "_intent_result = await dispatch_cover_intent(\n"
+            "                                self.hass, _intent, now_utc=_dispatch_now\n"
+            "                            )",
+            start,
+        )
+        body = source[start:end]
+        # Exclude the loop header's own binding and attribute reads
+        # (`_intent.foo`) / comparisons (`_intent ==`, `_intent is`) —
+        # only a bare reassignment (`_intent = ...` / `_intent=...`) is
+        # the defect this guards against.
+        reassignment = re.search(r"(?<!for )\b_intent\s*=(?!=)", body)
+        assert reassignment is None, (
+            "the safety dispatch intent must never be reassigned between "
+            "its binding and the real dispatch_cover_intent() call — a "
+            "reassignment here would let the actually-dispatched target "
+            "silently diverge from what was decided upstream"
+        )
+
+
+class TestSafetyNeverEntersComfortPlanExecutorOrLiveValidation:
+    # Audit items #11/#12 ("Safety läuft durch den Executor" / "durch
+    # Comfort-Live-Validation"): even when _run_comfort_dispatch_for_cycle()
+    # IS called with a full ordered_window_states list that happens to
+    # include a safety window (e.g. safety exists this cycle but is not
+    # itself executable, so the outer call-site branch still takes the
+    # normal comfort path), that safety window's own intent must never
+    # enter the DispatchPlanExecutor/live-validation pipeline this method
+    # builds — proven at the real architecture boundary
+    # (`if intent.is_safety: continue`) in _predispatch_sequential_plan's
+    # plan-item construction loop, using the real dispatch/validate ports.
+    def test_safety_window_excluded_from_comfort_plan_even_when_present(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        safety_state = _state(
+            "w_safety", "z1", entity_id="cover.safety", is_safety=True,
+            filter_allowed=True, target_position_ha=100,
+        )
+        comfort_state = _state(
+            "w_comfort", "z1", entity_id="cover.comfort", is_safety=False,
+            filter_allowed=True, target_position_ha=100,
+        )
+        from custom_components.smartshading.models.cover_group import CoverGroup
+        coord.windows = {"w_safety": safety_state.window, "w_comfort": comfort_state.window}
+        coord.zones = {"z1": safety_state.zone}
+        coord.cover_groups = {
+            "cg_w_safety": CoverGroup(id="cg_w_safety", window_id="w_safety", cover_ids=["cover.safety"]),
+            "cg_w_comfort": CoverGroup(id="cg_w_comfort", window_id="w_comfort", cover_ids=["cover.comfort"]),
+        }
+        coord._cover_capabilities["cover.safety"] = safety_state.exec_cap
+        coord._cover_capabilities["cover.comfort"] = comfort_state.exec_cap
+        states = {}
+        for eid in ("cover.safety", "cover.comfort"):
+            st = MagicMock()
+            st.state = "open"
+            st.attributes = {"current_position": 0}
+            states[eid] = st
+        coord.hass.states.get = MagicMock(side_effect=lambda eid: states.get(eid))
+
+        dispatch_calls: list[str] = []
+        validate_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "dispatch_cover_intent", fake_dispatch,
+        )
+        real_asyncio = coord._predispatch_sequential_plan.__func__.__globals__["asyncio"]
+        monkeypatch.setattr(real_asyncio, "sleep", lambda s: _real_sleep(0))
+
+        # Wrap CommandFilter.evaluate (the real comfort live-validation
+        # entry point) to record which entity it was asked to validate —
+        # this is the actual call-tracking proof, not a source check.
+        from custom_components.smartshading.cover_control import command_filter as _cf_mod
+        _real_evaluate = _cf_mod.CommandFilter.evaluate
+
+        def _tracking_evaluate(self, *a, **k):
+            validate_calls.append(bool(k.get("is_safety")))
+            return _real_evaluate(self, *a, **k)
+
+        monkeypatch.setattr(_cf_mod.CommandFilter, "evaluate", _tracking_evaluate)
+
+        results = asyncio.run(coord._run_comfort_dispatch_for_cycle(
+            _ordered([safety_state, comfort_state]),
+            _harm_for(safety_state, comfort_state),
+            datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc),
+            {"z1": 0}, {"w_safety": 0, "w_comfort": 1},
+        ))
+        assert ("w_comfort", "cover.comfort") in results
+        assert ("w_safety", "cover.safety") not in results, (
+            "the safety window must never receive a comfort-plan result "
+            "at all — it must be excluded before the plan is even built, "
+            "not merely skipped/blocked within it"
+        )
+        assert "cover.safety" not in dispatch_calls
+        assert "cover.comfort" in dispatch_calls
+        assert True not in validate_calls, (
+            "CommandFilter.evaluate() (the real comfort live-validation "
+            "entry point) must never be called with is_safety=True from "
+            "this comfort-only pipeline"
+        )
+
+
+class TestShutdownDuringGlobalThrottleWait:
+    # Ticket §5: coordinator shutdown must be able to end the SAME global
+    # throttle-wait promptly too — reusing the SAME cancellation Event
+    # async_shutdown() already signals (Phase 5b), not a second mechanism.
+    # Both Safety and shutdown are exercised as recognizably distinct
+    # triggers in this test file (this test = shutdown; the class above =
+    # safety), per the ticket's explicit requirement.
+    def test_shutdown_interrupts_the_global_throttle_wait(self, monkeypatch) -> None:
+        import homeassistant.util.dt as dt_util
+        coord = _make_coord(dispatch_config=DispatchConfig(
+            mode=DispatchMode.SPACED, start_interval_s=5.0,
+        ))
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
+        coord.windows = {"w1": s1.window}
+        coord.zones = {"z1": s1.zone}
+        from custom_components.smartshading.models.cover_group import CoverGroup
+        coord.cover_groups = {"cg_w1": CoverGroup(id="cg_w1", window_id="w1", cover_ids=["cover.w1"])}
+        coord._cover_capabilities["cover.w1"] = s1.exec_cap
+        st = MagicMock()
+        st.state = "open"
+        st.attributes = {"current_position": 0}
+        coord.hass.states.get = MagicMock(side_effect=lambda eid: {"cover.w1": st}.get(eid))
+        coord._serial_dispatch.record_dispatch(dt_util.utcnow())
+
+        dispatch_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "dispatch_cover_intent", fake_dispatch,
+        )
+        real_asyncio = coord._predispatch_sequential_plan.__func__.__globals__["asyncio"]
+        monkeypatch.setattr(real_asyncio, "sleep", lambda s: asyncio.Event().wait())
+
+        async def _run():
+            task_a = asyncio.ensure_future(coord._run_comfort_dispatch_for_cycle(
+                _ordered([s1]), _harm_for(s1),
+                datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc), {"z1": 0}, {"w1": 0},
+            ))
+            await _real_sleep(0)
+            await _real_sleep(0)
+            await _real_sleep(0)
+            assert dispatch_calls == []
+            assert not task_a.done()
+            assert coord._serial_dispatch.lock.locked()
+
+            await asyncio.wait_for(coord.async_shutdown(), timeout=2.0)
+            assert task_a.done()
+            assert task_a.cancelled() is False, (
+                "shutdown must let the throttle-wait wind down "
+                "cooperatively via the cancellation signal, never a hard "
+                "Task.cancel()"
+            )
+
+        asyncio.run(_run())
+        assert dispatch_calls == [], (
+            "no comfort service call may fire once shutdown interrupts "
+            "the global throttle-wait"
+        )
+        assert coord._serial_dispatch.lock.locked() is False, (
+            "the global serial-dispatch lock must be released promptly "
+            "after shutdown, not held until the full configured interval "
+            "elapses"
+        )
+        assert coord._unloading is True
 
 
 class TestSafetyPreemptsRightAfterValidationBeforeServiceCall:

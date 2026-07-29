@@ -6825,6 +6825,28 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
             async def _do_dispatch():
                 async with self._serial_dispatch.lock:
+                    # T22 Phase 5c final completion: this global-interval
+                    # throttle-wait is the ONLY sleep in the comfort
+                    # dispatch path that runs INSIDE self._serial_dispatch.
+                    # lock — the SAME lock safety's own legacy dispatch path
+                    # acquires. Left as a plain asyncio.sleep(), a cycle
+                    # carrying safety could be blocked behind up to
+                    # start_interval_s (configurable, up to 30s) of comfort
+                    # pacing even after a successful preemption, because
+                    # that preemption only unblocks the OUTER
+                    # DispatchPlanExecutor loop — it has no visibility into
+                    # this port's own internal wait. Checking cancellation/
+                    # generation before AND racing the wait against
+                    # cancellation (mirroring dispatch_plan_executor.py's
+                    # own _race_against_cancellation pattern) keeps the lock
+                    # held only for a bounded, near-instant duration once
+                    # preempted — never the full configured interval. Lock
+                    # scope itself is intentionally left unchanged (still
+                    # wraps throttle-wait + dispatch, per the module's own
+                    # documented lock-ownership contract) — only the wait
+                    # inside it becomes interruptible.
+                    if cancellation.is_set() or self._dispatch_generation != this_dispatch_gen:
+                        return build_not_attempted_result(intent, reason="safety_preempted")
                     is_first_in_zone_group = (
                         s.window.zone_id != self._sequential_prev_zone_id
                     )
@@ -6847,13 +6869,28 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         planned_ms = round(wait.total_seconds() * 1000)
                         try:
                             started_mono = _monotonic()
-                            await asyncio.sleep(wait.total_seconds())
+                            sleep_task = asyncio.ensure_future(
+                                asyncio.sleep(wait.total_seconds())
+                            )
+                            watch_task = asyncio.ensure_future(cancellation.wait())
+                            done, pending = await asyncio.wait(
+                                {sleep_task, watch_task},
+                                return_when=asyncio.FIRST_COMPLETED,
+                            )
+                            for _pending_task in pending:
+                                _pending_task.cancel()
+                            if watch_task in done:
+                                return build_not_attempted_result(
+                                    intent, reason="safety_preempted"
+                                )
                             slot_granted_mono = _monotonic()
                             actual_ms = max(
                                 0.0, (slot_granted_mono - started_mono) * 1000.0)
                         except Exception:
                             timing_status = "not_recorded"
                             actual_ms = None
+                    if cancellation.is_set() or self._dispatch_generation != this_dispatch_gen:
+                        return build_not_attempted_result(intent, reason="safety_preempted")
                     throttle_by_entity[plan_item.cover_entity_id] = {
                         "throttled": throttled, "planned_ms": planned_ms,
                         "actual_ms": actual_ms, "started_mono": started_mono,

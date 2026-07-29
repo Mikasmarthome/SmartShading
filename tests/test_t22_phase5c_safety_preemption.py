@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+import time
 import types
 from datetime import datetime, timezone
 from typing import Any
@@ -255,6 +256,40 @@ class TestPreemptWithoutActivePlan:
         assert coord._dispatch_generation == gen_before + 1
         assert coord._active_comfort_dispatch_task is None
         assert coord._active_dispatch_cancellation is None
+
+
+class TestPreemptCompletesPromptlyNotAfterAFullArtificialWait:
+    # Audit item #3, distinguished from #1 (signal not set at all): here
+    # the signal IS set and the previous task IS awaited correctly — the
+    # hazard is a REGRESSION that adds unnecessary extra latency AFTER
+    # that legitimate signal+await before control returns to the safety
+    # caller, e.g. someone reintroducing a "wait for the full plan
+    # duration" idea on top of the already-correct cooperative signal.
+    # Proven via real monotonic elapsed-time measurement (not merely a
+    # generous pass/fail timeout) — the underlying prev_task resolves
+    # near-instantly once cancellation.wait() unblocks it, so preempt()
+    # itself must also return near-instantly.
+    def test_preempt_returns_promptly_after_signal_not_after_extra_delay(self) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        cancellation = asyncio.Event()
+        coord._active_dispatch_cancellation = cancellation
+
+        async def _run():
+            task = asyncio.ensure_future(_run_forever_placeholder(cancellation))
+            coord._active_comfort_dispatch_task = task
+            await asyncio.sleep(0)
+            started = time.monotonic()
+            await asyncio.wait_for(coord._preempt_active_comfort_plan(), timeout=2.0)
+            elapsed = time.monotonic() - started
+            return elapsed
+
+        elapsed = asyncio.run(_run())
+        assert elapsed < 0.3, (
+            f"_preempt_active_comfort_plan() must return promptly once its "
+            f"own signal+await of the previous task resolves — took "
+            f"{elapsed:.3f}s, suggesting an unnecessary extra wait was "
+            f"added after the legitimate cooperative signal/await"
+        )
 
 
 class TestPreemptWithActivePlan:
@@ -731,6 +766,8 @@ class TestSafetyPreemptsDuringIntermediatePostCompletionPause:
                     zone_order, window_order_in_zone,
                 )
             )
+            await _real_sleep(0)
+            await _real_sleep(0)
             await _real_sleep(0)
             await _real_sleep(0)
             await _real_sleep(0)

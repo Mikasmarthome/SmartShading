@@ -1023,6 +1023,26 @@ def _build_zone_dispatch_order(
     return zone_order, window_order_in_zone
 
 
+def _cycle_has_executable_safety_intent(ordered_window_states) -> bool:
+    """T22 Phase 5c: True when at least one window in this cycle is both
+    Tier-1-classified as safety (`s.is_safety`) AND its own already-computed
+    Pass-1 `CommandFilterResult.allowed` is True.
+
+    Pure function of already-computed Pass-1 data — no new Safety-Decision-
+    Engine, no CommandFilter re-evaluation, no target recomputation. Used
+    to decide whether THIS coordinator cycle should skip building its own
+    new comfort DispatchPlan (see _async_update_data()'s call site and
+    _preempt_active_comfort_plan()) so an executable safety intent is never
+    made to wait behind this same cycle's own comfort dispatch.
+
+    ordered_window_states: the same `[(window_id, _WindowComputeState), ...]`
+    list already built by Pass 1 before this function's only call site."""
+    return any(
+        s.is_safety and s.exec_filter_result is not None and s.exec_filter_result.allowed
+        for _, s in ordered_window_states
+    )
+
+
 def _harmonized_filter_for_dispatch(exec_filter_result, harm, exec_cap):
     """Return the harmonization-adjusted CommandFilterResult to dispatch
     from, or the unmodified exec_filter_result when this window's target was
@@ -5361,12 +5381,29 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # T22 Phase 5b: routed through _run_comfort_dispatch_for_cycle(),
         # which guarantees at most one active comfort plan per coordinator
         # across overlapping _async_update_data() cycles.
+        #
+        # T22 Phase 5c: if THIS cycle itself carries an executable safety
+        # intent (already-computed Pass-1 data: is_safety AND its own
+        # CommandFilterResult.allowed — no new Safety-Decision-Engine, no
+        # recomputation), this cycle must not build/run its OWN new
+        # comfort plan at all — doing so would await that plan's own
+        # completion/pacing/pause before this SAME cycle's Pass-2 loop
+        # ever reaches its safety-dispatch further down, defeating the
+        # whole point of preemption. Only the invalidate-previous-plan
+        # half runs (_preempt_active_comfort_plan) — comfort for this
+        # cycle is simply deferred to a later cycle once safety clears.
+        _cycle_has_executable_safety = _cycle_has_executable_safety_intent(
+            _ordered_window_states
+        )
         _sequential_results: dict[tuple[str, str], object] = {}
         if self._dispatch_config.mode in (DispatchMode.SEQUENTIAL, DispatchMode.SPACED):
-            _sequential_results = await self._run_comfort_dispatch_for_cycle(
-                _ordered_window_states, _harmonization, now,
-                _zone_order, _window_order_in_zone,
-            )
+            if _cycle_has_executable_safety:
+                await self._preempt_active_comfort_plan()
+            else:
+                _sequential_results = await self._run_comfort_dispatch_for_cycle(
+                    _ordered_window_states, _harmonization, now,
+                    _zone_order, _window_order_in_zone,
+                )
 
         # For harmonized windows, the filter result is replaced with a new one
         # carrying the group's harmonized target_position_ha before plan building.
@@ -5471,6 +5508,29 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         _global_timing_recording_status = _throttle_info.get(
                             "timing_status", "recorded"
                         )
+                    elif (
+                        _cycle_has_executable_safety
+                        and self._dispatch_config.mode
+                        in (DispatchMode.SEQUENTIAL, DispatchMode.SPACED)
+                        and not _intent.is_safety
+                    ):
+                        # T22 Phase 5c: this cycle preempted its own comfort
+                        # plan in favor of safety (see the call site above —
+                        # _run_comfort_dispatch_for_cycle() was never
+                        # called, only _preempt_active_comfort_plan(), so
+                        # _sequential_results is empty this cycle). This
+                        # comfort intent must NOT fall through to the
+                        # unmodified lock block below — that block spans
+                        # throttle+dispatch+completion+pause under one
+                        # lock, exactly the long hold safety preemption
+                        # exists to avoid blocking behind. Record it as
+                        # not attempted with a stable, diagnostically
+                        # distinct reason instead; a later cycle (once
+                        # safety clears) will recompute and dispatch it
+                        # normally.
+                        _exec_results.append(build_not_attempted_result(
+                            _intent, reason="safety_preempted",
+                        ))
                     else:
                         # Serial Dispatch (Step 10): acquire the integration-wide
                         # lock before every cover command.  The lock is shared
@@ -6502,53 +6562,38 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             oldest = sorted(self._research_daily_buckets)[0]
             del self._research_daily_buckets[oldest]
 
-    async def _run_comfort_dispatch_for_cycle(
-        self, ordered_window_states, harmonization, now,
-        zone_order, window_order_in_zone,
-    ) -> dict:
-        """T22 Phase 5b: concurrent-cycle guard for comfort dispatch.
+    async def _preempt_active_comfort_plan(self) -> int:
+        """T22 Phase 5b/5c: bump the shared generation counter and signal +
+        await any still-active comfort DispatchPlanExecutor task, WITHOUT
+        starting a new one. Returns the freshly-bumped generation value.
 
-        Guarantees at most one active comfort DispatchPlanExecutor run per
-        coordinator, even when a NEW `_async_update_data()` cycle (a
-        separate task — presence/contact/lifecycle-boundary event, or the
-        periodic timer) starts while a PREVIOUS cycle's comfort plan is
-        still mid-flight (e.g. waiting on a completion wait or FULL_OPEN
-        pacing sleep). Safety is entirely unaffected — it never goes
-        through this method (see _predispatch_sequential_plan's own
-        docstring: safety keeps its unmodified fastlane path).
+        This is steps 1-3 of the original Phase 5b
+        `_run_comfort_dispatch_for_cycle()` sequence, extracted so T22
+        Phase 5c can invoke JUST the invalidate-and-wait-for-previous part
+        on a cycle that carries an executable safety intent — without also
+        building and running THIS cycle's own new comfort plan (which
+        would otherwise itself block this same cycle's Pass-2 loop, and
+        therefore its own safety dispatch, until fully finished). See
+        _async_update_data()'s call site for the safety-precedence check
+        that decides which of the two (this method alone, vs. the full
+        _run_comfort_dispatch_for_cycle()) a given cycle uses.
 
-        Sequence, matching the required flow exactly:
-          1. Bump self._dispatch_generation FIRST, before anything else —
-             this cycle's plan is authoritative from this point on. Any
-             OLDER still-running plan's next is_generation_current() check
-             (evaluated by the executor before every item) will now see a
-             mismatch and self-abort the rest of its own queue.
-          2. If a previous comfort plan is still active, signal it via the
-             SAME cancellation Event it was given (not Task.cancel() — the
-             executor winds itself down cooperatively via the generation
-             check above and this signal, never a hard interrupt except at
-             real coordinator shutdown).
-          3. Await the previous task to actually finish before starting a
-             new one — this is what makes "at most one active plan"
-             actually true, not just "eventually consistent".
-          4. Only then create the new cancellation Event + task for THIS
-             cycle's own plan, register it as the active one, run it, and
-             clear the registration afterward (identity-guarded, so a
-             still-newer cycle that raced ahead is never clobbered — same
-             pattern _predispatch_sequential_plan already used for
-             self._active_dispatch_cancellation before Phase 5b moved that
-             ownership here).
+        Because every genuinely long-running executor wait (completion,
+        FULL_OPEN pacing, INTERMEDIATE post-completion pause) is already
+        raced against the SAME cancellation Event (T22 Phase 3's
+        `_race_against_cancellation`), awaiting the previous task here
+        resolves quickly — bounded by whatever single in-flight port call
+        (a dispatch_item HA-service call, or a quick validate_item check)
+        is currently running, never by the full remaining plan duration.
+        This is what satisfies "Safety darf nicht auf Completion-Wait,
+        Pacing oder Pause warten" without needing a separate, harder
+        cancellation mechanism.
 
-        Reuses self._dispatch_generation — the SAME counter the legacy
-        SEQUENTIAL/SPACED-safety and PARALLEL paths already read via their
-        own `_this_dispatch_gen` snapshot (captured once, earlier, at the
-        top of Pass-2) — no second generation counter. Safety is exempt
-        from all generation checks (unchanged), and this bump only ever
-        runs when SEQUENTIAL/SPACED mode is active for a cycle that reaches
-        this method at all (PARALLEL mode never calls this method), so
-        PARALLEL's own generation semantics are untouched.
+        Idempotent: calling this repeatedly (e.g. two safety cycles in
+        quick succession) is always safe — a None/already-done previous
+        task or cancellation is simply a no-op past the bump.
         """
-        # Step 1: this cycle's plan becomes authoritative immediately.
+        # Step 1: this cycle becomes authoritative immediately.
         self._dispatch_generation += 1
         this_dispatch_gen = self._dispatch_generation
 
@@ -6568,6 +6613,49 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     "while winding down for a new cycle",
                     exc_info=True,
                 )
+        return this_dispatch_gen
+
+    async def _run_comfort_dispatch_for_cycle(
+        self, ordered_window_states, harmonization, now,
+        zone_order, window_order_in_zone,
+    ) -> dict:
+        """T22 Phase 5b: concurrent-cycle guard for comfort dispatch.
+
+        Guarantees at most one active comfort DispatchPlanExecutor run per
+        coordinator, even when a NEW `_async_update_data()` cycle (a
+        separate task — presence/contact/lifecycle-boundary event, or the
+        periodic timer) starts while a PREVIOUS cycle's comfort plan is
+        still mid-flight (e.g. waiting on a completion wait or FULL_OPEN
+        pacing sleep). Safety is entirely unaffected — it never goes
+        through this method (see _predispatch_sequential_plan's own
+        docstring: safety keeps its unmodified fastlane path).
+
+        T22 Phase 5c: a cycle that itself carries an executable safety
+        intent does not call this method at all — see
+        _preempt_active_comfort_plan() and this method's call site in
+        _async_update_data().
+
+        Sequence, matching the required flow exactly:
+          1-3. Delegates to _preempt_active_comfort_plan() (generation
+             bump + signal + await any previous plan).
+          4. Only then create the new cancellation Event + task for THIS
+             cycle's own plan, register it as the active one, run it, and
+             clear the registration afterward (identity-guarded, so a
+             still-newer cycle that raced ahead is never clobbered — same
+             pattern _predispatch_sequential_plan already used for
+             self._active_dispatch_cancellation before Phase 5b moved that
+             ownership here).
+
+        Reuses self._dispatch_generation — the SAME counter the legacy
+        SEQUENTIAL/SPACED-safety and PARALLEL paths already read via their
+        own `_this_dispatch_gen` snapshot (captured once, earlier, at the
+        top of Pass-2) — no second generation counter. Safety is exempt
+        from all generation checks (unchanged), and this bump only ever
+        runs when SEQUENTIAL/SPACED mode is active for a cycle that reaches
+        this method at all (PARALLEL mode never calls this method), so
+        PARALLEL's own generation semantics are untouched.
+        """
+        this_dispatch_gen = await self._preempt_active_comfort_plan()
 
         # Step 4: this cycle's own plan.
         cancellation = asyncio.Event()

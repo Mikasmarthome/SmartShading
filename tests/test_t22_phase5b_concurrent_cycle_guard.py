@@ -600,10 +600,11 @@ class TestShutdown:
 
 class TestParallelModeNeverReachesGuard:
     def test_call_site_guards_by_mode_before_reaching_the_cycle_guard(self) -> None:
-        # Structural: _run_comfort_dispatch_for_cycle() must only be called
+        # Structural: _run_comfort_dispatch_for_cycle() (and, since T22
+        # Phase 5c, _preempt_active_comfort_plan()) must only be called
         # from behind the SAME `mode in (SEQUENTIAL, SPACED)` guard that
         # already exists for the pre-pass — PARALLEL mode must never reach
-        # it at all, so it can never be affected by Phase 5b.
+        # either at all, so it can never be affected by Phase 5b/5c.
         import re
         from pathlib import Path
         source = (
@@ -612,10 +613,13 @@ class TestParallelModeNeverReachesGuard:
         ).read_text(encoding="utf-8")
         pattern = re.compile(
             r"if self\._dispatch_config\.mode in \(DispatchMode\.SEQUENTIAL, DispatchMode\.SPACED\):\s*\n"
-            r"\s*_sequential_results = await self\._run_comfort_dispatch_for_cycle\(",
+            r"(?:.*\n){0,6}?\s*await self\._preempt_active_comfort_plan\(\)\s*\n"
+            r"\s*else:\s*\n"
+            r"(?:.*\n){0,4}?\s*_sequential_results = await self\._run_comfort_dispatch_for_cycle\(",
         )
         assert pattern.search(source), (
-            "_run_comfort_dispatch_for_cycle() must remain called only from "
-            "behind the SEQUENTIAL/SPACED mode guard — PARALLEL mode must "
-            "never reach the Phase 5b concurrent-cycle guard at all."
+            "_run_comfort_dispatch_for_cycle() and _preempt_active_comfort_"
+            "plan() must remain called only from behind the SEQUENTIAL/"
+            "SPACED mode guard — PARALLEL mode must never reach the Phase "
+            "5b/5c concurrent-cycle guard at all."
         )

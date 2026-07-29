@@ -213,6 +213,41 @@ class TestOrder:
         assert [c for c, _ in h.dispatch_calls] == [i.cover_entity_id for i in plan.items]
 
     @async_test
+    async def test_full_open_across_multiple_zones_never_waits_behind_an_earlier_intermediate(self):
+        # T22 Phase 5d scope check: proves end-to-end (real build_dispatch_plan
+        # sort + real DispatchPlanExecutor pacing together, not each in
+        # isolation) that submitting items out of order, spanning multiple
+        # zones, with a MIX of FULL_OPEN and INTERMEDIATE targets, still
+        # dispatches every FULL_OPEN item first — paced only by the fixed
+        # 2s start interval, never delayed behind an INTERMEDIATE item's
+        # completion-wait — regardless of submission or zone order.
+        clock = FakeClock()
+        h = Harness(clock)
+        plan = _plan([
+            _item(zone_id="z2", zone_index=1, cover_entity_id="intermediate_z2",
+                 target_ha=40, target_class=DispatchTargetClass.INTERMEDIATE),
+            _item(zone_id="z3", zone_index=2, cover_entity_id="full_open_z3",
+                 target_ha=100, target_class=DispatchTargetClass.FULL_OPEN),
+            _item(zone_id="z1", zone_index=0, cover_entity_id="intermediate_z1",
+                 target_ha=40, target_class=DispatchTargetClass.INTERMEDIATE),
+            _item(zone_id="z1", zone_index=0, cover_entity_id="full_open_z1",
+                 target_ha=100, target_class=DispatchTargetClass.FULL_OPEN, cover_index=1),
+        ])
+        await _executor().execute_plan(plan=plan, **h.kwargs())
+        # Both FULL_OPEN items dispatch first (2s apart, no completion-wait
+        # involved), THEN the INTERMEDIATE items — never interleaved.
+        assert h.dispatch_calls == [
+            ("full_open_z1", 0.0),
+            ("full_open_z3", 2.0),
+            ("intermediate_z1", 4.0),
+            ("intermediate_z2", 6.0),
+        ]
+        assert h.completion_calls == ["intermediate_z1", "intermediate_z2"], (
+            "FULL_OPEN items must never enter completion-wait at all, "
+            "regardless of zone or submission order"
+        )
+
+    @async_test
     async def test_non_executable_items_never_dispatched(self):
         clock = FakeClock()
         h = Harness(clock)

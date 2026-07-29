@@ -290,6 +290,7 @@ def _run_plan(coord, states, **setup_kwargs):
     zone_order, window_order_in_zone = _zone_maps(states)
     return coord._predispatch_sequential_plan(
         _ordered(states), _harm(states), _NOW, 0, zone_order, window_order_in_zone,
+        asyncio.Event(),
     )
 
 

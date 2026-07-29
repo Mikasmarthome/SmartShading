@@ -1395,6 +1395,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # comfort completion wait) is a known, not-yet-wired limitation of
         # Phase 4b — see the Phase 4b closing report.
         self._active_dispatch_cancellation: asyncio.Event | None = None
+        # T22 Phase 5b: the currently-running comfort DispatchPlanExecutor
+        # task (SEQUENTIAL/SPACED only — see _run_comfort_dispatch_for_
+        # cycle()). At most one may be active per coordinator; a new cycle
+        # signals + awaits this one before starting its own.
+        self._active_comfort_dispatch_task: asyncio.Task | None = None
         # T22 Phase 4b: per-cycle throttle-timing diagnostics for comfort
         # items dispatched via the new DispatchPlanExecutor pre-pass, keyed
         # by cover_entity_id — consumed once by the main loop's
@@ -1810,10 +1815,25 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         narrow, accepted residual race, unchanged from the T16 audit.
         """
         self._unloading = True
-        # T22 Phase 4b: signal any in-flight comfort DispatchPlanExecutor run
-        # to stop promptly rather than racing shutdown.
+        # T22 Phase 4b/5b: signal any in-flight comfort DispatchPlanExecutor
+        # run to stop promptly rather than racing shutdown, then actually
+        # wait for it to finish winding down (cooperatively — the signal
+        # above plus its own generation check is what stops it, never a
+        # hard Task.cancel() here) so no comfort dispatch task outlives
+        # this coordinator.
         if self._active_dispatch_cancellation is not None:
             self._active_dispatch_cancellation.set()
+        active_comfort_task = self._active_comfort_dispatch_task
+        if active_comfort_task is not None and not active_comfort_task.done():
+            try:
+                await active_comfort_task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                _LOGGER.debug(
+                    "SmartShading: active comfort dispatch task raised during shutdown",
+                    exc_info=True,
+                )
         await super().async_shutdown()
         tasks = list(self._background_tasks)
         for task in tasks:
@@ -5338,10 +5358,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # _predispatch_sequential_plan() docstring. Safety intents are
         # excluded from this pre-pass and keep dispatching through the main
         # loop's own unmodified lock block below (the final `else` branch).
+        # T22 Phase 5b: routed through _run_comfort_dispatch_for_cycle(),
+        # which guarantees at most one active comfort plan per coordinator
+        # across overlapping _async_update_data() cycles.
         _sequential_results: dict[tuple[str, str], object] = {}
         if self._dispatch_config.mode in (DispatchMode.SEQUENTIAL, DispatchMode.SPACED):
-            _sequential_results = await self._predispatch_sequential_plan(
-                _ordered_window_states, _harmonization, now, _this_dispatch_gen,
+            _sequential_results = await self._run_comfort_dispatch_for_cycle(
+                _ordered_window_states, _harmonization, now,
                 _zone_order, _window_order_in_zone,
             )
 
@@ -6479,9 +6502,96 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             oldest = sorted(self._research_daily_buckets)[0]
             del self._research_daily_buckets[oldest]
 
+    async def _run_comfort_dispatch_for_cycle(
+        self, ordered_window_states, harmonization, now,
+        zone_order, window_order_in_zone,
+    ) -> dict:
+        """T22 Phase 5b: concurrent-cycle guard for comfort dispatch.
+
+        Guarantees at most one active comfort DispatchPlanExecutor run per
+        coordinator, even when a NEW `_async_update_data()` cycle (a
+        separate task — presence/contact/lifecycle-boundary event, or the
+        periodic timer) starts while a PREVIOUS cycle's comfort plan is
+        still mid-flight (e.g. waiting on a completion wait or FULL_OPEN
+        pacing sleep). Safety is entirely unaffected — it never goes
+        through this method (see _predispatch_sequential_plan's own
+        docstring: safety keeps its unmodified fastlane path).
+
+        Sequence, matching the required flow exactly:
+          1. Bump self._dispatch_generation FIRST, before anything else —
+             this cycle's plan is authoritative from this point on. Any
+             OLDER still-running plan's next is_generation_current() check
+             (evaluated by the executor before every item) will now see a
+             mismatch and self-abort the rest of its own queue.
+          2. If a previous comfort plan is still active, signal it via the
+             SAME cancellation Event it was given (not Task.cancel() — the
+             executor winds itself down cooperatively via the generation
+             check above and this signal, never a hard interrupt except at
+             real coordinator shutdown).
+          3. Await the previous task to actually finish before starting a
+             new one — this is what makes "at most one active plan"
+             actually true, not just "eventually consistent".
+          4. Only then create the new cancellation Event + task for THIS
+             cycle's own plan, register it as the active one, run it, and
+             clear the registration afterward (identity-guarded, so a
+             still-newer cycle that raced ahead is never clobbered — same
+             pattern _predispatch_sequential_plan already used for
+             self._active_dispatch_cancellation before Phase 5b moved that
+             ownership here).
+
+        Reuses self._dispatch_generation — the SAME counter the legacy
+        SEQUENTIAL/SPACED-safety and PARALLEL paths already read via their
+        own `_this_dispatch_gen` snapshot (captured once, earlier, at the
+        top of Pass-2) — no second generation counter. Safety is exempt
+        from all generation checks (unchanged), and this bump only ever
+        runs when SEQUENTIAL/SPACED mode is active for a cycle that reaches
+        this method at all (PARALLEL mode never calls this method), so
+        PARALLEL's own generation semantics are untouched.
+        """
+        # Step 1: this cycle's plan becomes authoritative immediately.
+        self._dispatch_generation += 1
+        this_dispatch_gen = self._dispatch_generation
+
+        # Steps 2-3: signal and await any still-active previous plan.
+        prev_cancellation = self._active_dispatch_cancellation
+        if prev_cancellation is not None:
+            prev_cancellation.set()
+        prev_task = self._active_comfort_dispatch_task
+        if prev_task is not None and not prev_task.done():
+            try:
+                await prev_task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                _LOGGER.debug(
+                    "SmartShading: previous comfort dispatch task raised "
+                    "while winding down for a new cycle",
+                    exc_info=True,
+                )
+
+        # Step 4: this cycle's own plan.
+        cancellation = asyncio.Event()
+        self._active_dispatch_cancellation = cancellation
+
+        async def _run():
+            return await self._predispatch_sequential_plan(
+                ordered_window_states, harmonization, now, this_dispatch_gen,
+                zone_order, window_order_in_zone, cancellation,
+            )
+
+        task = asyncio.ensure_future(_run())
+        self._active_comfort_dispatch_task = task
+        try:
+            return await task
+        finally:
+            if self._active_comfort_dispatch_task is task:
+                self._active_comfort_dispatch_task = None
+            if self._active_dispatch_cancellation is cancellation:
+                self._active_dispatch_cancellation = None
+
     async def _predispatch_sequential_plan(
         self, ordered_window_states, harmonization, now, this_dispatch_gen,
-        zone_order, window_order_in_zone,
+        zone_order, window_order_in_zone, cancellation,
     ) -> dict:
         """T22 Phase 4b: comfort-only SEQUENTIAL/SPACED dispatch via the
         isolated DispatchPlanExecutor (cover_control/dispatch_plan_executor.py).
@@ -6505,16 +6615,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         across the completion wait or the post-travel pause — unlike the
         legacy per-item block this pre-pass replaces for comfort items.
 
-        Known limitation (honestly documented, not silently dropped): full
-        live CommandFilter-equivalent revalidation (same-position/already-
-        moving-to-target re-checks) is not yet implemented here — validate_
-        item always returns EXECUTE, faithfully preserving today's exact
-        production behavior (Pass-1's CommandFilter result is trusted as-is,
-        same as the legacy block it replaces). A richer live-revalidation
-        port is a follow-up increment. Likewise, cross-cycle safety
-        preemption (a *different*, concurrently-running coordinator cycle's
-        safety dispatch interrupting this cycle's comfort completion wait)
-        is not wired — only coordinator unload triggers cancellation.
+        T22 Phase 5a: `validate_item` performs real live revalidation
+        (CommandFilter re-evaluation against a freshly re-fetched snapshot,
+        manual override, comfort/night holds, same-position, already-
+        moving) — see _validate_item_port's own docstring below.
+
+        T22 Phase 5b: `cancellation` is now owned and lifecycle-managed by
+        the CALLER (_run_comfort_dispatch_for_cycle) rather than created
+        here — this method just uses whatever Event it's given. This is
+        what lets a NEW coordinator cycle signal THIS running plan to wind
+        down (by setting the very Event this call is using) before the new
+        cycle starts its own plan — see _run_comfort_dispatch_for_cycle's
+        docstring for the full concurrent-cycle guard design.
         """
         if self._dispatch_config.mode not in (DispatchMode.SEQUENTIAL, DispatchMode.SPACED):
             return {}
@@ -6864,23 +6976,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             return _monotonic()
 
         self._sequential_prev_zone_id: str | None = None
-        cancellation = asyncio.Event()
-        self._active_dispatch_cancellation = cancellation
 
         executor = DispatchPlanExecutor()
-        try:
-            plan_execution_result = await executor.execute_plan(
-                plan=plan,
-                dispatch_item=_dispatch_item_port,
-                wait_for_completion=_wait_for_completion_port,
-                validate_item=_validate_item_port,
-                is_generation_current=_is_generation_current_port,
-                cancellation=cancellation,
-                sleep=_sleep_port,
-                clock=_clock_port,
-            )
-        finally:
-            self._active_dispatch_cancellation = None
+        plan_execution_result = await executor.execute_plan(
+            plan=plan,
+            dispatch_item=_dispatch_item_port,
+            wait_for_completion=_wait_for_completion_port,
+            validate_item=_validate_item_port,
+            is_generation_current=_is_generation_current_port,
+            cancellation=cancellation,
+            sleep=_sleep_port,
+            clock=_clock_port,
+        )
 
         # T22 Phase 5a: an item never reaching dispatch_item is not always
         # generation-staleness anymore — it may be a genuine validate_item

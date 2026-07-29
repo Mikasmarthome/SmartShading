@@ -325,6 +325,7 @@ class TestBasicDispatch:
             zone_order, window_order_in_zone = _zone_maps([s1])
             return await coord._predispatch_sequential_plan(
                 _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
             )
 
         results = asyncio.run(_run())
@@ -349,6 +350,7 @@ class TestSafetyExcluded:
             zone_order, window_order_in_zone = _zone_maps([s1])
             return await coord._predispatch_sequential_plan(
                 _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
             )
 
         results = asyncio.run(_run())
@@ -379,6 +381,7 @@ class TestNoMovementExcluded:
             zone_order, window_order_in_zone = _zone_maps([s1])
             return await coord._predispatch_sequential_plan(
                 _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
             )
 
         results = asyncio.run(_run())
@@ -412,6 +415,7 @@ class TestLockOwnership:
             zone_order, window_order_in_zone = _zone_maps([s1])
             await coord._predispatch_sequential_plan(
                 _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
             )
 
         asyncio.run(_run())
@@ -439,6 +443,7 @@ class TestLockOwnership:
             zone_order, window_order_in_zone = _zone_maps([s1])
             await coord._predispatch_sequential_plan(
                 _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
             )
 
         asyncio.run(_run())
@@ -462,6 +467,7 @@ class TestParallelModeNoOp:
             zone_order, window_order_in_zone = _zone_maps([s1])
             return await coord._predispatch_sequential_plan(
                 _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
             )
 
         results = asyncio.run(_run())
@@ -478,6 +484,7 @@ class TestEmptyPlan:
             zone_order, window_order_in_zone = _zone_maps([])
             return await coord._predispatch_sequential_plan(
                 [], {}, _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
             )
 
         results = asyncio.run(_run())
@@ -503,6 +510,7 @@ class TestStaleGeneration:
             zone_order, window_order_in_zone = _zone_maps([s1])
             return await coord._predispatch_sequential_plan(
                 _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
             )
 
         results = asyncio.run(_run())

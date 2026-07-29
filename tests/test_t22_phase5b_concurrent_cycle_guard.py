@@ -613,13 +613,19 @@ class TestParallelModeNeverReachesGuard:
         ).read_text(encoding="utf-8")
         pattern = re.compile(
             r"if self\._dispatch_config\.mode in \(DispatchMode\.SEQUENTIAL, DispatchMode\.SPACED\):\s*\n"
-            r"(?:.*\n){0,6}?\s*await self\._preempt_active_comfort_plan\(\)\s*\n"
+            r"\s*if _cycle_has_executable_safety:\s*\n"
+            r"\s*await self\._preempt_active_comfort_plan\(\)\s*\n"
             r"\s*else:\s*\n"
             r"(?:.*\n){0,4}?\s*_sequential_results = await self\._run_comfort_dispatch_for_cycle\(",
         )
         assert pattern.search(source), (
             "_run_comfort_dispatch_for_cycle() and _preempt_active_comfort_"
             "plan() must remain called only from behind the SEQUENTIAL/"
-            "SPACED mode guard — PARALLEL mode must never reach the Phase "
-            "5b/5c concurrent-cycle guard at all."
+            "SPACED mode guard, with `if _cycle_has_executable_safety:` as "
+            "the IMMEDIATE, sole condition gating _preempt_active_comfort_"
+            "plan() (nothing else in that branch) — PARALLEL mode must "
+            "never reach the Phase 5b/5c concurrent-cycle guard, and the "
+            "safety/comfort branches must never be swapped or padded with "
+            "an extra always-true/always-false branch that would let both "
+            "paths fire or the wrong one fire."
         )

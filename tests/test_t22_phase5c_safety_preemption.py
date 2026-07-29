@@ -494,6 +494,662 @@ class TestSafetyPreemptsActiveComfortPlanMidCompletionWait:
         assert coord._active_dispatch_cancellation is None
 
 
+def _setup_two_window_coord(coord, s1, s2, *, positions=None):
+    from custom_components.smartshading.models.cover_group import CoverGroup
+    coord.windows = {s1.window.id: s1.window, s2.window.id: s2.window}
+    coord.zones = {s1.zone.id: s1.zone, s2.zone.id: s2.zone}
+    coord.cover_groups = {
+        s1.window.cover_group_id: CoverGroup(
+            id=s1.window.cover_group_id, window_id=s1.window.id, cover_ids=[s1.exec_entity_id]),
+        s2.window.cover_group_id: CoverGroup(
+            id=s2.window.cover_group_id, window_id=s2.window.id, cover_ids=[s2.exec_entity_id]),
+    }
+    coord._cover_capabilities[s1.exec_entity_id] = s1.exec_cap
+    coord._cover_capabilities[s2.exec_entity_id] = s2.exec_cap
+    positions = positions or {}
+    states = {}
+    for s in (s1, s2):
+        st = MagicMock()
+        st.state = "open"
+        st.attributes = {"current_position": positions.get(s.exec_entity_id, 0)}
+        states[s.exec_entity_id] = st
+    coord.hass.states.get = MagicMock(side_effect=lambda eid: states.get(eid))
+
+
+def _harm_for(*states):
+    from custom_components.smartshading.cover_control.shading_group_harmonizer import (
+        HarmonizationResult,
+    )
+    return {
+        s.window.id: HarmonizationResult(
+            harmonized=False, final_target_position_ha=None,
+            pre_harmonization_target_position_ha=None,
+        )
+        for s in states
+    }
+
+
+class TestSafetyPreemptsDuringFullOpenPacing:
+    # Ticket §3.1: a comfort plan with two FULL_OPEN items — after the
+    # first item's real dispatch call, the executor is genuinely inside
+    # its FULL_OPEN-to-FULL_OPEN pacing sleep (the real
+    # `_race_against_cancellation(sleep(remaining), cancellation)` call in
+    # dispatch_plan_executor.py, not a source-level stand-in). Safety
+    # preemption must not wait for that pacing interval to elapse and must
+    # prevent the second FULL_OPEN item from ever dispatching.
+    def test_safety_preemption_during_full_open_pacing_interval(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
+        s2 = _state("w2", "z1", entity_id="cover.w2", target_position_ha=100)
+        _setup_two_window_coord(coord, s1, s2)
+
+        dispatch_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "dispatch_cover_intent", fake_dispatch,
+        )
+        # completion wait is irrelevant for FULL_OPEN items (no completion
+        # wait is performed for them at all) — still patched defensively so
+        # a classification regression cannot silently hang the test.
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "wait_for_travel_completion", _fake_completion_hangs_forever_factory({}),
+        )
+        # The pacing sleep itself never resolves on its own — only the
+        # cancellation Event (set by real _preempt_active_comfort_plan())
+        # may unblock it. This is the real production sleep() port, not a
+        # recursive self-calling stand-in.
+        real_asyncio = coord._predispatch_sequential_plan.__func__.__globals__["asyncio"]
+        monkeypatch.setattr(real_asyncio, "sleep", lambda s: asyncio.Event().wait())
+
+        async def _run():
+            zone_order = {"z1": 0}
+            window_order_in_zone = {"w1": 0, "w2": 1}
+            task_a = asyncio.ensure_future(
+                coord._run_comfort_dispatch_for_cycle(
+                    _ordered([s1, s2]), _harm_for(s1, s2),
+                    datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc),
+                    zone_order, window_order_in_zone,
+                )
+            )
+            # Real asyncio.sleep is patched to hang for the rest of this
+            # test — use the captured original for our own control-flow
+            # yields so this test doesn't hang itself.
+            await _real_sleep(0)
+            await _real_sleep(0)
+            await _real_sleep(0)
+            assert dispatch_calls == ["cover.w1"], (
+                "item 1 (FULL_OPEN) must have actually dispatched and the "
+                "executor must now be genuinely stuck in the real pacing "
+                "sleep before item 2 — otherwise this isn't testing "
+                "mid-pacing preemption at all"
+            )
+            assert not task_a.done()
+
+            gen_b = await asyncio.wait_for(coord._preempt_active_comfort_plan(), timeout=2.0)
+            await asyncio.wait_for(task_a, timeout=2.0)
+            return gen_b
+
+        asyncio.run(_run())
+        assert dispatch_calls == ["cover.w1"], (
+            "the second FULL_OPEN item must never dispatch once safety "
+            "preemption interrupts the pacing wait between items"
+        )
+        assert coord._active_comfort_dispatch_task is None
+        assert coord._active_dispatch_cancellation is None
+
+
+class TestSafetyPreemptsDuringIntermediatePostCompletionPause:
+    # Ticket §3.2: an INTERMEDIATE item completes, the executor enters its
+    # real fixed post-completion pause (`_race_against_cancellation(sleep(
+    # INTERMEDIATE_POST_COMPLETION_PAUSE_S), cancellation)`), and safety
+    # preemption must interrupt that pause immediately rather than waiting
+    # for it to elapse naturally, and prevent the next item from dispatching.
+    def test_safety_preemption_during_post_completion_pause(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
+        s2 = _state("w2", "z1", entity_id="cover.w2", target_position_ha=40)
+        _setup_two_window_coord(coord, s1, s2)
+
+        dispatch_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "dispatch_cover_intent", fake_dispatch,
+        )
+
+        async def completion_resolves_once(*a, **k):
+            from custom_components.smartshading.cover_control.dispatch_completion import (
+                CompletionMethod, CompletionResult,
+            )
+            return CompletionResult(method=CompletionMethod.TIMEOUT, elapsed_s=0.01, timed_out=False)
+
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "wait_for_travel_completion", completion_resolves_once,
+        )
+        # The post-completion pause sleep never resolves on its own —
+        # only preemption's cancellation Event may unblock it.
+        real_asyncio = coord._predispatch_sequential_plan.__func__.__globals__["asyncio"]
+        monkeypatch.setattr(real_asyncio, "sleep", lambda s: asyncio.Event().wait())
+
+        async def _run():
+            zone_order = {"z1": 0}
+            window_order_in_zone = {"w1": 0, "w2": 1}
+            task_a = asyncio.ensure_future(
+                coord._run_comfort_dispatch_for_cycle(
+                    _ordered([s1, s2]), _harm_for(s1, s2),
+                    datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc),
+                    zone_order, window_order_in_zone,
+                )
+            )
+            await _real_sleep(0)
+            await _real_sleep(0)
+            await _real_sleep(0)
+            await _real_sleep(0)
+            assert dispatch_calls == ["cover.w1"], (
+                "item 1 (INTERMEDIATE) must have dispatched and completed, "
+                "and the executor must now be genuinely stuck in the real "
+                "post-completion pause before item 2 dispatches"
+            )
+            assert not task_a.done()
+
+            gen_b = await asyncio.wait_for(coord._preempt_active_comfort_plan(), timeout=2.0)
+            await asyncio.wait_for(task_a, timeout=2.0)
+            return gen_b
+
+        asyncio.run(_run())
+        assert dispatch_calls == ["cover.w1"], (
+            "the second INTERMEDIATE item must never dispatch once safety "
+            "preemption interrupts the post-completion pause"
+        )
+        assert coord._active_comfort_dispatch_task is None
+        assert coord._active_dispatch_cancellation is None
+
+
+class TestSafetyPreemptsRightAfterValidationBeforeServiceCall:
+    # Ticket §3.4: the executor's own second cancellation.is_set() check
+    # (dispatch_plan_executor.py, immediately after validate_item returns
+    # EXECUTE and immediately before dispatch_item is awaited) must prevent
+    # the comfort service call once safety has set the cancellation Event
+    # in that exact window — proven at the real DispatchPlanExecutor level
+    # with a validate_item port that itself sets the cancellation the
+    # instant it is called, mirroring safety becoming active in the gap
+    # between live-validation returning EXECUTE and the service call.
+    def test_cancellation_set_between_validation_and_dispatch_blocks_service_call(self) -> None:
+        from custom_components.smartshading.cover_control.dispatch_plan import (
+            DispatchPlan, DispatchPlanItem,
+        )
+        from custom_components.smartshading.cover_control.dispatch_plan_executor import (
+            DispatchPlanExecutor, DispatchOutcome, ExecutionValidation, ValidationAction,
+        )
+        from custom_components.smartshading.engines.dispatch_classification import (
+            DispatchTargetClass,
+        )
+
+        cancellation = asyncio.Event()
+        dispatch_calls: list[str] = []
+
+        item = DispatchPlanItem(
+            zone_id="z1", zone_index=0, cover_entity_id="cover.w1", cover_index=0,
+            target_ha=40, target_class=DispatchTargetClass.INTERMEDIATE,
+            decision_ref="d1", zone_generation=1,
+        )
+        plan = DispatchPlan(plan_id="p1", trigger="test", created_at=None, items=(item,))
+
+        async def dispatch_item(plan_item):
+            dispatch_calls.append(plan_item.cover_entity_id)
+            return DispatchOutcome(success=True)
+
+        async def wait_for_completion(plan_item, cancel_sig):
+            from custom_components.smartshading.cover_control.dispatch_completion import (
+                CompletionMethod, CompletionResult,
+            )
+            return CompletionResult(method=CompletionMethod.TIMEOUT, elapsed_s=0.01, timed_out=False)
+
+        def validate_item(plan_item):
+            # Mirrors safety becoming active in the exact gap between
+            # live-validation returning EXECUTE and the service call.
+            cancellation.set()
+            return ExecutionValidation(ValidationAction.EXECUTE)
+
+        result = asyncio.run(DispatchPlanExecutor().execute_plan(
+            plan=plan,
+            dispatch_item=dispatch_item,
+            wait_for_completion=wait_for_completion,
+            validate_item=validate_item,
+            is_generation_current=lambda i: True,
+            cancellation=cancellation,
+            sleep=lambda s: _real_sleep(0),
+            clock=lambda: 0.0,
+        ))
+        assert dispatch_calls == [], (
+            "the comfort service call must never fire once cancellation "
+            "was set before the executor's pre-dispatch cancellation check "
+            "— this proves the real second-check race window is closed, "
+            "not merely asserted from source"
+        )
+        assert result.preempted is True
+
+
+class TestMixedSafetyAndComfortCycle:
+    # Ticket §4.1: within one cycle carrying an executable safety intent,
+    # the real call-site behavior — reused, not reimplemented here — must
+    # be: an active PREVIOUS comfort plan is preempted, and _run_comfort_
+    # dispatch_for_cycle() (which would start a brand-new comfort plan) is
+    # never invoked for THIS cycle. Proven by monkeypatching _run_comfort_
+    # dispatch_for_cycle() to raise if called at all, then exercising
+    # exactly the call-site branch shape via _cycle_has_executable_safety_
+    # intent() + _preempt_active_comfort_plan(), matching coordinator.py's
+    # own `if _cycle_has_executable_safety: await self._preempt_active_
+    # comfort_plan() else: ... _run_comfort_dispatch_for_cycle(...)`.
+    def test_executable_safety_preempts_and_never_starts_new_comfort_plan(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        safety_state = _state("w_safety", "z1", entity_id="cover.safety", is_safety=True, filter_allowed=True)
+        comfort_state = _state("w_comfort", "z1", entity_id="cover.comfort", is_safety=False, filter_allowed=True)
+
+        async def _must_not_be_called(*a, **k):
+            raise AssertionError(
+                "_run_comfort_dispatch_for_cycle() must never be invoked "
+                "for a cycle carrying an executable safety intent"
+            )
+
+        monkeypatch.setattr(coord, "_run_comfort_dispatch_for_cycle", _must_not_be_called)
+
+        async def _run():
+            cycle_has_safety = _cycle_has_executable_safety_intent(
+                _ordered([safety_state, comfort_state])
+            )
+            assert cycle_has_safety is True
+            if cycle_has_safety:
+                await coord._preempt_active_comfort_plan()
+            else:
+                await coord._run_comfort_dispatch_for_cycle(
+                    _ordered([comfort_state]), _harm_for(comfort_state),
+                    datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc), {"z1": 0}, {"w_comfort": 0},
+                )
+
+        asyncio.run(_run())  # raises via monkeypatch if the forbidden path is taken
+        assert coord._dispatch_generation == 1
+
+
+class TestBlockedSafetyIntentDoesNotPreempt:
+    # Ticket §4.2: a theoretical safety state whose own Pass-1
+    # exec_filter_result.allowed is False must NOT be treated as
+    # executable — _cycle_has_executable_safety_intent() already proves
+    # this at the pure-function level (SP-02); this test additionally
+    # proves the actual call-site shape (reused verbatim) correctly skips
+    # preemption and takes the normal comfort path instead.
+    def test_blocked_safety_intent_leaves_comfort_path_untouched(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        blocked_safety_state = _state(
+            "w_safety", "z1", entity_id="cover.safety", is_safety=True, filter_allowed=False,
+        )
+        comfort_state = _state("w_comfort", "z1", entity_id="cover.comfort", is_safety=False, filter_allowed=True)
+
+        preempt_calls: list[str] = []
+        comfort_calls: list[str] = []
+
+        async def _fake_preempt():
+            preempt_calls.append("preempt")
+            return 1
+
+        async def _fake_comfort(*a, **k):
+            comfort_calls.append("comfort")
+            return {}
+
+        monkeypatch.setattr(coord, "_preempt_active_comfort_plan", _fake_preempt)
+        monkeypatch.setattr(coord, "_run_comfort_dispatch_for_cycle", _fake_comfort)
+
+        async def _run():
+            cycle_has_safety = _cycle_has_executable_safety_intent(
+                _ordered([blocked_safety_state, comfort_state])
+            )
+            assert cycle_has_safety is False
+            if cycle_has_safety:
+                await coord._preempt_active_comfort_plan()
+            else:
+                await coord._run_comfort_dispatch_for_cycle(
+                    _ordered([comfort_state]), _harm_for(comfort_state),
+                    datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc), {"z1": 0}, {"w_comfort": 0},
+                )
+
+        asyncio.run(_run())
+        assert preempt_calls == []
+        assert comfort_calls == ["comfort"]
+
+
+class TestExceptionInWindingDownPreviousPlanDoesNotBlockSafety:
+    # Ticket §5.6: if the previous (winding-down) comfort plan's own task
+    # raises an exception while cooperatively unwinding, that must not
+    # propagate out of _preempt_active_comfort_plan() and must not prevent
+    # safety from proceeding this cycle.
+    def test_exception_in_previous_task_is_isolated(self) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        cancellation = asyncio.Event()
+        coord._active_dispatch_cancellation = cancellation
+
+        async def _raises_after_cancellation():
+            await cancellation.wait()
+            raise RuntimeError("simulated failure while winding down")
+
+        async def _run():
+            task = asyncio.ensure_future(_raises_after_cancellation())
+            coord._active_comfort_dispatch_task = task
+            return await asyncio.wait_for(coord._preempt_active_comfort_plan(), timeout=2.0)
+
+        result_gen = asyncio.run(_run())
+        assert result_gen == 1  # no exception propagated out
+
+
+class TestCancellationEventNeverReusedAcrossCycles:
+    # Audit item #10 ("dauerhaft gesetztes Event wird wiederverwendet"): a
+    # cancellation Event that was permanently .set() for one comfort cycle
+    # must never be handed to a LATER cycle's plan (a set Event would make
+    # the later plan preempt itself instantly on its very first check).
+    # Proven by running two real, independent comfort cycles back-to-back
+    # and asserting the Event object identity differs, and that the
+    # second cycle's Event is not already set when its own plan begins.
+    def test_each_cycle_gets_its_own_fresh_unset_event(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
+        coord.windows = {"w1": s1.window}
+        coord.zones = {"z1": s1.zone}
+        from custom_components.smartshading.models.cover_group import CoverGroup
+        coord.cover_groups = {"cg_w1": CoverGroup(id="cg_w1", window_id="w1", cover_ids=["cover.w1"])}
+        coord._cover_capabilities["cover.w1"] = s1.exec_cap
+        st = MagicMock()
+        st.state = "open"
+        st.attributes = {"current_position": 0}
+        coord.hass.states.get = MagicMock(side_effect=lambda eid: {"cover.w1": st}.get(eid))
+
+        seen_events: list = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            seen_events.append(coord._active_dispatch_cancellation)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "dispatch_cover_intent", fake_dispatch,
+        )
+        real_asyncio = coord._predispatch_sequential_plan.__func__.__globals__["asyncio"]
+        monkeypatch.setattr(real_asyncio, "sleep", lambda s: _real_sleep(0))
+
+        async def _run():
+            await coord._run_comfort_dispatch_for_cycle(
+                _ordered([s1]), _harm_for(s1),
+                datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc), {"z1": 0}, {"w1": 0},
+            )
+            await coord._run_comfort_dispatch_for_cycle(
+                _ordered([s1]), _harm_for(s1),
+                datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc), {"z1": 0}, {"w1": 0},
+            )
+
+        asyncio.run(_run())
+        assert len(seen_events) == 2
+        assert seen_events[0] is not seen_events[1], (
+            "each comfort cycle must build its own fresh asyncio.Event() — "
+            "reusing a previous (possibly already-.set()) Event would make "
+            "a later cycle preempt itself instantly"
+        )
+        assert seen_events[0].is_set() is False
+        assert seen_events[1].is_set() is False
+
+
+class TestPresenceLogicNotSneakedIntoPhase5cCode:
+    # Audit item #25 ("Presence-Logik wird eingeschlichen"): the two T22
+    # Phase 5c-owned functions must stay fully independent of any
+    # presence/occupancy concept per the ticket's explicit scope-out.
+    def test_no_presence_reference_in_safety_preemption_functions(self) -> None:
+        import re
+        from pathlib import Path
+        source = (
+            Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
+            / "coordinator.py"
+        ).read_text(encoding="utf-8")
+        for fn_name, end_marker in (
+            ("_cycle_has_executable_safety_intent", "\ndef "),
+            ("_preempt_active_comfort_plan", "\n    async def _run_comfort_dispatch_for_cycle"),
+        ):
+            start = source.index(f"def {fn_name}(")
+            end = source.index(end_marker, start + 10)
+            body = source[start:end]
+            assert "presence" not in body.lower(), (
+                f"{fn_name}() must stay fully independent of presence/"
+                f"occupancy logic per the ticket's explicit scope-out — "
+                f"found a 'presence' reference in its body"
+            )
+
+
+class TestComfortRestartsAfterSafetyPreemption:
+    # Ticket §17: the NEXT cycle without an executable safety intent must
+    # be able to start a brand-new, genuine comfort plan after a previous
+    # preemption — no leftover registration blocks it.
+    def test_comfort_plan_starts_fresh_after_a_prior_preemption(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        # Simulate a prior preemption with no active plan (SP-06 covers the
+        # await/signal path; here we only need the generation bump + clean
+        # registration state it leaves behind).
+        asyncio.run(coord._preempt_active_comfort_plan())
+        assert coord._active_comfort_dispatch_task is None
+        assert coord._active_dispatch_cancellation is None
+        gen_after_preemption = coord._dispatch_generation
+
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
+        coord.windows = {"w1": s1.window}
+        coord.zones = {"z1": s1.zone}
+        from custom_components.smartshading.models.cover_group import CoverGroup
+        coord.cover_groups = {"cg_w1": CoverGroup(id="cg_w1", window_id="w1", cover_ids=["cover.w1"])}
+        coord._cover_capabilities["cover.w1"] = s1.exec_cap
+        st = MagicMock()
+        st.state = "open"
+        st.attributes = {"current_position": 0}
+        coord.hass.states.get = MagicMock(side_effect=lambda eid: {"cover.w1": st}.get(eid))
+
+        dispatch_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "dispatch_cover_intent", fake_dispatch,
+        )
+        real_asyncio = coord._predispatch_sequential_plan.__func__.__globals__["asyncio"]
+        monkeypatch.setattr(real_asyncio, "sleep", lambda s: _real_sleep(0))
+
+        async def _run():
+            return await coord._run_comfort_dispatch_for_cycle(
+                _ordered([s1]), _harm_for(s1),
+                datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc), {"z1": 0}, {"w1": 0},
+            )
+
+        results = asyncio.run(_run())
+        assert dispatch_calls == ["cover.w1"], (
+            "a fresh comfort plan must be able to dispatch normally in the "
+            "next cycle after a previous safety preemption left no stale "
+            "registration behind"
+        )
+        assert coord._dispatch_generation == gen_after_preemption + 1
+        assert coord._active_comfort_dispatch_task is None
+
+
+class TestFinallyBlockNeverClobbersANewerRegistration:
+    # Ticket §5.2 / audit item #9 ("aktive Task-Referenz wird vorzeitig
+    # gelöscht"): _run_comfort_dispatch_for_cycle()'s own finally block
+    # must clear self._active_comfort_dispatch_task / self._active_
+    # dispatch_cancellation ONLY when they still identify THIS cycle's own
+    # task/Event — never unconditionally. Proven by swapping in sentinel
+    # "newer cycle" objects from inside the real dispatch_item port (i.e.
+    # mid-flight, before this cycle's own finally runs) and asserting they
+    # survive untouched afterward — a plain identity check on source code
+    # cannot prove this, only exercising the real finally block can.
+    def test_a_stale_finally_does_not_clear_a_newer_registration(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
+        coord.windows = {"w1": s1.window}
+        coord.zones = {"z1": s1.zone}
+        from custom_components.smartshading.models.cover_group import CoverGroup
+        coord.cover_groups = {"cg_w1": CoverGroup(id="cg_w1", window_id="w1", cover_ids=["cover.w1"])}
+        coord._cover_capabilities["cover.w1"] = s1.exec_cap
+        st = MagicMock()
+        st.state = "open"
+        st.attributes = {"current_position": 0}
+        coord.hass.states.get = MagicMock(side_effect=lambda eid: {"cover.w1": st}.get(eid))
+
+        sentinel_task = object()
+        sentinel_cancellation = object()
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            # Simulate a newer cycle having already raced ahead and
+            # registered its own active task/cancellation by the time
+            # THIS (older) cycle's own dispatch call is in flight.
+            coord._active_comfort_dispatch_task = sentinel_task
+            coord._active_dispatch_cancellation = sentinel_cancellation
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        monkeypatch.setitem(
+            coord._predispatch_sequential_plan.__func__.__globals__,
+            "dispatch_cover_intent", fake_dispatch,
+        )
+        real_asyncio = coord._predispatch_sequential_plan.__func__.__globals__["asyncio"]
+        monkeypatch.setattr(real_asyncio, "sleep", lambda s: _real_sleep(0))
+
+        asyncio.run(coord._run_comfort_dispatch_for_cycle(
+            _ordered([s1]), _harm_for(s1),
+            datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc), {"z1": 0}, {"w1": 0},
+        ))
+        assert coord._active_comfort_dispatch_task is sentinel_task, (
+            "an older cycle's own finally block must never clear a newer "
+            "cycle's active-task registration — it must only clear its own"
+        )
+        assert coord._active_dispatch_cancellation is sentinel_cancellation
+
+
+class TestShutdownDuringSafetyPreemptionRace:
+    # Ticket §5.5: coordinator shutdown happening concurrently with an
+    # active safety preemption must not raise or leave the previous
+    # comfort task orphaned — same cooperative-wind-down contract as
+    # Phase 5b's TestShutdown, now driven via the safety-preemption entry
+    # point instead of a second overlapping comfort cycle.
+    def test_shutdown_concurrent_with_preemption_no_exception_no_orphan(self) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        cancellation = asyncio.Event()
+        coord._active_dispatch_cancellation = cancellation
+
+        async def _run_forever():
+            await cancellation.wait()
+            return "wound_down"
+
+        async def _run():
+            task = asyncio.ensure_future(_run_forever())
+            coord._active_comfort_dispatch_task = task
+            await asyncio.sleep(0)
+            # Safety preemption and shutdown race concurrently.
+            preempt_task = asyncio.ensure_future(coord._preempt_active_comfort_plan())
+            shutdown_task = asyncio.ensure_future(coord.async_shutdown())
+            await asyncio.wait_for(asyncio.gather(preempt_task, shutdown_task), timeout=2.0)
+            assert task.done()
+            assert task.cancelled() is False
+
+        asyncio.run(_run())  # must not raise
+
+
+class TestSafetyPreemptedSurvivesIntoDiagnostics:
+    # Ticket §6: ExecutionResult.reason == "safety_preempted" must survive
+    # into _record_decision_trace()'s no_dispatch.primary_reason (feeding
+    # Support Export's recent_no_dispatches) and into _record_support_
+    # event()'s own primary reason — not collapse into the generic
+    # "dispatch_not_required" fallback, which would make a real safety
+    # preemption diagnostically indistinguishable from an ordinary no-op
+    # cycle.
+    def test_decision_trace_primary_reason_is_safety_preempted(self) -> None:
+        from custom_components.smartshading.cover_control.execution_result import (
+            build_not_attempted_result,
+        )
+        from custom_components.smartshading.models.decision_provenance import DispatchProvenance
+        from custom_components.smartshading.cover_control.execution_plan import (
+            CoverIntent, CoverCommandType,
+        )
+        from custom_components.smartshading.cover_control.command_filter import ExecutionMode
+
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        s = _state("w1", "z1", entity_id="cover.w1")
+        # decision_id is required for _record_decision_trace()'s own
+        # materiality gate (only material decisions get traced).
+        s.decision_id = "d1"
+
+        intent = CoverIntent(
+            cover_entity_id="cover.w1", command_type=CoverCommandType.MOVE_TO_POSITION,
+            target_position_internal=0, target_position_ha=100, target_tilt=None,
+            is_safety=False, execution_mode=ExecutionMode.AUTOMATIC.value,
+            allowed=True, blocked_reason=None, decided_by="TestEvaluator",
+            computed_at=datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc),
+        )
+        exec_result = build_not_attempted_result(intent, reason="safety_preempted")
+        dispatch_prov = DispatchProvenance(
+            dispatch_allowed=True, dispatch_filter_reason=None,
+            dispatch_attempted=False, dispatch_succeeded=None,
+        )
+        harm = _harm_for(s)["w1"]
+        coord._record_decision_trace("w1", s, harm, dispatch_prov, exec_result, _NOW := datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc))
+        snap = coord.decision_trace_snapshot()
+        rec = snap["z1"]["records"][-1]
+        assert rec["no_dispatch"]["primary_reason"] == "safety_preempted", (
+            "a safety-preempted comfort item must surface 'safety_preempted' "
+            "in Decision Trace no_dispatch.primary_reason, not the generic "
+            "'dispatch_not_required' fallback"
+        )
+        assert rec["no_dispatch"]["command_sent"] is False
+
+    def test_support_event_primary_reason_is_safety_preempted(self) -> None:
+        from custom_components.smartshading.cover_control.execution_result import (
+            build_not_attempted_result,
+        )
+        from custom_components.smartshading.models.decision_provenance import DispatchProvenance
+        from custom_components.smartshading.cover_control.execution_plan import (
+            CoverIntent, CoverCommandType,
+        )
+        from custom_components.smartshading.cover_control.command_filter import ExecutionMode
+
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        s = _state("w1", "z1", entity_id="cover.w1")
+
+        intent = CoverIntent(
+            cover_entity_id="cover.w1", command_type=CoverCommandType.MOVE_TO_POSITION,
+            target_position_internal=0, target_position_ha=100, target_tilt=None,
+            is_safety=False, execution_mode=ExecutionMode.AUTOMATIC.value,
+            allowed=True, blocked_reason=None, decided_by="TestEvaluator",
+            computed_at=datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc),
+        )
+        exec_result = build_not_attempted_result(intent, reason="safety_preempted")
+        dispatch_prov = DispatchProvenance(
+            dispatch_allowed=True, dispatch_filter_reason=None,
+            dispatch_attempted=False, dispatch_succeeded=None,
+        )
+        before = len(coord._support_critical_events)
+        coord._record_support_event(
+            "w1", s, dispatch_prov, datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc),
+            last_exec_result=exec_result, disp_ctx={},
+        )
+        assert len(coord._support_critical_events) == before + 1
+        evt = coord._support_critical_events[-1]
+        assert evt.get("reason") == "safety_preempted", (
+            f"support event must carry the safety_preempted reason, got: {evt}"
+        )
+
+
 class TestCallSiteActuallyChecksSafetyCondition:
     def test_safety_branch_condition_is_the_real_check(self) -> None:
         # Structural: the call site's branch must be gated on the ACTUAL

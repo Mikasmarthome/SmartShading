@@ -6341,7 +6341,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             elif cf_blocked:
                 primary = filt.blocked_reason or "command_filter_suppressed"
             elif not dispatch_prov.dispatch_attempted:
-                primary = "dispatch_not_required"
+                # T22 Phase 5c supplement: a comfort item deferred this
+                # cycle by cross-cycle safety preemption carries its own
+                # specific ExecutionResult.reason ("safety_preempted") —
+                # surface that distinct diagnostic value instead of the
+                # generic "dispatch_not_required" fallback, which would
+                # otherwise make a real preemption indistinguishable from
+                # an ordinary no-op cycle in Decision Trace / Support
+                # Export's no_dispatch.primary_reason.
+                primary = (
+                    "safety_preempted"
+                    if getattr(exec_result, "reason", None) == "safety_preempted"
+                    else "dispatch_not_required"
+                )
             else:
                 primary = dispatch_prov.dispatch_filter_reason or "not_recorded"
             if dispatch_prov.dispatch_filter_reason and dispatch_prov.dispatch_filter_reason != primary:
@@ -6424,7 +6436,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             elif cf_blocked:
                 primary = getattr(filt, "blocked_reason", None) or "command_filter_suppressed"
             elif not getattr(dispatch_prov, "dispatch_attempted", False):
-                primary = "dispatch_not_required"
+                # T22 Phase 5c supplement: same distinct-reason preservation
+                # as _record_decision_trace() — a safety-preempted comfort
+                # item must not collapse into the generic "dispatch_not_
+                # required" support event.
+                primary = (
+                    "safety_preempted"
+                    if getattr(last_exec_result, "reason", None) == "safety_preempted"
+                    else "dispatch_not_required"
+                )
             else:
                 primary = getattr(dispatch_prov, "dispatch_filter_reason", None) or "not_recorded"
 

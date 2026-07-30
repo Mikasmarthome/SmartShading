@@ -5361,16 +5361,35 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # scope; see dispatch_orchestrator.effective_interval_s()).
         _dispatch_prev_zone_id: str | None = None
 
+        # T22 Phase 5c: whether THIS cycle itself carries an executable
+        # safety intent (already-computed Pass-1 data: is_safety AND its
+        # own CommandFilterResult.allowed — no new Safety-Decision-Engine,
+        # no recomputation). Computed once, up front, so BOTH the PARALLEL
+        # pre-pass below and the SEQUENTIAL/SPACED pre-pass further down
+        # can consult the same snapshot.
+        _cycle_has_executable_safety = _cycle_has_executable_safety_intent(
+            _ordered_window_states
+        )
+
         # T11.1: PARALLEL mode dispatches every eligible intent for this
         # cycle CONCURRENTLY, in one pre-pass BEFORE the per-window loop
         # below — see _predispatch_parallel_batches() docstring for the full
         # rationale. For every other mode this is a no-op empty dict, and
         # the per-window loop's own sequential dispatch block (unchanged)
         # runs exactly as it did before T11.1.
+        #
+        # T22 PARALLEL safety-preemption fix: an executable safety intent
+        # this cycle must still dispatch via its own fast-lane batch inside
+        # _predispatch_parallel_batches() (never blocked — see that method's
+        # own is_safety_batch handling), but no NON-safety batch may start
+        # this cycle. _cycle_has_executable_safety is passed through so the
+        # batch loop itself can make that per-batch decision — the whole
+        # pre-pass is never skipped wholesale (that would also block safety).
         _parallel_results: dict[tuple[str, str], object] = {}
         if self._dispatch_config.mode is DispatchMode.PARALLEL:
             _parallel_results = await self._predispatch_parallel_batches(
                 _ordered_window_states, _harmonization, now, _this_dispatch_gen,
+                cycle_has_executable_safety=_cycle_has_executable_safety,
             )
 
         # T22 Phase 4b: SEQUENTIAL/SPACED comfort dispatch now runs via the
@@ -5382,19 +5401,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # which guarantees at most one active comfort plan per coordinator
         # across overlapping _async_update_data() cycles.
         #
-        # T22 Phase 5c: if THIS cycle itself carries an executable safety
-        # intent (already-computed Pass-1 data: is_safety AND its own
-        # CommandFilterResult.allowed — no new Safety-Decision-Engine, no
-        # recomputation), this cycle must not build/run its OWN new
-        # comfort plan at all — doing so would await that plan's own
-        # completion/pacing/pause before this SAME cycle's Pass-2 loop
-        # ever reaches its safety-dispatch further down, defeating the
-        # whole point of preemption. Only the invalidate-previous-plan
-        # half runs (_preempt_active_comfort_plan) — comfort for this
-        # cycle is simply deferred to a later cycle once safety clears.
-        _cycle_has_executable_safety = _cycle_has_executable_safety_intent(
-            _ordered_window_states
-        )
+        # T22 Phase 5c: this cycle must not build/run its OWN new comfort
+        # plan at all when it carries an executable safety intent — doing
+        # so would await that plan's own completion/pacing/pause before
+        # this SAME cycle's Pass-2 loop ever reaches its safety-dispatch
+        # further down, defeating the whole point of preemption. Only the
+        # invalidate-previous-plan half runs (_preempt_active_comfort_plan)
+        # — comfort for this cycle is simply deferred to a later cycle once
+        # safety clears.
         _sequential_results: dict[tuple[str, str], object] = {}
         if self._dispatch_config.mode in (DispatchMode.SEQUENTIAL, DispatchMode.SPACED):
             if _cycle_has_executable_safety:
@@ -7166,8 +7180,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     async def _predispatch_parallel_batches(
         self, ordered_window_states, harmonization, now, this_dispatch_gen,
+        *, cycle_has_executable_safety: bool = False,
     ) -> dict:
         """T11.1: genuinely concurrent dispatch for DispatchMode.PARALLEL.
+
+        T22 PARALLEL safety-preemption fix: when cycle_has_executable_safety
+        is True, every batch EXCEPT the safety fast-lane batch (dispatch_
+        batch.py's own is_safety_batch flag) is skipped entirely this cycle
+        — no asyncio.gather() call, no zone-boundary sleep, no service
+        call — and each of that batch's items instead gets a
+        "safety_preempted" NOT_ATTEMPTED result, the same stable reason
+        SEQUENTIAL/SPACED already use (coordinator.py's per-window loop,
+        T22 Phase 5c). The safety batch itself is completely unaffected —
+        it is not gated by this flag at all, since safety must never be
+        blocked by its own preemption check. No new generation/cancellation
+        primitive: this reuses the SAME Pass-1 "does this cycle have
+        executable safety" snapshot Phase 5c already established.
 
         Runs BEFORE the main per-window Pass-2 loop, as one self-contained
         pre-pass — the loop itself (600+ lines of per-window diagnostics,
@@ -7255,6 +7283,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         )
         _prev_zone_id: str | None = None
         for batch in batches:
+            # T22 PARALLEL safety-preemption fix: this cycle's executable
+            # safety intent must dispatch via its own fast-lane batch
+            # (below, unaffected by this check) — but no non-safety batch
+            # may start at all. No zone-boundary sleep, no service call.
+            if not batch.is_safety_batch and cycle_has_executable_safety:
+                for item in batch.items:
+                    _window_id, _intent = item.payload
+                    results[(_window_id, _intent.cover_entity_id)] = replace(
+                        build_not_attempted_result(_intent, reason="safety_preempted"),
+                        parallel_batch_id=(
+                            f"zone:{batch.zone_id}" if batch.zone_id is not None else "all"
+                        ),
+                        parallel_batch_size=len(batch.items),
+                    )
+                continue
+
             # Zone-boundary spacing (T11 zone_batching): applies only between
             # successive non-safety batches, never before the safety fast-lane.
             if (

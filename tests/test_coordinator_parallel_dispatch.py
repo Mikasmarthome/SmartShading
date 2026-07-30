@@ -574,3 +574,99 @@ class TestNoDispatchableItems:
         )
         assert results == {}
         assert called is False
+
+
+class TestParallelSafetyPreemption:
+    # T22 PARALLEL safety-preemption fix: an executable safety intent this
+    # cycle must still dispatch via its own fast-lane batch, but no
+    # non-safety batch may start at all — mirroring the SEQUENTIAL/SPACED
+    # safety_preempted pattern (Phase 5c), reusing the SAME
+    # cycle_has_executable_safety snapshot, no new mechanism.
+    def test_non_safety_batch_skipped_safety_batch_unaffected(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL))
+        safety = _state("w_safety", "z1", entity_id="cover.safety", is_safety=True)
+        comfort = _state("w_comfort", "z1", entity_id="cover.comfort")
+        _setup_coord(coord, [safety, comfort])
+
+        from custom_components.smartshading.cover_control.execution_result import build_sent_result
+        dispatch_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, fake_dispatch)
+
+        results = asyncio.run(
+            coord._predispatch_parallel_batches(
+                _ordered([safety, comfort]), _harm([safety, comfort]), _NOW, 0,
+                cycle_has_executable_safety=True,
+            )
+        )
+        assert dispatch_calls == ["cover.safety"], (
+            "safety must dispatch normally via its own fast-lane batch "
+            "even when cycle_has_executable_safety is True (that flag "
+            "describes THIS safety intent's own presence, not a reason "
+            "to block it)"
+        )
+        assert results[("w_safety", "cover.safety")].status is ExecutionStatus.SENT
+        comfort_result = results[("w_comfort", "cover.comfort")]
+        assert comfort_result.status is ExecutionStatus.NOT_ATTEMPTED
+        assert comfort_result.reason == "safety_preempted"
+
+    def test_multiple_non_safety_zone_batches_all_skipped(self, monkeypatch) -> None:
+        coord = _make_coord(
+            dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL, zone_batching=True)
+        )
+        w1 = _state("w1", "z1", entity_id="cover.w1")
+        w2 = _state("w2", "z2", entity_id="cover.w2")
+        _setup_coord(coord, [w1, w2])
+
+        dispatch_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            raise AssertionError("must never be called once preempted")
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, fake_dispatch)
+        sleep_calls: list[float] = []
+
+        async def spying_sleep(s):
+            sleep_calls.append(s)
+
+        _patch_asyncio_sleep(monkeypatch, coord, spying_sleep)
+
+        results = asyncio.run(
+            coord._predispatch_parallel_batches(
+                _ordered([w1, w2]), _harm([w1, w2]), _NOW, 0,
+                cycle_has_executable_safety=True,
+            )
+        )
+        assert dispatch_calls == [], "no batch may start a service call once preempted"
+        assert sleep_calls == [], "no zone-boundary sleep for a batch that never starts"
+        assert results[("w1", "cover.w1")].reason == "safety_preempted"
+        assert results[("w2", "cover.w2")].reason == "safety_preempted"
+
+    def test_no_executable_safety_dispatches_normally(self, monkeypatch) -> None:
+        # Regression guard: the default (cycle_has_executable_safety=False)
+        # must reproduce the exact pre-fix behavior — nothing skipped.
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL))
+        comfort = _state("w_comfort", "z1", entity_id="cover.comfort")
+        _setup_coord(coord, [comfort])
+
+        from custom_components.smartshading.cover_control.execution_result import build_sent_result
+        dispatch_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, fake_dispatch)
+
+        results = asyncio.run(
+            coord._predispatch_parallel_batches(
+                _ordered([comfort]), _harm([comfort]), _NOW, 0,
+            )
+        )
+        assert dispatch_calls == ["cover.comfort"]
+        assert results[("w_comfort", "cover.comfort")].status is ExecutionStatus.SENT

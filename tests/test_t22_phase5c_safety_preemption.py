@@ -1570,3 +1570,21 @@ class TestCallSiteActuallyChecksSafetyCondition:
             "meaning the safety-preemption branch may have been "
             "neutralized (e.g. replaced with `if False:`)."
         )
+
+    def test_parallel_call_site_threads_the_same_safety_snapshot(self) -> None:
+        # PARALLEL mode's own pre-pass call site must be handed the SAME
+        # _cycle_has_executable_safety snapshot the SEQUENTIAL/SPACED
+        # branch uses — not left at its default (which would silently
+        # disable PARALLEL safety-preemption without breaking any
+        # PARALLEL-mode test that doesn't pass the kwarg explicitly).
+        from pathlib import Path
+        source = (
+            Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
+            / "coordinator.py"
+        ).read_text(encoding="utf-8")
+        assert "cycle_has_executable_safety=_cycle_has_executable_safety" in source, (
+            "_predispatch_parallel_batches() must be called with the real "
+            "cycle_has_executable_safety=_cycle_has_executable_safety "
+            "keyword — omitting it would silently fall back to the "
+            "default (False) and disable PARALLEL safety-preemption."
+        )

@@ -2273,6 +2273,24 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     self._override_detector.clear(window_id)
                     self._override_detector.suppress_next_override_tick(window_id)
         self._persist_zone_controls()
+        # Event-Triggered Comfort Preemption (same pattern as f71c71e /
+        # 69224fd): a still-running comfort dispatch plan was built using
+        # this zone's PREVIOUS active_control_enabled value baked into each
+        # window's CommandFilterResult at Pass-1 time. Without invalidating
+        # it here, a not-yet-dispatched item in that stale plan could keep
+        # issuing cover commands for this zone using the old AUTOMATIC
+        # decision even after the user just turned Active Control off — and
+        # turning it back on could have its refresh silently dropped by the
+        # Debouncer execute_lock exactly like presence/contact/lifecycle-
+        # boundary already proven. _active_dispatch_cancellation/
+        # _dispatch_generation are coordinator-wide (one comfort plan spans
+        # all zones per cycle), so this necessarily invalidates the whole
+        # current plan — the same granularity every other preemption path
+        # already uses; unaffected zones are simply recomputed to their
+        # already-correct target on the next cycle.
+        self._dispatch_generation += 1
+        if self._active_dispatch_cancellation is not None:
+            self._active_dispatch_cancellation.set()
         await self.async_request_refresh()
 
     async def async_clear_manual_override(self, window_id: str) -> bool:

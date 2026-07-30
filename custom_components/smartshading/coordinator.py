@@ -1940,6 +1940,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Increment before scheduling so any intents currently waiting
             # for the dispatch lock see the updated generation and self-cancel.
             self._dispatch_generation += 1
+            # Event-Triggered Comfort Preemption: signal the SAME, already-
+            # existing cross-cycle cancellation (T22 Phase 5b/5c) synchronously
+            # here, at the only point in time this callback can actually reach
+            # a still-running comfort dispatch. async_request_refresh() alone
+            # cannot: HA's DataUpdateCoordinator serialises all refreshes
+            # through a single Debouncer execute_lock, so a refresh requested
+            # while one is already in flight is deferred behind a cooldown
+            # timer (default 10s) and is silently dropped if that timer fires
+            # while the lock is still held (verified against the real
+            # homeassistant.helpers.debounce.Debouncer) — i.e. without this,
+            # a presence/contact-driven re-evaluation can be lost outright,
+            # not just delayed. Setting cancellation here lets any active
+            # comfort completion-wait/pacing sleep end promptly, releasing
+            # the lock in time for the refresh below to actually run.
+            if self._active_dispatch_cancellation is not None:
+                self._active_dispatch_cancellation.set()
             # T15: tied to the config entry (not a bare hass task) so HA
             # cancels it automatically on unload — a plain hass.async_create_task
             # here would be untracked and could keep running after unload.
@@ -2008,6 +2024,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Bump generation so any intents waiting on the dispatch lock see the
             # newer generation and self-cancel, then re-evaluate immediately.
             self._dispatch_generation += 1
+            # Event-Triggered Comfort Preemption: see the matching comment in
+            # _on_presence_change for the full rationale (Debouncer execute_lock
+            # can silently drop this refresh — including a newly-arising
+            # Contact-Safety decision — unless the active comfort dispatch, if
+            # any, is signalled to end promptly right here).
+            if self._active_dispatch_cancellation is not None:
+                self._active_dispatch_cancellation.set()
             # T15: tied to the config entry so HA cancels it on unload.
             # T17: also coordinator-tracked (see async_shutdown()).
             self._create_tracked_background_task(

@@ -224,10 +224,33 @@ sys.modules["homeassistant.helpers.update_coordinator"] = _stub(
 sys.modules["homeassistant.helpers.storage"] = _stub("homeassistant.helpers.storage", Store=_StoreStub)
 
 sys.modules.pop("custom_components.smartshading.coordinator", None)
-from custom_components.smartshading.coordinator import SmartShadingCoordinator  # noqa: E402
+from custom_components.smartshading.coordinator import (  # noqa: E402
+    SmartShadingCoordinator,
+    _WindowComputeState,
+)
 from custom_components.smartshading.models.lifecycle import NightDayLifecycleConfig  # noqa: E402
 from custom_components.smartshading.models.window import WindowConfig  # noqa: E402
 from custom_components.smartshading.models.zone import ZoneConfig  # noqa: E402
+from custom_components.smartshading.cover_control.command_filter import (  # noqa: E402
+    CommandFilter,
+    CommandFilterResult,
+    ExecutionCapability,
+    ExecutionMode,
+)
+from custom_components.smartshading.cover_control.cover_capabilities import CoverCapability  # noqa: E402
+from custom_components.smartshading.cover_control.cover_entity_snapshot import (  # noqa: E402
+    build_cover_entity_snapshot,
+)
+from custom_components.smartshading.cover_control.execution_result import ExecutionStatus  # noqa: E402
+from custom_components.smartshading.cover_control.shading_group_harmonizer import (  # noqa: E402
+    HarmonizationResult,
+)
+from custom_components.smartshading.models.cover_group import CoverGroup  # noqa: E402
+from custom_components.smartshading.models.dispatch_config import (  # noqa: E402
+    DispatchConfig,
+    DispatchMode,
+)
+from custom_components.smartshading.state_machine.states import ShadingState  # noqa: E402
 
 
 def _make_hass() -> MagicMock:
@@ -663,3 +686,278 @@ class TestSafetyAndNoToken:
         await coord.async_set_zone_active_control_enabled("z1", False)
         await _wait_for_recompute_count(call_count, 1)
         assert call_count["n"] == 1
+
+
+# ---------------------------------------------------------------------------
+# TC-AC-FRESH: Bug-Injection #6 coverage gap closed — a FRESH plan (built
+# strictly AFTER the toggle, through the REAL, unmodified CommandFilter /
+# dispatch pre-pass) must not dispatch a real comfort command for the
+# disabled zone.
+#
+# Root cause the earlier bug-injection #6 exposed: no existing test called
+# the real coordinator.py Pass-1 mapping
+#   _exec_mode = ExecutionMode.AUTOMATIC if _exec.active_control_enabled
+#                else ExecutionMode.RECOMMENDATION_ONLY
+# (coordinator.py ~4995-4998) with a value freshly re-read from
+# effective_zone_execution() AFTER a real toggle, nor routed the result
+# through the real CommandFilter().evaluate() -> build_execution_plan() ->
+# _predispatch_parallel_batches() -> dispatch_cover_intent() chain. Every
+# existing test either used _install_fake_cycle() (bypasses ExecutionMode
+# entirely) or hardcoded exec_filter_result.allowed=True (bypasses the gate
+# function itself).
+#
+# This section closes exactly that gap while deliberately NOT driving the
+# full 600+-line _async_update_data() cycle -- following the same,
+# explicitly documented precedent as test_t22_phase4b_sequential_dispatch_
+# wiring.py and test_coordinator_parallel_dispatch.py, both of which state
+# that driving the full per-window Pass-1 tier pipeline end-to-end is out
+# of scope for this test suite. Instead, the ONE line that changes between
+# the "before" and "after" _WindowComputeState is `active_control_enabled`,
+# read live from coord.effective_zone_execution(zone_id) -- the exact same
+# source Pass-1 itself reads -- and everything downstream (CommandFilter,
+# build_execution_plan, _predispatch_parallel_batches,
+# _dispatch_one_parallel_item) is the REAL, unmodified production code.
+# Sun exposure, hold, throttle, deadband, override, contact, absence,
+# lifecycle, sensor validity are never modeled at all here (no tier
+# evaluation happens), so none of them can be the reason a dispatch does or
+# does not occur -- the only variable under test is active_control_enabled.
+# ---------------------------------------------------------------------------
+
+
+def _real_filter_result(coord, zone_id: str, *, target_internal: int, current_internal: int) -> CommandFilterResult:
+    """Reproduces coordinator.py's real Pass-1 ExecutionMode mapping
+    (~line 4995-4998) verbatim, reading live from effective_zone_execution,
+    then calls the REAL, unmodified CommandFilter().evaluate() -- the exact
+    production gate function (command_filter.py) that blocks dispatch when
+    execution_mode is RECOMMENDATION_ONLY."""
+    exec_cfg = coord.effective_zone_execution(zone_id)
+    exec_mode = (
+        ExecutionMode.AUTOMATIC
+        if exec_cfg.active_control_enabled
+        else ExecutionMode.RECOMMENDATION_ONLY
+    )
+    return CommandFilter().evaluate(
+        target_position_internal=target_internal,
+        current_position_internal=current_internal,
+        execution_mode=exec_mode,
+        is_safety=False,
+        is_manual_override=False,
+        is_cover_available=True,
+        state_guard_allowed=True,
+        execution_capability=ExecutionCapability(),
+    )
+
+
+def _fresh_state(coord, window_id: str, zone_id: str, *, entity_id: str,
+                  target_internal: int = 30, current_internal: int = 0) -> _WindowComputeState:
+    """A _WindowComputeState with a genuine, unambiguous comfort demand
+    (current=0, target=30 internal units -- real movement required, never
+    NO_MOVEMENT/same-position) and exec_filter_result computed via the REAL
+    CommandFilter gate, driven by whatever active_control_enabled currently
+    is for this zone -- NOT hardcoded."""
+    filt = _real_filter_result(coord, zone_id, target_internal=target_internal, current_internal=current_internal)
+    exec_mode = ExecutionMode(filt.execution_mode)
+    return _WindowComputeState(
+        window=WindowConfig(id=window_id, name=window_id, zone_id=zone_id,
+                             azimuth=180, floor_level=0, cover_group_id=f"cg_{window_id}"),
+        zone=ZoneConfig(id=zone_id, name=zone_id),
+        obs_enabled=False,
+        active_control_enabled=coord.effective_zone_execution(zone_id).active_control_enabled,
+        new_state=ShadingState.NORMAL_SHADE,
+        exec_entity_id=entity_id,
+        exec_cap=CoverCapability(entity_id=entity_id, supports_position=True, supports_tilt=False, supports_open_close_only=False),
+        exec_snapshot=build_cover_entity_snapshot(
+            entity_id=entity_id, state="open", attributes={"current_position": 0},
+        ),
+        exec_mode=exec_mode,
+        is_safety=False,
+        exec_target_internal=target_internal,
+        exec_filter_result=filt,
+        tier_decided_by="TestEvaluator",
+        is_override_active=False,
+        cover_available=True,
+    )
+
+
+_NOW_FRESH = datetime(2026, 6, 15, 12, 0, tzinfo=timezone.utc)
+
+
+def _harm_for(states):
+    return {
+        s.window.id: HarmonizationResult(
+            harmonized=False, final_target_position_ha=None,
+            pre_harmonization_target_position_ha=None,
+        )
+        for s in states
+    }
+
+
+def _make_coord_for_fresh_plan(*, zone_ids=("zA",)):
+    hass = _make_hass()
+    entry = _make_entry()
+    coord = SmartShadingCoordinator(
+        hass, entry, lifecycle_config=NightDayLifecycleConfig(id="default"),
+        presence_entity_ids=[], dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL),
+    )
+    coord.zones = {zid: ZoneConfig(id=zid, name=zid) for zid in zone_ids}
+    coord.windows = {}
+    coord.cover_groups = {}
+    coord._startup_cycles_remaining = 0
+    coord.config_entry = entry
+    return coord, entry
+
+
+class _patch_dispatch_cover_intent:
+    """Manual context-manager version of the monkeypatch.setitem trick used
+    elsewhere in this suite -- avoids the pytest monkeypatch fixture, which
+    the @async_test wrapper (a bare *a/**k function, not functools.wraps-
+    preserved) cannot have injected since it erases the coroutine's real
+    signature from pytest's fixture introspection."""
+
+    def __init__(self, coord, fake):
+        self._globals = coord._predispatch_parallel_batches.__func__.__globals__
+        self._fake = fake
+        self._orig = None
+
+    def __enter__(self):
+        self._orig = self._globals["dispatch_cover_intent"]
+        self._globals["dispatch_cover_intent"] = self._fake
+        return self
+
+    def __exit__(self, *exc):
+        self._globals["dispatch_cover_intent"] = self._orig
+        return False
+
+
+class TestFreshPlanExecutionModeGate:
+    @async_test
+    async def test_TC_AC_FRESH_toggle_off_then_fresh_plan_never_dispatches(self):
+        coord, entry = _make_coord_for_fresh_plan(zone_ids=("zA",))
+        # 1. Zone A starts with Active Control ON.
+        assert coord.effective_zone_execution("zA").active_control_enabled is False  # default off
+        await coord.async_set_zone_active_control_enabled("zA", True)
+        assert coord.effective_zone_execution("zA").active_control_enabled is True
+
+        # 2/3/4. Toggle OFF via the real public API; the callback's own
+        # triggered recompute is fully awaited before anything else happens.
+        cycle_events = []
+        _install_fake_cycle(coord, cycle_events, comfort_duration_s=0.01)
+        await coord.async_set_zone_active_control_enabled("zA", False)
+        await asyncio.sleep(0.1)
+        assert coord.effective_zone_execution("zA").active_control_enabled is False
+
+        # 5/6. A genuinely fresh evaluation/plan for zone A, built strictly
+        # AFTER the toggle, with a real, unambiguous comfort demand.
+        sA = _fresh_state(coord, "wA", "zA", entity_id="cover.a")
+        coord.windows = {sA.window.id: sA.window}
+        coord.cover_groups = {
+            sA.window.cover_group_id: CoverGroup(
+                id=sA.window.cover_group_id, window_id=sA.window.id, cover_ids=[sA.exec_entity_id],
+            ),
+        }
+
+        # 7. The fresh CommandFilterResult must be RECOMMENDATION_ONLY-blocked.
+        assert sA.exec_filter_result.allowed is False
+        assert sA.exec_filter_result.execution_mode == ExecutionMode.RECOMMENDATION_ONLY.value
+
+        dispatch_calls = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            from custom_components.smartshading.cover_control.execution_result import build_sent_result
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        with _patch_dispatch_cover_intent(coord, fake_dispatch):
+            # 8. Route through the REAL PARALLEL pre-pass -- the exact
+            # production dispatch entry point.
+            results = await coord._predispatch_parallel_batches(
+                [("wA", sA)], _harm_for([sA]), _NOW_FRESH, coord._dispatch_generation,
+            )
+
+        assert dispatch_calls == [], (
+            f"expected NO real comfort dispatch for the disabled zone, "
+            f"got calls={dispatch_calls}"
+        )
+        # The pre-pass must not even have attempted it (excluded from the
+        # plan by `if not intent.allowed: continue`, coordinator.py -- not
+        # merely "attempted and blocked").
+        assert ("wA", "cover.a") not in results
+
+    @async_test
+    async def test_TC_AC_FRESH_multi_zone_disabled_zone_blocked_enabled_zone_dispatches(self):
+        coord, entry = _make_coord_for_fresh_plan(zone_ids=("zA", "zB"))
+        await coord.async_set_zone_active_control_enabled("zA", False)
+        await asyncio.sleep(0.05)
+        await coord.async_set_zone_active_control_enabled("zB", True)
+        await asyncio.sleep(0.05)
+        assert coord.effective_zone_execution("zA").active_control_enabled is False
+        assert coord.effective_zone_execution("zB").active_control_enabled is True
+
+        sA = _fresh_state(coord, "wA", "zA", entity_id="cover.a")
+        sB = _fresh_state(coord, "wB", "zB", entity_id="cover.b")
+        coord.windows = {sA.window.id: sA.window, sB.window.id: sB.window}
+        coord.cover_groups = {
+            sA.window.cover_group_id: CoverGroup(
+                id=sA.window.cover_group_id, window_id=sA.window.id, cover_ids=[sA.exec_entity_id]),
+            sB.window.cover_group_id: CoverGroup(
+                id=sB.window.cover_group_id, window_id=sB.window.id, cover_ids=[sB.exec_entity_id]),
+        }
+        assert sA.exec_filter_result.allowed is False
+        assert sB.exec_filter_result.allowed is True
+
+        dispatch_calls = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            from custom_components.smartshading.cover_control.execution_result import build_sent_result
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        with _patch_dispatch_cover_intent(coord, fake_dispatch):
+            await coord._predispatch_parallel_batches(
+                [("wA", sA), ("wB", sB)], _harm_for([sA, sB]), _NOW_FRESH, coord._dispatch_generation,
+            )
+
+        assert dispatch_calls == ["cover.b"], (
+            f"expected zone B (enabled) to dispatch and zone A (disabled) not to, "
+            f"got calls={dispatch_calls}"
+        )
+
+    @async_test
+    async def test_TC_AC_FRESH_re_enable_then_fresh_plan_dispatches_again(self):
+        coord, entry = _make_coord_for_fresh_plan(zone_ids=("zA",))
+        await coord.async_set_zone_active_control_enabled("zA", False)
+        await asyncio.sleep(0.05)
+
+        sA_off = _fresh_state(coord, "wA", "zA", entity_id="cover.a")
+        assert sA_off.exec_filter_result.allowed is False
+
+        # Re-enable via the real public API; a further fresh recompute is
+        # fully awaited before the next fresh plan is built (a genuinely
+        # NEW decision, not a continued old plan).
+        await coord.async_set_zone_active_control_enabled("zA", True)
+        await asyncio.sleep(0.05)
+        assert coord.effective_zone_execution("zA").active_control_enabled is True
+
+        sA_on = _fresh_state(coord, "wA", "zA", entity_id="cover.a")
+        coord.windows = {sA_on.window.id: sA_on.window}
+        coord.cover_groups = {
+            sA_on.window.cover_group_id: CoverGroup(
+                id=sA_on.window.cover_group_id, window_id=sA_on.window.id, cover_ids=[sA_on.exec_entity_id]),
+        }
+        assert sA_on.exec_filter_result.allowed is True
+
+        dispatch_calls = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            from custom_components.smartshading.cover_control.execution_result import build_sent_result
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        with _patch_dispatch_cover_intent(coord, fake_dispatch):
+            await coord._predispatch_parallel_batches(
+                [("wA", sA_on)], _harm_for([sA_on]), _NOW_FRESH, coord._dispatch_generation,
+            )
+
+        assert dispatch_calls == ["cover.a"], (
+            f"expected zone A to dispatch again after re-enabling, got {dispatch_calls}"
+        )

@@ -262,6 +262,29 @@ class TestPresenceCallbackBehavior:
 
         entry.async_create_background_task.assert_called_once()
 
+    def test_return_home_bumps_dispatch_generation_before_scheduling_refresh(self):
+        """Presence Recovery audit: a return-home (away→home) event must bump
+        self._dispatch_generation BEFORE scheduling the refresh — this is the
+        real mechanism (predating T22's Safety-specific cancellation Event)
+        that makes any in-flight comfort dispatch task notice it is stale at
+        its own next generation check (dispatch_plan_executor.py's
+        is_generation_current port, or PARALLEL's per-item check). Was
+        previously unverified by any test — TC-PR6 only checked that a
+        refresh was scheduled, never that generation was bumped first."""
+        coord = _make_coord(presence_entity_ids=["person.alice"])
+        entry = _make_entry()
+        callbacks = self._setup_and_capture_callback(coord, entry)
+        gen_before = coord._dispatch_generation
+
+        event = _mock_event(old_state_str="not_home", new_state_str="home")
+        callbacks[0](event)
+
+        assert coord._dispatch_generation == gen_before + 1, (
+            "return-home must bump _dispatch_generation exactly once, "
+            "before (not instead of) scheduling the refresh task"
+        )
+        entry.async_create_background_task.assert_called_once()
+
     def test_tc_pr7_home_to_away_triggers_refresh(self):
         """TC-PR7: home→not_home also triggers refresh (departure is also a presence change)."""
         coord = _make_coord(presence_entity_ids=["person.alice"])

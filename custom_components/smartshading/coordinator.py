@@ -2135,6 +2135,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self._last_lifecycle_boundary_refresh_utc = dt_util.utcnow()
             # Bump generation so any stale queued intent self-cancels, refresh now.
             self._dispatch_generation += 1
+            # Lifecycle-Boundary Preemption: see the matching comment in
+            # _on_presence_change (coordinator.py) for the full rationale —
+            # signal the SAME, already-existing cross-cycle cancellation here,
+            # at the only point this callback can actually reach a still-
+            # running comfort dispatch, so the boundary's own documented
+            # "practically at the configured minute" guarantee is not
+            # silently degraded to the periodic (up to 5 min) fallback by
+            # the Debouncer's execute_lock dropping a deferred refresh.
+            if self._active_dispatch_cancellation is not None:
+                self._active_dispatch_cancellation.set()
             # T15: tied to the config entry so HA cancels it on unload.
             # T17: also coordinator-tracked (see async_shutdown()).
             self._create_tracked_background_task(

@@ -1043,6 +1043,39 @@ def _cycle_has_executable_safety_intent(ordered_window_states) -> bool:
     )
 
 
+async def _race_gather_against_cancellation(coros, cancellation) -> tuple[list | None, bool]:
+    """Run asyncio.gather(*coros) racing it against cancellation.wait() —
+    mirrors dispatch_plan_executor.py's own _race_against_cancellation
+    (Phase 3), reimplemented locally since PARALLEL dispatch (T11.1) is
+    deliberately NOT routed through that executor. Returns
+    (batch_results_or_None, was_preempted).
+
+    If cancellation wins, the gather() task is cancelled and FULLY AWAITED
+    (never left orphaned) before returning — every child coroutine's own
+    CancelledError propagates and is absorbed here, never swallowed
+    silently and never left pending. A real external CancelledError raised
+    while awaiting the race itself still propagates normally."""
+    work = asyncio.ensure_future(asyncio.gather(*coros))
+    watch = asyncio.ensure_future(cancellation.wait())
+    try:
+        done, pending = await asyncio.wait({work, watch}, return_when=asyncio.FIRST_COMPLETED)
+    except asyncio.CancelledError:
+        work.cancel()
+        watch.cancel()
+        raise
+    if watch in done:
+        if work not in done:
+            work.cancel()
+            try:
+                await work
+            except asyncio.CancelledError:
+                pass
+        return None, True
+    for task in pending:
+        task.cancel()
+    return work.result(), False
+
+
 def _harmonized_filter_for_dispatch(exec_filter_result, harm, exec_cap):
     """Return the harmonization-adjusted CommandFilterResult to dispatch
     from, or the unmodified exec_filter_result when this window's target was
@@ -7184,18 +7217,35 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
     ) -> dict:
         """T11.1: genuinely concurrent dispatch for DispatchMode.PARALLEL.
 
-        T22 PARALLEL safety-preemption fix: when cycle_has_executable_safety
-        is True, every batch EXCEPT the safety fast-lane batch (dispatch_
-        batch.py's own is_safety_batch flag) is skipped entirely this cycle
-        — no asyncio.gather() call, no zone-boundary sleep, no service
-        call — and each of that batch's items instead gets a
-        "safety_preempted" NOT_ATTEMPTED result, the same stable reason
-        SEQUENTIAL/SPACED already use (coordinator.py's per-window loop,
-        T22 Phase 5c). The safety batch itself is completely unaffected —
-        it is not gated by this flag at all, since safety must never be
-        blocked by its own preemption check. No new generation/cancellation
-        primitive: this reuses the SAME Pass-1 "does this cycle have
-        executable safety" snapshot Phase 5c already established.
+        T22 cross-cycle safety preemption for PARALLEL: reuses the SAME
+        _active_comfort_dispatch_task / _active_dispatch_cancellation /
+        _dispatch_generation primitives _run_comfort_dispatch_for_cycle()
+        (SEQUENTIAL/SPACED) already established — no second ownership
+        mechanism. Every entry into this method first calls
+        _preempt_active_comfort_plan(), exactly like _run_comfort_dispatch_
+        for_cycle() does: this invalidates the generation and signals +
+        awaits any PREVIOUS still-in-flight PARALLEL comfort run before
+        anything new happens, closing the cross-cycle gap where an OLDER
+        PARALLEL cycle's own batches/tasks had no way to learn about a
+        LATER cycle's safety event. The safety fast-lane batch always runs
+        AFTER that preemption completes (bounded, cooperative — the exact
+        same latency SEQUENTIAL/SPACED's own safety dispatch already
+        accepts waiting out).
+
+        THIS cycle's own new comfort work (only built when it does NOT
+        carry an executable safety intent) is itself registered as the
+        tracked active_comfort_dispatch_task/cancellation, so a LATER
+        cycle can find and preempt it in turn. The per-batch loop
+        (_run_parallel_batch_list) checks cancellation/generation before
+        every batch AND races each batch's own asyncio.gather() against
+        the cancellation Event, cancelling and fully awaiting it (not
+        orphaning child tasks) if preempted mid-flight.
+
+        When cycle_has_executable_safety is True, every batch EXCEPT the
+        safety fast-lane batch (dispatch_batch.py's own is_safety_batch
+        flag) is skipped entirely this cycle and each of that batch's
+        items gets a "safety_preempted" NOT_ATTEMPTED result — the same
+        stable reason SEQUENTIAL/SPACED already use (T22 Phase 5c).
 
         Runs BEFORE the main per-window Pass-2 loop, as one self-contained
         pre-pass — the loop itself (600+ lines of per-window diagnostics,
@@ -7281,13 +7331,71 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         batches = group_into_batches(
             _dispatchable, zone_batching=self._dispatch_config.zone_batching,
         )
+
+        # T22 cross-cycle safety preemption: invalidate the generation and
+        # signal + await any PREVIOUS still-in-flight PARALLEL comfort run
+        # BEFORE anything below happens — the SAME primitive SEQUENTIAL/
+        # SPACED already uses. The freshly-bumped generation becomes THIS
+        # cycle's own authoritative value (replacing the caller's earlier
+        # snapshot), exactly like _run_comfort_dispatch_for_cycle() does.
+        this_dispatch_gen = await self._preempt_active_comfort_plan()
+
+        if cycle_has_executable_safety:
+            # Only the safety fast-lane may proceed; every non-safety batch
+            # is preempted without starting, and THIS cycle registers no
+            # new tracked comfort task (comfort is simply deferred).
+            return await self._run_parallel_batch_list(
+                batches, this_dispatch_gen,
+                cancellation=asyncio.Event(),  # local-only; safety ignores cancellation entirely
+                cycle_has_executable_safety=True,
+            )
+
+        # No safety this cycle: register THIS cycle's own comfort work as
+        # the tracked active task so a LATER cycle can find and preempt it.
+        cancellation = asyncio.Event()
+        self._active_dispatch_cancellation = cancellation
+
+        async def _run():
+            return await self._run_parallel_batch_list(
+                batches, this_dispatch_gen, cancellation,
+                cycle_has_executable_safety=False,
+            )
+
+        task = asyncio.ensure_future(_run())
+        self._active_comfort_dispatch_task = task
+        try:
+            return await task
+        finally:
+            if self._active_comfort_dispatch_task is task:
+                self._active_comfort_dispatch_task = None
+            if self._active_dispatch_cancellation is cancellation:
+                self._active_dispatch_cancellation = None
+
+    async def _run_parallel_batch_list(
+        self, batches, this_dispatch_gen, cancellation, *, cycle_has_executable_safety,
+    ) -> dict:
+        """The actual PARALLEL batch loop, run under the caller's cross-
+        cycle task/cancellation ownership (see _predispatch_parallel_
+        batches()). Every non-safety batch is preceded by a cancellation/
+        generation check; each batch's own asyncio.gather() is raced
+        against the SAME cancellation Event so a preemption arriving
+        mid-batch cancels and fully awaits the in-flight child tasks
+        rather than orphaning them — never a bare Task.cancel() on the
+        cross-cycle ownership itself, only cooperative gather()-cancel."""
+        results: dict[tuple[str, str], object] = {}
         _prev_zone_id: str | None = None
         for batch in batches:
-            # T22 PARALLEL safety-preemption fix: this cycle's executable
-            # safety intent must dispatch via its own fast-lane batch
-            # (below, unaffected by this check) — but no non-safety batch
-            # may start at all. No zone-boundary sleep, no service call.
-            if not batch.is_safety_batch and cycle_has_executable_safety:
+            # T22 cross-cycle + same-cycle safety preemption: this cycle's
+            # OWN executable safety intent (cycle_has_executable_safety)
+            # OR a LATER cycle's preemption signal/generation bump
+            # (cancellation.is_set() / stale generation) both prevent any
+            # further non-safety batch from starting. The safety fast-lane
+            # batch itself is never gated by any of these checks.
+            if not batch.is_safety_batch and (
+                cycle_has_executable_safety
+                or cancellation.is_set()
+                or self._dispatch_generation != this_dispatch_gen
+            ):
                 for item in batch.items:
                     _window_id, _intent = item.payload
                     results[(_window_id, _intent.cover_entity_id)] = replace(
@@ -7325,10 +7433,27 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     self._dispatch_one_parallel_item(
                         window_id, intent, this_dispatch_gen,
                         batch_id=batch_id, batch_size=len(batch.items),
+                        cancellation=cancellation,
                     )
                     for window_id, intent in (item.payload for item in batch.items)
                 ]
-                _batch_results = await asyncio.gather(*_coros)
+                _batch_results, _batch_preempted = await _race_gather_against_cancellation(
+                    _coros, cancellation,
+                )
+            if _batch_preempted:
+                # The batch's own gather() was cancelled mid-flight — every
+                # child task has already been cancelled AND fully awaited
+                # (see _race_gather_against_cancellation) before we reach
+                # here, so nothing is orphaned. None of this batch's items
+                # produced a real result; mark them all preempted.
+                if not batch.is_safety_batch:
+                    for item in batch.items:
+                        _window_id, _intent = item.payload
+                        results[(_window_id, _intent.cover_entity_id)] = replace(
+                            build_not_attempted_result(_intent, reason="safety_preempted"),
+                            parallel_batch_id=batch_id, parallel_batch_size=len(batch.items),
+                        )
+                break
             for item, result in zip(batch.items, _batch_results):
                 _window_id, _intent = item.payload
                 results[(_window_id, _intent.cover_entity_id)] = result
@@ -7336,17 +7461,33 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     async def _dispatch_one_parallel_item(
         self, window_id, intent, this_dispatch_gen, *, batch_id, batch_size,
+        cancellation=None,
     ):
         """Dispatch exactly one intent as part of a concurrently-gathered
         PARALLEL batch. Never raises — any unexpected exception is converted
         into a structured FAILED-shaped result so one cover's failure can
         never swallow or corrupt the rest of the batch's results
         (asyncio.gather() default, no return_exceptions needed precisely
-        because this coroutine itself guarantees it never raises)."""
+        because this coroutine itself guarantees it never raises).
+
+        T22 cross-cycle safety preemption: checks cancellation.is_set() in
+        addition to the pre-existing generation check, immediately before
+        the real service call — a dispatch coroutine that happens to
+        complete without ever yielding to the event loop (e.g. a very
+        fast/synchronous port in tests, or a cover integration that
+        resolves its service call unusually quickly) could otherwise slip
+        past _race_gather_against_cancellation's own race entirely, since
+        that race only protects the OUTER gather() as a whole, not each
+        item's own pre-dispatch instant. Safety remains fully exempt from
+        both checks, matching every other cancellation/generation guard in
+        this codebase."""
         try:
-            if not intent.is_safety and self._dispatch_generation != this_dispatch_gen:
+            if not intent.is_safety and (
+                self._dispatch_generation != this_dispatch_gen
+                or (cancellation is not None and cancellation.is_set())
+            ):
                 return replace(
-                    build_not_attempted_result(intent, reason="stale_presence_superseded"),
+                    build_not_attempted_result(intent, reason="safety_preempted"),
                     parallel_batch_id=batch_id, parallel_batch_size=batch_size,
                 )
             _dispatch_now = dt_util.utcnow()

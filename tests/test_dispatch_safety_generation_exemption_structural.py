@@ -20,18 +20,25 @@ Coverage:
   SGE-01  The sequential-path stale-intent (generation) cancellation is
           gated on `not _intent.is_safety`.
   SGE-02  The parallel-path (_dispatch_one_parallel_item) stale-intent
-          cancellation is ALSO gated on `not intent.is_safety`.
-  SGE-03  Exactly three occurrences of "stale_presence_superseded" exist —
-          the original sequential-path and T11.1 parallel-path guards, plus
-          (T22 Phase 4b) the DispatchPlanExecutor comfort pre-pass's own
-          defensive fallback in _predispatch_sequential_plan(), used only
-          when an eligible comfort item never produced an executor result
-          (e.g. generation went stale before dispatch started). Safety is
-          never part of that pre-pass's plan at all (excluded up front), so
-          this third site can never affect a safety intent — it exists
-          purely as the comfort-path's own missing-result guard. Any other
-          count means a guard was removed, merged, or duplicated beyond
-          these three known, audited call sites.
+          cancellation is ALSO gated on `not intent.is_safety` — and (T22
+          cross-cycle PARALLEL safety preemption) now additionally checks
+          cancellation.is_set() alongside the generation check, reporting
+          the same stable "safety_preempted" reason the rest of Phase 5c's
+          preemption paths already use (not "stale_presence_superseded" —
+          that string is reserved for the two sites below).
+  SGE-03  Exactly two occurrences of "stale_presence_superseded" exist —
+          the original sequential-path guard, plus (T22 Phase 4b) the
+          DispatchPlanExecutor comfort pre-pass's own defensive fallback in
+          _predispatch_sequential_plan(), used only when an eligible
+          comfort item never produced an executor result (e.g. generation
+          went stale before dispatch started). Safety is never part of
+          that pre-pass's plan at all (excluded up front), so this second
+          site can never affect a safety intent — it exists purely as the
+          comfort-path's own missing-result guard. The T11.1 parallel-path
+          guard (SGE-02) now uses "safety_preempted" instead — see that
+          test for its own dedicated occurrence check. Any other count
+          means a guard was removed, merged, or duplicated beyond these
+          two known, audited call sites.
   SGE-04  Neither guard has been replaced with a tautology (e.g. "if True:").
 """
 from __future__ import annotations
@@ -70,35 +77,57 @@ class TestSequentialPathSafetyExemption:
 class TestParallelPathSafetyExemption:
     def test_stale_generation_guard_is_gated_on_not_is_safety(self) -> None:
         source = _source()
+        # T22 cross-cycle PARALLEL safety preemption: the guard now checks
+        # generation OR cancellation, still gated on `not intent.is_safety`,
+        # reporting "safety_preempted" (not "stale_presence_superseded").
         pattern = re.compile(
-            r"if not intent\.is_safety and self\._dispatch_generation != this_dispatch_gen:\s*\n"
-            r"(?:.*\n){0,4}?.*reason=\"stale_presence_superseded\"",
+            r"if not intent\.is_safety and \(\s*\n"
+            r"\s*self\._dispatch_generation != this_dispatch_gen\s*\n"
+            r"\s*or \(cancellation is not None and cancellation\.is_set\(\)\)\s*\n"
+            r"\s*\):\s*\n"
+            r"(?:.*\n){0,4}?.*reason=\"safety_preempted\"",
         )
         assert pattern.search(source), (
             "The T11.1 parallel-batch dispatch path "
             "(_dispatch_one_parallel_item) must remain gated on "
-            "`not intent.is_safety` — a Safety command dispatched as part "
-            "of a concurrent batch must never be cancelled by a mid-cycle "
-            "generation bump either."
+            "`not intent.is_safety` for BOTH the generation-mismatch and "
+            "cancellation checks — a Safety command dispatched as part of "
+            "a concurrent batch must never be cancelled by a mid-cycle "
+            "generation bump or a preemption signal either."
+        )
+
+    def test_stale_generation_guard_also_checks_cancellation(self) -> None:
+        # T22 cross-cycle PARALLEL safety preemption specifically: a fast/
+        # synchronous dispatch coroutine could otherwise complete before
+        # _race_gather_against_cancellation's own race resolves — this
+        # per-item check is the real, additional protection for that gap.
+        source = _source()
+        assert "cancellation is not None and cancellation.is_set()" in source, (
+            "_dispatch_one_parallel_item must check cancellation.is_set() "
+            "immediately before its own service call, in addition to the "
+            "generation check — otherwise a dispatch that completes "
+            "without yielding to the event loop can slip past the "
+            "batch-level gather()/cancellation race entirely."
         )
 
 
-class TestExactlyThreeOccurrencesOneNoMoreNoLess:
-    def test_stale_presence_superseded_reason_appears_exactly_three_times(self) -> None:
+class TestExactlyTwoOccurrencesOneNoMoreNoLess:
+    def test_stale_presence_superseded_reason_appears_exactly_two_times(self) -> None:
         source = _source()
         # Bare-string count (not `reason="..."`-prefixed) so this survives
-        # T22 Phase 5a's refactor of the third site into a ternary
+        # T22 Phase 5a's refactor of the second site into a ternary
         # (`reason = (... if ... else "stale_presence_superseded")`)
         # without weakening the invariant itself.
-        assert source.count('"stale_presence_superseded"') == 3, (
-            "Expected exactly three occurrences: the original sequential "
-            "dispatch path guard, the T11.1 parallel dispatch path guard, "
-            "and (T22 Phase 4b/5a) _predispatch_sequential_plan()'s own "
-            "missing-executor-result fallback for the comfort pre-pass — "
-            "see this file's module docstring (SGE-03) for the full "
-            "rationale. A different count means a guard was removed, "
-            "merged, or duplicated beyond these three known, audited "
-            "call sites."
+        assert source.count('"stale_presence_superseded"') == 2, (
+            "Expected exactly two occurrences: the original sequential "
+            "dispatch path guard, and (T22 Phase 4b/5a) "
+            "_predispatch_sequential_plan()'s own missing-executor-result "
+            "fallback for the comfort pre-pass — see this file's module "
+            "docstring (SGE-03) for the full rationale. The T11.1 "
+            "parallel-path guard now uses \"safety_preempted\" instead "
+            "(see TestParallelPathSafetyExemption). A different count "
+            "means a guard was removed, merged, or duplicated beyond "
+            "these two known, audited call sites."
         )
 
 

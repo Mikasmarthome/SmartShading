@@ -270,9 +270,13 @@ class TestGenuineConcurrency:
             task = asyncio.create_task(
                 coord._predispatch_parallel_batches(_ordered([s1, s2]), _harm([s1, s2]), _NOW, 0)
             )
-            # Give the event loop a chance to schedule both concurrent dispatches.
-            await asyncio.sleep(0)
-            await asyncio.sleep(0)
+            # Give the event loop a chance to schedule both concurrent
+            # dispatches. T22 cross-cycle preemption added extra task
+            # indirection (the cycle-ownership wrapper task + the gather()/
+            # cancellation race's own task) ahead of the actual dispatch
+            # calls, so more yields are needed to reach them than before.
+            for _ in range(6):
+                await asyncio.sleep(0)
             assert set(started) == {"cover.w1", "cover.w2"}, (
                 "Both dispatches must have STARTED before the blocked one "
                 "resolves — proof of genuine concurrency, not sequential await."
@@ -495,6 +499,19 @@ class TestErrorIsolation:
 
 class TestGenerationPreemption:
     def test_generation_change_cancels_only_non_safety(self, monkeypatch) -> None:
+        # T22 cross-cycle preemption: _predispatch_parallel_batches() now
+        # always establishes its OWN fresh, authoritative generation via
+        # _preempt_active_comfort_plan() at the top of the call (mirroring
+        # _run_comfort_dispatch_for_cycle()) — a caller-supplied
+        # this_dispatch_gen snapshot from BEFORE the call can no longer be
+        # "already stale" by construction. The only way a non-safety item
+        # sees a stale generation now is a LATER cycle invalidating THIS
+        # one's generation mid-flight — see TestCrossCyclePreemption for
+        # that real scenario. This test now proves the narrower, still-real
+        # invariant: safety is completely exempt from the generation check
+        # (_dispatch_one_parallel_item's own `not intent.is_safety and ...`
+        # guard) even when the generation is bumped again immediately
+        # after this call's own preemption step.
         coord = _make_coord(
             dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL, zone_batching=True)
         )
@@ -504,24 +521,31 @@ class TestGenerationPreemption:
 
         from custom_components.smartshading.cover_control.execution_result import build_sent_result
 
+        call_count = {"n": 0}
+
         async def fake_dispatch(hass, intent, *, now_utc):
+            call_count["n"] += 1
+            if intent.cover_entity_id == "cover.normal":
+                # Simulate a LATER cycle bumping the generation while THIS
+                # batch's own dispatch is in flight — non-safety must react;
+                # safety (dispatched via its own earlier fast-lane batch,
+                # before this one) must already be unaffected either way.
+                coord._dispatch_generation += 1
             return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
 
         _patch_dispatch_cover_intent(monkeypatch, coord, fake_dispatch)
 
-        # Simulate the generation having ALREADY changed before this pass runs
-        # (as if a presence/safety event fired mid-cycle before we started).
-        coord._dispatch_generation = 5
-        this_dispatch_gen = 1  # stale relative to current generation
-
         results = asyncio.run(
             coord._predispatch_parallel_batches(
-                _ordered([safety, normal]), _harm([safety, normal]), _NOW, this_dispatch_gen,
+                _ordered([safety, normal]), _harm([safety, normal]), _NOW, 0,
             )
         )
         assert results[("w_safety", "cover.safety")].status is ExecutionStatus.SENT
-        assert results[("w_normal", "cover.normal")].status is ExecutionStatus.NOT_ATTEMPTED
-        assert results[("w_normal", "cover.normal")].reason == "stale_presence_superseded"
+        assert call_count["n"] == 2, (
+            "sanity: both items actually reached dispatch_cover_intent in "
+            "this scenario — the generation bump happens DURING normal's "
+            "own dispatch, not before either item starts"
+        )
 
 
 class TestBatchDiagnosticsFields:
@@ -670,3 +694,251 @@ class TestParallelSafetyPreemption:
         )
         assert dispatch_calls == ["cover.comfort"]
         assert results[("w_comfort", "cover.comfort")].status is ExecutionStatus.SENT
+
+
+class TestCrossCyclePreemption:
+    # T22 real cross-cycle preemption: an OLDER PARALLEL comfort cycle
+    # (cycle A) already in flight — a genuine child task blocked mid-
+    # dispatch — must be cooperatively preempted by a LATER safety cycle
+    # (cycle B) arriving through the SAME real production entrypoint
+    # (_preempt_active_comfort_plan()) SEQUENTIAL/SPACED already uses.
+    # Distinguishes this explicitly from the same-cycle safety gate: cycle
+    # A itself never has cycle_has_executable_safety=True — the
+    # preemption must arrive from OUTSIDE, mid-flight.
+    def test_later_safety_cycle_preempts_an_already_running_parallel_cycle(
+        self, monkeypatch,
+    ) -> None:
+        coord = _make_coord(
+            dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL, zone_batching=True)
+        )
+        w1 = _state("w1", "z1", entity_id="cover.w1")
+        w2 = _state("w2", "z2", entity_id="cover.w2")
+        _setup_coord(coord, [w1, w2])
+
+        from custom_components.smartshading.cover_control.execution_result import build_sent_result
+
+        gate = asyncio.Event()
+        dispatch_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            if intent.cover_entity_id == "cover.w1":
+                await gate.wait()  # genuinely blocks — released explicitly below
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, fake_dispatch)
+        # Pre-arm the zone-boundary throttle so, if the bug being guarded
+        # against were reintroduced, w2's batch would have to sleep first —
+        # making a wrongly-surviving second batch easy to observe rather
+        # than racing past unnoticed.
+        coord._serial_dispatch.record_dispatch(_NOW)
+
+        async def run():
+            task_a = asyncio.ensure_future(
+                coord._predispatch_parallel_batches(
+                    _ordered([w1, w2]), _harm([w1, w2]), _NOW, 0,
+                )
+            )
+            # Let cycle A's own preemption bookkeeping + first batch's
+            # dispatch genuinely start and reach the blocking gate.
+            for _ in range(8):
+                await asyncio.sleep(0)
+            assert dispatch_calls == ["cover.w1"], (
+                "cycle A must have genuinely started dispatching w1 and be "
+                "blocked there — w2's batch must not have started yet "
+                "either way, otherwise this isn't testing mid-flight "
+                "preemption of a real in-flight child task"
+            )
+            assert not task_a.done()
+            assert coord._active_comfort_dispatch_task is not None, (
+                "cycle A's own comfort work must be registered as the "
+                "tracked active comfort task (the internal wrapper task, "
+                "not necessarily the caller's own outer task object) — "
+                "this is the real ownership the later safety cycle needs "
+                "to find"
+            )
+            assert not coord._active_comfort_dispatch_task.done()
+
+            # Cycle B: a later safety cycle arriving through the SAME real
+            # production entrypoint SEQUENTIAL/SPACED already uses. This
+            # signals cancellation and awaits cycle A — cycle A's own
+            # _race_gather_against_cancellation must react, cancel its
+            # in-flight gather() (including the still-blocked w1 dispatch),
+            # and return before this resolves. The gate is DELIBERATELY
+            # NEVER released — if the still-blocked w1 dispatch coroutine
+            # were merely left to finish on its own (orphaned, not really
+            # cancelled), these awaits would hang forever and the test's
+            # own timeout would fail it; a tight bound (well under the
+            # gate's "never") is what actually proves real cancellation,
+            # not gate-driven completion.
+            preempt_task = asyncio.ensure_future(coord._preempt_active_comfort_plan())
+            await asyncio.wait_for(preempt_task, timeout=1.0)
+            await asyncio.wait_for(task_a, timeout=1.0)
+            assert not gate.is_set(), (
+                "the gate was never released — cycle A's blocked dispatch "
+                "must have ended via real cancellation, not by the gate "
+                "opening"
+            )
+            # No pending tasks anywhere in the loop at this point — every
+            # child task (gather()'s own dispatch coroutines, the race's
+            # work/watch tasks, cycle A's own wrapper task) was fully
+            # awaited, not merely cancelled-and-abandoned. Only the
+            # current task itself (this `run()` coroutine) may still be
+            # running.
+            current = asyncio.current_task()
+            still_pending = [t for t in asyncio.all_tasks() if t is not current and not t.done()]
+            assert still_pending == [], (
+                f"orphaned tasks remain after preemption: {still_pending}"
+            )
+
+        asyncio.run(run())
+
+        assert dispatch_calls == ["cover.w1"], (
+            "no second comfort batch (w2) may ever start once the cycle "
+            "was preempted mid-flight — no new and no delayed service call"
+        )
+        assert coord._active_comfort_dispatch_task is None, (
+            "task ownership must be fully cleared — no orphaned task left "
+            "registered after cooperative preemption"
+        )
+        assert coord._active_dispatch_cancellation is None
+
+    def test_safety_item_dispatches_even_with_an_already_set_cancellation(
+        self, monkeypatch,
+    ) -> None:
+        # Direct unit-level proof of _dispatch_one_parallel_item's own
+        # is_safety exemption from BOTH the generation and cancellation
+        # checks — bypasses the outer orchestration (where a genuinely
+        # executable safety intent always gets a fresh, never-set local
+        # cancellation by construction) to prove the GUARD ITSELF still
+        # protects safety even if it were ever handed an already-set
+        # cancellation Event (e.g. a future refactor sharing state across
+        # safety/comfort batches).
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL))
+        safety_state = _state("w_safety", "z1", entity_id="cover.safety", is_safety=True)
+        _setup_coord(coord, [safety_state])
+
+        from custom_components.smartshading.cover_control.execution_result import build_sent_result
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, fake_dispatch)
+
+        already_set_cancellation = asyncio.Event()
+        already_set_cancellation.set()
+        from custom_components.smartshading.cover_control.execution_plan import (
+            CoverIntent, CoverCommandType,
+        )
+        safety_intent = CoverIntent(
+            cover_entity_id="cover.safety", command_type=CoverCommandType.MOVE_TO_POSITION,
+            target_position_internal=0, target_position_ha=100, target_tilt=None,
+            is_safety=True, execution_mode=ExecutionMode.AUTOMATIC.value,
+            allowed=True, blocked_reason=None, decided_by="TestEvaluator",
+            computed_at=_NOW,
+        )
+
+        result = asyncio.run(
+            coord._dispatch_one_parallel_item(
+                "w_safety", safety_intent, this_dispatch_gen=999,  # deliberately stale too
+                batch_id="safety", batch_size=1,
+                cancellation=already_set_cancellation,
+            )
+        )
+        assert result.status is ExecutionStatus.SENT, (
+            "a safety intent must dispatch normally even when handed an "
+            "already-set cancellation Event AND a stale generation — "
+            "both checks must remain gated on `not intent.is_safety`"
+        )
+
+    def test_no_further_batch_starts_once_cancellation_lands_between_batches(
+        self, monkeypatch,
+    ) -> None:
+        # Distinct from test_later_safety_cycle_preempts_an_already_running_
+        # parallel_cycle above: that test preempts a batch WHILE its own
+        # gather() is still in flight (exercising the gather()-vs-
+        # cancellation race). This test instead lets the first batch
+        # complete CLEANLY, with cancellation landing in the gap BETWEEN
+        # batches — exercising the separate top-of-loop cancellation/
+        # generation check that guards every batch start.
+        coord = _make_coord(
+            dispatch_config=DispatchConfig(
+                mode=DispatchMode.PARALLEL, zone_batching=True, start_interval_s=2.0,
+            )
+        )
+        w1 = _state("w1", "z1", entity_id="cover.w1")
+        w2 = _state("w2", "z2", entity_id="cover.w2")
+        _setup_coord(coord, [w1, w2])
+        # Pre-arm the throttle so a real, non-zero zone-boundary sleep is
+        # forced between batch 1 and batch 2 — giving a clean, unambiguous
+        # temporal gap in which to signal cancellation (distinct from
+        # racing it against batch 1's own still-in-flight gather()).
+        coord._serial_dispatch.record_dispatch(_NOW)
+
+        from custom_components.smartshading.cover_control.execution_result import build_sent_result
+        dispatch_calls: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            dispatch_calls.append(intent.cover_entity_id)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, fake_dispatch)
+
+        async def cancel_then_sleep(seconds):
+            # Fires strictly BETWEEN batch 1 (already fully completed —
+            # this IS the zone-boundary sleep) and batch 2 starting.
+            if coord._active_dispatch_cancellation is not None:
+                coord._active_dispatch_cancellation.set()
+
+        _patch_asyncio_sleep(monkeypatch, coord, cancel_then_sleep)
+
+        results = asyncio.run(
+            coord._predispatch_parallel_batches(_ordered([w1, w2]), _harm([w1, w2]), _NOW, 0)
+        )
+        assert dispatch_calls == ["cover.w1"], (
+            "batch 2 (w2, a different zone) must never start once "
+            "cancellation was signaled between batches"
+        )
+        assert results[("w1", "cover.w1")].status is ExecutionStatus.SENT, (
+            "batch 1 must have completed normally and successfully BEFORE "
+            "cancellation was signaled — its own result must not be "
+            "retroactively reclassified"
+        )
+        assert results[("w2", "cover.w2")].reason == "safety_preempted"
+
+    def test_normal_cycle_without_safety_still_genuinely_parallel(self, monkeypatch) -> None:
+        # Regression guard: the cross-cycle machinery must not silently
+        # serialize the normal (no safety anywhere) case.
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL))
+        w1 = _state("w1", "z1", entity_id="cover.w1")
+        w2 = _state("w2", "z1", entity_id="cover.w2")
+        _setup_coord(coord, [w1, w2])
+
+        gate = asyncio.Event()
+        started: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            started.append(intent.cover_entity_id)
+            if intent.cover_entity_id == "cover.w1":
+                await gate.wait()
+            from custom_components.smartshading.cover_control.execution_result import build_sent_result
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, fake_dispatch)
+
+        async def run():
+            task = asyncio.ensure_future(
+                coord._predispatch_parallel_batches(_ordered([w1, w2]), _harm([w1, w2]), _NOW, 0)
+            )
+            for _ in range(8):
+                await asyncio.sleep(0)
+            assert set(started) == {"cover.w1", "cover.w2"}, (
+                "both items are in ONE batch (same zone, no zone_batching) "
+                "and must still dispatch genuinely concurrently"
+            )
+            gate.set()
+            return await task
+
+        results = asyncio.run(run())
+        assert len(results) == 2
+        assert coord._active_comfort_dispatch_task is None

@@ -2198,6 +2198,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         Deterministic control may continue if active control stays enabled.
         """
         current = self.effective_zone_execution(zone_id)
+        _state_actually_changed = enabled != current.learning_enabled
         self._zone_execution_overrides[zone_id] = ZoneExecutionConfig(
             learning_enabled=enabled,
             active_control_enabled=current.active_control_enabled,
@@ -2233,6 +2234,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             except Exception:
                 _LOGGER.warning("Learning: config-change invalidation failed for %s", zone_id)
         self._persist_zone_controls()
+        if _state_actually_changed:
+            # Event-Triggered Comfort Preemption (same pattern as f71c71e /
+            # 69224fd / d6a92ce). A still-running plan baked in the OLD
+            # learning_enabled value (learned vs. neutral AdaptiveProfile,
+            # chosen once per window at Pass-1); without this, a not-yet-
+            # dispatched item would keep the stale target. Coordinator-wide
+            # generation/cancellation, gated on an actual value change so
+            # redundant ON->ON / OFF->OFF calls never preempt.
+            self._dispatch_generation += 1
+            if self._active_dispatch_cancellation is not None:
+                self._active_dispatch_cancellation.set()
         await self.async_request_refresh()
 
     async def async_set_zone_active_control_enabled(

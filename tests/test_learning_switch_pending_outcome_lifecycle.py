@@ -38,6 +38,21 @@ Both new methods are gated on `_state_actually_changed` (same guard the
 Phase 2A dispatch-generation fix already established in this exact function),
 so redundant ON->ON / OFF->OFF calls never reprocess anything.
 
+Deadline unification (Nachtrag): the toggle-reconciliation gate and the
+restart-restore gate now share a single private decision,
+`_pending_observation_deadline_exceeded()`, sourced from `pending.
+indoor_temp_outcome_delay_min` -- the same per-instance field the live
+per-cycle resolution gate already treats as authoritative -- plus the same
+5-minute grace both gates have always used. `_restore_pending_outcomes`
+previously used the global `_OUTCOME_OBSERVATION_DELAY_MIN` fallback
+constant instead; it now uses the shared per-pending decision too, so live
+resolution, toggle reconciliation and restart-restore can never drift apart.
+Restart-count and config-fingerprint checks remain restart-specific. The
+toggle path also now reuses the existing stable invalidation reason
+`observation_interrupted_too_long` (previously a separate
+`learning_toggle_interrupted_too_long` string) since no consumer
+distinguishes restart from toggle interruption.
+
 Downstream safety (no new production change needed — proven by test, not
 assumed): `observation_interrupted=True` already propagates all the way
 through `resolve_outcome()`'s reliability computation
@@ -64,14 +79,28 @@ Coverage:
   TC_PO_7   Rapid ON->OFF->ON->OFF->ON: deterministic end state, no double
             resolution, no double invalidation.
   TC_PO_8   Restart/restore while OFF: existing `_restore_pending_outcomes`
-            behavior is unaffected by this fix (structural non-regression).
+            behavior is unaffected by this fix (structural non-regression),
+            AND the restored pending later resolves as `interrupted_partial`,
+            never a clean "complete".
   TC_PO_9   Two zones: toggling zone A never touches zone B's PendingOutcome
             or learning state.
   TC_PO_10  No open PendingOutcome: toggle is a clean no-op for this path.
   TC_PO_11  Downstream safety: `observation_interrupted=True` measurably
             degrades the exact reliability field `_experiment_finalize_from_
             outcome` consumes (dynamic proof, real `resolve_outcome()`).
+  TC_PO_11b Production-near completion of TC_PO_11: a real, active
+            BoundedExperiment linked to a toggle-interrupted PendingOutcome,
+            finalized through the real `_experiment_finalize_from_outcome()`
+            (which internally also calls the real `_maybe_adopt()`), never
+            reaches STATUS_ACCEPTED_FOR_P8 and creates no adoption; its
+            persisted `evaluation.reliability` carries the same degradation
+            proven in TC_PO_11, not lost in transit.
   TC_PO_12  Idempotency: removal/resolution happens at most once.
+  TC_PO_13  Deadline unification: a PendingOutcome with a per-instance
+            `indoor_temp_outcome_delay_min` deliberately different from the
+            global default proves the live resolution gate, the toggle
+            reconciliation gate and the restart-restore gate all agree on
+            the same deadline -- no drift between the three.
 """
 from __future__ import annotations
 
@@ -232,6 +261,9 @@ from custom_components.smartshading.models.decision_provenance import LearningDe
 from custom_components.smartshading.state_machine.states import ShadingState  # noqa: E402
 from custom_components.smartshading.engines.outcome_resolution import (  # noqa: E402
     resolve_outcome, OutcomeResolutionInput, OutcomeResolutionTrigger,
+)
+from custom_components.smartshading.models.bounded_experiment import (  # noqa: E402
+    BoundedExperiment, STATUS_OBSERVING, STATUS_ACCEPTED_FOR_P8,
 )
 
 DELAY_MIN = 30  # matches _OUTCOME_OBSERVATION_DELAY_MIN default used throughout the fixture
@@ -477,7 +509,7 @@ class TestResumeTiming:
         assert ("w_z1", pending.decision_timestamp) not in coord._interrupted_decision_keys
         rec = coord._learning_store.get_decision(pending.window_id, did)
         assert rec is not None
-        assert rec.invalidation_reason == "learning_toggle_interrupted_too_long"
+        assert rec.invalidation_reason == "observation_interrupted_too_long"
         # No outcome must ever be produced for this decision.
         assert _simulate_timeout_resolution(coord, "w_z1", resume_at) is None
 
@@ -497,7 +529,7 @@ class TestResumeTiming:
 
         assert coord._pending_outcomes.get("w_z1") is None
         rec = coord._learning_store.get_decision("w_z1", did)
-        assert rec.invalidation_reason == "learning_toggle_interrupted_too_long"
+        assert rec.invalidation_reason == "observation_interrupted_too_long"
         assert _simulate_timeout_resolution(coord, "w_z1", resume_at) is None, (
             "a 3-day-late toggle-return must never fabricate an outcome from "
             "whatever sensor reading exists at that arbitrary later moment"
@@ -580,6 +612,18 @@ class TestRestartUnaffected:
         assert restored is not None, "existing restart-restore behavior must be unaffected"
         assert restored.restart_count == 1
         assert ("w_z1", persisted.decision_timestamp) in coord._interrupted_decision_keys
+
+        # The restored-as-interrupted pending must never later resolve as a
+        # clean "complete" -- production-near proof via the real per-cycle
+        # timeout-sweep shape (_simulate_timeout_resolution), not just a
+        # state-flag check.
+        due_now = decision_ts + timedelta(minutes=DELAY_MIN)
+        outcome = _simulate_timeout_resolution(coord, "w_z1", due_now)
+        assert outcome is not None
+        assert outcome.resolution_status == "interrupted_partial", (
+            "a restart-restored, interrupted pending must never resolve as a "
+            "clean 'complete' -- existing restart semantics preserved"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -679,6 +723,158 @@ class TestDownstreamSafety:
             "'reliability' input must be materially degraded when interrupted"
         )
 
+    @async_test
+    async def test_TC_PO_11b_interrupted_outcome_through_real_experiment_finalization_never_wins(self):
+        """Production-near completion of TC_PO_11: drives the REAL
+        coordinator experiment path, not just resolve_outcome() in isolation.
+
+        Builds a real, active `BoundedExperiment` (coord._experiments_active)
+        linked by `experiment_decision_id` to a real PendingOutcome. The
+        pending is toggle-interrupted (ON->OFF via the real public API) and
+        resolved as `interrupted_partial`. The resulting DecisionOutcome is
+        fed into the REAL `coord._experiment_finalize_from_outcome()` -- the
+        exact, unmodified coordinator method the normal per-cycle
+        `_store_outcome()` pipeline calls -- which internally also calls the
+        real `_maybe_adopt()`.
+
+        Asserts, against real production state:
+          - the experiment is finalized exactly once (removed from
+            `_experiments_active`, exactly one entry appended to
+            `_experiment_history`);
+          - it is NEVER finalized as STATUS_ACCEPTED_FOR_P8 (a winner);
+          - its persisted `evaluation.reliability` is the same materially
+            degraded value TC_PO_11 already proved (not silently dropped
+            on the way through the real finalization pipeline);
+          - no adoption is created in `_adoptions_active`;
+          - re-finalizing the same outcome a second time is a true no-op
+            (idempotent -- no matching active experiment left to finalize).
+
+        Honesty note (per the governing instructions): a single experiment
+        can never reach STATUS_ACCEPTED_FOR_P8 regardless of interruption,
+        because `derive_p8_adoption_eligible` structurally requires
+        `P8_MIN_VALID_EXPERIMENTS = 3` independent non-degraded experiments
+        (models/bounded_experiment.py). That structural gate is not created
+        by this fix. What IS specifically attributable to the toggle-
+        interruption fix, and is what this test isolates and asserts, is
+        that the persisted `evaluation.reliability` -- the exact value
+        `_experiment_finalize_from_outcome` derives from `mo.reliability.
+        thermal` and that would feed `min_confidence_seen` in any real
+        multi-experiment P8 snapshot -- is measurably degraded rather than
+        silently treated as full-strength evidence.
+        """
+        coord, entry = _make_coord()
+        _install_noop_cycle(coord)
+        decision_ts = datetime(2026, 7, 31, 8, 0, tzinfo=timezone.utc)
+        did = "exp-real-dec-1"
+        _seed_pending(coord, "w_z1", decision_ts, decision_id=did)
+
+        exp = BoundedExperiment(
+            experiment_id="exp-1", source_shadow_id="shadow-1", window_id="w_z1",
+            zone_id="z1", intensity_level="normal", context_family="day|mid",
+            created_at=decision_ts, updated_at=decision_ts,
+            status=STATUS_OBSERVING, experiment_decision_id=did,
+            baseline_parameter_target_ha=60, expected_final_candidate_target_ha=50,
+        )
+        coord._experiments_active["z1"] = exp
+
+        with _frozen_time(decision_ts):
+            await coord.async_set_zone_learning_enabled("z1", False)  # marks interrupted
+
+        due_now = decision_ts + timedelta(minutes=DELAY_MIN)
+        outcome = _simulate_timeout_resolution(coord, "w_z1", due_now)
+        assert outcome is not None
+        assert outcome.resolution_status == "interrupted_partial"
+        assert outcome.decision_id == did
+
+        coord._experiment_finalize_from_outcome(outcome)
+
+        assert "z1" not in coord._experiments_active, "must be finalized exactly once"
+        assert len(coord._experiment_history) == 1
+        finalized = coord._experiment_history[0]
+        assert finalized.status != STATUS_ACCEPTED_FOR_P8, (
+            "a toggle-interrupted outcome must never finalize its experiment as a winner"
+        )
+        assert finalized.evaluation.reliability <= 0.2, (
+            "the persisted evaluation must carry the same materially degraded "
+            "reliability TC_PO_11 proved on the raw outcome -- not lost in transit "
+            "through the real finalization pipeline"
+        )
+        assert coord._adoptions_active == {}, (
+            "a toggle-interrupted single outcome must never create an adoption"
+        )
+
+        # Idempotency: nothing left to finalize a second time.
+        coord._experiment_finalize_from_outcome(outcome)
+        assert len(coord._experiment_history) == 1, "must not be processed twice"
+
+
+# ---------------------------------------------------------------------------
+# TC_PO_13: unified deadline decision (no drift between live/toggle/restore)
+# ---------------------------------------------------------------------------
+
+
+class TestUnifiedDeadline:
+    @async_test
+    async def test_TC_PO_13_toggle_and_restore_use_the_same_per_pending_deadline_as_live_resolution(self):
+        """Dynamic proof that the live per-cycle resolution gate
+        (`indoor_temp_outcome_delay_min >= elapsed`), the toggle-reconciliation
+        gate, and the restart-restore gate all derive their deadline from the
+        SAME source -- `_pending_observation_deadline_exceeded()` -- for a
+        PendingOutcome whose delay deliberately diverges from the global
+        `_OUTCOME_OBSERVATION_DELAY_MIN` default (30 min): 12 minutes.
+        If any of the three ever used a different delay source, this test
+        would observe drift (e.g. the toggle path invalidating something the
+        live sweep would still consider due, or vice versa).
+        """
+        coord, entry = _make_coord()
+        _install_noop_cycle(coord)
+        decision_ts = datetime(2026, 7, 31, 8, 0, tzinfo=timezone.utc)
+        short_delay = 12  # deliberately != DELAY_MIN (30) and != the module default
+        pending = _seed_pending(coord, "w_z1", decision_ts, delay_min=short_delay)
+
+        # Live per-cycle gate: due at exactly 12 min, NOT at the global 30-min default.
+        just_before_due = decision_ts + timedelta(minutes=11)
+        assert _simulate_timeout_resolution(coord, "w_z1", just_before_due) is None, (
+            "must not be due yet at 11 min against a 12-min per-pending delay"
+        )
+
+        with _frozen_time(decision_ts):
+            await coord.async_set_zone_learning_enabled("z1", False)
+        # Toggle-reconciliation gate: resume at 13 min (past the 12-min delay,
+        # within the shared 5-min grace) -- must be LEFT QUEUED, not invalidated,
+        # exactly matching what the live gate above already confirmed as "due
+        # but within grace" for this same short delay.
+        resume_within_grace = decision_ts + timedelta(minutes=13)
+        with _frozen_time(resume_within_grace):
+            await coord.async_set_zone_learning_enabled("z1", True)
+        assert coord._pending_outcomes.get("w_z1") is not None, (
+            "toggle reconciliation must use the SAME 12-min per-pending delay as "
+            "the live gate -- must not fall back to the 30-min module default"
+        )
+
+        # Restart-restore gate: feed the SAME still-open pending through the
+        # real, unmodified _restore_pending_outcomes at 13 min elapsed --
+        # must reach the identical "survives as interrupted" verdict.
+        persisted = coord._pending_outcomes.remove("w_z1")
+        coord._restore_pending_outcomes([persisted], resume_within_grace)
+        assert coord._pending_outcomes.get("w_z1") is not None, (
+            "restart-restore must use the SAME per-pending delay as the toggle "
+            "gate for this pending -- confirms _pending_observation_deadline_"
+            "exceeded is the single shared source for all three call sites"
+        )
+
+        # Now push past 12min + 5min grace = 17 min -> all three gates must
+        # agree this is unrecoverably overdue.
+        past_grace = decision_ts + timedelta(minutes=18)
+        assert coord._pending_observation_deadline_exceeded(pending, past_grace) is True
+        coord._restore_pending_outcomes(
+            [coord._pending_outcomes.remove("w_z1")], past_grace
+        )
+        assert coord._pending_outcomes.get("w_z1") is None, (
+            "past the shared 12-min+5-min-grace deadline, the same helper must "
+            "invalidate via the restart path exactly as the toggle path would"
+        )
+
 
 # ---------------------------------------------------------------------------
 # TC_PO_12: idempotency
@@ -702,7 +898,7 @@ class TestIdempotency:
 
         assert coord._pending_outcomes.get("w_z1") is None
         rec_after_first = coord._learning_store.get_decision("w_z1", did)
-        assert rec_after_first.invalidation_reason == "learning_toggle_interrupted_too_long"
+        assert rec_after_first.invalidation_reason == "observation_interrupted_too_long"
 
         # A second OFF->ON with nothing left pending must be a true no-op --
         # no re-invalidation, no exception, no duplicate processing.

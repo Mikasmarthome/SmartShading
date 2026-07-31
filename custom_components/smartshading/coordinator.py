@@ -2297,11 +2297,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         `_restore_pending_outcomes` uses) -- no synthetic outcome, no
         model/confidence/experiment/adoption effect.
 
-        Delay source is `pending.indoor_temp_outcome_delay_min` -- the same
-        per-instance field the live per-cycle resolution gate (coordinator.py
-        ~4931) already treats as authoritative -- not a new time definition.
+        Deadline decision (delay source + grace) is `_pending_observation_
+        deadline_exceeded` -- the SAME shared decision `_restore_pending_
+        outcomes` uses, so the two can never drift apart -- and the same
+        stable invalidation reason (`observation_interrupted_too_long`) is
+        reused, since no consumer distinguishes restart from toggle
+        interruption.
         """
-        grace = timedelta(minutes=5)  # same grace window `_restore_pending_outcomes` uses
         for window_id, window in self.windows.items():
             if window.zone_id != zone_id:
                 continue
@@ -2311,8 +2313,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             key = (window_id, pending.decision_timestamp)
             if key not in self._interrupted_decision_keys:
                 continue  # never interrupted while OFF -- nothing to reconcile
-            delay = timedelta(minutes=pending.indoor_temp_outcome_delay_min)
-            if (now - pending.decision_timestamp) > (delay + grace):
+            if self._pending_observation_deadline_exceeded(pending, now):
                 self._pending_outcomes.remove(window_id)
                 self._interrupted_decision_keys.discard(key)
                 try:
@@ -2321,7 +2322,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     )
                     if rec is not None:
                         self._learning_store.mark_decision_invalidated(
-                            window_id, rec.decision_id, "learning_toggle_interrupted_too_long"
+                            window_id, rec.decision_id, "observation_interrupted_too_long"
                         )
                         self._request_important_save()
                 except Exception:
@@ -9721,19 +9722,33 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # cascade) is an important event → schedule a coalesced near-immediate save.
         self._request_important_save()
 
+    def _pending_observation_deadline_exceeded(self, pending: PendingOutcome, now: datetime) -> bool:
+        """Single authoritative deadline decision for "has this PendingOutcome's
+        observation window definitively expired" -- shared by the restart-
+        restore interruption gate and the Learning-toggle reconciliation gate,
+        so the two can never drift apart.
+
+        Delay source is `pending.indoor_temp_outcome_delay_min` -- the same
+        per-instance field the live per-cycle resolution gate (coordinator.py
+        ~4931) already treats as authoritative -- plus the same 5-minute
+        grace both gates have always used.
+        """
+        grace = timedelta(minutes=5)
+        delay = timedelta(minutes=pending.indoor_temp_outcome_delay_min)
+        return (now - pending.decision_timestamp) > (delay + grace)
+
     def _restore_pending_outcomes(
         self, pendings: list, now: datetime
     ) -> None:
         """Apply the P2.6 restart interruption gate to restored pending outcomes.
 
         A pending is INVALIDATED (dropped, no synthetic outcome) when the total
-        elapsed time exceeds the observation window + grace, the config
+        elapsed time exceeds the observation window + grace (shared deadline
+        decision, see `_pending_observation_deadline_exceeded`), the config
         fingerprint changed, or it has already survived more than one restart.
         Surviving pendings are restored and flagged interrupted so their later
         outcome can never be scored as 'complete'.
         """
-        grace = timedelta(minutes=5)
-        delay = timedelta(minutes=_OUTCOME_OBSERVATION_DELAY_MIN)
         for po in pendings:
             if po.window_id not in self.windows:
                 continue
@@ -9743,14 +9758,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 current_fp, _gen = self._config_fingerprint_for_window(window, zone)
             except Exception:
                 current_fp = None
-            elapsed = now - po.decision_timestamp
             restart_count = po.restart_count + 1
             fingerprint_changed = (
                 po.config_fingerprint is not None
                 and current_fp is not None
                 and po.config_fingerprint != current_fp
             )
-            if elapsed > (delay + grace) or fingerprint_changed or restart_count > 1:
+            if (self._pending_observation_deadline_exceeded(po, now)
+                    or fingerprint_changed or restart_count > 1):
                 # Invalidate the associated record (if any); never fabricate an outcome.
                 try:
                     rec = self._learning_store.get_decision_by_timestamp(

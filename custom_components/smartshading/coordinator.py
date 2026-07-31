@@ -2233,6 +2233,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     zone_id, _CI_CHANGE_MODE_AWAY, _disable_now)
             except Exception:
                 _LOGGER.warning("Learning: config-change invalidation failed for %s", zone_id)
+            if _state_actually_changed:
+                try:
+                    self._interrupt_zone_pending_outcomes(zone_id)
+                except Exception:
+                    _LOGGER.warning(
+                        "Learning: pending-outcome interruption on learning-disable failed for %s", zone_id)
+        elif _state_actually_changed:
+            try:
+                self._reconcile_zone_pending_outcomes_on_resume(zone_id, dt_util.utcnow())
+            except Exception:
+                _LOGGER.warning(
+                    "Learning: pending-outcome reconciliation on learning-enable failed for %s", zone_id)
         self._persist_zone_controls()
         if _state_actually_changed:
             # Event-Triggered Comfort Preemption (same pattern as f71c71e /
@@ -2246,6 +2258,74 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if self._active_dispatch_cancellation is not None:
                 self._active_dispatch_cancellation.set()
         await self.async_request_refresh()
+
+    def _interrupt_zone_pending_outcomes(self, zone_id: str) -> None:
+        """Learning ON->OFF: mark every open PendingOutcome for this zone's
+        windows as interrupted, via the same `_interrupted_decision_keys`
+        mechanism `_restore_pending_outcomes` already uses for restart
+        interruptions. Marking only -- no removal, no invalidation here, no
+        synthetic outcome, no other zone touched, no learning data deleted.
+        Every existing resolution call site (`_store_outcome` and its six
+        `resolve_outcome()` callers) already reads this key set, so once the
+        marked pending is eventually resolved, it will correctly receive
+        `observation_interrupted=True` -- downgrading its resolution status
+        to "interrupted_partial" and discounting its score instead of a
+        clean "complete" -- without any new gating logic at resolution time.
+        """
+        for window_id, window in self.windows.items():
+            if window.zone_id != zone_id:
+                continue
+            pending = self._pending_outcomes.get(window_id)
+            if pending is not None:
+                self._interrupted_decision_keys.add((window_id, pending.decision_timestamp))
+
+    def _reconcile_zone_pending_outcomes_on_resume(self, zone_id: str, now: datetime) -> None:
+        """Learning OFF->ON: for every open, interrupted PendingOutcome of this
+        zone, decide -- same threshold shape as `_restore_pending_outcomes`'s
+        restart-interruption gate (observation delay + grace) -- whether it
+        can still resolve later, or must be invalidated now.
+
+        Still within delay+grace: left queued and marked interrupted; the
+        normal per-cycle timeout sweep (coordinator.py ~4926) resolves it
+        once due, already discounted via the interrupted-keys mechanism
+        above -- no action needed here.
+
+        Delay+grace already exceeded: removed from the queue before the
+        normal sweep gets a chance to resolve it with stale present-moment
+        sensor data, and the underlying decision is marked invalidated via
+        the existing `mark_decision_invalidated` mechanism (same one
+        `_restore_pending_outcomes` uses) -- no synthetic outcome, no
+        model/confidence/experiment/adoption effect.
+
+        Delay source is `pending.indoor_temp_outcome_delay_min` -- the same
+        per-instance field the live per-cycle resolution gate (coordinator.py
+        ~4931) already treats as authoritative -- not a new time definition.
+        """
+        grace = timedelta(minutes=5)  # same grace window `_restore_pending_outcomes` uses
+        for window_id, window in self.windows.items():
+            if window.zone_id != zone_id:
+                continue
+            pending = self._pending_outcomes.get(window_id)
+            if pending is None:
+                continue
+            key = (window_id, pending.decision_timestamp)
+            if key not in self._interrupted_decision_keys:
+                continue  # never interrupted while OFF -- nothing to reconcile
+            delay = timedelta(minutes=pending.indoor_temp_outcome_delay_min)
+            if (now - pending.decision_timestamp) > (delay + grace):
+                self._pending_outcomes.remove(window_id)
+                self._interrupted_decision_keys.discard(key)
+                try:
+                    rec = self._learning_store.get_decision_by_timestamp(
+                        window_id, pending.decision_timestamp
+                    )
+                    if rec is not None:
+                        self._learning_store.mark_decision_invalidated(
+                            window_id, rec.decision_id, "learning_toggle_interrupted_too_long"
+                        )
+                        self._request_important_save()
+                except Exception:
+                    pass
 
     async def async_set_zone_active_control_enabled(
         self, zone_id: str, enabled: bool

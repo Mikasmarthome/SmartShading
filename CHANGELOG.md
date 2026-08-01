@@ -1,5 +1,86 @@
 # Changelog
 
+## v1.2.0-beta.2
+
+**This is a pre-release.** It is intended for testing on suitable Home
+Assistant systems, not for production use. Please take a backup before
+installing. Feedback and diagnostics/support exports are welcome via
+[GitHub Issues](https://github.com/Mikasmarthome/SmartShading/issues).
+Stable users should stay on the current stable release; installing the beta
+requires deliberately opting into a pre-release rather than the default
+HACS/stable installation.
+
+### Highlights
+
+- Deterministic dispatch ordering and pacing: comfort cover commands are now
+  planned and executed through a single, pure dispatch plan (fixed-priority
+  sort: fully-open moves before intermediate moves, then a stable per-zone/
+  per-cover order) for both sequential/spaced and parallel dispatch modes,
+  replacing the previous implicit ordering and fixing a lock-span bug where
+  the global dispatch lock was held across the entire completion wait and
+  pacing pause instead of only around the dispatch call itself.
+- Safety always preempts comfort dispatch, including across cycles: a newly
+  arriving safety condition (storm, wind, rain, manual override, absence,
+  etc.) now promptly interrupts an already-running comfort dispatch plan —
+  mid-pacing-interval, mid-completion-wait, or mid-throttle-wait — in every
+  dispatch mode, instead of only being checked at the start of a cycle.
+- Fixed several cases where a presence, contact, night/morning-lifecycle, or
+  Active Control toggle event could be silently delayed or dropped while a
+  comfort dispatch was still in flight, due to Home Assistant's coordinator
+  refresh debouncer holding a lock a fresh event needed.
+- Corrected a diagnostics field that could report the dispatch subsystem as
+  healthy even while real completion timeouts were present elsewhere in the
+  same diagnostics output.
+- Closed a narrow shutdown race where a just-triggered background save of
+  learning data could keep running invisibly to the coordinator's own
+  shutdown/unload sequence instead of being tracked and awaited like every
+  other background task.
+- Hardened the Learning Mode toggle and pending-outcome lifecycle: interrupted
+  observations, experiments, and adoptions are now consistently reconciled
+  across Learning Mode on/off toggles, coordinator restarts, and window
+  removal, with expanded regression coverage for the real persistence
+  round-trip (save/restore) of these records.
+- Simplified configuration: Cover Dispatch pacing, Manual Override policy, and
+  presence absence-delay timing can now be set once as System-wide defaults
+  and overridden per zone only where needed, instead of being repeated in
+  every zone's configuration. The zone options menu is reorganized into
+  grouped submenus. The Manual Override release-strategy choice is presented
+  as 4 concepts with sub-choices instead of a flat 7-value list (stored
+  configuration format is unchanged).
+- Removed the unused, never-triggered "strategy adoption" subsystem and the
+  already-unreachable legacy manual-override evaluator; the active
+  experiment/adoption (P7/P8) systems are unaffected.
+- Reduced repeated-hold noise in the Support Export timeline (a repeated
+  identical hold no longer produces one entry per cycle) and made
+  explainability/decision-trace/timeline target and influence reporting
+  consistent by resolving them from a single shared source instead of three
+  independently-drifting implementations.
+- Continued expansion of the automated test suite, including new dispatch
+  ordering/pacing, cross-cycle safety preemption, event-triggered refresh,
+  Learning Mode toggle, and restart-persistence regression tests.
+
+### Upgrade notes
+
+- Existing configurations and learning data are migrated/restored
+  automatically; no manual reconfiguration should be required.
+- Named Lifecycle Profiles (an alternative Night/Day schedule preset you
+  could switch between) have been removed. Whichever schedule was actually
+  active on your install is carried over unchanged as the zone's plain
+  schedule; any other, inactive stored profiles are not carried over. If you
+  used this feature, please verify each zone's Night/Day schedule after
+  upgrading.
+- If you notice unexpected behavior after upgrading, please save a
+  diagnostics or support export before reporting it.
+- Returning to the stable release afterward may require restoring from a
+  backup if beta-generated data is not compatible with an older stable
+  version; no automatic downgrade path to older stored data is guaranteed.
+
+### Notes
+
+No breaking changes to configuration storage are intended in this release;
+the configuration UI has been reorganized (see Highlights and Upgrade notes
+above).
+
 ## v1.2.0-beta.1
 
 **This is a pre-release.** It is intended for testing on suitable Home

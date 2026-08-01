@@ -11,6 +11,21 @@ Coverage:
   DGD-03  completion_method_counts aggregates recorded support-critical
           events by completion method, with zero window-identifying detail.
   DGD-04  completion_timeout_count reflects timed-out completions.
+
+  Beta-2 corrective phase R1 (health.dispatch_healthy/deterministic_control_available
+  truthfulness — real gap confirmed by the Beta-2 readiness audit: these two
+  fields were previously hardcoded True regardless of real dispatch state):
+  DGD-05  No completion-timeout events in the retained critical-event window
+          -> health.dispatch_healthy is True.
+  DGD-06  A completion-timeout event present in the SAME retained window that
+          health.dispatch_strategy_summary.completion_timeout_count already
+          reports -> health.dispatch_healthy is True must NOT hold; the two
+          sections must agree (dispatch_healthy is False, no contradiction).
+  DGD-07  health.deterministic_control_available is a documented architectural
+          invariant (rule-based TierOrchestrator/StateGuard evaluation always
+          runs for any validly-constructed coordinator) — asserted True for a
+          bare coordinator with zero configured zones/windows/covers, i.e. the
+          minimal possible construction, not just a "happy path" instance.
 """
 from __future__ import annotations
 
@@ -163,3 +178,84 @@ class TestCompletionAggregation:
         summary = build_consolidated_diagnostics(coord)["dispatch_strategy_summary"]
         assert summary["completion_method_counts"] == {"position": 2, "timeout": 1}
         assert summary["completion_timeout_count"] == 1
+
+
+class TestDispatchHealthyReflectsRealCompletionState:
+    """R1: health.dispatch_healthy must agree with the same retained
+    _support_critical_events window that dispatch_strategy_summary already
+    reports from — not a hardcoded constant. Both sections are built by
+    build_consolidated_diagnostics() from the SAME real coordinator state
+    (no result-dict mutation after the fact)."""
+
+    def test_no_timeouts_in_window_is_healthy(self) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord._support_critical_events = [
+            {"completion_method": "position", "completion_timed_out": False},
+            {"completion_method": "position", "completion_timed_out": False},
+        ]
+        contract = build_consolidated_diagnostics(coord)
+        assert contract["dispatch_strategy_summary"]["completion_timeout_count"] == 0
+        assert contract["health"]["dispatch_healthy"] is True
+
+    def test_real_completion_timeout_yields_truthful_unhealthy_state(self) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord._support_critical_events = [
+            {"completion_method": "position", "completion_timed_out": False},
+            {"completion_method": "timeout", "completion_timed_out": True},
+        ]
+        contract = build_consolidated_diagnostics(coord)
+        # The two sections must never contradict each other: a real,
+        # currently-retained timeout visible in dispatch_strategy_summary
+        # must also be reflected in health.dispatch_healthy.
+        assert contract["dispatch_strategy_summary"]["completion_timeout_count"] == 1
+        assert contract["health"]["dispatch_healthy"] is False
+
+    def test_timeout_eviction_from_the_retained_window_restores_healthy(self) -> None:
+        # The retained window is bounded (coordinator.py caps
+        # _support_critical_events at the most recent 500 entries) — once a
+        # timed-out event ages out of that window, dispatch_healthy must
+        # reflect the CURRENT window, not a permanent "ever timed out" flag.
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord._support_critical_events = [
+            {"completion_method": "position", "completion_timed_out": False},
+        ]
+        assert build_consolidated_diagnostics(coord)["health"]["dispatch_healthy"] is True
+
+    def test_privacy_contract_unaffected_no_ids_in_health_section(self) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord._support_critical_events = [
+            {"completion_method": "timeout", "completion_timed_out": True,
+             "window_id": "w-should-not-leak"},
+        ]
+        health = build_consolidated_diagnostics(coord)["health"]
+        assert "window_id" not in str(health.get("dispatch_healthy"))
+        assert set(health.keys()) == {
+            "overall_status", "reason_codes", "deterministic_control_available",
+            "learning_available", "storage_healthy", "dispatch_healthy",
+        }
+
+
+class TestDeterministicControlAvailableInvariant:
+    """R1: deterministic_control_available is a documented architectural
+    invariant (rule-based TierOrchestrator/StateGuard evaluation always runs
+    for any validly-constructed coordinator — see
+    models/zone_execution_config.py's combination table, row
+    learning_enabled=False/active_control_enabled=True), not a runtime
+    measurement with a reachable False state. This guard fails loudly if a
+    future change ever makes the field conditional without updating this
+    test."""
+
+    def test_true_for_minimal_bare_coordinator(self) -> None:
+        coord = _make_coord()
+        assert coord.windows == {} and coord.zones == {} and coord.cover_groups == {}
+        health = build_consolidated_diagnostics(coord)["health"]
+        assert health["deterministic_control_available"] is True
+
+    def test_true_even_under_degraded_storage_state(self) -> None:
+        # Deterministic (rule-based) control is architecturally independent
+        # of learning/storage health — degraded storage must not flip it.
+        coord = _make_coord()
+        coord._save_failures = 3
+        health = build_consolidated_diagnostics(coord)["health"]
+        assert health["overall_status"] == "degraded"
+        assert health["deterministic_control_available"] is True

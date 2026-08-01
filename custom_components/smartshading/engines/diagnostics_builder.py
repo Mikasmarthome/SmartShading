@@ -44,6 +44,15 @@ def _age_seconds(dt, now: datetime) -> float | None:
         return None
 
 
+def _dispatch_timeout_count(c) -> int:
+    """Count of completion-timeout events in the retained critical-event
+    window (coordinator._support_critical_events, capped at 500 entries —
+    see coordinator.py's append site). Single source of truth shared by
+    _health() and _dispatch_strategy_summary() so both agree."""
+    events = list(getattr(c, "_support_critical_events", []) or [])
+    return sum(1 for e in events if e.get("completion_timed_out"))
+
+
 def build_consolidated_diagnostics(coordinator, *, integration_version: str = "unknown") -> dict:
     """Build the PUBLIC_SAFE consolidated diagnostics contract (HA diagnostics).
 
@@ -154,16 +163,26 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
             reasons.append("thermal_finalize_failure")
         if any(v not in ("valid", "missing") for v in ledger.values()):
             reasons.append("learning_ledger_unsafe")
+        dispatch_timeouts = _dispatch_timeout_count(c)
         status = "healthy"
         if "storage_save_failure" in reasons or "learning_ledger_unsafe" in reasons:
             status = "degraded"
         return {
             "overall_status": status,
             "reason_codes": reasons,
+            # Architectural invariant, not a runtime measurement: the
+            # rule-based TierOrchestrator/StateGuard evaluation path (see
+            # models/zone_execution_config.py's combination table, row
+            # learning_enabled=False/active_control_enabled=True) always
+            # runs for any validly-constructed coordinator, independent of
+            # learning/storage/dispatch health. There is no real production
+            # state in which a constructed coordinator lacks it, so this is
+            # correctly True unconditionally — see
+            # TestDeterministicControlAvailableInvariant for the guard.
             "deterministic_control_available": True,
             "learning_available": not reasons,
             "storage_healthy": save_fail == 0 and restore_fail == 0,
-            "dispatch_healthy": True,
+            "dispatch_healthy": dispatch_timeouts == 0,
         }
 
     def _inputs_summary():
@@ -317,7 +336,7 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         # export timeline, not here.
         dc = getattr(c, "_dispatch_config", None)
         events = list(getattr(c, "_support_critical_events", []) or [])
-        timeouts = sum(1 for e in events if e.get("completion_timed_out"))
+        timeouts = _dispatch_timeout_count(c)
         completion_counts: dict = {}
         for e in events:
             method = e.get("completion_method")

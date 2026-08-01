@@ -1266,6 +1266,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._save_lock = asyncio.Lock()
         # P10 completion: coalescing near-immediate save scheduler handle.
         self._pending_save_unsub = None
+        # R2 (Beta-2 corrective phase): handle to the fired callback's OWN
+        # in-flight Task, valid for the callback's entire execution (not just
+        # while merely scheduled) -- see _on_important_save_due().
+        self._pending_save_task: asyncio.Task | None = None
         # P10: once unloading, no NEW important-save callbacks are scheduled.
         # T17: also gates _create_tracked_background_task() below — once set,
         # no new event-triggered refresh task (presence/contact/lifecycle
@@ -1711,7 +1715,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         Multiple important events within the delay window collapse into a single
         save (a pending handle suppresses re-scheduling).  Safe no-op when the HA
-        event loop helper is unavailable (e.g. headless tests)."""
+        event loop helper is unavailable (e.g. headless tests).
+
+        Scheduling itself is unchanged (still the cheap async_call_later timer,
+        not an eagerly-created task/coroutine) so this remains a no-op-safe call
+        in every existing test fixture. The R2 fix lives entirely in
+        _on_important_save_due(): once the timer actually fires, that callback's
+        own in-flight Task is registered into self._background_tasks for its
+        FULL execution (not just while merely scheduled), so a save already
+        running when shutdown starts is cancelled/awaited by the exact same
+        generic loop async_shutdown() already uses for the T17 listener tasks —
+        instead of running on as an invisible HA-core background job."""
         self._mark_learning_dirty()
         if self._unloading:
             return  # unloading: never schedule a new callback (final flush handles it)
@@ -1725,18 +1739,54 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     async def _on_important_save_due(self, _now=None) -> None:
         self._pending_save_unsub = None
+        if self._unloading:
+            # Fired after unloading already began: async_flush_learning() is
+            # the authoritative final save from this point on; do not race it
+            # with a second concurrent save attempt.
+            return
+        # R2: make this callback's own Task visible to the coordinator for its
+        # entire execution, exactly like the T17-tracked listener tasks —
+        # asyncio.current_task() is the standard public API for "the Task I am
+        # currently running in", not a private HA-core internal.
+        task = asyncio.current_task()
+        if task is not None:
+            self._background_tasks.add(task)
+            task.add_done_callback(self._background_tasks.discard)
+            self._pending_save_task = task
         try:
             await self._save_learning_snapshot(dt_util.utcnow())
+        except asyncio.CancelledError:
+            raise
         except Exception:
             _LOGGER.warning("Learning: scheduled important save failed (non-fatal)")
+        finally:
+            if self._pending_save_task is task:
+                self._pending_save_task = None
 
-    def _cancel_pending_save(self) -> None:
+    async def _cancel_pending_save(self) -> None:
         if self._pending_save_unsub is not None:
             try:
                 self._pending_save_unsub()
             except Exception:
                 pass
             self._pending_save_unsub = None
+        # R2: the timer may have already fired — cancel and AWAIT its Task so
+        # no important-save can still be running once this returns (closes the
+        # window between async_shutdown()'s own tracked-task loop and this
+        # call, and guarantees no save races entry removal afterward).
+        task = self._pending_save_task
+        if task is not None and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                _LOGGER.debug(
+                    "SmartShading: pending important-save task raised during cancellation",
+                    exc_info=True,
+                )
+        self._pending_save_task = None
 
     async def async_flush_learning(self) -> None:
         """Flush pending learning data immediately using the COMPLETE snapshot.
@@ -1747,7 +1797,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         mutation bumps dirty_generation mid-save.  Swallows errors so unload is
         never blocked."""
         self._unloading = True
-        self._cancel_pending_save()
+        await self._cancel_pending_save()
         for _attempt in range(3):
             try:
                 await self._save_learning_snapshot(dt_util.utcnow())

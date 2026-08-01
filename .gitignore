@@ -17,6 +17,11 @@ coverage.xml
 venv/
 env/
 .env
+.venv_t17/
+
+# Local scratch/backup working directory used during development — never
+# part of the public release (confirmed untracked, previously unprotected).
+.git_ignore_scratch/
 
 # Build / packaging artifacts
 dist/

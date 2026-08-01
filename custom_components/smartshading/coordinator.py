@@ -9051,6 +9051,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self._pending_outcomes.remove(window_id)
         except Exception:
             pass
+        # No orphaned interruption marker may survive the window's removal --
+        # any (window_id, decision_timestamp) key for this window is dropped,
+        # not just the one tied to whatever pending happened to be present.
+        for key in [k for k in self._interrupted_decision_keys if k[0] == window_id]:
+            self._interrupted_decision_keys.discard(key)
         self._request_important_save()
 
     def _shadow_proposals_storage(self) -> list:

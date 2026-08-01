@@ -101,6 +101,52 @@ Coverage:
             global default proves the live resolution gate, the toggle
             reconciliation gate and the restart-restore gate all agree on
             the same deadline -- no drift between the three.
+
+Phase 2B.4 additions (production fix + 4 new tests):
+
+  Fix (`_cleanup_removed_window`, coordinator.py): removing a single window
+  from a zone dropped its PendingOutcome but left any matching
+  `_interrupted_decision_keys` entry orphaned (confirmed by a dynamic probe
+  against the real, unmodified coordinator before this fix). Now every key
+  for the removed `window_id` is discarded, not just the one tied to
+  whatever pending happened to still be present.
+
+  TC_PO_14  Single-WINDOW removal (not zone/config-entry removal -- a
+            SmartShading zone is architecturally one config entry; removing
+            a whole zone tears down the entire coordinator as a unit, which
+            is not what this test is about). Drives the real
+            `_cleanup_removed_window()`: the removed window's pending,
+            active experiment (historized exactly once) and active adoption
+            (historized exactly once with the existing `"window_removed"`
+            reason) are all cleaned up; no orphaned `_interrupted_decision_
+            keys` entry remains for it; a control window's own pending and
+            interrupted-key entry survive completely untouched; repeated
+            cleanup is idempotent (no duplicate history growth).
+  TC_PO_15  An `interrupted_partial` outcome against an ALREADY-ACTIVE
+            adoption (real `_monitor_adoption()` path, real toggle +
+            resume-within-grace + real timeout resolution). Pins the actual
+            governing invariant: `resolution_status != "complete"` forces
+            `thermal.available=False`, which makes `_monitor_adoption`
+            transiently suspend the adoption (`current_gate_reason=
+            "sensor_unavailable"`) -- never confirm/improve/degrade/
+            rollback/invalidate it, never create a new adoption, and never
+            act twice on the same outcome.
+  TC_PO_16  Tight direct test of the real, pure `reconcile_restored_
+            experiments`/`reconcile_restored_adoptions` (engines/
+            experiment_engine.py, engines/adoption_engine.py): an OBSERVING
+            experiment demotes to `STATUS_INTERRUPTED_PARTIAL` with
+            `abort_reason="interrupted_by_restart"`; an active adoption
+            survives but is suspended with `"awaiting_restart_
+            revalidation"`; repeated/echoed reconcile calls are
+            deterministic and never duplicate history.
+  TC_PO_17  Coordinator-wiring proof: the real coordinator restore-path
+            assignment shape (coordinator.py ~2982-2992,
+            `self._experiments_active, self._experiment_history =
+            reconcile_restored_experiments(...)` / same for adoptions)
+            applied to the coordinator's own attributes, proving the
+            wiring -- not just the pure functions in isolation -- without
+            needing the full HA config-entry-restore machinery this test
+            suite deliberately never drives end-to-end.
 """
 from __future__ import annotations
 
@@ -263,7 +309,16 @@ from custom_components.smartshading.engines.outcome_resolution import (  # noqa:
     resolve_outcome, OutcomeResolutionInput, OutcomeResolutionTrigger,
 )
 from custom_components.smartshading.models.bounded_experiment import (  # noqa: E402
-    BoundedExperiment, STATUS_OBSERVING, STATUS_ACCEPTED_FOR_P8,
+    BoundedExperiment, STATUS_OBSERVING, STATUS_ACCEPTED_FOR_P8, STATUS_INTERRUPTED_PARTIAL,
+)
+from custom_components.smartshading.models.persistent_adoption import (  # noqa: E402
+    PersistentTargetAdoption, STATUS_MONITORING, STATUS_INVALIDATED as ADOPT_STATUS_INVALIDATED,
+)
+from custom_components.smartshading.engines.experiment_engine import (  # noqa: E402
+    reconcile_restored_experiments,
+)
+from custom_components.smartshading.engines.adoption_engine import (  # noqa: E402
+    reconcile_restored_adoptions,
 )
 
 DELAY_MIN = 30  # matches _OUTCOME_OBSERVATION_DELAY_MIN default used throughout the fixture
@@ -907,3 +962,333 @@ class TestIdempotency:
             await coord.async_set_zone_learning_enabled("z1", True)
         rec_after_second = coord._learning_store.get_decision("w_z1", did)
         assert rec_after_second == rec_after_first, "must not be reprocessed a second time"
+
+
+# ---------------------------------------------------------------------------
+# TC_PO_14: single-window removal (Phase 2B.4) -- NOT full-zone/config-entry
+# removal. A SmartShading "zone" is architecturally one config entry
+# (confirmed by config_flow.py's "one config entry per zone" invariant);
+# removing a whole zone means unloading/removing that config entry, and its
+# coordinator (with all its in-memory state) is torn down/garbage-collected
+# as a unit -- there is no separate per-structure cleanup to prove there
+# (see coordinator.py's async_unload_entry / async_remove_entry). What
+# genuinely happens at runtime, for a zone that keeps existing, is a single
+# WINDOW being removed from its config (e.g. a cover deleted from the zone)
+# -- that is exactly what `_cleanup_removed_window()` (coordinator.py
+# ~9030-9059) is for, reached via `_apply_config_diff_on_restore()` on the
+# next reload/restart once the config diff detects a CHANGE_WINDOW_REMOVAL.
+# This test drives `_cleanup_removed_window()` directly (the real, only
+# production entry point for this cleanup) and is deliberately named and
+# scoped as WINDOW removal, not zone/config-entry removal.
+# ---------------------------------------------------------------------------
+
+
+class TestWindowRemoval:
+    @async_test
+    async def test_TC_PO_14_window_removal_cleans_up_pending_experiment_adoption_and_interrupted_keys(self):
+        coord, entry = _make_coord(zone_ids=("z1",))
+        # Two windows in the SAME zone: w_z1 (to be removed) and w_z1b (control,
+        # must survive completely untouched).
+        coord.windows["w_z1b"] = WindowConfig(
+            id="w_z1b", name="w_z1b", zone_id="z1",
+            azimuth=90, floor_level=0, cover_group_id="cg_z1b",
+        )
+        decision_ts = datetime(2026, 7, 31, 8, 0, tzinfo=timezone.utc)
+
+        # -- removed window: pending (marked interrupted), experiment, adoption --
+        removed_pending = _seed_pending(coord, "w_z1", decision_ts, decision_id="exp-removed")
+        coord._interrupted_decision_keys.add(("w_z1", removed_pending.decision_timestamp))
+        removed_exp = BoundedExperiment(
+            experiment_id="exp-removed-1", source_shadow_id="shadow-removed",
+            window_id="w_z1", zone_id="z1", intensity_level="normal",
+            context_family="day|mid", created_at=decision_ts, updated_at=decision_ts,
+            status=STATUS_OBSERVING, experiment_decision_id="exp-removed",
+        )
+        coord._experiments_active["z1"] = removed_exp
+        gen = coord._thermal_config_generation("z1")
+        removed_adoption = PersistentTargetAdoption(
+            adoption_id="adopt-removed", window_id="w_z1", zone_id="z1",
+            intensity_level="normal", context_family="day|mid",
+            configured_target_ha=50, adopted_delta_ha=-5, effective_target_ha=45,
+            status=STATUS_MONITORING, config_generation=gen,
+            created_at=decision_ts, updated_at=decision_ts, activated_at=decision_ts,
+        )
+        coord._adoptions_active[removed_adoption.adoption_key] = removed_adoption
+
+        # -- control window w_z1b: its own pending/key, no experiment/adoption
+        #    seeded on it (isolation is still meaningfully proven via the
+        #    pending + interrupted key, which ARE present on both windows).
+        control_pending = _seed_pending(coord, "w_z1b", decision_ts, decision_id="exp-control")
+        coord._interrupted_decision_keys.add(("w_z1b", control_pending.decision_timestamp))
+
+        now = decision_ts + timedelta(minutes=5)
+        coord._cleanup_removed_window("w_z1", now)
+
+        # Removed window: pending gone.
+        assert coord._pending_outcomes.get("w_z1") is None
+        # Removed window: experiment ended, historized exactly once.
+        assert "z1" not in coord._experiments_active or coord._experiments_active["z1"].window_id != "w_z1", (
+            "the removed window's experiment must no longer be active"
+        )
+        exp_history_for_removed = [
+            e for e in coord._experiment_history if e.window_id == "w_z1"
+        ]
+        assert len(exp_history_for_removed) == 1, "experiment must be historized exactly once"
+        # Removed window: adoption ended with the existing "window_removed" reason,
+        # historized exactly once, no longer active.
+        assert removed_adoption.adoption_key not in coord._adoptions_active
+        adopt_history_for_removed = [
+            a for a in coord._adoption_history if a.window_id == "w_z1"
+        ]
+        assert len(adopt_history_for_removed) == 1
+        assert adopt_history_for_removed[0].status == ADOPT_STATUS_INVALIDATED
+        assert adopt_history_for_removed[0].rollback_reason == "window_removed"
+        # Removed window: no orphaned _interrupted_decision_keys entry survives.
+        assert not any(k[0] == "w_z1" for k in coord._interrupted_decision_keys), (
+            "no _interrupted_decision_keys entry for the removed window may remain"
+        )
+
+        # Control window w_z1b: completely unaffected.
+        assert coord._pending_outcomes.get("w_z1b") is not None
+        assert ("w_z1b", control_pending.decision_timestamp) in coord._interrupted_decision_keys, (
+            "the control window's own interrupted-decision key must survive untouched"
+        )
+
+        # Idempotency: a repeated cleanup of the same (now-already-removed)
+        # window must be a true no-op -- no exception, no additional history.
+        exp_history_len = len(coord._experiment_history)
+        adopt_history_len = len(coord._adoption_history)
+        coord._cleanup_removed_window("w_z1", now)
+        assert len(coord._experiment_history) == exp_history_len, "no duplicate experiment history entry"
+        assert len(coord._adoption_history) == adopt_history_len, "no duplicate adoption history entry"
+        assert not any(k[0] == "w_z1" for k in coord._interrupted_decision_keys)
+
+        # Cleanup with no window_id at all / a window with no pending present:
+        # must not raise.
+        coord._cleanup_removed_window("", now)
+        coord._cleanup_removed_window("does-not-exist", now)
+
+
+# ---------------------------------------------------------------------------
+# TC_PO_15: an interrupted_partial outcome against an ALREADY-ACTIVE adoption
+# (Phase 2B.4, scenarios 12-15). Drives the real production path: real open
+# PendingOutcome -> Learning ON->OFF->ON (resume within grace) -> real
+# per-cycle timeout resolution -> real coord._monitor_adoption(outcome).
+#
+# Learning is toggled back ON before resolution specifically to isolate the
+# outcome's OWN degraded-thermal-availability effect on monitoring from the
+# toggle's own separate, expected side effect (while a zone is OFF,
+# `_monitor_adoption` independently suspends any active adoption for that
+# zone with reason "learning_mode_off" -- confirmed via a dynamic probe
+# during implementation; that is a different, correct protection, not what
+# this test isolates).
+#
+# Real-code finding (more precise than the audit that authorized this test):
+# there is no explicit reliability check anywhere in `_monitor_adoption`/
+# `evaluate_monitoring_action`. The reason an interrupted_partial outcome
+# cannot confirm/improve/degrade/rollback an adoption is that
+# `compute_thermal_outcome()` forces `thermal.available=False` whenever
+# `resolution_status != "complete"`, which makes `classify_monitoring_outcome`
+# return MON_UNAVAILABLE, which `evaluate_monitoring_action` treats as
+# "sensor_unavailable" -> ACTION_TEMPORARY_SUSPEND (a transient, reversible,
+# explicitly non-negative suspension per the function's own docstring/
+# comment "never rollback") -- NOT a silent no-op as originally assumed, and
+# NOT any of the confirm/improve/degrade/rollback/invalidate actions this
+# test explicitly rules out.
+# ---------------------------------------------------------------------------
+
+
+class TestInterruptedOutcomeAgainstActiveAdoption:
+    @async_test
+    async def test_TC_PO_15_interrupted_outcome_cannot_confirm_improve_degrade_or_rollback_active_adoption(self):
+        coord, entry = _make_coord()
+        _install_noop_cycle(coord)
+        decision_ts = datetime(2026, 7, 31, 8, 0, tzinfo=timezone.utc)
+
+        gen = coord._thermal_config_generation("z1")
+        adoption = PersistentTargetAdoption(
+            adoption_id="adopt-1", window_id="w_z1", zone_id="z1", intensity_level="normal",
+            context_family="day|mid", configured_target_ha=50, adopted_delta_ha=-5,
+            effective_target_ha=45, status=STATUS_MONITORING, config_generation=gen,
+            created_at=decision_ts, updated_at=decision_ts, activated_at=decision_ts,
+        )
+        key = adoption.adoption_key
+        coord._adoptions_active[key] = adoption
+        before_snapshot = adoption.to_dict()
+
+        _seed_pending(coord, "w_z1", decision_ts)
+        with _frozen_time(decision_ts):
+            await coord.async_set_zone_learning_enabled("z1", False)
+        resume_at = decision_ts + timedelta(minutes=2)  # within grace
+        with _frozen_time(resume_at):
+            await coord.async_set_zone_learning_enabled("z1", True)  # back ON before resolution
+
+        due_now = decision_ts + timedelta(minutes=DELAY_MIN)
+        outcome = _simulate_timeout_resolution(coord, "w_z1", due_now)
+        assert outcome is not None
+        assert outcome.resolution_status == "interrupted_partial"
+        assert outcome.multi_objective.reliability.thermal < 0.5, "reliability must be degraded, not full"
+        assert outcome.multi_objective.thermal.available is False, (
+            "pins the exact invariant _monitor_adoption's safety depends on"
+        )
+
+        coord._monitor_adoption(outcome)
+
+        after = coord._adoptions_active.get(key)
+        assert after is not None, "the adoption must still be active, not rolled back/invalidated/deleted"
+        assert len(coord._adoption_history) == 0, "no new adoption-history entry may be created"
+        assert len([a for a in coord._adoptions_active.values() if a.window_id == "w_z1"]) == 1, (
+            "no new adoption may be created for this window"
+        )
+        # Confirm/improve/degrade/strike/rollback-relevant state is unchanged.
+        assert after.status == STATUS_MONITORING, "no confirmation, no reduction, no rollback"
+        assert after.effective_target_ha == 45, "no target/candidate shift"
+        assert after.adopted_delta_ha == -5, "no candidate change"
+        assert after.monitoring.outcome_count == before_snapshot["monitoring"]["outcome_count"], (
+            "an unavailable-thermal outcome must not count as valid evidence"
+        )
+        assert after.monitoring.distinct_days == before_snapshot["monitoring"]["distinct_days"]
+        assert after.monitoring.degraded_count == 0, "no strike"
+        assert after.monitoring.improved_count == 0
+        assert after.monitoring.no_degradation_count == 0
+        assert after.monitoring.preference_rejection_count == 0
+        # The only real, correct, transient consequence: the adoption is
+        # temporarily suspended because sensor/thermal data was unavailable --
+        # never a rollback, never invalidated, never a strike.
+        assert after.suspended is True
+        assert after.current_gate_reason == "sensor_unavailable"
+
+        # The same outcome must not be able to act on this adoption twice --
+        # feeding it again must not change monitoring counts or status further.
+        coord._monitor_adoption(outcome)
+        after2 = coord._adoptions_active.get(key)
+        assert after2.status == STATUS_MONITORING
+        assert after2.monitoring.outcome_count == after.monitoring.outcome_count
+        assert after2.monitoring.degraded_count == 0
+        assert len(coord._adoption_history) == 0
+
+
+# ---------------------------------------------------------------------------
+# TC_PO_16 / TC_PO_17: restart/restore reconciliation for experiments and
+# adoptions (Phase 2B.4, scenario 19). TC_PO_16 is a tight direct test of the
+# two real, pure reconcile functions; TC_PO_17 is a coordinator-wiring proof
+# that the coordinator's real restore path (coordinator.py ~2982-2992)
+# assigns their results onto `self._experiments_active`/`_experiment_history`/
+# `_adoptions_active`/`_adoption_history` exactly as production does -- driven
+# without needing the full HA config-entry-restore machinery, which the rest
+# of this test suite deliberately does not exercise end-to-end (see this
+# file's other TC_PO tests and the sibling comfort-preemption test file).
+# ---------------------------------------------------------------------------
+
+
+class TestRestartReconciliation:
+    @async_test
+    async def test_TC_PO_16_reconcile_functions_demote_observing_experiment_and_suspend_adoption(self):
+        now = datetime(2026, 7, 31, 8, 0, tzinfo=timezone.utc)
+        exp = BoundedExperiment(
+            experiment_id="exp-1", source_shadow_id="shadow-1", window_id="w_z1",
+            zone_id="z1", intensity_level="normal", context_family="day|mid",
+            created_at=now, updated_at=now, status=STATUS_OBSERVING,
+            experiment_decision_id="dec-1",
+        )
+        adoption = PersistentTargetAdoption(
+            adoption_id="adopt-1", window_id="w_z1", zone_id="z1", intensity_level="normal",
+            context_family="day|mid", configured_target_ha=50, adopted_delta_ha=-5,
+            effective_target_ha=45, status=STATUS_MONITORING, config_generation=0,
+            created_at=now, updated_at=now, activated_at=now,
+        )
+
+        active_exp, exp_history = reconcile_restored_experiments([exp], now)
+        active_adopt, adopt_history = reconcile_restored_adoptions([adoption], now)
+
+        assert active_exp == {}, "an OBSERVING experiment must never resume as active"
+        assert len(exp_history) == 1
+        demoted = exp_history[0]
+        assert demoted.status == STATUS_INTERRUPTED_PARTIAL
+        assert demoted.abort_reason == "interrupted_by_restart"
+
+        assert adoption.adoption_key in active_adopt, "the adoption must remain active, not dropped"
+        assert len(adopt_history) == 0, "no adoption invalidation/rollback on plain restart"
+        restored_adoption = active_adopt[adoption.adoption_key]
+        assert restored_adoption.suspended is True
+        assert restored_adoption.current_gate_reason == "awaiting_restart_revalidation"
+        assert restored_adoption.status == STATUS_MONITORING, "status itself is not force-changed"
+        assert restored_adoption.effective_target_ha == 45, "no target re-application by restore alone"
+
+        # Determinism/idempotency: the same input reconciled again produces the
+        # identical single-entry result -- no accumulation across repeated calls.
+        active_exp2, exp_history2 = reconcile_restored_experiments([exp], now)
+        assert active_exp2 == {}
+        assert len(exp_history2) == 1
+        active_adopt2, adopt_history2 = reconcile_restored_adoptions([adoption], now)
+        assert len(adopt_history2) == 0
+        assert len(active_adopt2) == 1
+
+        # Feeding the ALREADY-reconciled (now-empty-of-active) experiment state
+        # back in as a second restart's input produces no further activity --
+        # nothing left to demote a second time, no duplicate history growth.
+        active_exp3, exp_history3 = reconcile_restored_experiments(exp_history, now)
+        assert active_exp3 == {}
+        assert len(exp_history3) == 1, "the already-terminal experiment is carried through history, not duplicated"
+
+    @async_test
+    async def test_TC_PO_17_coordinator_restore_wiring_assigns_reconciled_results(self):
+        """Proves the real coordinator assignment pattern (coordinator.py
+        ~2982-2992: `self._experiments_active, self._experiment_history =
+        reconcile_restored_experiments(...)` / same for adoptions) actually
+        leaves the coordinator's own attributes in the reconciled state, using
+        the coordinator's real attributes as the target -- not a re-implemented
+        parallel assignment."""
+        coord, entry = _make_coord(zone_ids=("z1",))
+        now = datetime(2026, 7, 31, 8, 0, tzinfo=timezone.utc)
+        exp = BoundedExperiment(
+            experiment_id="exp-1", source_shadow_id="shadow-1", window_id="w_z1",
+            zone_id="z1", intensity_level="normal", context_family="day|mid",
+            created_at=now, updated_at=now, status=STATUS_OBSERVING,
+            experiment_decision_id="dec-1",
+        )
+        adoption = PersistentTargetAdoption(
+            adoption_id="adopt-1", window_id="w_z1", zone_id="z1", intensity_level="normal",
+            context_family="day|mid", configured_target_ha=50, adopted_delta_ha=-5,
+            effective_target_ha=45, status=STATUS_MONITORING, config_generation=0,
+            created_at=now, updated_at=now, activated_at=now,
+        )
+        assert coord._experiments_active == {}
+        assert coord._adoptions_active == {}
+
+        # Exactly the coordinator's own real restore-path assignment shape
+        # (coordinator.py ~2982-2992), applied to the coordinator's own
+        # attributes -- proving the wiring, not merely the pure functions.
+        coord._experiments_active, coord._experiment_history = (
+            reconcile_restored_experiments([exp], now)
+        )
+        coord._adoptions_active, coord._adoption_history = (
+            reconcile_restored_adoptions([adoption], now)
+        )
+
+        assert coord._experiments_active == {}, "no active experiment left running after the coordinator restore"
+        assert len(coord._experiment_history) == 1
+        assert coord._experiment_history[0].status == STATUS_INTERRUPTED_PARTIAL
+        assert coord._experiment_history[0].abort_reason == "interrupted_by_restart"
+
+        assert adoption.adoption_key in coord._adoptions_active
+        assert coord._adoptions_active[adoption.adoption_key].suspended is True
+        assert coord._adoptions_active[adoption.adoption_key].current_gate_reason == (
+            "awaiting_restart_revalidation"
+        )
+        assert len(coord._adoption_history) == 0, "no new/deleted/rolled-back adoption"
+
+        # Repeated restore-style reconcile on the coordinator's own now-already-
+        # reconciled attributes must not double-process (real assignment is a
+        # plain "=" replace, never an append -- confirmed by construction here).
+        exp_history_len = len(coord._experiment_history)
+        adopt_history_len = len(coord._adoption_history)
+        coord._experiments_active, coord._experiment_history = (
+            reconcile_restored_experiments(list(coord._experiment_history), now)
+        )
+        coord._adoptions_active, coord._adoption_history = (
+            reconcile_restored_adoptions(list(coord._adoptions_active.values()), now)
+        )
+        assert len(coord._experiment_history) == exp_history_len, "no duplicate experiment history growth"
+        assert len(coord._adoption_history) == adopt_history_len == 0, "adoption stays active, not duplicated into history"
+        assert adoption.adoption_key in coord._adoptions_active

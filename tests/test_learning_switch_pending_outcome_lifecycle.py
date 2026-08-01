@@ -147,6 +147,20 @@ Phase 2B.4 additions (production fix + 4 new tests):
             wiring -- not just the pure functions in isolation -- without
             needing the full HA config-entry-restore machinery this test
             suite deliberately never drives end-to-end.
+
+Phase 2B.5 addition (1 new test; 0 production changes -- the corrected
+audit found no reproducible defect):
+
+  TC_PO_18  Constructor-time restore of `zone_controls`
+            (`config_entry.options["zone_controls"]` ->
+            `SmartShadingCoordinator.__init__` ->
+            `_zone_execution_overrides` -> `effective_zone_execution()`),
+            proven via two independent real constructions (not a post-
+            construction mutation of one already-built instance): the
+            current `learning_enabled`/`active_control_enabled` contract,
+            and the still-supported legacy `observation_enabled` fallback
+            (coordinator.py:1536-1537) -- both asserted before any cycle
+            ever runs.
 """
 from __future__ import annotations
 
@@ -1292,3 +1306,73 @@ class TestRestartReconciliation:
         assert len(coord._experiment_history) == exp_history_len, "no duplicate experiment history growth"
         assert len(coord._adoption_history) == adopt_history_len == 0, "adoption stays active, not duplicated into history"
         assert adoption.adoption_key in coord._adoptions_active
+
+
+# ---------------------------------------------------------------------------
+# TC_PO_18: constructor-time restore of zone_controls (Phase 2B.5, G1)
+# ---------------------------------------------------------------------------
+
+
+class TestConstructorZoneControlsRestore:
+    @async_test
+    async def test_TC_PO_18_constructor_restores_zone_controls_including_legacy_observation_enabled_fallback(self):
+        """Proves the real constructor read path -- coordinator.py:1525-1539 --
+        NOT a post-construction mutation of an already-built instance:
+
+            config_entry.options["zone_controls"]
+            -> SmartShadingCoordinator.__init__()
+            -> self._zone_execution_overrides
+            -> effective_zone_execution(zone_id)
+
+        Two independent real constructions in one test (not one instance whose
+        options are mutated afterward):
+          1. the current two-key contract (`learning_enabled` +
+             `active_control_enabled`),
+          2. the still-supported legacy fallback (`observation_enabled` only,
+             no `learning_enabled` key) -- coordinator.py:1536-1537.
+
+        Both assertions run immediately after construction, before any cycle,
+        before `async_config_entry_first_refresh()` -- proving the restore is
+        synchronous and complete at construction time, matching the real
+        production ordering already established (learning_enabled is fully
+        available before the coordinator's first `_async_update_data` call
+        ever runs).
+        """
+        # -- 1. current contract --
+        hass1 = _make_hass()
+        entry1 = _make_entry()
+        entry1.options = {
+            "zone_controls": {
+                "z1": {"learning_enabled": False, "active_control_enabled": True},
+            }
+        }
+        coord1 = SmartShadingCoordinator(
+            hass1, entry1, lifecycle_config=NightDayLifecycleConfig(id="default"),
+            presence_entity_ids=[],
+        )
+        coord1.zones = {"z1": ZoneConfig(id="z1", name="z1")}
+
+        exec1 = coord1.effective_zone_execution("z1")
+        assert exec1.learning_enabled is False
+        assert exec1.active_control_enabled is True
+
+        # -- 2. legacy fallback (independent construction, own entry/options) --
+        hass2 = _make_hass()
+        entry2 = _make_entry()
+        entry2.options = {
+            "zone_controls": {
+                "legacy-zone": {"observation_enabled": False, "active_control_enabled": False},
+            }
+        }
+        coord2 = SmartShadingCoordinator(
+            hass2, entry2, lifecycle_config=NightDayLifecycleConfig(id="default"),
+            presence_entity_ids=[],
+        )
+        coord2.zones = {"legacy-zone": ZoneConfig(id="legacy-zone", name="legacy-zone")}
+
+        exec2 = coord2.effective_zone_execution("legacy-zone")
+        assert exec2.learning_enabled is False, (
+            "legacy 'observation_enabled' key must still be honored as the "
+            "learning_enabled fallback at construction time"
+        )
+        assert exec2.active_control_enabled is False

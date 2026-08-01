@@ -79,6 +79,19 @@ from custom_components.smartshading.models.learning import (  # noqa: E402
     StateTransitionRecord,
 )
 from custom_components.smartshading.state_machine.states import ShadingState  # noqa: E402
+from custom_components.smartshading.models.pending_outcome import PendingOutcome  # noqa: E402
+from custom_components.smartshading.models.bounded_experiment import (  # noqa: E402
+    BoundedExperiment, STATUS_OBSERVING, STATUS_INTERRUPTED_PARTIAL,
+)
+from custom_components.smartshading.models.persistent_adoption import (  # noqa: E402
+    PersistentTargetAdoption, STATUS_MONITORING,
+)
+from custom_components.smartshading.engines.experiment_engine import (  # noqa: E402
+    reconcile_restored_experiments,
+)
+from custom_components.smartshading.engines.adoption_engine import (  # noqa: E402
+    reconcile_restored_adoptions,
+)
 
 _NOW = datetime(2026, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
 
@@ -256,3 +269,195 @@ class TestMultiEntryIsolation:
 
         assert result is not None
         assert adapter.migration_dirty is False
+
+
+class TestPendingExperimentAdoptionAdapterRoundtrip:
+    """Phase 2B.5 (G3-G5): closes the one remaining gap in the restart-
+    reconciliation proof chain -- TC_PO_16 (tests/test_learning_switch_
+    pending_outcome_lifecycle.py) proves the real, pure reconcile functions
+    in isolation on in-memory model objects; TC_PO_17 proves the coordinator
+    assigns their results onto its own real attributes. Neither exercises
+    the real adapter serialize/deserialize contract in between. This test
+    drives exactly that missing link:
+
+        real async_save() -> real persisted payload -> new adapter instance
+        -> real async_restore() -> real Model.from_dict() deserialization
+        -> the same real reconcile_restored_experiments/adoptions functions
+
+    It does NOT exercise a full coordinator restart, a config-entry reload,
+    or a Home Assistant process restart -- coordinator-level restore wiring
+    is TC_PO_17's job; this test is scoped to the adapter contract only.
+    """
+
+    def test_pending_outcome_experiment_adoption_survive_real_save_restore_and_reconcile_correctly(self):
+        entry_id = "lifecycle-roundtrip-entry"
+        window_id = "w-lifecycle"
+        decision_ts = datetime(2026, 1, 10, 9, 30, 0, tzinfo=timezone.utc)
+
+        pending = PendingOutcome(
+            window_id=window_id,
+            decision_timestamp=decision_ts,
+            from_state=ShadingState.OPEN,
+            to_state=ShadingState.NORMAL_SHADE,
+            decided_by="tier2_comfort",
+            lifecycle_state="day",
+            indoor_temp_outcome_delay_min=30,
+            target_position=45,
+            indoor_temp_at_decision=23.5,
+            solar_exposure_at_decision=310.0,
+            decision_id="dec-lifecycle-1",
+            experiment_id="exp-lifecycle-1",
+            config_fingerprint="fp-lifecycle-abc",
+            created_at_utc=decision_ts,
+            restart_count=0,
+        )
+
+        experiment = BoundedExperiment(
+            experiment_id="exp-lifecycle-1", source_shadow_id="shadow-lifecycle-1",
+            window_id=window_id, zone_id="zone-lifecycle", intensity_level="normal",
+            context_family="day|mid", created_at=decision_ts, updated_at=decision_ts,
+            status=STATUS_OBSERVING, confirmation="command_sent",
+            source_decision_ids=("dec-lifecycle-1",), experiment_decision_id="dec-lifecycle-1",
+            config_generation=3, baseline_parameter_target_ha=60,
+            experiment_parameter_target_ha=55, expected_final_candidate_target_ha=55,
+            actual_dispatched_target_ha=55, delta_ha=-5,
+        )
+
+        adoption = PersistentTargetAdoption(
+            adoption_id="adopt-lifecycle-1", window_id=window_id, zone_id="zone-lifecycle",
+            intensity_level="normal", context_family="day|mid",
+            configured_target_ha=60, adopted_delta_ha=-5, effective_target_ha=55,
+            source_experiment_ids=("exp-lifecycle-0",), source_decision_ids=("dec-lifecycle-0",),
+            consumed_experiment_ids=("exp-lifecycle-0",),
+            created_at=decision_ts, updated_at=decision_ts, activated_at=decision_ts,
+            config_generation=3, status=STATUS_MONITORING, suspended=False,
+            confidence=0.72, reliability=0.68,
+        )
+
+        adapter1 = _make_adapter(entry_id)
+        store1 = LearningStore()
+        # Populate the restore baseline (fresh_start) before saving, matching
+        # the real production call shape (async_save is always preceded by
+        # at least one async_restore in the real coordinator lifecycle).
+        asyncio.run(adapter1.async_restore(store1, _NOW))
+
+        # Real contract (learning_persistence.py:1296-1321, matches
+        # coordinator.py's _build_save_kwargs exactly): pending_outcomes are
+        # passed as RAW model objects (the adapter calls po.to_dict()
+        # internally, learning_persistence.py:547-550); bounded_experiments/
+        # persistent_adoptions are passed PRE-SERIALIZED (coordinator.py's
+        # _experiments_storage()/_adoptions_storage() already return
+        # [e.to_dict() for e in ...] -- learning_persistence.py:568,570 store
+        # them as-is, with no second .to_dict() call).
+        saved = asyncio.run(adapter1.async_save(
+            store1, {window_id}, _NOW,
+            pending_outcomes=[pending],
+            bounded_experiments=[experiment.to_dict()],
+            persistent_adoptions=[adoption.to_dict()],
+        ))
+        assert saved is True
+
+        # New adapter instance, same entry_id, new empty LearningStore --
+        # simulates a fresh restore from the persisted file, not a mutation
+        # of the same in-memory objects.
+        adapter2 = _make_adapter(entry_id)
+        store2 = LearningStore()
+        asyncio.run(adapter2.async_restore(store2, _NOW))
+        extras = adapter2.last_restore_extras
+
+        assert extras is not None
+        assert len(extras.pending_outcomes) == 1
+        assert len(extras.bounded_experiments) == 1
+        assert len(extras.persistent_adoptions) == 1
+
+        restored_pending = extras.pending_outcomes[0]
+        assert restored_pending.window_id == window_id
+        assert restored_pending.decision_timestamp == decision_ts
+        assert restored_pending.from_state == pending.from_state
+        assert restored_pending.to_state == ShadingState.NORMAL_SHADE
+        assert restored_pending.lifecycle_state == "day"
+        assert restored_pending.indoor_temp_outcome_delay_min == 30
+        assert restored_pending.decision_id == "dec-lifecycle-1"
+        assert restored_pending.experiment_id == "exp-lifecycle-1"
+        assert restored_pending.config_fingerprint == "fp-lifecycle-abc"
+        assert restored_pending.created_at_utc == decision_ts
+        assert restored_pending.restart_count == 0
+
+        restored_experiment = extras.bounded_experiments[0]
+        assert restored_experiment.experiment_id == "exp-lifecycle-1"
+        assert restored_experiment.window_id == window_id
+        assert restored_experiment.zone_id == "zone-lifecycle"
+        assert restored_experiment.status == STATUS_OBSERVING
+        assert restored_experiment.confirmation == "command_sent"
+        assert restored_experiment.source_decision_ids == ("dec-lifecycle-1",)
+        assert restored_experiment.experiment_decision_id == "dec-lifecycle-1"
+        assert restored_experiment.config_generation == 3
+        assert restored_experiment.baseline_parameter_target_ha == 60
+        assert restored_experiment.expected_final_candidate_target_ha == 55
+        assert restored_experiment.actual_dispatched_target_ha == 55
+        assert restored_experiment.delta_ha == -5
+        assert restored_experiment.created_at == decision_ts
+        assert restored_experiment.updated_at == decision_ts
+
+        restored_adoption = extras.persistent_adoptions[0]
+        assert restored_adoption.adoption_id == "adopt-lifecycle-1"
+        assert restored_adoption.window_id == window_id
+        assert restored_adoption.zone_id == "zone-lifecycle"
+        assert restored_adoption.status == STATUS_MONITORING
+        assert restored_adoption.suspended is False
+        assert restored_adoption.adopted_delta_ha == -5
+        assert restored_adoption.effective_target_ha == 55
+        assert restored_adoption.source_experiment_ids == ("exp-lifecycle-0",)
+        assert restored_adoption.source_decision_ids == ("dec-lifecycle-0",)
+        assert restored_adoption.consumed_experiment_ids == ("exp-lifecycle-0",)
+        assert restored_adoption.config_generation == 3
+        assert restored_adoption.confidence == 0.72
+        assert restored_adoption.reliability == 0.68
+        assert restored_adoption.current_gate_reason is None
+        assert restored_adoption.created_at == decision_ts
+        assert restored_adoption.updated_at == decision_ts
+
+        # Apply the real, current restart-reconciliation rules to the
+        # ACTUALLY-DESERIALIZED objects -- not the original in-memory ones --
+        # exactly as the coordinator's real restore path does
+        # (coordinator.py ~2984-2992).
+        active_experiments, experiment_history = reconcile_restored_experiments(
+            extras.bounded_experiments, _NOW
+        )
+        active_adoptions, adoption_history = reconcile_restored_adoptions(
+            extras.persistent_adoptions, _NOW
+        )
+
+        # Experiment: an OBSERVING experiment must never silently resume.
+        assert active_experiments == {}, "no active experiment must survive restart-reconciliation"
+        assert len(experiment_history) == 1
+        demoted = experiment_history[0]
+        assert demoted.status == STATUS_INTERRUPTED_PARTIAL
+        assert demoted.abort_reason == "interrupted_by_restart"
+
+        # Adoption: stays active, not historized, but suspended pending revalidation.
+        assert len(active_adoptions) == 1, "the adoption must remain an active adoption, not be dropped"
+        assert len(adoption_history) == 0, (
+            "a plain non-terminal adoption must not be rolled back/invalidated/"
+            "historized by restart-reconciliation alone"
+        )
+        reconciled_adoption = active_adoptions[adoption.adoption_key]
+        assert reconciled_adoption.suspended is True
+        assert reconciled_adoption.current_gate_reason == "awaiting_restart_revalidation"
+        assert reconciled_adoption.status == STATUS_MONITORING, "status itself is not force-changed"
+        assert reconciled_adoption.effective_target_ha == 55, "no target re-application by restore alone"
+
+        # Idempotency: matches the real API contract of both reconcile
+        # functions (stateless, deterministic pure functions of their input
+        # list) -- re-running with the SAME restored input again must
+        # produce the identical single-entry result, not accumulate.
+        active_experiments_2, experiment_history_2 = reconcile_restored_experiments(
+            extras.bounded_experiments, _NOW
+        )
+        assert active_experiments_2 == {}
+        assert len(experiment_history_2) == 1
+        active_adoptions_2, adoption_history_2 = reconcile_restored_adoptions(
+            extras.persistent_adoptions, _NOW
+        )
+        assert len(adoption_history_2) == 0
+        assert len(active_adoptions_2) == 1

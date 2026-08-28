@@ -331,6 +331,41 @@ class TestBasicDispatch:
         results = asyncio.run(_run())
         assert calls == ["cover.w1"]
         assert results[("w1", "cover.w1")].status is ExecutionStatus.SENT
+        # B3-012: the real coordinator wiring records the classification
+        # this item was actually dispatched under (target_position_ha=100
+        # -> FULL_OPEN, see _state()'s own default).
+        assert results[("w1", "cover.w1")].dispatch_target_class == "full_open"
+
+    def test_full_close_target_is_classified_and_dispatched_like_full_open(
+        self, monkeypatch,
+    ) -> None:
+        # B3-012: a 0% target must reach the same fast dispatch path as a
+        # 100% target -- proven here via the real coordinator wiring
+        # (target_position_ha=0 -> FULL_CLOSE, not INTERMEDIATE).
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=0, current_position_ha=100)
+        _setup_coord(coord, [s1])
+        calls = []
+
+        async def fake(hass, intent, *, now_utc):
+            calls.append(intent.cover_entity_id)
+            return await _fake_sent_dispatch(hass, intent, now_utc=now_utc)
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, fake)
+        _patch_wait_for_travel_completion(monkeypatch, coord, _fake_completion_factory())
+        _patch_asyncio_sleep(monkeypatch, coord, lambda s: asyncio.sleep(0))
+
+        async def _run():
+            zone_order, window_order_in_zone = _zone_maps([s1])
+            return await coord._predispatch_sequential_plan(
+                _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
+            )
+
+        results = asyncio.run(_run())
+        assert calls == ["cover.w1"]
+        assert results[("w1", "cover.w1")].status is ExecutionStatus.SENT
+        assert results[("w1", "cover.w1")].dispatch_target_class == "full_close"
 
 
 class TestSafetyExcluded:

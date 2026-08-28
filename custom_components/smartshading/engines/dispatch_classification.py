@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from ..cover_control.position_semantics import (
+    HA_CLOSED,
     HA_OPEN,
     clamp_position,
     positions_within_tolerance,
@@ -52,11 +53,17 @@ _DISPATCH_ACTION_UNCHANGED = "unchanged"
 
 
 class DispatchTargetClass(str, Enum):
-    """The four — and only the four — semantic dispatch classes. Stable,
+    """The five — and only the five — semantic dispatch classes. Stable,
     lowercase-string-serializable values (used directly in exports/
-    diagnostics without a separate mapping table)."""
+    diagnostics without a separate mapping table).
+
+    B3-012: FULL_CLOSE added alongside FULL_OPEN so a fully-closed (0%)
+    target is never dispatched through the same completion-wait chain as a
+    genuine partial (INTERMEDIATE) target — see classify_dispatch_target()'s
+    own docstring for the exact-value boundary rule."""
 
     FULL_OPEN = "full_open"
+    FULL_CLOSE = "full_close"
     INTERMEDIATE = "intermediate"
     NO_MOVEMENT = "no_movement"
     BLOCKED = "blocked"
@@ -108,10 +115,22 @@ def classify_dispatch_target(
       2. NO_MOVEMENT    — the decision pipeline already says nothing changed
                           (dispatch_action == "unchanged"), or the current
                           position is already within tolerance of the target.
-      3. FULL_OPEN      — target is within tolerance of HA_OPEN (100).
-      4. INTERMEDIATE   — everything else that requires movement (including
-                          a fully-closed target of 0 — never lost to a
-                          truthiness check).
+                          This is the ONLY place position_tolerance affects
+                          classification — see B3-012 note below.
+      3. FULL_OPEN      — target is EXACTLY HA_OPEN (100).
+      4. FULL_CLOSE     — target is EXACTLY HA_CLOSED (0).
+      5. INTERMEDIATE   — everything else that requires movement (1-99).
+
+    B3-012: FULL_OPEN/FULL_CLOSE are decided on the exact normalized target
+    value, never blurred by position_tolerance — a target of 96 or 99 is
+    INTERMEDIATE, not FULL_OPEN, even though position_tolerance's default
+    (5) would consider it "close enough" for the separate NO_MOVEMENT /
+    completion "already there" judgment above. Conflating the two would let
+    a genuine near-boundary movement silently skip the completion-wait
+    chain B3-013's INTERMEDIATE handling depends on. NO_MOVEMENT's own
+    tolerance check runs first and is unaffected: a target within tolerance
+    of the CURRENT position is still classified NO_MOVEMENT regardless of
+    where it sits relative to 0/100.
 
     ``is_safety``: safety items are never part of a comfort DispatchPlan
     (Phase 2+), but if safety-sourced data is ever passed through this pure
@@ -145,9 +164,14 @@ def classify_dispatch_target(
             DispatchTargetClass.NO_MOVEMENT, "no_movement:within_tolerance", target, False,
         )
 
-    if positions_within_tolerance(target, HA_OPEN, position_tolerance):
+    if target == HA_OPEN:
         return DispatchClassification(
-            DispatchTargetClass.FULL_OPEN, "full_open:within_open_tolerance", target, True,
+            DispatchTargetClass.FULL_OPEN, "full_open:exact_target", target, True,
+        )
+
+    if target == HA_CLOSED:
+        return DispatchClassification(
+            DispatchTargetClass.FULL_CLOSE, "full_close:exact_target", target, True,
         )
 
     return DispatchClassification(

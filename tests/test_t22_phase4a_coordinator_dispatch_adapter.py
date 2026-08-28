@@ -67,9 +67,12 @@ class TestClassifyCoverIntent:
         assert c.target_class is DispatchTargetClass.FULL_OPEN
 
     def test_target_zero_preserved_not_lost_to_truthiness(self):
+        # B3-012: target=0 is FULL_CLOSE, not INTERMEDIATE -- but the point
+        # of this test (0 is never lost to a falsy-value truthiness check)
+        # holds under either class.
         intent = _intent(target_position_ha=0)
         c = classify_cover_intent(intent, current_position_ha=80)
-        assert c.target_class is DispatchTargetClass.INTERMEDIATE
+        assert c.target_class is DispatchTargetClass.FULL_CLOSE
         assert c.normalized_target == 0
 
     def test_no_op_same_position_maps_to_no_movement_not_blocked(self):

@@ -44,7 +44,20 @@ from ..engines.dispatch_classification import DispatchTargetClass
 FULL_OPEN_START_INTERVAL_S = 2.0
 INTERMEDIATE_POST_COMPLETION_PAUSE_S = 2.0
 
-_EXECUTABLE_CLASSES = frozenset({DispatchTargetClass.FULL_OPEN, DispatchTargetClass.INTERMEDIATE})
+_EXECUTABLE_CLASSES = frozenset({
+    DispatchTargetClass.FULL_OPEN, DispatchTargetClass.FULL_CLOSE,
+    DispatchTargetClass.INTERMEDIATE,
+})
+
+# B3-012: FULL_CLOSE (0%) is dispatched exactly like FULL_OPEN already was —
+# fire with the fixed start-to-start interval, never wait for completion.
+# Reuses the SAME existing fast path (no new timing behavior): before this,
+# a 0% target was misclassified INTERMEDIATE and incorrectly ran the full
+# completion-wait chain below. B3-013 (not this ticket) is where the actual
+# pacing/queue/zone-package rules themselves may change.
+_NO_COMPLETION_WAIT_CLASSES = frozenset({
+    DispatchTargetClass.FULL_OPEN, DispatchTargetClass.FULL_CLOSE,
+})
 
 
 # ---------------------------------------------------------------------------
@@ -175,8 +188,11 @@ class DispatchPlanExecutor:
         preempted = False
 
         # anchor: the earliest permitted start time for the NEXT paced item
-        # (FULL_OPEN-to-FULL_OPEN, and the single FULL_OPEN-to-first-
-        # INTERMEDIATE transition) — None until the first FULL_OPEN starts.
+        # (FULL_OPEN/FULL_CLOSE-to-FULL_OPEN/FULL_CLOSE, and the single
+        # FULL_OPEN/FULL_CLOSE-to-first-INTERMEDIATE transition) — None
+        # until the first no-completion-wait item starts. The variable name
+        # predates B3-012's FULL_CLOSE class but the same anchor now covers
+        # both (see _NO_COMPLETION_WAIT_CLASSES).
         next_paced_start: float | None = None
         any_full_open_dispatched = False
         had_error = False
@@ -212,7 +228,7 @@ class DispatchPlanExecutor:
                 and next_paced_start is not None
             )
             needs_start_pacing = (
-                item.target_class is DispatchTargetClass.FULL_OPEN
+                item.target_class in _NO_COMPLETION_WAIT_CLASSES
                 or is_first_intermediate_after_full_open
             )
             if needs_start_pacing and next_paced_start is not None:
@@ -279,7 +295,7 @@ class DispatchPlanExecutor:
                     item=item, status="dispatch_failed", dispatch_started=False,
                     error_type=type(exc).__name__,
                 ))
-                if item.target_class is DispatchTargetClass.FULL_OPEN:
+                if item.target_class in _NO_COMPLETION_WAIT_CLASSES:
                     any_full_open_dispatched = True
                     next_paced_start = dispatch_start_time + FULL_OPEN_START_INTERVAL_S
                 continue
@@ -291,15 +307,15 @@ class DispatchPlanExecutor:
                     error_type=outcome.error_type,
                 ))
                 # A dispatch that failed BEFORE actually starting never
-                # anchors the next FULL_OPEN's pacing to a real start time —
-                # but FULL_OPEN pacing must still not go backwards for later
-                # items, so anchor at "now" defensively.
-                if item.target_class is DispatchTargetClass.FULL_OPEN:
+                # anchors the next FULL_OPEN/FULL_CLOSE pacing to a real
+                # start time — but pacing must still not go backwards for
+                # later items, so anchor at "now" defensively.
+                if item.target_class in _NO_COMPLETION_WAIT_CLASSES:
                     any_full_open_dispatched = True
                     next_paced_start = dispatch_start_time + FULL_OPEN_START_INTERVAL_S
                 continue
 
-            if item.target_class is DispatchTargetClass.FULL_OPEN:
+            if item.target_class in _NO_COMPLETION_WAIT_CLASSES:
                 any_full_open_dispatched = True
                 next_paced_start = dispatch_start_time + FULL_OPEN_START_INTERVAL_S
                 results.append(DispatchItemExecutionResult(

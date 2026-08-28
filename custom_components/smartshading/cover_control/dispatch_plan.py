@@ -30,18 +30,23 @@ from .position_semantics import HA_CLOSED, HA_OPEN
 
 # ---------------------------------------------------------------------------
 # Explicit, central classification priority — never alphabetical/enum-string
-# sort order. FULL_OPEN first (fastest to start), then INTERMEDIATE, then the
-# two non-executable classes (kept sortable/present for diagnostics, but
-# never mixed ahead of real movement items).
+# sort order. FULL_OPEN/FULL_CLOSE first (fastest to start, no completion
+# wait — B3-012), then INTERMEDIATE, then the two non-executable classes
+# (kept sortable/present for diagnostics, but never mixed ahead of real
+# movement items).
 # ---------------------------------------------------------------------------
 _CLASS_PRIORITY: dict[DispatchTargetClass, int] = {
     DispatchTargetClass.FULL_OPEN: 0,
+    DispatchTargetClass.FULL_CLOSE: 0,
     DispatchTargetClass.INTERMEDIATE: 1,
     DispatchTargetClass.NO_MOVEMENT: 2,
     DispatchTargetClass.BLOCKED: 3,
 }
 
-_EXECUTABLE_CLASSES = frozenset({DispatchTargetClass.FULL_OPEN, DispatchTargetClass.INTERMEDIATE})
+_EXECUTABLE_CLASSES = frozenset({
+    DispatchTargetClass.FULL_OPEN, DispatchTargetClass.FULL_CLOSE,
+    DispatchTargetClass.INTERMEDIATE,
+})
 
 # Phase 2 never introduces a "safety class" — if a caller passes an item
 # whose reason names a known safety-execution path, the builder rejects the
@@ -109,6 +114,10 @@ class DispatchPlan:
         return tuple(i for i in self.items if i.target_class is DispatchTargetClass.FULL_OPEN)
 
     @property
+    def full_close_items(self) -> tuple[DispatchPlanItem, ...]:
+        return tuple(i for i in self.items if i.target_class is DispatchTargetClass.FULL_CLOSE)
+
+    @property
     def intermediate_items(self) -> tuple[DispatchPlanItem, ...]:
         return tuple(i for i in self.items if i.target_class is DispatchTargetClass.INTERMEDIATE)
 
@@ -150,14 +159,18 @@ def _validate_target(target_ha, *, target_class: DispatchTargetClass) -> int | N
     as_int = round(as_float)
     if not (HA_CLOSED <= as_int <= HA_OPEN):
         raise ValueError(f"target_ha {as_int} outside canonical range [{HA_CLOSED}, {HA_OPEN}]")
-    # One-directional semantic consistency check (see Phase 2 closing report
-    # for why this is the only check possible here without re-deriving
-    # Phase 1's tolerance logic): an INTERMEDIATE item can never legitimately
-    # carry the exact open value — under any positive tolerance, target_ha
-    # == HA_OPEN is unambiguously FULL_OPEN territory, already decided by
-    # Phase 1 before this item ever reached the plan builder.
+    # Semantic consistency check (see Phase 2 closing report for why this is
+    # the only check possible here without re-deriving Phase 1's own logic):
+    # an INTERMEDIATE item can never legitimately carry the exact open or
+    # closed value. B3-012 made Phase 1's FULL_OPEN/FULL_CLOSE boundary
+    # exact (never tolerance-blurred), so target_ha == HA_OPEN /
+    # target_ha == HA_CLOSED is unambiguously FULL_OPEN/FULL_CLOSE
+    # territory, already decided by Phase 1 before this item ever reached
+    # the plan builder.
     if target_class is DispatchTargetClass.INTERMEDIATE and as_int == HA_OPEN:
         raise ValueError("INTERMEDIATE item cannot carry the fully-open target value")
+    if target_class is DispatchTargetClass.INTERMEDIATE and as_int == HA_CLOSED:
+        raise ValueError("INTERMEDIATE item cannot carry the fully-closed target value")
     return as_int
 
 

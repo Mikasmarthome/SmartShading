@@ -87,7 +87,9 @@ class TestDataModel:
             _plan([_item(target_ha=math.inf)])
 
     def test_target_zero_remains_valid(self) -> None:
-        p = _plan([_item(target_ha=0)])
+        # B3-012: target=0 is FULL_CLOSE, not INTERMEDIATE (see
+        # test_intermediate_cannot_carry_full_close_value below).
+        p = _plan([_item(target_ha=0, target_class=DispatchTargetClass.FULL_CLOSE)])
         assert p.items[0].target_ha == 0
 
     def test_target_100_remains_valid(self) -> None:
@@ -97,6 +99,11 @@ class TestDataModel:
     def test_intermediate_cannot_carry_full_open_value(self) -> None:
         with pytest.raises(ValueError):
             _plan([_item(target_ha=100, target_class=DispatchTargetClass.INTERMEDIATE)])
+
+    def test_intermediate_cannot_carry_full_close_value(self) -> None:
+        # B3-012: symmetric to the FULL_OPEN check above.
+        with pytest.raises(ValueError):
+            _plan([_item(target_ha=0, target_class=DispatchTargetClass.INTERMEDIATE)])
 
     def test_executable_item_requires_target(self) -> None:
         with pytest.raises(ValueError):

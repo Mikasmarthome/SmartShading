@@ -7908,6 +7908,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     return result
 
             result = await _do_dispatch()
+            # B3-012: record the classification this item was actually
+            # dispatched under (already final/revalidated by this point —
+            # plan_item is the SAME item live-revalidated by
+            # DispatchPlanExecutor immediately before dispatch_item was
+            # called) — diagnostics only, never re-interpreted for control.
+            result = replace(result, dispatch_target_class=plan_item.target_class.value)
             exec_result_by_entity[plan_item.cover_entity_id] = result
             return DispatchOutcome(
                 success=result.status in (ExecutionStatus.SENT,),

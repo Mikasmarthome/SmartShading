@@ -241,6 +241,16 @@ class ExecutionResult:
     """How many intents were dispatched concurrently in this result's batch
     (PARALLEL mode only). None outside PARALLEL mode."""
 
+    # --- B3-012: dispatch target classification diagnostics (additive) -----
+    dispatch_target_class: str | None = None
+    """engines.dispatch_classification.DispatchTargetClass.value
+    ("full_open", "full_close", "intermediate", "no_movement", "blocked")
+    for this dispatch, as classified by classify_cover_intent() on the
+    already-final, already-revalidated target this item was actually
+    dispatched with. None when classification was never computed for this
+    result (e.g. safety's own fastlane, which bypasses this classifier
+    entirely, or PARALLEL-mode results)."""
+
 
 # ---------------------------------------------------------------------------
 # ExecutionPlanResult

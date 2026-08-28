@@ -1,8 +1,12 @@
 """T22 Phase 1 — pure semantic dispatch classification
-(engines/dispatch_classification.py). Covers: FULL_OPEN/INTERMEDIATE/
-NO_MOVEMENT/BLOCKED content tests, robustness edge cases, and architecture
-protection tests (no HA/coordinator/service imports, no queue/executor,
-exactly four class values).
+(engines/dispatch_classification.py). Covers: FULL_OPEN/FULL_CLOSE/
+INTERMEDIATE/NO_MOVEMENT/BLOCKED content tests, robustness edge cases, and
+architecture protection tests (no HA/coordinator/service imports, no
+queue/executor, exactly five class values).
+
+B3-012: FULL_CLOSE added, and FULL_OPEN/FULL_CLOSE classification changed
+from tolerance-blurred to the exact normalized target value (0/100) --
+see TestFullOpen/TestFullClose for the corrected boundary tests.
 """
 from __future__ import annotations
 
@@ -28,9 +32,16 @@ class TestFullOpen:
         assert r.target_class is DispatchTargetClass.FULL_OPEN
         assert r.movement_required is True
 
-    def test_target_within_open_tolerance(self) -> None:
+    def test_target_near_open_within_tolerance_is_intermediate_not_full_open(self) -> None:
+        # B3-012: FULL_OPEN/FULL_CLOSE are decided on the EXACT normalized
+        # target, never blurred by position_tolerance — a target of 98 is
+        # a genuine partial (INTERMEDIATE) target, even though 98 would be
+        # "close enough" to already-being-at-100 for the SEPARATE
+        # NO_MOVEMENT/completion "already there" judgment (which only
+        # applies when the CURRENT position, not the target itself, is
+        # near the boundary — see TestNoMovement).
         r = _classify(resolved_target_ha=98, current_position_ha=50, dispatch_action="sent")
-        assert r.target_class is DispatchTargetClass.FULL_OPEN
+        assert r.target_class is DispatchTargetClass.INTERMEDIATE
 
     def test_target_just_outside_open_tolerance_is_intermediate(self) -> None:
         r = _classify(resolved_target_ha=96, current_position_ha=50, dispatch_action="sent")
@@ -47,17 +58,45 @@ class TestFullOpen:
         assert r.movement_required is True
 
 
+class TestFullClose:
+    """B3-012: FULL_CLOSE (target exactly 0) must never be classified
+    INTERMEDIATE — it is dispatched like FULL_OPEN (no completion wait,
+    fixed start interval), never through the completion-wait chain."""
+
+    def test_exact_full_close_target(self) -> None:
+        r = _classify(resolved_target_ha=0, current_position_ha=100, dispatch_action="sent")
+        assert r.target_class is DispatchTargetClass.FULL_CLOSE
+        assert r.normalized_target == 0
+        assert r.movement_required is True
+
+    def test_target_near_closed_within_tolerance_is_intermediate_not_full_close(self) -> None:
+        # Same exact-boundary rule as FULL_OPEN, mirrored at the 0 end.
+        r = _classify(resolved_target_ha=2, current_position_ha=100, dispatch_action="sent")
+        assert r.target_class is DispatchTargetClass.INTERMEDIATE
+
+    def test_closed_target_with_unknown_current_position_is_full_close(self) -> None:
+        # A closed target must not be assumed equal to an unknown current
+        # position (that would silently fabricate a "nothing to do"
+        # NO_MOVEMENT conclusion the data doesn't support) -- but it is
+        # still unambiguously FULL_CLOSE by its own exact value, not a
+        # generic INTERMEDIATE movement.
+        r = _classify(resolved_target_ha=0, current_position_ha=None, dispatch_action="sent")
+        assert r.target_class is DispatchTargetClass.FULL_CLOSE
+
+    def test_current_not_at_target_requires_movement(self) -> None:
+        r = _classify(resolved_target_ha=0, current_position_ha=80, dispatch_action="sent")
+        assert r.movement_required is True
+
+
 class TestIntermediate:
     def test_typical_shading_position(self) -> None:
         r = _classify(resolved_target_ha=40, current_position_ha=100, dispatch_action="sent")
         assert r.target_class is DispatchTargetClass.INTERMEDIATE
 
-    def test_fully_closed_target(self) -> None:
-        r = _classify(resolved_target_ha=0, current_position_ha=100, dispatch_action="sent")
-        assert r.target_class is DispatchTargetClass.INTERMEDIATE
-        assert r.normalized_target == 0
-
     def test_target_zero_is_preserved_not_lost(self) -> None:
+        # target=0 is now FULL_CLOSE (see TestFullClose), never lost to a
+        # truthiness check or misclassified as BLOCKED -- the boundary
+        # value itself is asserted here, not INTERMEDIATE membership.
         r = _classify(resolved_target_ha=0, current_position_ha=50, dispatch_action="sent")
         assert r.normalized_target == 0
         assert r.target_class is not DispatchTargetClass.BLOCKED
@@ -74,11 +113,15 @@ class TestIntermediate:
         r = _classify(resolved_target_ha=40, current_position_ha=90, dispatch_action="sent")
         assert r.target_class is DispatchTargetClass.INTERMEDIATE
 
-    def test_closed_target_with_unknown_current_position_is_not_assumed_no_movement(self) -> None:
-        # A closed target must not be assumed equal to an unknown current
-        # position — that would silently fabricate a "nothing to do"
-        # conclusion the data doesn't actually support.
-        r = _classify(resolved_target_ha=0, current_position_ha=None, dispatch_action="sent")
+    def test_boundary_values_1_and_99_are_intermediate(self) -> None:
+        # B3-012 explicit target-boundary requirement.
+        r1 = _classify(resolved_target_ha=1, current_position_ha=50, dispatch_action="sent")
+        assert r1.target_class is DispatchTargetClass.INTERMEDIATE
+        r99 = _classify(resolved_target_ha=99, current_position_ha=50, dispatch_action="sent")
+        assert r99.target_class is DispatchTargetClass.INTERMEDIATE
+
+    def test_midpoint_50_is_intermediate(self) -> None:
+        r = _classify(resolved_target_ha=50, current_position_ha=90, dispatch_action="sent")
         assert r.target_class is DispatchTargetClass.INTERMEDIATE
 
 
@@ -161,10 +204,13 @@ class TestSafetyPassthrough:
     def test_safety_movement_not_silently_lost(self) -> None:
         # A safety target requiring real movement, with only a comfort-only
         # block reason present, must classify by its actual target/position
-        # data — never silently vanish as BLOCKED.
+        # data — never silently vanish as BLOCKED. target=0 is FULL_CLOSE
+        # (B3-012's exact-value boundary), not INTERMEDIATE, but the point
+        # of this test — real movement, not swallowed as BLOCKED — holds
+        # either way.
         r = _classify(resolved_target_ha=0, current_position_ha=80, dispatch_action="sent",
                       blocked_reason="same_position", is_safety=True)
-        assert r.target_class is DispatchTargetClass.INTERMEDIATE
+        assert r.target_class is DispatchTargetClass.FULL_CLOSE
         assert r.movement_required is True
 
 
@@ -249,9 +295,9 @@ class TestPriorityOrder:
 
 
 class TestArchitectureProtection:
-    def test_module_has_exactly_the_four_approved_enum_values(self) -> None:
+    def test_module_has_exactly_the_five_approved_enum_values(self) -> None:
         assert {m.value for m in DispatchTargetClass} == {
-            "full_open", "intermediate", "no_movement", "blocked",
+            "full_open", "full_close", "intermediate", "no_movement", "blocked",
         }
 
     def test_enum_values_are_stable_lowercase_strings(self) -> None:

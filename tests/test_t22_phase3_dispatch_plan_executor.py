@@ -323,6 +323,60 @@ class TestFullOpenPacing:
 
 
 # ---------------------------------------------------------------------------
+# B3-012: FULL_CLOSE pacing -- must behave IDENTICALLY to FULL_OPEN's own
+# existing pacing (same fixed interval, no completion wait). Reuses
+# FULL_OPEN's own already-tested fast path; not new timing logic.
+# ---------------------------------------------------------------------------
+
+class TestFullClosePacing:
+    @async_test
+    async def test_first_item_starts_immediately(self):
+        clock = FakeClock()
+        h = Harness(clock)
+        plan = _plan([_item(cover_entity_id="c1", target_ha=0, target_class=DispatchTargetClass.FULL_CLOSE)])
+        await _executor().execute_plan(plan=plan, **h.kwargs())
+        assert h.dispatch_calls == [("c1", 0.0)]
+
+    @async_test
+    async def test_second_item_starts_exactly_2s_after_first_start(self):
+        clock = FakeClock()
+        h = Harness(clock)
+        plan = _plan([
+            _item(cover_entity_id="c1", target_ha=0, target_class=DispatchTargetClass.FULL_CLOSE),
+            _item(cover_entity_id="c2", target_ha=0, target_class=DispatchTargetClass.FULL_CLOSE,
+                 cover_index=1),
+        ])
+        await _executor().execute_plan(plan=plan, **h.kwargs())
+        assert h.dispatch_calls == [("c1", 0.0), ("c2", 2.0)]
+
+    @async_test
+    async def test_full_close_never_waits_for_completion(self):
+        # The exact B3-012 acceptance criterion: 0% must never enter the
+        # completion-wait chain a genuine INTERMEDIATE target would.
+        clock = FakeClock()
+        h = Harness(clock)
+        plan = _plan([_item(cover_entity_id="c1", target_ha=0, target_class=DispatchTargetClass.FULL_CLOSE)])
+        await _executor().execute_plan(plan=plan, **h.kwargs())
+        assert h.completion_calls == []
+
+    @async_test
+    async def test_mixed_full_open_and_full_close_share_the_same_pacing_anchor(self):
+        # FULL_OPEN and FULL_CLOSE are both priority-0 (see dispatch_plan.py
+        # _CLASS_PRIORITY) -- a mixed plan paces them against EACH OTHER,
+        # not as two independent sequences.
+        clock = FakeClock()
+        h = Harness(clock)
+        plan = _plan([
+            _item(cover_entity_id="c1", target_ha=100, target_class=DispatchTargetClass.FULL_OPEN),
+            _item(cover_entity_id="c2", target_ha=0, target_class=DispatchTargetClass.FULL_CLOSE,
+                 cover_index=1),
+        ])
+        await _executor().execute_plan(plan=plan, **h.kwargs())
+        assert h.dispatch_calls == [("c1", 0.0), ("c2", 2.0)]
+        assert h.completion_calls == []
+
+
+# ---------------------------------------------------------------------------
 # FULL_OPEN -> INTERMEDIATE transition
 # ---------------------------------------------------------------------------
 
@@ -353,6 +407,20 @@ class TestTransition:
         await _executor().execute_plan(plan=plan, **h.kwargs())
         # only the single 2.0s pacing sleep for the transition — no extra.
         assert h.sleep_calls == [2.0]
+
+    @async_test
+    async def test_intermediate_starts_2s_after_full_close(self):
+        # B3-012: FULL_CLOSE -> INTERMEDIATE transition paces identically
+        # to the existing FULL_OPEN -> INTERMEDIATE transition above.
+        clock = FakeClock()
+        h = Harness(clock)
+        plan = _plan([
+            _item(cover_entity_id="a", target_ha=0, target_class=DispatchTargetClass.FULL_CLOSE),
+            _item(cover_entity_id="c", target_ha=40, target_class=DispatchTargetClass.INTERMEDIATE,
+                 cover_index=1),
+        ])
+        await _executor().execute_plan(plan=plan, **h.kwargs())
+        assert h.dispatch_calls == [("a", 0.0), ("c", 2.0)]
 
 
 # ---------------------------------------------------------------------------

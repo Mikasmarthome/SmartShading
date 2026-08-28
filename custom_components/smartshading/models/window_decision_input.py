@@ -280,9 +280,25 @@ def build_window_decision_input(
             if night_shading_enabled
             else None
         ),
+        # NightDayLifecycleConfig.morning_position is typed `int` (not
+        # Optional) with a real default -- every valid load path (config_flow's
+        # vol.Required, config_entry_data.py's raw.get(key, default)) keeps it
+        # a real int. The `is not None` guard is purely defensive against a
+        # corrupted/hand-edited stored payload with an explicit null for this
+        # key (raw.get() only substitutes the default when the KEY is absent,
+        # never when it is present with value None) -- coordinator.py already
+        # treats this same field as possibly-None elsewhere in the identical
+        # cycle (see its own `if _active_lc_profile.morning_position is not
+        # None else None` a few dozen lines below its _active_profile() call).
+        # No fabricated default: an unexpected None here degrades to "no
+        # explicit morning position override" (BehaviorConfig.morning_position
+        # stays None), the same documented state as morning_enabled=False,
+        # letting the existing shared arbitration pipeline take over --
+        # never a crash, never an invented 0/100/light/normal/strong position.
         morning_position=(
             _ha_to_internal(lifecycle_config.morning_position)
             if lifecycle_config.morning_enabled
+            and lifecycle_config.morning_position is not None
             else None
         ),
         absence_position=(

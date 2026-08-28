@@ -49,7 +49,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from .position_semantics import clamp_position, positions_within_tolerance, to_ha_position
+from .position_semantics import (
+    DEFAULT_POSITION_TOLERANCE_INTERNAL,
+    clamp_position,
+    positions_within_tolerance,
+    to_ha_position,
+)
 
 # T16: ARCHITECTURE.md §6.2 "Anwendung in der Decision Engine" — when a
 # cover's assumed position is no longer trustworthy (AssumedStateManager
@@ -142,7 +147,11 @@ class ExecutionCapability:
     position_tolerance
         If the cover's current position is within this many internal units
         of the target, the command is suppressed.  Prevents micro-commands
-        caused by sensor noise or rounding.  Default 3 (= ±3%).
+        caused by sensor noise or rounding.  Defaults to
+        position_semantics.DEFAULT_POSITION_TOLERANCE_INTERNAL — the single
+        canonical "close enough" threshold shared with any other module that
+        needs the same semantic (e.g. engines.outcome_resolution's open-heat
+        penalty gate), rather than each site picking its own number.
 
     tilt_tolerance
         Same concept for tilt (Phase 2).  Always applied but effectively
@@ -150,7 +159,7 @@ class ExecutionCapability:
     """
 
     safe_position_internal: int = 0   # internal: 0=retracted/open, 100=closed
-    position_tolerance: int = 3        # internal position units
+    position_tolerance: int = DEFAULT_POSITION_TOLERANCE_INTERNAL
     tilt_tolerance: int = 3            # internal tilt units (Phase 2)
 
 

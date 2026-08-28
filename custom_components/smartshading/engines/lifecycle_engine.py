@@ -231,6 +231,16 @@ class _ScheduleProfile(NamedTuple):
     morning_position: int
 
 
+class ScheduleDiagnostics(NamedTuple):
+    """Diagnostics-only view of which schedule source and month-gate applied
+    this cycle (B3-010 Diagnostics-Nachweis). Never used for control —
+    _active_profile()/get_lifecycle_state() already derive the same facts
+    internally; this exposes them read-only for decision-trace/export."""
+
+    source: str  # "same_every_day" | "weekday" | "weekend"
+    month_active: bool
+
+
 def _is_weekend(now: datetime) -> bool:
     """Return True for Saturday (5) and Sunday (6) in local time."""
     return now.weekday() >= 5
@@ -491,6 +501,53 @@ class LifecycleEngine:
     ) -> _ScheduleProfile:
         """Return the schedule profile active for the current local datetime."""
         return _active_profile(now, config, sun_event_times)
+
+    def is_morning_trigger_due(
+        self,
+        now: datetime,
+        sun_elevation_deg: float | None,
+        config: NightDayLifecycleConfig,
+        sun_event_times: SunEventTimes | None = None,
+    ) -> bool:
+        """B3-010 R12: True when today's configured morning trigger has
+        already fired as of `now`, using the EXACT SAME trigger semantics
+        get_lifecycle_state() itself uses for the real NIGHT->MORNING
+        transition -- Fixed Time, Sun Elevation, BOTH (existing OR
+        semantics), a configured sun-event override, and the resolved
+        Weekday/Weekend/same-every-day profile (all handled identically by
+        _active_profile()/_check_morning_trigger(), reused here verbatim,
+        never re-implemented).
+
+        This is deliberately NOT the same question get_lifecycle_state()
+        answers (that also depends on previous_lifecycle_state, to report
+        MORNING only as the one-cycle transition event) -- this method
+        answers the narrower, stateless question "is today's trigger due
+        RIGHT NOW", which is exactly what a missed-event check needs: it
+        must never fire before the real trigger would have, regardless of
+        what state the coordinator happened to start in.
+
+        False when the month is not active or morning is disabled/
+        DISABLED-triggered -- deferring to _check_morning_trigger()'s own
+        DISABLED handling and the month gate, so there is exactly ONE
+        place (this module) that knows when Morning is due.
+        """
+        if not config.morning_enabled or not _is_month_active(now, config):
+            return False
+        profile = _active_profile(now, config, sun_event_times)
+        return self._check_morning_trigger(now, sun_elevation_deg, config, profile)
+
+    def schedule_diagnostics(
+        self, now: datetime, config: NightDayLifecycleConfig,
+    ) -> ScheduleDiagnostics:
+        """Return which schedule source (same_every_day/weekday/weekend) and
+        month-gate applied for `now` — read-only, mirrors the exact selection
+        _active_profile() already makes internally (B3-010 Diagnostics-Nachweis)."""
+        source = (
+            ("weekend" if _is_weekend(now) else "weekday")
+            if config.schedule_mode is LifecycleScheduleMode.WEEKDAY_WEEKEND
+            else "same_every_day"
+        )
+        return ScheduleDiagnostics(source=source, month_active=_is_month_active(now, config))
 
     @staticmethod
     def _check_night_trigger(

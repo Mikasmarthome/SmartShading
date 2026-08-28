@@ -89,13 +89,15 @@ class TestNightTransitionWithBreakEnabled:
 
 class TestMorningTransitionWithBreakEnabled:
     def test_override_ends_and_fallback_decision_applies_same_cycle(self) -> None:
-        """NightEvaluator produces no candidate once lifecycle leaves NIGHT
-        (no dedicated "morning" evaluator in this version — see
-        tier_orchestrator.py) — the resulting decision is whatever Tier 4/5
-        would produce (here: the plain fallback OPEN, COMFORT-tagged). The
-        key proof is that it is NOT blocked as MANUAL_OVERRIDE, because the
-        override was already cleared before this candidate was evaluated —
-        even though its own category (COMFORT) would otherwise be gated by
+        """NightEvaluator produces no candidate once lifecycle leaves NIGHT,
+        and MorningEvaluator only ever fires for LifecycleState.MORNING
+        itself (a genuine one-cycle transition event), never for the
+        resulting DAY state — see evaluators/morning_evaluator.py. The
+        resulting decision here is therefore whatever Tier 4/5 would produce
+        (here: the plain fallback OPEN, COMFORT-tagged). The key proof is
+        that it is NOT blocked as MANUAL_OVERRIDE, because the override was
+        already cleared before this candidate was evaluated — even though
+        its own category (COMFORT) would otherwise be gated by
         allow_comfort=False (the legacy default) had the override still
         been active."""
         result, remaining_override = _simulate_one_cycle(

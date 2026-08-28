@@ -160,3 +160,38 @@ class TestBuildReasonAlreadySafeForAllStates:
         reason, reason_code = build_reason(ShadingState.NIGHT_VENT, comfort=None)
         assert isinstance(reason, str)
         assert isinstance(reason_code, str)
+
+
+class TestNextActionNeverClaimsFullyOpenForAMorningPartialPositionB3010:
+    """B3-010: ShadingState.OPEN can now carry a partial (non-fully-open)
+    target_position (MorningEvaluator's one-cycle transition). The bare
+    "OPEN" label (no percentage, unlike every other position-based state's
+    "MOVE_TO_<x>") previously implied fully open regardless of the real
+    target -- now precise when target_position_ha is supplied."""
+
+    def test_partial_open_shows_the_real_target_not_bare_open(self):
+        result = build_next_action(
+            ShadingState.OPEN, ShadingState.NIGHT_CLOSED, _DEFAULTS,
+            target_position_ha=70,
+        )
+        assert result == "MOVE_TO_70"
+        assert result != "OPEN"
+
+    def test_fully_open_target_still_shows_the_explicit_value(self):
+        result = build_next_action(
+            ShadingState.OPEN, ShadingState.NIGHT_CLOSED, _DEFAULTS,
+            target_position_ha=100,
+        )
+        assert result == "MOVE_TO_100"
+
+    def test_omitted_target_position_preserves_the_prior_bare_open_label(self):
+        # Backward compatibility: call sites that don't pass the new
+        # parameter behave exactly as before.
+        result = build_next_action(ShadingState.OPEN, ShadingState.NIGHT_CLOSED, _DEFAULTS)
+        assert result == "OPEN"
+
+    def test_no_action_case_is_unaffected_by_target_position(self):
+        result = build_next_action(
+            ShadingState.OPEN, ShadingState.OPEN, _DEFAULTS, target_position_ha=70,
+        )
+        assert result == "NO_ACTION"

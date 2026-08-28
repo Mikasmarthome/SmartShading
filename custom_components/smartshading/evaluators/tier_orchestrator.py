@@ -8,15 +8,35 @@ Manual Override policy gate.
 Tier order:
   Tier 1  — Safety Guards          StormEvaluator, WindEvaluator, RainEvaluator → early exit
   Tier 3  — Lifecycle Phase Gate   NightEvaluator                      → early exit
+  Tier 3  — Lifecycle Phase Gate   MorningEvaluator (candidate, NOT early exit — see below)
   Tier 4  — Protection Floors      AbsenceEvaluator, HeatEvaluator, GlareEvaluator
   Tier 5  — Comfort Pipeline       SolarEvaluator
-  PositionResolver                 max(tier4 floors, tier5)
+  PositionResolver                 max(morning candidate, tier4 floors, tier5)
   Fallback                         OPEN / PresenceUncertain hold (no evaluator active)
   Tier 2  — Manual Override Policy ManualOverridePolicy (engines/manual_override_policy.py)
 
 Tier 1 currently contains Storm Protection, Wind Protection and Rain Protection.
 Frost Protection is deliberately excluded until a Cover-Type model exists
 in WindowConfig / CoverCapability (see state_machine/states.py for details).
+
+MorningEvaluator (v1.2.0-beta.3, B3-010) deliberately does NOT early-exit like
+NightEvaluator: night protection always wins outright, but morning_position is
+only correct when nothing more protective is required at that exact moment.
+It is folded into the SAME PositionResolver.resolve() call as Tier 4/5 below,
+so the existing max(target_position) rule picks a Heat/Glare/Absence floor or
+an already-required Solar shade over morning_position automatically — no
+second arbitration mechanism, no early return, no separate dispatch path.
+While wdi.presence_uncertain is True, it is excluded from that pool (treated
+as if it hadn't fired) ONLY when it would represent an opening-equivalent
+move — for the same reason the daytime fallback OPEN already refuses to
+actively open in that case (see the presence-uncertain branch below):
+guessing "not absent" is riskiest exactly when presence cannot be confirmed.
+A Morning target that would instead numerically CLOSE the window further
+than wdi.current_position_internal (the Coordinator-resolved best-known
+current position — reliable feedback, or an assumed position only when
+trustworthy; None when genuinely unknown, the conservative fallback) is a
+genuinely protective move and is NOT excluded — suppressing it too would
+deny a legitimate protective improvement precisely when it is most needed.
 
 Tier 2 — Manual Override Policy (v1.2.0-beta.1, T7 restructure):
   Tier 1 still runs FIRST and early-exits exactly as before — Safety always
@@ -61,6 +81,7 @@ from ..state_machine.states import DecisionCategory, ShadingState
 from .absence_evaluator import AbsenceEvaluator
 from .glare_evaluator import GlareEvaluator
 from .heat_evaluator import HeatEvaluator
+from .morning_evaluator import MorningEvaluator
 from .night_evaluator import NightEvaluator
 from .position_resolver import PositionResolver
 from .rain_evaluator import RainEvaluator
@@ -86,6 +107,7 @@ class TierOrchestrator:
         self._rain = RainEvaluator()
         # Tier 3 — Lifecycle Phase Gate
         self._night = NightEvaluator()
+        self._morning = MorningEvaluator()
         # Tier 4 — Protection Floors
         self._absence = AbsenceEvaluator()
         self._heat = HeatEvaluator()
@@ -128,6 +150,45 @@ class TierOrchestrator:
         if night_result is not None:
             candidate = night_result
         else:
+            # --- Tier 3 (cont.): Morning candidate, NOT an early exit --------
+            # See module docstring "MorningEvaluator" note above: folded into
+            # the same PositionResolver pool as Tier 4/5 below.
+            #
+            # Direction-aware presence-uncertain exclusion (B3-010
+            # correction, numeric): only an OPENING-equivalent Morning move
+            # is excluded while presence is uncertain, matching the
+            # daytime-fallback OPEN's own presence-uncertain caution — a
+            # Morning target is NOT structurally guaranteed to be less
+            # protective than the current position. A CLOSING move (target
+            # more shaded than the window's actual current position) is a
+            # genuine protective improvement and must not be suppressed.
+            #
+            # wdi.current_position_internal is the Coordinator-resolved,
+            # already-internal-convention best-known current position
+            # (reliable feedback, or an assumed position ONLY when
+            # AssumedStateManager.is_position_trustworthy() — never a raw
+            # guess). Comparing it numerically against morning_result's own
+            # target_position (same internal convention, 0=open/100=shaded)
+            # is the actual, magnitude-correct direction check — e.g. HA 50
+            # -> HA 70 (internal 50 -> internal 30) is correctly OPENING
+            # (target < current), not closing, regardless of the coarse
+            # ShadingState.OPEN label both positions might share.
+            #
+            # None (genuinely unknown/untrustworthy position) is the
+            # explicit conservative Unknown-path: `>` against None is
+            # impossible, so is_closing_move is False and the Morning
+            # candidate is suppressed exactly like the opening case —
+            # never a numeric guess from missing data.
+            morning_result = self._morning.evaluate(wdi)
+            if morning_result is not None and wdi.presence_uncertain:
+                is_closing_move = (
+                    wdi.current_position_internal is not None
+                    and morning_result.target_position is not None
+                    and morning_result.target_position > wdi.current_position_internal
+                )
+                if not is_closing_move:
+                    morning_result = None
+
             # --- Tier 4: Protection Floors (all run, positions compared) ------
             tier4_results: list[WindowDecision | None] = [
                 self._absence.evaluate(wdi),
@@ -139,7 +200,7 @@ class TierOrchestrator:
             tier5_result = self._solar.evaluate(wdi)
 
             # --- Position arbitration ---------------------------------------
-            winner = PositionResolver.resolve([*tier4_results, tier5_result])
+            winner = PositionResolver.resolve([morning_result, *tier4_results, tier5_result])
             if winner is not None:
                 candidate = winner
             elif wdi.presence_uncertain:

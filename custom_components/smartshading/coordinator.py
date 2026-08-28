@@ -31,7 +31,7 @@ _monotonic = time.monotonic
 from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -96,6 +96,8 @@ from .engines.comfort_movement_hold import (
 )
 from .engines.pending_outcome_queue import PendingOutcomeQueue
 from .models.pending_outcome import PendingOutcome
+from .engines import morning_reconciliation as _morning_reconciliation_module
+from .engines.morning_reconciliation import MorningOccurrence
 from .engines.lifecycle_engine import (
     LifecycleEngine,
     PresenceDebouncer,
@@ -659,6 +661,19 @@ class _WindowComputeState:
     lifecycle_state_value: str = "day"
     absence_active_at_decision: bool = False
     manual_override_active_at_decision: bool = False
+    # B3-010: read-only morning-decision facts, threaded into
+    # _record_decision_trace()'s lifecycle_authority block. All fields stay
+    # None unless MorningEvaluator actually produced a candidate THIS cycle
+    # (lifecycle_state is MORNING and morning_position is configured, not
+    # masked out by ABSENCE_ONLY/DISABLED_AUTOMATIC — see
+    # _apply_window_behavior_mode()) — never merely "morning_position is
+    # configured", which could be true on a DAY/NIGHT cycle Morning never
+    # competes in.
+    morning_effective_position_ha: int | None = None
+    morning_schedule_source: str | None = None
+    morning_month_active: bool | None = None
+    morning_effective_trigger_time: str | None = None
+    morning_superseded_by: str | None = None
     # P2 — decision_id shared with the cycle's PendingOutcome (authoritative link).
     decision_id: str | None = None
 
@@ -670,6 +685,144 @@ class _WindowComputeState:
 # it here is what keeps an ABSENCE_CLOSED window from silently flipping to OPEN on
 # a transient uncertain cycle and then failing to release after returning home.
 _NO_DISPATCH_HOLD_DECIDERS = frozenset({"BehaviorMode:hold", "PresenceUncertain:hold"})
+
+# B3-010 R9: a winning decider supersedes a pending Morning Reconciliation
+# occurrence based on the EXISTING DecisionCategory authority (state_machine/
+# states.py) -- NEVER a numeric "is the target more shaded" comparison. The
+# prior R8 approach compared target_position magnitudes, which is fachlich
+# falsch: a genuine protective need can legitimately require a NUMERICALLY
+# SMALLER (less shaded) target than Morning's own (e.g. Storm/Wind safety
+# deliberately opening covers fully, internal target 0), or a smaller-but-
+# still-stronger protection floor (e.g. Heat protection at internal 75 vs.
+# Morning's own 90 -- 75 is still the genuinely correct, stronger-protection
+# target even though it is numerically less shaded). Whichever tier/category
+# won arbitration is definitionally the correct answer for that cycle,
+# independent of movement direction.
+#
+# DecisionCategory.SAFETY (Tier 1: Storm/Wind/Rain) and
+# DecisionCategory.PROTECTION (Tier 4: Absence/Heat/Glare) are unambiguous:
+# any decider tagged with either category represents a real protective win.
+#
+# DecisionCategory.COMFORT is deliberately ambiguous by design (states.py's
+# own docstring): both SolarEvaluator's real Tier-5 comfort-protection AND
+# the plain "nothing else applies" TierOrchestrator:fallback OPEN share it.
+# Category alone cannot distinguish them -- decided_by does: only
+# decided_by == "SolarEvaluator" counts as a protective win; the bare
+# fallback never does.
+#
+# DecisionCategory.HOLD (PresenceUncertain:hold / BehaviorMode:hold, see
+# _NO_DISPATCH_HOLD_DECIDERS above) and DecisionCategory.LIFECYCLE (Night)
+# are never treated as a protective supersession here -- a HOLD sent no
+# command at all (technical/neutral, occurrence stays `pending`), and a
+# LIFECYCLE win other than MorningEvaluator itself cannot occur while the
+# occurrence is being re-proposed in the first place (re-proposing is
+# already gated on lifecycle_state is DAY; NightEvaluator only ever wins
+# during NIGHT).
+_MORNING_RECONCILIATION_PROTECTIVE_CATEGORIES = frozenset({
+    DecisionCategory.SAFETY, DecisionCategory.PROTECTION,
+})
+
+
+def _resolve_morning_occurrence_after_dispatch(
+    occ: MorningOccurrence, *, results: list, expected_cover_ids: list[str], now: datetime,
+) -> MorningOccurrence:
+    """B3-010 R12: resolve a still-pending Morning occurrence from THIS
+    cycle's real, individual per-cover ExecutionResults for the window,
+    validated against the window's real, expected cover-ID set -- never
+    from the window-wide any_sent/any_failed aggregate alone (that
+    aggregate would mark a window `dispatched` even when only SOME of its
+    covers actually received a command), and never from a vacuous "empty
+    results list = all succeeded" reading (R11 bug: ExecutionPlanResult's
+    own semantics already document that an empty `results` means the plan
+    had no cover entities at all -- every aggregate is False, `all_blocked`
+    deliberately requires a non-empty set -- so an empty set here must
+    never read as success).
+
+    Requires:
+      - `expected_cover_ids` non-empty. Empty (removed window / empty cover
+        group) -> invalidate() (reason "empty_cover_group") -- a genuinely
+        non-executable occurrence, explicitly never `dispatched`.
+      - every id in `expected_cover_ids` maps to EXACTLY ONE result for
+        that same entity_id. Missing (no result), or more than one
+        (duplicate/ambiguous) -> that cover counts as unresolved, the
+        occurrence stays `pending`. R13: a result for an entity_id NOT in
+        `expected_cover_ids` (a correlation anomaly -- structurally should
+        never happen, since `results` is built from THIS window's own
+        per-cycle dispatch loop and `expected_cover_ids` from THIS same
+        window's cover group, but never silently trusted) also blocks
+        resolution -- the occurrence stays `pending` rather than silently
+        ignoring an unexplained extra result; no additional match within
+        the same plan is ever silently discarded.
+      - BLOCKED_MANUAL_OVERRIDE on a result for one of THIS window's own
+        expected_cover_ids -> invalidate() (a changed fact, matches the
+        arbitration-level override handling elsewhere) -- checked BEFORE
+        the per-cover matching, so a real override block for this window
+        always wins immediately, without waiting for every expected cover
+        to resolve. R14 item 4 correction: a BLOCKED_MANUAL_OVERRIDE result
+        for a cover OUTSIDE expected_cover_ids is a foreign result like any
+        other (see the foreign-result rule below) and must NOT invalidate
+        this window's occurrence -- an override active on some unrelated
+        cover/window is not a changed fact about THIS window at all; only a
+        result correctly correlated to this window's own cover group may
+        ever invalidate it.
+      - a resolved cover's status is SENT/SUCCEEDED, OR BLOCKED with
+        blocked_reason BLOCKED_SAME_POSITION (the cover is already at the
+        target -- CommandFilter's existing, legitimate no-op path, a
+        fachlich COMPLETED outcome, never a technical non-execution;
+        BLOCKED_NO_TARGET_POSITION and every other blocked_reason is
+        explicitly NOT an already-reached target) -> counts toward
+        mark_dispatched().
+      - every expected cover resolved this way -> mark_dispatched().
+        Anything else (FAILED, unavailable, StateGuard/CommandFilter
+        blocks other than same-position, NOT_ATTEMPTED, SKIPPED, missing,
+        duplicate) for at least one expected cover -> occurrence stays
+        `pending` unchanged, eligible for retry on a later real runtime
+        cycle (see module docstring -- no time-window bound).
+
+    Pure function (no coordinator/hass access) so the resolution logic is
+    directly unit-testable without driving the full _async_update_data()
+    cycle -- see test_morning_occurrence_dispatch_resolution.py.
+    """
+    if occ.status != "pending":
+        return occ
+    # R14 item 4: scoped to THIS window's own expected_cover_ids -- a
+    # BLOCKED_MANUAL_OVERRIDE result for a cover outside this window's
+    # cover group is a foreign result (see the general foreign-result rule
+    # below) and must never invalidate an occurrence it has no correlation
+    # to. expected_cover_ids itself is already the window/plan/cycle-scoped
+    # set the caller resolves fresh from THIS window's real cover group
+    # every cycle (see coordinator.py's own call site) -- no separate
+    # window-state flag needed for this correlation.
+    saw_override_block = any(
+        r.status is ExecutionStatus.BLOCKED and r.blocked_reason == BLOCKED_MANUAL_OVERRIDE
+        and r.entity_id in expected_cover_ids
+        for r in results
+    )
+    if saw_override_block:
+        return _morning_reconciliation_module.invalidate(
+            occ, now=now, reason="manual_override_blocked_dispatch",
+        )
+    if not expected_cover_ids:
+        return _morning_reconciliation_module.invalidate(
+            occ, now=now, reason="empty_cover_group",
+        )
+    results_by_entity: dict[str, list] = {}
+    for r in results:
+        results_by_entity.setdefault(r.entity_id, []).append(r)
+    if set(results_by_entity.keys()) - set(expected_cover_ids):
+        return occ  # unexplained result for a cover outside this window's group -- stays pending
+    for cover_id in expected_cover_ids:
+        matches = results_by_entity.get(cover_id, [])
+        if len(matches) != 1:
+            return occ  # missing or ambiguous/duplicate result -- stays pending
+        r = matches[0]
+        resolved = (
+            r.status in (ExecutionStatus.SENT, ExecutionStatus.SUCCEEDED)
+            or (r.status is ExecutionStatus.BLOCKED and r.blocked_reason == BLOCKED_SAME_POSITION)
+        )
+        if not resolved:
+            return occ
+    return _morning_reconciliation_module.mark_dispatched(occ, now=now)
 
 
 def _hold_state_for_no_dispatch(
@@ -748,6 +901,7 @@ def _is_position_recovery_release(
     *,
     behavior_mode: WindowBehaviorMode,
     proposed_is_open: bool,
+    proposed_target_position_ha: int | None = None,
     actual_position_ha: int | None,
     cover_available: bool,
     active_control_enabled: bool,
@@ -790,6 +944,23 @@ def _is_position_recovery_release(
     the raised cover then matches an OPEN internal state, subsequent cycles are
     same-position no-ops — so it fires at most once per desync and never loops.
     Pure function so every guard is unit-testable in isolation.
+
+    B3-010 correction: `proposed_is_open` alone (shading_state is OPEN) used
+    to be a reliable proxy for "the tier baseline wants fully open", because
+    the only two OPEN-shaped candidates in the whole pipeline were the
+    hardcoded fallback (target 0) and — once configured — night_position's
+    own OPEN counterpart, which did not exist yet. Now that a configured
+    partial morning_position also carries shading_state=OPEN
+    (evaluators/morning_evaluator.py), that proxy alone is no longer
+    sufficient: e.g. a window physically stuck at 75 HA with a
+    morning_position of 70 HA configured would otherwise pass every other
+    guard and get dispatched to 70 HA — a CLOSE, not the exclusively-OPEN
+    retract this function's own contract promises. proposed_target_position_ha
+    (the tier decision's actual HA target, when known) is therefore also
+    required to be strictly more open than the observed position; omitting
+    it (None, e.g. an older/unrelated call site) preserves the prior
+    behavior exactly, since the check is only applied when a target is
+    supplied.
     """
     if behavior_mode not in (
         WindowBehaviorMode.ABSENCE_ONLY,
@@ -816,6 +987,11 @@ def _is_position_recovery_release(
     # min_below_open_ha below the fully-open position.  A cover already at/near
     # open does not qualify (no fighting minor deviations).
     if actual_position_ha >= open_position_ha - min_below_open_ha:
+        return False
+    # The proposed target (when known) must itself actually be an opening
+    # move relative to the observed position — never a close disguised as
+    # OPEN by a configured partial morning_position (B3-010).
+    if proposed_target_position_ha is not None and proposed_target_position_ha <= actual_position_ha:
         return False
     return True
 
@@ -936,6 +1112,22 @@ def _apply_window_behavior_mode(
     masking only disables heat/solar/glare/absence/lifecycle per the mode.
     The deterministic baseline pass and the adapted pass both route through
     this helper so the baseline reflects the same mode restrictions.
+
+    B3-010: ABSENCE_ONLY and DISABLED_AUTOMATIC force lifecycle_state=DAY
+    below, which alone already keeps these two modes free of any lifecycle/
+    morning control — NightEvaluator only reacts to NIGHT and
+    MorningEvaluator only reacts to the one-cycle MORNING transition (see
+    evaluators/morning_evaluator.py), never DAY. effective_behavior.
+    morning_position is ALSO explicitly nulled here regardless — the same
+    masking pattern already used for heat/glare/absence above — so a real
+    NIGHT->MORNING transition that happens to land on a window already in
+    one of these restricted modes still cannot receive a morning_position
+    candidate (belt-and-braces: MorningEvaluator would never fire for these
+    modes' forced DAY state anyway, but morning_position could still reach
+    it during the genuine MORNING cycle itself before this forcing applies).
+    ABSENCE_AND_SCHEDULE keeps the real night/morning lifecycle active
+    (unchanged, pre-existing), so morning_position is deliberately NOT
+    masked there.
     """
     if behavior_mode is WindowBehaviorMode.ABSENCE_ONLY:
         return replace(
@@ -947,6 +1139,7 @@ def _apply_window_behavior_mode(
                 heat_indoor_threshold_c=None,
                 solar_gain_suppresses_shading=True,
                 glare_protection_enabled=False,
+                morning_position=None,
             ),
         )
     if behavior_mode is WindowBehaviorMode.ABSENCE_AND_SCHEDULE:
@@ -971,6 +1164,7 @@ def _apply_window_behavior_mode(
                 solar_gain_suppresses_shading=True,
                 glare_protection_enabled=False,
                 absence_position=None,
+                morning_position=None,
             ),
         )
     return wdi
@@ -1525,6 +1719,54 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # last confirmed dispatch, used to throttle rapid comfort-tier
         # (Solar/Heat/Glare) re-targets. See engines/comfort_movement_hold.py.
         self._comfort_movement_holds: dict[str, _ComfortMovementHold] = {}
+        # B3-010 Morning occurrence tracking: per-window pending/dispatched/
+        # superseded/invalidated status for the current-day MORNING
+        # occurrence (see engines/morning_reconciliation.py). RAM-only for
+        # THIS process -- self._morning_last_processed (below) is the
+        # persisted cross-restart/-reload marker that resolves the
+        # ambiguity a bare in-memory dict cannot: "was today's Morning
+        # already fachlich handled before this process started". See
+        # engines/lifecycle_engine.py's is_morning_trigger_due() for the
+        # trigger-due determination reused by the missed-event check below.
+        self._morning_reconciliation: dict[str, MorningOccurrence] = {}
+        # R12: per-window "have we already performed the missed-Morning-
+        # event check this coordinator-instance lifetime" marker -- a
+        # dedicated, honestly-named flag, NOT a reuse of
+        # _startup_cycles_remaining (which carries no fachlich meaning
+        # about Morning). Checked and set exactly once per window per
+        # instance, regardless of outcome.
+        self._morning_missed_event_checked: set[str] = set()
+        # R12: the minimal persisted marker -- window_id -> the last LOCAL
+        # date this window's Morning occurrence reached a terminal state
+        # (dispatched/superseded/invalidated). Restored from the learning
+        # snapshot in _restore_learning_snapshot() below (robust to
+        # missing/old/corrupted entries -- see that method). Written ONLY
+        # via _set_morning_occurrence() (single write-path). Deliberately
+        # NOT a stored travel target, NOT per-cover state, NOT a resumed
+        # runtime authority -- purely "was today already handled, yes/no"
+        # per window, so a reload/restart never creates a second Morning
+        # authority for a day already resolved, while a marker from a
+        # PRIOR day never blocks today's real, freshly-evaluated Morning.
+        self._morning_last_processed: dict[str, date] = {}
+        # R14 item 2: the minimal additional persisted marker
+        # missed_transition_proven needs -- window_id -> the last LOCAL
+        # date this window was genuinely observed in LifecycleState.NIGHT
+        # (written every cycle self._lifecycle_state is NIGHT, for every
+        # window not excluded from lifecycle control -- see the per-window
+        # write site, mirroring _morning_last_processed's own persistence
+        # pattern exactly: same restore-filtered-to-today logic, same
+        # additive LearningPersistenceAdapter payload). This is the real,
+        # minimal fachlich evidence a missed-Morning catch-up requires
+        # beyond "the trigger time has passed" (is_morning_trigger_due()
+        # alone): proof THIS window's own Night phase genuinely happened
+        # TODAY, not merely that today's clock already passed the
+        # configured trigger. A fresh install, a newly added window, or a
+        # window newly switched into lifecycle control today has NO entry
+        # here for today -- and therefore gets no blind catch-up, even
+        # though the trigger time may already be due (see
+        # is_missed_transition_proven() usage in the missed-event check
+        # below).
+        self._night_last_started: dict[str, date] = {}
 
         _zone_controls_raw = config_entry.options.get("zone_controls", {})
         # Defensive: a corrupted/old options blob may store None or a non-dict
@@ -1632,6 +1874,21 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "owner_zone_id": next(iter(self.zones.keys()), None),
             "support_critical_events": list(self._support_critical_events),
             "research_daily_buckets": dict(self._research_daily_buckets),
+            # B3-010 R12: minimal restart/reload-safe Morning marker --
+            # window_id -> ISO date string of the last local date that
+            # window's Morning occurrence reached a terminal state. See
+            # self._morning_last_processed's own docstring in __init__.
+            "morning_last_processed": {
+                wid: d.isoformat() for wid, d in self._morning_last_processed.items()
+                if wid in self.windows
+            },
+            # R14 item 2: the minimal additional evidence marker
+            # missed_transition_proven needs -- see self._night_last_started's
+            # own docstring in __init__.
+            "night_last_started": {
+                wid: d.isoformat() for wid, d in self._night_last_started.items()
+                if wid in self.windows
+            },
         }
 
     def _build_config_snapshot(self) -> dict:
@@ -2506,6 +2763,24 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             options={**self.config_entry.options, "zone_controls": zone_controls},
         )
 
+    def _set_morning_occurrence(
+        self, window_id: str, occ: MorningOccurrence,
+    ) -> None:
+        """B3-010 R12: single write-path for self._morning_reconciliation.
+        Whenever the written occurrence has reached a terminal state
+        (dispatched/superseded/invalidated), also records
+        self._morning_last_processed[window_id] = occ.occurrence_date --
+        the minimal, restart/reload-safe marker the missed-Morning-event
+        check (see the per-window loop) consults to know "today's Morning
+        has already been fachlich handled for this window, do not treat a
+        due trigger as missed again". Uses the OCCURRENCE's own
+        occurrence_date, not `now`, so a cycle that crosses midnight still
+        records the correct day. A `pending` write is a pure no-op for the
+        marker (nothing has been decided yet)."""
+        self._morning_reconciliation[window_id] = occ
+        if occ.status != "pending":
+            self._morning_last_processed[window_id] = occ.occurrence_date
+
     def _get_or_detect_capability(self, cover_entity_id: str) -> CoverCapability:
         """Detect once per cover entity and cache. Capabilities essentially
         never change at runtime - the one known gap is a cover that was
@@ -3150,6 +3425,65 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     continue
                         except Exception:
                             _LOGGER.warning("Learning: current-state restore failed (non-fatal)")
+                        # B3-010 R12: restore the minimal Morning last-processed
+                        # marker BEFORE the first dispatch decision -- see
+                        # self._morning_last_processed's own docstring in
+                        # __init__ for the exact semantics. A marker from a
+                        # PRIOR local date is intentionally NOT restored (it
+                        # must never suppress TODAY's real Morning) --
+                        # already the natural effect of comparing against
+                        # local_now.date() on read, but filtered out here
+                        # too so the in-memory dict never grows with stale
+                        # entries. Malformed entries (bad ISO date, unknown
+                        # window_id) are skipped individually, never raise.
+                        try:
+                            _raw_mlp = getattr(_extras, "morning_last_processed", {}) or {}
+                            _restore_today = dt_util.as_local(_restore_now).date()
+                            for _wid, _dv in _raw_mlp.items():
+                                if _wid not in self.windows or not isinstance(_dv, str):
+                                    continue
+                                try:
+                                    _parsed_date = date.fromisoformat(_dv)
+                                except ValueError:
+                                    continue
+                                if _parsed_date == _restore_today:
+                                    self._morning_last_processed[_wid] = _parsed_date
+                        except Exception:
+                            _LOGGER.warning("Learning: morning-last-processed restore failed (non-fatal)")
+                        # R14 item 2: restore the minimal night-last-started
+                        # evidence marker -- same per-entry error isolation
+                        # as the morning-last-processed restore immediately
+                        # above, but a WIDER valid-date filter: [today,
+                        # yesterday] relative to THIS restore cycle's own
+                        # date, not today-only. Night typically starts the
+                        # evening BEFORE the day its Morning catch-up runs
+                        # (crossing local midnight -- e.g. Night marked
+                        # 2026-08-10, restart/restore happens the morning of
+                        # 2026-08-11) -- a today-only filter would silently
+                        # discard exactly the realistic restart case this
+                        # marker exists for. Anything older than yesterday
+                        # is still correctly dropped (no evidence of a
+                        # NEWLY missed transition, just a stale technical
+                        # gap). See self._night_last_started's own docstring
+                        # in __init__ and the missed-event check's own
+                        # matching [today, yesterday] window below.
+                        try:
+                            _raw_nls = getattr(_extras, "night_last_started", {}) or {}
+                            _restore_today_nls = dt_util.as_local(_restore_now).date()
+                            _restore_valid_nls_dates = (
+                                _restore_today_nls, _restore_today_nls - timedelta(days=1),
+                            )
+                            for _wid, _dv in _raw_nls.items():
+                                if _wid not in self.windows or not isinstance(_dv, str):
+                                    continue
+                                try:
+                                    _parsed_date_nls = date.fromisoformat(_dv)
+                                except ValueError:
+                                    continue
+                                if _parsed_date_nls in _restore_valid_nls_dates:
+                                    self._night_last_started[_wid] = _parsed_date_nls
+                        except Exception:
+                            _LOGGER.warning("Learning: night-last-started restore failed (non-fatal)")
                         # P4c: restore persisted support critical events + daily buckets.
                         try:
                             self._support_critical_events = list(
@@ -3745,7 +4079,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Tier orchestration: build_window_decision_input() is the single
             # resolution point for config inheritance and HA-convention conversion
             # (INV-18).  TierOrchestrator runs Storm/Wind (Tier 1) → Night
-            # (Tier 3) → Absence/Heat/Glare (Tier 4) → Solar (Tier 5) →
+            # (Tier 3, early exit) → Morning (Tier 3, PositionResolver candidate,
+            # B3-010) → Absence/Heat/Glare (Tier 4) → Solar (Tier 5) →
             # PositionResolver → fallback OPEN.
             # StateGuard is applied after the orchestrator returns.
             #
@@ -3754,7 +4089,20 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # before passing it to build_window_decision_input.  This ensures
             # Night and Morning evaluators use the correct target position for
             # the current day of week without modifying the stored config.
+            # _sun_event_times (computed earlier this cycle, same instance
+            # get_lifecycle_state() above already used) must be threaded
+            # through here too -- otherwise a configured sun-event morning
+            # trigger would resolve to a DIFFERENT (unclamped/wrong-day)
+            # time here than the one that actually governed this cycle's
+            # real MORNING/DAY decision.
             _active_lc_profile = self.lifecycle_engine.active_profile(
+                local_now, self._lifecycle_config, _sun_event_times
+            )
+            # B3-010 diagnostics: which schedule source (same_every_day/
+            # weekday/weekend) and month-gate applied this cycle — read-only,
+            # threaded into _record_decision_trace()'s existing lifecycle_authority
+            # block below; never affects control.
+            _lc_schedule_diag = self.lifecycle_engine.schedule_diagnostics(
                 local_now, self._lifecycle_config
             )
             _effective_lifecycle_config = replace(
@@ -3776,6 +4124,203 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 else CoverHardwareType.GENERIC
             )
             _hw_settings = default_hardware_settings(_early_hw_type)
+            # B3-010 fix: primary entity_id + its cached invert_position, resolved
+            # cheaply this early (cache read only, no HA/detection calls) so every
+            # to_ha_position() call in THIS per-window block before the real
+            # capability-aware exec pass (~line 5200) can pass the correct
+            # `invert=` and stay in the SAME convention the eventual real dispatch
+            # payload uses. Without this, an inverted cover's HA-convention values
+            # computed here (position-recovery direction check, morning diagnostics)
+            # would silently use the wrong formula (100-x instead of x) and disagree
+            # with both the real dispatch payload and the actual observed position.
+            # None/False when the entity isn't cached yet (first-ever cycle for this
+            # cover) -- matches to_ha_position()'s own invert=False default, so this
+            # is never worse than the pre-existing behavior, only better once cached.
+            _early_entity_id = (
+                _early_cg.cover_ids[0] if _early_cg is not None and _early_cg.cover_ids else None
+            )
+            _early_invert_position = (
+                self._cover_capabilities[_early_entity_id].invert_position
+                if _early_entity_id is not None and _early_entity_id in self._cover_capabilities
+                else False
+            )
+            # B3-010: best-known CURRENT position (internal convention,
+            # already normalized by AssumedStateManager regardless of the
+            # cover's own invert quirk — no invert= needed here) for
+            # TierOrchestrator's numeric presence_uncertain direction check.
+            # Only populated when AssumedStateManager itself considers the
+            # position trustworthy (reliable feedback, or a sufficiently
+            # confident assumed value) — otherwise None, the explicit
+            # conservative Unknown-path WindowDecisionInput.
+            # current_position_internal documents.
+            _early_current_position_internal: int | None = None
+            if _early_entity_id is not None and self.assumed_state_manager.is_position_trustworthy(
+                _early_entity_id, local_now
+            ):
+                _early_assumed_state = self.assumed_state_manager.get_state(_early_entity_id, local_now)
+                if _early_assumed_state is not None:
+                    _early_current_position_internal = _early_assumed_state.assumed_position
+
+            # B3-010 Morning Reconciliation: the still-pending target (if
+            # any) for TODAY's occurrence, IN INTERNAL CONVENTION, resolved
+            # BEFORE evaluation so MorningEvaluator can re-propose it (see
+            # evaluators/morning_evaluator.py). Gated on BOTH
+            # is_current_occurrence() (local_now.date() matching the
+            # record's own occurrence_date -- no cross-day catch-up) AND
+            # lifecycle_state is DAY specifically -- never re-proposed
+            # during NIGHT/EVENING.
+            #
+            # B3-010 R10 (scope correction): the per-cover, live-polled
+            # arrival-confirmation check that used to run here (reusing
+            # cover_control/dispatch_completion.evaluate_travel_status(),
+            # plus a SEQUENTIAL-completion-only fallback for unreliable-
+            # feedback covers in the post-dispatch block) was removed. It
+            # was a real, correct fix for the R8 command-echo bug it
+            # targeted, but proving CONFIRMED PHYSICAL ARRIVAL is B3-021's
+            # ("Completion-Neudefinition") scope, not B3-010's -- the
+            # canonical B3-010 acceptance only requires that the configured
+            # morning position act in the runtime path, not that arrival be
+            # confirmed. The R8 bug's specific failure mode (claiming
+            # position confirmation from SmartShading's own just-sent
+            # command echoed back through AssumedStateManager) cannot recur
+            # under the R10 design because no confirmed-arrival claim is
+            # made at all any more: an occurrence becomes `dispatched` (see
+            # mark_dispatched() below) directly from a real
+            # ExecutionStatus.SENT with no ExecutionStatus.FAILED in the
+            # same result set -- an honest, weaker claim ("the command left
+            # SmartShading"), never a stand-in for "the cover physically
+            # arrived".
+            # B3-010 R14: a `pending` occurrence (left over from a technical
+            # non-execution on its own creation cycle) is re-proposable on
+            # ANY cycle -- periodic or event-triggered alike -- UNTIL it has
+            # had its ONE real dispatch-capable attempt (see
+            # MorningOccurrence.dispatch_attempted's own docstring and
+            # mark_dispatch_attempted() in morning_reconciliation.py).
+            # pending_target_position_internal() itself enforces this bound
+            # (occ.dispatch_attempted -> None); no separate event-vs-
+            # periodic distinction is made here any more (the R13
+            # event-gating mechanism was found to still "conserve
+            # historical Morning authority" indefinitely across unrelated
+            # later real events, which is not fachlich justified -- see
+            # this module's own docstring section for the full rationale).
+            _early_morning_pending_target = _morning_reconciliation_module.pending_target_position_internal(
+                self._morning_reconciliation.get(window_id), today=local_now.date(),
+                lifecycle_state_is_day=self._lifecycle_state is LifecycleState.DAY,
+            )
+
+            # B3-010 R12: missed-Morning-event detection, corrected again.
+            # Occurrence state is RAM-only for the CURRENT process (see the
+            # persisted marker below for cross-restart/-reload
+            # disambiguation) -- so a HA restart/reload starts with an
+            # empty self._morning_reconciliation and, without this check, a
+            # window whose MORNING transition already happened before the
+            # restart would simply never receive its configured morning
+            # position again until the NEXT calendar day's transition.
+            #
+            # R12 fix: the R11 condition (DAY + enabled + not-DISABLED +
+            # month-active) proved only that Morning is theoretically
+            # ELIGIBLE today -- NOT that today's trigger has actually FIRED
+            # yet. A coordinator started before the configured trigger time
+            # would have wrongly created a "missed" occurrence hours early.
+            # Fixed by requiring self.lifecycle_engine.is_morning_trigger_due()
+            # -- the SAME Fixed-Time/Sun-Elevation/BOTH/sun-event/Weekday-
+            # Weekend/month-gate semantics get_lifecycle_state() itself uses
+            # for the real transition, reused verbatim (see that method's
+            # own docstring), never a second, parallel trigger computation.
+            #
+            # Gated on self._morning_missed_event_checked (a dedicated,
+            # honestly-named marker: "have we already performed this check
+            # for this window, this coordinator-instance lifetime" --
+            # checked and set exactly once, independent of dispatch-
+            # suppression timing; NOT self._startup_cycles_remaining, which
+            # remains purely a technical dispatch-suppression counter and
+            # never itself triggers an occurrence).
+            #
+            # The persisted last-processed-occurrence-date marker (see
+            # self._morning_last_processed / _load_morning_last_processed_marker
+            # below) resolves the R11-disclosed reload/restart-vs-already-
+            # processed ambiguity: if today's date is already recorded for
+            # this window, no occurrence is created here at all, regardless
+            # of whether the trigger is due -- Morning for today is already
+            # accounted for.
+            #
+            # _active_lc_profile.morning_position is still in HA convention
+            # here (build_window_decision_input() below is the single
+            # config-resolution boundary that converts it to internal, per
+            # this file's own module docstring) -- converted the SAME way
+            # (_ha_to_internal(), a fixed 100-x with no per-cover invert,
+            # since this is a window-level target, not tied to one
+            # physical cover's own invert quirk) build_window_decision_input()
+            # itself uses for morning_position.
+            # R14 item 2: record real evidence this window was genuinely
+            # observed in LifecycleState.NIGHT today -- unconditional, every
+            # cycle NIGHT applies (idempotent same-day overwrite, exactly
+            # like _set_morning_occurrence's own many-cycles-write pattern
+            # for _morning_last_processed). This is the minimal fachlich
+            # evidence missed_transition_proven below requires beyond "the
+            # trigger time has passed": proof THIS window's own Night phase
+            # genuinely happened, not merely that today's clock already
+            # passed the configured trigger. Excluded windows mirror the
+            # missed-check's own exclusion below -- a window never under
+            # lifecycle control has no real Night evidence to record either.
+            if self._lifecycle_state is LifecycleState.NIGHT and window.behavior_mode not in (
+                WindowBehaviorMode.ABSENCE_ONLY, WindowBehaviorMode.DISABLED_AUTOMATIC,
+            ):
+                if self._night_last_started.get(window_id) != local_now.date():
+                    self._night_last_started[window_id] = local_now.date()
+                    self._mark_learning_dirty()
+
+            if window_id not in self._morning_missed_event_checked:
+                self._morning_missed_event_checked.add(window_id)
+                _missed_check_morning_position_internal = (
+                    to_internal_position(_active_lc_profile.morning_position, invert=False)
+                    if _active_lc_profile.morning_position is not None else None
+                )
+                _missed_check_already_processed_today = (
+                    self._morning_last_processed.get(window_id) == local_now.date()
+                )
+                # R14 item 2: missed_transition_proven -- is_morning_trigger_due()
+                # alone only proves the configured clock trigger has passed,
+                # NOT that a real Morning transition was ever actually missed.
+                # A fresh install, a newly added window, or a window newly
+                # switched into lifecycle control today has no Night
+                # evidence at all and must NOT receive a blind catch-up
+                # merely because the clock already reads past the trigger.
+                # The valid evidence window is exactly [today, yesterday]:
+                # Night typically starts the evening BEFORE the Morning
+                # trigger fires (crossing local midnight), but a same-day
+                # Night+Morning pair (e.g. a very early configured trigger)
+                # is also valid -- never anything older, which would mean
+                # no NEW Night was ever observed since (a real technical
+                # gap, not evidence of today's specific missed transition).
+                _missed_check_night_evidence_date = self._night_last_started.get(window_id)
+                _missed_check_transition_proven = _missed_check_night_evidence_date in (
+                    local_now.date(), local_now.date() - timedelta(days=1),
+                )
+                if (
+                    self._lifecycle_state is LifecycleState.DAY
+                    and not _missed_check_already_processed_today
+                    and self.lifecycle_engine.is_morning_trigger_due(
+                        local_now, _sun_elevation, self._lifecycle_config, _sun_event_times,
+                    )
+                    and _missed_check_transition_proven
+                    and window.behavior_mode not in (
+                        WindowBehaviorMode.ABSENCE_ONLY, WindowBehaviorMode.DISABLED_AUTOMATIC,
+                    )
+                    and not _morning_reconciliation_module.is_current_occurrence(
+                        self._morning_reconciliation.get(window_id), today=local_now.date(),
+                    )
+                    and _missed_check_morning_position_internal is not None
+                ):
+                    self._morning_reconciliation[window_id] = _morning_reconciliation_module.start_occurrence(
+                        window_id=window_id, occurrence_date=local_now.date(),
+                        target_position_internal=_missed_check_morning_position_internal, now=local_now,
+                    )
+                    _early_morning_pending_target = _morning_reconciliation_module.pending_target_position_internal(
+                        self._morning_reconciliation.get(window_id), today=local_now.date(),
+                        lifecycle_state_is_day=True,
+                    )
+
             _rain_prot_enabled: bool = (
                 window.rain_protection_enabled
                 if window.rain_protection_enabled is not None
@@ -3867,6 +4412,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 contact_status=_cs_reading.status,
                 presence_uncertain=presence_uncertain,
                 heat_previously_active=_heat_was_active,
+                current_position_internal=_early_current_position_internal,
+                morning_reconciliation_pending_target_internal=_early_morning_pending_target,
             )
             # P2 provenance: snapshot the pre-adaptation (config) WDI so the
             # deterministic baseline can be evaluated from the same input.
@@ -4406,6 +4953,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 _is_position_recovery = _is_position_recovery_release(
                     behavior_mode=_window_behavior,
                     proposed_is_open=tier_decision.shading_state is ShadingState.OPEN,
+                    proposed_target_position_ha=(
+                        to_ha_position(tier_decision.target_position, invert=_early_invert_position)
+                        if tier_decision.target_position is not None else None
+                    ),
                     actual_position_ha=cover_position.actual_position,
                     cover_available=cover_position.position_source == "actual",
                     active_control_enabled=_exec.active_control_enabled,
@@ -5155,15 +5706,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     and not _cs_reading.is_stale
                 ),
             )
-            # Comfort Movement Stability Hold (v1.1.1, tightened v1.1.2):
-            # throttles repeated real non-priority dispatches for the same
-            # window — Solar/Heat/Glare comfort tiers and the daytime OPEN
-            # fallback (e.g. SolarEvaluator and GlareEvaluator alternately
-            # winning PositionResolver as measured exposure hovers near both
-            # evaluators' thresholds). Independent of StateGuard/
-            # minimum_state_duration; every genuinely prioritized decision
-            # path (Safety, Night, Night Contact, Absence, Manual Override)
-            # is unaffected — see engines/comfort_movement_hold.py.
+            # Comfort Movement Stability Hold (v1.1.1, tightened v1.1.2,
+            # extended B3-010): throttles repeated real non-priority
+            # dispatches for the same window — Solar/Heat/Glare comfort
+            # tiers, the daytime OPEN fallback, and (B3-010) the one-cycle
+            # MorningEvaluator transition (e.g. the plain Fallback/Open
+            # dispatched the cycle right after Morning's own dispatch is
+            # held rather than immediately re-driving the cover). Independent
+            # of StateGuard/minimum_state_duration; every genuinely
+            # prioritized decision path (Safety, Night, Night Contact,
+            # Absence, Manual Override) is unaffected — see
+            # engines/comfort_movement_hold.py.
             _comfort_hold = self._comfort_movement_holds.setdefault(
                 window_id, _ComfortMovementHold()
             )
@@ -5195,6 +5748,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 # proposals or STRONG_SHADE — see module docstring.
                 is_confirmed_exit=_is_fallback_confirmed_exit,
                 now=now,
+                # B3-010 R4 fact-based release: the REAL observed position
+                # (same source _is_position_recovery_release already uses),
+                # not the assumed one — if the cover has genuinely moved
+                # away from where it was last dispatched (manual action,
+                # external actor), the hold's "unchanged facts" premise no
+                # longer holds and it releases immediately, without waiting
+                # for hold_minutes to elapse.
+                actual_position_ha=cover_position.actual_position,
             )
             _comfort_hold_last_dispatch_age_min = _comfort_hold.age_minutes(now)
             _comfort_hold_remaining_min = _comfort_hold.hold_remaining_minutes(now)
@@ -5382,6 +5943,111 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     target_tilt_ha=_effective_tilt_ha,
                 )
 
+            # B3-010 diagnostics: read-only morning-decision facts for this
+            # window this cycle. MorningEvaluator only ever produces a
+            # candidate on the actual MORNING transition cycle (see
+            # evaluators/morning_evaluator.py) -- these fields therefore stay
+            # None on every other cycle (DAY/NIGHT/EVENING), even when
+            # wdi.effective_behavior.morning_position is configured, so a
+            # reader can never mistake "a morning_position is configured" for
+            # "Morning actually applied/competed this cycle". superseded_by
+            # names the winning decider only when Morning genuinely competed
+            # (lifecycle_state is MORNING) and something else won.
+            _morning_applies_this_cycle = (
+                wdi.lifecycle_state is LifecycleState.MORNING
+                and wdi.effective_behavior.morning_position is not None
+            )
+            _morning_effective_position_ha = (
+                to_ha_position(wdi.effective_behavior.morning_position, invert=_early_invert_position)
+                if _morning_applies_this_cycle else None
+            )
+            _morning_superseded_by = (
+                tier_decision.decided_by
+                if _morning_applies_this_cycle and tier_decision.decided_by != "MorningEvaluator"
+                else None
+            )
+
+            # B3-010 Morning occurrence bookkeeping. Creates/updates
+            # self._morning_reconciliation[window_id] from real per-cycle
+            # facts only (which decider actually won arbitration this
+            # cycle, whether an override is actually active) -- never a
+            # second target-arbitration or dispatch decision of its own.
+            # `dispatched` is set later, in the dispatch pass, from a real
+            # ExecutionStatus.SENT (see mark_dispatched() near
+            # record_dispatch() below) -- an honest "the command left
+            # SmartShading" claim, not a confirmed-arrival one (see
+            # engines/morning_reconciliation.py's module docstring).
+            #
+            # Terminal-state fix (kept from R9, re-verified here): "not MorningEvaluator" alone is NOT
+            # sufficient to call supersede() -- only a decider whose
+            # DecisionCategory represents a real protective authority counts
+            # (see _MORNING_RECONCILIATION_PROTECTIVE_CATEGORIES above) --
+            # NEVER a numeric target-magnitude comparison. ManualOverrideEvaluator
+            # winning is an invalidation, not a supersession -- including at
+            # the MORNING transition cycle itself. Any other decider (the
+            # plain fallback, a PresenceUncertain/BehaviorMode hold, or any
+            # other technical/neutral outcome) leaves the record exactly
+            # as-is (still `pending`) so a later cycle can be re-evaluated
+            # on current facts -- it is neither a protective win nor a
+            # changed fact, so it terminates nothing.
+            if tier_decision.decided_by == "ManualOverrideEvaluator":
+                _mr_is_protective_winner = False
+                _mr_is_override_winner = True
+            elif (
+                tier_decision.decided_by != "MorningEvaluator"
+                and (
+                    tier_decision.category in _MORNING_RECONCILIATION_PROTECTIVE_CATEGORIES
+                    or (
+                        tier_decision.category is DecisionCategory.COMFORT
+                        and tier_decision.decided_by == "SolarEvaluator"
+                    )
+                )
+            ):
+                _mr_is_protective_winner = True
+                _mr_is_override_winner = False
+            else:
+                _mr_is_protective_winner = False
+                _mr_is_override_winner = False
+
+            if _morning_applies_this_cycle:
+                _mr_fresh = _morning_reconciliation_module.start_occurrence(
+                    window_id=window_id, occurrence_date=local_now.date(),
+                    target_position_internal=wdi.effective_behavior.morning_position,
+                    now=local_now,
+                )
+                if _mr_is_override_winner:
+                    # Manual Override already active exactly at the MORNING
+                    # transition itself -- invalidate immediately, never
+                    # reaches a genuinely `pending` state (transition
+                    # matrix item 20 applied at t=0).
+                    _mr_fresh = _morning_reconciliation_module.invalidate(
+                        _mr_fresh, now=local_now, reason="manual_override_active_at_transition",
+                    )
+                elif _mr_is_protective_winner:
+                    # A stronger protective tier already won on the
+                    # transition cycle itself -- the occurrence never
+                    # reaches `pending` at all (transition matrix item 12).
+                    _mr_fresh = _morning_reconciliation_module.supersede(
+                        _mr_fresh, now=local_now,
+                        reason=f"superseded_at_morning_transition_by_{tier_decision.decided_by}",
+                    )
+                self._set_morning_occurrence(window_id, _mr_fresh)
+            elif _early_morning_pending_target is not None:
+                _mr_record = self._morning_reconciliation.get(window_id)
+                if _mr_record is not None and _morning_reconciliation_module.is_current_occurrence(
+                    _mr_record, today=local_now.date(),
+                ):
+                    if _mr_is_override_winner:
+                        self._set_morning_occurrence(window_id, _morning_reconciliation_module.invalidate(
+                            _mr_record, now=local_now, reason="manual_override_active",
+                        ))
+                    elif _mr_is_protective_winner:
+                        self._set_morning_occurrence(window_id, _morning_reconciliation_module.supersede(
+                            _mr_record, now=local_now, reason=f"superseded_by_{tier_decision.decided_by}",
+                        ))
+                    # else: technical/neutral non-execution or the plain
+                    # fallback winning -- record stays untouched (`pending`).
+
             # Store per-window state for harmonization + dispatch pass.
             # is_override_active uses current_override (post-tick), consistent with
             # CommandFilter which also uses the post-tick state so that a freshly
@@ -5476,6 +6142,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 absence_active_at_decision=absence_active,
                 manual_override_active_at_decision=(current_override is not None),
                 decision_id=_decision_id,
+                morning_effective_position_ha=_morning_effective_position_ha,
+                morning_schedule_source=(_lc_schedule_diag.source if _morning_applies_this_cycle else None),
+                morning_month_active=(_lc_schedule_diag.month_active if _morning_applies_this_cycle else None),
+                morning_effective_trigger_time=(
+                    _active_lc_profile.morning_fixed_time.isoformat()
+                    if _morning_applies_this_cycle and _active_lc_profile.morning_fixed_time is not None
+                    else None
+                ),
+                morning_superseded_by=_morning_superseded_by,
             )
 
             # Build window_results now — WindowObservation has no dependency on
@@ -5485,7 +6160,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 state=new_state,
                 reason=reason,
                 reason_code=reason_code,
-                next_action=build_next_action(new_state, current_state, self.shade_position_defaults),
+                next_action=build_next_action(
+                    new_state, current_state, self.shade_position_defaults,
+                    target_position_ha=_comfort_target_ha,
+                ),
                 guard_blocked=guard_blocked,
                 exposure=exposure,
                 outdoor_temperature=weather_inputs.outdoor_temperature,
@@ -5959,6 +6637,64 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     )
                         _exec_results.append(_intent_result)
                 _exec_plan_result = build_execution_plan_result(window_id, _exec_results)
+
+                # B3-010 R12: resolve a still-pending Morning occurrence
+                # from THIS cycle's real per-cover ExecutionResults,
+                # validated against the window's real expected cover-ID set
+                # -- see _resolve_morning_occurrence_after_dispatch()'s own
+                # docstring for the full reasoning (module-level, pure,
+                # directly unit-tested). Re-resolves the cover group fresh
+                # here (not reusing the much-earlier _early_cg local) so the
+                # expected set is unambiguous at the exact point it is used.
+                if s.tier_decided_by == "MorningEvaluator":
+                    _mr_record_dispatch = self._morning_reconciliation.get(window_id)
+                    if _mr_record_dispatch is not None:
+                        _mr_cg_dispatch = self.cover_groups.get(s.window.cover_group_id)
+                        _mr_expected_cover_ids = (
+                            list(_mr_cg_dispatch.cover_ids) if _mr_cg_dispatch is not None else []
+                        )
+                        _mr_record_dispatch = _resolve_morning_occurrence_after_dispatch(
+                            _mr_record_dispatch, results=_exec_plan_result.results,
+                            expected_cover_ids=_mr_expected_cover_ids, now=now,
+                        )
+                        # B3-010 R14: this cycle's Morning candidate reached
+                        # the real dispatch pipeline as MorningEvaluator's
+                        # winning decision for THIS window -- record the ONE
+                        # real dispatch-capable attempt (see
+                        # mark_dispatch_attempted()'s own docstring) ONLY
+                        # when every one of THIS cycle's real per-cover
+                        # results actually reached dispatch/CommandFilter
+                        # resolution, i.e. none of them is
+                        # ExecutionStatus.NOT_ATTEMPTED. NOT_ATTEMPTED is the
+                        # exact, reason-string-independent signal that a
+                        # cover's intent never reached real resolution this
+                        # cycle -- whether the cause is Startup Grace
+                        # (reason startup_grace_active), a newer cycle
+                        # already superseding this one (reason
+                        # stale_generation or the stale-presence-superseded
+                        # reason used elsewhere in this file), or this
+                        # cycle's own comfort dispatch being deferred behind
+                        # an executable safety intent (reason
+                        # safety_preempted).
+                        # Checking the ExecutionStatus itself (rather than
+                        # one specific reason string) covers all of these
+                        # uniformly, including any future NOT_ATTEMPTED
+                        # reason, without a second, parallel "is dispatch
+                        # capable" check duplicating the dispatch loop's own
+                        # logic. A cycle left with any NOT_ATTEMPTED result
+                        # leaves dispatch_attempted False, so a later
+                        # dispatch-capable cycle -- periodic or
+                        # event-triggered alike -- still gets the one real
+                        # decision; nothing here is lost, only deferred.
+                        _mr_any_not_attempted = any(
+                            r.status is ExecutionStatus.NOT_ATTEMPTED
+                            for r in _exec_plan_result.results
+                        )
+                        if not _mr_any_not_attempted:
+                            _mr_record_dispatch = _morning_reconciliation_module.mark_dispatch_attempted(
+                                _mr_record_dispatch, now=now,
+                            )
+                        self._set_morning_occurrence(window_id, _mr_record_dispatch)
 
                 # Post-dispatch side effects — only on confirmed sends, never on failure.
                 if _exec_plan_result.any_sent and not _exec_plan_result.any_failed:
@@ -6548,7 +7284,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 "source_type": "manual_override"},
             "lifecycle_authority": {
                 "active": getattr(s, "lifecycle_state_value", "day") != "day",
-                "source_type": "lifecycle"},
+                "source_type": "lifecycle",
+                # B3-010: effective morning position, its weekday/weekend/
+                # same_every_day source, the resolved+clamped trigger time,
+                # the active-month check result, and (when Morning competed
+                # but did not win) which decider won instead. None fields
+                # mean MorningEvaluator did not produce a candidate this
+                # cycle for this window (see _WindowComputeState field
+                # comments above for the exact gating condition).
+                "morning_effective_position_ha": getattr(s, "morning_effective_position_ha", None),
+                "morning_schedule_source": getattr(s, "morning_schedule_source", None),
+                "morning_month_active": getattr(s, "morning_month_active", None),
+                "morning_effective_trigger_time": getattr(s, "morning_effective_trigger_time", None),
+                "morning_superseded_by": getattr(s, "morning_superseded_by", None)},
             "behavior_mode_authority": {
                 "source_type": str(getattr(window, "behavior_mode", None))},
             "absence_authority": {
@@ -6846,9 +7594,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         resolves quickly — bounded by whatever single in-flight port call
         (a dispatch_item HA-service call, or a quick validate_item check)
         is currently running, never by the full remaining plan duration.
-        This is what satisfies "Safety darf nicht auf Completion-Wait,
-        Pacing oder Pause warten" without needing a separate, harder
-        cancellation mechanism.
+        This is what satisfies "Safety must not wait on a completion wait,
+        pacing, or pause" without needing a separate, harder cancellation
+        mechanism.
 
         Idempotent: calling this repeatedly (e.g. two safety cycles in
         quick succession) is always safe — a None/already-done previous

@@ -68,7 +68,8 @@ def build_reason(
 
 
 def build_next_action(
-    new_state: ShadingState, current_state: ShadingState, defaults: ShadePositionDefaults
+    new_state: ShadingState, current_state: ShadingState, defaults: ShadePositionDefaults,
+    target_position_ha: int | None = None,
 ) -> str:
     """Display-only preview of what a future PositionCalculator
     (ARCHITECTURE.md §5.7 step 11) would do - no command is ever sent in
@@ -90,11 +91,23 @@ def build_next_action(
     a fixed default) rather than a fabricated percentage; RAIN_SAFE mirrors
     STORM_SAFE/WIND_SAFE (all three Tier-1 safety states are already
     simplified to "MOVE_TO_0" here for the same reason).
+
+    B3-010: ShadingState.OPEN is no longer always "fully open" —
+    MorningEvaluator's one-cycle transition can dispatch OPEN with a
+    partial (non-zero) target_position. `target_position_ha` (HA
+    convention, 0=closed/100=open), when supplied, is used to label the
+    action precisely ("MOVE_TO_<ha>", matching every other position-based
+    state) instead of the bare "OPEN" label, which previously always
+    implied fully open regardless of the real target. None preserves the
+    prior bare "OPEN" behavior exactly (e.g. for call sites that never
+    pass it), so it is optional and backward-compatible.
     """
     if new_state == current_state:
         return "NO_ACTION"
     if new_state is ShadingState.MANUAL_OVERRIDE:
         return "NO_ACTION"  # never override the user
+    if new_state is ShadingState.OPEN and target_position_ha is not None:
+        return f"MOVE_TO_{target_position_ha}"
     action = {
         ShadingState.OPEN: "OPEN",
         ShadingState.LIGHT_SHADE: f"MOVE_TO_{defaults.light_shade_position}",

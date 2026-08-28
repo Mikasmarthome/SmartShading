@@ -98,6 +98,22 @@ WIND_SAFE_POSITION_INTERNAL: int = 0
 #: OPEN state — fully open, no shading.
 OPEN_POSITION_INTERNAL: int = 0
 
+#: Canonical "close enough" tolerance in internal position units (B3-010 R5).
+#:
+#: Single shared definition for "how much position difference is significant"
+#: — any module that needs this semantic (not a dispatch-execution decision,
+#: just the numeric threshold itself) imports this constant directly rather
+#: than hardcoding its own copy or depending on cover_control.command_filter.
+#: ExecutionCapability (a dispatch-execution dataclass) for it.
+#:
+#: cover_control.command_filter.ExecutionCapability.position_tolerance
+#: defaults to this value. engines.outcome_resolution's open-heat-penalty
+#: gate also reads it directly, instead of an independently chosen number —
+#: both express the same real-world question ("is the cover close enough to
+#: a position that the difference no longer matters"), just at different
+#: points in the pipeline (execution gating vs. Learning bucketing).
+DEFAULT_POSITION_TOLERANCE_INTERNAL: int = 3
+
 
 # ---------------------------------------------------------------------------
 # Core conversion functions

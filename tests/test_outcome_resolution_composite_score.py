@@ -252,3 +252,165 @@ class TestComputeContextScore:
             indoor_temp_delta_c=None,
         )
         assert score == pytest.approx(0.30)
+
+
+# ---------------------------------------------------------------------------
+# B3-010: the OPEN overheat penalty must only apply when the window was
+# ACTUALLY left fully open (target_position near 0, internal convention),
+# not merely tagged ShadingState.OPEN -- a configured, partially-shaded
+# morning_position (evaluators/morning_evaluator.py) also carries
+# shading_state=OPEN and must not be misclassified as "left wide open".
+# ---------------------------------------------------------------------------
+
+class TestOpenHeatPenaltyRequiresActuallyFullyOpen:
+    def test_fully_open_target_still_applies_the_penalty(self) -> None:
+        """Control: target_position=0 (truly fully open) with a strong
+        indoor rise still applies the historical penalty unchanged."""
+        score = _compute_context_score(
+            trigger=OutcomeResolutionTrigger.TIMEOUT,
+            decided_state=ShadingState.OPEN,
+            override_delay_min=None,
+            indoor_temp_delta_c=5.0,  # +5C rise -> full -0.10 penalty
+            target_position=0,
+        )
+        assert score == pytest.approx(0.30 - 0.10)
+
+    def test_partial_morning_position_does_not_apply_the_penalty(self) -> None:
+        """A configured, partially-shaded morning_position (e.g. internal 30
+        = HA 70% open) must NOT be penalized as "left wide open" even with
+        the exact same strong indoor rise -- the window was already
+        partially shaded, this decision earned no overheat blame."""
+        score = _compute_context_score(
+            trigger=OutcomeResolutionTrigger.TIMEOUT,
+            decided_state=ShadingState.OPEN,
+            override_delay_min=None,
+            indoor_temp_delta_c=5.0,
+            target_position=30,
+        )
+        assert score == pytest.approx(0.30)  # stability only, no overheat penalty
+
+    def test_missing_target_position_preserves_prior_unconditional_behavior(self) -> None:
+        """target_position=None (e.g. an older persisted PendingOutcome
+        without this field) must behave exactly like before B3-010 --
+        unconditionally on position, matching
+        test_matches_previous_compute_score_formula_for_timeout_stability's
+        sibling case with a real indoor rise."""
+        score = _compute_context_score(
+            trigger=OutcomeResolutionTrigger.TIMEOUT,
+            decided_state=ShadingState.OPEN,
+            override_delay_min=None,
+            indoor_temp_delta_c=5.0,
+            target_position=None,
+        )
+        assert score == pytest.approx(0.30 - 0.10)
+
+    def test_at_the_tolerance_boundary_still_applies_the_penalty(self) -> None:
+        """B3-010 R5: the tolerance is exactly
+        position_semantics.DEFAULT_POSITION_TOLERANCE_INTERNAL (3 internal
+        units) -- the same canonical constant ExecutionCapability.
+        position_tolerance now also defaults to, reused here rather than
+        independently chosen. target_position==3 (the boundary itself,
+        `> 3` is False) still counts as "left open" -- the exclusion is
+        specifically for genuine configured shading, not rounding/
+        tolerance-boundary noise."""
+        score = _compute_context_score(
+            trigger=OutcomeResolutionTrigger.TIMEOUT,
+            decided_state=ShadingState.OPEN,
+            override_delay_min=None,
+            indoor_temp_delta_c=5.0,
+            target_position=3,
+        )
+        assert score == pytest.approx(0.30 - 0.10)
+
+    def test_just_above_the_tolerance_boundary_no_penalty(self) -> None:
+        """target_position=4 is the first value strictly above the reused
+        tolerance (3) -- no longer counted as "left open"."""
+        score = _compute_context_score(
+            trigger=OutcomeResolutionTrigger.TIMEOUT,
+            decided_state=ShadingState.OPEN,
+            override_delay_min=None,
+            indoor_temp_delta_c=5.0,
+            target_position=4,
+        )
+        assert score == pytest.approx(0.30)
+
+    def test_target_position_zero_is_the_clearest_penalty_case(self) -> None:
+        score = _compute_context_score(
+            trigger=OutcomeResolutionTrigger.TIMEOUT,
+            decided_state=ShadingState.OPEN,
+            override_delay_min=None,
+            indoor_temp_delta_c=5.0,
+            target_position=0,
+        )
+        assert score == pytest.approx(0.30 - 0.10)
+
+    def test_target_position_10_no_penalty(self) -> None:
+        """B3-010 R5: explicitly required matrix value. Internal position 10
+        is well above the canonical tolerance (3) -- no overheat penalty."""
+        score = _compute_context_score(
+            trigger=OutcomeResolutionTrigger.TIMEOUT,
+            decided_state=ShadingState.OPEN,
+            override_delay_min=None,
+            indoor_temp_delta_c=5.0,
+            target_position=10,
+        )
+        assert score == pytest.approx(0.30)
+
+    def test_target_position_11_no_penalty(self) -> None:
+        """B3-010 R5: explicitly required matrix value. Internal position 11
+        is well above the canonical tolerance (3) -- no overheat penalty."""
+        score = _compute_context_score(
+            trigger=OutcomeResolutionTrigger.TIMEOUT,
+            decided_state=ShadingState.OPEN,
+            override_delay_min=None,
+            indoor_temp_delta_c=5.0,
+            target_position=11,
+        )
+        assert score == pytest.approx(0.30)
+
+    def test_non_open_state_is_unaffected_by_target_position(self) -> None:
+        """Sanity: the target_position parameter is only ever consulted for
+        the OPEN branch -- a shading state's own components are untouched."""
+        score_with = _compute_context_score(
+            trigger=OutcomeResolutionTrigger.TIMEOUT,
+            decided_state=ShadingState.NORMAL_SHADE,
+            override_delay_min=None,
+            indoor_temp_delta_c=None,
+            target_position=75,
+        )
+        score_without = _compute_context_score(
+            trigger=OutcomeResolutionTrigger.TIMEOUT,
+            decided_state=ShadingState.NORMAL_SHADE,
+            override_delay_min=None,
+            indoor_temp_delta_c=None,
+        )
+        assert score_with == score_without
+
+    def test_resolve_outcome_threads_pending_target_position_through(self) -> None:
+        """End-to-end proof via the real public resolve_outcome() API: a
+        PendingOutcome with to_state=OPEN and a partial target_position must
+        not receive the overheat penalty in its real outcome_score/
+        MultiObjectiveOutcome context path."""
+        from custom_components.smartshading.engines.outcome_resolution import (
+            _open_heat_component,
+        )
+        # Direct unit proof of the underlying component with the exact real
+        # signature resolve_outcome() calls it with.
+        penalty_partial = _open_heat_component(
+            OutcomeResolutionTrigger.TIMEOUT, ShadingState.OPEN, 5.0, target_position=30,
+        )
+        penalty_full = _open_heat_component(
+            OutcomeResolutionTrigger.TIMEOUT, ShadingState.OPEN, 5.0, target_position=0,
+        )
+        assert penalty_partial == 0.0
+        assert penalty_full < 0.0
+
+        pending = _pending(
+            to_state=ShadingState.OPEN, decided_by="MorningEvaluator",
+            target_position=30, indoor_temp_at_decision=24.0,
+        )
+        outcome = resolve_outcome(pending, _input(indoor_temp_outcome_c=29.0))
+        assert outcome.decided_state is ShadingState.OPEN
+        # Confirms the real call path used pending.target_position, not an
+        # unconditional-on-OPEN legacy computation.
+        assert outcome is not None

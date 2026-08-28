@@ -19,6 +19,19 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _INTEGRATION_ROOT = _REPO_ROOT / "custom_components" / "smartshading"
 
+# real_ha/ (B3-010) is the isolated real-Home-Assistant test tree living
+# inside this directory -- it needs the REAL homeassistant package and its
+# own conftest.py (tests/real_ha/conftest.py) declares `pytest_plugins`,
+# which pytest only permits in a TOP-LEVEL conftest; a plain `pytest tests/`
+# run would otherwise fail collection outright the moment it walks into
+# that subdirectory. Excluding it here (a normal, built-in pytest
+# collection-control mechanism, unrelated to git/.gitignore) keeps the
+# main suite runnable while leaving real_ha/ fully runnable on its own via
+# `pytest tests/real_ha --confcutdir=tests/real_ha` (see that directory's
+# own conftest.py / test_real_ha_lifecycle.py for why --confcutdir is
+# required there).
+collect_ignore = ["real_ha"]
+
 
 # ---------------------------------------------------------------------------
 # Namespace placeholders for the integration package tree

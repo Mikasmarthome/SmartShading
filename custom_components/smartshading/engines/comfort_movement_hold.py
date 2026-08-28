@@ -85,6 +85,34 @@ F27 field fix — protective shade after fallback open must not be held:
   between Solar/Heat/Glare proposals themselves, and never for an opening
   move — those keep being held exactly as before.
 
+B3-010 field fix — MorningEvaluator joins the non-priority pool:
+  MorningEvaluator (evaluators/morning_evaluator.py) fires exactly once, on
+  the NIGHT->MORNING transition cycle, and never again — the ordinary DAY
+  cycle immediately following it has no Morning candidate at all and
+  resolves via whichever tier genuinely applies, typically the plain
+  Fallback/Open. Without this fix, that immediately-following Fallback/Open
+  proposal would dispatch a real, undesired second movement the very next
+  cycle (e.g. a configured HA 70% morning position followed one cycle later
+  by a full HA 100% open), even though nothing in the outside world actually
+  changed between the two cycles — the SAME class of problem this module
+  already solves for Solar<->Glare<->Fallback alternation.
+  "MorningEvaluator" is therefore added to NON_PRIORITY_DECIDERS below and to
+  the F27 protective-carve-out condition in should_hold(): the immediately
+  following Fallback/Open is held against Morning's last dispatched target
+  for the same COMFORT_MOVEMENT_MIN_HOLD_MINUTES/FALLBACK_OPEN_RELEASE_CYCLES
+  window ordinary daytime operation already uses, while a genuinely stronger
+  Solar/Heat/Glare protective need (wanting a strictly more shaded target
+  than Morning just set) still bypasses the hold immediately, exactly like it
+  already bypasses a hold recorded against a prior Fallback/Open. No new
+  state is introduced: this widens membership of the SAME runtime-only,
+  non-persisted, per-window ComfortMovementHold instances already created
+  once per window and reused every cycle (coordinator.py's
+  _comfort_movement_holds dict) — on a real restart or config-entry reload
+  the dict starts empty exactly like today, so the very first post-restart/
+  reload dispatch (Morning or Fallback/Open) is never artificially held; the
+  hold only ever throttles a SECOND dispatch against a FIRST one already
+  observed live this run.
+
 F29 field fix — exit-debounce / confirmed release for Fallback/Open:
   Real-world report: HeatEvaluator (and, by the same shape, Solar/Glare)
   reads its outdoor/indoor temperature and solar-exposure inputs fresh every
@@ -114,6 +142,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from ..cover_control.position_semantics import DEFAULT_POSITION_TOLERANCE_INTERNAL
+
 #: Deciders whose target changes are subject to the movement stability hold.
 #:
 #: v1.1.2 field-fix follow-up: "TierOrchestrator:fallback" (the daytime OPEN
@@ -132,9 +162,13 @@ from datetime import datetime, timedelta
 #: Safety/Night/NightContact/Absence/ManualOverride evaluators use their own
 #: decided_by strings, none of which appear here, so they remain fully
 #: exempt from this hold, exactly as before.
+#: "MorningEvaluator" (B3-010 field fix, see module docstring above): the
+#: one-cycle MORNING transition dispatch is itself non-priority, and its
+#: recorded target is what the immediately following Fallback/Open proposal
+#: is held against — this is what prevents the unwanted second movement.
 NON_PRIORITY_DECIDERS: frozenset[str] = frozenset({
     "SolarEvaluator", "HeatEvaluator", "GlareEvaluator",
-    "TierOrchestrator:fallback",
+    "TierOrchestrator:fallback", "MorningEvaluator",
 })
 
 #: Default minimum time between two DIFFERENT comfort-tier dispatches for the
@@ -196,6 +230,7 @@ class ComfortMovementHold:
         now: datetime,
         is_confirmed_exit: bool = False,
         hold_minutes: float = COMFORT_MOVEMENT_MIN_HOLD_MINUTES,
+        actual_position_ha: int | None = None,
     ) -> bool:
         """True when this proposed non-priority dispatch should be held back.
 
@@ -221,7 +256,37 @@ class ComfortMovementHold:
             open (F27: last dispatch was "TierOrchestrator:fallback" and
             this proposal is Solar/Heat/Glare wanting a strictly lower, more
             shaded target — see module docstring),
-          - less than `hold_minutes` have elapsed since the last dispatch.
+          - `actual_position_ha` (B3-010 R4/R5, fact-based release) is either
+            unknown or still within DEFAULT_POSITION_TOLERANCE_INTERNAL of
+            `last_target_ha` — i.e. the cover is still physically where it
+            was last (successfully) dispatched to, allowing for sensor
+            rounding/reporting noise (R5: a strict `!=` treated a 1-point
+            rounding difference the same as a genuine divergence — replaced
+            with the same canonical tolerance CommandFilter itself uses for
+            "close enough to be the same position"). The moment the REAL
+            observed position diverges from that by MORE than the tolerance
+            (a manual move, an external actor, a restart landing after the
+            cover was already moved elsewhere) the "unchanged facts" premise
+            this hold exists to protect is no longer true, so the hold
+            releases immediately regardless of `hold_minutes` — a genuine
+            fact, not a clock, ends it.
+            Known limitation (R5, not yet resolved): this check cannot by
+            itself distinguish "the cover is still travelling toward
+            last_target_ha" from "the cover was stopped/moved away and will
+            never reach it" — both look identical here (actual position
+            outside tolerance, target unchanged). The coordinator call site
+            is responsible for not calling should_hold() with a stale
+            actual_position_ha snapshot taken mid-travel; this module has no
+            travel-duration or completion-state input to make that
+            distinction itself without either duplicating
+            cover_control.dispatch_completion's completion detection here or
+            being passed an explicit "dispatch still in flight" flag — a
+            larger, separate change deliberately not made in this pass.
+          - less than `hold_minutes` have elapsed since the last dispatch
+            (the remaining, bounded safety-net cap for the case neither a
+            stronger tier nor a position-drift fact ever arrives — see
+            module docstring "B3-010 field fix" for why an unbounded hold
+            would regress to the rejected permanent all-day baseline).
         """
         if proposed_decided_by not in NON_PRIORITY_DECIDERS:
             return False
@@ -231,10 +296,33 @@ class ComfortMovementHold:
             return False
         if is_strong_escalation:
             return False
-        if is_confirmed_exit:
+        if (
+            actual_position_ha is not None
+            and self.last_target_ha is not None
+            and abs(actual_position_ha - self.last_target_ha) > DEFAULT_POSITION_TOLERANCE_INTERNAL
+        ):
+            return False
+        # is_confirmed_exit is a geometric "sun genuinely left this window's
+        # solar sector" fact — its trust rationale (module docstring, F27/
+        # v1.1.2 second follow-up) is about Solar/Heat/Glare/Fallback
+        # alternation, where the exit fact is directly relevant to whatever
+        # was previously held. It has NO logical connection to a
+        # MorningEvaluator-dispatched target, which is never solar-driven —
+        # a north-facing/out-of-sector window's Morning position must not
+        # lose its hold protection merely because that window happens to be
+        # geometrically out of sector every cycle (B3-010 fix: exclude ONLY
+        # the Morning-held case from this carve-out; every other
+        # last_decided_by keeps the original, broader bypass).
+        if is_confirmed_exit and self.last_decided_by != "MorningEvaluator":
             return False
         if (
-            self.last_decided_by == "TierOrchestrator:fallback"
+            # B3-010: "MorningEvaluator" joins this carve-out alongside
+            # "TierOrchestrator:fallback" — neither is ever a protective
+            # decision, so a genuinely stronger Solar/Heat/Glare need must
+            # bypass the hold immediately after either one, exactly the
+            # same way, rather than being throttled for up to
+            # COMFORT_MOVEMENT_MIN_HOLD_MINUTES.
+            self.last_decided_by in ("TierOrchestrator:fallback", "MorningEvaluator")
             and proposed_decided_by in ("GlareEvaluator", "HeatEvaluator", "SolarEvaluator")
             and proposed_target_ha is not None
             and self.last_target_ha is not None

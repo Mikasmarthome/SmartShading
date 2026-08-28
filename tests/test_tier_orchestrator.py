@@ -112,12 +112,17 @@ def _wdi(
     # HA-convention positions (converted to internal by builder)
     night_position_ha: int = 0,          # HA 0 → internal 100 (fully shaded)
     night_shading_enabled: bool = True,
+    morning_position_ha: int = 100,      # HA 100 → internal 0 (fully open)
+    morning_shading_enabled: bool = True,
     absence_position_ha: int = 30,        # HA 30 → internal 70
     absence_shading_enabled: bool = True,
     light_shade_ha: int = 40,             # HA 40 → internal 60
     normal_shade_ha: int = 25,            # HA 25 → internal 75
     strong_shade_ha: int = 10,            # HA 10 → internal 90
     comfort_config: ComfortConfig | None = None,
+    presence_uncertain: bool = False,
+    current_shading_state: ShadingState = ShadingState.OPEN,
+    current_position_internal: int | None = None,
 ):
     return build_window_decision_input(
         window=window,
@@ -136,15 +141,19 @@ def _wdi(
             id="default",
             night_position=night_position_ha,
             night_enabled=True,
+            morning_position=morning_position_ha,
+            morning_enabled=morning_shading_enabled,
         ),
         lifecycle_state=lifecycle_state,
         absence_active=absence_active,
-        current_shading_state=ShadingState.OPEN,
+        current_shading_state=current_shading_state,
         outdoor_temp_c=outdoor_temp_c,
         indoor_temp_c=indoor_temp_c,
         exposure=_exposure(exposure_wm2) if exposure_wm2 is not None else None,
         is_in_solar_sector=is_in_solar_sector,
         comfort_config=comfort_config,
+        presence_uncertain=presence_uncertain,
+        current_position_internal=current_position_internal,
     )
 
 
@@ -850,7 +859,7 @@ class TestTierOrchestratorAdoptionCannotOverrideSafetyOrManualOverride:
 
 class TestManualOverrideVsAbsencePriorityIsIntentionalDesign:
     """Real-world bug report (ABSENCE_AND_SCHEDULE terrace-door window):
-    "sollte Absence-Close Safety-ähnlich höher als Manual Override sein?"
+    "should Absence-Close rank above Manual Override, similar to Safety?"
     Audit finding: Manual Override (Tier 2) intentionally outranks
     Absence-close (Tier 4) — a genuine user override (e.g. the user just
     opened the cover by hand) must not be immediately undone by an automatic
@@ -910,3 +919,353 @@ class TestManualOverrideVsAbsencePriorityIsIntentionalDesign:
         result = orchestrator.evaluate_window(wdi)
         assert result.shading_state is ShadingState.ABSENCE_CLOSED
         assert result.decided_by == "AbsenceEvaluator"
+
+
+# ---------------------------------------------------------------------------
+# Tier 3 (cont.): Morning — v1.2.0-beta.3, B3-010
+#
+# Unlike Night, Morning is NOT an early exit: it must be a candidate inside
+# the SAME PositionResolver.resolve() call as Tier 4/5, so a real Heat/Glare/
+# Absence floor or an already-required Solar shade wins over morning_position
+# automatically via the existing max(target_position) rule — no separate
+# arbitration path, no early return, no intermediate full-open dispatch.
+# ---------------------------------------------------------------------------
+
+class TestTierOrchestratorMorningNoProtectionNeeded:
+    def test_morning_alone_returns_open_at_morning_position(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            morning_position_ha=100, comfort_config=_NO_COMFORT,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.shading_state is ShadingState.OPEN
+        assert result.decided_by == "MorningEvaluator"
+        assert result.target_position == 0  # HA 100 -> internal 0 (fully open)
+
+    def test_morning_partial_position_wins_over_plain_fallback(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """A non-fully-open configured morning_position must be used exactly
+        as configured, not silently replaced by the generic OPEN=0 fallback."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            morning_position_ha=70, comfort_config=_NO_COMFORT,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "MorningEvaluator"
+        assert result.target_position == 30  # HA 70 -> internal 30
+
+    def test_morning_disabled_falls_through_to_plain_fallback(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """Regression guard for the pre-B3-010 behavior: with morning
+        explicitly disabled, MORNING state still resolves to the generic
+        fallback OPEN, exactly as before this change."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            morning_shading_enabled=False, comfort_config=_NO_COMFORT,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.shading_state is ShadingState.OPEN
+        assert result.decided_by == "TierOrchestrator:fallback"
+        assert result.target_position == 0
+
+    def test_morning_category_is_lifecycle_end_to_end(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            comfort_config=_NO_COMFORT,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.category is DecisionCategory.LIFECYCLE
+
+
+class TestTierOrchestratorMorningVsProtectionArbitration:
+    """B3-010 requirement 5: if protection is already required at the exact
+    morning transition, its final protective position is reached directly —
+    never an intermediate full-open-then-reshade sequence."""
+
+    def test_heat_already_required_wins_over_morning_position(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            morning_position_ha=100,  # would otherwise fully open
+            outdoor_temp_c=30.0, comfort_config=_HEAT_ONLY,
+            is_in_solar_sector=True,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "HeatEvaluator"
+        assert result.shading_state is not ShadingState.OPEN
+        # Exactly one decision reached this cycle -- no intermediate OPEN.
+        assert result.target_position > 0
+
+    def test_glare_already_required_wins_over_morning_position(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            morning_position_ha=100,
+            is_in_solar_sector=True, exposure_wm2=120.0, comfort_config=_GLARE_ONLY,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "GlareEvaluator"
+        assert result.target_position > 0
+
+    def test_absence_already_active_wins_over_morning_position(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            morning_position_ha=100,
+            absence_active=True, comfort_config=_NO_COMFORT,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "AbsenceEvaluator"
+        assert result.shading_state is ShadingState.ABSENCE_CLOSED
+
+    def test_strong_solar_shade_already_required_wins_over_morning_position(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """Solar's regular Tier 5 comfort shading (not just Tier 4 Glare
+        protection) also correctly wins when it wants more shade than
+        morning_position -- prevents the exact double-movement bug B3-010
+        forbids (open fully, then reshade moments later for direct sun)."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            morning_position_ha=100,  # internal 0
+            is_in_solar_sector=True, exposure_wm2=800.0,
+            comfort_config=_NO_COMFORT,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "SolarEvaluator"
+        assert result.target_position == 90  # strong_shade_ha=10 -> internal 90
+
+    def test_morning_position_wins_when_more_shaded_than_mild_solar(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """The reverse: a mild Solar candidate that wants LESS shade than
+        morning_position must not override the user's configured morning
+        position -- max(target_position) picks morning_position here."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            morning_position_ha=30,  # internal 70 -- fairly shaded morning position
+            is_in_solar_sector=True, exposure_wm2=50.0,  # below any shade threshold
+            comfort_config=_NO_COMFORT,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "MorningEvaluator"
+        assert result.target_position == 70
+
+    def test_night_hard_hold_style_no_double_dispatch_in_single_evaluation(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """A single evaluate_window() call for a MORNING cycle with active
+        heat protection returns exactly ONE decision -- proving there is no
+        separate "open first" step anywhere in this call."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            outdoor_temp_c=30.0, comfort_config=_HEAT_ONLY,
+            is_in_solar_sector=True,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result is not None
+        assert result.shading_state is not ShadingState.OPEN
+
+
+class TestTierOrchestratorMorningPresenceUncertain:
+    """B3-010: presence-uncertain must take priority over Morning, exactly
+    like it already takes priority over the plain daytime fallback OPEN --
+    morning_position typically opens the cover, and an unconfirmed presence
+    reading is precisely when guessing "not absent" is riskiest."""
+
+    def test_presence_uncertain_holds_instead_of_morning_position(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            comfort_config=_NO_COMFORT, presence_uncertain=True,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "PresenceUncertain:hold"
+        assert result.target_position is None
+
+    def test_presence_uncertain_does_not_block_a_real_protection_winner(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """presence_uncertain only removes Morning from the candidate pool --
+        a genuine Heat/Glare/Absence floor still applies normally."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            outdoor_temp_c=30.0, comfort_config=_HEAT_ONLY, presence_uncertain=True,
+            is_in_solar_sector=True,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "HeatEvaluator"
+
+    def test_presence_known_uses_morning_position_normally(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """Control: presence_uncertain=False (the default) -> Morning applies
+        normally, confirming the prior test's hold was due to the uncertain
+        flag specifically."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            comfort_config=_NO_COMFORT, presence_uncertain=False,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "MorningEvaluator"
+
+    def test_numeric_ha_50_to_70_is_opening_and_stays_held(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """The exact counter-example from the correction ticket: real
+        position HA 50 (internal 50), Morning target HA 70 (internal 30).
+        internal 30 < internal 50 -- the cover would numerically OPEN
+        further (30 is LESS shaded than 50), even though both HA 50 and
+        HA 70 share the coarse ShadingState.OPEN label. Must be held --
+        the old current_shading_state-is-OPEN heuristic got this case
+        wrong (it only checked target_position > 0, which is true here,
+        and would have incorrectly treated this as closing)."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            comfort_config=_NO_COMFORT, presence_uncertain=True,
+            morning_position_ha=70, current_position_internal=50,  # HA 50 -> internal 50
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "PresenceUncertain:hold", (
+            "HA 50 -> HA 70 is numerically OPENING (internal 50 -> 30), "
+            "must be held even though the coarse state label is the same "
+            "OPEN on both sides"
+        )
+        assert result.target_position is None
+
+    def test_numeric_ha_70_to_70_is_identical_and_held(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """Identical position (HA 70 -> HA 70, internal 30 -> 30): not a
+        closing move (target > current is False when equal) -- held, no
+        spurious dispatch either way."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            comfort_config=_NO_COMFORT, presence_uncertain=True,
+            morning_position_ha=70, current_position_internal=30,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "PresenceUncertain:hold"
+
+    def test_closing_direction_is_not_suppressed_real_position(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """B3-010 correction requirement 4 (numeric direction-aware fix): a
+        Morning target that shades the window MORE than its real current
+        position (internal target > internal current) is a genuinely
+        CLOSING, more protective move and must NOT be suppressed while
+        presence is uncertain -- suppressing it would deny a legitimate
+        protective improvement. Uses wdi.current_position_internal, the
+        Coordinator-resolved numeric position, not the coarse
+        ShadingState.OPEN label."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            comfort_config=_NO_COMFORT, presence_uncertain=True,
+            morning_position_ha=70, current_position_internal=0,  # HA 100 -> internal 0
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "MorningEvaluator", (
+            "a closing move away from the current position must apply "
+            "even while presence is uncertain"
+        )
+        assert result.target_position == 30
+
+    def test_unknown_position_is_the_conservative_unknown_path(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """current_position_internal=None (genuinely unknown/untrustworthy,
+        e.g. AssumedStateManager.is_position_trustworthy() was False) is the
+        explicit conservative Unknown-path -- never a numeric guess, always
+        held, exactly like the opening case."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            comfort_config=_NO_COMFORT, presence_uncertain=True,
+            morning_position_ha=70, current_position_internal=None,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "PresenceUncertain:hold"
+        assert result.target_position is None
+
+    def test_concurrent_heat_protection_still_wins_regardless_of_direction(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        """The direction-aware Morning gate must not interfere with a
+        genuinely active Heat/Solar/Absence protective tier, which is
+        entirely unaffected by presence_uncertain either way."""
+        wdi = _wdi(
+            window, zone, lifecycle_state=LifecycleState.MORNING,
+            outdoor_temp_c=30.0, comfort_config=_HEAT_ONLY, presence_uncertain=True,
+            is_in_solar_sector=True, morning_position_ha=70,
+            current_position_internal=0,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.decided_by == "HeatEvaluator"
+
+
+class TestTierOrchestratorMorningVsSafetyAndOverride:
+    """B3-010 requirement 4: Morning must not bypass Safety or an active
+    Manual Override -- Tier 1 still early-exits before Morning is ever
+    reached, and the central Tier 2 gate still applies to a Morning
+    candidate exactly like it already does for Night."""
+
+    def test_storm_safety_wins_over_morning_position(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        wdi = build_window_decision_input(
+            window=window, zone=zone,
+            global_defaults=GlobalDefaults(),
+            shade_position_defaults=ShadePositionDefaults(),
+            lifecycle_config=NightDayLifecycleConfig(
+                id="default", morning_position=100, morning_enabled=True,
+            ),
+            lifecycle_state=LifecycleState.MORNING,
+            absence_active=False,
+            current_shading_state=ShadingState.OPEN,
+            outdoor_temp_c=None, indoor_temp_c=None, exposure=None,
+            is_in_solar_sector=False,
+            weather_condition=WeatherCondition.STORM,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        assert result.shading_state is ShadingState.STORM_SAFE
+
+    def test_active_manual_override_blocks_morning_position(
+        self, orchestrator: TierOrchestrator, window: WindowConfig, zone: ZoneConfig
+    ) -> None:
+        override = ManualOverride(
+            window_id=window.id, override_position=20,
+            started_at=_NOW, expires_at=_NOW.replace(hour=18),
+            source="position_delta", overridden_state=ShadingState.OPEN,
+            overridden_position=80,
+        )
+        wdi = build_window_decision_input(
+            window=window, zone=zone,
+            global_defaults=GlobalDefaults(),
+            shade_position_defaults=ShadePositionDefaults(),
+            lifecycle_config=NightDayLifecycleConfig(
+                id="default", morning_position=100, morning_enabled=True,
+            ),
+            lifecycle_state=LifecycleState.MORNING,
+            absence_active=False,
+            current_shading_state=ShadingState.OPEN,
+            outdoor_temp_c=22.0, indoor_temp_c=21.0,
+            exposure=_exposure(0.0),
+            is_in_solar_sector=False,
+            comfort_config=_NO_COMFORT,
+            active_override=override,
+        )
+        result = orchestrator.evaluate_window(wdi)
+        # LIFECYCLE candidates are always blocked while an override is
+        # active (unchanged manual_override_policy.py semantics, same as
+        # NightEvaluator) -- the override's own hold position applies.
+        assert result.shading_state is ShadingState.MANUAL_OVERRIDE
+        assert result.decided_by == "ManualOverrideEvaluator"

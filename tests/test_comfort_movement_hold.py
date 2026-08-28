@@ -80,15 +80,21 @@ class TestConstants:
         # Matches the user's explicit target: "about once per hour".
         assert COMFORT_MOVEMENT_MIN_HOLD_MINUTES == 60.0
 
-    def test_non_priority_deciders_are_solar_heat_glare_and_fallback(self):
+    def test_non_priority_deciders_are_solar_heat_glare_fallback_and_morning(self):
         # v1.1.2 follow-up: TierOrchestrator:fallback joined the set.
+        # B3-010 field fix: MorningEvaluator joined the set (its one-cycle
+        # transition dispatch is what the immediately following Fallback/
+        # Open proposal must be held against).
         assert NON_PRIORITY_DECIDERS == frozenset({
             "SolarEvaluator", "HeatEvaluator", "GlareEvaluator",
-            "TierOrchestrator:fallback",
+            "TierOrchestrator:fallback", "MorningEvaluator",
         })
 
     def test_fallback_open_is_now_a_non_priority_decider(self):
         assert "TierOrchestrator:fallback" in NON_PRIORITY_DECIDERS
+
+    def test_morning_evaluator_is_a_non_priority_decider(self):
+        assert "MorningEvaluator" in NON_PRIORITY_DECIDERS
 
     def test_safety_night_absence_deciders_are_not_non_priority(self):
         for decider in (
@@ -814,6 +820,256 @@ class TestProtectiveShadeAfterFallbackOpenBypassesHold:
         assert held is False
 
 
+class TestFactBasedReleaseViaActualPositionB3010R4:
+    """B3-010 R4/R5: the hold releases immediately -- not after hold_minutes
+    -- the moment the REAL observed position diverges from what was last
+    dispatched by MORE than the canonical position tolerance. This is the
+    fact-based release the correction ticket demanded alongside the bounded
+    time cap: "unchanged decision-relevant facts -> no fallback" and
+    "presence/contact/safety/lifecycle change -> re-decide now" both reduce,
+    in the common case, to "the physical position is still what SmartShading
+    left it at" -- the moment that stops being true (beyond tolerance),
+    holding back the new proposal no longer protects anything real.
+
+    R5: the comparison is now `abs(delta) > DEFAULT_POSITION_TOLERANCE_INTERNAL`
+    instead of a strict `!=` -- a single point of sensor rounding/reporting
+    noise must not spuriously release the hold (see
+    TestPositionDriftToleranceBoundaryB3010R5 below for the boundary
+    proof)."""
+
+    def test_position_drifted_from_last_dispatched_target_releases_immediately(self):
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),  # well within hold_minutes
+            actual_position_ha=55,  # cover is no longer at 70 -- something changed
+        )
+        assert held is False, (
+            "a real position drift away from the last dispatched target is "
+            "a genuine changed fact -- must release immediately, not wait "
+            "for the 60-minute safety-net cap"
+        )
+
+    def test_position_still_matches_last_dispatched_target_stays_held(self):
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+            actual_position_ha=70,  # exactly where Morning left it -- unchanged facts
+        )
+        assert held is True
+
+    def test_unknown_actual_position_preserves_the_ordinary_time_based_hold(self):
+        # actual_position_ha=None (position unavailable/untrustworthy this
+        # cycle) must not be treated as "drifted" -- falls back to the
+        # ordinary elapsed-time behavior, unchanged.
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+            actual_position_ha=None,
+        )
+        assert held is True
+
+
+class TestPositionDriftToleranceBoundaryB3010R5:
+    """B3-010 R5: the fact-based release uses the canonical position
+    tolerance (DEFAULT_POSITION_TOLERANCE_INTERNAL = 3), not a strict `!=`,
+    so a single point of rounding/reporting noise around the last dispatched
+    target does not spuriously release the hold."""
+
+    def test_within_tolerance_stays_held(self):
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+            actual_position_ha=72,  # +2, inside the 3-point tolerance
+        )
+        assert held is True
+
+    def test_at_the_tolerance_boundary_stays_held(self):
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+            actual_position_ha=73,  # exactly +3, the boundary itself -- not > tolerance
+        )
+        assert held is True
+
+    def test_just_beyond_tolerance_releases(self):
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+            actual_position_ha=74,  # +4, first value strictly beyond tolerance
+        )
+        assert held is False
+
+
+class TestMorningToFallbackOpenIsHeldB3010:
+    """B3-010: the plain Fallback/Open proposed the cycle immediately after
+    MorningEvaluator's own one-cycle transition dispatch must NOT
+    immediately re-drive the cover to a different target — held exactly
+    like a Fallback/Open<->comfort-tier alternation, using the SAME
+    mechanism (widened NON_PRIORITY_DECIDERS membership), not a new one."""
+
+    def test_fallback_open_right_after_morning_partial_position_is_held(self):
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is True, (
+            "the immediately following Fallback/Open must be held against "
+            "Morning's just-dispatched target — this is the exact mechanism "
+            "that prevents the unwanted second movement"
+        )
+
+    def test_fallback_open_is_released_after_the_hold_window(self):
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=61),
+        )
+        assert held is False, (
+            "ordinary daytime operation eventually takes over once the hold "
+            "window elapses — this is not a permanent baseline"
+        )
+
+    def test_same_target_is_not_counted_as_held(self):
+        # Morning's configured position happens to already equal the
+        # fallback's own target (e.g. morning_position=100 = fully open) —
+        # nothing to hold, CommandFilter's own same-position check applies.
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=100, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is False
+
+    def test_out_of_solar_sector_confirmed_exit_does_not_bypass_the_morning_hold(self):
+        """Real bug found in review: is_confirmed_exit is a geometric
+        "sun genuinely left this window's solar sector" fact, computed for
+        EVERY Fallback/Open proposal regardless of what is being held
+        against. A north-facing/out-of-sector window is out of its solar
+        sector on essentially every cycle, so is_confirmed_exit=True is the
+        COMMON case for such windows, not an edge case. Before this fix,
+        that made the confirmed-exit carve-out unconditionally bypass the
+        should_hold() check, defeating the Morning->Fallback hold for any
+        such window and allowing the exact unwanted second movement the
+        hold exists to prevent, immediately, on the very next cycle."""
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            is_confirmed_exit=True,  # window is out of its solar sector this cycle
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is True, (
+            "a Morning-held target must stay held even when the window is "
+            "confirmed out of its solar sector -- that geometric fact has "
+            "no bearing on a non-solar-driven Morning position"
+        )
+
+    def test_confirmed_exit_still_bypasses_a_genuine_fallback_to_fallback_hold(self):
+        """Control: the ORIGINAL confirmed-exit carve-out (last dispatch was
+        itself TierOrchestrator:fallback, e.g. a prior confirmed-exit open)
+        must remain unaffected by the B3-010 fix -- only the Morning case is
+        excluded."""
+        h = _hold()
+        h.record_dispatch(decided_by="TierOrchestrator:fallback", target_ha=50, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            is_confirmed_exit=True,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is False
+
+
+class TestProtectiveShadeAfterMorningBypassesHoldB3010:
+    """B3-010: a genuinely stronger Solar/Heat/Glare protective need arising
+    shortly after the Morning transition must apply immediately, exactly
+    like it already bypasses a hold recorded against a prior Fallback/Open
+    (F27) — Morning is not a protective decision either."""
+
+    def test_glare_after_morning_is_not_held(self):
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="GlareEvaluator",
+            proposed_target_ha=30,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is False
+
+    def test_heat_after_morning_is_not_held(self):
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="HeatEvaluator",
+            proposed_target_ha=30,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is False
+
+    def test_solar_after_morning_is_not_held(self):
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="SolarEvaluator",
+            proposed_target_ha=30,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is False
+
+    def test_opening_direction_after_morning_is_still_held(self):
+        # A LESS shaded (higher HA) target than Morning's own is not a
+        # protective move — ordinary hold rule applies.
+        h = _hold()
+        h.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        held = h.should_hold(
+            proposed_decided_by="GlareEvaluator",
+            proposed_target_ha=90,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is True
+
+
 class TestCombinedSequencesAreNowStable:
     """End-to-end sequence checks mirroring the user's exact examples."""
 
@@ -910,6 +1166,91 @@ class TestRestartLosesHoldState:
         assert held is False
 
 
+class TestMorningHoldNotSetWhenNothingActuallyMovedB3010:
+    """B3-010: coordinator.py only calls record_dispatch() when
+    `_exec_plan_result.any_sent and not _exec_plan_result.any_failed`
+    (coordinator.py ~6071-6079) — i.e. a genuinely confirmed SENT dispatch,
+    never on a blocked, already-at-target, or failed attempt. This is
+    architecturally correct for the "no unwanted second movement" concern
+    the Morning hold exists for: if Morning's own cycle never actually moved
+    the cover, there is no first movement for a following cycle's proposal
+    to be a SECOND movement of — the following cycle's proposal, if
+    dispatched, would be the first real movement, not a second one. These
+    tests prove the hold's own behavior in that situation directly; the
+    coordinator's gating of record_dispatch() itself (not part of
+    ComfortMovementHold) is a separate, pre-existing, unrelated mechanism
+    not modified by B3-010."""
+
+    def test_morning_already_within_tolerance_no_hold_recorded_next_dispatches_freely(self):
+        # Morning's target was already within CommandFilter's position
+        # tolerance of the cover's current position -> classified
+        # same_position -> never dispatched -> record_dispatch() never
+        # called for this window this cycle.
+        h = _hold()
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is False, (
+            "nothing moved during the Morning cycle, so the following "
+            "cycle's proposal is the first real movement, not a second one "
+            "-- correctly not held"
+        )
+
+    def test_morning_blocked_by_command_filter_no_hold_recorded(self):
+        # Same outcome regardless of WHY Morning never dispatched (same
+        # reasoning as same_position above) -- e.g. blocked by an active
+        # override, cover unavailable, or any other CommandFilter block.
+        h = _hold()
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is False
+
+    def test_morning_dispatch_failed_no_hold_recorded(self):
+        # A failed service call (any_failed=True) also never calls
+        # record_dispatch() -- the cover's real position is unknown/
+        # unchanged, so again there is no confirmed first movement to guard
+        # a "second" movement against.
+        h = _hold()
+        held = h.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held is False
+
+    def test_only_one_of_two_windows_sent_holds_are_tracked_independently(self):
+        # ComfortMovementHold instances are per-window (coordinator.py's
+        # self._comfort_movement_holds dict, keyed by window_id) -- window A
+        # (successfully dispatched Morning) and window B (blocked/failed)
+        # must be held independently, never cross-contaminating.
+        h_a = _hold()  # window A: Morning succeeded
+        h_a.record_dispatch(decided_by="MorningEvaluator", target_ha=70, now=_T0)
+        h_b = _hold()  # window B: Morning never dispatched
+
+        held_a = h_a.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        held_b = h_b.should_hold(
+            proposed_decided_by="TierOrchestrator:fallback",
+            proposed_target_ha=100,
+            is_strong_escalation=False,
+            now=_T0 + timedelta(minutes=1),
+        )
+        assert held_a is True, "window A actually moved -- must be held"
+        assert held_b is False, "window B never moved -- correctly not held"
+
+
 # ---------------------------------------------------------------------------
 # F10 — Sensor Smoothing Decision (2026-07-08): combined-pipeline proof.
 #
@@ -917,8 +1258,8 @@ class TestRestartLosesHoldState:
 # This class drives the REAL StateGuard + CommandFilter + ComfortMovementHold
 # together across a boundary-straddling solar-exposure oscillation at the
 # real 5-minute coordinator cadence, proving the F10 task's own example:
-# "Solar-W/m^2-Spike loest nicht direkt dauernd neue Befehle aus, weil
-# CommandFilter/Guard greift." A noisy sensor hovering across a
+# "A solar W/m^2 spike does not directly trigger constant new commands,
+# because CommandFilter/Guard intervenes." A noisy sensor hovering across a
 # NORMAL_SHADE(40) <-> STRONG_SHADE(60) decision boundary produces exactly
 # ONE real dispatch across 6 cycles (60 minutes), not 6.
 # ---------------------------------------------------------------------------

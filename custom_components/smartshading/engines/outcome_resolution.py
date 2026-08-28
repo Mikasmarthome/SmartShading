@@ -84,6 +84,7 @@ from ..models.multi_objective_outcome import (
     PreferenceOutcome,
     ThermalOutcome,
 )
+from ..cover_control.position_semantics import DEFAULT_POSITION_TOLERANCE_INTERNAL
 from ..models.pending_outcome import PendingOutcome
 from ..state_machine.states import ShadingState
 
@@ -231,6 +232,22 @@ _OUTDOOR_HEAT_PENALTY_ZERO_C: float = 40.0
 _OPEN_OVERHEAT_THRESHOLD_C: float = 3.0   # rises above this trigger the penalty
 _OPEN_OVERHEAT_PENALTY_PER_C: float = 0.05  # per degree above threshold
 _OPEN_OVERHEAT_MAX_PENALTY: float = 0.10   # cap
+# B3-010 R5: the overheat penalty targets "left fully open with zero shading"
+# — internal convention 0=open, 100=shaded. This is NOT a workaround for
+# ShadingState.OPEN's own coarse granularity (that ambiguity is resolved
+# below by checking target_position directly, the ground truth); it is the
+# SAME canonical "close enough to be the same position" tolerance the
+# dispatch layer uses — cover_control.position_semantics
+# .DEFAULT_POSITION_TOLERANCE_INTERNAL — imported directly here rather than
+# duplicated as a second literal or read off cover_control.command_filter
+# .ExecutionCapability (a dispatch-execution dataclass this Learning-side
+# module has no other reason to depend on). ExecutionCapability.
+# position_tolerance itself now defaults to the SAME constant, so the two
+# call sites can never silently drift apart again. A genuinely configured
+# non-trivial morning_position is always well above this tolerance, and
+# even then the penalty itself is capped and small
+# (_OPEN_OVERHEAT_MAX_PENALTY), never a hard misclassification.
+_OPEN_HEAT_PENALTY_MAX_INTERNAL_POSITION: int = DEFAULT_POSITION_TOLERANCE_INTERNAL
 
 
 def _resolution_status(
@@ -327,12 +344,28 @@ def _open_heat_component(
     trigger: OutcomeResolutionTrigger,
     decided_state: ShadingState,
     indoor_temp_delta_c: float | None,
+    target_position: int | None = None,
 ) -> float:
-    """Conservative overheating penalty for OPEN decisions.
+    """Conservative overheating penalty for OPEN decisions left FULLY open.
 
     Returns a small negative penalty when SmartShading left the window open
     and the room heated substantially (delta > _OPEN_OVERHEAT_THRESHOLD_C).
     Only applies to TIMEOUT (full observation window without override).
+
+    B3-010 correction: `decided_state != ShadingState.OPEN` alone used to be
+    a reliable proxy for "left the window fully open with zero shading",
+    because the only real-world producer of ShadingState.OPEN was the
+    hardcoded fallback (target_position == 0, internal 0 = open). Now that a
+    configured, possibly-partial morning_position also carries
+    shading_state=OPEN (evaluators/morning_evaluator.py), that proxy alone
+    would misclassify an already-partially-shaded morning decision as "left
+    wide open" and apply an overheat penalty it never earned — the window
+    was NOT left fully open. `target_position` (internal convention, 0=open)
+    is therefore also checked: the penalty only applies when the position is
+    at or near fully open (<= _OPEN_HEAT_PENALTY_MAX_INTERNAL_POSITION).
+    Missing position data (None, e.g. an older persisted PendingOutcome
+    without this field) preserves the prior, unconditional-on-position
+    behavior exactly.
 
     Score contribution: -0.05 per degree above threshold, capped at -0.10.
     Examples: +4 °C rise → -0.05; +5 °C rise → -0.10; +6 °C+ → -0.10.
@@ -341,6 +374,8 @@ def _open_heat_component(
         return 0.0
     if decided_state != ShadingState.OPEN:
         return 0.0
+    if target_position is not None and target_position > _OPEN_HEAT_PENALTY_MAX_INTERNAL_POSITION:
+        return 0.0  # a real, partially-shaded OPEN decision -- not "left wide open"
     if indoor_temp_delta_c is None or indoor_temp_delta_c <= _OPEN_OVERHEAT_THRESHOLD_C:
         return 0.0
     excess = indoor_temp_delta_c - _OPEN_OVERHEAT_THRESHOLD_C
@@ -353,6 +388,7 @@ def _compute_context_score(
     override_delay_min: float | None,
     indoor_temp_delta_c: float | None,
     outdoor_temp_c: float | None = None,
+    target_position: int | None = None,
 ) -> float:
     """Compute the trigger/context score component in [-1.0, +1.0].
 
@@ -388,7 +424,7 @@ def _compute_context_score(
             stability
             + _temp_component(decided_state, indoor_temp_delta_c, outdoor_temp_c)
             + _thermal_hold_component(trigger, decided_state, indoor_temp_delta_c)
-            + _open_heat_component(trigger, decided_state, indoor_temp_delta_c)
+            + _open_heat_component(trigger, decided_state, indoor_temp_delta_c, target_position)
         )
 
     return max(-1.0, min(1.0, score))
@@ -1092,6 +1128,7 @@ def resolve_outcome(
         override_delay_min=inp.override_delay_min,
         indoor_temp_delta_c=indoor_temp_delta_c,
         outdoor_temp_c=pending.outdoor_temp_at_decision,
+        target_position=pending.target_position,
     )
 
     # T12: MultiObjectiveOutcome is the single source of truth for outcome

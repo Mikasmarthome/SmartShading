@@ -91,7 +91,10 @@ class BehaviorConfig:
 
     # Target position on the MORNING transition (one-cycle event).
     # None = no explicit morning position override (pipeline takes over immediately).
-    # Phase 2 only; MorningEvaluator is not part of this version.
+    # Evaluated by MorningEvaluator (v1.2.0-beta.3, B3-010) as a PositionResolver
+    # candidate alongside Tier 4/5 — NOT an early exit like night_position;
+    # a higher-priority protection/comfort floor still wins. See
+    # evaluators/morning_evaluator.py and evaluators/tier_orchestrator.py.
     morning_position: int | None = None
 
     # --- Tier 4: Protection Floor positions -----------------------------------

@@ -478,6 +478,8 @@ def serialize_learning_store(
     owner_zone_id: str | None = None,
     support_critical_events: list | None = None,
     research_daily_buckets: dict | None = None,
+    morning_last_processed: dict | None = None,
+    night_last_started: dict | None = None,
 ) -> dict:
     """Serialize the LearningStore to a JSON-safe dict.
 
@@ -614,6 +616,13 @@ def serialize_learning_store(
         # P4c — persisted critical support events + daily research accumulation buckets.
         "support_critical_events": _prune_support_events(support_critical_events or [], now),
         "research_daily_buckets": _prune_daily_buckets(research_daily_buckets or {}, now),
+        # B3-010 R12 — minimal restart/reload-safe Morning marker (additive).
+        # {window_id: ISO-date-string}, see RestoreExtras.morning_last_processed.
+        "morning_last_processed": dict(morning_last_processed or {}),
+        # B3-010 R14 item 2 — minimal missed_transition_proven evidence marker
+        # (additive). {window_id: ISO-date-string}, see
+        # RestoreExtras.night_last_started.
+        "night_last_started": dict(night_last_started or {}),
         "created_by_domain": "smartshading",
     }
 
@@ -792,6 +801,8 @@ class RestoreExtras:
     support_critical_events: list = field(default_factory=list)  # P4c compact critical events
     research_daily_buckets: dict = field(default_factory=dict)  # P4c date → counts
     assumed_state: dict = field(default_factory=dict)  # T16: cover_id -> raw assumed-state dict
+    morning_last_processed: dict = field(default_factory=dict)  # B3-010: window_id -> ISO date string
+    night_last_started: dict = field(default_factory=dict)  # B3-010 R14: window_id -> ISO date string
 
 
 def deserialize_into_learning_store(
@@ -1137,6 +1148,26 @@ def deserialize_into_learning_store(
         if isinstance(k, str) and isinstance(v, dict) and "last_known_good_at" in v
     }
 
+    # B3-010 R12: minimal restart/reload-safe Morning marker (additive).
+    # Raw {window_id: ISO-date-string} dict; the coordinator parses/
+    # validates the date and applies the "only today's date counts"
+    # filter on read (a marker from a prior day must never suppress
+    # today's real Morning). Only basic shape validation (str keys, str
+    # values) happens here — date parsing itself happens coordinator-side
+    # so a malformed date string is skipped individually, never raises.
+    _raw_mlp = data.get("morning_last_processed") or {}
+    morning_last_processed: dict = {
+        k: v for k, v in _raw_mlp.items() if isinstance(k, str) and isinstance(v, str)
+    }
+
+    # B3-010 R14 item 2: minimal missed_transition_proven evidence marker
+    # (additive) -- same shape-only validation pattern as
+    # morning_last_processed immediately above.
+    _raw_nls = data.get("night_last_started") or {}
+    night_last_started: dict = {
+        k: v for k, v in _raw_nls.items() if isinstance(k, str) and isinstance(v, str)
+    }
+
     return RestoreExtras(
         pending_outcomes=pending_outcomes,
         config_generations=config_generations,
@@ -1160,6 +1191,8 @@ def deserialize_into_learning_store(
         support_critical_events=support_critical_events,
         research_daily_buckets=research_daily_buckets,
         assumed_state=assumed_state,
+        morning_last_processed=morning_last_processed,
+        night_last_started=night_last_started,
     )
 
 
@@ -1318,6 +1351,8 @@ class LearningPersistenceAdapter:
         owner_zone_id: str | None = None,
         support_critical_events: list | None = None,
         research_daily_buckets: dict | None = None,
+        morning_last_processed: dict | None = None,
+        night_last_started: dict | None = None,
     ) -> bool:
         """Prune and persist the current in-memory learning data.
 
@@ -1348,6 +1383,8 @@ class LearningPersistenceAdapter:
                 owner_zone_id=owner_zone_id,
                 support_critical_events=support_critical_events,
                 research_daily_buckets=research_daily_buckets,
+                morning_last_processed=morning_last_processed,
+                night_last_started=night_last_started,
             )
             await self._store.async_save(data)
         except Exception as exc:

@@ -224,6 +224,46 @@ class TestPositionThreshold:
 
 
 # ===========================================================================
+# 4b. B3-010 guard: the proposed target itself must be an opening move —
+# never a close disguised as OPEN by a configured partial morning_position.
+# ===========================================================================
+
+class TestProposedTargetMustActuallyBeMoreOpen:
+    def test_partial_morning_target_below_stuck_position_does_not_recover(self):
+        """Stuck at 75 HA; a configured morning_position of 70 HA would be a
+        CLOSE relative to 75, not an opening retract — must not fire."""
+        assert _recovery(**_base_kwargs(
+            actual_position_ha=75, proposed_target_position_ha=70,
+        )) is False
+
+    def test_partial_morning_target_above_stuck_position_still_recovers(self):
+        """Stuck at 0 HA (fully down); a configured morning_position of 70 HA
+        IS a genuine opening move relative to 0 — must still fire."""
+        assert _recovery(**_base_kwargs(
+            actual_position_ha=0, proposed_target_position_ha=70,
+        )) is True
+
+    def test_target_equal_to_actual_does_not_recover(self):
+        """A same-position "open" is not itself an opening move."""
+        assert _recovery(**_base_kwargs(
+            actual_position_ha=30, proposed_target_position_ha=30,
+        )) is False
+
+    def test_target_omitted_preserves_prior_behavior(self):
+        """proposed_target_position_ha defaults to None (unknown/not
+        threaded through by an older call site) — the check is then skipped
+        entirely, preserving the pre-B3-010 behavior exactly."""
+        assert _recovery(**_base_kwargs(actual_position_ha=0)) is True
+
+    def test_full_open_target_from_generic_fallback_still_recovers(self):
+        """Control: the historical case (generic fallback, target 100 HA)
+        remains a valid opening move from any clearly-below-open position."""
+        assert _recovery(**_base_kwargs(
+            actual_position_ha=30, proposed_target_position_ha=100,
+        )) is True
+
+
+# ===========================================================================
 # 5. Guards: priority paths keep recovery inert.
 # ===========================================================================
 

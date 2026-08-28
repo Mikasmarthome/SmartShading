@@ -717,6 +717,24 @@ def _day_wdi_with_comfort(window):
     )
 
 
+def _morning_wdi_with_comfort(window):
+    """Same shape as _day_wdi_with_comfort(), but on the actual MORNING
+    transition cycle -- the only lifecycle_state MorningEvaluator ever
+    produces a candidate for (see evaluators/morning_evaluator.py)."""
+    zone = ZoneConfig(id="z1", name="Zone")
+    defaults = GlobalDefaults(absence_position=30, absence_shading_enabled=True)
+    lifecycle_config = NightDayLifecycleConfig(id="default")
+    comfort = ComfortConfig(heat_protection_enabled=True, glare_protection_enabled=True)
+    return build_window_decision_input(
+        window=window, zone=zone, global_defaults=defaults,
+        shade_position_defaults=ShadePositionDefaults(),
+        lifecycle_config=lifecycle_config, lifecycle_state=LifecycleState.MORNING,
+        absence_active=False, current_shading_state=ShadingState.OPEN,
+        outdoor_temp_c=32.0, indoor_temp_c=29.0, exposure=None,
+        is_in_solar_sector=True, comfort_config=comfort,
+    )
+
+
 class TestF8BehaviorModeMaskingNullsHeatSolarGlare:
 
     def test_absence_and_schedule_masks_heat_solar_glare(self):
@@ -779,3 +797,85 @@ class TestF8BehaviorModeMaskingNullsHeatSolarGlare:
         assert masked is wdi  # pure pass-through, no replace() at all
         assert masked.effective_behavior.heat_outdoor_threshold_c is not None
         assert masked.effective_behavior.glare_protection_enabled is True
+
+
+# ===========================================================================
+# B3-010 — morning_position masking for ABSENCE_ONLY / DISABLED_AUTOMATIC
+#
+# MorningEvaluator only ever produces a candidate for the one-cycle
+# LifecycleState.MORNING transition, never for DAY (see
+# evaluators/morning_evaluator.py) — so ABSENCE_ONLY/DISABLED_AUTOMATIC
+# forcing lifecycle_state=DAY already keeps these modes free of any
+# lifecycle/morning control on its own. effective_behavior.morning_position
+# is ALSO explicitly nulled here regardless, mirroring the existing heat/
+# glare/absence masking pattern exactly — belt-and-braces coverage for the
+# genuine MORNING transition cycle itself, which happens BEFORE this
+# DAY-forcing applies (see _apply_window_behavior_mode()'s own docstring).
+# ===========================================================================
+
+class TestB3010MorningPositionMaskedForRestrictedModes:
+    def test_absence_only_masks_morning_position(self):
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.ABSENCE_ONLY,
+        )
+        wdi = _day_wdi_with_comfort(window)
+        assert wdi.effective_behavior.morning_position is not None  # sanity: real before masking
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.ABSENCE_ONLY)
+        assert masked.effective_behavior.morning_position is None
+
+    def test_disabled_automatic_masks_morning_position(self):
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.DISABLED_AUTOMATIC,
+        )
+        wdi = _day_wdi_with_comfort(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.DISABLED_AUTOMATIC)
+        assert masked.effective_behavior.morning_position is None
+
+    def test_absence_and_schedule_keeps_morning_position(self):
+        """Regression guard: ABSENCE_AND_SCHEDULE must NOT be masked — it
+        keeps the real night/morning lifecycle active, unchanged."""
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+        )
+        wdi = _day_wdi_with_comfort(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.ABSENCE_AND_SCHEDULE)
+        assert masked.effective_behavior.morning_position is not None
+
+    def test_fully_automatic_keeps_morning_position_untouched(self):
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.FULLY_AUTOMATIC,
+        )
+        wdi = _day_wdi_with_comfort(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.FULLY_AUTOMATIC)
+        assert masked.effective_behavior.morning_position is not None
+
+    def test_absence_only_morning_evaluator_returns_none_end_to_end(self):
+        """Full-pipeline proof: ABSENCE_ONLY windows, masked, get NO Morning
+        candidate at all from MorningEvaluator directly (not just a nulled
+        field in isolation) -- checked on the actual MORNING transition
+        cycle, the only cycle MorningEvaluator ever produces a candidate
+        for."""
+        from custom_components.smartshading.evaluators.morning_evaluator import MorningEvaluator
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.ABSENCE_ONLY,
+        )
+        wdi = _morning_wdi_with_comfort(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.ABSENCE_ONLY)
+        assert MorningEvaluator().evaluate(masked) is None
+
+    def test_absence_and_schedule_morning_evaluator_still_fires_end_to_end(self):
+        from custom_components.smartshading.evaluators.morning_evaluator import MorningEvaluator
+        window = WindowConfig(
+            id="w1", name="W", zone_id="z1", azimuth=180.0, floor_level=0,
+            cover_group_id="cg1", behavior_mode=WindowBehaviorMode.ABSENCE_AND_SCHEDULE,
+        )
+        wdi = _morning_wdi_with_comfort(window)
+        masked = _apply_window_behavior_mode(wdi, WindowBehaviorMode.ABSENCE_AND_SCHEDULE)
+        result = MorningEvaluator().evaluate(masked)
+        assert result is not None
+        assert result.decided_by == "MorningEvaluator"

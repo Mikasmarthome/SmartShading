@@ -121,6 +121,32 @@ class WindowDecisionInput:
     # unchanged. Never touched by anything other than the Coordinator.
     heat_previously_active: bool = False
 
+    # B3-010 correction: the window's best-known CURRENT cover position,
+    # already in SmartShading internal convention (0=open, 100=shaded) —
+    # the Coordinator resolves this from AssumedStateManager (reliable
+    # actual feedback, or an assumed position ONLY when
+    # AssumedStateManager.is_position_trustworthy() is True) BEFORE
+    # building this WDI, so no invert_position conversion is needed here
+    # (AssumedStateManager already stores/returns internal-convention
+    # values regardless of the physical cover's invert quirk). None when
+    # genuinely unknown or not (yet) trustworthy — TierOrchestrator's
+    # presence_uncertain direction check treats None as the conservative
+    # "cannot confirm a closing move" case, never a numeric guess.
+    current_position_internal: int | None = None
+
+    # B3-010: the still-pending Morning Reconciliation target for this
+    # window, in internal convention, or None when there is nothing
+    # pending for today (satisfied/superseded/invalidated/stale/never
+    # started). Resolved by the Coordinator from
+    # engines.morning_reconciliation.pending_target_position_ha() BEFORE
+    # building this WDI. MorningEvaluator re-proposes this target every
+    # DAY cycle while it is not None, replacing the old "MorningEvaluator
+    # fires once, then ComfortMovementHold throttles the fallback" design
+    # — the commitment now stays in the SAME Tier 3/4/5 arbitration pool
+    # every cycle until genuinely satisfied or superseded, not merely
+    # throttled by a timer.
+    morning_reconciliation_pending_target_internal: int | None = None
+
 
 # ---------------------------------------------------------------------------
 # Builder
@@ -168,6 +194,10 @@ def build_window_decision_input(
     # Heat protection hysteresis (v1.2.0-beta.1, T9) — see WindowDecisionInput
     # .heat_previously_active docstring.
     heat_previously_active: bool = False,
+    # B3-010 — see WindowDecisionInput.current_position_internal docstring.
+    current_position_internal: int | None = None,
+    # B3-010 — see WindowDecisionInput.morning_reconciliation_pending_target_internal docstring.
+    morning_reconciliation_pending_target_internal: int | None = None,
 ) -> WindowDecisionInput:
     """Assemble a WindowDecisionInput for one window evaluation cycle.
 
@@ -305,4 +335,6 @@ def build_window_decision_input(
         contact_status=contact_status,
         presence_uncertain=presence_uncertain,
         heat_previously_active=heat_previously_active,
+        current_position_internal=current_position_internal,
+        morning_reconciliation_pending_target_internal=morning_reconciliation_pending_target_internal,
     )

@@ -221,6 +221,48 @@ def _build_consolidated(runtime_data: Any) -> dict:
         return {"section_errors": {"builder": 1}}
 
 
+async def _build_support_and_research_sections(hass: HomeAssistant) -> dict:
+    """Aggregate the same privacy-safe Support/Research Export payloads the
+    (now-removed) /config/www export buttons used to write to an
+    unauthenticated public file — see entities/button.py's own module
+    docstring for why that path was removed. Reuses the existing,
+    already privacy-safe builders unmodified (no entity IDs, no room/window
+    names, no device IDs — see build_support_export_all_zones's and
+    build_research_export_all_zones's own docstrings); this is additive
+    aggregation for the standard HA diagnostics download, never a second
+    export mechanism.
+
+    integration_version() reads manifest.json from disk — run in the
+    executor so this genuinely async HA hook never blocks the event loop
+    on synchronous file I/O.
+
+    Never raises: any failure degrades to a section_error, exactly like
+    every other section in this module.
+    """
+    try:
+        from .const import integration_version
+        from .engines.research_export_v3 import build_research_export_all_zones
+        from .engines.support_export import build_support_export_all_zones
+        from .entities.button import _active_zone_coordinators
+
+        now = datetime.now(timezone.utc)
+        coordinators = _active_zone_coordinators(hass)
+        version = await hass.async_add_executor_job(integration_version)
+        return {
+            "support_export": build_support_export_all_zones(
+                coordinators, now=now, integration_version=version,
+            ),
+            "research_export": build_research_export_all_zones(
+                coordinators, now=now, integration_version=version,
+            ),
+        }
+    except Exception:
+        _LOGGER.warning(
+            "SmartShading: support/research export diagnostics failed — partial"
+        )
+        return {"section_errors": {"support_research_export": 1}}
+
+
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -229,9 +271,16 @@ async def async_get_config_entry_diagnostics(
 
     P11: consolidated PUBLIC_SAFE contract (system/learning/execution/storage/
     validation/health) plus the existing forecast section.  Read-only; counts and
-    status only; no raw ids, no exact historical timestamps."""
+    status only; no raw ids, no exact historical timestamps.
+
+    Also includes the aggregated Support/Research Export sections (previously
+    only reachable by pressing a button that wrote an unauthenticated file to
+    /config/www — see _build_support_and_research_sections's own docstring),
+    on every entry (system or zone) so the data is available regardless of
+    which SmartShading entry's diagnostics a user downloads."""
     runtime_data = getattr(entry, "runtime_data", None)
     return {
         **_build_consolidated(runtime_data),
         "forecast_learning": build_forecast_diagnostics(runtime_data),
+        **await _build_support_and_research_sections(hass),
     }

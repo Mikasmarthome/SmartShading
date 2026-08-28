@@ -1,5 +1,5 @@
-"""Tests for the smartshading.clear_manual_override service (v1.2.0-beta.1,
-T10.1) — custom_components/smartshading/services.py.
+"""Tests for the smartshading.clear_manual_override service —
+custom_components/smartshading/services.py.
 
 Uses lightweight duck-typed hass/config-entry/coordinator fakes rather than
 the full real-SmartShadingCoordinator HA-stub technique used elsewhere —
@@ -9,6 +9,20 @@ self-contained and does not need a real coordinator to exercise. The
 Learning/diagnostics-accuracy fix (T10.1, coordinator.py) is covered
 separately in test_coordinator_explicit_clear_reason.py against the real
 Coordinator per-cycle loop.
+
+v1.2.0-beta.2.1 HA-compatibility hotfix: the stub for
+homeassistant.helpers.service used to define a bare
+async_extract_referenced_entity_ids(hass, call) function — the OLD,
+pre-migration API shape services.py used to import directly. Because the
+test built its own stub instead of importing anything from a real
+homeassistant install, it could not detect that this exact import was
+removed from a real, current Home Assistant release (see
+TestRealImportAgainstCurrentHomeAssistant below, and services.py's own
+adapter docstring for the full root-cause account). The stub below now
+mirrors the REAL current homeassistant.helpers.target module shape
+(TargetSelection + async_extract_referenced_entity_ids(hass,
+target_selection, ...) -> SelectedEntities) instead of re-implementing the
+old, now-removed one.
 
 Coverage:
   SVC-01  Successful clear of an active override, any release strategy.
@@ -29,6 +43,14 @@ Coverage:
           service when no OTHER zone entry is still loaded.
   SVC-11  async_unload_services_if_no_zone_entries_remain is a no-op while
           another zone entry is still loaded.
+  SVC-12  TargetSelection(call.data) is actually constructed and passed to
+          the real extraction function (not bypassed).
+  SVC-13  Direct entity target resolves via the current API shape.
+  SVC-14  Device target resolves via indirectly_referenced.
+  SVC-15  Area target resolves via indirectly_referenced.
+  SVC-16  Multiple targets (entity + device) are merged/deduplicated.
+  SVC-17  The old, removed homeassistant.helpers.service import path does
+          not appear anywhere in services.py's source.
 """
 from __future__ import annotations
 
@@ -102,10 +124,68 @@ _er_mod = sys.modules.setdefault("homeassistant.helpers.entity_registry", _stub(
 if not hasattr(_er_mod, "async_get"):
     _er_mod.async_get = lambda hass: None
 
-sys.modules["homeassistant.helpers.service"] = _stub(
-    "homeassistant.helpers.service",
-    async_extract_referenced_entity_ids=lambda hass, call: None,
+
+class _FakeSelected:
+    def __init__(self, referenced=(), indirectly_referenced=()) -> None:
+        self.referenced = set(referenced)
+        self.indirectly_referenced = set(indirectly_referenced)
+
+
+class _FakeTargetSelection:
+    """Mirrors the shape of the REAL current
+    homeassistant.helpers.target.TargetSelection: extracts entity/device/area
+    ids from the raw service-call data dict (call.data), nothing else."""
+
+    def __init__(self, config: dict) -> None:
+        def _as_set(v):
+            if v is None:
+                return set()
+            if isinstance(v, (list, tuple, set)):
+                return set(v)
+            return {v}
+
+        self.entity_ids = _as_set(config.get("entity_id"))
+        self.device_ids = _as_set(config.get("device_id"))
+        self.area_ids = _as_set(config.get("area_id"))
+
+    @property
+    def has_any_target(self) -> bool:
+        return bool(self.entity_ids or self.device_ids or self.area_ids)
+
+
+def _fake_async_extract_referenced_entity_ids(
+    hass, target_selection, expand_group=True, *, primary_entities_only=True
+):
+    """Mirrors the CONTRACT of the REAL current
+    homeassistant.helpers.target.async_extract_referenced_entity_ids:
+    directly targeted entity_ids land in `referenced`; entities resolved via
+    a device_id/area_id land in `indirectly_referenced`. Device/area -> entity
+    resolution reads a small fake lookup table the test attaches to `hass`
+    (`hass._device_entities`, `hass._area_entities`) — this replicates the
+    CONTRACT the real function honors, it does not reimplement Home
+    Assistant's own registry-walking logic."""
+    selected = _FakeSelected(referenced=target_selection.entity_ids)
+    for device_id in target_selection.device_ids:
+        selected.indirectly_referenced |= getattr(hass, "_device_entities", {}).get(device_id, set())
+    for area_id in target_selection.area_ids:
+        selected.indirectly_referenced |= getattr(hass, "_area_entities", {}).get(area_id, set())
+    return selected
+
+
+# v1.2.0-beta.2.1: the REAL current Home Assistant API surface services.py's
+# adapter imports from — homeassistant.helpers.target, NOT
+# homeassistant.helpers.service (the old, now-removed location — see
+# TestOldImportPathIsGone below for the explicit regression guard, and
+# services.py's own adapter docstring for the full root-cause account).
+sys.modules["homeassistant.helpers.target"] = _stub(
+    "homeassistant.helpers.target",
+    TargetSelection=_FakeTargetSelection,
+    async_extract_referenced_entity_ids=_fake_async_extract_referenced_entity_ids,
 )
+# Deliberately NOT stubbed: homeassistant.helpers.service. services.py no
+# longer imports anything from it — if a regression reintroduces that
+# import, this test module now fails with a real ModuleNotFoundError/
+# ImportError instead of silently succeeding against a self-provided stub.
 
 sys.modules.pop("custom_components.smartshading.services", None)
 from custom_components.smartshading import services as svc  # noqa: E402
@@ -119,12 +199,6 @@ from custom_components.smartshading.const import (  # noqa: E402
 # ---------------------------------------------------------------------------
 # Fakes
 # ---------------------------------------------------------------------------
-
-
-class _FakeSelected:
-    def __init__(self, referenced=(), indirectly_referenced=()) -> None:
-        self.referenced = set(referenced)
-        self.indirectly_referenced = set(indirectly_referenced)
 
 
 class _FakeEntityEntry:
@@ -196,9 +270,15 @@ class _FakeConfigEntries:
 
 
 class _FakeHass:
-    def __init__(self, entries: list) -> None:
+    def __init__(self, entries: list, device_entities=None, area_entities=None) -> None:
         self.config_entries = _FakeConfigEntries(entries)
         self.services = _FakeServiceRegistry()
+        # Consumed only by _fake_async_extract_referenced_entity_ids (the
+        # homeassistant.helpers.target stub above) for the real-adapter-path
+        # tests (TestRealAdapterResolvesViaCurrentApi) — every other test in
+        # this file bypasses target resolution entirely via _patch_extract.
+        self._device_entities: dict[str, set[str]] = device_entities or {}
+        self._area_entities: dict[str, set[str]] = area_entities or {}
 
 
 def _uid(entry_id: str, window_id: str) -> str:
@@ -210,8 +290,14 @@ def _entity_id_for(zone: str, window: str) -> str:
 
 
 def _patch_extract(monkeypatch, entity_ids) -> None:
+    """Bypass target resolution entirely and hand the handler a fixed
+    entity_id set directly — used by every test that only cares about
+    what happens AFTER resolution (registry lookup, coordinator dispatch,
+    error surfacing). Patches the production adapter function
+    (_extract_referenced_entity_ids), not the old removed
+    homeassistant.helpers.service name."""
     monkeypatch.setattr(
-        svc, "async_extract_referenced_entity_ids",
+        svc, "_extract_referenced_entity_ids",
         lambda hass, call: _FakeSelected(referenced=entity_ids),
     )
 
@@ -377,3 +463,133 @@ class TestServiceUnloadOnLastZoneEntry:
 
         svc.async_unload_services_if_no_zone_entries_remain(hass, "e1")
         assert not hass.services.has_service(DOMAIN, svc.SERVICE_CLEAR_MANUAL_OVERRIDE)
+
+
+class TestRealAdapterResolvesViaCurrentApi:
+    """v1.2.0-beta.2.1: exercises svc._extract_referenced_entity_ids
+    UNPATCHED — i.e. the real production adapter, calling the real (stubbed
+    to match the current HA shape) TargetSelection(call.data) and
+    homeassistant.helpers.target.async_extract_referenced_entity_ids, not a
+    test-provided shortcut. Proves the adapter itself (not just the code
+    after it) works against the current API."""
+
+    def test_target_selection_is_actually_constructed_from_call_data(self, monkeypatch) -> None:
+        eid = _entity_id_for("z1", "w1")
+        coord = _FakeCoordinator({"w1": object()})
+        hass = _FakeHass([_FakeConfigEntry("e1", coord)])
+        _patch_registry(monkeypatch, {eid: _uid("e1", "w1")})
+
+        captured: dict = {}
+        real_target_selection_cls = svc._TargetSelection
+
+        def _spy(config):
+            ts = real_target_selection_cls(config)
+            captured["entity_ids"] = set(ts.entity_ids)
+            return ts
+
+        monkeypatch.setattr(svc, "_TargetSelection", _spy)
+
+        asyncio.run(svc._async_handle_clear_manual_override(hass, _FakeCall({"entity_id": eid})))
+        assert captured["entity_ids"] == {eid}
+        assert coord.clear_calls == ["w1"]
+
+    def test_direct_entity_target(self) -> None:
+        eid = _entity_id_for("z1", "w1")
+        coord = _FakeCoordinator({"w1": object()})
+        hass = _FakeHass([_FakeConfigEntry("e1", coord)])
+        er_mod = sys.modules["homeassistant.helpers.entity_registry"]
+        er_mod.async_get = lambda hass: _FakeEntityRegistry({eid: _uid("e1", "w1")})
+
+        asyncio.run(svc._async_handle_clear_manual_override(hass, _FakeCall({"entity_id": eid})))
+        assert coord.clear_calls == ["w1"]
+
+    def test_device_target_resolves_via_indirectly_referenced(self) -> None:
+        eid = _entity_id_for("z1", "w1")
+        coord = _FakeCoordinator({"w1": object()})
+        hass = _FakeHass(
+            [_FakeConfigEntry("e1", coord)],
+            device_entities={"device_1": {eid}},
+        )
+        er_mod = sys.modules["homeassistant.helpers.entity_registry"]
+        er_mod.async_get = lambda hass: _FakeEntityRegistry({eid: _uid("e1", "w1")})
+
+        asyncio.run(svc._async_handle_clear_manual_override(hass, _FakeCall({"device_id": "device_1"})))
+        assert coord.clear_calls == ["w1"]
+
+    def test_area_target_resolves_via_indirectly_referenced(self) -> None:
+        eid = _entity_id_for("z1", "w1")
+        coord = _FakeCoordinator({"w1": object()})
+        hass = _FakeHass(
+            [_FakeConfigEntry("e1", coord)],
+            area_entities={"area_1": {eid}},
+        )
+        er_mod = sys.modules["homeassistant.helpers.entity_registry"]
+        er_mod.async_get = lambda hass: _FakeEntityRegistry({eid: _uid("e1", "w1")})
+
+        asyncio.run(svc._async_handle_clear_manual_override(hass, _FakeCall({"area_id": "area_1"})))
+        assert coord.clear_calls == ["w1"]
+
+    def test_entity_and_device_targets_merge_and_deduplicate(self) -> None:
+        eid1 = _entity_id_for("z1", "w1")
+        eid2 = _entity_id_for("z1", "w2")
+        coord = _FakeCoordinator({"w1": object(), "w2": object()})
+        hass = _FakeHass(
+            [_FakeConfigEntry("e1", coord)],
+            # device_1's own entities include eid1 AGAIN (already directly
+            # targeted) plus eid2 -- must merge/deduplicate, not double-clear w1.
+            device_entities={"device_1": {eid1, eid2}},
+        )
+        er_mod = sys.modules["homeassistant.helpers.entity_registry"]
+        er_mod.async_get = lambda hass: _FakeEntityRegistry(
+            {eid1: _uid("e1", "w1"), eid2: _uid("e1", "w2")}
+        )
+
+        asyncio.run(
+            svc._async_handle_clear_manual_override(
+                hass, _FakeCall({"entity_id": eid1, "device_id": "device_1"})
+            )
+        )
+        assert sorted(coord.clear_calls) == ["w1", "w2"]
+
+    def test_foreign_entity_via_area_target_is_ignored_not_fatal(self) -> None:
+        eid_good = _entity_id_for("z1", "w1")
+        eid_foreign = "sensor.some_unrelated_device_battery"
+        coord = _FakeCoordinator({"w1": object()})
+        hass = _FakeHass(
+            [_FakeConfigEntry("e1", coord)],
+            area_entities={"area_1": {eid_good, eid_foreign}},
+        )
+        er_mod = sys.modules["homeassistant.helpers.entity_registry"]
+        er_mod.async_get = lambda hass: _FakeEntityRegistry(
+            {eid_good: _uid("e1", "w1"), eid_foreign: "unrelated"}
+        )
+
+        asyncio.run(svc._async_handle_clear_manual_override(hass, _FakeCall({"area_id": "area_1"})))
+        assert coord.clear_calls == ["w1"]
+
+    def test_empty_target_raises_via_real_adapter(self) -> None:
+        coord = _FakeCoordinator({"w1": object()})
+        hass = _FakeHass([_FakeConfigEntry("e1", coord)])
+        er_mod = sys.modules["homeassistant.helpers.entity_registry"]
+        er_mod.async_get = lambda hass: _FakeEntityRegistry({})
+
+        with pytest.raises(svc.ServiceValidationError):
+            asyncio.run(svc._async_handle_clear_manual_override(hass, _FakeCall({})))
+        assert coord.clear_calls == []
+
+
+class TestOldImportPathIsGone:
+    """v1.2.0-beta.2.1 regression guard: the import path Home Assistant
+    removed (homeassistant.helpers.service.async_extract_referenced_entity_ids)
+    must never reappear in services.py's source -- that exact reintroduction
+    is the bug this hotfix fixes."""
+
+    def test_old_import_path_not_present_in_services_source(self) -> None:
+        import pathlib
+
+        source = pathlib.Path(svc.__file__).read_text(encoding="utf-8")
+        assert "from homeassistant.helpers.service import async_extract_referenced_entity_ids" not in source
+        assert "helpers.service import async_extract_referenced_entity_ids" not in source
+
+    def test_services_module_uses_the_target_module_not_service_module(self) -> None:
+        assert svc._TargetSelection is sys.modules["homeassistant.helpers.target"].TargetSelection

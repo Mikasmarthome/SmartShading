@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.2.0-beta.2.1
+
+**This is a pre-release.** It is a narrow compatibility hotfix on top of
+v1.2.0-beta.2's current `develop` state (including in-progress, not yet
+finalized Beta 3 work) — not a completed Beta 3 milestone.
+
+- Restored compatibility with current Home Assistant releases: SmartShading
+  failed to import at all under Home Assistant 2026.8 with
+  `ImportError: cannot import name 'async_extract_referenced_entity_ids'
+  from 'homeassistant.helpers.service'` — that function was removed from
+  Home Assistant core after being moved to a new
+  `homeassistant.helpers.target` module. `smartshading.clear_manual_override`'s
+  target resolution now uses the current API on a recent Home Assistant, and
+  automatically falls back to the older API on Home Assistant versions
+  still within this integration's documented "2024.1+" minimum that predate
+  the move — encapsulated in a single small adapter, with no change to
+  entity/device/area target resolution behavior on either path.
+- Added a regression test that imports the integration against a real,
+  installed Home Assistant package rather than only the test suite's
+  existing lightweight stubs, specifically so this class of upstream API
+  removal is caught in the future.
+
 ## v1.2.0-beta.2
 
 **This is a pre-release.** It is intended for testing on suitable Home

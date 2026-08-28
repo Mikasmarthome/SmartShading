@@ -35,6 +35,28 @@ _DELIBERATELY_STUBBED_NOT_INSTALLED = {
         "would pull in a very large dependency tree the suite never "
         "exercises."
     ),
+    "pytest_homeassistant_custom_component": (
+        "Only used by tests/real_ha/ — the isolated real-Home-Assistant "
+        "test tree (B3-010). That tree deliberately requires a real, "
+        "installed `homeassistant` package via its own separate "
+        "requirements file (tests/real_ha/requirements-real-ha.txt), never "
+        "installed into this suite's own .venv_t17 (see that file's "
+        "docstring for why). tests/conftest.py's collect_ignore excludes "
+        "tests/real_ha/ from normal pytest collection for the same reason "
+        "— this scanner walks the filesystem independently of pytest "
+        "collection, so it still finds the import and needs its own "
+        "exemption here."
+    ),
+    "freezegun": (
+        "Only used by tests/real_ha/test_real_ha_morning_one_shot.py (B3-010 "
+        "R14) for real time control against the real, installed "
+        "homeassistant package's dt_util — pytest-homeassistant-custom-"
+        "component pulls freezegun in transitively as its own dependency, "
+        "so it is never listed in requirements-test.txt for the same "
+        "reason as pytest_homeassistant_custom_component itself above: "
+        "installed only via tests/real_ha/requirements-real-ha.txt, never "
+        "into this suite's own .venv_t17."
+    ),
 }
 
 

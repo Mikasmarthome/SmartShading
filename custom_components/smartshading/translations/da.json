@@ -359,15 +359,11 @@
         "title": "Koordinering af afskærmninger",
         "description": "Angiver, hvordan SmartShading fordeler skærmkommandoer på tværs af alle zoner, når flere skærme besluttes i samme cyklus. Dette er en egenskab ved din hardware/radiogateway, som deles for hele huset.",
         "data": {
-          "dispatch_mode": "Koordineringstilstand",
-          "dispatch_start_interval_s": "Forsinkelse mellem starter",
           "dispatch_max_travel_wait_s": "Maksimal ventetid på bevægelse færdig",
           "dispatch_post_travel_pause_s": "Pause efter bevægelse er færdig",
           "dispatch_zone_batching": "Hold zoner adskilt"
         },
         "data_description": {
-          "dispatch_mode": "Samtidig starter hver kommando uden forsinkelse. Med tidsmellemrum venter et fast antal sekunder mellem starter. En ad gangen venter på, at hver afskærmning er færdig med at bevæge sig, før den næste starter.",
-          "dispatch_start_interval_s": "Bruges af \"Med tidsmellemrum\", og som minimumsafstand mellem zoner, når \"Hold zoner adskilt\" er aktiveret.",
           "dispatch_max_travel_wait_s": "Bruges kun af \"En ad gangen\" — hvor længe der ventes på, at en afskærmning bliver færdig, før der fortsættes alligevel.",
           "dispatch_post_travel_pause_s": "Bruges kun af \"En ad gangen\" — en kort pause efter en afskærmning er færdig, før den næste starter.",
           "dispatch_zone_batching": "Når aktiveret, anvendes forsinkelsen mellem starter altid mellem forskellige rum/zoner, selv i tilstanden Samtidig, så rum forbliver visuelt adskilte."
@@ -674,13 +670,6 @@
         "any_home": "Nogen hjemme",
         "all_home": "Alle hjemme",
         "inverted_any_home": "Inverteret (nogen hjemme = væk)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Samtidig",
-        "spaced": "Med tidsmellemrum",
-        "sequential": "En ad gangen"
       }
     },
     "override_release_mode": {

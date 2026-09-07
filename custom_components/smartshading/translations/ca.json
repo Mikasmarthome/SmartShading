@@ -359,15 +359,11 @@
         "title": "Coordinació de les persianes",
         "description": "Defineix com SmartShading espaia les ordres de les persianes a totes les zones quan diverses persianes es decideixen en el mateix cicle. Això és una propietat del vostre maquinari/passarel·la de ràdio, compartida per tota la casa.",
         "data": {
-          "dispatch_mode": "Mode de coordinació",
-          "dispatch_start_interval_s": "Retard entre inicis",
           "dispatch_max_travel_wait_s": "Espera màxima perquè acabi el moviment",
           "dispatch_post_travel_pause_s": "Pausa després que acabi el moviment",
           "dispatch_zone_batching": "Mantén les zones separades"
         },
         "data_description": {
-          "dispatch_mode": "Simultani inicia totes les ordres sense retard. Amb interval espera un nombre fix de segons entre inicis. Una darrere l'altra espera que cada persiana acabi de moure's abans d'iniciar la següent.",
-          "dispatch_start_interval_s": "S'utilitza amb \"Amb interval\", i com a interval mínim entre zones quan \"Mantén les zones separades\" està activat.",
           "dispatch_max_travel_wait_s": "Només s'utilitza amb \"Una darrere l'altra\" — quant de temps s'espera que una persiana acabi abans de continuar igualment.",
           "dispatch_post_travel_pause_s": "Només s'utilitza amb \"Una darrere l'altra\" — una breu pausa d'assentament després que una persiana acabi, abans que comenci la següent.",
           "dispatch_zone_batching": "Si està activat, el retard entre inicis s'aplica sempre entre diferents habitacions/zones, fins i tot en mode Simultani, perquè les habitacions es mantinguin visualment separades."
@@ -674,13 +670,6 @@
         "any_home": "Algú a casa",
         "all_home": "Tothom a casa",
         "inverted_any_home": "Invertit (algú a casa = absent)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Simultani",
-        "spaced": "Amb interval",
-        "sequential": "Una darrere l'altra"
       }
     },
     "override_release_mode": {

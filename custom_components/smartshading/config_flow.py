@@ -126,9 +126,7 @@ from .const import (
     CONF_NIGHT_TRIGGER,
     CONF_NORMAL_SHADE_POSITION,
     CONF_DISPATCH_MAX_TRAVEL_WAIT_S,
-    CONF_DISPATCH_MODE,
     CONF_DISPATCH_POST_TRAVEL_PAUSE_S,
-    CONF_DISPATCH_START_INTERVAL_S,
     CONF_DISPATCH_ZONE_BATCHING,
     CONF_OUTDOOR_TEMPERATURE_SENSOR_ID,
     CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
@@ -298,28 +296,19 @@ def _safe_float_in_range(value: Any, default: float, *, minimum: float, maximum:
 # the old zone-level async_step_dispatch used, unchanged in substance.
 
 def _dispatch_schema(stored: dict[str, Any]) -> vol.Schema:
-    mode_selector = SelectSelector(
-        SelectSelectorConfig(
-            options=[m.value for m in DispatchMode],
-            mode=SelectSelectorMode.DROPDOWN,
-            translation_key="dispatch_mode",
-        )
-    )
+    # B3-013: the user-facing dispatch-mode selector and the free-form
+    # start-interval field are removed — SmartShading now has exactly one
+    # fixed, non-configurable dispatch rule (FULL_OPEN/FULL_CLOSE: 2.0s
+    # start pacing; INTERMEDIATE: completion wait + 2.0s pause — see
+    # cover_control/dispatch_plan_executor.py). CONF_DISPATCH_MODE and
+    # CONF_DISPATCH_START_INTERVAL_S stay defined (const.py) purely so an
+    # old stored payload still round-trips through _parse_dispatch_
+    # submission() below unchanged — never shown in this form again.
+    # max_travel_wait_s (completion-wait timeout bound) and
+    # post_travel_pause_s (safety's own unmodified fastlane settle pause,
+    # see coordinator.py) remain real, still-consulted settings.
     return vol.Schema(
         {
-            vol.Required(
-                CONF_DISPATCH_MODE,
-                default=stored.get("mode", DispatchMode.SPACED.value),
-            ): mode_selector,
-            vol.Required(
-                CONF_DISPATCH_START_INTERVAL_S,
-                default=stored.get("start_interval_s", DEFAULT_START_INTERVAL_S),
-            ): NumberSelector(
-                NumberSelectorConfig(
-                    min=START_INTERVAL_S_MIN, max=START_INTERVAL_S_MAX, step=0.1,
-                    mode=NumberSelectorMode.BOX, unit_of_measurement="s",
-                )
-            ),
             vol.Required(
                 CONF_DISPATCH_MAX_TRAVEL_WAIT_S,
                 default=stored.get("max_travel_wait_s", DEFAULT_MAX_TRAVEL_WAIT_S),
@@ -346,15 +335,23 @@ def _dispatch_schema(stored: dict[str, Any]) -> vol.Schema:
     )
 
 
-def _parse_dispatch_submission(user_input: dict[str, Any]) -> dict[str, Any]:
+def _parse_dispatch_submission(
+    user_input: dict[str, Any], stored: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """B3-013: mode/start_interval_s are no longer part of the form — an old
+    stored value is carried through UNCHANGED (tolerant load/ignore, never
+    re-derived from this submission) rather than defaulted back to SPACED/
+    2.0, so a pre-B3-013 install's own stored choice is preserved exactly
+    as-is even though nothing productive reads it anymore."""
+    stored = stored or {}
     try:
-        mode = DispatchMode(user_input.get(CONF_DISPATCH_MODE, DispatchMode.SPACED.value))
+        mode = DispatchMode(stored.get("mode", DispatchMode.SPACED.value))
     except ValueError:
         mode = DispatchMode.SPACED
     return {
         "mode": mode.value,
         "start_interval_s": _safe_float_in_range(
-            user_input.get(CONF_DISPATCH_START_INTERVAL_S), DEFAULT_START_INTERVAL_S,
+            stored.get("start_interval_s"), DEFAULT_START_INTERVAL_S,
             minimum=START_INTERVAL_S_MIN, maximum=START_INTERVAL_S_MAX,
         ),
         "max_travel_wait_s": _safe_float_in_range(
@@ -2286,7 +2283,7 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
         stored = current.get("system_dispatch_config") or {}
 
         if user_input is not None:
-            new_config = _parse_dispatch_submission(user_input)
+            new_config = _parse_dispatch_submission(user_input, stored)
             return self._save_system_default_and_reload({"system_dispatch_config": new_config})
 
         schema = _dispatch_schema(stored)

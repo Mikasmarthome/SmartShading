@@ -251,6 +251,39 @@ class ExecutionResult:
     result (e.g. safety's own fastlane, which bypasses this classifier
     entirely, or PARALLEL-mode results)."""
 
+    # --- B3-013: zone-package / dispatch-order diagnostics (additive) ------
+    dispatch_zone_id: str | None = None
+    """The DispatchPlanItem.zone_id this result's item belonged to — the
+    zone/room "package" identifier. None when no DispatchPlanItem was ever
+    built for this result (e.g. safety's own fastlane, BLOCKED/NOT_ATTEMPTED
+    results built before the plan pre-pass runs)."""
+
+    dispatch_zone_index: int | None = None
+    """The DispatchPlanItem.zone_index this result's item carried — the
+    zone's stable position within the cycle's overall zone-package order
+    (see coordinator._build_zone_dispatch_order()). None under the same
+    conditions as dispatch_zone_id."""
+
+    dispatch_cover_index_in_package: int | None = None
+    """The DispatchPlanItem.cover_index this result's item carried — this
+    cover's stable position within its own zone package. None under the
+    same conditions as dispatch_zone_id."""
+
+    dispatch_zone_generation: int | None = None
+    """The DispatchPlanItem.zone_generation this result's item was built
+    under — the generation guard that live-revalidation and preemption
+    compare against (coordinator._dispatch_generation at plan-build time).
+    None under the same conditions as dispatch_zone_id."""
+
+    dispatch_wait_type: str | None = None
+    """Which of the two fixed B3-013 pacing rules applied before this item
+    started: "start_pacing" (FULL_OPEN/FULL_CLOSE — fixed 2.0s start-to-
+    start interval, no completion wait) or "completion_plus_pacing"
+    (INTERMEDIATE — waits for the previous item's completion, then a fixed
+    2.0s pause). None when the item was never dispatched through the T22
+    DispatchPlanExecutor (safety's own fastlane, BLOCKED/NOT_ATTEMPTED/
+    NO_MOVEMENT results)."""
+
 
 # ---------------------------------------------------------------------------
 # ExecutionPlanResult

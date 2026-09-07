@@ -334,7 +334,15 @@ class TestBasicDispatch:
         # B3-012: the real coordinator wiring records the classification
         # this item was actually dispatched under (target_position_ha=100
         # -> FULL_OPEN, see _state()'s own default).
-        assert results[("w1", "cover.w1")].dispatch_target_class == "full_open"
+        result = results[("w1", "cover.w1")]
+        assert result.dispatch_target_class == "full_open"
+        # B3-013: zone-package diagnostics are populated from the SAME
+        # DispatchPlanItem, via the real coordinator wiring.
+        assert result.dispatch_zone_id == "z1"
+        assert result.dispatch_zone_index == 0
+        assert result.dispatch_cover_index_in_package is not None
+        assert result.dispatch_zone_generation == 0
+        assert result.dispatch_wait_type == "start_pacing"
 
     def test_full_close_target_is_classified_and_dispatched_like_full_open(
         self, monkeypatch,
@@ -424,6 +432,29 @@ class TestNoMovementExcluded:
         assert calls == []
 
 
+class TestZonePackageDiagnosticsForIntermediate:
+    def test_intermediate_item_wait_type_is_completion_plus_pacing(self, monkeypatch) -> None:
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
+        _setup_coord(coord, [s1])
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, _fake_sent_dispatch)
+        _patch_wait_for_travel_completion(monkeypatch, coord, _fake_completion_factory())
+        _patch_asyncio_sleep(monkeypatch, coord, lambda s: asyncio.sleep(0))
+
+        async def _run():
+            zone_order, window_order_in_zone = _zone_maps([s1])
+            return await coord._predispatch_sequential_plan(
+                _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
+            )
+
+        results = asyncio.run(_run())
+        result = results[("w1", "cover.w1")]
+        assert result.dispatch_target_class == "intermediate"
+        assert result.dispatch_wait_type == "completion_plus_pacing"
+
+
 class TestLockOwnership:
     def test_lock_not_held_during_completion_wait(self, monkeypatch) -> None:
         # INTERMEDIATE target (not full-open) — only INTERMEDIATE items wait
@@ -485,8 +516,15 @@ class TestLockOwnership:
         assert lock_held_during_dispatch["value"] is True
 
 
-class TestParallelModeNoOp:
-    def test_parallel_mode_returns_empty_and_never_dispatches(self, monkeypatch) -> None:
+class TestStoredModeNoLongerGatesDispatch:
+    # B3-013: _predispatch_sequential_plan is now the ONE, unconditional
+    # comfort dispatch path — it no longer branches on config.mode at all.
+    # A stored PARALLEL (or SEQUENTIAL) value must have zero productive
+    # effect: the plan still dispatches, exactly as it would under SPACED.
+    # This replaces the old TestParallelModeNoOp, which asserted the
+    # opposite (PARALLEL made this method a no-op) — that gating is exactly
+    # what B3-013 removes in favor of one fixed dispatch rule.
+    def test_stored_parallel_mode_does_not_suppress_dispatch(self, monkeypatch) -> None:
         coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL))
         s1 = _state("w1", "z1", entity_id="cover.w1")
         _setup_coord(coord, [s1])
@@ -506,8 +544,8 @@ class TestParallelModeNoOp:
             )
 
         results = asyncio.run(_run())
-        assert results == {}
-        assert calls == []
+        assert calls == ["cover.w1"]
+        assert ("w1", "cover.w1") in results
 
 
 class TestEmptyPlan:

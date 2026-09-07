@@ -359,15 +359,11 @@
         "title": "Coördinatie van zonweringen",
         "description": "Bepaalt hoe SmartShading zonwering-commando's over alle zones spreidt wanneer meerdere zonweringen in dezelfde cyclus worden beslist. Dit is een eigenschap van uw hardware/radiogateway, gedeeld voor het hele huis.",
         "data": {
-          "dispatch_mode": "Coördinatiemodus",
-          "dispatch_start_interval_s": "Vertraging tussen starts",
           "dispatch_max_travel_wait_s": "Maximale wachttijd op einde beweging",
           "dispatch_post_travel_pause_s": "Pauze na einde beweging",
           "dispatch_zone_batching": "Zones gescheiden houden"
         },
         "data_description": {
-          "dispatch_mode": "Gelijktijdig start elk commando zonder vertraging. Met tijdsinterval wacht een vast aantal seconden tussen de starts. Na elkaar wacht tot elke zonwering klaar is met bewegen voordat de volgende start.",
-          "dispatch_start_interval_s": "Wordt gebruikt door \"Met tijdsinterval\", en als minimale afstand tussen zones wanneer \"Zones gescheiden houden\" is ingeschakeld.",
           "dispatch_max_travel_wait_s": "Wordt alleen gebruikt door \"Na elkaar\" — hoe lang gewacht wordt tot een zonwering klaar is voordat er toch wordt doorgegaan.",
           "dispatch_post_travel_pause_s": "Wordt alleen gebruikt door \"Na elkaar\" — een korte rustpauze nadat een zonwering klaar is, voordat de volgende start.",
           "dispatch_zone_batching": "Indien ingeschakeld, wordt de vertraging tussen starts altijd toegepast tussen verschillende kamers/zones, ook in de modus Gelijktijdig, zodat kamers visueel gescheiden blijven."
@@ -674,13 +670,6 @@
         "any_home": "Iemand thuis",
         "all_home": "Iedereen thuis",
         "inverted_any_home": "Omgekeerd (iemand thuis = afwezig)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Gelijktijdig",
-        "spaced": "Met tijdsinterval",
-        "sequential": "Na elkaar"
       }
     },
     "override_release_mode": {

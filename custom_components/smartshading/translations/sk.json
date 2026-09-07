@@ -359,15 +359,11 @@
         "title": "Koordinácia tienenia",
         "description": "Určuje, ako SmartShading časovo rozvrhuje príkazy žalúzií vo všetkých zónach, keď sa v rovnakom cykle rozhoduje o viacerých žalúziách. Ide o vlastnosť vášho hardvéru/rádiovej brány, spoločnú pre celý dom.",
         "data": {
-          "dispatch_mode": "Režim koordinácie",
-          "dispatch_start_interval_s": "Oneskorenie medzi štartmi",
           "dispatch_max_travel_wait_s": "Maximálne čakanie na dokončenie pohybu",
           "dispatch_post_travel_pause_s": "Pauza po dokončení pohybu",
           "dispatch_zone_batching": "Oddeľovať zóny"
         },
         "data_description": {
-          "dispatch_mode": "Súbežne spustí každý príkaz bez oneskorenia. S časovým odstupom čaká pevný počet sekúnd medzi štartmi. Postupne čaká, kým tienenie dokončí pohyb, kým spustí ďalšie.",
-          "dispatch_start_interval_s": "Používa sa pri \"S časovým odstupom\" a ako minimálny odstup medzi zónami, keď je zapnuté \"Oddeľovať zóny\".",
           "dispatch_max_travel_wait_s": "Používa sa iba pri \"Postupne\" — ako dlho čakať na dokončenie pohybu tienenia, kým sa aj tak pokračuje ďalej.",
           "dispatch_post_travel_pause_s": "Používa sa iba pri \"Postupne\" — krátka pokojová pauza po dokončení pohybu tienenia, kým sa spustí ďalšie.",
           "dispatch_zone_batching": "Ak je zapnuté, oneskorenie medzi štartmi sa vždy uplatní medzi rôznymi miestnosťami/zónami, aj v režime Súbežne, aby miestnosti zostali vizuálne oddelené."
@@ -674,13 +670,6 @@
         "any_home": "Niekto doma",
         "all_home": "Všetci doma",
         "inverted_any_home": "Invertované (niekto doma = preč)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Súbežne",
-        "spaced": "S časovým odstupom",
-        "sequential": "Postupne"
       }
     },
     "override_release_mode": {

@@ -359,15 +359,11 @@
         "title": "Árnyékolók ütemezése",
         "description": "Meghatározza, hogyan ütemezi a SmartShading az árnyékoló parancsokat az összes zónában, amikor több árnyékolóról döntenek ugyanabban a ciklusban. Ez a hardver/rádiós átjáró tulajdonsága, amely az egész házra vonatkozik.",
         "data": {
-          "dispatch_mode": "Ütemezési mód",
-          "dispatch_start_interval_s": "Késleltetés az indítások között",
           "dispatch_max_travel_wait_s": "Maximális várakozás a mozgás befejezésére",
           "dispatch_post_travel_pause_s": "Szünet a mozgás befejezése után",
           "dispatch_zone_batching": "Zónák elkülönítése"
         },
         "data_description": {
-          "dispatch_mode": "Párhuzamos minden parancsot késleltetés nélkül indít el. Időréssel fix másodpercet vár az indítások között. Egymás után megvárja, amíg az egyik árnyékoló befejezi a mozgást, mielőtt a következő elindul.",
-          "dispatch_start_interval_s": "Az \"Időréssel\" módnál használatos, valamint a zónák közötti minimális résként, ha a \"Zónák elkülönítése\" engedélyezve van.",
           "dispatch_max_travel_wait_s": "Csak az \"Egymás után\" módnál használatos — mennyi ideig várjon egy árnyékoló befejezésére, mielőtt mindenképp folytatja.",
           "dispatch_post_travel_pause_s": "Csak az \"Egymás után\" módnál használatos — rövid megnyugvási szünet azután, hogy egy árnyékoló befejezte a mozgást, mielőtt a következő elindul.",
           "dispatch_zone_batching": "Ha engedélyezve van, az indítások közötti késleltetés mindig érvényesül a különböző szobák/zónák között, még Párhuzamos módban is, hogy a szobák vizuálisan elkülönüljenek."
@@ -674,13 +670,6 @@
         "any_home": "Valaki otthon",
         "all_home": "Mindenki otthon",
         "inverted_any_home": "Fordított (valaki otthon = távol)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Párhuzamos",
-        "spaced": "Időréssel",
-        "sequential": "Egymás után"
       }
     },
     "override_release_mode": {

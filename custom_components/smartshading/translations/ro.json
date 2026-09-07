@@ -359,15 +359,11 @@
         "title": "Coordonarea umbrarelor",
         "description": "Definește modul în care SmartShading eșalonează comenzile jaluzelelor în toate zonele atunci când mai multe jaluzele sunt decise în același ciclu. Aceasta este o proprietate a hardware-ului/gateway-ului radio, comună pentru întreaga casă.",
         "data": {
-          "dispatch_mode": "Mod de coordonare",
-          "dispatch_start_interval_s": "Întârziere între porniri",
           "dispatch_max_travel_wait_s": "Așteptare maximă pentru finalizarea mișcării",
           "dispatch_post_travel_pause_s": "Pauză după finalizarea mișcării",
           "dispatch_zone_batching": "Menține zonele separate"
         },
         "data_description": {
-          "dispatch_mode": "Paralel pornește fiecare comandă fără întârziere. Cu interval de timp așteaptă un număr fix de secunde între porniri. Unul după altul așteaptă ca fiecare umbrar să termine mișcarea înainte de a-l porni pe următorul.",
-          "dispatch_start_interval_s": "Folosit de \"Cu interval de timp\", și ca interval minim între zone atunci când \"Menține zonele separate\" este activat.",
           "dispatch_max_travel_wait_s": "Folosit doar de \"Unul după altul\" — cât timp se așteaptă ca un umbrar să termine înainte de a continua oricum.",
           "dispatch_post_travel_pause_s": "Folosit doar de \"Unul după altul\" — o scurtă pauză de stabilizare după ce un umbrar termină, înainte ca următorul să pornească.",
           "dispatch_zone_batching": "Dacă este activat, întârzierea între porniri se aplică întotdeauna între camere/zone diferite, chiar și în modul Paralel, astfel încât camerele să rămână separate vizual."
@@ -674,13 +670,6 @@
         "any_home": "Cineva acasă",
         "all_home": "Toți acasă",
         "inverted_any_home": "Inversat (cineva acasă = plecat)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Paralel",
-        "spaced": "Cu interval de timp",
-        "sequential": "Unul după altul"
       }
     },
     "override_release_mode": {

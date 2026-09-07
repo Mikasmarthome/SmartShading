@@ -353,6 +353,7 @@ from .cover_control.coordinator_dispatch_adapter import (
     classify_cover_intent,
 )
 from .cover_control.dispatch_batch import DispatchItem, group_into_batches
+from .engines.dispatch_classification import DispatchTargetClass
 from .cover_control.dispatch_completion import wait_for_travel_completion
 from .cover_control.dispatch_orchestrator import (
     effective_interval_s,
@@ -6276,29 +6277,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _ordered_window_states
         )
 
-        # T11.1: PARALLEL mode dispatches every eligible intent for this
-        # cycle CONCURRENTLY, in one pre-pass BEFORE the per-window loop
-        # below — see _predispatch_parallel_batches() docstring for the full
-        # rationale. For every other mode this is a no-op empty dict, and
-        # the per-window loop's own sequential dispatch block (unchanged)
-        # runs exactly as it did before T11.1.
-        #
-        # T22 PARALLEL safety-preemption fix: an executable safety intent
-        # this cycle must still dispatch via its own fast-lane batch inside
-        # _predispatch_parallel_batches() (never blocked — see that method's
-        # own is_safety_batch handling), but no NON-safety batch may start
-        # this cycle. _cycle_has_executable_safety is passed through so the
-        # batch loop itself can make that per-batch decision — the whole
-        # pre-pass is never skipped wholesale (that would also block safety).
+        # B3-013: PARALLEL mode's own pre-pass (_predispatch_parallel_batches)
+        # is no longer called productively — SmartShading now has exactly
+        # ONE fixed comfort dispatch rule (FULL_OPEN/FULL_CLOSE: 2.0s start
+        # pacing, no completion wait; INTERMEDIATE: completion wait + 2.0s
+        # pause — see dispatch_plan_executor.py), applied via the SAME
+        # DispatchPlanExecutor pre-pass below regardless of any stored
+        # config.mode value. _predispatch_parallel_batches() itself stays
+        # defined (dead code removal is a separate, later cleanup) but is
+        # never invoked from a productive trigger.
         _parallel_results: dict[tuple[str, str], object] = {}
-        if self._dispatch_config.mode is DispatchMode.PARALLEL:
-            _parallel_results = await self._predispatch_parallel_batches(
-                _ordered_window_states, _harmonization, now, _this_dispatch_gen,
-                cycle_has_executable_safety=_cycle_has_executable_safety,
-            )
 
-        # T22 Phase 4b: SEQUENTIAL/SPACED comfort dispatch now runs via the
-        # isolated DispatchPlanExecutor, in its own pre-pass — see
+        # T22 Phase 4b: comfort dispatch runs via the isolated
+        # DispatchPlanExecutor, in its own pre-pass — see
         # _predispatch_sequential_plan() docstring. Safety intents are
         # excluded from this pre-pass and keep dispatching through the main
         # loop's own unmodified lock block below (the final `else` branch).
@@ -6314,15 +6305,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # invalidate-previous-plan half runs (_preempt_active_comfort_plan)
         # — comfort for this cycle is simply deferred to a later cycle once
         # safety clears.
+        #
+        # B3-013: unconditional — no longer gated on config.mode.
         _sequential_results: dict[tuple[str, str], object] = {}
-        if self._dispatch_config.mode in (DispatchMode.SEQUENTIAL, DispatchMode.SPACED):
-            if _cycle_has_executable_safety:
-                await self._preempt_active_comfort_plan()
-            else:
-                _sequential_results = await self._run_comfort_dispatch_for_cycle(
-                    _ordered_window_states, _harmonization, now,
-                    _zone_order, _window_order_in_zone,
-                )
+        if _cycle_has_executable_safety:
+            await self._preempt_active_comfort_plan()
+        else:
+            _sequential_results = await self._run_comfort_dispatch_for_cycle(
+                _ordered_window_states, _harmonization, now,
+                _zone_order, _window_order_in_zone,
+            )
 
         # For harmonized windows, the filter result is replaced with a new one
         # carrying the group's harmonized target_position_ha before plan building.
@@ -6377,25 +6369,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             _intent,
                             reason="startup_grace_active: dispatch suppressed during startup hydration",
                         ))
-                    elif self._dispatch_config.mode is DispatchMode.PARALLEL:
-                        # T11.1: this intent was already dispatched CONCURRENTLY
-                        # (alongside every other eligible intent in its batch)
-                        # by _predispatch_parallel_batches() above, before this
-                        # loop started. No additional await/lock/throttle here —
-                        # that would defeat genuine parallelism. Look up the
-                        # already-computed result by (window_id, entity_id),
-                        # which is unique within one coordinator cycle.
-                        _result = _parallel_results.get((window_id, _intent.cover_entity_id))
-                        if _result is None:
-                            # Defensive only — every eligible intent reaching
-                            # this branch was included in the pre-pass batch
-                            # build using the identical eligibility gates
-                            # (not _intent.allowed / startup grace) checked
-                            # just above, so this should never happen.
-                            _result = build_not_attempted_result(
-                                _intent, reason="parallel_dispatch_result_missing",
-                            )
-                        _exec_results.append(_result)
                     elif (
                         window_id, _intent.cover_entity_id
                     ) in _sequential_results:
@@ -6429,8 +6402,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         )
                     elif (
                         _cycle_has_executable_safety
-                        and self._dispatch_config.mode
-                        in (DispatchMode.SEQUENTIAL, DispatchMode.SPACED)
                         and not _intent.is_safety
                     ):
                         # T22 Phase 5c: this cycle preempted its own comfort
@@ -6457,17 +6428,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         # zones are fully serialised — no two zones can dispatch
                         # at the same time.
                         #
-                        # T22 Phase 4b: comfort intents in SEQUENTIAL/SPACED mode
-                        # no longer reach this block (they dispatch via
-                        # _predispatch_sequential_plan()'s DispatchPlanExecutor
-                        # pre-pass above, with the lock held only around the
-                        # dispatch call itself). This block now only executes for
-                        # SAFETY intents (any mode) and for PARALLEL-mode intents
-                        # already handled by the elif above never reach here
-                        # either — i.e. effectively safety-only in practice. Left
-                        # otherwise unmodified — this is the "existing, unmodified
-                        # fastlane path" safety keeps per the Phase 4 callsite
-                        # audit.
+                        # T22 Phase 4b / B3-013: every non-safety comfort intent
+                        # now reaches _predispatch_sequential_plan()'s
+                        # DispatchPlanExecutor pre-pass above unconditionally
+                        # (with the lock held only around the dispatch call
+                        # itself) and is looked up via the `_sequential_results`
+                        # elif above — this block is therefore safety-only in
+                        # practice. Left otherwise unmodified — this is the
+                        # "existing, unmodified fastlane path" safety keeps per
+                        # the Phase 4 callsite audit.
                         #
                         # While holding the lock:
                         #   1. Throttle: ALL intents (including safety) sleep until
@@ -7724,10 +7693,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         down (by setting the very Event this call is using) before the new
         cycle starts its own plan — see _run_comfort_dispatch_for_cycle's
         docstring for the full concurrent-cycle guard design.
-        """
-        if self._dispatch_config.mode not in (DispatchMode.SEQUENTIAL, DispatchMode.SPACED):
-            return {}
 
+        B3-013: this is now the ONE, unconditional comfort dispatch path —
+        no longer gated on config.mode. PARALLEL's own pre-pass
+        (_predispatch_parallel_batches) is no longer called from
+        _async_update_data(); config.mode/start_interval_s/zone_batching
+        stay defined on DispatchConfig purely so an old stored value still
+        loads without a migration, but nothing here reads them anymore.
+        """
         plan_items = []
         # Per-item side channels, keyed by cover_entity_id (unique within one
         # plan — Phase 2's build_dispatch_plan() rejects true duplicates):
@@ -7836,14 +7809,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     # inside it becomes interruptible.
                     if cancellation.is_set() or self._dispatch_generation != this_dispatch_gen:
                         return build_not_attempted_result(intent, reason="safety_preempted")
-                    is_first_in_zone_group = (
-                        s.window.zone_id != self._sequential_prev_zone_id
-                    )
+                    # B3-013: the single fixed dispatch rule's own 2.0s
+                    # start-to-start pacing (FULL_OPEN_START_INTERVAL_S) and
+                    # completion+2.0s pause (INTERMEDIATE_POST_COMPLETION_
+                    # PAUSE_S) are enforced entirely by DispatchPlanExecutor
+                    # itself (cover_control/dispatch_plan_executor.py),
+                    # driven by each item's own B3-012 target_class — no
+                    # longer by config.mode/start_interval_s/zone_batching
+                    # (effective_interval_s() stays defined and still used
+                    # by safety's own unmodified legacy fastlane below,
+                    # never called from here anymore). This throttle-wait
+                    # is therefore always 0 for comfort dispatch; the
+                    # GlobalSerialDispatch lock itself (still held here) is
+                    # what remains: it still serialises the actual dispatch
+                    # call against every other zone's/safety's own dispatch.
                     self._sequential_prev_zone_id = s.window.zone_id
-                    interval_s = effective_interval_s(
-                        self._dispatch_config,
-                        is_first_in_zone_group=is_first_in_zone_group,
-                    )
+                    interval_s = 0.0
                     wait = self._serial_dispatch.time_until_next_allowed(
                         min_interval_override=timedelta(seconds=interval_s)
                     )
@@ -7913,7 +7894,23 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # plan_item is the SAME item live-revalidated by
             # DispatchPlanExecutor immediately before dispatch_item was
             # called) — diagnostics only, never re-interpreted for control.
-            result = replace(result, dispatch_target_class=plan_item.target_class.value)
+            # B3-013: zone/package diagnostics — same source (plan_item),
+            # same "already final" guarantee, same diagnostics-only status.
+            result = replace(
+                result,
+                dispatch_target_class=plan_item.target_class.value,
+                dispatch_zone_id=plan_item.zone_id,
+                dispatch_zone_index=plan_item.zone_index,
+                dispatch_cover_index_in_package=plan_item.cover_index,
+                dispatch_zone_generation=plan_item.zone_generation,
+                dispatch_wait_type=(
+                    "start_pacing"
+                    if plan_item.target_class in (
+                        DispatchTargetClass.FULL_OPEN, DispatchTargetClass.FULL_CLOSE,
+                    )
+                    else "completion_plus_pacing"
+                ),
+            )
             exec_result_by_entity[plan_item.cover_entity_id] = result
             return DispatchOutcome(
                 success=result.status in (ExecutionStatus.SENT,),
@@ -7926,7 +7923,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         async def _wait_for_completion_port(plan_item, cancellation):
             window_id, s, intent = intent_by_entity[plan_item.cover_entity_id]
             prior = exec_result_by_entity.get(plan_item.cover_entity_id)
-            if prior is None or not requires_completion_wait(self._dispatch_config):
+            # B3-013: this port is only ever invoked by DispatchPlanExecutor
+            # for an INTERMEDIATE item (FULL_OPEN/FULL_CLOSE never call it —
+            # see _NO_COMPLETION_WAIT_CLASSES) — the single fixed rule
+            # always requires a real completion wait for those, regardless
+            # of config.mode (requires_completion_wait() stays defined and
+            # used by safety's own unmodified legacy fastlane, never called
+            # from here anymore).
+            if prior is None:
                 return CompletionOutcome(status="completed")
             completion = await wait_for_travel_completion(
                 self.hass,

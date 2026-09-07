@@ -285,8 +285,16 @@ class TestZoneAndCoverOrder:
         assert forward.items == backward.items
 
 
-class TestGlobalClassOrder:
-    def test_full_open_across_zones_before_any_intermediate(self) -> None:
+class TestZoneContiguousOrder:
+    """B3-013: zone_index is now the PRIMARY sort key (was target_class
+    priority). A plan must never interleave two zones' items — each zone's
+    items form one contiguous block, in zone_index order; target_class
+    priority only breaks ties WITHIN a zone. This replaces the old T22
+    TestGlobalClassOrder behavior (all FULL_OPEN items globally before any
+    INTERMEDIATE item, regardless of zone), which is exactly the cross-room
+    interleaving B3-013 forbids."""
+
+    def test_zones_stay_contiguous_class_priority_only_breaks_ties_within_a_zone(self) -> None:
         items = [
             _item(zone_id="z2", zone_index=1, cover_entity_id="c1", target_ha=100,
                  target_class=DispatchTargetClass.FULL_OPEN),
@@ -303,8 +311,8 @@ class TestGlobalClassOrder:
         got = [(i.zone_id, i.target_class) for i in p.items]
         assert got == [
             ("z1", DispatchTargetClass.FULL_OPEN),
-            ("z2", DispatchTargetClass.FULL_OPEN),
             ("z1", DispatchTargetClass.INTERMEDIATE),
+            ("z2", DispatchTargetClass.FULL_OPEN),
             ("z2", DispatchTargetClass.INTERMEDIATE),
             ("z3", DispatchTargetClass.INTERMEDIATE),
         ]

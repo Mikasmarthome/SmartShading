@@ -359,15 +359,11 @@
         "title": "Samordning av solskydd",
         "description": "Anger hur SmartShading fördelar markiskommandon över alla zoner när flera markiser avgörs i samma cykel. Detta är en egenskap hos din hårdvara/radiogateway, delad för hela huset.",
         "data": {
-          "dispatch_mode": "Samordningsläge",
-          "dispatch_start_interval_s": "Fördröjning mellan starter",
           "dispatch_max_travel_wait_s": "Maximal väntetid på att rörelsen avslutas",
           "dispatch_post_travel_pause_s": "Paus efter avslutad rörelse",
           "dispatch_zone_batching": "Håll zoner separerade"
         },
         "data_description": {
-          "dispatch_mode": "Parallellt startar varje kommando utan fördröjning. Med tidsintervall väntar ett fast antal sekunder mellan starterna. En i taget väntar tills varje solskydd är klart med rörelsen innan nästa startar.",
-          "dispatch_start_interval_s": "Används av \"Med tidsintervall\", och som minsta avstånd mellan zoner när \"Håll zoner separerade\" är aktiverat.",
           "dispatch_max_travel_wait_s": "Används endast av \"En i taget\" — hur länge det väntas på att ett solskydd blir klart innan det ändå fortsätter.",
           "dispatch_post_travel_pause_s": "Används endast av \"En i taget\" — en kort paus efter att ett solskydd är klart, innan nästa startar.",
           "dispatch_zone_batching": "När aktiverat tillämpas fördröjningen mellan starter alltid mellan olika rum/zoner, även i läget Parallellt, så att rum förblir visuellt separerade."
@@ -674,13 +670,6 @@
         "any_home": "Någon hemma",
         "all_home": "Alla hemma",
         "inverted_any_home": "Inverterad (någon hemma = borta)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Parallellt",
-        "spaced": "Med tidsintervall",
-        "sequential": "En i taget"
       }
     },
     "override_release_mode": {

@@ -357,20 +357,16 @@
       },
       "system_dispatch": {
         "title": "Cover Dispatch",
-        "description": "Configure how SmartShading paces cover commands across every zone when several covers are decided in the same cycle. This is a property of your cover hardware/RF gateway, shared by the whole house.",
+        "description": "SmartShading paces cover commands with one fixed rule shared by the whole house: fully open/fully closed covers start 2.0 seconds apart without waiting for travel to finish; a partial position waits for the previous cover to finish moving, then a 2.0 second pause, before the next one starts.",
         "data": {
-          "dispatch_mode": "Dispatch mode",
-          "dispatch_start_interval_s": "Delay between starts",
           "dispatch_max_travel_wait_s": "Maximum wait for travel to finish",
-          "dispatch_post_travel_pause_s": "Pause after travel finishes",
+          "dispatch_post_travel_pause_s": "Pause after travel finishes (safety commands)",
           "dispatch_zone_batching": "Keep zones apart"
         },
         "data_description": {
-          "dispatch_mode": "Parallel starts every command without delay. With a time gap waits a fixed number of seconds between starts. One after another waits for each cover to finish moving before starting the next.",
-          "dispatch_start_interval_s": "Used by \"With a time gap\", and as the minimum gap between zones when \"Keep zones apart\" is enabled.",
-          "dispatch_max_travel_wait_s": "Only used by \"One after another\" — how long to wait for a cover to finish before continuing anyway.",
-          "dispatch_post_travel_pause_s": "Only used by \"One after another\" — a short settle pause after a cover finishes, before the next one starts.",
-          "dispatch_zone_batching": "When enabled, the delay between starts is always applied between different rooms/zones, even in Parallel mode, so rooms stay visually separated."
+          "dispatch_max_travel_wait_s": "How long to wait for a cover moving to a partial position to finish before continuing anyway.",
+          "dispatch_post_travel_pause_s": "Settle pause after a safety command (storm/wind/rain protection) finishes, before the next one starts.",
+          "dispatch_zone_batching": "When enabled, the 2.0 second delay is always applied between different rooms/zones, so rooms stay visually separated."
         }
       },
       "system_init": {
@@ -674,13 +670,6 @@
         "any_home": "Anyone home",
         "all_home": "Everyone home",
         "inverted_any_home": "Inverted (anyone home = away)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Parallel",
-        "spaced": "With a time gap",
-        "sequential": "One after another"
       }
     },
     "override_release_mode": {

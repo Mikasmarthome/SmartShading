@@ -796,18 +796,23 @@ class TestSafetyPreemptsDuringIntermediatePostCompletionPause:
         assert coord._active_dispatch_cancellation is None
 
 
-class TestSafetyPreemptsDuringGlobalThrottleWait:
-    # T22 Phase 5c final completion: the global-interval throttle-wait
-    # inside _dispatch_item_port's _do_dispatch() (coordinator.py) runs
-    # INSIDE self._serial_dispatch.lock — the SAME lock Safety's own
-    # legacy dispatch path acquires. Before this fix, that wait was a
-    # plain asyncio.sleep(), so a cycle could hold the shared lock for up
-    # to the configured start_interval_s (max 30s) even after Safety had
-    # already signaled preemption, blocking Safety's own dispatch behind
-    # it. This is a real end-to-end proof using the actual dispatch_config
-    # + GlobalSerialDispatch + _do_dispatch() code path, not a source
-    # regex and not an unrealistically-fast fake sleep.
-    def test_safety_preemption_interrupts_the_global_throttle_wait(self, monkeypatch) -> None:
+class TestOldStartIntervalNoLongerThrottlesComfortDispatch:
+    # B3-013: the global-interval throttle-wait inside _dispatch_item_
+    # port's _do_dispatch() (coordinator.py) used to be driven by the
+    # configured (SPACED-mode) start_interval_s — up to 30s — and used to
+    # need its own cancellation-race to stay interruptible by Safety (see
+    # the T22 Phase 5c history this test replaces). B3-013 hardcodes
+    # interval_s=0.0 for comfort dispatch there (all real pacing now lives
+    # in DispatchPlanExecutor's own FULL_OPEN_START_INTERVAL_S /
+    # INTERMEDIATE_POST_COMPLETION_PAUSE_S, keyed off target_class, not
+    # config), so this port-level wait is now always zero: a stale/old
+    # stored start_interval_s=5.0 (tolerantly loaded, never read
+    # productively — see config_flow.py's B3-013 docstring) must have NO
+    # effect at all, even immediately after a real record_dispatch() that
+    # would previously have forced a ~5s wait. This is a real end-to-end
+    # proof using the actual dispatch_config + GlobalSerialDispatch +
+    # _do_dispatch() code path, not a source regex.
+    def test_stale_start_interval_config_no_longer_delays_first_dispatch(self, monkeypatch) -> None:
         import homeassistant.util.dt as dt_util
         coord = _make_coord(dispatch_config=DispatchConfig(
             mode=DispatchMode.SPACED, start_interval_s=5.0,
@@ -822,10 +827,11 @@ class TestSafetyPreemptsDuringGlobalThrottleWait:
         st.state = "open"
         st.attributes = {"current_position": 0}
         coord.hass.states.get = MagicMock(side_effect=lambda eid: {"cover.w1": st}.get(eid))
-        # Force a genuine positive throttle wait: a dispatch was "just"
-        # recorded (real wall-clock/monotonic timestamps), so
-        # time_until_next_allowed(min_interval_override=5s) returns a real
-        # near-5-second remaining wait for the next dispatch.
+        # Pre-B3-013, this record_dispatch() immediately before evaluation
+        # would have forced time_until_next_allowed(min_interval_override=
+        # 5s) to return a real near-5-second remaining wait. B3-013 hard-
+        # codes interval_s=0.0 for the comfort port, so this must now have
+        # zero effect on comfort dispatch timing.
         coord._serial_dispatch.record_dispatch(dt_util.utcnow())
 
         dispatch_calls: list[str] = []
@@ -838,10 +844,11 @@ class TestSafetyPreemptsDuringGlobalThrottleWait:
             coord._predispatch_sequential_plan.__func__.__globals__,
             "dispatch_cover_intent", fake_dispatch,
         )
-        # Only the throttle-wait's own asyncio.sleep() must be interrupted
-        # by preemption — patch the real module-level sleep used inside
-        # _do_dispatch() to hang unless raced against cancellation, exactly
-        # like the FULL_OPEN pacing / INTERMEDIATE pause tests above.
+        # The throttle-wait's own asyncio.sleep() is patched to hang
+        # forever unless raced against cancellation — proving, by the fact
+        # that dispatch still completes below, that this sleep() is never
+        # even invoked (interval_s=0.0 means wait.total_seconds() is never
+        # positive), not merely that it happens to resolve quickly.
         real_asyncio = coord._predispatch_sequential_plan.__func__.__globals__["asyncio"]
         monkeypatch.setattr(real_asyncio, "sleep", lambda s: asyncio.Event().wait())
 
@@ -853,32 +860,28 @@ class TestSafetyPreemptsDuringGlobalThrottleWait:
             await _real_sleep(0)
             await _real_sleep(0)
             await _real_sleep(0)
-            assert dispatch_calls == [], (
-                "the comfort item must be genuinely stuck inside the "
-                "global throttle-wait — dispatch_cover_intent must not "
-                "have been called yet"
+            assert dispatch_calls == ["cover.w1"], (
+                "a stale/ignored start_interval_s=5.0 must not delay the "
+                "single-item comfort plan's dispatch at all — B3-013 has "
+                "exactly one fixed rule, not a configurable interval"
             )
-            assert not task_a.done()
-            assert coord._serial_dispatch.lock.locked(), (
-                "the lock must genuinely be held during the throttle-wait "
-                "for this to be a real test of the lock-contention scenario"
+            assert task_a.done(), (
+                "a single FULL_OPEN item never enters a completion-wait, "
+                "so the whole comfort plan is already finished"
+            )
+            assert coord._serial_dispatch.lock.locked() is False, (
+                "the lock must not still be held once the (single-item, "
+                "already-dispatched) plan has finished"
             )
 
-            gen_b = await asyncio.wait_for(coord._preempt_active_comfort_plan(), timeout=2.0)
+            # A safety preemption arriving after the plan already finished
+            # must still behave as a clean no-op — nothing left to cancel.
+            await asyncio.wait_for(coord._preempt_active_comfort_plan(), timeout=2.0)
             await asyncio.wait_for(task_a, timeout=2.0)
-            return gen_b
 
         asyncio.run(_run())
-        assert dispatch_calls == [], (
-            "no comfort service call may fire once safety preemption "
-            "interrupts the global throttle-wait"
-        )
-        assert coord._serial_dispatch.lock.locked() is False, (
-            "the global serial-dispatch lock must be released promptly "
-            "after preemption, not held until the full configured "
-            "interval elapses — this is what would otherwise block "
-            "Safety's own dispatch, which acquires the SAME lock"
-        )
+        assert dispatch_calls == ["cover.w1"]
+        assert coord._serial_dispatch.lock.locked() is False
         assert coord._active_comfort_dispatch_task is None
         assert coord._active_dispatch_cancellation is None
 
@@ -1009,14 +1012,17 @@ class TestSafetyNeverEntersComfortPlanExecutorOrLiveValidation:
         )
 
 
-class TestShutdownDuringGlobalThrottleWait:
-    # Ticket §5: coordinator shutdown must be able to end the SAME global
-    # throttle-wait promptly too — reusing the SAME cancellation Event
-    # async_shutdown() already signals (Phase 5b), not a second mechanism.
-    # Both Safety and shutdown are exercised as recognizably distinct
-    # triggers in this test file (this test = shutdown; the class above =
-    # safety), per the ticket's explicit requirement.
-    def test_shutdown_interrupts_the_global_throttle_wait(self, monkeypatch) -> None:
+class TestShutdownAfterOldStartIntervalNoLongerThrottles:
+    # B3-013: mirrors TestOldStartIntervalNoLongerThrottlesComfortDispatch
+    # above but for the shutdown trigger instead of safety preemption
+    # (Ticket §5 originally required both triggers be exercised
+    # separately). Since interval_s is hardcoded 0.0 for comfort dispatch,
+    # there is no longer a real positive-duration throttle-wait for
+    # shutdown to interrupt — a single-item FULL_OPEN plan dispatches and
+    # finishes immediately regardless of a stale start_interval_s=5.0, and
+    # a shutdown arriving afterward must still complete cleanly as a
+    # no-op.
+    def test_shutdown_after_stale_start_interval_config_is_a_clean_no_op(self, monkeypatch) -> None:
         import homeassistant.util.dt as dt_util
         coord = _make_coord(dispatch_config=DispatchConfig(
             mode=DispatchMode.SPACED, start_interval_s=5.0,
@@ -1054,27 +1060,27 @@ class TestShutdownDuringGlobalThrottleWait:
             await _real_sleep(0)
             await _real_sleep(0)
             await _real_sleep(0)
-            assert dispatch_calls == []
-            assert not task_a.done()
-            assert coord._serial_dispatch.lock.locked()
+            assert dispatch_calls == ["cover.w1"], (
+                "a stale/ignored start_interval_s=5.0 must not delay the "
+                "single-item comfort plan's dispatch at all"
+            )
+            assert task_a.done()
+            assert coord._serial_dispatch.lock.locked() is False
 
             await asyncio.wait_for(coord.async_shutdown(), timeout=2.0)
             assert task_a.done()
             assert task_a.cancelled() is False, (
-                "shutdown must let the throttle-wait wind down "
-                "cooperatively via the cancellation signal, never a hard "
-                "Task.cancel()"
+                "shutdown must never hard-cancel an already-finished task"
             )
 
         asyncio.run(_run())
-        assert dispatch_calls == [], (
-            "no comfort service call may fire once shutdown interrupts "
-            "the global throttle-wait"
+        assert dispatch_calls == ["cover.w1"], (
+            "shutdown arriving after the plan already finished must not "
+            "retroactively suppress the dispatch that already happened"
         )
         assert coord._serial_dispatch.lock.locked() is False, (
-            "the global serial-dispatch lock must be released promptly "
-            "after shutdown, not held until the full configured interval "
-            "elapses"
+            "the global serial-dispatch lock must not be held after "
+            "shutdown"
         )
         assert coord._unloading is True
 
@@ -1571,20 +1577,24 @@ class TestCallSiteActuallyChecksSafetyCondition:
             "neutralized (e.g. replaced with `if False:`)."
         )
 
-    def test_parallel_call_site_threads_the_same_safety_snapshot(self) -> None:
-        # PARALLEL mode's own pre-pass call site must be handed the SAME
-        # _cycle_has_executable_safety snapshot the SEQUENTIAL/SPACED
-        # branch uses — not left at its default (which would silently
-        # disable PARALLEL safety-preemption without breaking any
-        # PARALLEL-mode test that doesn't pass the kwarg explicitly).
+    def test_parallel_pre_pass_is_never_productively_invoked(self) -> None:
+        # B3-013: PARALLEL mode's own pre-pass call site (which this test
+        # used to check was threaded the real safety snapshot) no longer
+        # exists at all — _predispatch_parallel_batches() stays defined
+        # (risk-minimization: not deleted) but coordinator.py's Pass-2 loop
+        # never calls it productively any more; _parallel_results is always
+        # the empty dict. There is therefore no PARALLEL-mode-specific
+        # safety-preemption path left to verify separately — the single
+        # `if _cycle_has_executable_safety:` branch checked above is the
+        # only comfort-dispatch call site there is, for every stored mode.
+        import re
         from pathlib import Path
         source = (
             Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
             / "coordinator.py"
         ).read_text(encoding="utf-8")
-        assert "cycle_has_executable_safety=_cycle_has_executable_safety" in source, (
-            "_predispatch_parallel_batches() must be called with the real "
-            "cycle_has_executable_safety=_cycle_has_executable_safety "
-            "keyword — omitting it would silently fall back to the "
-            "default (False) and disable PARALLEL safety-preemption."
+        assert not re.search(r"await self\._predispatch_parallel_batches\(", source), (
+            "_predispatch_parallel_batches() must stay uninvoked in "
+            "production code — if it is called again, this test (and the "
+            "safety-snapshot threading it used to check) must be revisited"
         )

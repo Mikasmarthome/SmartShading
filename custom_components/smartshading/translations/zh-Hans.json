@@ -359,15 +359,11 @@
         "title": "遮阳帘调度",
         "description": "设置当同一周期内决定多个遮阳帘时，SmartShading 如何在所有区域间调度遮阳帘命令。这是您的硬件/无线网关的属性，由整个住宅共享。",
         "data": {
-          "dispatch_mode": "调度模式",
-          "dispatch_start_interval_s": "启动间隔延迟",
           "dispatch_max_travel_wait_s": "等待运行完成的最长时间",
           "dispatch_post_travel_pause_s": "运行完成后的暂停时间",
           "dispatch_zone_batching": "保持区域分开"
         },
         "data_description": {
-          "dispatch_mode": "并行会立即启动每条指令，没有延迟。有时间间隔会在启动之间等待固定的秒数。依次执行会等待每个遮阳帘完成移动后再启动下一个。",
-          "dispatch_start_interval_s": "用于\"有时间间隔\"模式，在启用\"保持区域分开\"时，也作为区域之间的最小间隔。",
           "dispatch_max_travel_wait_s": "仅用于\"依次执行\"模式——在继续执行前，等待遮阳帘完成运行的最长时间。",
           "dispatch_post_travel_pause_s": "仅用于\"依次执行\"模式——遮阳帘完成运行后、下一个启动前的短暂缓冲暂停。",
           "dispatch_zone_batching": "启用后，即使在并行模式下，不同房间/区域之间也始终应用启动间隔延迟，使房间在视觉上保持分隔。"
@@ -674,13 +670,6 @@
         "any_home": "有人在家",
         "all_home": "所有人在家",
         "inverted_any_home": "反转（有人在家=离开）"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "并行",
-        "spaced": "有时间间隔",
-        "sequential": "依次执行"
       }
     },
     "override_release_mode": {

@@ -213,14 +213,16 @@ class TestOrder:
         assert [c for c, _ in h.dispatch_calls] == [i.cover_entity_id for i in plan.items]
 
     @async_test
-    async def test_full_open_across_multiple_zones_never_waits_behind_an_earlier_intermediate(self):
-        # T22 Phase 5d scope check: proves end-to-end (real build_dispatch_plan
+    async def test_zone_stays_contiguous_end_to_end_with_mixed_classes_across_zones(self):
+        # B3-013 scope check: proves end-to-end (real build_dispatch_plan
         # sort + real DispatchPlanExecutor pacing together, not each in
         # isolation) that submitting items out of order, spanning multiple
-        # zones, with a MIX of FULL_OPEN and INTERMEDIATE targets, still
-        # dispatches every FULL_OPEN item first — paced only by the fixed
-        # 2s start interval, never delayed behind an INTERMEDIATE item's
-        # completion-wait — regardless of submission or zone order.
+        # zones, with a MIX of FULL_OPEN and INTERMEDIATE targets, keeps
+        # each zone CONTIGUOUS — z1 (FULL_OPEN then INTERMEDIATE) fully
+        # dispatched before z2's INTERMEDIATE item, before z3's FULL_OPEN
+        # item — never grouped globally by class across zone boundaries
+        # (that was the pre-B3-013 behavior this test used to assert, and
+        # is exactly the cross-room interleaving B3-013 forbids).
         clock = FakeClock()
         h = Harness(clock)
         plan = _plan([
@@ -234,17 +236,22 @@ class TestOrder:
                  target_ha=100, target_class=DispatchTargetClass.FULL_OPEN, cover_index=1),
         ])
         await _executor().execute_plan(plan=plan, **h.kwargs())
-        # Both FULL_OPEN items dispatch first (2s apart, no completion-wait
-        # involved), THEN the INTERMEDIATE items — never interleaved.
+        assert [c for c, _ in h.dispatch_calls] == [
+            "full_open_z1", "intermediate_z1", "intermediate_z2", "full_open_z3",
+        ], "z1's items must both dispatch before z2's, before z3's"
+        # z1: full_open_z1 starts immediately (t=0, no anchor yet). It is
+        # the only FULL_OPEN/FULL_CLOSE item ahead of intermediate_z1, so
+        # intermediate_z1 observes the one 2.0s start-to-start anchor, then
+        # waits for its own completion (instant in this harness) plus the
+        # fixed 2.0s post-completion pause before z2 may start.
         assert h.dispatch_calls == [
             ("full_open_z1", 0.0),
-            ("full_open_z3", 2.0),
-            ("intermediate_z1", 4.0),
-            ("intermediate_z2", 6.0),
+            ("intermediate_z1", 2.0),
+            ("intermediate_z2", 4.0),
+            ("full_open_z3", 6.0),
         ]
         assert h.completion_calls == ["intermediate_z1", "intermediate_z2"], (
-            "FULL_OPEN items must never enter completion-wait at all, "
-            "regardless of zone or submission order"
+            "FULL_OPEN items must never enter completion-wait at all"
         )
 
     @async_test

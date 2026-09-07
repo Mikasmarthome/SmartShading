@@ -359,15 +359,11 @@
         "title": "Rollladen-Ansteuerung",
         "description": "Legt fest, wie SmartShading Rollladenbefehle über alle Zonen hinweg zeitlich staffelt, wenn mehrere Rollläden im selben Zyklus entschieden werden. Dies ist eine Eigenschaft Ihrer Rollladen-Hardware/Funk-Gateway, die für das ganze Haus gilt.",
         "data": {
-          "dispatch_mode": "Ansteuerungsmodus",
-          "dispatch_start_interval_s": "Abstand zwischen den Starts",
           "dispatch_max_travel_wait_s": "Maximale Wartezeit auf Fahrtende",
           "dispatch_post_travel_pause_s": "Pause nach Fahrtende",
           "dispatch_zone_batching": "Zonen getrennt halten"
         },
         "data_description": {
-          "dispatch_mode": "Gleichzeitig startet jeden Befehl ohne Verzögerung. Mit Zeitabstand wartet eine feste Anzahl Sekunden zwischen den Starts. Nacheinander wartet, bis ein Rollladen seine Fahrt beendet hat, bevor der nächste startet.",
-          "dispatch_start_interval_s": "Wird bei \"Mit Zeitabstand\" verwendet, sowie als Mindestabstand zwischen Zonen, wenn \"Zonen getrennt halten\" aktiviert ist.",
           "dispatch_max_travel_wait_s": "Nur bei \"Nacheinander\" verwendet — wie lange auf das Fahrtende eines Rollladens gewartet wird, bevor trotzdem fortgefahren wird.",
           "dispatch_post_travel_pause_s": "Nur bei \"Nacheinander\" verwendet — eine kurze Ruhepause nach Fahrtende, bevor der nächste Rollladen startet.",
           "dispatch_zone_batching": "Wenn aktiviert, wird der Abstand zwischen den Starts immer zwischen verschiedenen Räumen/Zonen eingehalten, auch im Modus \"Gleichzeitig\", damit Zonen sichtbar getrennt bleiben."
@@ -674,13 +670,6 @@
         "any_home": "Jemand zuhause",
         "all_home": "Alle zuhause",
         "inverted_any_home": "Invertiert (jemand zuhause = abwesend)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Gleichzeitig",
-        "spaced": "Mit Zeitabstand",
-        "sequential": "Nacheinander"
       }
     },
     "override_release_mode": {

@@ -359,15 +359,11 @@
         "title": "Coordinación de persianas",
         "description": "Define cómo SmartShading espacia las órdenes de los toldos en todas las zonas cuando se deciden varios toldos en el mismo ciclo. Esto es una propiedad de su hardware/pasarela de radio, compartida por toda la casa.",
         "data": {
-          "dispatch_mode": "Modo de coordinación",
-          "dispatch_start_interval_s": "Retraso entre inicios",
           "dispatch_max_travel_wait_s": "Espera máxima para que termine el movimiento",
           "dispatch_post_travel_pause_s": "Pausa tras terminar el movimiento",
           "dispatch_zone_batching": "Mantener zonas separadas"
         },
         "data_description": {
-          "dispatch_mode": "Paralelo inicia cada orden sin retraso. Con intervalo espera un número fijo de segundos entre inicios. Una tras otra espera a que cada persiana termine de moverse antes de iniciar la siguiente.",
-          "dispatch_start_interval_s": "Se usa con \"Con intervalo\", y como separación mínima entre zonas cuando \"Mantener zonas separadas\" está activado.",
           "dispatch_max_travel_wait_s": "Solo se usa con \"Una tras otra\" — cuánto tiempo esperar a que una persiana termine antes de continuar de todos modos.",
           "dispatch_post_travel_pause_s": "Solo se usa con \"Una tras otra\" — una breve pausa de asentamiento tras terminar una persiana, antes de que empiece la siguiente.",
           "dispatch_zone_batching": "Si está activado, el retraso entre inicios se aplica siempre entre habitaciones/zonas distintas, incluso en modo Paralelo, para que las habitaciones se mantengan visualmente separadas."
@@ -674,13 +670,6 @@
         "any_home": "Alguien en casa",
         "all_home": "Todos en casa",
         "inverted_any_home": "Invertido (alguien en casa = ausente)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Paralelo",
-        "spaced": "Con intervalo",
-        "sequential": "Una tras otra"
       }
     },
     "override_release_mode": {

@@ -359,15 +359,11 @@
         "title": "Varjostimien ajoitus",
         "description": "Määrittää, miten SmartShading ajoittaa verhokomentoja kaikissa vyöhykkeissä, kun useita verhoja päätetään samassa syklissä. Tämä on laitteistosi/radioyhdyskäytäväsi ominaisuus, joka on jaettu koko talolle.",
         "data": {
-          "dispatch_mode": "Ajoitustapa",
-          "dispatch_start_interval_s": "Viive käynnistysten välillä",
           "dispatch_max_travel_wait_s": "Enimmäisodotus liikkeen päättymiselle",
           "dispatch_post_travel_pause_s": "Tauko liikkeen päätyttyä",
           "dispatch_zone_batching": "Pidä vyöhykkeet erillään"
         },
         "data_description": {
-          "dispatch_mode": "Rinnakkain käynnistää jokaisen komennon ilman viivettä. Aikavälillä odottaa kiinteän sekuntimäärän käynnistysten välillä. Peräkkäin odottaa, että kukin varjostin lopettaa liikkeensä, ennen kuin seuraava käynnistyy.",
-          "dispatch_start_interval_s": "Käytetään tilassa \"Aikavälillä\" sekä vyöhykkeiden välisenä vähimmäisvälinä, kun \"Pidä vyöhykkeet erillään\" on käytössä.",
           "dispatch_max_travel_wait_s": "Käytetään vain tilassa \"Peräkkäin\" — kuinka kauan odotetaan varjostimen lopettavan liikkeensä, ennen kuin jatketaan joka tapauksessa.",
           "dispatch_post_travel_pause_s": "Käytetään vain tilassa \"Peräkkäin\" — lyhyt asettumistauko sen jälkeen, kun varjostin on lopettanut liikkeensä, ennen kuin seuraava käynnistyy.",
           "dispatch_zone_batching": "Kun käytössä, käynnistysten välinen viive kohdistetaan aina eri huoneiden/vyöhykkeiden välille, myös Rinnakkain-tilassa, jotta huoneet pysyvät visuaalisesti erillään."
@@ -674,13 +670,6 @@
         "any_home": "Joku kotona",
         "all_home": "Kaikki kotona",
         "inverted_any_home": "Käänteinen (joku kotona = poissa)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Rinnakkain",
-        "spaced": "Aikavälillä",
-        "sequential": "Peräkkäin"
       }
     },
     "override_release_mode": {

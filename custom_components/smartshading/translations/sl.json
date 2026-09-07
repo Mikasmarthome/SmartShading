@@ -359,15 +359,11 @@
         "title": "Usklajevanje senčil",
         "description": "Določa, kako SmartShading razporeja ukaze senčil po vseh conah, ko je v istem ciklu odločenih več senčil. To je lastnost vaše strojne opreme/radijskega prehoda, skupna za celo hišo.",
         "data": {
-          "dispatch_mode": "Način usklajevanja",
-          "dispatch_start_interval_s": "Zamik med zagoni",
           "dispatch_max_travel_wait_s": "Največje čakanje na konec premika",
           "dispatch_post_travel_pause_s": "Premor po koncu premika",
           "dispatch_zone_batching": "Ločuj območja"
         },
         "data_description": {
-          "dispatch_mode": "Sočasno zažene vsak ukaz brez zamika. S časovnim zamikom čaka določeno število sekund med zagoni. Zaporedno počaka, da vsako senčilo konča premik, preden zažene naslednje.",
-          "dispatch_start_interval_s": "Uporablja se pri \"S časovnim zamikom\", in kot najmanjši razmik med območji, kadar je omogočeno \"Ločuj območja\".",
           "dispatch_max_travel_wait_s": "Uporablja se samo pri \"Zaporedno\" — kako dolgo čakati na konec premika senčila, preden se kljub temu nadaljuje.",
           "dispatch_post_travel_pause_s": "Uporablja se samo pri \"Zaporedno\" — kratek premor po koncu premika senčila, preden se zažene naslednje.",
           "dispatch_zone_batching": "Če je omogočeno, se zamik med zagoni vedno uporabi med različnimi prostori/območji, tudi v načinu Sočasno, tako da prostori ostanejo vizualno ločeni."
@@ -674,13 +670,6 @@
         "any_home": "Nekdo doma",
         "all_home": "Vsi doma",
         "inverted_any_home": "Obrnjeno (nekdo doma = odsoten)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Sočasno",
-        "spaced": "S časovnim zamikom",
-        "sequential": "Zaporedno"
       }
     },
     "override_release_mode": {

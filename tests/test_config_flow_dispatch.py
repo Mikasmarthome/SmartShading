@@ -9,18 +9,24 @@ tests/test_config_flow_manual_override.py (T7/T10).
 Coverage:
   CFD-01  System entry menu reaches "system_dispatch" (reachability); the
           zone menu no longer offers a Dispatch step at all.
-  CFD-02  Defaults pre-selected when nothing stored (backward compatibility:
-          SPACED at 2.0s).
-  CFD-03  Stored values pre-selected on reopen.
-  CFD-04  Saving persists every field into "system_dispatch_config" on the
-          System entry.
-  CFD-05  Out-of-range numeric input is clamped server-side, never stored
-          as-is or crashes the save.
-  CFD-06  Invalid mode string falls back to SPACED on save.
-  CFD-07  Form render (user_input=None) does not mutate ConfigEntry.data.
-  CFD-08  Unrelated top-level keys untouched by a save.
-  CFD-09  Decimal (float) start_interval_s values are accepted and saved.
-  CFD-10  zone_batching boolean round-trips correctly.
+  CFD-02  Defaults pre-selected when nothing stored for the fields that are
+          still user-facing (max_travel_wait_s/post_travel_pause_s/
+          zone_batching); mode/start_interval_s are no longer schema fields
+          at all (B3-013 — SmartShading has exactly one fixed dispatch rule,
+          see _dispatch_schema()'s docstring in config_flow.py).
+  CFD-03  Stored values for the still-user-facing fields are pre-selected
+          on reopen; mode/start_interval_s stay absent from the schema
+          regardless of what is stored.
+  CFD-04  Saving persists every still-user-facing field into
+          "system_dispatch_config" on the System entry; mode/
+          start_interval_s are carried through UNCHANGED from whatever was
+          previously stored (tolerant pass-through), never re-derived from
+          the submission.
+  CFD-05  Out-of-range numeric input (max_travel_wait_s/post_travel_pause_s)
+          is clamped server-side, never stored as-is or crashes the save.
+  CFD-06  Form render (user_input=None) does not mutate ConfigEntry.data.
+  CFD-07  Unrelated top-level keys untouched by a save.
+  CFD-08  zone_batching boolean round-trips correctly.
 """
 from __future__ import annotations
 
@@ -152,9 +158,9 @@ def _make_options_flow(data: dict | None = None) -> SmartShadingOptionsFlow:
     return flow
 
 
+# B3-013: CONF_DISPATCH_MODE / CONF_DISPATCH_START_INTERVAL_S are deliberately
+# absent — the form no longer submits them (see _dispatch_schema()).
 _FULL_INPUT = {
-    CONF_DISPATCH_MODE: DispatchMode.SEQUENTIAL.value,
-    CONF_DISPATCH_START_INTERVAL_S: 1.5,
     CONF_DISPATCH_MAX_TRAVEL_WAIT_S: 45.0,
     CONF_DISPATCH_POST_TRAVEL_PAUSE_S: 0.8,
     CONF_DISPATCH_ZONE_BATCHING: True,
@@ -180,8 +186,9 @@ class TestDefaultsPreselected:
         flow = _make_options_flow(data={})
         result = asyncio.run(flow.async_step_system_dispatch(user_input=None))
         schema: vol.Schema = result["data_schema"]
-        assert _schema_field_key(schema, CONF_DISPATCH_MODE).default() == DispatchMode.SPACED.value
-        assert _schema_field_key(schema, CONF_DISPATCH_START_INTERVAL_S).default() == DEFAULT_START_INTERVAL_S
+        # B3-013: mode/start_interval_s are no longer schema fields at all.
+        assert _schema_field_key(schema, CONF_DISPATCH_MODE) is None
+        assert _schema_field_key(schema, CONF_DISPATCH_START_INTERVAL_S) is None
         assert _schema_field_key(schema, CONF_DISPATCH_MAX_TRAVEL_WAIT_S).default() == DEFAULT_MAX_TRAVEL_WAIT_S
         assert _schema_field_key(schema, CONF_DISPATCH_POST_TRAVEL_PAUSE_S).default() == DEFAULT_POST_TRAVEL_PAUSE_S
         assert _schema_field_key(schema, CONF_DISPATCH_ZONE_BATCHING).default() is False
@@ -198,8 +205,11 @@ class TestStoredValuesPreselected:
         })
         result = asyncio.run(flow.async_step_system_dispatch(user_input=None))
         schema: vol.Schema = result["data_schema"]
-        assert _schema_field_key(schema, CONF_DISPATCH_MODE).default() == "sequential"
-        assert _schema_field_key(schema, CONF_DISPATCH_START_INTERVAL_S).default() == 3.0
+        # B3-013: still absent from the schema even though a value is
+        # stored — the old mode/interval never resurface in the UI.
+        assert _schema_field_key(schema, CONF_DISPATCH_MODE) is None
+        assert _schema_field_key(schema, CONF_DISPATCH_START_INTERVAL_S) is None
+        assert _schema_field_key(schema, CONF_DISPATCH_MAX_TRAVEL_WAIT_S).default() == 60.0
         assert _schema_field_key(schema, CONF_DISPATCH_ZONE_BATCHING).default() is True
 
     def test_form_render_does_not_mutate_entry(self):
@@ -212,31 +222,36 @@ class TestStoredValuesPreselected:
 
 class TestSavePersistsEveryField:
     def test_full_input_saved(self):
+        # Nothing was previously stored, so mode/start_interval_s fall back
+        # to their tolerant defaults (SPACED / DEFAULT_START_INTERVAL_S) —
+        # B3-013: they are carried through from `stored`, never from this
+        # submission, since the field no longer exists in the form.
         flow = _make_options_flow(data={})
         asyncio.run(flow.async_step_system_dispatch(user_input=dict(_FULL_INPUT)))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         saved = kwargs["data"]["system_dispatch_config"]
-        assert saved["mode"] == "sequential"
-        assert saved["start_interval_s"] == 1.5
+        assert saved["mode"] == DispatchMode.SPACED.value
+        assert saved["start_interval_s"] == DEFAULT_START_INTERVAL_S
         assert saved["max_travel_wait_s"] == 45.0
         assert saved["post_travel_pause_s"] == 0.8
         assert saved["zone_batching"] is True
 
-    def test_decimal_start_interval_saved(self):
-        flow = _make_options_flow(data={})
-        user_input = dict(_FULL_INPUT)
-        user_input[CONF_DISPATCH_START_INTERVAL_S] = 0.5
-        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
+    def test_stored_mode_and_interval_pass_through_unchanged_on_save(self):
+        # B3-013: a pre-existing stored mode/start_interval_s (from before
+        # this package) must round-trip through a save UNCHANGED, since the
+        # submission no longer carries a value for either field at all.
+        flow = _make_options_flow(data={
+            "system_dispatch_config": {
+                "mode": "sequential", "start_interval_s": 3.0,
+                "max_travel_wait_s": 45.0, "post_travel_pause_s": 0.8,
+                "zone_batching": False,
+            }
+        })
+        asyncio.run(flow.async_step_system_dispatch(user_input=dict(_FULL_INPUT)))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["system_dispatch_config"]["start_interval_s"] == 0.5
-
-    def test_zero_start_interval_saved(self):
-        flow = _make_options_flow(data={})
-        user_input = dict(_FULL_INPUT)
-        user_input[CONF_DISPATCH_START_INTERVAL_S] = 0.0
-        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["system_dispatch_config"]["start_interval_s"] == 0.0
+        saved = kwargs["data"]["system_dispatch_config"]
+        assert saved["mode"] == "sequential"
+        assert saved["start_interval_s"] == 3.0
 
     def test_unrelated_keys_untouched(self):
         flow = _make_options_flow(data={"weather_entity_id": "weather.home"})
@@ -246,23 +261,6 @@ class TestSavePersistsEveryField:
 
 
 class TestServerSideValidation:
-    def test_out_of_range_start_interval_clamped(self):
-        # config_flow.py's _safe_float_in_range() clamps into [min, max]
-        # (the user typed something real, just out of bounds — clamping to
-        # the nearest valid value is more helpful than silently discarding
-        # it back to the unrelated default). This differs deliberately from
-        # config_entry_data.py's _dispatch_config_from_storage(), which
-        # falls back to the default for a value it cannot trust came from
-        # deliberate user input (e.g. a malformed/hand-edited storage file) —
-        # see test_dispatch_config_storage.py's TestOutOfRangeClamping.
-        from custom_components.smartshading.models.dispatch_config import START_INTERVAL_S_MAX
-        flow = _make_options_flow(data={})
-        user_input = dict(_FULL_INPUT)
-        user_input[CONF_DISPATCH_START_INTERVAL_S] = 9999.0
-        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["system_dispatch_config"]["start_interval_s"] == START_INTERVAL_S_MAX
-
     def test_negative_max_travel_wait_clamped(self):
         from custom_components.smartshading.models.dispatch_config import MAX_TRAVEL_WAIT_S_MIN
         flow = _make_options_flow(data={})
@@ -272,18 +270,14 @@ class TestServerSideValidation:
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         assert kwargs["data"]["system_dispatch_config"]["max_travel_wait_s"] == MAX_TRAVEL_WAIT_S_MIN
 
-    def test_invalid_mode_falls_back_to_spaced(self):
-        flow = _make_options_flow(data={})
-        user_input = dict(_FULL_INPUT)
-        user_input[CONF_DISPATCH_MODE] = "warp_speed"
-        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
+    def test_malformed_stored_mode_falls_back_to_spaced(self):
+        # B3-013: an old stored value that is no longer a valid DispatchMode
+        # member falls back to SPACED — this can no longer happen via the
+        # UI (the field is gone), only via a hand-edited/corrupted storage
+        # payload, so it's exercised through `stored` now, not `user_input`.
+        flow = _make_options_flow(data={
+            "system_dispatch_config": {"mode": "warp_speed"},
+        })
+        asyncio.run(flow.async_step_system_dispatch(user_input=dict(_FULL_INPUT)))
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         assert kwargs["data"]["system_dispatch_config"]["mode"] == DispatchMode.SPACED.value
-
-    def test_non_numeric_input_falls_back_to_default(self):
-        flow = _make_options_flow(data={})
-        user_input = dict(_FULL_INPUT)
-        user_input[CONF_DISPATCH_START_INTERVAL_S] = "not_a_number"
-        asyncio.run(flow.async_step_system_dispatch(user_input=user_input))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["system_dispatch_config"]["start_interval_s"] == DEFAULT_START_INTERVAL_S

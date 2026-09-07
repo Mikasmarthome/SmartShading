@@ -134,10 +134,21 @@ def _sort_key(item: DispatchPlanItem) -> tuple:
     """The full, explicit, deterministic sort key. Never depends on dict
     iteration, set order, HA entity-registry order, listener submission
     order, object id(), hash(), or a random UUID — every component is a
-    plain, stable, caller-supplied value."""
+    plain, stable, caller-supplied value.
+
+    B3-013: zone_index is now the PRIMARY key (was target_class priority).
+    A plan spanning multiple zones must be zone-CONTIGUOUS — every item of
+    zone N before any item of zone N+1 — so the executor (which walks
+    plan.items in order) never interleaves two rooms. Before this, class
+    priority was primary, so e.g. a FULL_OPEN item in zone B could sort
+    ahead of an INTERMEDIATE item in zone A, splitting zone A's own package
+    across the plan. class_priority stays the secondary key WITHIN one
+    zone (endpoints before intermediates before non-executable items,
+    unchanged from T22), then cover_index for the existing stable
+    within-zone item order."""
     return (
-        _CLASS_PRIORITY[item.target_class],
         item.zone_index,
+        _CLASS_PRIORITY[item.target_class],
         item.cover_index,
         item.zone_id,
         item.cover_entity_id,

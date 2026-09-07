@@ -598,13 +598,14 @@ class TestShutdown:
         asyncio.run(_run())
 
 
-class TestParallelModeNeverReachesGuard:
-    def test_call_site_guards_by_mode_before_reaching_the_cycle_guard(self) -> None:
-        # Structural: _run_comfort_dispatch_for_cycle() (and, since T22
-        # Phase 5c, _preempt_active_comfort_plan()) must only be called
-        # from behind the SAME `mode in (SEQUENTIAL, SPACED)` guard that
-        # already exists for the pre-pass — PARALLEL mode must never reach
-        # either at all, so it can never be affected by Phase 5b/5c.
+class TestUnconditionalSafetyVsComfortGuard:
+    # B3-013: DispatchMode no longer gates this call site at all — comfort
+    # dispatch is the one, unconditional path (PARALLEL's own pre-pass is
+    # no longer invoked productively; see coordinator.py's B3-013 comment
+    # directly above this block). This replaces the old
+    # TestParallelModeNeverReachesGuard, which asserted a `mode in
+    # (SEQUENTIAL, SPACED)` guard that B3-013 deliberately removes.
+    def test_safety_vs_comfort_branch_is_the_sole_condition(self) -> None:
         import re
         from pathlib import Path
         source = (
@@ -612,7 +613,7 @@ class TestParallelModeNeverReachesGuard:
             / "coordinator.py"
         ).read_text(encoding="utf-8")
         pattern = re.compile(
-            r"if self\._dispatch_config\.mode in \(DispatchMode\.SEQUENTIAL, DispatchMode\.SPACED\):\s*\n"
+            r"_sequential_results: dict\[tuple\[str, str\], object\] = \{\}\s*\n"
             r"\s*if _cycle_has_executable_safety:\s*\n"
             r"\s*await self\._preempt_active_comfort_plan\(\)\s*\n"
             r"\s*else:\s*\n"
@@ -620,12 +621,10 @@ class TestParallelModeNeverReachesGuard:
         )
         assert pattern.search(source), (
             "_run_comfort_dispatch_for_cycle() and _preempt_active_comfort_"
-            "plan() must remain called only from behind the SEQUENTIAL/"
-            "SPACED mode guard, with `if _cycle_has_executable_safety:` as "
-            "the IMMEDIATE, sole condition gating _preempt_active_comfort_"
-            "plan() (nothing else in that branch) — PARALLEL mode must "
-            "never reach the Phase 5b/5c concurrent-cycle guard, and the "
-            "safety/comfort branches must never be swapped or padded with "
-            "an extra always-true/always-false branch that would let both "
-            "paths fire or the wrong one fire."
+            "plan() must be called from behind `if _cycle_has_executable_"
+            "safety:` as the IMMEDIATE, sole condition (nothing else in "
+            "that branch, no config.mode gate) — the safety/comfort "
+            "branches must never be swapped or padded with an extra "
+            "always-true/always-false branch that would let both paths "
+            "fire or the wrong one fire."
         )

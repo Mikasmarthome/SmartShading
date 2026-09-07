@@ -359,15 +359,11 @@
         "title": "Koordinace stínění",
         "description": "Určuje, jak SmartShading rozvrhuje příkazy žaluziím napříč všemi zónami, když je ve stejném cyklu rozhodnuto o více žaluziích. Jde o vlastnost vašeho hardwaru/rádiové brány, sdílenou pro celý dům.",
         "data": {
-          "dispatch_mode": "Režim koordinace",
-          "dispatch_start_interval_s": "Prodleva mezi starty",
           "dispatch_max_travel_wait_s": "Maximální čekání na dokončení pohybu",
           "dispatch_post_travel_pause_s": "Pauza po dokončení pohybu",
           "dispatch_zone_batching": "Oddělovat zóny"
         },
         "data_description": {
-          "dispatch_mode": "Souběžně spustí každý příkaz bez prodlevy. S časovou mezerou čeká pevný počet sekund mezi starty. Postupně čeká, až stínění dokončí pohyb, než spustí další.",
-          "dispatch_start_interval_s": "Používá se u \"S časovou mezerou\" a jako minimální mezera mezi zónami, když je zapnuto \"Oddělovat zóny\".",
           "dispatch_max_travel_wait_s": "Používá se pouze u \"Postupně\" — jak dlouho čekat na dokončení pohybu stínění, než se přesto pokračuje dál.",
           "dispatch_post_travel_pause_s": "Používá se pouze u \"Postupně\" — krátká klidová pauza po dokončení pohybu stínění, než se spustí další.",
           "dispatch_zone_batching": "Je-li zapnuto, prodleva mezi starty se vždy uplatní mezi různými místnostmi/zónami, i v režimu Souběžně, aby zůstaly místnosti vizuálně oddělené."
@@ -674,13 +670,6 @@
         "any_home": "Někdo doma",
         "all_home": "Všichni doma",
         "inverted_any_home": "Invertováno (někdo doma = pryč)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Souběžně",
-        "spaced": "S časovou mezerou",
-        "sequential": "Postupně"
       }
     },
     "override_release_mode": {

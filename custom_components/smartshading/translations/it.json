@@ -359,15 +359,11 @@
         "title": "Coordinamento delle tapparelle",
         "description": "Definisce come SmartShading scagliona i comandi delle tapparelle in tutte le zone quando più tapparelle vengono decise nello stesso ciclo. È una proprietà del tuo hardware/gateway radio, condivisa per tutta la casa.",
         "data": {
-          "dispatch_mode": "Modalità di coordinamento",
-          "dispatch_start_interval_s": "Ritardo tra gli avvii",
           "dispatch_max_travel_wait_s": "Attesa massima per il termine del movimento",
           "dispatch_post_travel_pause_s": "Pausa dopo il termine del movimento",
           "dispatch_zone_batching": "Mantieni le zone separate"
         },
         "data_description": {
-          "dispatch_mode": "Parallelo avvia ogni comando senza ritardo. Con intervallo attende un numero fisso di secondi tra gli avvii. Una alla volta attende che ogni tapparella finisca di muoversi prima di avviare la successiva.",
-          "dispatch_start_interval_s": "Usato da \"Con intervallo\", e come intervallo minimo tra le zone quando \"Mantieni le zone separate\" è attivo.",
           "dispatch_max_travel_wait_s": "Usato solo da \"Una alla volta\" — quanto attendere che una tapparella finisca prima di continuare comunque.",
           "dispatch_post_travel_pause_s": "Usato solo da \"Una alla volta\" — una breve pausa di assestamento dopo che una tapparella finisce, prima che parta la successiva.",
           "dispatch_zone_batching": "Se attivo, il ritardo tra gli avvii viene sempre applicato tra stanze/zone diverse, anche in modalità Parallelo, così le stanze restano visivamente separate."
@@ -674,13 +670,6 @@
         "any_home": "Qualcuno a casa",
         "all_home": "Tutti a casa",
         "inverted_any_home": "Invertito (qualcuno a casa = assente)"
-      }
-    },
-    "dispatch_mode": {
-      "options": {
-        "parallel": "Parallelo",
-        "spaced": "Con intervallo",
-        "sequential": "Una alla volta"
       }
     },
     "override_release_mode": {

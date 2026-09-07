@@ -3,13 +3,16 @@
 Covers, per the real maintainer review (frenck, 2026-08-27) on
 https://github.com/hacs/default/pull/8691:
   - hacs.json declares a Home Assistant minimum version.
-  - manifest.json declares integration_type "helper".
   - README's HA badge matches the declared minimum.
   - The Support/Research Export buttons no longer write an unauthenticated
     file to /config/www/ (entities/button.py).
   - The same export data is aggregated into the standard Home Assistant
     Diagnostics download instead (diagnostics.py), with the manifest read
     that used to block the event loop now run in the executor.
+
+manifest.json's integration_type is covered separately below
+(TestManifestDeclaresDeviceIntegrationType) -- its value changed again in
+v1.1.11, after this review.
 """
 from __future__ import annotations
 
@@ -35,12 +38,16 @@ class TestHacsJsonDeclaresMinimumHomeAssistantVersion:
         assert data.get("homeassistant") == "2024.6.0"
 
 
-class TestManifestDeclaresHelperIntegrationType:
-    def test_integration_type_is_helper(self) -> None:
+class TestManifestDeclaresDeviceIntegrationType:
+    def test_integration_type_is_device(self) -> None:
+        """v1.1.11: a SmartShading config entry is treated as a logical
+        shading controller, and its entity platforms (base.py, switch.py,
+        button.py, zone_summary.py) already declare a real DeviceInfo --
+        so integration_type is "device"."""
         data = json.loads(
             (_INTEGRATION_ROOT / "manifest.json").read_text(encoding="utf-8")
         )
-        assert data.get("integration_type") == "helper"
+        assert data.get("integration_type") == "device"
 
 
 class TestReadmeBadgeMatchesDeclaredMinimum:

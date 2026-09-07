@@ -6,8 +6,8 @@
 <p align="center"><strong>Intelligent local shading control for Home Assistant</strong></p>
 
 <p align="center">
-  <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg" alt="HACS Custom"/></a>
-  <a href="https://github.com/Mikasmarthome/SmartShading/releases/latest"><img src="https://img.shields.io/badge/stable-v1.1.10-brightgreen.svg" alt="Stable release"/></a>
+  <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg" alt="HACS Default"/></a>
+  <a href="https://github.com/Mikasmarthome/SmartShading/releases/latest"><img src="https://img.shields.io/badge/stable-v1.1.11-brightgreen.svg" alt="Stable release"/></a>
   <img src="https://img.shields.io/badge/status-stable-brightgreen.svg" alt="Stable"/>
   <img src="https://img.shields.io/badge/HA-2024.6%2B-brightgreen.svg" alt="Home Assistant 2024.6+"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/></a>
@@ -216,26 +216,29 @@ not exposed.
 
 | Entity | Type | Description |
 |--------|------|-------------|
-| Create Support Export | Button | Writes a local support file for troubleshooting. |
-| Create Research Export | Button | Writes a local, anonymized technical analysis file. |
+| Create Support Export | Button | Points you at the Home Assistant Diagnostics download. |
+| Create Research Export | Button | Points you at the Home Assistant Diagnostics download. |
 | Debug logging | Switch | Temporarily increases log detail for diagnosis. |
 
 ## Diagnostics and exports
 
-SmartShading provides two local exports, each created only when you press the corresponding button on the
-System Entry:
+SmartShading's Support and Research data is part of the standard Home Assistant Diagnostics download —
+open **Settings → Devices & Services → SmartShading → the System device → Download diagnostics**. Pressing
+**Create Support Export** or **Create Research Export** on the System Entry doesn't write a file itself; it
+just points you at that same download (a persistent notification with the exact path above). The download
+is authenticated by Home Assistant itself, like any other integration's diagnostics — SmartShading never
+uploads it anywhere.
 
-- **Support Export** — a focused snapshot intended to help with troubleshooting. Created on demand, stored
-  locally, and not uploaded.
-- **Research Export** — a more detailed, anonymized technical view of learning and decision relationships.
-  Created manually, stored locally, not uploaded, intended for you to review before sharing, and
-  automatically removed after 24 hours.
+The diagnostics download contains two sections, matching the two export buttons:
 
-Both exports are written to your Home Assistant `config/www` directory and are automatically removed after
-24 hours. SmartShading never uploads them. The **Debug logging** switch is a temporary diagnostic aid — turn
-it on while investigating an issue and off again afterwards.
+- **Support** — a focused snapshot intended to help with troubleshooting. Reflects recent activity.
+- **Research** — a more detailed, anonymized technical view of learning and decision relationships,
+  intended for you to review before sharing.
 
-Both exports include the **installed integration version** and a **history-metadata** block so the time span
+The **Debug logging** switch is a temporary diagnostic aid — turn it on while investigating an issue and
+off again afterwards.
+
+Both sections include the **installed integration version** and a **history-metadata** block so the time span
 and coverage are explicit:
 
 - oldest and newest record timestamps,
@@ -243,11 +246,11 @@ and coverage are explicit:
 - whether the data was truncated and the cap reason,
 - the store scope the export was read from.
 
-The two exports read different sources, which is reflected in the store scope:
+The two sections read different sources, which is reflected in the store scope:
 
-- **Support Export** is a **runtime-recent** diagnostic snapshot. It reflects recent activity since the last
+- **Support** is a **runtime-recent** diagnostic snapshot. It reflects recent activity since the last
   start and **resets on restart or reload** — so shortly after a restart it only shows recent data.
-- **Research Export** uses the **persistent learning history**, so it reflects what has accumulated over time.
+- **Research** uses the **persistent learning history**, so it reflects what has accumulated over time.
 
 No-dispatch outcomes are reported with registered reason codes, including `same_position`,
 `no_target_position`, `recommendation_only`, and `guard_action_interval`, so a "no command this cycle" result
@@ -262,29 +265,26 @@ records were truncated or capped rather than implying that a full 365 days is al
 
 - SmartShading runs locally in Home Assistant.
 - No SmartShading cloud account is required.
-- SmartShading does not automatically upload exports or any other data.
-- Support and Research Exports are created only when you press the corresponding button.
-- Export files are written under `config/www`.
-- Export files are automatically removed after 24 hours.
-- The Research Export contains anonymized technical learning data.
-- Review export files before sharing them, so you can confirm they contain only what you intend to share.
+- SmartShading does not automatically upload the diagnostics download or any other data.
+- Support and Research data are part of the standard, authenticated Home Assistant Diagnostics download —
+  available only when you request it (Settings → Devices & Services → SmartShading → the System device →
+  Download diagnostics).
+- The Research section contains anonymized technical learning data.
+- Review the diagnostics download before sharing it, so you can confirm it contains only what you intend
+  to share.
 
-The exports are designed to avoid raw private data, but no export can be guaranteed to be completely
+The diagnostics download is designed to avoid raw private data, but it can't be guaranteed to be completely
 anonymous — please review before sharing.
 
 ## Installation
 
-### HACS (custom repository)
+### HACS
 
-1. Add the SmartShading repository (`https://github.com/Mikasmarthome/SmartShading`) as a **custom
-   repository** in HACS.
-2. Select **Integration** as the repository category.
-3. Install SmartShading.
-4. Restart Home Assistant.
-5. Go to **Settings → Devices & Services**.
-6. Add the **SmartShading** integration.
-
-SmartShading is installed as a custom repository; it is not part of the default HACS store.
+1. In HACS, search for **SmartShading** and install it (it is part of the default HACS store — no custom
+   repository needed).
+2. Restart Home Assistant.
+3. Go to **Settings → Devices & Services**.
+4. Add the **SmartShading** integration.
 
 ### Manual installation
 
@@ -387,8 +387,8 @@ a restart, a brief startup grace period and minimum action intervals apply.
 - The global dispatch queue is briefly spacing this command out from another window's command (a short,
   expected delay, not a stuck state).
 
-  A Support Export shows the exact reason for a held/skipped command (`command_blocked_reason` and related
-  fields), so you do not have to guess between these causes.
+  The diagnostics download's Support section shows the exact reason for a held/skipped command
+  (`command_blocked_reason` and related fields), so you do not have to guess between these causes.
 
 **Cover stays closed / shutter stays down** — check, in order:
 - The window's **Behavior Mode** — some modes intentionally skip daytime shading (see
@@ -399,8 +399,8 @@ a restart, a brief startup grace period and minimum action intervals apply.
 - The **absence** state — the zone may be in an absence position waiting for presence to return.
 - The window's **contact sensor** state, if configured — an open contact can hold a window at its current
   position until it is confirmed closed again.
-- A Support Export or the Recommendation/State sensor attributes for that window show the current reason and
-  target position, so you can see exactly which of the above applies.
+- The diagnostics download's Support section, or the Recommendation/State sensor attributes for that
+  window, show the current reason and target position, so you can see exactly which of the above applies.
 
 **Cover moves unexpectedly** — check, in order:
 - A **safety condition** (wind, storm, or rain) — safety always takes priority and can move a cover even
@@ -410,7 +410,8 @@ a restart, a brief startup grace period and minimum action intervals apply.
   behavior.
 - The window's **Behavior Mode** — confirm it matches what you expect for that window.
 - Whether a previous **manual override** has just expired, handing control back to SmartShading.
-- A Support Export shows the decision and reason for the specific cycle in question.
+- The diagnostics download's Support section shows the decision and reason for the specific cycle in
+  question.
 
 **Active Control is disabled** — it is per zone and off by default; enable it on the zone's Active Control
 switch once you are confident the covers are safe to operate automatically.
@@ -428,12 +429,13 @@ physical position is consistently off.
 **Optional sensors are unavailable** — weather, solar, indoor temperature, and presence inputs are optional;
 if one is unavailable, SmartShading falls back to its normal logic and continues to produce recommendations.
 
-**Creating a Support Export** — press **Create Support Export** on the System Entry. The file is written
-under `config/www` and removed automatically after 24 hours. For anything you cannot explain from the
-Recommendation/State sensor attributes alone, a Support Export is the better starting point — it bundles the
-relevant context in one place instead of raw sensor attributes, and is a better format to attach when
-[asking for help](#contributing). Review a Support Export yourself before sharing it, and avoid posting one
-publicly unless you have checked its contents first.
+**Creating a Support Export** — press **Create Support Export** on the System Entry, then open
+**Settings → Devices & Services → SmartShading → the System device → Download diagnostics**. For anything
+you cannot explain from the Recommendation/State sensor attributes alone, the diagnostics download's
+Support section is the better starting point — it bundles the relevant context in one place instead of raw
+sensor attributes, and is a better format to attach when [asking for help](#contributing). Review the
+download yourself before sharing it, and avoid posting one publicly unless you have checked its contents
+first.
 
 **Debug logging** — turn on the **Debug logging** switch only while investigating an issue, and turn it off
 again afterwards.
@@ -457,7 +459,7 @@ English when a language is unavailable.
 
 ## Contributing
 
-**Bugs** → [GitHub Issues](https://github.com/Mikasmarthome/SmartShading/issues): Home Assistant version, SmartShading version, what happened, relevant log lines (`Settings → System → Logs → smartshading`), and, if possible, a Support Export.
+**Bugs** → [GitHub Issues](https://github.com/Mikasmarthome/SmartShading/issues): Home Assistant version, SmartShading version, what happened, relevant log lines (`Settings → System → Logs → smartshading`), and, if possible, the diagnostics download's Support section.
 
 **Features** → Issues with the `enhancement` label.
 

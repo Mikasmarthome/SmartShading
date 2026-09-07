@@ -4,7 +4,7 @@
   "codeowners": ["@Mikasmarthome"],
   "config_flow": true,
   "documentation": "https://github.com/Mikasmarthome/SmartShading",
-  "integration_type": "helper",
+  "integration_type": "device",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/Mikasmarthome/SmartShading/issues",
   "requirements": [],

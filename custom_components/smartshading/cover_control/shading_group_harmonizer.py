@@ -39,7 +39,7 @@ ELIGIBILITY CRITERIA
 
 SAFETY SEMANTICS
 ----------------
-  Safety (STORM_SAFE / WIND_SAFE) is never propagated to the whole group.
+  Safety (STORM_SAFE / WIND_SAFE / RAIN_SAFE) is never propagated to the whole group.
   A safety window is excluded from harmonization and keeps its own safety
   target.  Other eligible windows in the same group are still harmonized
   among themselves.

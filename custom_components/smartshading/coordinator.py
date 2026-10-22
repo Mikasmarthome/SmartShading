@@ -107,6 +107,7 @@ from .evaluators.tier_orchestrator import TierOrchestrator
 from .models.window_decision import WindowDecision
 from .models.window_decision_input import build_window_decision_input
 from .state_machine.guards import StateGuard, StateGuardConfig
+from .state_machine.states import TIER1_SAFETY_STATES as _TIER1_SAFETY_STATES
 from .state_machine.states import ShadingState
 from .state_machine.transitions import bypasses_guard
 import uuid
@@ -3658,7 +3659,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             _last_commanded_was_available: bool = False
             _prev_obs_was_available: bool = False
             _observed_internal_stored: bool = False
-            if tier_decision.shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
+            if tier_decision.shading_state in _TIER1_SAFETY_STATES:
                 # Phase 9C: record safety clear before removing the override.
                 # Learning write is gated; functional clear always runs.
                 if obs_enabled and active_override is not None:
@@ -4024,7 +4025,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Phase 9C: detect "started" and "renewed" from tick() outcome.
             # Safety path clears the override — no started/renewed possible there.
             # Learning writes gated behind obs_enabled.
-            if obs_enabled and tier_decision.shading_state not in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
+            if obs_enabled and tier_decision.shading_state not in _TIER1_SAFETY_STATES:
                 if active_override is None and current_override is not None:
                     try:
                         self._learning_store.record_override(OverrideRecord(
@@ -4267,7 +4268,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if _exec.active_control_enabled
                 else ExecutionMode.RECOMMENDATION_ONLY
             )
-            _is_safety = new_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
+            # Tier-1 Safety: Storm, Wind and Rain share the same dispatch
+            # privileges (startup grace, StateGuard interval, same-position
+            # tolerance, stale-generation cancellation, harmonization, ordering).
+            _is_safety = new_state in _TIER1_SAFETY_STATES
             _exec_target_internal = tier_decision.target_position
             _exec_filter_result: CommandFilterResult | None = None
 
@@ -5363,7 +5367,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     @staticmethod
     def _classify_movement_cause(state: ShadingState) -> str:
-        if state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
+        if state in _TIER1_SAFETY_STATES:
             return MOVE_CAUSE_SAFETY
         if state is ShadingState.NIGHT_CLOSED:
             return MOVE_CAUSE_LIFECYCLE
@@ -8499,7 +8503,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Reuse the cycle's decision_id (shared with any PendingOutcome) so the
         # outcome is later attached by decision_id, not by timestamp.
         decision_id = s.decision_id or uuid.uuid4().hex
-        safety_active = s.new_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)
+        safety_active = s.new_state in _TIER1_SAFETY_STATES
         is_night = s.new_state is ShadingState.NIGHT_CLOSED
         is_absence = s.new_state is ShadingState.ABSENCE_CLOSED
         shade_states = (ShadingState.LIGHT_SHADE, ShadingState.NORMAL_SHADE, ShadingState.STRONG_SHADE)

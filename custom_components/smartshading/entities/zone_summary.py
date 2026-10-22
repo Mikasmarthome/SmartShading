@@ -62,7 +62,7 @@ from ..const import DOMAIN
 from ..coordinator import SmartShadingCoordinator
 from ..engines.learning_store import LearningStore
 from ..models.window import WindowBehaviorMode
-from ..state_machine.states import ShadingState
+from ..state_machine.states import TIER1_SAFETY_STATES, ShadingState
 
 # ---------------------------------------------------------------------------
 # Eligibility
@@ -101,10 +101,7 @@ _CONFIDENCE_RANK: dict[str, int] = {
     "very_high": 4,
 }
 
-_SAFETY_STATES: frozenset[ShadingState] = frozenset({
-    ShadingState.STORM_SAFE,
-    ShadingState.WIND_SAFE,
-})
+_SAFETY_STATES: frozenset[ShadingState] = TIER1_SAFETY_STATES
 
 
 # ---------------------------------------------------------------------------

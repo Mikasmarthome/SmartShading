@@ -12,7 +12,7 @@ implemented, deferred to the Comfort/Forecast/Lifecycle Engine phase).
 """
 from __future__ import annotations
 
-from .states import ShadingState, priority
+from .states import TIER1_SAFETY_STATES, ShadingState, priority
 
 # ARCHITECTURE.md §4.4 "Direkt (ohne Deeskalation)": lifecycle- or
 # presence-driven exits that bypass the normal hysteresis/guard check even
@@ -51,10 +51,11 @@ def bypasses_guard(current: ShadingState, proposed: ShadingState) -> bool:
     4. Ending MANUAL_OVERRIDE (§4.5 clarification): a timeout or explicit
        user reset must not be re-delayed by minimum_state_duration - that
        would silently re-extend an override that has already ended.
-    5. Leaving a Tier-1 Safety state — STORM_SAFE (§4.6) or WIND_SAFE: the
-       respective clear-hysteresis already gates *when* the evaluator proposes
-       leaving the safety state; once proposed, the return to the previous
-       state must not be additionally delayed by minimum_state_duration.
+    5. Leaving a Tier-1 Safety state — STORM_SAFE (§4.6), WIND_SAFE or
+       RAIN_SAFE: the respective clear-hysteresis (RAIN_SAFE: dry cooldown)
+       already gates *when* the evaluator proposes leaving the safety state;
+       once proposed, the return to the previous state must not be
+       additionally delayed by minimum_state_duration.
     6. Night-Contact Option B ventilation (NIGHT_CLOSED <-> NIGHT_VENT): both
        directions are driven directly by the window contact sensor (a real,
        user-caused open/close), not by hysteresis. NIGHT_VENT -> NIGHT_CLOSED
@@ -73,7 +74,7 @@ def bypasses_guard(current: ShadingState, proposed: ShadingState) -> bool:
         return True
     if current is ShadingState.MANUAL_OVERRIDE:
         return True
-    if current in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
+    if current in TIER1_SAFETY_STATES:
         return True
     if (
         current is ShadingState.NIGHT_CLOSED

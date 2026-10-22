@@ -75,6 +75,17 @@ STATE_PRIORITY: dict[ShadingState, int] = {
 }
 
 
+# Tier-1 Safety Guards (STATE_PRIORITY ranks 1-3).  Single source of truth for
+# every place that must give these states safety privileges (dispatch class,
+# StateGuard action-interval bypass, manual-override preemption, ...).  Keep in
+# sync with the Tier-1 block of STATE_PRIORITY above.
+TIER1_SAFETY_STATES: frozenset[ShadingState] = frozenset({
+    ShadingState.STORM_SAFE,
+    ShadingState.WIND_SAFE,
+    ShadingState.RAIN_SAFE,
+})
+
+
 def priority(state: ShadingState) -> int:
     """Return the priority rank of a state (1 = highest priority)."""
     return STATE_PRIORITY[state]

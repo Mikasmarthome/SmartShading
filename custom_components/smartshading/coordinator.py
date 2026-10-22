@@ -2983,8 +2983,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             )
             # --- Per-window rain config resolution --------------------------------
             # rain_protection_enabled: window override → hardware-type default.
-            # rain_safe_position_ha: window override → HARDWARE_RAIN_SAFE_POSITIONS
-            #   (HA convention: AWNING/EXTERIOR_SCREEN → 0 = retracted; others → 100 = raised).
+            # rain_safe_position_ha: window override (HA convention) →
+            #   HARDWARE_RAIN_SAFE_POSITIONS (already INTERNAL convention:
+            #   AWNING/GENERIC → 100 = HA 0 = retracted;
+            #   EXTERIOR_SCREEN/ROLLER_SHUTTER/VENETIAN_BLIND → 0 = HA 100 = raised).
             # rain_release_delay_min: window override → global default (30 min).
             # _early_hw_type is also used below for wind/storm position correction
             # and Night Hard Hold; resolved once here to avoid duplication.
@@ -3000,13 +3002,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if window.rain_protection_enabled is not None
                 else _hw_settings.get("rain_protection_enabled", False)
             )
-            _rain_safe_ha: int = (
-                window.rain_safe_position_ha
+            # Resolved to the INTERNAL convention (0=open, 100=shaded) exactly
+            # once: only the explicit window override is in HA convention and is
+            # converted here; the hardware table is already internal, and an
+            # unresolved hardware type falls back to retracted (100 = HA 0),
+            # never to extended.
+            _rain_safe_internal: int = (
+                to_internal_position(window.rain_safe_position_ha)
                 if window.rain_safe_position_ha is not None
-                else _HARDWARE_RAIN_SAFE_POSITIONS.get(_early_hw_type, 0)
+                else _HARDWARE_RAIN_SAFE_POSITIONS.get(_early_hw_type, 100)
             )
-            # Convert HA convention to internal (0=open, 100=shaded).
-            _rain_safe_internal: int = 100 - _rain_safe_ha
             _rain_delay_min: int = (
                 window.rain_release_delay_min
                 if window.rain_release_delay_min is not None
@@ -3325,10 +3330,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # The evaluators (WindEvaluator, StormEvaluator) produce
             # target_position=0 (internal: 0=open).  For ROLLER_SHUTTER and
             # VENETIAN_BLIND, internal 0 → HA 100 (retracted/raised) — correct.
-            # For AWNING and EXTERIOR_SCREEN, "safe" means retracted which is
-            # HA 0 (= internal 100).  Without this correction those covers would
-            # be sent to HA 100% (fully deployed/extended) during a wind/storm
-            # event — the most exposed position possible.
+            # For an AWNING, "safe" means retracted which is HA 0 (= internal 100).
+            # Without this correction it would be sent to HA 100% (fully
+            # extended) during a wind/storm event — the most exposed position
+            # possible.  An EXTERIOR_SCREEN is a vertical cover (HA 100 = raised
+            # = safe), like roller shutters and venetian blinds.
             if tier_decision.shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
                 _hw_safe_pos = _HARDWARE_SAFE_POSITIONS.get(_early_hw_type, 0)
                 if tier_decision.target_position != _hw_safe_pos:
@@ -3397,8 +3403,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
             # --- Rain Safe Position Correction + Release Hold ----------------------
             # Mirror of the storm/wind position-correction block above.
-            # AWNING/EXTERIOR_SCREEN: "safe" is HA 0 = retracted (internal 100).
-            # Other types: already correct via HARDWARE_RAIN_SAFE_POSITIONS.
+            # AWNING: "safe" is HA 0 = retracted (internal 100); EXTERIOR_SCREEN and
+            # the other vertical covers: HA 100 = raised (internal 0).  All taken
+            # from HARDWARE_RAIN_SAFE_POSITIONS (internal) via _rain_safe_internal.
             # Position correction is only needed if the evaluator fired directly.
             if tier_decision.shading_state is ShadingState.RAIN_SAFE:
                 if tier_decision.target_position != _rain_safe_internal:

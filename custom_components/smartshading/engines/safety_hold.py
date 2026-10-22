@@ -104,27 +104,40 @@ RAIN_HOLD_S: float = 60.0    # 60 s sensor-flutter guard (coordinator overrides 
 # Internal convention: 0=open/retracted, 100=shaded/deployed.
 # HA conversion (INV-18): ha_position = 100 - internal_position.
 #
-# ROLLER_SHUTTER / VENETIAN_BLIND: safe = retracted UP = internal 0 → HA 100.
-# AWNING / EXTERIOR_SCREEN: safe = retracted = HA 0 → internal 100.
-#   Without this, wind/storm events would send AWNING/EXTERIOR_SCREEN to HA 100%
-#   (fully deployed) — the most exposed position possible.
+# Physical meaning of the HA position per type (Home Assistant: 0=closed, 100=open):
+#   AWNING            HA 0 = retracted, HA 100 = extended  (open = extend)
+#   EXTERIOR_SCREEN   HA 0 = lowered/closed (covers the window),
+#                     HA 100 = raised/open (rolled up = retracted)
+#   ROLLER_SHUTTER / VENETIAN_BLIND: HA 100 = raised/open
+# so the safe (retracted/raised) position is:
+# ROLLER_SHUTTER / VENETIAN_BLIND / EXTERIOR_SCREEN: raised → internal 0 → HA 100.
+# AWNING: retracted → internal 100 → HA 0.
+#   Without this, wind/storm events would send an AWNING to HA 100%
+#   (fully extended) — the most exposed position possible.
 # GENERIC: fail-safe open → internal 0 → HA 100.
 HARDWARE_SAFE_POSITIONS: dict[CoverHardwareType, int] = {
     CoverHardwareType.ROLLER_SHUTTER:  0,
     CoverHardwareType.VENETIAN_BLIND:  0,
-    CoverHardwareType.EXTERIOR_SCREEN: 100,
+    CoverHardwareType.EXTERIOR_SCREEN: 0,
     CoverHardwareType.AWNING:          100,
     CoverHardwareType.GENERIC:         0,
 }
 
 # Internal safe position per hardware type for RAIN_SAFE.
-# Identical semantics as HARDWARE_SAFE_POSITIONS: awnings/screens must retract
-# (internal 100 = HA 0), roller shutters/venetian blinds move to open (internal 0 = HA 100).
-# The rain_safe_position_ha config overrides this per-window if specified.
+# INTERNAL convention (0=open/retracted, 100=shaded/deployed, HA = 100 - internal):
+# the coordinator uses these values as-is and must NOT convert them again.
+# Same physical semantics as HARDWARE_SAFE_POSITIONS (see there): an awning must
+# retract (internal 100 = HA 0); an exterior screen, roller shutter and venetian
+# blind move to raised/open (internal 0 = HA 100).
+# GENERIC is also what a missing/unknown hardware type resolves to and may be an
+# awning, so unlike wind/storm it retracts (internal 100 = HA 0) instead of
+# defaulting to HA 100, which would fully extend such a cover in the rain.
+# The rain_safe_position_ha config (HA convention) overrides this per-window if
+# specified and is converted once to internal at the point of use.
 HARDWARE_RAIN_SAFE_POSITIONS: dict[CoverHardwareType, int] = {
     CoverHardwareType.ROLLER_SHUTTER:  0,
     CoverHardwareType.VENETIAN_BLIND:  0,
-    CoverHardwareType.EXTERIOR_SCREEN: 100,
+    CoverHardwareType.EXTERIOR_SCREEN: 0,
     CoverHardwareType.AWNING:          100,
-    CoverHardwareType.GENERIC:         0,
+    CoverHardwareType.GENERIC:         100,
 }

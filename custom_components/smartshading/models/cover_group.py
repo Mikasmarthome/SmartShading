@@ -37,10 +37,13 @@ class CoverHardwareType(Enum):
     EXTERIOR_SCREEN
         Textile exterior screen.  No tilt.  Lower heat-buildup risk than a
         roller shutter.  Wind sensitivity higher than a roller shutter.
+        A vertical cover like a roller shutter: HA 0 = lowered/closed (covers
+        the window), HA 100 = raised/open (rolled up = the safe position).
 
     AWNING
         Horizontal projection awning.  Wind protection is the dominant safety
-        concern.  No position/tilt mapping comparable to vertical covers.
+        concern.  No position/tilt mapping comparable to vertical covers:
+        HA 0 = retracted, HA 100 = extended (the safe position is HA 0).
 
     GENERIC
         Safe fallback for unknown or uncategorised covers.  Conservative

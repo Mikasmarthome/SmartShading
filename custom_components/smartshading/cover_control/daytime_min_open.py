@@ -15,7 +15,7 @@ WHAT THIS MODULE DOES
 
 WHAT IS EXEMPT FROM THE CLAMP
 ------------------------------
-  STORM_SAFE / WIND_SAFE   — safety commands bypass everything
+  STORM_SAFE / WIND_SAFE / RAIN_SAFE — safety commands bypass everything
   MANUAL_OVERRIDE          — user explicitly chose a position
   NIGHT_CLOSED             — lifecycle night closing is intentional
   ABSENCE_CLOSED           — explicit absence configuration
@@ -44,6 +44,7 @@ from ..state_machine.states import ShadingState
 DAYTIME_CLAMP_EXEMPT_STATES: frozenset[ShadingState] = frozenset({
     ShadingState.STORM_SAFE,
     ShadingState.WIND_SAFE,
+    ShadingState.RAIN_SAFE,
     ShadingState.MANUAL_OVERRIDE,
     ShadingState.NIGHT_CLOSED,
     ShadingState.ABSENCE_CLOSED,

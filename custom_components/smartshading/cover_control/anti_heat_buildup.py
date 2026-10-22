@@ -36,6 +36,7 @@ EXEMPT STATES (always bypass — set ANTI_HEAT_BUILDUP_EXEMPT_STATES)
 --------------------------------------------------------------------
   STORM_SAFE      — safety commands take unconditional priority
   WIND_SAFE       — safety commands take unconditional priority
+  RAIN_SAFE       — safety commands take unconditional priority
   MANUAL_OVERRIDE — user explicitly chose a position; must not be overridden
   NIGHT_CLOSED    — intentional night closure; solar exposure is zero at night
 
@@ -60,6 +61,7 @@ from ..state_machine.states import ShadingState
 ANTI_HEAT_BUILDUP_EXEMPT_STATES: frozenset[ShadingState] = frozenset({
     ShadingState.STORM_SAFE,
     ShadingState.WIND_SAFE,
+    ShadingState.RAIN_SAFE,
     ShadingState.MANUAL_OVERRIDE,
     ShadingState.NIGHT_CLOSED,
 })

@@ -84,7 +84,8 @@ class WindowConfig:
     # Rain Protection — per-window overrides (None = inherit from hardware default via GlobalDefaults).
     # rain_protection_enabled=True → RainEvaluator fires for this window when rain is detected.
     # rain_safe_position_ha: HA position (0=closed, 100=open) to move to when RAIN_SAFE.
-    #   None = use hardware-type default (AWNING/EXTERIOR_SCREEN → HA 0; others → HA 100).
+    #   None = use hardware-type default (AWNING/GENERIC → HA 0 = retracted;
+    #   EXTERIOR_SCREEN/ROLLER_SHUTTER/VENETIAN_BLIND → HA 100 = raised).
     # rain_release_delay_min: minutes to wait after rain stops before resuming normal control.
     rain_protection_enabled: bool | None = None
     rain_safe_position_ha: int | None = None

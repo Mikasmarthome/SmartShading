@@ -48,8 +48,9 @@ class RainEvaluator:
 
         safe_pos = wdi.effective_behavior.rain_safe_position
         if safe_pos is None:
-            # rain_protection_enabled=True but no safe position resolved — fall back to 0
-            safe_pos = 0
+            # rain_protection_enabled=True but no safe position resolved — fall back
+            # to retracted (internal 100 = HA 0), never to extended (internal 0 = HA 100).
+            safe_pos = 100
 
         return WindowDecision(
             window_id=wdi.window_config.id,

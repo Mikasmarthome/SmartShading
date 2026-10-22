@@ -169,6 +169,7 @@ from custom_components.smartshading.engines.safety_hold import (  # noqa: E402
     HARDWARE_SAFE_POSITIONS,
 )
 from custom_components.smartshading.engines.support_export import (  # noqa: E402
+    _hardware_type_name,
     build_support_export_v3,
     privacy_scan,
 )
@@ -1173,6 +1174,7 @@ class TestPreemptionAndStaleGenerations:
         assert s.calls_for("cover.awning_right") == [0]
 
 
+
 # ---------------------------------------------------------------------------
 # Rain-sensor state listener
 # ---------------------------------------------------------------------------
@@ -1782,13 +1784,89 @@ def _coordinator_like(groups: dict[str, CoverHardwareType | None], windows: dict
     )
 
 
+class TestSupportExportHardwareType:
+    @pytest.mark.parametrize("hw", list(CoverHardwareType))
+    def test_hardware_type_comes_from_the_cover_group(self, hw):
+        c = _coordinator_like({"cg": hw}, {"w": "cg"})
+        assert _hardware_type_name(c, c.windows["w"]) == hw.name
+
+    def test_each_window_maps_to_its_own_group(self):
+        c = _coordinator_like(
+            {"cg1": AWNING, "cg2": SCREEN, "cg3": GENERIC},
+            {"w1": "cg1", "w2": "cg2", "w3": "cg3", "w4": "cg1"},
+        )
+        got = {wid: _hardware_type_name(c, w) for wid, w in c.windows.items()}
+        assert got == {"w1": "AWNING", "w2": "EXTERIOR_SCREEN",
+                       "w3": "GENERIC", "w4": "AWNING"}
+
+    def test_missing_assignment_is_reported_as_unknown_not_invented(self):
+        c = _coordinator_like({"cg": AWNING}, {"w": "other_group"})
+        assert _hardware_type_name(c, c.windows["w"]) is None
+        assert _hardware_type_name(c, None) is None
+        no_type = _coordinator_like({"cg": None}, {"w": "cg"})
+        assert _hardware_type_name(no_type, no_type.windows["w"]) is None
+
+    def test_full_export_reports_the_real_hardware_type_and_stays_private(self):
+        s = _Scenario(AWNING, extra=[_Win("w2", SCREEN, ["cover.screen"])])
+        s.set_rain(True)
+        s.coord.data = s.cycle()          # what DataUpdateCoordinator stores after a refresh
+        with s._clock(0):
+            export = build_support_export_v3(s.coord, now=_NOW)
+        pz = Pseudonymizer(s.coord.config_entry.entry_id)
+        snap = export["current_snapshot"]
+        assert snap[pz.ref(NS_WINDOW, "w1")]["hardware_type"] == "AWNING"
+        assert snap[pz.ref(NS_WINDOW, "w2")]["hardware_type"] == "EXTERIOR_SCREEN"
+        assert snap[pz.ref(NS_WINDOW, "w1")]["is_safety"] is True
+        assert privacy_scan(export) == []
+        assert export["section_errors"] == {}
+
+
 class TestNextActionAndReason:
     DEFAULTS = ShadePositionDefaults()
 
+    @pytest.mark.parametrize("state", _TIER1_STATES)
+    def test_safety_label_reports_the_real_target(self, state):
+        assert build_next_action(state, ShadingState.OPEN, self.DEFAULTS,
+                                 target_position_ha=100) == "MOVE_TO_100"
+        assert build_next_action(state, ShadingState.OPEN, self.DEFAULTS,
+                                 target_position_ha=30) == "MOVE_TO_30"
 
     def test_without_a_target_the_old_constant_label_is_kept(self):
         assert build_next_action(
             ShadingState.RAIN_SAFE, ShadingState.OPEN, self.DEFAULTS) == "MOVE_TO_0"
+
+    def test_other_states_ignore_the_supplied_target(self):
+        assert build_next_action(
+            ShadingState.STRONG_SHADE, ShadingState.OPEN, self.DEFAULTS,
+            target_position_ha=99) == f"MOVE_TO_{self.DEFAULTS.strong_shade_position}"
+
+    def test_no_action_when_the_state_does_not_change(self):
+        assert build_next_action(
+            ShadingState.RAIN_SAFE, ShadingState.RAIN_SAFE, self.DEFAULTS,
+            target_position_ha=0) == "NO_ACTION"
+
+    @pytest.mark.parametrize("kwargs,expected", [
+        (dict(hw=AWNING), "MOVE_TO_0"),
+        (dict(hw=SCREEN), "MOVE_TO_100"),
+        (dict(hw=AWNING, rain_safe_position_ha=30), "MOVE_TO_30"),
+        (dict(hw=ROLLER, rain_protection_enabled=True), "MOVE_TO_100"),
+    ])
+    def test_coordinator_label_matches_the_dispatched_target(self, kwargs, expected):
+        hw = kwargs.pop("hw")
+        s = _Scenario(hw, **kwargs)
+        s.set_rain(True)
+        data = s.cycle()
+        assert data.window_results["w1"].next_action == expected
+        assert f"MOVE_TO_{s.diag(data).target_position_ha}" == expected
+        assert s.position_calls == [int(expected.rsplit("_", 1)[1])]
+
+    def test_rain_reason_is_reported_as_rain(self):
+        assert build_reason(ShadingState.RAIN_SAFE) == ("RAIN", "rain_detected")
+        s = _Scenario(AWNING)
+        s.set_rain(True)
+        data = s.cycle()
+        assert data.window_results["w1"].reason == "RAIN"
+        assert data.window_results["w1"].reason_code == "rain_detected"
 
 
 # ---------------------------------------------------------------------------

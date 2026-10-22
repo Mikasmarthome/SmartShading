@@ -4695,7 +4695,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 state=new_state,
                 reason=reason,
                 reason_code=reason_code,
-                next_action=build_next_action(new_state, current_state, self.shade_position_defaults),
+                next_action=build_next_action(
+                    new_state, current_state, self.shade_position_defaults,
+                    target_position_ha=(
+                        _exec_filter_result.target_position_ha
+                        if _exec_filter_result is not None else None
+                    ),
+                ),
                 guard_blocked=guard_blocked,
                 exposure=exposure,
                 outdoor_temperature=weather_inputs.outdoor_temperature,

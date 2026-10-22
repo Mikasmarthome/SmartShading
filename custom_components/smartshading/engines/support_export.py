@@ -125,6 +125,22 @@ def _resolve_home_tz(coordinator) -> tuple[ZoneInfo | None, str | None, str]:
         return None, tz_name, "invalid"
 
 
+def _hardware_type_name(coordinator, window) -> str | None:
+    """Hardware category (e.g. ``"AWNING"``) of a window's cover group.
+
+    The hardware type belongs to the CoverGroup, not to the WindowConfig, so it
+    is resolved through ``window.cover_group_id``.  Returns None when the window
+    or its cover group is unknown (never a made-up category).
+    """
+    if window is None:
+        return None
+    group = (getattr(coordinator, "cover_groups", None) or {}).get(
+        getattr(window, "cover_group_id", None))
+    hardware_type = getattr(group, "hardware_type", None)
+    name = getattr(hardware_type, "name", None)
+    return name if isinstance(name, str) else None
+
+
 def _safe(fn, errors, name, default=None):
     try:
         return fn()
@@ -427,8 +443,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 # Startup
                 "startup_grace_active": getattr(diag, "startup_grace_active", None),
                 # Hardware type (from window config — privacy-safe category, not entity id)
-                "hardware_type": (str(getattr(w, "hardware_type", None))
-                                  .replace("CoverHardwareType.", "") if w else None),
+                "hardware_type": _hardware_type_name(c, w),
                 # F24: "how long has this been the case" — answers e.g. "the
                 # window has been in night_vent for 3 minutes" without needing
                 # to cross-reference support_timeline.

@@ -18,7 +18,7 @@ from ..models.comfort import ComfortAssessment
 from ..models.config import ShadePositionDefaults
 from ..models.state import ReasonCode
 from ..state_machine.guards import HysteresisConfig
-from ..state_machine.states import ShadingState
+from ..state_machine.states import TIER1_SAFETY_STATES, ShadingState
 from .exposure_engine import WindowExposure
 from .learning_store import LearningStore
 
@@ -58,6 +58,8 @@ def build_reason(
         return "STORM", ReasonCode.STORM_DETECTED.value
     if state is ShadingState.WIND_SAFE:
         return "WIND", ReasonCode.WIND_DETECTED.value
+    if state is ShadingState.RAIN_SAFE:
+        return "RAIN", ReasonCode.RAIN_DETECTED.value
     if state is ShadingState.NIGHT_CLOSED:
         return "NIGHT", ReasonCode.NIGHT_LIFECYCLE.value
     if state is ShadingState.ABSENCE_CLOSED:
@@ -68,7 +70,10 @@ def build_reason(
 
 
 def build_next_action(
-    new_state: ShadingState, current_state: ShadingState, defaults: ShadePositionDefaults
+    new_state: ShadingState,
+    current_state: ShadingState,
+    defaults: ShadePositionDefaults,
+    target_position_ha: int | None = None,
 ) -> str:
     """Display-only preview of what a future PositionCalculator
     (ARCHITECTURE.md §5.7 step 11) would do - no command is ever sent in
@@ -88,13 +93,21 @@ def build_next_action(
     the per-window night/vent/absence/rain-safe position. NIGHT_VENT is
     labelled as a named action (its real position is per-window config, not
     a fixed default) rather than a fabricated percentage; RAIN_SAFE mirrors
-    STORM_SAFE/WIND_SAFE (all three Tier-1 safety states are already
-    simplified to "MOVE_TO_0" here for the same reason).
+    STORM_SAFE/WIND_SAFE (all three Tier-1 safety states are simplified to
+    "MOVE_TO_0" here when no real target is supplied).
+
+    Tier-1 safety states depend on the cover's hardware type (and, for rain,
+    an optional per-window position), so a constant label can be wrong.  When
+    the caller passes the already-computed HA target (``target_position_ha``,
+    the same value that is dispatched) the label reports exactly that target;
+    nothing is calculated here.
     """
     if new_state == current_state:
         return "NO_ACTION"
     if new_state is ShadingState.MANUAL_OVERRIDE:
         return "NO_ACTION"  # never override the user
+    if new_state in TIER1_SAFETY_STATES and target_position_ha is not None:
+        return f"MOVE_TO_{target_position_ha}"
     action = {
         ShadingState.OPEN: "OPEN",
         ShadingState.LIGHT_SHADE: f"MOVE_TO_{defaults.light_shade_position}",

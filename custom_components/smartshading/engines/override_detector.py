@@ -143,7 +143,7 @@ class OverrideDetector:
 
         Must be called AFTER TierOrchestrator has produced tier_decision
         (uses tier_decision.target_position as smartshading_target).
-        Must NOT be called when Tier 1 Safety (STORM_SAFE / WIND_SAFE) is
+        Must NOT be called when Tier 1 Safety (STORM_SAFE / WIND_SAFE / RAIN_SAFE) is
         active — the Coordinator calls clear() instead in that case.
 
         Args:
@@ -259,7 +259,7 @@ class OverrideDetector:
     def clear(self, window_id: str) -> None:
         """Explicitly remove an active override.
 
-        Called by the Coordinator when Tier 1 Safety (STORM_SAFE / WIND_SAFE)
+        Called by the Coordinator when Tier 1 Safety (STORM_SAFE / WIND_SAFE / RAIN_SAFE)
         takes over — Safety always beats a manual override.
         """
         self._active_overrides.pop(window_id, None)

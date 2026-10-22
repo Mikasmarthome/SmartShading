@@ -43,7 +43,7 @@ desired behaviour for Somfy RTS and similar RF-based systems.
 
 Safety behavior
 ---------------
-Safety commands (STORM_SAFE / WIND_SAFE) acquire the lock and wait for the
+Safety commands (STORM_SAFE / WIND_SAFE / RAIN_SAFE) acquire the lock and wait for the
 throttle exactly like non-safety commands — the minimum interval
 (DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS) is always enforced.  Safety's queue
 priority means it is exempt from stale-intent

@@ -81,8 +81,9 @@ is controlled separately by Active Control.
 
 Active Control lets SmartShading send cover commands automatically for a zone. It defaults to **off** and
 must be enabled explicitly per zone. While it is off, SmartShading still computes recommendations and
-diagnostics but does not move any cover. Enable it only when the covers in that zone are safe to operate
-automatically.
+diagnostics but does not move any cover — this includes safety decisions (wind, storm, rain), which are then
+shown as recommendations only and are not executed automatically. Enable it only when the covers in that zone
+are safe to operate automatically.
 
 ### Behavior Modes
 
@@ -124,6 +125,14 @@ Safety conditions take priority over normal automatic shading decisions:
 - Safety decisions have the highest priority.
 - Wind and storm behavior depends on the configured cover hardware type, so the protective position suits
   the kind of cover.
+- Rain protection is on by default for awnings and exterior screens: when rain is detected an awning is
+  retracted to Home Assistant position `0` and an exterior screen is raised to position `100`. Rain is
+  evaluated as soon as the rain sensor changes (not only on the periodic cycle). Like wind and storm, rain
+  protection overrides a manual override and is not delayed by the startup grace period or the minimum
+  action interval; the command is sent in the global dispatch order, so it can wait briefly behind commands
+  other zones have already queued.
+- For wind and storm an awning is retracted to position `0`, while exterior screens, roller shutters and
+  venetian blinds are raised to position `100`.
 - An active safety condition remains latched for a release period rather than clearing the instant the
   triggering value drops.
 - A temporarily unavailable sensor does not release a safety state that is already active.

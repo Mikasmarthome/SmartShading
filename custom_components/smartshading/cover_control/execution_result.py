@@ -172,7 +172,7 @@ class ExecutionResult:
     """Target tilt position — Phase 2 only.  Always None in this version."""
 
     is_safety: bool
-    """True when triggered by STORM_SAFE or WIND_SAFE (Tier 1 Safety).
+    """True when triggered by STORM_SAFE, WIND_SAFE or RAIN_SAFE (Tier 1 Safety).
     Failed safety results can be identified by status==FAILED and is_safety==True."""
 
     blocked_reason: str | None

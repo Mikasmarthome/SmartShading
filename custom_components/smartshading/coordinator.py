@@ -1,7 +1,7 @@
 """DataUpdateCoordinator for SmartShading (ARCHITECTURE.md §9).
 
 Drives the Tier 1-5 evaluation pipeline per window and per cycle:
-  Tier 1 — Safety Guards           (StormEvaluator, WindEvaluator)
+  Tier 1 — Safety Guards           (StormEvaluator, WindEvaluator, RainEvaluator)
   Tier 2 — Manual Override         (ManualOverrideEvaluator + OverrideDetector)
   Tier 3 — Lifecycle Phase Gate    (NightEvaluator)
   Tier 4 — Protection Floors       (AbsenceEvaluator, HeatEvaluator, GlareEvaluator)
@@ -426,7 +426,7 @@ _DEFAULT_MINIMUM_STATE_DURATION = {
 # Startup Grace Period (Step 9G5): number of coordinator cycles after HA
 # restart during which cover dispatch is suppressed.  Gives HA time to
 # hydrate all entity states before SmartShading can move a cover.
-# Safety exceptions (STORM_SAFE/WIND_SAFE) will bypass this in 9G5b/9G6.
+# Safety exceptions (STORM_SAFE/WIND_SAFE/RAIN_SAFE) bypass this.
 STARTUP_GRACE_CYCLES: int = 1
 
 # P10 completion: important learning events trigger a coalesced near-immediate

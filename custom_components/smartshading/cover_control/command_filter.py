@@ -30,8 +30,8 @@ BLOCKING ORDER (evaluated top-to-bottom; first match wins)
 
 SAFETY BYPASS SEMANTICS
 -----------------------
-STORM_SAFE and WIND_SAFE bypass the StateGuard action interval check and the
-position-tolerance check.  They do NOT bypass recommendation_only or
+STORM_SAFE, WIND_SAFE and RAIN_SAFE (Tier-1 Safety) bypass the StateGuard action
+interval check and the position-tolerance check.  They do NOT bypass recommendation_only or
 cover_unavailable — if a cover is unavailable, it cannot receive any command.
 
 EXECUTION MODE
@@ -178,7 +178,7 @@ class CommandFilterResult:
 
     is_safety
         True when the triggering decision is a Tier 1 Safety state
-        (STORM_SAFE or WIND_SAFE).  Safety commands bypass some filters
+        (STORM_SAFE, WIND_SAFE or RAIN_SAFE).  Safety commands bypass some filters
         (not all — see module docstring).
     """
 
@@ -250,7 +250,7 @@ class CommandFilter:
         execution_mode:
             RECOMMENDATION_ONLY or AUTOMATIC.
         is_safety:
-            True when shading_state is STORM_SAFE or WIND_SAFE.
+            True when shading_state is STORM_SAFE, WIND_SAFE or RAIN_SAFE.
             Safety commands bypass action-interval and position-tolerance
             checks, but not recommendation_only or cover_unavailable.
         is_manual_override:
@@ -341,7 +341,7 @@ class CommandFilter:
 
         # ------------------------------------------------------------------
         # Blocking check 4: StateGuard action interval.
-        # Safety (STORM_SAFE / WIND_SAFE) bypasses this check: immediate
+        # Safety (STORM_SAFE / WIND_SAFE / RAIN_SAFE) bypasses this check: immediate
         # retraction must never be delayed by a prior command's cooldown.
         # ------------------------------------------------------------------
         if not state_guard_allowed and not is_safety:

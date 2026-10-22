@@ -126,8 +126,9 @@ class SmartShadingActiveControlSwitch(_ZoneControlSwitch):
               No cover is moved automatically.
 
     Default: off.  Enable only when the configured covers are safe to operate
-    automatically.  Safety decisions (STORM_SAFE, WIND_SAFE) and manual
-    override bypass this flag and remain unaffected.
+    automatically.  While off, even Tier-1 safety decisions (STORM_SAFE,
+    WIND_SAFE, RAIN_SAFE) are only shown as recommendations; no cover command
+    is sent (CommandFilter: recommendation_only).
     """
 
     def __init__(

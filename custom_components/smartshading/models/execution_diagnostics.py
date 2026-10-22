@@ -79,7 +79,7 @@ class WindowExecutionDiagnostics:
     by CommandFilter / CoverIntent. None when target_position_internal is None."""
 
     is_safety: bool
-    """True when TierDecision is STORM_SAFE or WIND_SAFE (Tier 1 Safety)."""
+    """True when TierDecision is STORM_SAFE, WIND_SAFE or RAIN_SAFE (Tier 1 Safety)."""
 
     # --- CommandFilter result -----------------------------------------------
 

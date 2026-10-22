@@ -197,6 +197,7 @@ from custom_components.smartshading.models.zone_execution_config import (  # noq
 from custom_components.smartshading.state_machine.guards import StateGuard  # noqa: E402
 from custom_components.smartshading.state_machine.states import (  # noqa: E402
     STATE_PRIORITY,
+    SAFETY_SHADING_STATES,
     ShadingState,
 )
 from custom_components.smartshading.state_machine.transitions import bypasses_guard  # noqa: E402
@@ -582,6 +583,15 @@ class TestRainSafeTargetAtServiceCall:
         s.cycle()
         assert s.position_calls == [0]
 
+    def test_retracted_awning_is_never_extended(self):
+        s = _Scenario(AWNING, cover_position=0)     # already retracted
+        s.set_rain(True)
+        data = s.cycle()
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        # Safety commands are not suppressed by the same-position filter (the
+        # assumed position may be stale), so the retract may be repeated — but
+        # a rain decision can never send anything other than "retracted".
+        assert s.position_calls and set(s.position_calls) == {0}
 
     def test_lowered_exterior_screen_is_raised(self):
         s = _Scenario(SCREEN, cover_position=0)     # lowered (covering the window)
@@ -589,6 +599,12 @@ class TestRainSafeTargetAtServiceCall:
         s.cycle()
         assert s.position_calls == [100]
 
+    def test_raised_exterior_screen_is_never_lowered(self):
+        s = _Scenario(SCREEN, cover_position=100)   # already raised
+        s.set_rain(True)
+        data = s.cycle()
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert s.position_calls and set(s.position_calls) == {100}
 
     @pytest.mark.parametrize("hw", [AWNING, SCREEN])
     @pytest.mark.parametrize("explicit", [0, 30, 100])
@@ -645,6 +661,23 @@ class TestRainSafeTargetAtServiceCall:
         s.set_rain(True)
         data = s.cycle()
         assert _state_of(data) is not ShadingState.RAIN_SAFE
+
+
+class TestNightIncident:
+    """The reported event happened at 03:24:59 local time, sun below horizon."""
+
+    @pytest.mark.parametrize("start", [0, 40])
+    def test_night_rain_never_extends_the_awning(self, start):
+        s = _Scenario(AWNING, cover_position=start)
+        s.night()
+        s.set_rain(True)
+        data = s.cycle()
+        assert data.window_results["w1"].night_active is True
+        assert data.window_results["w1"].lifecycle_state == "night"
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert s.diag(data).rain_safe_active is True
+        assert s.diag(data).target_position_ha == 0
+        assert s.position_calls and set(s.position_calls) == {0}
 
 
 class TestNoRainUnchanged:
@@ -721,6 +754,17 @@ class TestRainSafeStaysConsistentAcrossEvaluations:
 
 
 class TestRainSafeWithActiveControl:
+    def test_recommendation_is_correct_but_no_command_when_active_control_is_off(self):
+        # Active Control off is recommendation-only for every state, safety
+        # included (CommandFilter: recommendation_only blocks everything).
+        s = _Scenario(AWNING, active_control=False)
+        s.set_rain(True)
+        data = s.cycle()
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert s.diag(data).target_position_ha == 0
+        assert s.diag(data).is_safety is True
+        assert s.diag(data).command_blocked_reason == "recommendation_only"
+        assert s.hass.services.async_call.await_count == 0
 
     def test_no_command_even_with_a_manual_override_when_active_control_is_off(self):
         s = _Scenario(AWNING, active_control=False)
@@ -819,10 +863,51 @@ class TestExteriorScreenWindStormFix:
         s.cycle()
         assert s.position_calls == [0]
 
+    @pytest.mark.parametrize("trigger", ["rain", "wind", "storm"])
+    def test_no_safety_state_ever_lowers_a_screen(self, trigger):
+        for start in (0, 40, 100):
+            s = _Scenario(SCREEN, cover_position=start)
+            _trigger(s, trigger)
+            s.cycle(0)
+            s.set_cover_position(100)
+            s.cycle(5)
+            assert s.position_calls and set(s.position_calls) == {100}, (trigger, start)
+
 
 class TestSafetyTargetMatrix:
     """Rain / wind / storm x awning / screen / roller / venetian."""
 
+    @pytest.mark.parametrize("hw,trigger,expected", _MATRIX)
+    def test_documented_target(self, hw, trigger, expected):
+        s = _safety_scenario(hw, trigger)
+        data = s.cycle()
+        assert s.diag(data).is_safety is True
+        assert s.diag(data).target_position_ha == expected
+        assert s.position_calls == [expected]
+
+    @pytest.mark.parametrize("hw,trigger,expected", _MATRIX)
+    def test_already_safe_position_gets_no_unsafe_counter_command(self, hw, trigger, expected):
+        s = _safety_scenario(hw, trigger, cover_position=expected)
+        s.cycle(0)
+        s.cycle(5)
+        assert s.position_calls and set(s.position_calls) == {expected}
+
+    @pytest.mark.parametrize("hw,trigger,expected", _MATRIX)
+    def test_stale_assumed_position_cannot_block_the_safety_command(self, hw, trigger, expected):
+        # RF-style cover without position feedback: SmartShading assumes "already
+        # safe" but the cover was moved with the remote control.
+        s = _safety_scenario(hw, trigger)
+        cap = _capability(s.cover)
+        cap.has_reliable_position_feedback = False
+        cap.assumed_state = True
+        s.coord._cover_capabilities[s.cover] = cap
+        s.hass.states.set(s.cover, "open", supported_features=15)     # no current_position
+        s.coord.assumed_state_manager.update(
+            s.cover, 100 - expected, commanded_at=_NOW - timedelta(hours=1),
+            has_reliable_position_feedback=False)
+        data = s.cycle()
+        assert s.diag(data).command_blocked_reason is None
+        assert s.position_calls == [expected]
 
     @pytest.mark.parametrize("hw,trigger,expected", _MATRIX)
     def test_position_clamps_do_not_change_the_safety_target(self, hw, trigger, expected):
@@ -874,7 +959,19 @@ class TestInvertPosition:
 
 
 class TestTier1DispatchParity:
+    def test_rain_is_flagged_as_safety(self):
+        s = _Scenario(AWNING)
+        s.set_rain(True)
+        data = s.cycle()
+        assert s.diag(data).is_safety is True
 
+    def test_startup_grace_does_not_delay_rain_safety(self):
+        s = _Scenario(AWNING, cover_position=100)
+        s.coord._startup_cycles_remaining = 1        # first cycle after a restart
+        s.set_rain(True)
+        data = s.cycle(0)
+        assert s.diag(data).dispatch_suppressed_reason is None
+        assert s.position_calls == [0]
 
     def test_startup_grace_still_delays_normal_shading(self):
         s = _Scenario(AWNING)
@@ -883,6 +980,16 @@ class TestTier1DispatchParity:
         assert s.diag(data).dispatch_suppressed_reason == "startup_grace_active"
         assert s.position_calls == []
 
+    def test_state_guard_interval_does_not_block_rain_safety(self):
+        s = _Scenario(AWNING, cover_position=40)
+        s.cycle(0)                                    # normal command -> action interval starts
+        shading_calls = list(s.position_calls)
+        assert shading_calls
+        s.set_cover_position(shading_calls[-1])
+        s.set_rain(True)
+        data = s.cycle(1)                             # < 3 min later
+        assert s.diag(data).command_blocked_reason is None
+        assert s.position_calls == [*shading_calls, 0]
 
     def test_state_guard_interval_still_blocks_normal_shading(self):
         # Control for the test above: a normal (non-safety) re-target within the
@@ -896,10 +1003,108 @@ class TestTier1DispatchParity:
         assert s.diag(data).command_blocked_reason == "guard_action_interval"
         assert s.position_calls == shading_calls
 
+    def test_same_position_filter_does_not_suppress_a_stale_assumed_position(self):
+        # RF-style cover without position feedback: SmartShading assumes
+        # "retracted" but the awning was extended with the remote control.
+        s = _Scenario(AWNING, cover_position=0)
+        cap = _capability()
+        cap.has_reliable_position_feedback = False
+        cap.assumed_state = True
+        s.coord._cover_capabilities[_COVER] = cap
+        s.hass.states.set(_COVER, "open", supported_features=15)   # no current_position
+        s.coord.assumed_state_manager.update(
+            _COVER, 100, commanded_at=_NOW - timedelta(hours=1),
+            has_reliable_position_feedback=False)
+        s.set_rain(True)
+        data = s.cycle(0)
+        assert s.diag(data).command_blocked_reason is None
+        assert s.position_calls == [0]
+
+    def test_rain_and_storm_are_treated_identically_by_the_command_filter(self):
+        rain = _Scenario(AWNING, cover_position=0)
+        rain.set_rain(True)
+        rd = rain.diag(rain.cycle())
+        storm = _Scenario(AWNING, cover_position=0)
+        storm.set_wind(40.0)
+        sd = storm.diag(storm.cycle())
+        for attr in ("is_safety", "command_allowed", "command_blocked_reason",
+                     "service_call_sent", "dispatch_suppressed_reason",
+                     "target_position_ha"):
+            assert getattr(rd, attr) == getattr(sd, attr), attr
+
 
 # ---------------------------------------------------------------------------
 # Package B2 — Rain-Safety overrules a manual override like wind/storm
 # ---------------------------------------------------------------------------
+
+
+class TestManualOverridePreemption:
+    def test_rain_overrules_a_daytime_manual_override(self):
+        s = _Scenario(AWNING, cover_position=40)
+        _establish_manual_override(s, user_position=90)   # user extended the awning
+        calls_before = len(s.position_calls)
+        s.set_rain(True)
+        data = s.cycle(15)
+        d = s.diag(data)
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert d.manual_override_active is False
+        assert d.manual_override_release_reason == "safety"
+        assert d.command_blocked_reason is None
+        assert s.position_calls[calls_before:] == [0]
+
+    def test_rain_overrules_a_night_manual_override(self):
+        s = _Scenario(AWNING, cover_position=40)
+        s.night()
+        s.cycle(0)                          # night command
+        s.set_cover_position(60)            # user moves the cover during the night
+        s.cycle(5)
+        data = s.cycle(10)
+        assert s.diag(data).manual_override_active
+        assert s.diag(data).manual_override_scope == "night"
+        calls_before = len(s.position_calls)
+        s.set_rain(True)
+        data = s.cycle(15)
+        d = s.diag(data)
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert d.manual_override_active is False
+        assert d.manual_override_release_reason == "safety"
+        assert s.position_calls[calls_before:] == [0]
+
+    def test_override_does_not_come_back_after_the_rain(self):
+        s = _Scenario(AWNING, cover_position=40)
+        _establish_manual_override(s)
+        s.set_rain(True)
+        s.cycle(15)
+        s.set_cover_position(0)             # cover followed the rain command
+        s.set_rain(False)
+        for minutes in (20, 25, 40, 45):
+            data = s.cycle(minutes)
+            assert s.diag(data).manual_override_active is False, minutes
+
+    def test_manual_move_during_rain_safety_is_not_registered_as_override(self):
+        # Same as wind/storm: while the safety state is active no override
+        # detection runs, so the next cycle simply retracts again.
+        s = _Scenario(AWNING, cover_position=40)
+        s.set_rain(True)
+        s.cycle(0)
+        s.set_cover_position(90)            # user extends it during the rain
+        data = s.cycle(5)
+        assert s.diag(data).manual_override_active is False
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert s.position_calls[-1] == 0
+
+    def test_override_handling_is_identical_for_rain_and_storm(self):
+        rain = _Scenario(AWNING, cover_position=40)
+        _establish_manual_override(rain)
+        rain.set_rain(True)
+        rd = rain.diag(rain.cycle(15))
+        storm = _Scenario(AWNING, cover_position=40)
+        _establish_manual_override(storm)
+        storm.set_wind(40.0)
+        sd = storm.diag(storm.cycle(15))
+        for attr in ("manual_override_active", "manual_override_release_reason",
+                     "command_blocked_reason", "service_call_sent", "is_safety"):
+            assert getattr(rd, attr) == getattr(sd, attr), attr
 
 
 # ---------------------------------------------------------------------------
@@ -917,11 +1122,11 @@ class _GenerationBumpingSerial(GlobalSerialDispatch):
         self.coordinator = None
         self._armed = True
 
-    def time_until_next_allowed(self):
+    def time_until_next_allowed(self, *args, **kwargs):
         if self._armed and self.coordinator is not None:
             self._armed = False
             self.coordinator._dispatch_generation += 1
-        return super().time_until_next_allowed()
+        return super().time_until_next_allowed(*args, **kwargs)
 
 
 class TestPreemptionAndStaleGenerations:
@@ -941,6 +1146,23 @@ class TestPreemptionAndStaleGenerations:
         assert s.diag(data).dispatch_throttled is True
         assert s.position_calls == [0]
 
+    def test_stale_generation_cancels_normal_intents_but_not_rain_safety(self):
+        serial = _GenerationBumpingSerial(min_interval=timedelta(milliseconds=1))
+        s = _Scenario(AWNING, serial=serial,
+                      extra=[_Win("w2", ROLLER, ["cover.roller"])],
+                      covers=["cover.awning"])
+        serial.coordinator = s.coord
+        s.set_rain(True)
+        data = s.cycle(0)
+        # Rain intent (safety) is dispatched first and is exempt from the stale
+        # check; the roller's normal shading intent is cancelled (old plan).
+        assert s.calls_for("cover.awning") == [0]
+        assert s.calls_for("cover.roller") == []
+        assert s.diag(data, "w2").service_call_sent is False
+        # The cancelled plan is not executed later.
+        s.set_cover_position(0, cover="cover.awning")
+        s.cycle(5)
+        assert set(s.calls_for("cover.awning")) == {0}
 
     def test_every_cover_of_a_group_is_retracted(self):
         covers = ["cover.awning_left", "cover.awning_right"]
@@ -990,19 +1212,135 @@ def hass_calls(s: _Scenario, cover: str) -> list[int]:
 # ---------------------------------------------------------------------------
 
 
+class TestGlobalDispatchQueue:
+    def test_rain_command_waits_fifo_behind_intents_other_zones_already_queued(self):
+        # The rain listener invalidates the old plan of ITS OWN coordinator only.
+        # Intents other zones already queued in the global dispatch lock are
+        # served first (plain FIFO, same as wind/storm; the zones' items take their
+        # dispatch slots alternately); a global safety priority is a separate,
+        # later change.  If it is added, "x1" moves ahead of the still-queued
+        # intents.
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=500))
+        zone_a = _Scenario(ROLLER, hass=hass, serial=serial, window_id="a1", zone_id="za",
+                           covers=["cover.a1"], extra=[_Win("a2", ROLLER, ["cover.a2"])])
+        zone_b = _Scenario(ROLLER, hass=hass, serial=serial, window_id="b1", zone_id="zb",
+                           covers=["cover.b1"], extra=[_Win("b2", ROLLER, ["cover.b2"])])
+        zone_x = _Scenario(AWNING, hass=hass, serial=serial, window_id="x1", zone_id="zx",
+                           covers=["cover.x1"])
+        order: list[str] = []
+
+        async def record(domain, service, data, *a, **k):
+            order.append(data["entity_id"].replace("cover.", ""))
+
+        hass.services.async_call = AsyncMock(side_effect=record)
+
+        async def main():
+            with zone_a._clock(0):
+                task_a = asyncio.ensure_future(zone_a.coord._async_update_data())
+                task_b = asyncio.ensure_future(zone_b.coord._async_update_data())
+                await asyncio.sleep(0.05)
+                zone_a.set_rain(True)                         # rain reported while A/B are queued
+                task_x = asyncio.ensure_future(zone_x.coord._async_update_data())
+                await asyncio.gather(task_a, task_b, task_x)
+
+        asyncio.run(main())
+        assert order == ["a1", "b1", "a2", "b2", "x1"]
+        assert order.index("x1") > order.index("b1")           # waited behind queued intents
+        assert order.count("x1") == 1                          # and was sent exactly once
+
+    def test_wind_storm_have_the_same_queue_behaviour(self):
+        results = {}
+        for trigger in ("rain", "storm"):
+            hass = _make_hass()
+            serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=400))
+            zone_a = _Scenario(ROLLER, hass=hass, serial=serial, window_id="a1", zone_id="za",
+                               covers=["cover.a1"], extra=[_Win("a2", ROLLER, ["cover.a2"])])
+            zone_x = _Scenario(AWNING, hass=hass, serial=serial, window_id="x1", zone_id="zx",
+                               covers=["cover.x1"])
+            order: list[str] = []
+
+            async def record(domain, service, data, *a, _o=order, **k):
+                _o.append(data["entity_id"].replace("cover.", ""))
+
+            hass.services.async_call = AsyncMock(side_effect=record)
+
+            async def main():
+                with zone_a._clock(0):
+                    task_a = asyncio.ensure_future(zone_a.coord._async_update_data())
+                    await asyncio.sleep(0.05)
+                    _trigger(zone_a, trigger)
+                    task_x = asyncio.ensure_future(zone_x.coord._async_update_data())
+                    await asyncio.gather(task_a, task_x)
+
+            asyncio.run(main())
+            results[trigger] = order
+        assert results["rain"] == results["storm"]
+
+
 # ---------------------------------------------------------------------------
 # Audit guards: no stray storm/wind-only safety checks
 # ---------------------------------------------------------------------------
 
 
 class TestSafetyGateAudit:
+    def test_tier1_set_matches_the_priority_table(self):
+        tier1 = {s for s, rank in STATE_PRIORITY.items() if rank <= 3}
+        assert tier1 == set(SAFETY_SHADING_STATES) == {
+            ShadingState.STORM_SAFE, ShadingState.WIND_SAFE, ShadingState.RAIN_SAFE,
+        }
 
+    @pytest.mark.parametrize("state", _TIER1_STATES)
+    def test_state_guard_never_throttles_a_tier1_command(self, state):
+        guard = StateGuard()
+        now = _NOW
+        guard.record_action_sent("w1", now)
+        assert guard.can_send_action("w1", state, now + timedelta(seconds=5)) is True
 
     def test_state_guard_still_throttles_normal_commands(self):
         guard = StateGuard()
         guard.record_action_sent("w1", _NOW)
         assert guard.can_send_action(
             "w1", ShadingState.STRONG_SHADE, _NOW + timedelta(seconds=5)) is False
+
+    @pytest.mark.parametrize("state", _TIER1_STATES)
+    def test_leaving_a_tier1_state_is_not_delayed(self, state):
+        assert bypasses_guard(state, ShadingState.OPEN) is True
+
+    def test_rain_moves_are_classified_as_safety_movements(self):
+        classify = _coord_mod.SmartShadingCoordinator._classify_movement_cause
+        for state in _TIER1_STATES:
+            assert classify(state) == _coord_mod.MOVE_CAUSE_SAFETY
+
+    def test_only_the_intended_storm_wind_only_checks_remain(self):
+        # Any tuple/set/list literal that names STORM_SAFE and WIND_SAFE but not
+        # RAIN_SAFE is a place that would treat rain differently from the other
+        # Tier-1 states.  Only two such checks are specific to storm/wind on
+        # purpose (comments and docstrings are ignored by the AST walk).
+        import ast
+
+        root = Path(_coord_mod.__file__).parent
+        found = []
+        for path in sorted(root.rglob("*.py")):
+            text = path.read_text(encoding="utf-8")
+            lines = text.splitlines()
+            for node in ast.walk(ast.parse(text)):
+                if not isinstance(node, (ast.Tuple, ast.Set, ast.List)):
+                    continue
+                names = {n.attr for n in ast.walk(node) if isinstance(n, ast.Attribute)}
+                names |= {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+                if {"STORM_SAFE", "WIND_SAFE"} <= names and "RAIN_SAFE" not in names:
+                    found.append((path.relative_to(root).as_posix(),
+                                  lines[node.lineno - 1].strip()))
+        allowed = [
+            # hardware-aware wind/storm position correction (own block for rain)
+            ("coordinator.py",
+             "if tier_decision.shading_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):"),
+            # rain hold must not override a storm/wind decision (lower priority)
+            ("coordinator.py",
+             "and tier_decision.shading_state not in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE)"),
+        ]
+        assert sorted(found) == sorted(allowed), found
 
 
 # ---------------------------------------------------------------------------

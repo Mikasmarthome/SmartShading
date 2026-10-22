@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-from .states import ShadingState
+from .states import SAFETY_SHADING_STATES, ShadingState
 
 # States during which the shading position is locked (ARCHITECTURE.md §4.3,
 # "Position Lock - Kernregel").
@@ -49,7 +49,7 @@ class StateGuard:
       lifecycle-direct exits, MANUAL_OVERRIDE/STORM_SAFE/WIND_SAFE exits
       all skip this check entirely, per the §5.7 P0-1 fix).
     - can_send_action(): protects *cover commands* (minimum_action_interval).
-      STORM_SAFE and WIND_SAFE (both Tier-1 Safety) always bypass this.
+      STORM_SAFE, WIND_SAFE and RAIN_SAFE (Tier-1 Safety) always bypass this.
     """
 
     def __init__(self, config: StateGuardConfig | None = None) -> None:
@@ -94,11 +94,11 @@ class StateGuard:
     def can_send_action(self, window_id: str, proposed_state: ShadingState, now: datetime) -> bool:
         """True if a cover command may be sent now.
 
-        STORM_SAFE and WIND_SAFE (both Tier-1 Safety, ARCHITECTURE.md §4.3)
-        always bypass minimum_action_interval - immediate cover retraction
-        must never be throttled by a prior command's cooldown.
+        STORM_SAFE, WIND_SAFE and RAIN_SAFE (Tier-1 Safety, ARCHITECTURE.md
+        §4.3) always bypass minimum_action_interval - immediate cover
+        retraction must never be throttled by a prior command's cooldown.
         """
-        if proposed_state in (ShadingState.STORM_SAFE, ShadingState.WIND_SAFE):
+        if proposed_state in SAFETY_SHADING_STATES:
             return True
         last_action_at = self._last_action_at.get(window_id)
         if last_action_at is None:

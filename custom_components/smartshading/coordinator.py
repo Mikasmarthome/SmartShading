@@ -1254,6 +1254,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Unsubscribe callbacks for window-contact state change listeners.
         # Populated by async_setup_contact_listeners(); cleared by teardown.
         self._unsub_contact_listeners: list[Callable[[], None]] = []
+        # Rain-sensor state listener (single subscription) and the normalized
+        # rain status the last coordinator cycle evaluated.
+        self._unsub_rain_listener: Callable[[], None] | None = None
+        self._last_rain_status: _RainStatus | None = None
         # Single point-in-time timer for the next fixed-time lifecycle boundary
         # (night start / morning release).  Managed by the lifecycle-boundary
         # scheduler so those time-based moves fire promptly, not at the next
@@ -1705,6 +1709,103 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         for unsub in self._unsub_contact_listeners:
             unsub()
         self._unsub_contact_listeners.clear()
+
+    # ------------------------------------------------------------------
+    # Rain-sensor state listener
+    # ------------------------------------------------------------------
+
+    def _rain_source_type(self) -> _RainSourceType:
+        """Source type of the configured rain entity (auto-detected from its domain)."""
+        if self._rain_sensor_id is None:
+            return _RainSourceType.NONE
+        if self._rain_sensor_id.startswith("binary_sensor."):
+            return _RainSourceType.BINARY_SENSOR
+        return _RainSourceType.NUMERIC_RATE
+
+    def _rain_status_of_state(self, hass_state: Any) -> _RainStatus:
+        """Normalized rain status of a HA state object (None -> UNKNOWN).
+
+        Uses the same production normalization as the update cycle
+        (build_rain_sensor_reading), so the listener and the RainEvaluator can
+        never disagree about what counts as raining/dry/unknown.
+        """
+        return _build_rain_sensor_reading(
+            entity_id=self._rain_sensor_id,
+            hass_state=hass_state.state if hass_state is not None else None,
+            source_type=self._rain_source_type(),
+            read_at_utc=None,
+            now_utc=None,
+        ).status
+
+    def async_setup_rain_listener(self, entry: ConfigEntry) -> None:
+        """Re-evaluate immediately when the configured rain entity changes status.
+
+        Without this, a rain start is only seen on the next periodic cycle (up to
+        ~5 minutes), and a not-yet-sent normal plan computed before the rain
+        started could still extend a cover.  The listener reacts only to a real
+        change of the NORMALIZED rain status (a numeric sensor wobbling inside
+        RAINING produces no refresh):
+
+          * any -> RAINING: bump the dispatch generation first, so intents of an
+            older normal plan of THIS coordinator that are still waiting for the
+            global dispatch slot cancel themselves (safety intents are exempt),
+            then request a refresh through the normal debouncer.
+          * RAINING -> anything else: request a refresh so the release hold /
+            dry cooldown is evaluated promptly.  No generation bump: nothing in
+            the old plan is invalidated by rain ending (RAIN_SAFE keeps its
+            hold), so already-planned commands stay valid.
+          * DRY <-> UNKNOWN: neither triggers the evaluator, nothing to do.
+
+        This invalidates the old plan of the same coordinator only.  It does not
+        remove intents that other zones already queued in the global dispatch
+        lock (plain FIFO); the rain command waits behind them like wind/storm.
+
+        Active Control off still yields recommendation-only: the refresh runs
+        the normal pipeline and CommandFilter sends nothing.  A missing,
+        unavailable or invalid entity normalizes to UNKNOWN (fail-safe: never a
+        trigger).  Idempotent: a repeated setup first cancels the previous
+        subscription, and teardown (also registered with entry.async_on_unload)
+        removes it.
+        """
+        self.async_teardown_rain_listener()
+        entity_id = self._rain_sensor_id
+        if entity_id is None:
+            return
+
+        def _request_rain_refresh(raining_started: bool) -> None:
+            if raining_started:
+                self._dispatch_generation += 1
+            self.hass.async_create_task(self.async_request_refresh())
+
+        @callback
+        def _on_rain_change(event: Event) -> None:
+            old_status = self._rain_status_of_state(event.data.get("old_state"))
+            new_status = self._rain_status_of_state(event.data.get("new_state"))
+            if new_status is old_status:
+                return
+            if new_status is _RainStatus.RAINING:
+                _request_rain_refresh(True)
+            elif old_status is _RainStatus.RAINING:
+                _request_rain_refresh(False)
+
+        self._unsub_rain_listener = async_track_state_change_event(
+            self.hass, entity_id, _on_rain_change
+        )
+        entry.async_on_unload(self.async_teardown_rain_listener)
+
+        # Catch-up: rain that started after the first refresh read the sensor but
+        # before this subscription existed would otherwise wait for the next poll.
+        if (
+            self._rain_status_of_state(self.hass.states.get(entity_id)) is _RainStatus.RAINING
+            and self._last_rain_status is not _RainStatus.RAINING
+        ):
+            _request_rain_refresh(True)
+
+    def async_teardown_rain_listener(self) -> None:
+        """Cancel the rain-sensor state listener.  Idempotent."""
+        unsub, self._unsub_rain_listener = self._unsub_rain_listener, None
+        if unsub is not None:
+            unsub()
 
     # ------------------------------------------------------------------
     # Lifecycle schedule-boundary immediate refresh (v1.1.0-beta.7)
@@ -2508,13 +2609,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self.hass.states.get(self._rain_sensor_id)
             if self._rain_sensor_id else None
         )
-        _rain_source_type: _RainSourceType = (
-            _RainSourceType.BINARY_SENSOR
-            if (self._rain_sensor_id or "").startswith("binary_sensor.")
-            else _RainSourceType.NUMERIC_RATE
-            if self._rain_sensor_id is not None
-            else _RainSourceType.NONE
-        )
+        _rain_source_type: _RainSourceType = self._rain_source_type()
         _rain_reading = _build_rain_sensor_reading(
             entity_id=self._rain_sensor_id,
             hass_state=_rain_hs.state if _rain_hs is not None else None,
@@ -2523,6 +2618,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             now_utc=now,
         )
         _rain_status_global: _RainStatus = _rain_reading.status
+        # Remembered for the rain-listener catch-up check (see async_setup_rain_listener).
+        self._last_rain_status = _rain_status_global
         local_now = dt_util.as_local(now)  # same instant as now, converted to local timezone
 
         # Forecast Strategy Modifier (v1.0): compute once per cycle from the

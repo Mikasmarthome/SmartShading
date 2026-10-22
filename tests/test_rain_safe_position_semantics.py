@@ -1162,6 +1162,35 @@ class TestPreemptionAndStaleGenerations:
 # ---------------------------------------------------------------------------
 
 
+class _FakeBus:
+    """Stand-in for async_track_state_change_event with real subscribe /
+    unsubscribe semantics, so tests can count active listeners and prove that
+    nothing is called after unload."""
+
+    def __init__(self) -> None:
+        self.subs: dict[str, list] = {}
+        self.registered = 0
+
+    def track(self, hass, entity_id, action):
+        self.subs.setdefault(entity_id, []).append(action)
+        self.registered += 1
+
+        def _unsub():
+            lst = self.subs.get(entity_id, [])
+            if action in lst:
+                lst.remove(action)
+
+        return _unsub
+
+    def active(self, entity_id: str) -> int:
+        return len(self.subs.get(entity_id, []))
+
+    def fire(self, entity_id: str, old, new) -> None:
+        event = SimpleNamespace(data={"old_state": old, "new_state": new})
+        for callback in list(self.subs.get(entity_id, [])):
+            callback(event)
+
+
 def _attach_rain_listener(s: _Scenario, bus: _FakeBus) -> _Scenario:
     s.coord.async_request_refresh = MagicMock(return_value=None)
     s.entry = _make_entry()
@@ -1185,6 +1214,296 @@ def _listener_scenario(hw=AWNING, *, rain_entity=_RAIN, **kw):
     s = _Scenario(hw, rain_entity=rain_entity, **kw)
     _attach_rain_listener(s, bus)
     return s, bus
+
+
+class TestRainSensorListener:
+    def test_dry_to_raining_bumps_the_generation_and_requests_a_refresh(self):
+        s, bus = _listener_scenario()
+        gen = s.coord._dispatch_generation
+        _change_rain(s, bus, "on")
+        assert s.coord._dispatch_generation == gen + 1
+        assert s.coord.async_request_refresh.call_count == 1
+
+    def test_raining_to_dry_requests_a_refresh_without_a_generation_bump(self):
+        s, bus = _listener_scenario()
+        s.set_rain(True)
+        gen = s.coord._dispatch_generation
+        _change_rain(s, bus, "off")
+        assert s.coord.async_request_refresh.call_count == 1
+        assert s.coord._dispatch_generation == gen       # old plan stays valid
+
+    def test_raining_to_dry_starts_the_hold_and_dry_cooldown(self):
+        s, bus = _listener_scenario()
+        s.set_rain(True)
+        s.cycle(0)
+        s.set_cover_position(0)
+        _change_rain(s, bus, "off")                       # event -> prompt re-evaluation
+        data = s.cycle(1)                                 # what the debounced refresh runs
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert s.diag(data).tier_decided_by == "RainSafeHold"
+        assert _state_of(s.cycle(25)) is ShadingState.RAIN_SAFE      # still inside the cooldown
+        assert _state_of(s.cycle(32)) is not ShadingState.RAIN_SAFE  # released afterwards
+
+    def test_numeric_changes_inside_the_same_status_do_nothing(self):
+        s, bus = _listener_scenario(rain_entity="sensor.rain_rate")
+        s.set_rain(True)                                  # 1.5 mm/h
+        gen = s.coord._dispatch_generation
+        for raw in ("0.2", "0.5", "3.4", "12.0", "0.01"):
+            _change_rain(s, bus, raw)
+        assert s.coord.async_request_refresh.call_count == 0
+        assert s.coord._dispatch_generation == gen
+
+    def test_numeric_status_changes_are_detected(self):
+        s, bus = _listener_scenario(rain_entity="sensor.rain_rate")
+        gen = s.coord._dispatch_generation
+        _change_rain(s, bus, "0.3")                       # 0.0 -> raining
+        assert (s.coord.async_request_refresh.call_count, s.coord._dispatch_generation) == (1, gen + 1)
+        _change_rain(s, bus, "0.0")                       # raining -> dry
+        assert (s.coord.async_request_refresh.call_count, s.coord._dispatch_generation) == (2, gen + 1)
+
+    @pytest.mark.parametrize("raw", ["unavailable", "unknown"])
+    def test_unavailable_or_unknown_to_raining_reacts(self, raw):
+        s, bus = _listener_scenario()
+        s.hass.states.set(_RAIN, raw)
+        gen = s.coord._dispatch_generation
+        _change_rain(s, bus, "on")
+        assert (s.coord.async_request_refresh.call_count, s.coord._dispatch_generation) == (1, gen + 1)
+
+    def test_raining_to_unavailable_reevaluates_without_a_bump(self):
+        s, bus = _listener_scenario()
+        s.set_rain(True)
+        gen = s.coord._dispatch_generation
+        _change_rain(s, bus, "unavailable")
+        assert s.coord.async_request_refresh.call_count == 1
+        assert s.coord._dispatch_generation == gen
+
+    def test_dry_and_unavailable_flapping_is_ignored(self):
+        # Neither status triggers the evaluator: nothing to re-evaluate.
+        s, bus = _listener_scenario()
+        for raw in ("unavailable", "off", "unknown", "off", "unavailable"):
+            _change_rain(s, bus, raw)
+        assert s.coord.async_request_refresh.call_count == 0
+
+    def test_invalid_values_are_treated_conservatively(self):
+        s, bus = _listener_scenario()
+        _change_rain(s, bus, "garbage")                   # dry -> unknown: ignored
+        assert s.coord.async_request_refresh.call_count == 0
+        _change_rain(s, bus, "on")                        # unknown -> raining: reacts
+        assert s.coord.async_request_refresh.call_count == 1
+
+    def test_entity_added_or_removed(self):
+        s, bus = _listener_scenario()
+        s.hass.states._d.pop(_RAIN, None)
+        _change_rain(s, bus, "on")                        # appears already raining
+        assert s.coord.async_request_refresh.call_count == 1
+        _change_rain(s, bus, None)                        # removed while raining
+        assert s.coord.async_request_refresh.call_count == 2
+
+    def test_no_listener_without_a_configured_rain_entity(self):
+        s = _Scenario(AWNING)
+        s.coord._rain_sensor_id = None
+        bus = _FakeBus()
+        _attach_rain_listener(s, bus)
+        assert bus.registered == 0
+
+    def test_listener_subscribes_only_to_the_configured_rain_entity(self):
+        s, bus = _listener_scenario()
+        assert list(bus.subs) == [_RAIN]
+        assert bus.registered == 1
+
+    # -- setup / reload / unload --------------------------------------------------
+    def test_setup_with_rain_already_active_is_covered_by_the_first_cycle(self):
+        s = _Scenario(AWNING)
+        s.set_rain(True)
+        data = s.cycle()                                  # the first refresh of the setup
+        assert s.position_calls == [0] and _state_of(data) is ShadingState.RAIN_SAFE
+        bus = _FakeBus()
+        gen = s.coord._dispatch_generation
+        _attach_rain_listener(s, bus)
+        assert s.coord.async_request_refresh.call_count == 0     # nothing missed
+        assert s.coord._dispatch_generation == gen
+
+    def test_rain_that_starts_between_the_first_refresh_and_the_listener_is_caught(self):
+        s = _Scenario(AWNING)
+        s.cycle()                                         # first refresh: dry
+        s.set_rain(True)                                  # rain starts before registration
+        bus = _FakeBus()
+        gen = s.coord._dispatch_generation
+        _attach_rain_listener(s, bus)
+        assert s.coord.async_request_refresh.call_count == 1
+        assert s.coord._dispatch_generation == gen + 1
+
+    def test_repeated_setup_keeps_exactly_one_subscription(self):
+        s, bus = _listener_scenario()
+        with patch.object(_coord_mod, "async_track_state_change_event", side_effect=bus.track):
+            s.coord.async_setup_rain_listener(s.entry)
+        assert bus.registered == 2 and bus.active(_RAIN) == 1
+        gen = s.coord._dispatch_generation
+        _change_rain(s, bus, "on")
+        assert s.coord._dispatch_generation == gen + 1      # one reaction, not two
+
+    def test_reload_with_a_new_coordinator_leaves_exactly_one_listener(self):
+        bus = _FakeBus()
+        hass = _make_hass()
+        old = _attach_rain_listener(_Scenario(AWNING, hass=hass), bus)
+        old.coord.async_teardown_rain_listener()            # entry unload
+        new = _attach_rain_listener(_Scenario(AWNING, hass=hass), bus)   # entry setup
+        assert bus.active(_RAIN) == 1
+        old_gen, new_gen = old.coord._dispatch_generation, new.coord._dispatch_generation
+        _change_rain(new, bus, "on")
+        assert old.coord._dispatch_generation == old_gen
+        assert new.coord._dispatch_generation == new_gen + 1
+
+    def test_unload_removes_the_listener_and_is_idempotent(self):
+        s, bus = _listener_scenario()
+        s.entry.async_on_unload.assert_called_once()
+        assert bus.active(_RAIN) == 1
+        s.coord.async_teardown_rain_listener()
+        s.coord.async_teardown_rain_listener()
+        assert bus.active(_RAIN) == 0
+
+    def test_no_callback_and_no_service_call_after_unload(self):
+        s, bus = _listener_scenario()
+        s.coord.async_teardown_rain_listener()
+        gen = s.coord._dispatch_generation
+        _change_rain(s, bus, "on")
+        assert s.coord._dispatch_generation == gen
+        assert s.coord.async_request_refresh.call_count == 0
+        assert s.hass.services.async_call.await_count == 0
+
+    # -- production-faithful plan invalidation ------------------------------------
+    def _hazard_scenario(self, *, with_event: bool):
+        """Zone with a normal plan that would EXTEND the awning (shade = HA 100)
+        and queued behind another zone's command; rain starts while it waits."""
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=600))
+        s = _Scenario(AWNING, hass=hass, serial=serial, cover_position=0,
+                      window_id="x1", zone_id="zx", covers=["cover.x1"])
+        s.coord.shade_position_defaults = ShadePositionDefaults(
+            light_shade_position=100, normal_shade_position=100, strong_shade_position=100)
+        bus = _FakeBus()
+        _attach_rain_listener(s, bus)
+        serial.record_dispatch(_NOW)                       # another zone just dispatched
+
+        async def main():
+            with s._clock(0):
+                old_plan = asyncio.ensure_future(s.coord._async_update_data())
+                await asyncio.sleep(0.05)                  # old plan waits for its slot
+                if with_event:
+                    _change_rain(s, bus, "on")             # rain event -> listener
+                else:
+                    s.set_rain(True)                       # rain only visible on the next poll
+                await old_plan
+                # HA runs refreshes of one coordinator serially: the next cycle
+                # (event-requested or periodic) starts after the old one.
+                await s.coord._async_update_data()
+
+        asyncio.run(main())
+        return s
+
+    def test_old_unsent_normal_plan_of_the_zone_is_discarded_after_the_rain_event(self):
+        s = self._hazard_scenario(with_event=True)
+        assert s.position_calls == [0]                      # never extended, then retracted
+
+    def test_without_the_event_the_old_plan_still_extends_the_cover(self):
+        # Documents the limitation the listener removes: only an event can
+        # invalidate a plan that was computed before the rain was visible.
+        s = self._hazard_scenario(with_event=False)
+        assert s.position_calls == [100, 0]
+
+    def test_all_windows_of_the_zone_drop_their_old_plan(self):
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=500))
+        s = _Scenario(AWNING, hass=hass, serial=serial, cover_position=40,
+                      window_id="x1", zone_id="zx", covers=["cover.x1"],
+                      extra=[_Win("x2", SCREEN, ["cover.x2"], cover_position=40),
+                             _Win("x3", ROLLER, ["cover.x3"], cover_position=40)])
+        bus = _FakeBus()
+        _attach_rain_listener(s, bus)
+        serial.record_dispatch(_NOW)
+
+        async def main():
+            with s._clock(0):
+                old_plan = asyncio.ensure_future(s.coord._async_update_data())
+                await asyncio.sleep(0.05)
+                _change_rain(s, bus, "on")
+                await old_plan
+                await s.coord._async_update_data()
+
+        asyncio.run(main())
+        assert s.calls_for("cover.x1") == [0]               # awning retracted, no old command
+        assert s.calls_for("cover.x2") == [100]             # screen raised, never lowered to 10
+        assert s.calls_for("cover.x3") == [10]              # not rain-protected: re-planned once
+
+    @pytest.mark.parametrize("zones", [2, 3])
+    def test_every_zone_invalidates_its_own_plan(self, zones):
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=400))
+        bus = _FakeBus()
+        scenarios = []
+        for i in range(zones):
+            tag = "abc"[i]
+            z = _Scenario(AWNING, hass=hass, serial=serial, cover_position=0,
+                          window_id=f"{tag}1", zone_id=f"z{tag}", covers=[f"cover.{tag}1"])
+            z.coord.shade_position_defaults = ShadePositionDefaults(
+                light_shade_position=100, normal_shade_position=100, strong_shade_position=100)
+            _attach_rain_listener(z, bus)
+            scenarios.append(z)
+        serial.record_dispatch(_NOW)
+        gens = [z.coord._dispatch_generation for z in scenarios]
+
+        async def main():
+            with scenarios[0]._clock(0):
+                old_plans = [asyncio.ensure_future(z.coord._async_update_data())
+                             for z in scenarios]
+                await asyncio.sleep(0.05)
+                _change_rain(scenarios[0], bus, "on")        # one shared rain entity
+                await asyncio.gather(*old_plans)
+                for z in scenarios:                          # each zone's next cycle
+                    await z.coord._async_update_data()
+
+        asyncio.run(main())
+        for z, gen in zip(scenarios, gens):
+            assert z.coord._dispatch_generation == gen + 1
+            assert z.coord.async_request_refresh.call_count == 1
+        for tag in "abc"[:zones]:
+            assert hass_calls(scenarios[0], f"cover.{tag}1") == [0], tag
+
+    # -- interplay with the other gates ---------------------------------------------
+    def test_active_control_off_reacts_but_sends_nothing(self):
+        s, bus = _listener_scenario(active_control=False)
+        _change_rain(s, bus, "on")
+        assert s.coord.async_request_refresh.call_count == 1
+        data = s.cycle()
+        assert s.diag(data).target_position_ha == 0
+        assert s.hass.services.async_call.await_count == 0
+
+    def test_event_during_a_manual_override(self):
+        s, bus = _listener_scenario(cover_position=40)
+        _establish_manual_override(s)
+        n = len(s.position_calls)
+        _change_rain(s, bus, "on")
+        data = s.cycle(15)
+        assert s.diag(data).manual_override_active is False
+        assert s.position_calls[n:] == [0]
+
+    def test_event_during_the_startup_grace(self):
+        s, bus = _listener_scenario(cover_position=100)
+        s.coord._startup_cycles_remaining = 1
+        _change_rain(s, bus, "on")
+        data = s.cycle()
+        assert s.diag(data).dispatch_suppressed_reason is None
+        assert s.position_calls == [0]
+
+    def test_event_inside_the_state_guard_interval(self):
+        s, bus = _listener_scenario(cover_position=40)
+        s.cycle(0)                                          # normal command -> interval starts
+        s.set_cover_position(s.position_calls[-1])
+        n = len(s.position_calls)
+        _change_rain(s, bus, "on")
+        data = s.cycle(1)
+        assert s.diag(data).command_blocked_reason is None
+        assert s.position_calls[n:] == [0]
 
 
 def hass_calls(s: _Scenario, cover: str) -> list[int]:

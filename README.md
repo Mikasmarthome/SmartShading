@@ -136,6 +136,10 @@ Safety conditions take priority over normal automatic shading decisions:
 - An active safety condition remains latched for a release period rather than clearing the instant the
   triggering value drops.
 - A temporarily unavailable sensor does not release a safety state that is already active.
+- Rain, wind and storm protection do not depend on Home Assistant's `sun.sun` entity. If `sun.sun` is
+  unknown or unavailable, safety still acts (the diagnostics then list `safety_active_without_sun`), while
+  ordinary shading, schedule and comfort actions are paused. As soon as valid sun data returns,
+  SmartShading starts a fresh evaluation immediately; nothing planned before the outage is replayed.
 - When a safety state clears, SmartShading does not automatically restore the previous position; it
   calculates a fresh normal decision for the current conditions.
 

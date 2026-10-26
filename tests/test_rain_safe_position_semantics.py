@@ -1916,3 +1916,423 @@ class TestStoredConfigurationUnchanged:
         restored = from_storage_dict(stored)
         assert restored.windows[0].rain_safe_position_ha is None
         assert restored.cover_groups[0].hardware_type is GENERIC
+
+
+# ===========================================================================
+# A1: Tier-1 Safety (Storm / Wind / Rain) without usable sun.sun
+#
+# Before A1 the per-window loop dropped a window with an early `continue` as
+# soon as sun.sun was unusable, so Tier-1 -- which needs no sun data -- never
+# ran.  Now a window whose Tier-1 guard fires, or whose release hold is still
+# latched, continues through the normal pipeline in a reduced "sun-less safety"
+# mode (Tier-1 only, nothing else may act, nothing sun-related is recorded);
+# every other window keeps the unchanged conservative no-sun behavior; usable
+# <-> unusable changes of sun.sun trigger an immediate re-evaluation and a
+# loss invalidates a running plan.  Real Home Assistant scenarios:
+# tests/real_ha/test_real_ha_a1_safety_without_sun.py.
+# ===========================================================================
+
+SUN_KINDS = ["unknown", "unavailable", "missing", "garbage"]
+
+
+def _sun_unusable(s: _Scenario, kind: str) -> None:
+    if kind == "missing":
+        s.hass.states._d.pop("sun.sun", None)
+    elif kind == "garbage":
+        s.hass.states.set("sun.sun", "above_horizon", azimuth="n/a", elevation=None)
+    else:
+        s.hass.states.set("sun.sun", kind)   # no azimuth/elevation attributes
+
+
+def _sun_valid(s: _Scenario) -> None:
+    s.hass.states.set("sun.sun", "above_horizon", azimuth=180.0, elevation=60.0)
+
+
+# ---------------------------------------------------------------------------
+# Real update cycle: Rain / Wind / Storm act without usable sun data
+# ---------------------------------------------------------------------------
+
+
+class TestTier1ActsWithoutSun:
+    @pytest.mark.parametrize("kind", SUN_KINDS)
+    def test_rain_retracts_an_awning(self, kind):
+        s = _Scenario(AWNING, cover_position=100)
+        _sun_unusable(s, kind)
+        s.set_rain(True)
+        data = s.cycle()
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert s.position_calls == [0]
+        d = s.diag(data)
+        assert d.rain_safe_active is True
+        assert d.is_safety is True
+
+    @pytest.mark.parametrize("kind", SUN_KINDS)
+    def test_rain_raises_an_exterior_screen(self, kind):
+        s = _Scenario(SCREEN, cover_position=0)
+        _sun_unusable(s, kind)
+        s.set_rain(True)
+        s.cycle()
+        assert s.position_calls == [100]
+
+    @pytest.mark.parametrize("kind", SUN_KINDS)
+    def test_wind_retracts_an_awning(self, kind):
+        s = _Scenario(AWNING, cover_position=100)
+        _sun_unusable(s, kind)
+        s.set_wind(16.0)
+        data = s.cycle()
+        assert _state_of(data) is ShadingState.WIND_SAFE
+        assert s.position_calls == [0]
+
+    @pytest.mark.parametrize("kind", SUN_KINDS)
+    def test_storm_retracts_an_awning(self, kind):
+        s = _Scenario(AWNING, cover_position=100)
+        _sun_unusable(s, kind)
+        s.set_wind(25.0)
+        data = s.cycle()
+        assert _state_of(data) is ShadingState.STORM_SAFE
+        assert s.position_calls == [0]
+
+    def test_storm_beats_rain_without_the_sun(self):
+        s = _Scenario(AWNING, cover_position=100)
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        s.set_wind(25.0)
+        assert _state_of(s.cycle()) is ShadingState.STORM_SAFE
+
+    def test_same_result_as_with_a_valid_sun(self):
+        a = _Scenario(AWNING, cover_position=100)
+        a.set_rain(True)
+        with_sun = a.cycle()
+        b = _Scenario(AWNING, cover_position=100)
+        _sun_unusable(b, "unavailable")
+        b.set_rain(True)
+        without_sun = b.cycle()
+        assert _state_of(with_sun) is _state_of(without_sun)
+        assert a.position_calls == b.position_calls == [0]
+        assert a.diag(with_sun).target_position_ha == b.diag(without_sun).target_position_ha
+
+    def test_active_control_off_gives_a_recommendation_but_no_command(self):
+        s = _Scenario(AWNING, cover_position=100, active_control=False)
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        data = s.cycle()
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert s.position_calls == []
+
+    def test_safety_overrides_a_manual_override_without_the_sun(self):
+        s = _Scenario(AWNING, cover_position=40)
+        s.cycle(0)
+        s.set_cover_position(90)          # the user moves it by hand
+        s.cycle(5)
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        data = s.cycle(10)
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert s.position_calls[-1] == 0
+
+    def test_release_hold_keeps_the_safe_target_while_the_sun_is_still_gone(self):
+        s = _Scenario(AWNING, cover_position=100)
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        s.cycle(0)
+        s.set_cover_position(0)
+        s.set_rain(False)                  # dry cooldown (30 min) running
+        held = s.cycle(10)
+        assert _state_of(held) is ShadingState.RAIN_SAFE
+        assert s.diag(held).tier_decided_by == "RainSafeHold"
+        assert set(s.position_calls) == {0}
+
+    def test_release_after_the_cooldown_never_extends_the_cover_without_the_sun(self):
+        s = _Scenario(AWNING, cover_position=100)
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        s.cycle(0)
+        s.set_cover_position(0)
+        s.set_rain(False)
+        for minutes in (10, 29, 31, 36, 41):
+            s.cycle(minutes)
+        assert set(s.position_calls) == {0}     # nothing but the retract, ever
+
+    def test_only_the_safety_window_acts_other_windows_stay_conservative(self):
+        s = _Scenario(
+            AWNING, cover_position=100,
+            extra=[_Win("w2", ROLLER, ["cover.roller"], cover_position=40)],
+        )
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        data = s.cycle()
+        assert s.calls_for(s.cover) == [0]
+        assert s.calls_for("cover.roller") == []
+        assert data.window_results["w2"].reason_code == "unavailable"
+
+
+# ---------------------------------------------------------------------------
+# Normal automation stays conservative when sun data is unusable
+# ---------------------------------------------------------------------------
+
+
+class TestNormalAutomationStaysConservative:
+    @pytest.mark.parametrize("kind", SUN_KINDS)
+    @pytest.mark.parametrize("hw", [AWNING, ROLLER, GENERIC])
+    def test_no_safety_no_sun_sends_nothing(self, kind, hw):
+        s = _Scenario(hw, cover_position=40)
+        _sun_unusable(s, kind)
+        for minutes in (0, 5, 10):
+            data = s.cycle(minutes)
+        assert s.calls == []
+        assert data.window_results["w1"].reason_code == "unavailable"
+
+    def test_diagnostics_show_sun_unavailable_without_a_safety_claim(self):
+        s = _Scenario(AWNING, cover_position=40)
+        _sun_unusable(s, "unavailable")
+        d = s.diag(s.cycle())
+        assert d.required_inputs_ready is False
+        assert d.degraded_input_codes == ("sun_unavailable",)
+
+    def test_valid_sun_returns_to_the_full_pipeline(self):
+        s = _Scenario(AWNING, cover_position=40)
+        _sun_unusable(s, "unavailable")
+        s.cycle(0)
+        _sun_valid(s)
+        d = s.diag(s.cycle(5))
+        assert d.required_inputs_ready is True
+        assert d.degraded_input_codes == ()
+        assert d.tier_decided_by != "SunUnavailable:hold"
+
+
+class TestSafetyDiagnosticsWithoutSun:
+    def test_window_is_flagged_as_acting_on_safety_alone(self):
+        s = _Scenario(AWNING, cover_position=100)
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        d = s.diag(s.cycle())
+        assert d.required_inputs_ready is False
+        assert d.degraded_input_codes == ("sun_unavailable", "safety_active_without_sun")
+        assert d.tier_decided_by == "RainEvaluator"
+        assert d.target_position_ha == 0
+        assert d.service_call_sent is True
+
+    def test_flag_is_per_window(self):
+        s = _Scenario(
+            AWNING, cover_position=100,
+            extra=[_Win("w2", ROLLER, ["cover.roller"], cover_position=40)],
+        )
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        data = s.cycle()
+        assert "safety_active_without_sun" in s.diag(data, "w1").degraded_input_codes
+        assert "safety_active_without_sun" not in s.diag(data, "w2").degraded_input_codes
+
+    def test_flag_disappears_when_the_sun_is_back(self):
+        s = _Scenario(AWNING, cover_position=100)
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        s.cycle(0)
+        _sun_valid(s)
+        d = s.diag(s.cycle(5))
+        assert "safety_active_without_sun" not in d.degraded_input_codes
+        assert d.required_inputs_ready is True
+
+
+class TestNothingSunRelatedIsRecordedWithoutSun:
+    @staticmethod
+    def _learning_scenario() -> _Scenario:
+        s = _Scenario(AWNING, cover_position=100)
+        s.coord.zones["z1"].execution = ZoneExecutionConfig(
+            learning_enabled=True, active_control_enabled=True,
+        )
+        s.coord._learning_store.record_transition = MagicMock()
+        return s
+
+    def test_control_a_state_change_with_sun_is_recorded_for_learning(self):
+        s = self._learning_scenario()
+        s.set_rain(True)
+        s.cycle()
+        assert s.coord._learning_store.record_transition.call_count >= 1
+
+    def test_the_sunless_safety_cycle_records_no_learning_transition(self):
+        """Learning records carry sun azimuth/elevation/exposure; there is no
+        sun context in this cycle, so none may be written (the safety command
+        itself is still sent)."""
+        s = self._learning_scenario()
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        s.cycle()
+        assert s.position_calls == [0]
+        assert s.coord._learning_store.record_transition.call_count == 0
+
+
+# ---------------------------------------------------------------------------
+# Sun listener
+# ---------------------------------------------------------------------------
+
+
+def _sun_state(az=180.0, el=60.0, state="above_horizon"):
+    return SimpleNamespace(state=state, attributes={"azimuth": az, "elevation": el})
+
+
+_UNUSABLE = SimpleNamespace(state="unavailable", attributes={})
+
+
+def _attach_sun_listener(s: _Scenario, bus: _FakeBus) -> _Scenario:
+    s.coord.async_request_refresh = MagicMock(return_value=None)
+    s.entry = _make_entry()
+    with patch.object(_coord_mod, "async_track_state_change_event", side_effect=bus.track):
+        s.coord.async_setup_sun_listener(s.entry)
+    return s
+
+
+def _sun_listener_scenario(**kw):
+    bus = _FakeBus()
+    s = _Scenario(AWNING, **kw)
+    s.cycle()                       # first refresh: records whether the sun was usable
+    _attach_sun_listener(s, bus)
+    s.coord.async_request_refresh.reset_mock()
+    return s, bus
+
+
+class TestSunListener:
+    def test_routine_sun_updates_do_not_refresh(self):
+        s, bus = _sun_listener_scenario()
+        gen = s.coord._dispatch_generation
+        bus.fire("sun.sun", _sun_state(180.0, 60.0), _sun_state(181.0, 60.2))
+        assert s.coord.async_request_refresh.call_count == 0
+        assert s.coord._dispatch_generation == gen
+
+    def test_loss_bumps_the_generation_signals_the_running_plan_and_refreshes(self):
+        s, bus = _sun_listener_scenario()
+        cancel = MagicMock()
+        s.coord._active_dispatch_cancellation = cancel
+        gen = s.coord._dispatch_generation
+        bus.fire("sun.sun", _sun_state(), _UNUSABLE)
+        assert s.coord._dispatch_generation == gen + 1
+        cancel.set.assert_called_once()
+        assert s.coord.async_request_refresh.call_count == 1
+
+    def test_return_refreshes_without_a_generation_bump(self):
+        s, bus = _sun_listener_scenario()
+        gen = s.coord._dispatch_generation
+        bus.fire("sun.sun", _UNUSABLE, _sun_state())
+        assert s.coord.async_request_refresh.call_count == 1
+        assert s.coord._dispatch_generation == gen
+
+    def test_unusable_to_unusable_is_ignored(self):
+        s, bus = _sun_listener_scenario()
+        bus.fire("sun.sun", _UNUSABLE, SimpleNamespace(state="unknown", attributes={}))
+        bus.fire("sun.sun", None, _UNUSABLE)
+        assert s.coord.async_request_refresh.call_count == 0
+
+    def test_entity_removed_counts_as_loss_and_added_as_return(self):
+        s, bus = _sun_listener_scenario()
+        bus.fire("sun.sun", _sun_state(), None)
+        bus.fire("sun.sun", None, _sun_state())
+        assert s.coord.async_request_refresh.call_count == 2
+
+    def test_a_cycle_after_the_return_is_a_fresh_evaluation(self):
+        s, bus = _sun_listener_scenario(cover_position=100)
+        _sun_unusable(s, "unavailable")
+        bus.fire("sun.sun", _sun_state(), _UNUSABLE)
+        s.set_rain(True)
+        s.cycle(1)
+        assert s.position_calls[-1] == 0
+        first_retract = s.position_calls.index(0)    # earlier calls: the initial sunny cycle
+        _sun_valid(s)
+        bus.fire("sun.sun", _UNUSABLE, _sun_state())
+        data = s.cycle(2)
+        assert s.diag(data).required_inputs_ready is True
+        # From the retract on -- through the outage and after the return -- nothing
+        # but "retracted" is ever sent (no stale pre-outage plan is replayed).
+        assert set(s.position_calls[first_retract:]) == {0}
+
+    # -- catch-up ----------------------------------------------------------
+    def test_loss_between_the_first_refresh_and_the_listener_is_caught(self):
+        s = _Scenario(AWNING)
+        s.cycle()                                    # sun usable at the first refresh
+        _sun_unusable(s, "unavailable")              # lost before registration
+        gen = s.coord._dispatch_generation
+        _attach_sun_listener(s, _FakeBus())
+        assert s.coord.async_request_refresh.call_count == 1
+        assert s.coord._dispatch_generation == gen + 1
+
+    def test_return_between_the_first_refresh_and_the_listener_is_caught(self):
+        s = _Scenario(AWNING)
+        _sun_unusable(s, "unavailable")
+        s.cycle()
+        _sun_valid(s)
+        _attach_sun_listener(s, _FakeBus())
+        assert s.coord.async_request_refresh.call_count == 1
+
+    def test_nothing_missed_means_no_catch_up_refresh(self):
+        s = _Scenario(AWNING)
+        s.cycle()
+        _attach_sun_listener(s, _FakeBus())
+        assert s.coord.async_request_refresh.call_count == 0
+
+    # -- lifecycle -----------------------------------------------------------
+    def test_repeated_setup_keeps_exactly_one_subscription(self):
+        s, bus = _sun_listener_scenario()
+        with patch.object(_coord_mod, "async_track_state_change_event", side_effect=bus.track):
+            s.coord.async_setup_sun_listener(s.entry)
+        assert bus.registered == 2 and bus.active("sun.sun") == 1
+        gen = s.coord._dispatch_generation
+        bus.fire("sun.sun", _sun_state(), _UNUSABLE)
+        assert s.coord._dispatch_generation == gen + 1       # one reaction, not two
+
+    def test_unload_removes_the_listener_and_is_idempotent(self):
+        s, bus = _sun_listener_scenario()
+        s.entry.async_on_unload.assert_called_once()
+        assert bus.active("sun.sun") == 1
+        s.coord.async_teardown_sun_listener()
+        s.coord.async_teardown_sun_listener()
+        assert bus.active("sun.sun") == 0
+
+    def test_no_callback_and_no_service_call_after_unload(self):
+        s, bus = _sun_listener_scenario()
+        s.coord.async_teardown_sun_listener()
+        gen = s.coord._dispatch_generation
+        calls_before = s.hass.services.async_call.await_count   # initial sunny cycle's command
+        bus.fire("sun.sun", _sun_state(), _UNUSABLE)
+        assert s.coord._dispatch_generation == gen
+        assert s.coord.async_request_refresh.call_count == 0
+        assert s.hass.services.async_call.await_count == calls_before
+
+    def test_reload_with_a_new_coordinator_leaves_exactly_one_listener(self):
+        bus = _FakeBus()
+        old = _attach_sun_listener(_Scenario(AWNING), bus)
+        old.coord.async_teardown_sun_listener()              # entry unload
+        new = _attach_sun_listener(_Scenario(AWNING), bus)   # entry setup
+        assert bus.active("sun.sun") == 1
+        old_gen, new_gen = old.coord._dispatch_generation, new.coord._dispatch_generation
+        bus.fire("sun.sun", _sun_state(), _UNUSABLE)
+        assert old.coord._dispatch_generation == old_gen
+        assert new.coord._dispatch_generation == new_gen + 1
+
+    def test_unload_wiring_tears_the_listener_down(self):
+        from pathlib import Path
+        src = (
+            Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
+            / "__init__.py"
+        ).read_text(encoding="utf-8")
+        assert "async_setup_sun_listener(entry)" in src
+        assert "async_teardown_sun_listener()" in src
+
+
+class TestSunPositionFromState:
+    @pytest.mark.parametrize("state", [
+        None,
+        SimpleNamespace(state="unknown", attributes={}),
+        SimpleNamespace(state="unavailable", attributes={}),
+        SimpleNamespace(state="above_horizon", attributes={"azimuth": 10.0}),
+        SimpleNamespace(state="above_horizon", attributes={"azimuth": 10.0, "elevation": None}),
+        SimpleNamespace(state="above_horizon", attributes={"azimuth": "x", "elevation": 5.0}),
+    ])
+    def test_unusable(self, state):
+        assert _coord_mod._sun_position_from_state(state) is None
+
+    def test_usable(self):
+        pos = _coord_mod._sun_position_from_state(_sun_state(123.0, 45.5))
+        assert (pos.azimuth, pos.elevation) == (123.0, 45.5)
+
+    def test_numeric_strings_are_accepted_like_before(self):
+        pos = _coord_mod._sun_position_from_state(_sun_state("12.5", "3"))
+        assert (pos.azimuth, pos.elevation) == (12.5, 3.0)

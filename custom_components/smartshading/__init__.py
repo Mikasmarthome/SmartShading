@@ -110,6 +110,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
         coordinator.async_teardown_presence_listeners()
         coordinator.async_teardown_contact_listeners()
         coordinator.async_teardown_rain_listener()
+        coordinator.async_teardown_sun_listener()
         coordinator.async_teardown_lifecycle_boundary_timer()
         await coordinator.async_flush_learning()
     unloaded = await hass.config_entries.async_unload_platforms(entry, ZONE_PLATFORMS)
@@ -347,6 +348,11 @@ async def _async_setup_zone_entry(
     # Rain start/stop must be evaluated promptly (and an old, not yet sent normal
     # plan of this zone invalidated) instead of waiting for the next periodic cycle.
     coordinator.async_setup_rain_listener(entry)
+
+    # sun.sun becoming usable/unusable must re-evaluate at once: Tier-1 Safety
+    # keeps acting without sun data, and the return of valid sun data starts a
+    # fresh evaluation instead of waiting for the next periodic cycle.
+    coordinator.async_setup_sun_listener(entry)
 
     # Time-based lifecycle boundaries (night start / morning release) must fire at
     # the configured minute, not up to a full periodic cycle later: schedule a

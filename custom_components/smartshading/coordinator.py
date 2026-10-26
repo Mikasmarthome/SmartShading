@@ -565,6 +565,9 @@ class _WindowComputeState:
     # are excluded from harmonization — they must not be pulled into shade by
     # another window whose sun IS within sector.
     in_solar_sector: bool = True
+    # A1: True when this window was evaluated in sun-less safety mode (sun.sun
+    # unusable, Tier-1 active or latched).  Diagnostics only.
+    sunless_safety: bool = False
     # v1.1.1: diagnostic-only — measured solar sensor may be locally shaded /
     # unrepresentative for this window this cycle. Never affects shading.
     measured_solar_may_be_locally_shaded: bool = False
@@ -679,13 +682,21 @@ class _WindowComputeState:
     decision_id: str | None = None
 
 
+# A1 diagnostics: appended to a window's degraded_input_codes when Tier-1 Safety
+# (Storm/Wind/Rain) is active or latched while sun.sun is unusable -- i.e. the
+# window is deliberately acting on safety alone ("sun_unavailable" is already
+# in the same tuple for the cycle).
+_SAFETY_WITHOUT_SUN_CODE = "safety_active_without_sun"
+
 # Suppressed-hold decisions: the orchestrator/mode-gate produced a result that
 # sent NO cover command (target_position=None), so the state machine must stay at
 # current_state — recording a transition or outcome would desync state from the
 # unmoved cover.  PresenceUncertain:hold carries shading_state=OPEN, so excluding
 # it here is what keeps an ABSENCE_CLOSED window from silently flipping to OPEN on
 # a transient uncertain cycle and then failing to release after returning home.
-_NO_DISPATCH_HOLD_DECIDERS = frozenset({"BehaviorMode:hold", "PresenceUncertain:hold"})
+_NO_DISPATCH_HOLD_DECIDERS = frozenset({
+    "BehaviorMode:hold", "PresenceUncertain:hold", "SunUnavailable:hold",
+})
 
 # B3-010 R9: a winning decider supersedes a pending Morning Reconciliation
 # occurrence based on the EXISTING DecisionCategory authority (state_machine/
@@ -1076,6 +1087,26 @@ def _measured_solar_may_be_locally_shaded(
     if rain_status is _RainStatus.RAINING:
         return False
     return True
+
+
+def _sun_position_from_state(sun_state: Any) -> SunPosition | None:
+    """SunPosition of a HA ``sun.sun`` state, or None when it is not usable.
+
+    "Usable" means a numeric azimuth AND elevation attribute.  A missing
+    entity, an ``unknown``/``unavailable`` state (HA drops the attributes) and
+    garbage values all give None.  Single definition shared by the update cycle
+    and the sun listener, so both always agree on what "sun data is usable"
+    means.
+    """
+    if sun_state is None:
+        return None
+    try:
+        return SunPosition(
+            azimuth=float(sun_state.attributes["azimuth"]),
+            elevation=float(sun_state.attributes["elevation"]),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
 
 
 def _read_local_datetime_attr(sun_state: Any, attr_name: str) -> datetime | None:
@@ -1623,6 +1654,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # rain status the last coordinator cycle evaluated.
         self._unsub_rain_listener: Callable[[], None] | None = None
         self._last_rain_status: _RainStatus | None = None
+        # sun.sun state listener (single subscription) and whether the last
+        # coordinator cycle had usable sun data.  A change of usability is what
+        # the listener turns into an immediate re-evaluation (A1).
+        self._unsub_sun_listener: Callable[[], None] | None = None
+        self._last_sun_usable: bool | None = None
         # Single point-in-time timer for the next fixed-time lifecycle boundary
         # (night start / morning release).  Managed by the lifecycle-boundary
         # scheduler so those time-based moves fire promptly, not at the next
@@ -2389,6 +2425,148 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             read_at_utc=None,
             now_utc=None,
         ).status
+
+    def _window_rain_config(self, window: WindowConfig) -> tuple[bool, int, int]:
+        """Per-window rain settings: (enabled, safe position INTERNAL, release delay min).
+
+        rain_protection_enabled: window override -> hardware-type default.
+        rain_safe_position_ha: window override (HA convention) is converted to
+        internal here, exactly once; the hardware table is already internal and
+        an unresolved hardware type falls back to retracted (100 = HA 0), never
+        to extended.  rain_release_delay_min: window override -> global default.
+        Single definition for the normal evaluation path and the no-sun Tier-1
+        path, so both always agree.
+        """
+        cover_group = self.cover_groups.get(window.cover_group_id)
+        hardware_type = (
+            cover_group.hardware_type if cover_group is not None else CoverHardwareType.GENERIC
+        )
+        enabled = (
+            window.rain_protection_enabled
+            if window.rain_protection_enabled is not None
+            else default_hardware_settings(hardware_type).get("rain_protection_enabled", False)
+        )
+        safe_internal = (
+            to_internal_position(window.rain_safe_position_ha)
+            if window.rain_safe_position_ha is not None
+            else _HARDWARE_RAIN_SAFE_POSITIONS.get(hardware_type, 100)
+        )
+        delay_min = (
+            window.rain_release_delay_min
+            if window.rain_release_delay_min is not None
+            else self.global_defaults.rain_release_delay_min
+        )
+        return enabled, safe_internal, delay_min
+
+    def _sunless_tier1_relevant(
+        self,
+        window: WindowConfig,
+        window_id: str,
+        zone: ZoneConfig,
+        *,
+        weather_inputs: Any,
+        rain_status: _RainStatus,
+        absence_active: bool,
+        current_state: ShadingState,
+    ) -> bool:
+        """Whether this window needs Tier-1 evaluation although sun data is unusable.
+
+        True when a Storm/Wind/Rain release hold of this window is still latched
+        (so the safety state must keep being maintained and eventually released
+        by the normal hold logic), or when a Tier-1 guard fires right now.  Uses
+        the same WindowDecisionInput builder and TierOrchestrator.evaluate_tier1
+        as the normal path, with no exposure / sun input at all.  Pure with
+        respect to coordinator state (the holds are only read).
+        """
+        for holds in (self._storm_holds, self._wind_holds, self._rain_holds):
+            hold = holds.get(window_id)
+            if hold is not None and hold.is_held:
+                return True
+
+        rain_enabled, rain_safe_internal, rain_delay_min = self._window_rain_config(window)
+        probe = build_window_decision_input(
+            window=window,
+            zone=zone,
+            global_defaults=self.global_defaults,
+            shade_position_defaults=self.shade_position_defaults,
+            lifecycle_config=self._lifecycle_config,
+            lifecycle_state=self._lifecycle_state,
+            absence_active=absence_active,
+            current_shading_state=current_state,
+            outdoor_temp_c=None,
+            indoor_temp_c=None,
+            exposure=None,
+            is_in_solar_sector=False,
+            comfort_config=self._comfort_config,
+            wind_speed_ms=weather_inputs.wind_speed,
+            wind_gust_ms=weather_inputs.wind_gust,
+            weather_condition=weather_inputs.weather_condition_enum,
+            storm_protection_enabled=self._storm_protection_enabled,
+            wind_protection_enabled=self._wind_protection_enabled,
+            wind_threshold_ms=self._wind_threshold_ms,
+            rain_status=rain_status,
+            rain_protection_enabled=rain_enabled,
+            rain_safe_position=rain_safe_internal,
+            rain_release_delay_min=rain_delay_min,
+        )
+        return self._tier_orchestrator.evaluate_tier1(probe) is not None
+
+    def async_setup_sun_listener(self, entry: ConfigEntry) -> None:
+        """Re-evaluate immediately when sun.sun becomes usable or unusable.
+
+        sun.sun changes every minute (azimuth/elevation attributes), so this
+        reacts ONLY to a change of USABILITY (numeric azimuth + elevation
+        present, see _sun_position_from_state), never to the regular updates:
+
+          * usable -> unusable: bump the dispatch generation and signal a
+            running comfort dispatch, so a normal plan that was computed with
+            sun data cannot keep executing while the sun is gone; then refresh,
+            which evaluates Tier-1 Safety without the sun at once.
+          * unusable -> usable: request a refresh so the normal pipeline runs a
+            completely fresh evaluation right away (every cycle recomputes from
+            current inputs; nothing from before the outage is replayed -- the
+            only plan that could have survived, an in-flight one, was
+            invalidated at the first transition above).
+
+        Idempotent: a repeated setup first cancels the previous subscription;
+        teardown is also registered with entry.async_on_unload.
+        """
+        self.async_teardown_sun_listener()
+
+        def _request_sun_refresh(sun_lost: bool) -> None:
+            if sun_lost:
+                self._dispatch_generation += 1
+                if self._active_dispatch_cancellation is not None:
+                    self._active_dispatch_cancellation.set()
+            self._create_tracked_background_task(
+                entry, self.async_request_refresh(), "smartshading_sun_refresh",
+            )
+
+        @callback
+        def _on_sun_change(event: Event) -> None:
+            was_usable = _sun_position_from_state(event.data.get("old_state")) is not None
+            is_usable = _sun_position_from_state(event.data.get("new_state")) is not None
+            if was_usable is is_usable:
+                return
+            _request_sun_refresh(sun_lost=was_usable and not is_usable)
+
+        self._unsub_sun_listener = async_track_state_change_event(
+            self.hass, "sun.sun", _on_sun_change
+        )
+        entry.async_on_unload(self.async_teardown_sun_listener)
+
+        # Catch-up: a usability change that happened after the first refresh read
+        # sun.sun but before this subscription existed would otherwise wait for
+        # the next periodic cycle.
+        now_usable = _sun_position_from_state(self.hass.states.get("sun.sun")) is not None
+        if self._last_sun_usable is not None and now_usable is not self._last_sun_usable:
+            _request_sun_refresh(sun_lost=self._last_sun_usable and not now_usable)
+
+    def async_teardown_sun_listener(self) -> None:
+        """Cancel the sun.sun state listener.  Idempotent."""
+        unsub, self._unsub_sun_listener = self._unsub_sun_listener, None
+        if unsub is not None:
+            unsub()
 
     def async_setup_rain_listener(self, entry: ConfigEntry) -> None:
         """Re-evaluate immediately when the configured rain entity changes status.
@@ -3663,15 +3841,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._cycle_counter += 1
 
         sun_state = self.hass.states.get("sun.sun")
-        sun_position: SunPosition | None = None
-        if sun_state is not None:
-            try:
-                sun_position = SunPosition(
-                    azimuth=float(sun_state.attributes["azimuth"]),
-                    elevation=float(sun_state.attributes["elevation"]),
-                )
-            except (KeyError, TypeError, ValueError):
-                _LOGGER.warning("sun.sun has no usable azimuth/elevation attributes yet")
+        sun_position: SunPosition | None = _sun_position_from_state(sun_state)
+        if sun_state is not None and sun_position is None:
+            _LOGGER.warning("sun.sun has no usable azimuth/elevation attributes yet")
+        # Remembered for the sun-listener catch-up check (async_setup_sun_listener).
+        self._last_sun_usable = sun_position is not None
 
         # v1.2.0-beta.1 SUN_EVENT triggers: HA's sun.sun entity already
         # exposes next_rising/next_setting/next_dawn/next_dusk (backed by
@@ -4014,7 +4188,21 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # used in both the no-sun path and the normal path below.
             _learn_diag = compute_learning_diagnostics(self._learning_store, window_id, now)
 
-            if sun_position is None:
+            # A1: Tier-1 Safety (Storm/Wind/Rain) does not depend on the sun, so
+            # a window whose safety is currently active (or still latched by a
+            # release hold) must not be dropped here just because sun.sun is
+            # unusable.  Such a window continues through the normal pipeline
+            # in a reduced "sun-less safety" mode (see _sunless_safety below);
+            # every other window keeps the unchanged no-sun behavior.
+            _sunless_safety: bool = sun_position is None and self._sunless_tier1_relevant(
+                window, window_id, zone,
+                weather_inputs=weather_inputs,
+                rain_status=_rain_status_global,
+                absence_active=absence_active,
+                current_state=self._current_states.get(window_id, ShadingState.OPEN),
+            )
+
+            if sun_position is None and not _sunless_safety:
                 window_results[window_id] = WindowObservation.unavailable(
                     self._current_states.get(window_id, ShadingState.OPEN),
                     cover_position=cover_position,
@@ -4075,26 +4263,41 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 )
                 continue
 
+            if _sunless_safety:
+                # No sun context exists for this cycle, so nothing sun-related is
+                # recorded: no learning/outcome/observation records are written
+                # for this window (every such block is gated on obs_enabled).
+                obs_enabled = False
+
             # zone is already resolved at the top of the loop.
             tolerance_start = ConfigResolver.resolve(window, zone, self.global_defaults, "tolerance_start")
             tolerance_end = ConfigResolver.resolve(window, zone, self.global_defaults, "tolerance_end")
 
-            sun_geometry = self.sun_engine.calculate(
-                sun_position=sun_position,
-                window_azimuth=window.azimuth,
-                tolerance_start=tolerance_start,
-                tolerance_end=tolerance_end,
-                floor_level=window.floor_level,
-                overhang_depth_m=window.overhang_depth_m,
+            # Sun geometry / exposure need a real sun position; in sun-less
+            # safety mode they stay None (WindowDecisionInput.exposure and
+            # WindowObservation.exposure are already Optional for exactly this).
+            sun_geometry = (
+                self.sun_engine.calculate(
+                    sun_position=sun_position,
+                    window_azimuth=window.azimuth,
+                    tolerance_start=tolerance_start,
+                    tolerance_end=tolerance_end,
+                    floor_level=window.floor_level,
+                    overhang_depth_m=window.overhang_depth_m,
+                )
+                if sun_position is not None else None
             )
             # Authoritative solar source (solar_source.py): a configured, valid,
             # fresh and plausible measured sensor value is authoritative; a weather/
             # cloud estimate is a diagnosed fallback only and never overrides or
             # double-damps the measured value.  The estimate is always computed so
             # the diagnostics can show the value that was (or was not) used.
-            _solar_estimate = self.weather_engine.calculate_effective_radiation(
-                sun_elevation_deg=sun_position.elevation,
-                cloud_cover_pct=weather_inputs.cloud_cover or 0.0,
+            _solar_estimate = (
+                self.weather_engine.calculate_effective_radiation(
+                    sun_elevation_deg=sun_position.elevation,
+                    cloud_cover_pct=weather_inputs.cloud_cover or 0.0,
+                )
+                if sun_position is not None else None
             )
             _solar_sel = classify_solar_source(
                 sensor_configured=self._solar_radiation_sensor_id is not None,
@@ -4106,25 +4309,31 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             )
             effective_radiation = _solar_sel.effective_radiation_wm2
             _solar_source = "sensor" if _solar_sel.source == SOURCE_MEASURED else "estimate"
-            exposure = self.exposure_engine.calculate(
-                sun_geometry=sun_geometry,
-                effective_solar_radiation_wm2=effective_radiation,
-                window_id=window_id,
-                timestamp=now,
+            exposure = (
+                self.exposure_engine.calculate(
+                    sun_geometry=sun_geometry,
+                    effective_solar_radiation_wm2=effective_radiation,
+                    window_id=window_id,
+                    timestamp=now,
+                )
+                if sun_geometry is not None else None
             )
 
             current_state = self._current_states.get(window_id, ShadingState.OPEN)
 
             # Effective solar sector: start from automatic geometry, then apply
             # per-window manual sector override and obstruction zones.
-            _effective_in_solar_sector = sun_geometry.is_in_tolerance_window
+            _effective_in_solar_sector = (
+                sun_geometry.is_in_tolerance_window if sun_geometry is not None else False
+            )
             _manual_sun_sector_active = False
             _obstruction_blocked = False
 
             # Manual sun sector override: replaces the automatic azimuth sector
             # for this window when both start and end degrees are configured.
             if (
-                window.manual_sun_sector_start_deg is not None
+                sun_position is not None
+                and window.manual_sun_sector_start_deg is not None
                 and window.manual_sun_sector_end_deg is not None
             ):
                 _manual_sun_sector_active = True
@@ -4163,12 +4372,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # measured solar sensor is plausible for this window this cycle.
             # Never affects exposure/thresholds/shading; surfaced in
             # diagnostics/export only. See _measured_solar_may_be_locally_shaded.
-            _measured_solar_underrepresentation_flag = _measured_solar_may_be_locally_shaded(
-                is_in_solar_sector=_effective_in_solar_sector,
-                sun_elevation_deg=sun_position.elevation,
-                solar_source=_solar_source,
-                measured_solar_wm2=exposure.measured_solar_wm2,
-                rain_status=_rain_status_global,
+            _measured_solar_underrepresentation_flag = (
+                _measured_solar_may_be_locally_shaded(
+                    is_in_solar_sector=_effective_in_solar_sector,
+                    sun_elevation_deg=sun_position.elevation,
+                    solar_source=_solar_source,
+                    measured_solar_wm2=exposure.measured_solar_wm2,
+                    rain_status=_rain_status_global,
+                )
+                if sun_position is not None and exposure is not None else False
             )
 
             # Comfort Engine round (2026-06-17): per-window assessment because
@@ -4178,7 +4390,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 outdoor_temp=weather_inputs.outdoor_temperature,
                 indoor_temp=indoor_temperature,
                 is_in_solar_sector=_effective_in_solar_sector,
-                sun_elevation=sun_position.elevation,
+                sun_elevation=sun_position.elevation if sun_position is not None else None,
                 config=self._comfort_config,
             )
 
@@ -4216,14 +4428,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 night_position=_active_lc_profile.night_position,
                 morning_position=_active_lc_profile.morning_position,
             )
-            # --- Per-window rain config resolution --------------------------------
-            # rain_protection_enabled: window override → hardware-type default.
-            # rain_safe_position_ha: window override (HA convention) →
-            #   HARDWARE_RAIN_SAFE_POSITIONS (already INTERNAL convention:
-            #   AWNING/GENERIC → 100 = HA 0 = retracted;
-            #   EXTERIOR_SCREEN/ROLLER_SHUTTER/VENETIAN_BLIND → 0 = HA 100 = raised).
-            # rain_release_delay_min: window override → global default (30 min).
-            # _early_hw_type is also used below for wind/storm position correction
+            # The per-window rain settings (enabled / safe position INTERNAL /
+            # release delay) come from _window_rain_config() further below.
+            # _early_hw_type is used below for wind/storm position correction
             # and Night Hard Hold; resolved once here to avoid duplication.
             _early_cg = self.cover_groups.get(window.cover_group_id)
             _early_hw_type = (
@@ -4231,7 +4438,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if _early_cg is not None
                 else CoverHardwareType.GENERIC
             )
-            _hw_settings = default_hardware_settings(_early_hw_type)
             # B3-010 fix: primary entity_id + its cached invert_position, resolved
             # cheaply this early (cache read only, no HA/detection calls) so every
             # to_ha_position() call in THIS per-window block before the real
@@ -4429,25 +4635,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         lifecycle_state_is_day=True,
                     )
 
-            _rain_prot_enabled: bool = (
-                window.rain_protection_enabled
-                if window.rain_protection_enabled is not None
-                else _hw_settings.get("rain_protection_enabled", False)
-            )
-            # Resolved to the INTERNAL convention (0=open, 100=shaded) exactly
-            # once: only the explicit window override is in HA convention and is
-            # converted here; the hardware table is already internal, and an
-            # unresolved hardware type falls back to retracted (100 = HA 0),
-            # never to extended.
-            _rain_safe_internal: int = (
-                to_internal_position(window.rain_safe_position_ha)
-                if window.rain_safe_position_ha is not None
-                else _HARDWARE_RAIN_SAFE_POSITIONS.get(_early_hw_type, 100)
-            )
-            _rain_delay_min: int = (
-                window.rain_release_delay_min
-                if window.rain_release_delay_min is not None
-                else self.global_defaults.rain_release_delay_min
+            _rain_prot_enabled, _rain_safe_internal, _rain_delay_min = (
+                self._window_rain_config(window)
             )
 
             # --- Per-window contact sensor reading(s) -----------------------------
@@ -4738,7 +4927,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             )
             self._heat_active[window_id] = _heat_result.active
 
-            tier_decision = self._tier_orchestrator.evaluate_window(wdi)
+            # A1: with unusable sun data only Tier-1 may act; everything else
+            # holds (see TierOrchestrator.evaluate_without_sun).
+            if _sunless_safety:
+                tier_decision = self._tier_orchestrator.evaluate_without_sun(wdi)
+            else:
+                tier_decision = self._tier_orchestrator.evaluate_window(wdi)
 
             # Diagnostics-only: was Heat's own hysteresis-resolved decision
             # active this cycle but a higher-priority tier (Safety early-exit,
@@ -5980,7 +6174,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     hardware_type=_hw_type,
                     new_state=new_state,
                     in_solar_sector=_effective_in_solar_sector,
-                    effective_exposure_wm2=exposure.effective_exposure,
+                    effective_exposure_wm2=exposure.effective_exposure if exposure is not None else 0.0,
                     allow_during_absence=_allow_during_absence,
                 )
                 if _ahb_applied:
@@ -6214,6 +6408,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 min_position_floor_ha=_min_position_floor_ha,
                 target_tilt_ha=_effective_tilt_ha,
                 in_solar_sector=_effective_in_solar_sector,
+                sunless_safety=_sunless_safety,
                 measured_solar_may_be_locally_shaded=_measured_solar_underrepresentation_flag,
                 comfort_hold_last_dispatch_age_min=_comfort_hold_last_dispatch_age_min,
                 comfort_hold_remaining_min=_comfort_hold_remaining_min,
@@ -6287,7 +6482,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 cover_position=cover_position,
                 lifecycle_state=self._lifecycle_state.value,
                 previous_lifecycle_state=_prev_lifecycle_state.value,
-                sun_elevation_deg=sun_position.elevation,
+                sun_elevation_deg=sun_position.elevation if sun_position is not None else None,
                 night_active=self._lifecycle_state is LifecycleState.NIGHT,
                 absence_active=absence_active,
                 effective_solar_sector=_effective_in_solar_sector,
@@ -6964,7 +7159,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 cycle_timestamp_utc=now,
                 restore_completed=self._learning_restored,
                 required_inputs_ready=_required_inputs_ready,
-                degraded_input_codes=_degraded_input_codes,
+                degraded_input_codes=(
+                    _degraded_input_codes + (_SAFETY_WITHOUT_SUN_CODE,)
+                    if s.sunless_safety else _degraded_input_codes
+                ),
                 lifecycle_state_at_cycle=self._lifecycle_state.value,
                 previous_lifecycle_state=_prev_lifecycle_state.value,
                 lifecycle_trigger=_lifecycle_trigger,

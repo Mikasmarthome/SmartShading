@@ -298,7 +298,9 @@ class WindowExecutionDiagnostics:
     degraded_input_codes: tuple[str, ...] | None = None
     """Codes for inputs that are missing or degraded this cycle.
     Empty tuple when all inputs are present. None when not populated.
-    Current codes: "sun_unavailable"."""
+    Current codes: "sun_unavailable"; "safety_active_without_sun" (added for a
+    window whose Tier-1 Storm/Wind/Rain safety is acting while sun.sun is
+    unusable)."""
 
     lifecycle_state_at_cycle: str | None = None
     """LifecycleState.value after lifecycle engine evaluation this cycle

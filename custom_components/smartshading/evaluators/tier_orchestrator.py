@@ -115,6 +115,46 @@ class TierOrchestrator:
         # Tier 5 — Comfort Pipeline
         self._solar = SolarEvaluator()
 
+    def evaluate_tier1(self, wdi: WindowDecisionInput) -> WindowDecision | None:
+        """Tier 1 only: the Safety Guards, in their fixed priority order.
+
+        STORM_SAFE (1) > WIND_SAFE (2) > RAIN_SAFE (3); the first one that
+        fires wins and the rest are skipped.  Returns None when no safety
+        guard fires.  Reads only wind/weather/rain inputs and the resolved
+        safety behavior of ``wdi`` -- never exposure or any sun value -- so it
+        is valid for a window evaluated without usable sun data.
+        """
+        storm_result = self._storm.evaluate(wdi)
+        if storm_result is not None:
+            return storm_result
+
+        wind_result = self._wind.evaluate(wdi)
+        if wind_result is not None:
+            return wind_result
+
+        return self._rain.evaluate(wdi)
+
+    def evaluate_without_sun(self, wdi: WindowDecisionInput) -> WindowDecision:
+        """Decision for a window whose sun data is unusable this cycle.
+
+        Tier 1 (Storm/Wind/Rain) does not depend on the sun and is evaluated
+        exactly as in evaluate_window().  Everything else -- night/morning,
+        absence/heat/glare, solar and the daytime fallback OPEN -- is NOT
+        evaluated: without sun data those would run on incomplete input, so
+        the window holds its current position (target None -> no dispatch),
+        the same hold shape PresenceUncertain already uses.
+        """
+        safety_result = self.evaluate_tier1(wdi)
+        if safety_result is not None:
+            return safety_result
+        return WindowDecision(
+            window_id=wdi.window_config.id,
+            shading_state=ShadingState.OPEN,
+            target_position=None,
+            decided_by="SunUnavailable:hold",
+            category=DecisionCategory.HOLD,
+        )
+
     def evaluate_window(self, wdi: WindowDecisionInput) -> WindowDecision:
         """Evaluate one window and return a concrete WindowDecision.
 
@@ -129,21 +169,11 @@ class TierOrchestrator:
             A WindowDecision.  Never None — falls back to OPEN if no tier fires.
         """
         # --- Tier 1: Safety Guards (sequential early-exit, highest priority) --
-        # Priority order: STORM_SAFE (1) > WIND_SAFE (2) > RAIN_SAFE (3).
-        # Storm is checked first; if it fires, wind and rain are skipped.
         # Override-immune by ordering: this runs before the Tier 2 policy gate
         # below, so Safety always wins regardless of override state (unchanged).
-        storm_result = self._storm.evaluate(wdi)
-        if storm_result is not None:
-            return storm_result
-
-        wind_result = self._wind.evaluate(wdi)
-        if wind_result is not None:
-            return wind_result
-
-        rain_result = self._rain.evaluate(wdi)
-        if rain_result is not None:
-            return rain_result
+        safety_result = self.evaluate_tier1(wdi)
+        if safety_result is not None:
+            return safety_result
 
         # --- Tier 3: Lifecycle Phase Gate (early exit) ------------------------
         night_result = self._night.evaluate(wdi)

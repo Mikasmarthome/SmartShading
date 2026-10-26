@@ -2308,13 +2308,173 @@ class TestSunListener:
         assert new.coord._dispatch_generation == new_gen + 1
 
     def test_unload_wiring_tears_the_listener_down(self):
+        """Setup is wired into the zone-entry setup and the teardown into
+        async_unload_entry -- checked on the AST of __init__.py (function
+        bodies), not as a loose text match, so a call that merely appears
+        somewhere else in the file cannot satisfy it."""
+        import ast
         from pathlib import Path
-        src = (
+
+        tree = ast.parse((
             Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
             / "__init__.py"
-        ).read_text(encoding="utf-8")
-        assert "async_setup_sun_listener(entry)" in src
-        assert "async_teardown_sun_listener()" in src
+        ).read_text(encoding="utf-8"))
+
+        def calls_in(func_name: str) -> set[str]:
+            func = next(
+                n for n in ast.walk(tree)
+                if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef)) and n.name == func_name
+            )
+            return {
+                c.func.attr for c in ast.walk(func)
+                if isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)
+            }
+
+        assert "async_setup_sun_listener" in calls_in("_async_setup_zone_entry")
+        assert "async_teardown_sun_listener" in calls_in("async_unload_entry")
+        # ...next to the rain listener it mirrors, so neither can silently go missing alone.
+        assert "async_teardown_rain_listener" in calls_in("async_unload_entry")
+
+
+class TestSunLossDiscardsAQueuedNormalPlan:
+    """The real thing behind "losing the sun invalidates a running plan": a
+    normal plan computed WITH sun data and still waiting for its dispatch slot
+    (another zone holds the global lock) must not be sent after the sun is gone
+    -- and must not come back when the sun returns.  Same production-faithful
+    construction as the rain listener's hazard tests above."""
+
+    def _scenario(self, events):
+        """events: sequence of "lose" / "return", fired in order while the
+        normal plan waits for its slot.  Returns (scenario, bus)."""
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=600))
+        s = _Scenario(AWNING, hass=hass, serial=serial, cover_position=0,
+                      window_id="x1", zone_id="zx", covers=["cover.x1"])
+        # A normal plan that would EXTEND the awning (shade = HA 100).
+        s.coord.shade_position_defaults = ShadePositionDefaults(
+            light_shade_position=100, normal_shade_position=100, strong_shade_position=100)
+        bus = _FakeBus()
+        _attach_sun_listener(s, bus)
+
+        async def main():
+            with s._clock(0):
+                await serial.lock.acquire()                    # another zone is dispatching
+                old_plan = asyncio.ensure_future(s.coord._async_update_data())
+                await asyncio.sleep(0.05)                      # old plan waits for its slot
+                for event in events:
+                    if event == "lose":
+                        _sun_unusable(s, "unavailable")
+                        bus.fire("sun.sun", _sun_state(), _UNUSABLE)
+                    else:
+                        _sun_valid(s)
+                        bus.fire("sun.sun", _UNUSABLE, _sun_state())
+                serial.lock.release()
+                await old_plan
+        asyncio.run(main())
+        return s, bus
+
+    def test_control_without_an_event_the_queued_plan_still_extends_the_cover(self):
+        s, _ = self._scenario([])
+        assert s.position_calls == [100]
+
+    def test_queued_plan_is_discarded_when_the_sun_is_lost(self):
+        s, _ = self._scenario(["lose"])
+        assert s.position_calls == []                  # never extended
+        assert s.coord.async_request_refresh.call_count == 1
+
+    def test_the_returning_sun_does_not_resurrect_the_old_plan(self):
+        s, _ = self._scenario(["lose", "return"])
+        assert s.position_calls == []                  # old plan stays dead
+        assert s.coord.async_request_refresh.call_count == 2
+
+    def test_the_next_cycle_after_the_return_is_a_fresh_evaluation(self):
+        s, _ = self._scenario(["lose", "return"])
+        with s._clock(1):
+            data = asyncio.run(s.coord._async_update_data())
+        # A fresh normal evaluation, not a replay: it runs the full pipeline again
+        # (sun data usable) and is the only thing that may send the extend now.
+        assert s.diag(data).required_inputs_ready is True
+        assert s.diag(data).tier_decided_by != "SunUnavailable:hold"
+        assert s.position_calls == [100]
+
+    def test_with_the_sun_still_gone_the_next_cycle_sends_nothing(self):
+        s, _ = self._scenario(["lose"])
+        with s._clock(1):
+            data = asyncio.run(s.coord._async_update_data())
+        assert s.position_calls == []
+        assert s.diag(data).required_inputs_ready is False
+
+    def test_rain_after_the_loss_still_retracts_and_never_extends(self):
+        s, _ = self._scenario(["lose"])
+        s.set_rain(True)
+        with s._clock(1):
+            asyncio.run(s.coord._async_update_data())
+        assert s.position_calls == [0]
+
+
+class TestSunlessSafetyCycleKeepsTheLatchesHonest:
+    """With sun geometry and exposure None, state kept between cycles must not
+    be corrupted.  The heat hysteresis latch is driven by temperatures only
+    (engines/heat_hysteresis.py), so a sun-less safety cycle must neither drop
+    it for lack of exposure nor hold it for lack of sun."""
+
+    def _hot_scenario(self, outdoor_c: str, indoor_c: str):
+        s = _Scenario(AWNING, cover_position=100)
+        s.coord._outdoor_temperature_sensor_id = "sensor.outdoor"
+        s.coord._indoor_temperature_sensor_ids = ["sensor.indoor"]
+        self._temps(s, outdoor_c, indoor_c)
+        return s
+
+    @staticmethod
+    def _temps(s, outdoor_c: str, indoor_c: str) -> None:
+        s.hass.states.set("sensor.outdoor", outdoor_c, unit_of_measurement="\u00b0C")
+        s.hass.states.set("sensor.indoor", indoor_c, unit_of_measurement="\u00b0C")
+
+    def test_control_heat_latch_is_established_with_a_valid_sun(self):
+        s = self._hot_scenario("30", "26")
+        s.cycle(0)
+        assert s.coord._heat_active.get("w1") is True
+
+    def test_latch_survives_a_sunless_safety_cycle_while_it_is_still_hot(self):
+        s = self._hot_scenario("30", "26")
+        s.cycle(0)
+        assert s.coord._heat_active.get("w1") is True
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        data = s.cycle(5)
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert s.coord._heat_active.get("w1") is True
+
+    def test_latch_follows_the_temperature_not_the_sun_data(self):
+        s = self._hot_scenario("30", "26")
+        s.cycle(0)
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        self._temps(s, "15", "20")                       # both well below their exit bounds
+        s.cycle(5)
+        assert s.coord._heat_active.get("w1") is False
+
+    def test_a_sunless_safety_cycle_never_creates_a_heat_latch(self):
+        s = self._hot_scenario("15", "20")
+        _sun_unusable(s, "unavailable")
+        s.set_rain(True)
+        s.cycle(0)
+        assert not s.coord._heat_active.get("w1")
+
+    def test_comfort_hold_bookkeeping_is_identical_with_and_without_the_sun(self):
+        """The comfort-movement hold records every command that was actually
+        sent (a safety command included) -- with a valid sun just as without.
+        The sun-less path must not add, drop or alter that bookkeeping."""
+        def run(sunless: bool):
+            s = _Scenario(AWNING, cover_position=100)
+            if sunless:
+                _sun_unusable(s, "unavailable")
+            s.set_rain(True)
+            s.cycle(0)
+            hold = s.coord._comfort_movement_holds.get("w1")
+            return (hold.last_decided_by, hold.last_target_ha) if hold is not None else None
+
+        assert run(sunless=True) == run(sunless=False) == ("RainEvaluator", 0)
 
 
 class TestSunPositionFromState:

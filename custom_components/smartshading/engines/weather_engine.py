@@ -65,6 +65,47 @@ DEFAULT_SOLAR_CONSTANT_WM2 = 1000.0
 DEFAULT_STORM_WIND_THRESHOLD_MS = 20.0
 
 
+class WindBand(Enum):
+    """Coarse wind situation used to decide when a re-evaluation is needed.
+
+    CLEAR   usable reading below the wind threshold (and no storm condition)
+    WIND    effective wind >= wind threshold, below the storm threshold
+    STORM   storm weather condition, or effective wind >= storm threshold
+    UNKNOWN no usable wind reading and no weather condition
+    """
+
+    CLEAR = "clear"
+    WIND = "wind"
+    STORM = "storm"
+    UNKNOWN = "unknown"
+
+
+def classify_wind_band(
+    *,
+    wind_speed_ms: float | None,
+    wind_gust_ms: float | None,
+    condition: "WeatherCondition | None",
+    wind_threshold_ms: float,
+    storm_wind_threshold_ms: float = DEFAULT_STORM_WIND_THRESHOLD_MS,
+) -> tuple[WindBand, float | None]:
+    """(band, effective wind) with the exact rules StormEvaluator / WindEvaluator
+    apply: effective wind is the gust when available, else the sustained speed;
+    storm if the condition is a storm condition or effective wind >= storm
+    threshold; wind if effective wind >= wind threshold."""
+    effective = wind_gust_ms if wind_gust_ms is not None else wind_speed_ms
+    if condition is None and effective is None:
+        return WindBand.UNKNOWN, None
+    if (condition is not None and condition in STORM_CONDITIONS) or (
+        effective is not None and effective >= storm_wind_threshold_ms
+    ):
+        return WindBand.STORM, effective
+    if effective is None:
+        return WindBand.UNKNOWN, None
+    if effective >= wind_threshold_ms:
+        return WindBand.WIND, effective
+    return WindBand.CLEAR, effective
+
+
 class WeatherEngine:
     """Evaluates the configured weather source (ARCHITECTURE.md §5.3)."""
 

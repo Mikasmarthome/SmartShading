@@ -625,6 +625,20 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 } if diag is not None else {
                     "configured": getattr(c, "_rain_sensor_id", None) is not None,
                     "status": None}
+                # Wind / storm safety (A3): configured state, band, used value,
+                # holds and listener activity (privacy-safe: no entity ids).
+                prov["wind"] = {
+                    "sensor_configured": getattr(c, "_wind_speed_sensor_id", None) is not None,
+                    "protection_effective": getattr(diag, "wind_protection_effective", None),
+                    "band": getattr(diag, "wind_band", None),
+                    "effective_ms": getattr(diag, "wind_effective_ms", None),
+                    "wind_threshold_ms": getattr(diag, "wind_threshold_ms", None),
+                    "storm_threshold_ms": getattr(diag, "storm_threshold_ms", None),
+                    "wind_hold_active": getattr(diag, "wind_hold_active", None),
+                    "storm_hold_active": getattr(diag, "storm_hold_active", None),
+                    "hold_kept_for_missing_data": getattr(diag, "wind_hold_data_missing", None),
+                    "listener": dict(getattr(c, "_wind_listener_stats", {}) or {}),
+                } if diag is not None else {"sensor_configured": False}
                 # Heat protection hysteresis (v1.2.0-beta.1, T9): entry/exit
                 # thresholds, current readings, and the resolved hysteresis
                 # state/reason — lets a support case reconstruct exactly why

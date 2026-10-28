@@ -334,6 +334,32 @@ class WindowExecutionDiagnostics:
     """Seconds remaining in the rain dry-cooldown hold, or None when no hold
     is active. Computed from SafetyHold._last_triggered and rain_release_delay_min."""
 
+    # --- Wind / storm diagnostics (A3) ---------------------------------------
+
+    wind_protection_effective: bool | None = None
+    """Whether Wind protection (WIND_SAFE) is effectively enabled for THIS
+    window: the coordinator-wide override when one was given, else the
+    hardware-type default.  Storm protection is separate (always on).
+    None when not populated."""
+
+    wind_band: str | None = None
+    """Band of the last wind reading: "clear", "wind", "storm" or "unknown"."""
+
+    wind_effective_ms: float | None = None
+    """The wind value the evaluators used (gust if available, else sustained
+    speed), in m/s; None without a usable reading."""
+
+    wind_threshold_ms: float | None = None
+    storm_threshold_ms: float | None = None
+
+    wind_hold_active: bool | None = None
+    storm_hold_active: bool | None = None
+    """True while the release hold of WIND_SAFE / STORM_SAFE is latched."""
+
+    wind_hold_data_missing: bool | None = None
+    """True when a latched wind/storm hold is being kept because the wind
+    reading is missing (the hold is extended, never released, on absent data)."""
+
     # --- Heat protection hysteresis diagnostics (v1.2.0-beta.1, T9) ---------
 
     heat_hysteresis_active: bool = False

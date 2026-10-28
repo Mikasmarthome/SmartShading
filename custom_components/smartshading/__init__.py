@@ -110,6 +110,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
         coordinator.async_teardown_presence_listeners()
         coordinator.async_teardown_contact_listeners()
         coordinator.async_teardown_rain_listener()
+        coordinator.async_teardown_wind_listener()
         coordinator.async_teardown_sun_listener()
         coordinator.async_teardown_lifecycle_boundary_timer()
         await coordinator.async_flush_learning()
@@ -348,6 +349,10 @@ async def _async_setup_zone_entry(
     # Rain start/stop must be evaluated promptly (and an old, not yet sent normal
     # plan of this zone invalidated) instead of waiting for the next periodic cycle.
     coordinator.async_setup_rain_listener(entry)
+
+    # Wind / storm band changes must be evaluated promptly (and an old normal
+    # plan of this zone invalidated) instead of waiting for the next periodic cycle.
+    coordinator.async_setup_wind_listener(entry)
 
     # sun.sun becoming usable/unusable must re-evaluate at once: Tier-1 Safety
     # keeps acting without sun data, and the return of valid sun data starts a

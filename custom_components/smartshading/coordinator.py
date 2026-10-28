@@ -120,7 +120,13 @@ from .engines.observability_evaluator import (
     compute_learning_diagnostics,
 )
 from .engines.sun_engine import SunEngine, SunPosition
-from .engines.weather_engine import WeatherCondition, WeatherEngine
+from .engines.weather_engine import (
+    DEFAULT_STORM_WIND_THRESHOLD_MS,
+    WeatherCondition,
+    WeatherEngine,
+    WindBand,
+    classify_wind_band,
+)
 from .models.comfort import ComfortConfig
 from .models.config import ConfigResolver, GlobalDefaults, ShadePositionDefaults
 from .models.cover_group import CoverGroup, CoverHardwareType, default_hardware_settings
@@ -1352,7 +1358,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         wind_gust_sensor_id: str | None = None,
         rain_sensor_id: str | None = None,
         storm_protection_enabled: bool = True,
-        wind_protection_enabled: bool = False,
+        wind_protection_enabled: bool | None = None,
         wind_threshold_ms: float = 14.0,
         override_duration_min: int = 120,
         override_night_duration_min: int = 720,
@@ -1409,6 +1415,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._ema_alpha = ema_alpha
         self._ema_smoother = EmaSmoother()
         self._storm_protection_enabled = storm_protection_enabled
+        # None = resolve per window from the hardware-type default (the same
+        # table rain protection uses); an explicit bool overrides it for the
+        # whole coordinator.  See _window_wind_enabled().
         self._wind_protection_enabled = wind_protection_enabled
         self._wind_threshold_ms = wind_threshold_ms
         # v1.1.3: daytime manual override now holds for a fixed duration
@@ -1659,6 +1668,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # rain status the last coordinator cycle evaluated.
         self._unsub_rain_listener: Callable[[], None] | None = None
         self._last_rain_status: _RainStatus | None = None
+        # Wind / storm listener (A3): one subscription over every entity that
+        # feeds the wind reading, the band the last evaluation saw, and counters
+        # for diagnostics.
+        self._unsub_wind_listener: Callable[[], None] | None = None
+        self._last_wind_band: WindBand | None = None
+        self._last_wind_effective_ms: float | None = None
+        self._wind_listener_stats: dict[str, Any] = {
+            "events": 0, "band_changes": 0, "refreshes_requested": 0,
+            "plan_invalidations": 0, "last_band": None, "last_trigger": None,
+        }
         # sun.sun state listener (single subscription) and whether the last
         # coordinator cycle had usable sun data.  A change of usability is what
         # the listener turns into an immediate re-evaluation (A1).
@@ -2463,6 +2482,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         )
         return enabled, safe_internal, delay_min
 
+    def _window_wind_enabled(self, window: WindowConfig) -> bool:
+        """Effective Wind protection (WIND_SAFE) for one window.
+
+        An explicit coordinator-wide setting wins; otherwise the hardware-type
+        default applies (awning on, the others off), exactly like rain protection.
+        Storm protection is independent of this and always on.  Single definition
+        for the normal evaluation path and the no-sun Tier-1 path.
+        """
+        if self._wind_protection_enabled is not None:
+            return self._wind_protection_enabled
+        cover_group = self.cover_groups.get(window.cover_group_id)
+        hardware_type = (
+            cover_group.hardware_type if cover_group is not None else CoverHardwareType.GENERIC
+        )
+        return bool(default_hardware_settings(hardware_type).get("wind_protection_enabled", False))
+
     def _sunless_tier1_relevant(
         self,
         window: WindowConfig,
@@ -2507,7 +2542,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             wind_gust_ms=weather_inputs.wind_gust,
             weather_condition=weather_inputs.weather_condition_enum,
             storm_protection_enabled=self._storm_protection_enabled,
-            wind_protection_enabled=self._wind_protection_enabled,
+            wind_protection_enabled=self._window_wind_enabled(window),
             wind_threshold_ms=self._wind_threshold_ms,
             rain_status=rain_status,
             rain_protection_enabled=rain_enabled,
@@ -2570,6 +2605,119 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
     def async_teardown_sun_listener(self) -> None:
         """Cancel the sun.sun state listener.  Idempotent."""
         unsub, self._unsub_sun_listener = self._unsub_sun_listener, None
+        if unsub is not None:
+            unsub()
+
+    def _wind_band_of_inputs(self, weather_inputs: Any) -> tuple[WindBand, float | None]:
+        return classify_wind_band(
+            wind_speed_ms=weather_inputs.wind_speed,
+            wind_gust_ms=weather_inputs.wind_gust,
+            condition=weather_inputs.weather_condition_enum,
+            wind_threshold_ms=self._wind_threshold_ms,
+            storm_wind_threshold_ms=DEFAULT_STORM_WIND_THRESHOLD_MS,
+        )
+
+    def async_setup_wind_listener(self, entry: ConfigEntry) -> None:
+        """Re-evaluate immediately when the wind situation changes band.
+
+        Watches every entity that feeds the wind reading (the wind sensor, a gust
+        sensor if one is set, and the weather entity whose attributes and storm
+        condition are the fallback).  Storm uses the same sensor with a higher
+        threshold, so one listener covers both.  Only a change of the BAND
+        (clear / wind / storm / unknown, computed with the exact rules the
+        evaluators use) matters; wobbling inside a band, or a clear<->unknown
+        flip, produces no refresh.
+
+          * into a higher band (clear/unknown -> wind/storm, wind -> storm): bump
+            the dispatch generation and signal the running comfort plan, so older
+            normal plans of THIS coordinator cancel themselves, then refresh
+            immediately (bypassing the debouncer cooldown).
+            Other zones' plans end when the resulting Safety request enters the
+            global admission (A2 safety epoch).
+          * leaving wind/storm (to a lower band or to unknown): refresh so the
+            release hold and the data-missing hold are evaluated promptly; the
+            plan stays valid (the hold keeps the safety state).
+
+        Non-urgent refreshes (leaving a band) go through the coordinator's
+        debouncer, which coalesces bursts; urgent ones occur only on a real band
+        increase, so they cannot flood.
+        Missing, unavailable or non-numeric readings normalize to "no value"
+        (never a trigger by themselves; the release holds keep an active safety
+        state through them).  Idempotent: a repeated setup first removes the
+        previous subscription; teardown is also registered with
+        entry.async_on_unload.  Catch-up: a dangerous band that already exists at
+        setup, but that the last evaluation did not see, is handled at once.
+        """
+        self.async_teardown_wind_listener()
+        entity_ids = []
+        for candidate in (self._wind_speed_sensor_id, self._wind_gust_sensor_id,
+                          self._weather_entity_id):
+            if candidate is not None and candidate not in entity_ids:
+                entity_ids.append(candidate)
+        if not entity_ids:
+            return
+
+        stats = self._wind_listener_stats
+
+        def _request_wind_refresh(trigger: str, raised: bool) -> None:
+            stats["last_trigger"] = trigger
+            if raised:
+                stats["plan_invalidations"] += 1
+                self._dispatch_generation += 1
+                if self._active_dispatch_cancellation is not None:
+                    self._active_dispatch_cancellation.set()
+            stats["refreshes_requested"] += 1
+            if raised:
+                # Entering a dangerous band is urgent: async_refresh() runs the
+                # evaluation now, whereas async_request_refresh() would sit
+                # behind the debouncer's 10 s cooldown after any recent refresh
+                # (and can be dropped while a refresh is in flight).  Overlapping
+                # cycles are safe: the newer cycle preempts the older comfort
+                # plan.  Leaving a band is not urgent and uses the debouncer.
+                self._create_tracked_background_task(
+                    entry, self.async_refresh(), "smartshading_wind_refresh_now",
+                )
+            else:
+                self._create_tracked_background_task(
+                    entry, self.async_request_refresh(), "smartshading_wind_refresh",
+                )
+
+        def _evaluate_band(trigger: str) -> None:
+            new_band, effective = self._wind_band_of_inputs(self._read_weather_inputs())
+            old_band = self._last_wind_band
+            self._last_wind_effective_ms = effective
+            stats["last_band"] = new_band.value
+            if new_band is old_band:
+                return
+            self._last_wind_band = new_band
+            stats["band_changes"] += 1
+            dangerous = (WindBand.WIND, WindBand.STORM)
+            rank = {WindBand.UNKNOWN: 0, WindBand.CLEAR: 0, WindBand.WIND: 1, WindBand.STORM: 2}
+            old_rank = rank.get(old_band, 0)
+            if rank[new_band] > old_rank:
+                _request_wind_refresh(trigger, raised=True)
+            elif old_band in dangerous or new_band in dangerous:
+                _request_wind_refresh(trigger, raised=False)
+            # clear <-> unknown without an active band: nothing to do.
+
+        @callback
+        def _on_wind_change(event: Event) -> None:
+            stats["events"] += 1
+            _evaluate_band(f"state_change:{event.data.get('entity_id')}")
+
+        self._unsub_wind_listener = async_track_state_change_event(
+            self.hass, entity_ids, _on_wind_change
+        )
+        entry.async_on_unload(self.async_teardown_wind_listener)
+
+        # Catch-up (see docstring): the band the first refresh evaluated is
+        # remembered in _last_wind_band; a differing, dangerous band right now
+        # was missed between that read and this subscription.
+        _evaluate_band("setup_catch_up")
+
+    def async_teardown_wind_listener(self) -> None:
+        """Cancel the wind/storm state listener.  Idempotent."""
+        unsub, self._unsub_wind_listener = self._unsub_wind_listener, None
         if unsub is not None:
             unsub()
 
@@ -3868,6 +4016,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         )
 
         weather_inputs = self._read_weather_inputs()
+        self._last_wind_band, self._last_wind_effective_ms = self._wind_band_of_inputs(
+            weather_inputs)
 
         # Comfort Engine round (2026-06-17): read indoor temperature once per
         # cycle (house-wide, not per-window). is_in_solar_sector is per-window
@@ -4682,6 +4832,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # cycle's WDI. See engines/heat_hysteresis.py and self._heat_active.
             _heat_was_active = self._heat_active.get(window_id, False)
 
+            _wind_enabled = self._window_wind_enabled(window)
             wdi = build_window_decision_input(
                 window=window,
                 zone=zone,
@@ -4700,7 +4851,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 wind_gust_ms=weather_inputs.wind_gust,
                 weather_condition=weather_inputs.weather_condition_enum,
                 storm_protection_enabled=self._storm_protection_enabled,
-                wind_protection_enabled=self._wind_protection_enabled,
+                wind_protection_enabled=_wind_enabled,
                 wind_threshold_ms=self._wind_threshold_ms,
                 rain_status=_rain_status_global,
                 rain_protection_enabled=_rain_prot_enabled,
@@ -5018,10 +5169,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 weather_inputs.wind_speed is None
                 and weather_inputs.wind_gust is None
             )
+            # A configured wind sensor without a reading keeps a latched storm
+            # hold even though the weather entity still reports a non-storm
+            # condition: that condition does not confirm the wind has dropped.
             _storm_sensor_unavailable = (
                 weather_inputs.wind_speed is None
                 and weather_inputs.wind_gust is None
-                and weather_inputs.weather_condition is None
+                and (
+                    weather_inputs.weather_condition is None
+                    or self._wind_speed_sensor_id is not None
+                )
             )
 
             _storm_h = self._storm_holds.setdefault(window_id, _SafetyHold(_hold_s=_STORM_HOLD_S))
@@ -7230,6 +7387,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     max(0.0, _rain_delay_min * 60 - (_rain_h.seconds_held(now) or 0.0))
                     if _rain_held and not _eval_is_rain
                     else None
+                ),
+                wind_protection_effective=self._window_wind_enabled(s.window),
+                wind_band=(
+                    self._last_wind_band.value if self._last_wind_band is not None else None
+                ),
+                wind_effective_ms=self._last_wind_effective_ms,
+                wind_threshold_ms=self._wind_threshold_ms,
+                storm_threshold_ms=DEFAULT_STORM_WIND_THRESHOLD_MS,
+                wind_hold_active=_wind_held,
+                storm_hold_active=_storm_held,
+                wind_hold_data_missing=(
+                    (_wind_held and _wind_sensor_unavailable)
+                    or (_storm_held and _storm_sensor_unavailable)
                 ),
                 heat_hysteresis_active=s.heat_hysteresis_active,
                 heat_hysteresis_reason=s.heat_hysteresis_reason,

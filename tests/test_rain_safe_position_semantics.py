@@ -315,6 +315,9 @@ def _capability(entity_id: str = _COVER, *, invert: bool = False) -> CoverCapabi
     )
 
 
+_UNSET_WIND = object()
+
+
 class _Win:
     """An additional window (with its own cover group) in the primary zone."""
 
@@ -354,6 +357,8 @@ class _Scenario:
         serial: GlobalSerialDispatch | None = None,
         base_now: _datetime.datetime | None = None,
         rain_entity: str = _RAIN,
+        wind_protection_enabled: Any = True,
+        wind_entity: str = _WIND,
     ) -> None:
         self.hass = hass if hass is not None else _make_hass()
         self.rain_entity = rain_entity
@@ -388,6 +393,13 @@ class _Scenario:
                 learning_enabled=False, active_control_enabled=active_control,
             ),
         )
+        # _UNSET_WIND = construct exactly like __init__.py does (the argument is
+        # not passed at all), so production wiring is what is exercised.
+        _wind_kwargs = (
+            {} if wind_protection_enabled is _UNSET_WIND
+            else {"wind_protection_enabled": wind_protection_enabled}
+        )
+        self.wind_entity = wind_entity
         self.coord = _coord_mod.SmartShadingCoordinator(
             self.hass,
             _make_entry(),
@@ -397,9 +409,9 @@ class _Scenario:
             global_defaults=GlobalDefaults(),
             shade_position_defaults=ShadePositionDefaults(),
             rain_sensor_id=rain_entity,
-            wind_speed_sensor_id=_WIND,
-            wind_protection_enabled=True,
+            wind_speed_sensor_id=wind_entity,
             global_serial_dispatch=self.serial,
+            **_wind_kwargs,
         )
         # Steady state: restore done, startup grace elapsed (production state
         # from the second cycle on).
@@ -416,8 +428,8 @@ class _Scenario:
         else:
             self.hass.states.set(self.rain_entity, "1.5" if raining else "0.0")
 
-    def set_wind(self, ms: float) -> None:
-        self.hass.states.set(_WIND, str(ms), unit_of_measurement="m/s")
+    def set_wind(self, ms: float | str) -> None:
+        self.hass.states.set(self.wind_entity, str(ms), unit_of_measurement="m/s")
 
     def set_cover_position(self, ha_position: int, *, cover: str | None = None,
                            state: str = "open") -> None:
@@ -1190,13 +1202,16 @@ class _FakeBus:
         self.registered = 0
 
     def track(self, hass, entity_id, action):
-        self.subs.setdefault(entity_id, []).append(action)
-        self.registered += 1
+        entity_ids = [entity_id] if isinstance(entity_id, str) else list(entity_id)
+        for eid in entity_ids:
+            self.subs.setdefault(eid, []).append(action)
+            self.registered += 1
 
         def _unsub():
-            lst = self.subs.get(entity_id, [])
-            if action in lst:
-                lst.remove(action)
+            for eid in entity_ids:
+                lst = self.subs.get(eid, [])
+                if action in lst:
+                    lst.remove(action)
 
         return _unsub
 
@@ -1204,7 +1219,8 @@ class _FakeBus:
         return len(self.subs.get(entity_id, []))
 
     def fire(self, entity_id: str, old, new) -> None:
-        event = SimpleNamespace(data={"old_state": old, "new_state": new})
+        event = SimpleNamespace(
+            data={"entity_id": entity_id, "old_state": old, "new_state": new})
         for callback in list(self.subs.get(entity_id, [])):
             callback(event)
 
@@ -2639,3 +2655,557 @@ class TestA2CoordinatorGlobalSafetyPriority:
         s.cycle(0)
         stats = s.serial.admission.stats()
         assert stats["admitted_safety"] == 1 and stats["held"] is False and stats["queued"] == 0
+
+
+# ---------------------------------------------------------------------------
+# A3 -- wind / storm wiring and thresholds (production construction)
+# ---------------------------------------------------------------------------
+
+
+class TestA3WindWiring:
+    """The coordinator is built exactly like __init__.py builds it (no
+    wind_protection_enabled argument), so the production wiring is exercised."""
+
+    @staticmethod
+    def _scenario(hw, *, cover_position=100, wind_protection_enabled=_UNSET_WIND, **kw):
+        s = _Scenario(hw, cover_position=cover_position,
+                      wind_protection_enabled=wind_protection_enabled, **kw)
+        # Sun outside the window's sector: no comfort movement competes with
+        # the safety behaviour under test.
+        s.hass.states.set("sun.sun", "above_horizon", azimuth=0.0, elevation=30.0)
+        return s
+
+    @classmethod
+    def _run(cls, hw, wind, *, cover_position=100, **kw):
+        s = cls._scenario(hw, cover_position=cover_position, **kw)
+        s.set_wind(wind)
+        return s, s.cycle(0)
+
+    def test_awning_default_retracts_at_wind_threshold(self):
+        s, data = self._run(AWNING, 16)
+        assert s.position_calls == [0]
+        assert _state_of(data) is ShadingState.WIND_SAFE
+        assert s.diag(data).tier_decided_by == "WindEvaluator"
+
+    @pytest.mark.parametrize("wind,expected", [
+        (13.9, []), (14.0, [0]), (19.9, [0]),
+    ])
+    def test_wind_threshold_boundaries_for_an_awning(self, wind, expected):
+        s, _ = self._run(AWNING, wind)
+        assert s.position_calls == expected
+
+    @pytest.mark.parametrize("wind", [20.0, 25.0])
+    def test_storm_at_and_above_threshold_is_storm_safe(self, wind):
+        s, data = self._run(AWNING, wind)
+        assert _state_of(data) is ShadingState.STORM_SAFE
+        assert s.position_calls == [0]
+        assert s.diag(data).tier_decided_by == "StormEvaluator"
+
+    def test_explicitly_disabled_wind_protection_stays_disabled_but_storm_still_acts(self):
+        s = self._scenario(AWNING, wind_protection_enabled=False)
+        s.set_wind(16)
+        s.cycle(0)
+        assert s.position_calls == []
+        s.set_wind(25)
+        s.cycle(10)
+        assert s.position_calls == [0]
+
+    @pytest.mark.parametrize("hw", [ROLLER, VENETIAN, SCREEN, GENERIC])
+    def test_hardware_default_off_types_ignore_wind_but_obey_storm(self, hw):
+        s, data = self._run(hw, 16, cover_position=60)
+        assert _state_of(data) not in (ShadingState.WIND_SAFE, ShadingState.STORM_SAFE)
+        s.set_wind(25)
+        data = s.cycle(10)
+        assert _state_of(data) is ShadingState.STORM_SAFE
+        assert s.position_calls[-1] == 100          # raised/open for every vertical type
+
+    def test_storm_wins_over_wind_and_rain(self):
+        s, data = self._run(AWNING, 25)
+        s.set_rain(True)
+        data = s.cycle(10)
+        assert _state_of(data) is ShadingState.STORM_SAFE
+
+    def test_wind_wins_over_rain(self):
+        s = self._scenario(AWNING)
+        s.set_rain(True)
+        s.set_wind(16)
+        data = s.cycle(0)
+        assert _state_of(data) is ShadingState.WIND_SAFE
+
+
+# ---------------------------------------------------------------------------
+# A3 -- wind / storm listener, holds and recovery, dispatch interaction
+# ---------------------------------------------------------------------------
+
+
+def _attach_wind_listener(s: _Scenario, bus: _FakeBus) -> _Scenario:
+    s.coord.async_request_refresh = MagicMock(return_value=None)
+    s.coord.async_refresh = MagicMock(return_value=None)
+    s.entry = _make_entry()
+    with patch.object(_coord_mod, "async_track_state_change_event", side_effect=bus.track):
+        s.coord.async_setup_wind_listener(s.entry)
+    return s
+
+
+def _change_wind(s: _Scenario, bus: _FakeBus, raw: str | None, *, entity: str | None = None) -> None:
+    """The wind entity changes to ``raw`` (None = entity removed)."""
+    entity = entity or s.wind_entity
+    old = s.hass.states.get(entity)
+    if raw is None:
+        s.hass.states._d.pop(entity, None)
+    else:
+        s.hass.states.set(entity, raw, unit_of_measurement="m/s")
+    bus.fire(entity, old, s.hass.states.get(entity))
+
+
+def _wind_scenario(hw=AWNING, *, initial_wind="5", attach=True, **kw):
+    """A zone built like production, one evaluated cycle at the given wind, then
+    the wind listener attached (as __init__.py does after the first refresh)."""
+    bus = _FakeBus()
+    s = TestA3WindWiring._scenario(hw, **kw)
+    s.set_wind(initial_wind)
+    s.cycle(0)
+    if attach:
+        _attach_wind_listener(s, bus)
+        _reset_refreshes(s)
+    return s, bus
+
+
+def _reset_refreshes(s) -> None:
+    s.coord.async_request_refresh.reset_mock()
+    s.coord.async_refresh.reset_mock()
+
+
+def _refreshes(s) -> int:
+    """Refreshes requested by the listener: debounced plus immediate ones."""
+    return s.coord.async_request_refresh.call_count + s.coord.async_refresh.call_count
+
+
+class TestA3WindListenerTransitions:
+    def test_clear_to_wind_invalidates_the_plan_and_refreshes(self):
+        s, bus = _wind_scenario()
+        gen = s.coord._dispatch_generation
+        _change_wind(s, bus, "16")
+        assert (s.coord._dispatch_generation, _refreshes(s)) == (gen + 1, 1)
+
+    def test_wind_to_storm_invalidates_again(self):
+        s, bus = _wind_scenario(initial_wind="16")
+        gen = s.coord._dispatch_generation
+        _change_wind(s, bus, "25")
+        assert (s.coord._dispatch_generation, _refreshes(s)) == (gen + 1, 1)
+
+    def test_storm_to_wind_refreshes_without_invalidation(self):
+        s, bus = _wind_scenario(initial_wind="25")
+        gen = s.coord._dispatch_generation
+        _change_wind(s, bus, "16")
+        assert (s.coord._dispatch_generation, _refreshes(s)) == (gen, 1)
+
+    def test_wind_to_clear_refreshes_for_the_release_hold_without_invalidation(self):
+        s, bus = _wind_scenario(initial_wind="16")
+        gen = s.coord._dispatch_generation
+        _change_wind(s, bus, "5")
+        assert (s.coord._dispatch_generation, _refreshes(s)) == (gen, 1)
+
+    def test_clear_to_storm_directly(self):
+        s, bus = _wind_scenario()
+        gen = s.coord._dispatch_generation
+        _change_wind(s, bus, "30")
+        assert (s.coord._dispatch_generation, _refreshes(s)) == (gen + 1, 1)
+
+    @pytest.mark.parametrize("initial,values", [
+        ("5", ["6", "7.5", "13.9", "0", "9"]),          # wobbling below the wind threshold
+        ("16", ["14", "15", "19.9", "14.5"]),           # wobbling inside the wind band
+    ])
+    def test_movement_inside_a_band_produces_no_refresh(self, initial, values):
+        s, bus = _wind_scenario(initial_wind=initial)
+        for v in values:
+            _change_wind(s, bus, v)
+        assert _refreshes(s) == 0
+
+    def test_threshold_edges_are_band_changes(self):
+        s, bus = _wind_scenario()
+        _change_wind(s, bus, "14.0")
+        assert _refreshes(s) == 1
+        _change_wind(s, bus, "20.0")
+        assert _refreshes(s) == 2
+        _change_wind(s, bus, "19.99")
+        assert _refreshes(s) == 3
+
+    def test_storm_weather_condition_is_a_storm_band_change(self):
+        bus = _FakeBus()
+        s = TestA3WindWiring._scenario(AWNING)
+        s.coord._weather_entity_id = "weather.home"
+        s.hass.states.set("weather.home", "sunny")
+        s.set_wind("5")
+        s.cycle(0)
+        _attach_wind_listener(s, bus)
+        _reset_refreshes(s)
+        gen = s.coord._dispatch_generation
+        old = s.hass.states.get("weather.home")
+        s.hass.states.set("weather.home", "lightning")
+        bus.fire("weather.home", old, s.hass.states.get("weather.home"))
+        assert (s.coord._dispatch_generation, _refreshes(s)) == (gen + 1, 1)
+
+
+class TestA3WindListenerAvailability:
+    @pytest.mark.parametrize("bad", ["unavailable", "unknown", "garbage", None])
+    def test_losing_the_reading_while_clear_does_not_refresh(self, bad):
+        s, bus = _wind_scenario()
+        _change_wind(s, bus, bad)
+        assert _refreshes(s) == 0
+
+    @pytest.mark.parametrize("bad", ["unavailable", "unknown", "garbage", None])
+    def test_losing_the_reading_while_in_wind_refreshes_without_invalidation(self, bad):
+        s, bus = _wind_scenario(initial_wind="16")
+        gen = s.coord._dispatch_generation
+        _change_wind(s, bus, bad)
+        assert (s.coord._dispatch_generation, _refreshes(s)) == (gen, 1)
+
+    def test_reading_returning_into_wind_invalidates_and_refreshes(self):
+        s, bus = _wind_scenario(initial_wind="16")
+        _change_wind(s, bus, "unavailable")
+        _reset_refreshes(s)
+        gen = s.coord._dispatch_generation
+        _change_wind(s, bus, "17")
+        assert (s.coord._dispatch_generation, _refreshes(s)) == (gen + 1, 1)
+
+    def test_reading_returning_clear_after_an_outage_is_quiet(self):
+        s, bus = _wind_scenario()
+        _change_wind(s, bus, "unavailable")
+        _change_wind(s, bus, "4")
+        assert _refreshes(s) == 0
+
+
+class TestA3WindListenerLifecycle:
+    def test_setup_is_idempotent_and_teardown_removes_everything(self):
+        s, bus = _wind_scenario()
+        with patch.object(_coord_mod, "async_track_state_change_event", side_effect=bus.track):
+            s.coord.async_setup_wind_listener(s.entry)
+            s.coord.async_setup_wind_listener(s.entry)
+        assert bus.active(s.wind_entity) == 1
+        s.coord.async_teardown_wind_listener()
+        s.coord.async_teardown_wind_listener()
+        assert bus.active(s.wind_entity) == 0
+        _reset_refreshes(s)
+        _change_wind(s, bus, "25")
+        assert _refreshes(s) == 0
+        assert s.coord._unsub_wind_listener is None
+
+    def test_teardown_is_registered_with_the_entry_unload(self):
+        s, _ = _wind_scenario()
+        assert s.coord.async_teardown_wind_listener in [
+            c.args[0] for c in s.entry.async_on_unload.call_args_list]
+
+    def test_no_wind_entities_means_no_subscription(self):
+        bus = _FakeBus()
+        s = TestA3WindWiring._scenario(AWNING)
+        s.coord._wind_speed_sensor_id = None
+        s.coord._wind_gust_sensor_id = None
+        s.coord._weather_entity_id = None
+        _attach_wind_listener(s, bus)
+        assert bus.registered == 0 and s.coord._unsub_wind_listener is None
+
+    def test_dangerous_band_present_at_setup_is_caught_up(self):
+        s, bus = _wind_scenario(attach=False)          # last evaluation saw "clear"
+        s.set_wind("17")                               # ... then the wind rose before the listener existed
+        gen = s.coord._dispatch_generation
+        _attach_wind_listener(s, bus)
+        assert (s.coord._dispatch_generation, _refreshes(s)) == (gen + 1, 1)
+
+    def test_no_catch_up_when_the_last_evaluation_already_saw_the_band(self):
+        bus = _FakeBus()
+        s = TestA3WindWiring._scenario(AWNING)
+        s.set_wind("17")
+        s.cycle(0)
+        _attach_wind_listener(s, bus)
+        assert _refreshes(s) == 0
+
+    def test_wiring_in_init_setup_and_unload(self):
+        import ast
+        root = Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
+        tree = ast.parse((root / "__init__.py").read_text(encoding="utf-8"))
+
+        def calls_in(name):
+            fn = next(n for n in ast.walk(tree)
+                      if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef)) and n.name == name)
+            return {c.func.attr for c in ast.walk(fn)
+                    if isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)}
+
+        assert "async_setup_wind_listener" in calls_in("_async_setup_zone_entry")
+        assert "async_teardown_wind_listener" in calls_in("async_unload_entry")
+
+
+class TestA3WindHoldAndSensorLoss:
+    """The conservative principle: absent or invalid wind data never releases an
+    active wind/storm protection; release needs a confirmed low reading plus
+    the 10 minute hold (WIND_HOLD_S / STORM_HOLD_S)."""
+
+    def test_release_needs_confirmed_low_wind_plus_the_hold_time(self):
+        s = TestA3WindWiring._scenario(AWNING)
+        s.set_wind("16")
+        assert _state_of(s.cycle(0)) is ShadingState.WIND_SAFE
+        s.set_wind("5")
+        assert _state_of(s.cycle(5)) is ShadingState.WIND_SAFE           # inside the hold
+        assert _state_of(s.cycle(9.9)) is ShadingState.WIND_SAFE
+        assert _state_of(s.cycle(10.0)) is not ShadingState.WIND_SAFE    # released
+        assert set(s.position_calls) == {0}                               # never re-extended by safety
+
+    @pytest.mark.parametrize("bad", ["unavailable", "unknown", "garbage", None])
+    def test_sensor_loss_keeps_the_protection_indefinitely(self, bad):
+        s = TestA3WindWiring._scenario(AWNING)
+        s.set_wind("16")
+        s.cycle(0)
+        if bad is None:
+            s.hass.states._d.pop(s.wind_entity, None)
+        else:
+            s.hass.states.set(s.wind_entity, bad)
+        for minute in (5, 15, 40, 120):
+            data = s.cycle(minute)
+            assert _state_of(data) is ShadingState.WIND_SAFE
+            assert s.diag(data).wind_hold_data_missing is True
+        assert set(s.position_calls) == {0}
+
+    def test_recovery_after_an_outage_restarts_the_hold_from_the_last_missing_cycle(self):
+        s = TestA3WindWiring._scenario(AWNING)
+        s.set_wind("16")
+        s.cycle(0)
+        s.hass.states.set(s.wind_entity, "unavailable")
+        s.cycle(30)
+        s.set_wind("5")
+        assert _state_of(s.cycle(31)) is ShadingState.WIND_SAFE
+        assert _state_of(s.cycle(39)) is ShadingState.WIND_SAFE
+        assert _state_of(s.cycle(40)) is not ShadingState.WIND_SAFE
+
+    def test_a_short_outage_never_causes_an_extend(self):
+        s = TestA3WindWiring._scenario(AWNING)
+        s.set_wind("16")
+        s.cycle(0)
+        s.hass.states.set(s.wind_entity, "unavailable")
+        s.cycle(5)
+        s.cycle(10)
+        s.set_wind("16")
+        s.cycle(15)
+        assert s.position_calls and set(s.position_calls) == {0}   # only retracts, never an extend
+
+    def test_never_triggered_and_no_data_does_nothing(self):
+        s = TestA3WindWiring._scenario(AWNING)
+        s.hass.states.set(s.wind_entity, "unavailable")
+        data = s.cycle(0)
+        assert s.position_calls == []
+        assert s.diag(data).wind_band == "unknown"
+
+    def test_storm_hold_survives_sensor_loss_even_with_a_benign_weather_condition(self):
+        s = TestA3WindWiring._scenario(AWNING)
+        s.coord._weather_entity_id = "weather.home"
+        s.hass.states.set("weather.home", "sunny")
+        s.set_wind("25")
+        assert _state_of(s.cycle(0)) is ShadingState.STORM_SAFE
+        s.hass.states.set(s.wind_entity, "unavailable")
+        for minute in (15, 60):
+            data = s.cycle(minute)
+            assert _state_of(data) is ShadingState.STORM_SAFE
+            assert s.diag(data).wind_hold_data_missing is True
+
+    def test_storm_hold_without_a_wind_sensor_still_releases_via_the_weather_entity(self):
+        """No dedicated sensor configured: the weather entity is the only
+        source, so a benign condition IS the confirmation (unchanged behaviour)."""
+        s = TestA3WindWiring._scenario(AWNING)
+        s.coord._wind_speed_sensor_id = None
+        s.coord._weather_entity_id = "weather.home"
+        s.hass.states.set("weather.home", "lightning")
+        assert _state_of(s.cycle(0)) is ShadingState.STORM_SAFE
+        s.hass.states.set("weather.home", "sunny")
+        assert _state_of(s.cycle(11)) is not ShadingState.STORM_SAFE
+
+    def test_wind_hold_never_overrides_a_storm(self):
+        s = TestA3WindWiring._scenario(AWNING)
+        s.set_wind("16")
+        s.cycle(0)
+        s.set_wind("25")
+        data = s.cycle(2)
+        assert _state_of(data) is ShadingState.STORM_SAFE
+        s.set_wind("16")
+        assert _state_of(s.cycle(4)) is ShadingState.STORM_SAFE          # storm hold wins
+        assert _state_of(s.cycle(13)) is ShadingState.WIND_SAFE          # then the wind hold remains
+
+    @pytest.mark.parametrize("sun", ["valid", "unknown", "unavailable", "missing"])
+    def test_wind_acts_whatever_state_the_sun_is_in(self, sun):
+        s = TestA3WindWiring._scenario(AWNING)
+        if sun == "valid":
+            _sun_valid(s)
+        else:
+            _sun_unusable(s, sun)
+        s.set_wind("16")
+        assert _state_of(s.cycle(0)) is ShadingState.WIND_SAFE
+        assert set(s.position_calls) == {0}
+
+
+class TestA3DispatchAndZones:
+    def test_a_queued_normal_plan_is_discarded_by_the_wind_event_and_never_replayed(self):
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=600))
+        bus = _FakeBus()
+        s = _Scenario(AWNING, hass=hass, serial=serial, cover_position=0, window_id="x1",
+                      zone_id="zx", covers=["cover.x1"], wind_protection_enabled=_UNSET_WIND)
+        s.coord.shade_position_defaults = ShadePositionDefaults(
+            light_shade_position=100, normal_shade_position=100, strong_shade_position=100)
+        s.set_wind("5")
+        s.cycle()
+        s.hass.services.async_call.reset_mock()
+        _attach_wind_listener(s, bus)
+        _reset_refreshes(s)
+
+        async def main():
+            with s._clock(0):
+                await serial.admission.acquire()                 # another zone is dispatching
+                old_plan = asyncio.ensure_future(s.coord._async_update_data())
+                for _ in range(200):
+                    if serial.admission.queued_count:
+                        break
+                    await asyncio.sleep(0)
+                _change_wind(s, bus, "16")                       # wind arrives while the plan waits
+                serial.admission.release()
+                await old_plan
+
+        asyncio.run(main())
+        assert s.position_calls == []                            # the old extend was never sent
+        assert _refreshes(s) == 1
+        # ... and the fresh evaluation that follows retracts instead of extending.
+        data = s.cycle(1)
+        assert s.state(data, "x1") is ShadingState.WIND_SAFE and set(s.position_calls) == {0}
+        # The wind returning to calm does not resurrect the old plan.
+        s.set_wind("5")
+        s.cycle(2)
+        assert 100 not in s.position_calls
+
+    def test_wind_safety_of_zone_b_is_dispatched_before_queued_normals_of_zone_a(self):
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=1))
+        b = _Scenario(AWNING, cover_position=100, window_id="b1", zone_id="zb", covers=["cover.b1"],
+                      hass=hass, serial=serial, wind_protection_enabled=_UNSET_WIND,
+                      rain_entity="binary_sensor.rain_b", wind_entity="sensor.wind_b")
+        hass.states.set("sun.sun", "above_horizon", azimuth=0.0, elevation=30.0)
+        b.set_wind("16")
+        order: list[str] = []
+
+        async def rec(*args, **kwargs):
+            if args[1] == "set_cover_position":
+                order.append("SAFETY")
+            else:
+                order.append(f"other:{args[1]}")
+
+        hass.services.async_call = AsyncMock(side_effect=rec)
+
+        async def normal(i):
+            async with serial.admit(safety=False):
+                order.append(f"n{i}")
+
+        async def main():
+            with b._clock(0):
+                await serial.admission.acquire()
+                normals = [asyncio.ensure_future(normal(i)) for i in range(5)]
+                for _ in range(100):
+                    await asyncio.sleep(0)
+                cycle = asyncio.ensure_future(b.coord._async_update_data())
+                for _ in range(2000):
+                    if serial.admission.safety_waiting:
+                        break
+                    await asyncio.sleep(0)
+                assert order == []
+                serial.admission.release()
+                await asyncio.wait_for(asyncio.gather(cycle, *normals), timeout=5)
+
+        asyncio.run(main())
+        assert order == ["SAFETY", "n0", "n1", "n2", "n3", "n4"]
+        assert serial.admission.stats()["admitted_safety"] == 1
+
+    def test_wind_safety_of_zone_b_ends_a_running_normal_completion_wait_of_zone_a(self, monkeypatch):
+        TestA2CoordinatorGlobalSafetyPriority._real_completion(monkeypatch)
+        until = TestA2CoordinatorGlobalSafetyPriority._until
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=1))
+        a = _Scenario(AWNING, cover_position=0, window_id="a1", zone_id="za",
+                      covers=["cover.a1"], hass=hass, serial=serial,
+                      extra=[_Win("a2", AWNING, ["cover.a2"], cover_position=0)],
+                      wind_protection_enabled=_UNSET_WIND)
+        a.coord.shade_position_defaults = ShadePositionDefaults(
+            light_shade_position=50, normal_shade_position=50, strong_shade_position=50)
+        a.coord.async_request_refresh = MagicMock(return_value=None)
+        b = _Scenario(AWNING, cover_position=100, window_id="b1", zone_id="zb",
+                      covers=["cover.b1"], hass=hass, serial=serial,
+                      wind_protection_enabled=_UNSET_WIND,
+                      rain_entity="binary_sensor.rain_b", wind_entity="sensor.wind_b")
+        a.set_wind("5")
+        b.set_wind("16")
+
+        async def main():
+            with a._clock(0):
+                plan_a = asyncio.ensure_future(a.coord._async_update_data())
+                await until(lambda: a.calls_for("cover.a1") == [50])
+                await asyncio.sleep(0.05)
+                assert not plan_a.done() and not serial.admission.locked()
+                await asyncio.wait_for(b.coord._async_update_data(), timeout=5)
+                await asyncio.wait_for(plan_a, timeout=2)
+
+        asyncio.run(main())
+        assert b.calls_for("cover.b1") == [0]
+        assert a.calls_for("cover.a2") == []                     # the aborted plan is not continued
+        assert a.coord.async_request_refresh.call_count == 1
+
+    def test_only_cover_position_commands_are_sent_never_a_stop(self):
+        s = TestA3WindWiring._scenario(AWNING)
+        s.set_wind("25")
+        s.cycle(0)
+        services = {(c.args[0], c.args[1]) for c in s.hass.services.async_call.await_args_list}
+        assert services <= {("cover", "set_cover_position")}
+
+    def test_several_windows_each_follow_their_own_hardware_default(self):
+        s = TestA3WindWiring._scenario(
+            AWNING, cover_position=100, covers=["cover.aw"],
+            extra=[_Win("r1", ROLLER, ["cover.rl"], cover_position=60),
+                   _Win("a2", AWNING, ["cover.aw2"], cover_position=100)])
+        s.set_wind("16")
+        data = s.cycle(0)
+        assert s.state(data, "w1") is ShadingState.WIND_SAFE
+        assert s.state(data, "a2") is ShadingState.WIND_SAFE
+        assert s.state(data, "r1") is not ShadingState.WIND_SAFE
+        assert s.calls_for("cover.aw") == [0] and s.calls_for("cover.aw2") == [0]
+        assert s.diag(data, "w1").wind_protection_effective is True
+        assert s.diag(data, "r1").wind_protection_effective is False
+
+    def test_rain_listener_and_wind_listener_do_not_interfere(self):
+        s, wbus = _wind_scenario()
+        rbus = _FakeBus()
+        with patch.object(_coord_mod, "async_track_state_change_event", side_effect=rbus.track):
+            s.coord.async_setup_rain_listener(s.entry)
+        _reset_refreshes(s)
+        _change_rain(s, rbus, "on")
+        assert _refreshes(s) == 1
+        _change_wind(s, wbus, "16")
+        assert _refreshes(s) == 2
+
+
+class TestA3Diagnostics:
+    def test_window_diagnostics_describe_the_wind_situation(self):
+        s = TestA3WindWiring._scenario(AWNING)
+        s.set_wind("16")
+        d = s.diag(s.cycle(0))
+        assert d.wind_protection_effective is True
+        assert (d.wind_band, d.wind_effective_ms) == ("wind", 16.0)
+        assert (d.wind_threshold_ms, d.storm_threshold_ms) == (14.0, 20.0)
+        assert d.wind_hold_active is True and d.storm_hold_active is False
+        assert d.wind_hold_data_missing is False and d.tier_decided_by == "WindEvaluator"
+
+    def test_storm_diagnostics(self):
+        s = TestA3WindWiring._scenario(AWNING)
+        s.set_wind("25")
+        d = s.diag(s.cycle(0))
+        assert (d.wind_band, d.storm_hold_active) == ("storm", True)
+
+    def test_listener_counters(self):
+        s, bus = _wind_scenario()
+        _change_wind(s, bus, "16")
+        stats = s.coord._wind_listener_stats
+        assert (stats["events"], stats["band_changes"], stats["refreshes_requested"],
+                stats["plan_invalidations"], stats["last_band"]) == (1, 1, 1, 1, "wind")
+        assert stats["last_trigger"].startswith("state_change:")

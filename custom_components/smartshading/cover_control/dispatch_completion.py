@@ -22,6 +22,16 @@ Tiered strategy, most-trustworthy signal first:
 
 No busy-wait: uses asyncio.sleep(poll_interval_s) between checks (tier 1)
 or a single bounded sleep (tier 2) — never a tight loop.
+
+Abortable (A2): a caller may pass ``cancellation`` (anything with the
+asyncio.Event interface) and/or ``abort_check`` (returns None while the wait
+is still wanted, else the reason it is not).  Every sleep is then raced
+against the cancellation, and the check runs before the first poll and after
+every wake-up, so a wait never outlives a safety preemption, a superseded
+plan or an unload by more than the in-flight state read.  Without those
+inputs the behaviour is exactly the original one.  The result's ``status``
+tells COMPLETED / TIMED_OUT / CANCELLED / STALE / UNLOADED apart; only
+COMPLETED means the travel was actually seen to finish.
 """
 from __future__ import annotations
 
@@ -29,7 +39,7 @@ import asyncio
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable
+from typing import Callable, Protocol
 
 from .cover_entity_snapshot import build_cover_entity_snapshot
 
@@ -45,6 +55,54 @@ class CompletionMethod(Enum):
     MOVEMENT_STATE = "movement_state"
     TIME_ESTIMATE = "time_estimate"
     TIMEOUT = "timeout"
+    ABORTED = "aborted"
+
+
+class CompletionStatus(Enum):
+    COMPLETED = "completed"
+    TIMED_OUT = "timed_out"
+    CANCELLED = "cancelled"
+    STALE = "stale"
+    UNLOADED = "unloaded"
+
+
+class CancellationSignal(Protocol):
+    def is_set(self) -> bool: ...
+    async def wait(self) -> None: ...
+
+
+class AnyOfSignals:
+    """Fires when ANY of the wrapped signals fires.  ``fired`` names the first
+    wrapped signal (by label) that was observed set.  Satisfies the
+    CancellationSignal protocol; ``wait()`` leaves no task behind."""
+
+    def __init__(self, **signals: "CancellationSignal") -> None:
+        self._signals = signals
+
+    @property
+    def fired(self) -> str | None:
+        for label, sig in self._signals.items():
+            if sig.is_set():
+                return label
+        return None
+
+    def is_set(self) -> bool:
+        return self.fired is not None
+
+    async def wait(self) -> None:
+        if self.is_set():
+            return
+        tasks = [asyncio.ensure_future(sig.wait()) for sig in self._signals.values()]
+        try:
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+
+AbortCheck = Callable[[], "tuple[CompletionStatus, str] | None"]
 
 
 @dataclass(frozen=True)
@@ -52,6 +110,42 @@ class CompletionResult:
     method: CompletionMethod
     elapsed_s: float
     timed_out: bool
+    status: CompletionStatus | None = None
+    cancel_reason: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.status is None:
+            object.__setattr__(
+                self, "status",
+                CompletionStatus.TIMED_OUT if self.timed_out else CompletionStatus.COMPLETED,
+            )
+
+    @property
+    def completed(self) -> bool:
+        """True only when the travel was actually seen to finish."""
+        return self.status is CompletionStatus.COMPLETED
+
+
+async def _sleep_or_abort(sleep, seconds: float, cancellation: CancellationSignal | None) -> None:
+    """``sleep(seconds)``, ended early when ``cancellation`` fires.  The loser
+    is always cancelled and awaited, so no task outlives the call; an external
+    CancelledError propagates normally."""
+    if cancellation is None:
+        await sleep(seconds)
+        return
+    if cancellation.is_set():
+        return
+    work = asyncio.ensure_future(sleep(seconds))
+    watch = asyncio.ensure_future(cancellation.wait())
+    try:
+        await asyncio.wait({work, watch}, return_when=asyncio.FIRST_COMPLETED)
+    finally:
+        for task in (work, watch):
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(work, watch, return_exceptions=True)
+    if work.done() and not work.cancelled() and work.exception() is not None:
+        raise work.exception()
 
 
 def estimate_travel_duration_s(
@@ -128,6 +222,8 @@ async def wait_for_travel_completion(
     position_tolerance: int = DEFAULT_POSITION_TOLERANCE,
     mono_clock: MonoClock = time.monotonic,
     sleep=asyncio.sleep,
+    cancellation: CancellationSignal | None = None,
+    abort_check: AbortCheck | None = None,
 ) -> CompletionResult:
     """Wait for one cover's travel to complete, tiered per the module
     docstring. Always returns (never raises) — a timeout is a normal,
@@ -135,6 +231,22 @@ async def wait_for_travel_completion(
     continues the queue from, per the T11 spec's "robust: document and
     continue" default."""
     started = mono_clock()
+
+    def _aborted() -> CompletionResult | None:
+        verdict = abort_check() if abort_check is not None else None
+        if verdict is None and cancellation is not None and cancellation.is_set():
+            verdict = (CompletionStatus.CANCELLED, "cancellation_signal")
+        if verdict is None:
+            return None
+        status, reason = verdict
+        return CompletionResult(
+            CompletionMethod.ABORTED, mono_clock() - started, False,
+            status=status, cancel_reason=reason,
+        )
+
+    pre = _aborted()
+    if pre is not None:
+        return pre
     estimated_s = estimate_travel_duration_s(
         start_position_ha=start_position_ha,
         target_position_ha=target_position_ha,
@@ -161,14 +273,21 @@ async def wait_for_travel_completion(
             if method is not None:
                 return CompletionResult(method, mono_clock() - started, False)
             remaining = max_wait_s - (mono_clock() - started)
-            await sleep(min(poll_interval_s, max(0.0, remaining)))
+            await _sleep_or_abort(
+                sleep, min(poll_interval_s, max(0.0, remaining)), cancellation)
+            aborted = _aborted()
+            if aborted is not None:
+                return aborted
 
     # No reliable feedback: a single bounded wait for the estimated duration
     # — never poll real state for these covers (tier 2/3 of the module
     # docstring).
     wait_s = min(estimated_s, max_wait_s) if estimated_s > 0 else 0.0
     if wait_s > 0:
-        await sleep(wait_s)
+        await _sleep_or_abort(sleep, wait_s, cancellation)
+        aborted = _aborted()
+        if aborted is not None:
+            return aborted
     timed_out = estimated_s > max_wait_s
     return CompletionResult(
         CompletionMethod.TIMEOUT if timed_out else CompletionMethod.TIME_ESTIMATE,

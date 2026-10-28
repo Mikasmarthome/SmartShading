@@ -2496,3 +2496,146 @@ class TestSunPositionFromState:
     def test_numeric_strings_are_accepted_like_before(self):
         pos = _coord_mod._sun_position_from_state(_sun_state("12.5", "3"))
         assert (pos.azimuth, pos.elevation) == (12.5, 3.0)
+
+
+# ---------------------------------------------------------------------------
+# A2 -- global Safety priority and abortable completion waits, through the real
+# coordinator (two or three zones sharing ONE GlobalSerialDispatch)
+# ---------------------------------------------------------------------------
+
+
+class TestA2CoordinatorGlobalSafetyPriority:
+    _RAIN_B = "binary_sensor.rain_b"
+    _RAIN_C = "binary_sensor.rain_c"
+
+    @staticmethod
+    def _real_completion(monkeypatch):
+        from custom_components.smartshading.cover_control import dispatch_completion
+        monkeypatch.setattr(
+            _coord_mod, "wait_for_travel_completion", dispatch_completion.wait_for_travel_completion)
+
+    @staticmethod
+    async def _until(predicate, timeout: float = 3.0) -> None:
+        loop = asyncio.get_running_loop()
+        end = loop.time() + timeout
+        while not predicate():
+            assert loop.time() < end, "condition not reached"
+            await asyncio.sleep(0.005)
+
+    def _zone_b(self, hass, serial, **kw):
+        s = _Scenario(AWNING, cover_position=100, window_id="b1", zone_id="zb",
+                      covers=["cover.b1"], hass=hass, serial=serial,
+                      rain_entity=self._RAIN_B, **kw)
+        s.set_rain(True)
+        return s
+
+    def test_safety_of_another_zone_is_dispatched_before_every_queued_normal(self):
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=1))
+        b = self._zone_b(hass, serial)
+        order: list[str] = []
+
+        async def rec(*args, **kwargs):
+            if args[1] == "set_cover_position":
+                order.append("SAFETY")
+
+        hass.services.async_call = AsyncMock(side_effect=rec)
+
+        async def normal(i: int):
+            async with serial.admit(safety=False):
+                order.append(f"n{i}")
+
+        async def main():
+            with b._clock(0):
+                await serial.admission.acquire()                 # zone A is dispatching
+                normals = [asyncio.ensure_future(normal(i)) for i in range(6)]
+                await asyncio.sleep(0.02)
+                safety_cycle = asyncio.ensure_future(b.coord._async_update_data())
+                await self._until(lambda: serial.admission.safety_waiting)
+                assert order == []
+                serial.admission.release()
+                await asyncio.wait_for(asyncio.gather(safety_cycle, *normals), timeout=5)
+
+        asyncio.run(main())
+        assert order == ["SAFETY", "n0", "n1", "n2", "n3", "n4", "n5"]
+        assert b.calls_for("cover.b1") == [0]
+        assert serial.admission.stats()["safety_overtook_total"] == 6
+
+    def test_foreign_safety_ends_a_running_normal_completion_wait(self, monkeypatch):
+        self._real_completion(monkeypatch)
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=1))
+        a = _Scenario(AWNING, cover_position=0, window_id="a1", zone_id="za",
+                      covers=["cover.a1"], hass=hass, serial=serial,
+                      extra=[_Win("a2", AWNING, ["cover.a2"], cover_position=0)])
+        a.coord.shade_position_defaults = ShadePositionDefaults(
+            light_shade_position=50, normal_shade_position=50, strong_shade_position=50)
+        a.coord.async_request_refresh = MagicMock(return_value=None)
+        b = self._zone_b(hass, serial)
+
+        async def main():
+            with a._clock(0):
+                plan_a = asyncio.ensure_future(a.coord._async_update_data())
+                await self._until(lambda: a.calls_for("cover.a1") == [50])
+                await asyncio.sleep(0.05)
+                assert not plan_a.done()                  # parked in a REAL completion wait
+                assert not serial.admission.locked()      # ... outside the admission
+                await asyncio.wait_for(b.coord._async_update_data(), timeout=5)
+                await asyncio.wait_for(plan_a, timeout=2)  # far below one 1 s poll interval
+
+        asyncio.run(main())
+        assert b.calls_for("cover.b1") == [0]
+        assert a.calls_for("cover.a1") == [50]
+        assert a.calls_for("cover.a2") == []              # aborted plan never continues ...
+        assert a.coord.async_request_refresh.call_count == 1   # ... a fresh evaluation is requested
+
+    def test_safety_holder_completion_wait_yields_to_a_second_safety(self, monkeypatch):
+        self._real_completion(monkeypatch)
+        from custom_components.smartshading.models.dispatch_config import (
+            DispatchConfig,
+            DispatchMode,
+        )
+        hass = _make_hass()
+        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=1))
+        b = self._zone_b(hass, serial)
+        b.coord._dispatch_config = DispatchConfig(
+            mode=DispatchMode.SEQUENTIAL, max_travel_wait_s=40.0, post_travel_pause_s=0.5)
+        c = _Scenario(AWNING, cover_position=100, window_id="c1", zone_id="zc",
+                      covers=["cover.c1"], hass=hass, serial=serial, rain_entity=self._RAIN_C)
+        c.set_rain(True)
+
+        async def main():
+            with b._clock(0):
+                cycle_b = asyncio.ensure_future(b.coord._async_update_data())
+                await self._until(lambda: b.calls_for("cover.b1") == [0])
+                await asyncio.sleep(0.05)
+                assert not cycle_b.done()                 # B's SEQUENTIAL wait holds the admission
+                assert serial.admission.locked()
+                await asyncio.wait_for(c.coord._async_update_data(), timeout=3)
+                await asyncio.wait_for(cycle_b, timeout=3)
+
+        asyncio.run(main())
+        assert c.calls_for("cover.c1") == [0] and b.calls_for("cover.b1") == [0]
+        assert not serial.admission.locked() and serial.admission.queued_count == 0
+
+    def test_completion_abort_check_semantics(self):
+        s = _Scenario(AWNING)
+        from custom_components.smartshading.cover_control.dispatch_completion import (
+            CompletionStatus,
+        )
+        coord = s.coord
+        coord._dispatch_generation = 5
+        assert coord._completion_abort_check(5, False)() is None
+        assert coord._completion_abort_check(4, False)() == (
+            CompletionStatus.STALE, "generation_superseded")
+        assert coord._completion_abort_check(4, True)() is None      # Safety ignores generation
+        coord._unloading = True
+        assert coord._completion_abort_check(5, False)() == (CompletionStatus.UNLOADED, "unloading")
+        assert coord._completion_abort_check(5, True)() == (CompletionStatus.UNLOADED, "unloading")
+
+    def test_admission_diagnostics_reach_the_global_stats_and_the_diagnostics_section(self):
+        s = _Scenario(AWNING, cover_position=100)
+        s.set_rain(True)
+        s.cycle(0)
+        stats = s.serial.admission.stats()
+        assert stats["admitted_safety"] == 1 and stats["held"] is False and stats["queued"] == 0

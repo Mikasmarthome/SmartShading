@@ -98,11 +98,15 @@ class TestGlobalSerialDispatchStructure:
 
 
 class TestGlobalSerialDispatchLock:
-    def test_lock_is_asyncio_lock(self):
+    def test_lock_is_a_lock_compatible_admission(self):
+        """A2: the admission is priority-aware, so it is no longer an
+        asyncio.Lock -- it keeps the lock surface every caller relies on."""
         gsd = GlobalSerialDispatch()
-        # Access from a sync context — lock is created lazily
         lock = gsd.lock
-        assert isinstance(lock, asyncio.Lock)
+        assert not isinstance(lock, asyncio.Lock)
+        for name in ("acquire", "release", "locked", "__aenter__", "__aexit__"):
+            assert callable(getattr(lock, name))
+        assert lock.locked() is False
 
     def test_lock_is_same_object_on_repeated_access(self):
         gsd = GlobalSerialDispatch()

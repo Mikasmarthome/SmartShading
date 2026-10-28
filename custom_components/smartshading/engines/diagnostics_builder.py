@@ -338,10 +338,17 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         events = list(getattr(c, "_support_critical_events", []) or [])
         timeouts = _dispatch_timeout_count(c)
         completion_counts: dict = {}
+        completion_status_counts: dict = {}
         for e in events:
             method = e.get("completion_method")
             if method:
                 completion_counts[method] = completion_counts.get(method, 0) + 1
+            status = e.get("completion_status")
+            if status:
+                completion_status_counts[status] = completion_status_counts.get(status, 0) + 1
+        serial = getattr(c, "_serial_dispatch", None)
+        admission = getattr(serial, "admission", None)
+        admission_stats = admission.stats() if hasattr(admission, "stats") else None
         return {
             "mode": dc.mode.value if dc is not None else None,
             "start_interval_s": dc.start_interval_s if dc is not None else None,
@@ -349,7 +356,9 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
             "post_travel_pause_s": dc.post_travel_pause_s if dc is not None else None,
             "zone_batching": dc.zone_batching if dc is not None else None,
             "completion_method_counts": completion_counts,
+            "completion_status_counts": completion_status_counts,
             "completion_timeout_count": timeouts,
+            "global_admission": admission_stats,
         }
 
     contract = {

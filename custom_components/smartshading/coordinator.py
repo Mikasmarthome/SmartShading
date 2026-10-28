@@ -354,7 +354,11 @@ from .cover_control.coordinator_dispatch_adapter import (
 )
 from .cover_control.dispatch_batch import DispatchItem, group_into_batches
 from .engines.dispatch_classification import DispatchTargetClass
-from .cover_control.dispatch_completion import wait_for_travel_completion
+from .cover_control.dispatch_completion import (
+    AnyOfSignals,
+    CompletionStatus,
+    wait_for_travel_completion,
+)
 from .cover_control.dispatch_orchestrator import (
     effective_interval_s,
     requires_completion_wait,
@@ -366,6 +370,7 @@ from .cover_control.dispatch_plan_executor import (
     ExecutionValidation,
     ValidationAction,
 )
+from .cover_control.dispatch_completion import _sleep_or_abort
 from .cover_control.global_dispatch_throttle import GlobalDispatchThrottle, GlobalSerialDispatch
 from .cover_control.ha_service_adapter import dispatch_cover_intent
 from .cover_control.position_semantics import (
@@ -6756,7 +6761,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         #
                         # POSITION INVARIANT: dispatch_cover_intent uses
                         # target_position_ha, never target_position_internal.
-                        async with self._serial_dispatch.lock:
+                        async with self._serial_dispatch.admit(
+                            safety=_intent.is_safety
+                        ) as _admission:
+                            # A2: a request that waits for the global
+                            # admission is ordered by class (Safety first,
+                            # FIFO within a class), and every wait performed
+                            # while holding it ends as soon as a Safety
+                            # request queues behind it.
+                            _safety_yield = self._serial_dispatch.admission.safety_waiting_event
                             # T11: DispatchConfig-driven per-dispatch interval
                             # (PARALLEL=0, SPACED=start_interval_s, SEQUENTIAL=0
                             # except at a zone boundary under zone_batching) —
@@ -6788,7 +6801,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 # ACTUAL wait = monotonic elapsed across the real await.
                                 try:
                                     _global_wait_started_mono = time.monotonic()
-                                    await asyncio.sleep(_wait.total_seconds())
+                                    if _intent.is_safety:
+                                        await asyncio.sleep(_wait.total_seconds())
+                                    else:
+                                        # A normal holder gives the admission
+                                        # up the moment a Safety request
+                                        # queues; it has not dispatched yet.
+                                        await _sleep_or_abort(
+                                            asyncio.sleep, _wait.total_seconds(),
+                                            _safety_yield)
                                     _global_slot_granted_mono = time.monotonic()
                                     _actual_global_wait_ms = max(
                                         0.0,
@@ -6815,10 +6836,26 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         reason="stale_presence_superseded",
                                     ))
                                     continue
+                                if _safety_yield.is_set() or self._unloading:
+                                    # A Safety request is queued (or the entry
+                                    # is going away): this normal intent was
+                                    # never sent and is not replayed; a later
+                                    # cycle recomputes it.
+                                    _exec_results.append(build_not_attempted_result(
+                                        _intent, reason="safety_preempted"))
+                                    continue
                             _dispatch_now = dt_util.utcnow()
                             _intent_result = await dispatch_cover_intent(
                                 self.hass, _intent, now_utc=_dispatch_now
                             )
+                            if _admission.info is not None:
+                                _intent_result = replace(
+                                    _intent_result,
+                                    admission_priority=(
+                                        "safety" if _intent.is_safety else "normal"),
+                                    admission_wait_ms=round(_admission.info.wait_ms, 1),
+                                    admission_overtaken=_admission.info.overtaken,
+                                )
                             # Update throttle clock whenever async_call was started.
                             # SENT:   confirmed dispatch — always update.
                             # FAILED: async_call was invoked (but raised) — the call
@@ -6885,14 +6922,25 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         if s.exec_cap is not None else 30.0
                                     ),
                                     max_wait_s=self._dispatch_config.max_travel_wait_s,
+                                    cancellation=_safety_yield,
+                                    abort_check=self._completion_abort_check(
+                                        _this_dispatch_gen, _intent.is_safety),
                                 )
                                 _intent_result = replace(
                                     _intent_result,
                                     completion_method=_completion.method.value,
                                     completion_wait_s=round(_completion.elapsed_s, 3),
                                     completion_timed_out=_completion.timed_out,
+                                    completion_status=_completion.status.value,
+                                    completion_cancel_reason=_completion.cancel_reason,
                                 )
-                                if _completion.timed_out:
+                                if not _completion.completed and not _completion.timed_out:
+                                    # Cancelled / superseded / unloading: the
+                                    # command itself was already sent and is
+                                    # left to finish; the wait ends here and
+                                    # the admission is released for Safety.
+                                    pass
+                                elif _completion.timed_out:
                                     _LOGGER.warning(
                                         "SmartShading: cover travel completion timed "
                                         "out entity=%s after %.1fs (sequential dispatch "
@@ -6907,9 +6955,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                         _completion.method.value,
                                         _completion.elapsed_s,
                                     )
-                                if self._dispatch_config.post_travel_pause_s > 0:
-                                    await asyncio.sleep(
-                                        self._dispatch_config.post_travel_pause_s
+                                if (
+                                    self._dispatch_config.post_travel_pause_s > 0
+                                    and _completion.status is not CompletionStatus.UNLOADED
+                                ):
+                                    await _sleep_or_abort(
+                                        asyncio.sleep,
+                                        self._dispatch_config.post_travel_pause_s,
+                                        _safety_yield,
                                     )
                         _exec_results.append(_intent_result)
                 _exec_plan_result = build_execution_plan_result(window_id, _exec_results)
@@ -7790,6 +7843,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "completion_method": _ctx.get("completion_method"),
             "completion_wait_s": _ctx.get("completion_wait_s"),
             "completion_timed_out": _ctx.get("completion_timed_out"),
+            "completion_status": _ctx.get("completion_status"),
+            "completion_cancel_reason": _ctx.get("completion_cancel_reason"),
+            "admission_priority": _ctx.get("admission_priority"),
+            "admission_wait_ms": _ctx.get("admission_wait_ms"),
+            "admission_overtaken": _ctx.get("admission_overtaken"),
             # T11.1: concurrent-batch identity (PARALLEL mode only).
             "parallel_batch_id": _ctx.get("parallel_batch_id"),
             "parallel_batch_size": _ctx.get("parallel_batch_size"),
@@ -7849,6 +7907,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if len(self._research_daily_buckets) > 365:
             oldest = sorted(self._research_daily_buckets)[0]
             del self._research_daily_buckets[oldest]
+
+    def _completion_abort_check(self, dispatch_gen: int, is_safety: bool):
+        """Abort verdict for a completion wait (see wait_for_travel_completion).
+
+        Unload always ends the wait.  A superseded generation ends a NORMAL
+        wait only -- Safety is exempt from generation cancellation."""
+        def _check():
+            if self._unloading:
+                return (CompletionStatus.UNLOADED, "unloading")
+            if not is_safety and self._dispatch_generation != dispatch_gen:
+                return (CompletionStatus.STALE, "generation_superseded")
+            return None
+        return _check
 
     async def _preempt_active_comfort_plan(self) -> int:
         """T22 Phase 5b/5c: bump the shared generation counter and signal +
@@ -7948,11 +8019,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Step 4: this cycle's own plan.
         cancellation = asyncio.Event()
         self._active_dispatch_cancellation = cancellation
+        # A2: coordinator-local cancellation alone cannot end this plan when a
+        # Safety request of ANOTHER zone enters the shared admission.  The
+        # plan therefore also listens to the integration-wide safety epoch.
+        plan_signal = AnyOfSignals(
+            local=cancellation,
+            safety=self._serial_dispatch.safety_epoch_signal(),
+        )
 
         async def _run():
             return await self._predispatch_sequential_plan(
                 ordered_window_states, harmonization, now, this_dispatch_gen,
-                zone_order, window_order_in_zone, cancellation,
+                zone_order, window_order_in_zone, plan_signal,
             )
 
         task = asyncio.ensure_future(_run())
@@ -7964,6 +8042,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._active_comfort_dispatch_task = None
             if self._active_dispatch_cancellation is cancellation:
                 self._active_dispatch_cancellation = None
+            if plan_signal.fired == "safety" and not self._unloading:
+                # The plan was ended by another zone's Safety: it is not
+                # replayed; a fresh evaluation is requested instead.
+                self._create_tracked_background_task(
+                    self.config_entry, self.async_request_refresh(),
+                    "smartshading_safety_yield_refresh",
+                )
 
     async def _predispatch_sequential_plan(
         self, ordered_window_states, harmonization, now, this_dispatch_gen,
@@ -8096,7 +8181,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             window_id, s, intent = intent_by_entity[plan_item.cover_entity_id]
 
             async def _do_dispatch():
-                async with self._serial_dispatch.lock:
+                async with self._serial_dispatch.admit(safety=False) as _admission:
                     # T22 Phase 5c final completion: this global-interval
                     # throttle-wait is the ONLY sleep in the comfort
                     # dispatch path that runs INSIDE self._serial_dispatch.
@@ -8181,6 +8266,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     result = await dispatch_cover_intent(
                         self.hass, intent, now_utc=dispatch_now
                     )
+                    if _admission.info is not None:
+                        result = replace(
+                            result,
+                            admission_priority="normal",
+                            admission_wait_ms=round(_admission.info.wait_ms, 1),
+                            admission_overtaken=_admission.info.overtaken,
+                        )
                     if result.status in (ExecutionStatus.SENT, ExecutionStatus.FAILED):
                         self._serial_dispatch.record_dispatch(dispatch_now)
                         if self._debug_logging_enabled:
@@ -8264,13 +8356,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     s.exec_cap.travel_time_close_s if s.exec_cap is not None else 30.0
                 ),
                 max_wait_s=self._dispatch_config.max_travel_wait_s,
+                cancellation=cancellation,
+                abort_check=self._completion_abort_check(this_dispatch_gen, False),
             )
             exec_result_by_entity[plan_item.cover_entity_id] = replace(
                 prior,
                 completion_method=completion.method.value,
                 completion_wait_s=round(completion.elapsed_s, 3),
                 completion_timed_out=completion.timed_out,
+                completion_status=completion.status.value,
+                completion_cancel_reason=completion.cancel_reason,
             )
+            if not completion.completed and not completion.timed_out:
+                # Cancelled / stale / unloaded: the plan stops here and is
+                # never replayed; a timeout is NOT folded into this.
+                return CompletionOutcome(
+                    status="cancelled", completion_method=completion.method.value)
             if completion.timed_out:
                 _LOGGER.warning(
                     "SmartShading: cover travel completion timed out entity=%s "
@@ -8804,6 +8905,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "completion_method": getattr(exec_result, "completion_method", None),
             "completion_wait_s": getattr(exec_result, "completion_wait_s", None),
             "completion_timed_out": bool(getattr(exec_result, "completion_timed_out", False)),
+            "completion_status": getattr(exec_result, "completion_status", None),
+            "completion_cancel_reason": getattr(exec_result, "completion_cancel_reason", None),
+            "admission_priority": getattr(exec_result, "admission_priority", None),
+            "admission_wait_ms": getattr(exec_result, "admission_wait_ms", None),
+            "admission_overtaken": getattr(exec_result, "admission_overtaken", None),
             # T11.1: which concurrently-dispatched batch this event belongs
             # to (PARALLEL mode only) and how many intents it contained.
             "parallel_batch_id": getattr(exec_result, "parallel_batch_id", None),

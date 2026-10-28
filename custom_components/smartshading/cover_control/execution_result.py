@@ -231,6 +231,28 @@ class ExecutionResult:
     without detecting completion — the queue still continues (see
     cover_control/dispatch_completion.py module docstring)."""
 
+    completion_status: str | None = None
+    """cover_control.dispatch_completion.CompletionStatus.value ("completed",
+    "timed_out", "cancelled", "stale", "unloaded") of the completion wait that
+    followed this dispatch.  None when no completion wait was performed.
+    Only "completed" means the travel was seen to finish."""
+
+    completion_cancel_reason: str | None = None
+    """Why a completion wait was ended early (e.g. "safety_preempted",
+    "generation_superseded", "unloading").  None otherwise."""
+
+    # --- A2: global admission diagnostics (additive) -----------------------
+    admission_priority: str | None = None
+    """"safety" or "normal": the class this dispatch was admitted under by
+    GlobalSerialDispatch.  None when it never went through the admission."""
+
+    admission_wait_ms: float | None = None
+    """Monotonic milliseconds this request waited for the global admission."""
+
+    admission_overtaken: int | None = None
+    """For a Safety dispatch: how many earlier-queued normal requests were
+    admitted after it (0 when it was admitted immediately)."""
+
     # --- T11.1: PARALLEL-mode concurrent-batch diagnostics (additive) ---
     parallel_batch_id: str | None = None
     """Identifies which concurrently-dispatched batch this result belongs to

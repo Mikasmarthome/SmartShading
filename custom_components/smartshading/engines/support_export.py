@@ -1003,6 +1003,11 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                         "completion_method": pe.get("completion_method"),
                         "completion_wait_s": pe.get("completion_wait_s"),
                         "completion_timed_out": pe.get("completion_timed_out"),
+                        "completion_status": pe.get("completion_status"),
+                        "completion_cancel_reason": pe.get("completion_cancel_reason"),
+                        "admission_priority": pe.get("admission_priority"),
+                        "admission_wait_ms": pe.get("admission_wait_ms"),
+                        "admission_overtaken": pe.get("admission_overtaken"),
                         # T11.1: concurrent-batch identity (PARALLEL mode only).
                         "parallel_batch_id": pe.get("parallel_batch_id"),
                         "parallel_batch_size": pe.get("parallel_batch_size"),

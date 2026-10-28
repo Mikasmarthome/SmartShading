@@ -942,3 +942,131 @@ class TestCrossCyclePreemption:
         results = asyncio.run(run())
         assert len(results) == 2
         assert coord._active_comfort_dispatch_task is None
+
+
+class TestParallelBatchesUseClassAwareAdmission:
+    """A2 follow-up: the admission class of a PARALLEL batch follows the batch
+    (Safety batch -> Safety admission), so cross-zone Safety priority does not
+    depend on the stored dispatch mode."""
+
+    @staticmethod
+    def _coord_with(serial, monkeypatch, states, order):
+        from custom_components.smartshading.cover_control.execution_result import build_sent_result
+
+        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL))
+        coord._serial_dispatch = serial
+        _setup_coord(coord, states)
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            order.append(intent.cover_entity_id)
+            return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, fake_dispatch)
+        return coord
+
+    @staticmethod
+    async def _foreign_normal(serial, order, name):
+        async with serial.admit(safety=False):
+            order.append(name)
+
+    @staticmethod
+    async def _until(predicate):
+        for _ in range(2000):
+            if predicate():
+                return
+            await asyncio.sleep(0)
+        raise AssertionError("condition not reached")
+
+    def test_safety_batch_overtakes_all_queued_normals_of_other_zones(self, monkeypatch) -> None:
+        from custom_components.smartshading.cover_control.global_dispatch_throttle import (
+            GlobalSerialDispatch,
+        )
+        serial = GlobalSerialDispatch()
+        order: list[str] = []
+        safety = _state("w_s", "zb", entity_id="cover.safety", is_safety=True)
+        coord = self._coord_with(serial, monkeypatch, [safety], order)
+
+        async def run():
+            await serial.admission.acquire()
+            normals = [asyncio.ensure_future(self._foreign_normal(serial, order, f"n{i}"))
+                       for i in range(4)]
+            await self._until(lambda: serial.admission.queued_count == 4)
+            batch = asyncio.ensure_future(coord._predispatch_parallel_batches(
+                _ordered([safety]), _harm([safety]), _NOW, 0))
+            await self._until(lambda: serial.admission.safety_waiting)
+            assert order == []
+            serial.admission.release()
+            await asyncio.wait_for(asyncio.gather(batch, *normals), timeout=5)
+
+        asyncio.run(run())
+        assert order == ["cover.safety", "n0", "n1", "n2", "n3"]
+        stats = serial.admission.stats()
+        assert stats["admitted_safety"] == 1 and stats["safety_overtook_total"] == 4
+
+    def test_normal_batch_keeps_normal_admission_and_fifo(self, monkeypatch) -> None:
+        from custom_components.smartshading.cover_control.global_dispatch_throttle import (
+            GlobalSerialDispatch,
+        )
+        serial = GlobalSerialDispatch()
+        order: list[str] = []
+        normal = _state("w_n", "za", entity_id="cover.normal")
+        coord = self._coord_with(serial, monkeypatch, [normal], order)
+
+        async def run():
+            await serial.admission.acquire()
+            first = asyncio.ensure_future(self._foreign_normal(serial, order, "before"))
+            await self._until(lambda: serial.admission.queued_count == 1)
+            batch = asyncio.ensure_future(coord._predispatch_parallel_batches(
+                _ordered([normal]), _harm([normal]), _NOW, 0))
+            await self._until(lambda: serial.admission.queued_count == 2)
+            after = asyncio.ensure_future(self._foreign_normal(serial, order, "after"))
+            await self._until(lambda: serial.admission.queued_count == 3)
+            assert not serial.admission.safety_waiting
+            serial.admission.release()
+            await asyncio.wait_for(asyncio.gather(first, batch, after), timeout=5)
+
+        asyncio.run(run())
+        assert order == ["before", "cover.normal", "after"]
+        assert serial.admission.stats()["admitted_safety"] == 0
+
+    def test_safety_epoch_fires_for_a_safety_batch_only(self, monkeypatch) -> None:
+        from custom_components.smartshading.cover_control.global_dispatch_throttle import (
+            GlobalSerialDispatch,
+        )
+        results = {}
+        for kind, is_safety in (("safety", True), ("normal", False)):
+            serial = GlobalSerialDispatch()
+            state = _state(f"w_{kind}", "zb", entity_id=f"cover.{kind}", is_safety=is_safety)
+            coord = self._coord_with(serial, monkeypatch, [state], [])
+            signal = serial.safety_epoch_signal()
+            asyncio.run(coord._predispatch_parallel_batches(
+                _ordered([state]), _harm([state]), _NOW, 0))
+            results[kind] = signal.is_set()
+        assert results == {"safety": True, "normal": False}
+
+    def test_no_production_path_admits_through_the_plain_lock(self) -> None:
+        """Wiring guard: every admission in coordinator.py goes through
+        admit(safety=...); the plain `.lock` (always a NORMAL request) is not
+        used at all, so no Safety request can be admitted as normal."""
+        import ast
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
+        for path in root.rglob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            offenders = [
+                n.lineno for n in ast.walk(tree)
+                if isinstance(n, ast.Attribute) and n.attr == "lock"
+                and isinstance(n.value, ast.Attribute) and n.value.attr == "_serial_dispatch"
+            ]
+            assert offenders == [], f"{path.name}: plain lock admission at lines {offenders}"
+
+        src = (root / "coordinator.py").read_text(encoding="utf-8")
+        tree = ast.parse(src)
+        calls = [
+            n for n in ast.walk(tree)
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+            and n.func.attr == "admit"
+        ]
+        assert len(calls) == 3
+        assert all(c.keywords and c.keywords[0].arg == "safety" for c in calls)

@@ -8791,7 +8791,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             batch_id = "safety" if batch.is_safety_batch else (
                 f"zone:{batch.zone_id}" if batch.zone_id is not None else "all"
             )
-            async with self._serial_dispatch.lock:
+            # A2: the batch class decides the admission class, so Safety keeps
+            # its cross-zone priority whichever dispatch mode is stored.
+            async with self._serial_dispatch.admit(safety=batch.is_safety_batch):
                 _coros = [
                     self._dispatch_one_parallel_item(
                         window_id, intent, this_dispatch_gen,

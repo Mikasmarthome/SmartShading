@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
       "override_fixed_until_required": "Indiquez une heure de fin fixe lorsque la durée est réglée sur \"Heure fixe\".",
       "invalid_custom_azimuth": "Saisissez un azimut personnalisé entre 0 et 359 degrés, ou choisissez une direction de boussole.",
-      "no_covers_selected": "Sélectionnez au moins une entité de volet pour cette fenêtre."
+      "no_covers_selected": "Sélectionnez au moins une entité de volet pour cette fenêtre.",
+      "cover_already_assigned": "Au moins un volet sélectionné est déjà affecté à une autre fenêtre SmartShading. Un volet ne peut être affecté qu'une seule fois."
     },
     "abort": {
       "no_options_for_system_entry": "L'entrée Système de SmartShading n'a aucune option configurable."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Entrez une exposition minimale d'éblouissement entre 0 et 500 W/m².",
       "invalid_heat_hysteresis": "Entrez une marge de relâchement entre 0 et 5 °C.",
       "night_clamp_window_invalid": "Le déclencheur nocturne au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
-      "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard."
+      "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
+      "cover_already_assigned": "Au moins un volet sélectionné est déjà affecté à une autre fenêtre SmartShading. Un volet ne peut être affecté qu'une seule fois."
     },
     "abort": {
       "single_instance_allowed": "SmartShading est déjà configuré.",
@@ -834,6 +836,20 @@
       "name": "Effacer la dérogation manuelle",
       "description": "Met fin à une dérogation manuelle active afin que SmartShading reprenne le contrôle automatique.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Volet affecté plusieurs fois",
+      "description": "Le volet {cover} est affecté à plusieurs fenêtres SmartShading avec des réglages différents : {locations}. Tant que ce n'est pas corrigé, SmartShading ne le déplace pas automatiquement. Seule la protection contre la pluie, le vent et la tempête reste active, envoyée par une seule fenêtre. Pour corriger, ne gardez le volet que dans une seule fenêtre dans les options SmartShading, retirez-le des autres, puis rechargez les entrées SmartShading concernées."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Volet affecté plusieurs fois avec des types de volet différents",
+      "description": "Le volet {cover} est affecté à plusieurs fenêtres SmartShading avec des types de volet différents : {locations}. La position de sécurité ne peut pas être déterminée sans ambiguïté ; tant que ce n'est pas corrigé, SmartShading ne pilote pas du tout ce volet, y compris la protection contre la pluie, le vent et la tempête. Ne gardez le volet que dans une seule fenêtre dans les options SmartShading, retirez-le des autres, puis rechargez les entrées SmartShading concernées."
+    },
+    "duplicate_cover_identical": {
+      "title": "Volet affecté deux fois avec des réglages identiques",
+      "description": "Le volet {cover} apparaît plusieurs fois avec des réglages identiques : {locations}. SmartShading ne le pilote qu'à partir d'une de ces affectations. Supprimez le doublon dans les options SmartShading pour que chaque volet ne soit affecté qu'une fois."
     }
   }
 }

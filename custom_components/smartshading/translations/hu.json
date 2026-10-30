@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél.",
       "override_fixed_until_required": "Adjon meg egy rögzített befejezési időt, ha az időtartam \"Rögzített idő\"-re van állítva.",
       "invalid_custom_azimuth": "Adjon meg egy egyéni azimutot 0 és 359 fok között, vagy válasszon iránytű-irányt.",
-      "no_covers_selected": "Válasszon legalább egy árnyékoló entitást ehhez az ablakhoz."
+      "no_covers_selected": "Válasszon legalább egy árnyékoló entitást ehhez az ablakhoz.",
+      "cover_already_assigned": "Legalább egy kiválasztott árnyékoló már hozzá van rendelve egy másik SmartShading ablakhoz. Egy árnyékoló csak egyszer rendelhető hozzá."
     },
     "abort": {
       "no_options_for_system_entry": "A SmartShading rendszerbejegyzésnek nincsenek konfigurálható beállításai."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Adjon meg egy 0 és 500 W/m² közötti minimális vakítási megvilágítást.",
       "invalid_heat_hysteresis": "Adjon meg egy feloldási tartományt 0 és 5 °C között.",
       "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",
-      "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél."
+      "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél.",
+      "cover_already_assigned": "Legalább egy kiválasztott árnyékoló már hozzá van rendelve egy másik SmartShading ablakhoz. Egy árnyékoló csak egyszer rendelhető hozzá."
     },
     "abort": {
       "single_instance_allowed": "A SmartShading már konfigurálva van.",
@@ -834,6 +836,20 @@
       "name": "Kézi felülbírálás törlése",
       "description": "Befejezi az aktív kézi felülbírálást, így a SmartShading ismét átveszi az automatikus vezérlést.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Az árnyékoló többször van hozzárendelve",
+      "description": "A(z) {cover} árnyékoló több SmartShading ablakhoz van hozzárendelve eltérő beállításokkal: {locations}. A javításig a SmartShading nem mozgatja automatikusan. Csak az eső-, szél- és viharvédelem marad aktív, egyetlen ablakból küldve. A javításhoz tartsa meg az árnyékolót csak egy ablakban a SmartShading beállításaiban, távolítsa el a többiből, majd töltse újra az érintett SmartShading bejegyzéseket."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Az árnyékoló többször van hozzárendelve különböző árnyékolótípusokkal",
+      "description": "A(z) {cover} árnyékoló több SmartShading ablakhoz van hozzárendelve eltérő árnyékolótípusokkal: {locations}. A biztonságos pozíció nem határozható meg egyértelműen, ezért a javításig a SmartShading egyáltalán nem vezérli ezt az árnyékolót, az eső-, szél- és viharvédelmet sem. Tartsa meg az árnyékolót csak egy ablakban a SmartShading beállításaiban, távolítsa el a többiből, majd töltse újra az érintett SmartShading bejegyzéseket."
+    },
+    "duplicate_cover_identical": {
+      "title": "Az árnyékoló kétszer van hozzárendelve azonos beállításokkal",
+      "description": "A(z) {cover} árnyékoló többször szerepel azonos beállításokkal: {locations}. A SmartShading csak az egyik hozzárendelésből vezérli. Távolítsa el a duplikátumot a SmartShading beállításaiban, hogy minden árnyékoló csak egyszer legyen hozzárendelve."
     }
   }
 }

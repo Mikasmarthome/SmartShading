@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy.",
       "override_fixed_until_required": "Podaj stałą godzinę zakończenia, gdy czas trwania jest ustawiony na \"Stała godzina\".",
       "invalid_custom_azimuth": "Wprowadź niestandardowy azymut od 0 do 359 stopni lub wybierz kierunek kompasu.",
-      "no_covers_selected": "Wybierz co najmniej jedną encję osłony dla tego okna."
+      "no_covers_selected": "Wybierz co najmniej jedną encję osłony dla tego okna.",
+      "cover_already_assigned": "Co najmniej jedna wybrana osłona jest już przypisana do innego okna SmartShading. Osłonę można przypisać tylko raz."
     },
     "abort": {
       "no_options_for_system_entry": "Wpis systemowy SmartShading nie ma konfigurowalnych opcji."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Wprowadź minimalne natężenie olśnienia w zakresie od 0 do 500 W/m².",
       "invalid_heat_hysteresis": "Podaj margines zwolnienia od 0 do 5 °C.",
       "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
-      "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy."
+      "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy.",
+      "cover_already_assigned": "Co najmniej jedna wybrana osłona jest już przypisana do innego okna SmartShading. Osłonę można przypisać tylko raz."
     },
     "abort": {
       "single_instance_allowed": "SmartShading jest już skonfigurowany.",
@@ -834,6 +836,20 @@
       "name": "Wyczyść ręczne zastąpienie",
       "description": "Kończy aktywne ręczne zastąpienie, dzięki czemu SmartShading ponownie przejmuje automatyczne sterowanie.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Osłona przypisana więcej niż raz",
+      "description": "Osłona {cover} jest przypisana do kilku okien SmartShading o różnych ustawieniach: {locations}. Dopóki nie zostanie to naprawione, SmartShading nie porusza jej automatycznie. Aktywna pozostaje tylko ochrona przed deszczem, wiatrem i burzą, wysyłana z jednego okna. Aby to naprawić, pozostaw osłonę tylko w jednym oknie w opcjach SmartShading, usuń ją z pozostałych, a następnie przeładuj dotknięte wpisy SmartShading."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Osłona przypisana więcej niż raz z różnymi typami osłon",
+      "description": "Osłona {cover} jest przypisana do kilku okien SmartShading o różnych typach osłon: {locations}. Bezpiecznej pozycji nie można jednoznacznie określić, więc dopóki nie zostanie to naprawione, SmartShading w ogóle nie steruje tą osłoną, także ochroną przed deszczem, wiatrem i burzą. Pozostaw osłonę tylko w jednym oknie w opcjach SmartShading, usuń ją z pozostałych, a następnie przeładuj dotknięte wpisy SmartShading."
+    },
+    "duplicate_cover_identical": {
+      "title": "Osłona przypisana dwukrotnie z identycznymi ustawieniami",
+      "description": "Osłona {cover} występuje więcej niż raz z identycznymi ustawieniami: {locations}. SmartShading steruje nią tylko z jednego z tych przypisań. Usuń duplikat w opcjach SmartShading, aby każda osłona była przypisana tylko raz."
     }
   }
 }

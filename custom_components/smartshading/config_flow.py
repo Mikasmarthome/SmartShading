@@ -91,6 +91,11 @@ from .models.lifecycle import (
 )
 from .models.window import WindowBehaviorMode, WindowConfig
 from .models.zone import ZoneConfig
+from .cover_ownership_runtime import current_claims as _ownership_claims
+from .engines.cover_ownership import (
+    covers_claimed_by_others as _covers_claimed_by_others,
+    normalize_cover_id as _normalize_cover_id,
+)
 from .const import (
     COMPASS_AZIMUTHS,
     CONF_ABSENCE_DELAY_MIN,
@@ -580,6 +585,19 @@ def _compass_from_azimuth(azimuth: float) -> tuple[str, float | None]:
         if abs(azimuth - preset_az) < 0.5:
             return direction, None
     return CUSTOM_AZIMUTH_OPTION, azimuth
+
+
+
+def _covers_already_assigned(
+    hass, cover_ids, *, own_key=None, extra_taken=(),
+) -> bool:
+    """True when any selected cover is already assigned to another SmartShading
+    window (any entry), assigned earlier in the running flow, or selected twice.
+    New duplicates are rejected; existing ones keep loading (see ownership)."""
+    taken_here = {_normalize_cover_id(c) for c in extra_taken}
+    if any(_normalize_cover_id(c) in taken_here for c in cover_ids):
+        return True
+    return bool(_covers_claimed_by_others(_ownership_claims(hass), cover_ids, own_key=own_key))
 
 
 class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -1169,6 +1187,11 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             cover_entities: list[str] = user_input[CONF_COVER_ENTITIES]
             if not cover_entities:
                 errors["base"] = "no_covers_selected"
+            elif _covers_already_assigned(
+                self.hass, cover_entities,
+                extra_taken=[c for g in self._cover_groups for c in g.cover_ids],
+            ):
+                errors["base"] = "cover_already_assigned"
             else:
                 hw_type = cover_hardware_type_from_str(
                     user_input.get(CONF_COVER_HARDWARE_TYPE)
@@ -2408,6 +2431,8 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             cover_entities: list[str] = user_input[CONF_COVER_ENTITIES]
             if not cover_entities:
                 errors["base"] = "no_covers_selected"
+            elif _covers_already_assigned(self.hass, cover_entities):
+                errors["base"] = "cover_already_assigned"
             else:
                 zone_id: str = self._config_entry.data["zones"][0]["id"]
                 hw_type = cover_hardware_type_from_str(user_input.get(CONF_COVER_HARDWARE_TYPE))
@@ -2579,6 +2604,11 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
             new_azimuth = _resolve_azimuth(user_input)
             if not new_cover_ids:
                 errors["base"] = "no_covers_selected"
+            elif _covers_already_assigned(
+                self.hass, new_cover_ids,
+                own_key=(self._config_entry.entry_id, self._edit_window_id),
+            ):
+                errors["base"] = "cover_already_assigned"
             elif new_azimuth is None:
                 errors["base"] = "invalid_custom_azimuth"
             else:

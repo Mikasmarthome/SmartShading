@@ -334,6 +334,24 @@ class WindowExecutionDiagnostics:
     """Seconds remaining in the rain dry-cooldown hold, or None when no hold
     is active. Computed from SafetyHold._last_triggered and rain_release_delay_min."""
 
+    # --- Cover ownership diagnostics (A4) ------------------------------------
+
+    cover_ownership_role: str | None = None
+    """Role of this window's primary cover: "active", "deduplicated" (an
+    identical duplicate owned by another window), "quarantined" (conflicting
+    assignments, no commands) or "quarantined_safety_only" (conflicting
+    assignments; only Safety is sent, by this window).  None when not populated."""
+
+    cover_ownership_kind: str | None = None
+    """"unique", "identical" or "conflict"."""
+
+    cover_ownership_owner_count: int | None = None
+    """How many windows claim the primary cover."""
+
+    cover_ownership_aspects: tuple[str, ...] = ()
+    """Which configuration aspects differ between conflicting assignments
+    (hardware / safety / contact_override / targets)."""
+
     # --- Wind / storm diagnostics (A3) ---------------------------------------
 
     wind_protection_effective: bool | None = None

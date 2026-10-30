@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste.",
       "override_fixed_until_required": "Voer een vaste eindtijd in wanneer de duur is ingesteld op \"Vaste tijd\".",
       "invalid_custom_azimuth": "Voer een aangepaste azimut tussen 0 en 359 graden in, of kies een kompasrichting.",
-      "no_covers_selected": "Selecteer ten minste één zonweringsentiteit voor dit venster."
+      "no_covers_selected": "Selecteer ten minste één zonweringsentiteit voor dit venster.",
+      "cover_already_assigned": "Minstens één geselecteerde afdekking is al aan een ander SmartShading-raam toegewezen. Een afdekking kan maar één keer worden toegewezen."
     },
     "abort": {
       "no_options_for_system_entry": "De SmartShading-systeeminvoer heeft geen configureerbare opties."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Voer een minimale verblindingsblootstelling tussen 0 en 500 W/m² in.",
       "invalid_heat_hysteresis": "Voer een vrijgavemarge in tussen 0 en 5 °C.",
       "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
-      "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste."
+      "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste.",
+      "cover_already_assigned": "Minstens één geselecteerde afdekking is al aan een ander SmartShading-raam toegewezen. Een afdekking kan maar één keer worden toegewezen."
     },
     "abort": {
       "single_instance_allowed": "SmartShading is al geconfigureerd.",
@@ -834,6 +836,20 @@
       "name": "Handmatige overschrijving wissen",
       "description": "Beëindigt een actieve handmatige overschrijving zodat SmartShading de automatische besturing weer overneemt.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Afdekking meerdere keren toegewezen",
+      "description": "De afdekking {cover} is toegewezen aan meerdere SmartShading-ramen met verschillende instellingen: {locations}. Totdat dit is opgelost, beweegt SmartShading haar niet automatisch. Alleen de bescherming tegen regen, wind en storm blijft actief en wordt vanuit één raam verzonden. Los het op door de afdekking in de SmartShading-opties maar in één raam te laten staan, haar uit de andere te verwijderen en daarna de betrokken SmartShading-items opnieuw te laden."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Afdekking meerdere keren toegewezen met verschillende afdekkingstypen",
+      "description": "De afdekking {cover} is toegewezen aan meerdere SmartShading-ramen met verschillende afdekkingstypen: {locations}. De veilige positie kan niet eenduidig worden bepaald, dus totdat dit is opgelost bestuurt SmartShading deze afdekking helemaal niet, ook niet de bescherming tegen regen, wind en storm. Laat de afdekking in de SmartShading-opties maar in één raam staan, verwijder haar uit de andere en laad daarna de betrokken SmartShading-items opnieuw."
+    },
+    "duplicate_cover_identical": {
+      "title": "Afdekking twee keer toegewezen met identieke instellingen",
+      "description": "De afdekking {cover} komt meerdere keren voor met identieke instellingen: {locations}. SmartShading bestuurt haar vanuit slechts één van deze toewijzingen. Verwijder de dubbele toewijzing in de SmartShading-opties zodat elke afdekking maar één keer wordt toegewezen."
     }
   }
 }

@@ -53,6 +53,7 @@ DATA_SYSTEM_ENTRY_ID = "system_entry_id"
 # hass.data[DOMAIN] keys for integration-wide runtime state.
 DATA_GLOBAL_DISPATCH = "global_dispatch"   # GlobalSerialDispatch instance
 DATA_DEBUG_LOGGING = "debug_logging"       # bool: debug logging enabled
+DATA_COVER_OWNERSHIP = "cover_ownership"   # CoverOwnershipRegistry instance (A4)
 
 # config_entry.options key for the debug logging switch (system entry only).
 CONF_DEBUG_LOGGING = "debug_logging"

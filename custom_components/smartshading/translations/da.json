@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Tidligste morgenudløser må ikke være senere end seneste.",
       "override_fixed_until_required": "Angiv et fast sluttidspunkt, når varighed er sat til \"Fast tid\".",
       "invalid_custom_azimuth": "Angiv en tilpasset azimut mellem 0 og 359 grader, eller vælg en kompasretning.",
-      "no_covers_selected": "Vælg mindst én afskærmningsentitet for dette vindue."
+      "no_covers_selected": "Vælg mindst én afskærmningsentitet for dette vindue.",
+      "cover_already_assigned": "Mindst ét valgt dæksel er allerede tildelt et andet SmartShading-vindue. Et dæksel kan kun tildeles én gang."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-systemposten har ingen konfigurerbare indstillinger."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Angiv en minimal blændingseksponering mellem 0 og 500 W/m².",
       "invalid_heat_hysteresis": "Indtast en frigivelsesmargin mellem 0 og 5 °C.",
       "night_clamp_window_invalid": "Tidligste natudløser må ikke være senere end seneste.",
-      "morning_clamp_window_invalid": "Tidligste morgenudløser må ikke være senere end seneste."
+      "morning_clamp_window_invalid": "Tidligste morgenudløser må ikke være senere end seneste.",
+      "cover_already_assigned": "Mindst ét valgt dæksel er allerede tildelt et andet SmartShading-vindue. Et dæksel kan kun tildeles én gang."
     },
     "abort": {
       "single_instance_allowed": "SmartShading er allerede konfigureret.",
@@ -834,6 +836,20 @@
       "name": "Ryd manuel tilsidesættelse",
       "description": "Afslutter en aktiv manuel tilsidesættelse, så SmartShading igen overtager den automatiske styring.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Dæksel tildelt mere end én gang",
+      "description": "Dækslet {cover} er tildelt flere SmartShading-vinduer med forskellige indstillinger: {locations}. Indtil det er rettet, flytter SmartShading det ikke automatisk. Kun beskyttelsen mod regn, vind og storm forbliver aktiv og sendes fra ét vindue. Ret det ved kun at beholde dækslet i ét vindue i SmartShading-indstillingerne, fjerne det fra de andre og derefter genindlæse de berørte SmartShading-poster."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Dæksel tildelt mere end én gang med forskellige dækseltyper",
+      "description": "Dækslet {cover} er tildelt flere SmartShading-vinduer med forskellige dækseltyper: {locations}. Den sikre position kan ikke bestemmes entydigt, så indtil det er rettet styrer SmartShading slet ikke dette dæksel, heller ikke beskyttelsen mod regn, vind og storm. Behold dækslet i kun ét vindue i SmartShading-indstillingerne, fjern det fra de andre og genindlæs derefter de berørte SmartShading-poster."
+    },
+    "duplicate_cover_identical": {
+      "title": "Dæksel tildelt to gange med identiske indstillinger",
+      "description": "Dækslet {cover} optræder flere gange med identiske indstillinger: {locations}. SmartShading styrer det kun fra én af disse tildelinger. Fjern dubletten i SmartShading-indstillingerne, så hvert dæksel kun tildeles én gang."
     }
   }
 }

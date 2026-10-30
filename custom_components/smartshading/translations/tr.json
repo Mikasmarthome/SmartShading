@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
       "override_fixed_until_required": "Süre \"Sabit saat\" olarak ayarlandığında sabit bir bitiş saati girin.",
       "invalid_custom_azimuth": "0 ile 359 derece arasında özel bir azimut girin veya bir pusula yönü seçin.",
-      "no_covers_selected": "Bu pencere için en az bir gölgelik varlığı seçin."
+      "no_covers_selected": "Bu pencere için en az bir gölgelik varlığı seçin.",
+      "cover_already_assigned": "Seçilen kapaklardan en az biri zaten başka bir SmartShading penceresine atanmış. Bir kapak yalnızca bir kez atanabilir."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading Sistem girişinin yapılandırılabilir seçeneği yoktur."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "0 ile 500 W/m² arasında bir kamaşma minimum maruziyeti girin.",
       "invalid_heat_hysteresis": "0 ile 5 °C arasında bir serbest bırakma payı girin.",
       "night_clamp_window_invalid": "En erken gece tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
-      "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz."
+      "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
+      "cover_already_assigned": "Seçilen kapaklardan en az biri zaten başka bir SmartShading penceresine atanmış. Bir kapak yalnızca bir kez atanabilir."
     },
     "abort": {
       "single_instance_allowed": "SmartShading zaten yapılandırılmış.",
@@ -834,6 +836,20 @@
       "name": "Manuel geçersiz kılmayı temizle",
       "description": "Etkin bir manuel geçersiz kılmayı sonlandırır, böylece SmartShading otomatik kontrolü yeniden devralır.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Kapak birden fazla kez atanmış",
+      "description": "{cover} kapağı farklı ayarlarla birden fazla SmartShading penceresine atanmış: {locations}. Bu düzeltilene kadar SmartShading onu otomatik olarak hareket ettirmez. Yalnızca yağmur, rüzgâr ve fırtına koruması etkin kalır ve tek bir pencereden gönderilir. Düzeltmek için SmartShading seçeneklerinde kapağı yalnızca bir pencerede bırakın, diğerlerinden kaldırın ve ardından etkilenen SmartShading girdilerini yeniden yükleyin."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Kapak farklı kapak türleriyle birden fazla kez atanmış",
+      "description": "{cover} kapağı farklı kapak türleriyle birden fazla SmartShading penceresine atanmış: {locations}. Güvenli konum net olarak belirlenemediği için, bu düzeltilene kadar SmartShading bu kapağı hiç kontrol etmez; yağmur, rüzgâr ve fırtına koruması da dahildir. SmartShading seçeneklerinde kapağı yalnızca bir pencerede bırakın, diğerlerinden kaldırın ve ardından etkilenen SmartShading girdilerini yeniden yükleyin."
+    },
+    "duplicate_cover_identical": {
+      "title": "Kapak aynı ayarlarla iki kez atanmış",
+      "description": "{cover} kapağı aynı ayarlarla birden fazla kez görünüyor: {locations}. SmartShading onu yalnızca bu atamalardan birinden kontrol eder. Her kapağın yalnızca bir kez atanması için SmartShading seçeneklerinde yinelenen atamayı kaldırın."
     }
   }
 }

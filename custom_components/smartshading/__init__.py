@@ -43,6 +43,7 @@ from .const import (
     ZONE_PLATFORMS,
 )
 from .cover_control.global_dispatch_throttle import GlobalSerialDispatch
+from .cover_ownership_runtime import async_sync_cover_ownership
 from .coordinator import SmartShadingCoordinator, SmartShadingRuntimeData
 from .engines.forecast_orchestrator import async_run_startup_matching
 from .engines.forecast_persistence import (
@@ -110,6 +111,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
         coordinator.async_teardown_presence_listeners()
         coordinator.async_teardown_contact_listeners()
         coordinator.async_teardown_rain_listener()
+        coordinator.async_teardown_ownership_listener()
         coordinator.async_teardown_wind_listener()
         coordinator.async_teardown_sun_listener()
         coordinator.async_teardown_lifecycle_boundary_timer()
@@ -129,6 +131,10 @@ async def async_remove_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
     entry_type = entry.data.get(CONF_ENTRY_TYPE, ENTRY_TYPE_ZONE)
     if entry_type == ENTRY_TYPE_SYSTEM:
         return
+
+    # A4: the entry is still listed while HA removes it; recompute without it so
+    # the remaining owner becomes unique and its repair issue closes.
+    async_sync_cover_ownership(hass, exclude_entry_id=entry.entry_id)
 
     from homeassistant.helpers.storage import Store  # lazy HA import
 
@@ -280,6 +286,11 @@ async def _async_setup_zone_entry(
     # Debug logging flag: default False until the system entry sets it.
     hass.data[DOMAIN].setdefault(DATA_DEBUG_LOGGING, False)
 
+    # A4: which window may command which cover.  Computed from the stored
+    # config of ALL zone entries (never from setup order) before this entry's
+    # coordinator exists, so it starts with the correct roles.
+    _cover_ownership = async_sync_cover_ownership(hass)
+
     # Services (v1.2.0-beta.1, T10.1): registered once regardless of how many
     # zone entries exist — async_setup_services() itself is guarded by
     # hass.services.has_service().
@@ -314,6 +325,7 @@ async def _async_setup_zone_entry(
         ema_enabled=entry_data.ema_enabled,
         ema_alpha=entry_data.ema_alpha,
         global_serial_dispatch=serial_dispatch,
+        cover_ownership=_cover_ownership,
         # T21 Phase C2: resolved through resolve_zone_override_policy() /
         # resolve_zone_dispatch_config() above, not entry_data.override_policy /
         # entry_data.dispatch_config directly — a zone may defer to the System
@@ -349,6 +361,10 @@ async def _async_setup_zone_entry(
     # Rain start/stop must be evaluated promptly (and an old, not yet sent normal
     # plan of this zone invalidated) instead of waiting for the next periodic cycle.
     coordinator.async_setup_rain_listener(entry)
+
+    # A cover ownership change (another entry gained/lost a claim) invalidates
+    # this zone's plans for the affected covers and triggers a fresh evaluation.
+    coordinator.async_setup_ownership_listener(entry)
 
     # Wind / storm band changes must be evaluated promptly (and an old normal
     # plan of this zone invalidated) instead of waiting for the next periodic cycle.

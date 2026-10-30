@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
       "override_fixed_until_required": "Introduceți o oră de încheiere fixă când durata este setată pe \"Oră fixă\".",
       "invalid_custom_azimuth": "Introduceți un azimut personalizat între 0 și 359 de grade sau alegeți o direcție a busolei.",
-      "no_covers_selected": "Selectați cel puțin o entitate de umbrar pentru această fereastră."
+      "no_covers_selected": "Selectați cel puțin o entitate de umbrar pentru această fereastră.",
+      "cover_already_assigned": "Cel puțin o acoperire selectată este deja atribuită altei ferestre SmartShading. O acoperire poate fi atribuită o singură dată."
     },
     "abort": {
       "no_options_for_system_entry": "Intrarea de Sistem SmartShading nu are opțiuni configurabile."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Introduceți o expunere minimă la orbire între 0 și 500 W/m².",
       "invalid_heat_hysteresis": "Introduceți o marjă de eliberare între 0 și 5 °C.",
       "night_clamp_window_invalid": "Declanșatorul de noapte cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
-      "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu."
+      "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
+      "cover_already_assigned": "Cel puțin o acoperire selectată este deja atribuită altei ferestre SmartShading. O acoperire poate fi atribuită o singură dată."
     },
     "abort": {
       "single_instance_allowed": "SmartShading este deja configurat.",
@@ -834,6 +836,20 @@
       "name": "Șterge suprascrierea manuală",
       "description": "Încheie o suprascriere manuală activă, astfel încât SmartShading preia din nou controlul automat.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Acoperire atribuită de mai multe ori",
+      "description": "Acoperirea {cover} este atribuită mai multor ferestre SmartShading cu setări diferite: {locations}. Până la remediere, SmartShading nu o mișcă automat. Rămâne activă doar protecția împotriva ploii, vântului și furtunii, trimisă dintr-o singură fereastră. Pentru remediere, păstrați acoperirea într-o singură fereastră în opțiunile SmartShading, eliminați-o din celelalte, apoi reîncărcați intrările SmartShading afectate."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Acoperire atribuită de mai multe ori cu tipuri de acoperire diferite",
+      "description": "Acoperirea {cover} este atribuită mai multor ferestre SmartShading cu tipuri de acoperire diferite: {locations}. Poziția sigură nu poate fi determinată fără ambiguitate, deci până la remediere SmartShading nu controlează deloc această acoperire, inclusiv protecția împotriva ploii, vântului și furtunii. Păstrați acoperirea într-o singură fereastră în opțiunile SmartShading, eliminați-o din celelalte, apoi reîncărcați intrările SmartShading afectate."
+    },
+    "duplicate_cover_identical": {
+      "title": "Acoperire atribuită de două ori cu setări identice",
+      "description": "Acoperirea {cover} apare de mai multe ori cu setări identice: {locations}. SmartShading o controlează doar dintr-una dintre aceste atribuiri. Eliminați duplicatul în opțiunile SmartShading, astfel încât fiecare acoperire să fie atribuită o singură dată."
     }
   }
 }

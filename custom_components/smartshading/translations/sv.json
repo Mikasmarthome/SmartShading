@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste.",
       "override_fixed_until_required": "Ange en fast sluttid när varaktighet är satt till \"Fast tid\".",
       "invalid_custom_azimuth": "Ange en anpassad azimut mellan 0 och 359 grader, eller välj en kompassriktning.",
-      "no_covers_selected": "Välj minst en solskyddsentitet för det här fönstret."
+      "no_covers_selected": "Välj minst en solskyddsentitet för det här fönstret.",
+      "cover_already_assigned": "Minst ett valt skydd är redan tilldelat ett annat SmartShading-fönster. Ett skydd kan bara tilldelas en gång."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-systemposten har inga konfigurerbara alternativ."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Ange en minsta bländningsexponering mellan 0 och 500 W/m².",
       "invalid_heat_hysteresis": "Ange en frigöringsmarginal mellan 0 och 5 °C.",
       "night_clamp_window_invalid": "Tidigaste nattutlösaren får inte vara senare än senaste.",
-      "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste."
+      "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste.",
+      "cover_already_assigned": "Minst ett valt skydd är redan tilldelat ett annat SmartShading-fönster. Ett skydd kan bara tilldelas en gång."
     },
     "abort": {
       "single_instance_allowed": "SmartShading är redan konfigurerat.",
@@ -834,6 +836,20 @@
       "name": "Rensa manuell åsidosättning",
       "description": "Avslutar en aktiv manuell åsidosättning så att SmartShading återigen tar över den automatiska styrningen.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Skydd tilldelat mer än en gång",
+      "description": "Skyddet {cover} är tilldelat flera SmartShading-fönster med olika inställningar: {locations}. Tills detta är åtgärdat flyttar SmartShading det inte automatiskt. Bara skyddet mot regn, vind och storm förblir aktivt och skickas från ett enda fönster. Åtgärda genom att bara behålla skyddet i ett fönster i SmartShading-alternativen, ta bort det från de andra och sedan ladda om de berörda SmartShading-posterna."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Skydd tilldelat mer än en gång med olika skyddstyper",
+      "description": "Skyddet {cover} är tilldelat flera SmartShading-fönster med olika skyddstyper: {locations}. Den säkra positionen kan inte fastställas entydigt, så tills detta är åtgärdat styr SmartShading inte skyddet alls, inte heller skyddet mot regn, vind och storm. Behåll skyddet i bara ett fönster i SmartShading-alternativen, ta bort det från de andra och ladda sedan om de berörda SmartShading-posterna."
+    },
+    "duplicate_cover_identical": {
+      "title": "Skydd tilldelat två gånger med identiska inställningar",
+      "description": "Skyddet {cover} förekommer flera gånger med identiska inställningar: {locations}. SmartShading styr det bara från en av dessa tilldelningar. Ta bort dubbletten i SmartShading-alternativen så att varje skydd bara tilldelas en gång."
     }
   }
 }

@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "El activador matutino más temprano no debe ser posterior al más tardío.",
       "override_fixed_until_required": "Introduzca una hora de fin fija cuando la duración esté configurada como \"Hora fija\".",
       "invalid_custom_azimuth": "Introduce un acimut personalizado entre 0 y 359 grados, o elige una dirección de la brújula.",
-      "no_covers_selected": "Selecciona al menos una entidad de persiana para esta ventana."
+      "no_covers_selected": "Selecciona al menos una entidad de persiana para esta ventana.",
+      "cover_already_assigned": "Al menos una cubierta seleccionada ya está asignada a otra ventana de SmartShading. Una cubierta solo puede asignarse una vez."
     },
     "abort": {
       "no_options_for_system_entry": "La entrada de Sistema de SmartShading no tiene opciones configurables."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Introduzca una exposición mínima de deslumbramiento entre 0 y 500 W/m².",
       "invalid_heat_hysteresis": "Introduce un margen de liberación entre 0 y 5 °C.",
       "night_clamp_window_invalid": "El activador nocturno más temprano no debe ser posterior al más tardío.",
-      "morning_clamp_window_invalid": "El activador matutino más temprano no debe ser posterior al más tardío."
+      "morning_clamp_window_invalid": "El activador matutino más temprano no debe ser posterior al más tardío.",
+      "cover_already_assigned": "Al menos una cubierta seleccionada ya está asignada a otra ventana de SmartShading. Una cubierta solo puede asignarse una vez."
     },
     "abort": {
       "single_instance_allowed": "SmartShading ya está configurado.",
@@ -834,6 +836,20 @@
       "name": "Borrar anulación manual",
       "description": "Finaliza una anulación manual activa para que SmartShading vuelva a asumir el control automático.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Cubierta asignada más de una vez",
+      "description": "La cubierta {cover} está asignada a varias ventanas de SmartShading con ajustes distintos: {locations}. Hasta que se corrija, SmartShading no la mueve automáticamente. Solo la protección contra lluvia, viento y tormenta sigue activa, enviada desde una única ventana. Para corregirlo, deje la cubierta en una sola ventana en las opciones de SmartShading, quítela de las demás y recargue las entradas de SmartShading afectadas."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Cubierta asignada más de una vez con tipos de cubierta distintos",
+      "description": "La cubierta {cover} está asignada a varias ventanas de SmartShading con tipos de cubierta distintos: {locations}. La posición segura no puede determinarse con claridad, por lo que hasta que se corrija SmartShading no controla esta cubierta en absoluto, incluida la protección contra lluvia, viento y tormenta. Deje la cubierta en una sola ventana en las opciones de SmartShading, quítela de las demás y recargue las entradas de SmartShading afectadas."
+    },
+    "duplicate_cover_identical": {
+      "title": "Cubierta asignada dos veces con ajustes idénticos",
+      "description": "La cubierta {cover} aparece más de una vez con ajustes idénticos: {locations}. SmartShading la controla solo desde una de estas asignaciones. Elimine el duplicado en las opciones de SmartShading para que cada cubierta se asigne una sola vez."
     }
   }
 }

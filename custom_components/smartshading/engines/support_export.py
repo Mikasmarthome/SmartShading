@@ -625,6 +625,20 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                 } if diag is not None else {
                     "configured": getattr(c, "_rain_sensor_id", None) is not None,
                     "status": None}
+                # Cover ownership (A4): is the window's cover commanded by it,
+                # and how many windows claim it (privacy-safe: no entity ids).
+                prov["cover_ownership"] = {
+                    "role": getattr(diag, "cover_ownership_role", None),
+                    "kind": getattr(diag, "cover_ownership_kind", None),
+                    "owner_count": getattr(diag, "cover_ownership_owner_count", None),
+                    "differing_aspects": list(getattr(diag, "cover_ownership_aspects", ()) or ()),
+                    "actively_controlled": getattr(diag, "cover_ownership_role", None) == "active",
+                    "plan_invalidations": dict(getattr(c, "_ownership_stats", {}) or {}),
+                    "integration": (
+                        c._cover_ownership.summary()
+                        if getattr(c, "_cover_ownership", None) is not None else None
+                    ),
+                } if diag is not None else {"role": None}
                 # Wind / storm safety (A3): configured state, band, used value,
                 # holds and listener activity (privacy-safe: no entity ids).
                 prov["wind"] = {

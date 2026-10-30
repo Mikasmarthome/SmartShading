@@ -291,9 +291,9 @@ def _make_hass() -> MagicMock:
     return hass
 
 
-def _make_entry() -> MagicMock:
+def _make_entry(entry_id: str = "e1") -> MagicMock:
     entry = MagicMock()
-    entry.entry_id = "e1"
+    entry.entry_id = entry_id
     entry.options = {}
     entry.data = {}
     entry.async_on_unload = MagicMock()
@@ -359,6 +359,8 @@ class _Scenario:
         rain_entity: str = _RAIN,
         wind_protection_enabled: Any = True,
         wind_entity: str = _WIND,
+        entry_id: str = "e1",
+        cover_ownership: Any = None,
     ) -> None:
         self.hass = hass if hass is not None else _make_hass()
         self.rain_entity = rain_entity
@@ -400,9 +402,10 @@ class _Scenario:
             else {"wind_protection_enabled": wind_protection_enabled}
         )
         self.wind_entity = wind_entity
+        self.entry_id = entry_id
         self.coord = _coord_mod.SmartShadingCoordinator(
             self.hass,
-            _make_entry(),
+            _make_entry(entry_id),
             windows=windows,
             zones={zone_id: zone},
             cover_groups=groups,
@@ -411,6 +414,7 @@ class _Scenario:
             rain_sensor_id=rain_entity,
             wind_speed_sensor_id=wind_entity,
             global_serial_dispatch=self.serial,
+            cover_ownership=cover_ownership,
             **_wind_kwargs,
         )
         # Steady state: restore done, startup grace elapsed (production state
@@ -3209,3 +3213,301 @@ class TestA3Diagnostics:
         assert (stats["events"], stats["band_changes"], stats["refreshes_requested"],
                 stats["plan_invalidations"], stats["last_band"]) == (1, 1, 1, 1, "wind")
         assert stats["last_trigger"].startswith("state_change:")
+
+
+# ---------------------------------------------------------------------------
+# A4 -- cover ownership through the real coordinator
+# ---------------------------------------------------------------------------
+
+from custom_components.smartshading.engines.cover_ownership import (  # noqa: E402
+    CoverClaim,
+    CoverOwnershipRegistry,
+)
+
+_SHARED = "cover.shared"
+
+
+def _claim(entry_id, window_id, *, cover=_SHARED, hardware="awning", target="t", rain_safe=None, rain=True):
+    return CoverClaim(
+        entry_id=entry_id, window_id=window_id, cover_id=cover, window_name=window_id,
+        zone_name=f"zone_{entry_id}", hardware=hardware, safety_sig="s", contact_sig="c",
+        target_sig=target, rain_safe_ha=rain_safe, rain_enabled=rain)
+
+
+def _registry(*claims):
+    reg = CoverOwnershipRegistry()
+    reg.update(list(claims))
+    return reg
+
+
+def _a4_zone(entry_id, reg, hass, serial, *, hw=AWNING, cover=_SHARED, window_id="w1",
+             cover_position=0, rain_entity=None, extra=(), **kw):
+    s = _Scenario(
+        hw, entry_id=entry_id, window_id=window_id, zone_id=f"z_{entry_id}", covers=[cover],
+        hass=hass, serial=serial, cover_position=cover_position, cover_ownership=reg,
+        rain_entity=rain_entity or f"binary_sensor.rain_{entry_id}", extra=extra,
+        wind_entity=f"sensor.wind_{entry_id}", wind_protection_enabled=_UNSET_WIND, **kw)
+    s.coord.shade_position_defaults = ShadePositionDefaults(
+        light_shade_position=100, normal_shade_position=100, strong_shade_position=100)
+    return s
+
+
+def _world():
+    hass = _make_hass()
+    serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=1))
+    return hass, serial
+
+
+def _cover_calls(hass, cover=_SHARED):
+    return [c.args[2]["position"] for c in hass.services.async_call.await_args_list
+            if c.args[0] == "cover" and c.args[1] == "set_cover_position"
+            and c.args[2]["entity_id"] == cover]
+
+
+def _all_services(hass):
+    return {(c.args[0], c.args[1]) for c in hass.services.async_call.await_args_list}
+
+
+class TestA4Quarantine:
+    def test_unique_cover_is_controlled_as_before(self):
+        hass, serial = _world()
+        a = _a4_zone("e1", _registry(), hass, serial)
+        a.cycle(0)
+        assert _cover_calls(hass) == [100]
+
+    def test_conflict_sends_no_normal_command_from_any_party(self):
+        hass, serial = _world()
+        reg = _registry(_claim("e1", "w1", target="a"), _claim("e2", "w1", target="b"))
+        a = _a4_zone("e1", reg, hass, serial)
+        b = _a4_zone("e2", reg, hass, serial)
+        a.cycle(0)
+        b.cycle(0)
+        assert _cover_calls(hass) == []
+
+    def test_identical_duplicate_is_commanded_exactly_once_by_the_owner(self):
+        hass, serial = _world()
+        reg = _registry(_claim("e1", "w1"), _claim("e2", "w1"))
+        a = _a4_zone("e1", reg, hass, serial)
+        b = _a4_zone("e2", reg, hass, serial)
+        b.cycle(0)                                       # setup order must not matter
+        a.cycle(0)
+        assert _cover_calls(hass) == [100]
+
+    def test_rain_safety_is_sent_by_exactly_one_deterministic_sender(self):
+        hass, serial = _world()
+        reg = _registry(_claim("e1", "w1", target="a"), _claim("e2", "w1", target="b"))
+        a = _a4_zone("e1", reg, hass, serial, cover_position=100)
+        b = _a4_zone("e2", reg, hass, serial, cover_position=100)
+        a.set_rain(True)
+        b.set_rain(True)
+        b.cycle(0)
+        a.cycle(0)
+        assert _cover_calls(hass) == [0]                 # one retract, from the smallest key (e1)
+        assert _all_services(hass) <= {("cover", "set_cover_position")}     # never a stop
+
+    def test_rain_union_protects_when_only_the_other_party_enabled_rain(self):
+        hass, serial = _world()
+        reg = _registry(_claim("e1", "w1", target="a", rain=False), _claim("e2", "w1", target="b", rain=True))
+        a = _a4_zone("e1", reg, hass, serial, cover_position=100, rain_protection_enabled=False)
+        a.set_rain(True)
+        a.cycle(0)
+        assert _cover_calls(hass) == [0]
+
+    def test_storm_is_sent_once_by_the_sender(self):
+        hass, serial = _world()
+        reg = _registry(_claim("e1", "w1", target="a"), _claim("e2", "w1", target="b"))
+        a = _a4_zone("e1", reg, hass, serial, cover_position=100)
+        b = _a4_zone("e2", reg, hass, serial, cover_position=100)
+        a.set_wind("25")
+        b.set_wind("25")
+        a.cycle(0)
+        b.cycle(0)
+        assert _cover_calls(hass) == [0]
+
+    def test_ambiguous_hardware_sends_nothing_at_all(self):
+        hass, serial = _world()
+        reg = _registry(_claim("e1", "w1", hardware="awning"), _claim("e2", "w1", hardware="roller_shutter"))
+        a = _a4_zone("e1", reg, hass, serial, cover_position=100)
+        b = _a4_zone("e2", reg, hass, serial, hw=ROLLER, cover_position=100)
+        for s in (a, b):
+            s.set_rain(True)
+            s.set_wind("25")
+            s.cycle(0)
+        assert _cover_calls(hass) == []
+
+    def test_other_covers_of_the_same_and_of_other_zones_keep_running(self):
+        hass, serial = _world()
+        reg = _registry(_claim("e1", "w1", target="a"), _claim("e2", "w1", target="b"))
+        a = _a4_zone("e1", reg, hass, serial, extra=[_Win("w2", AWNING, ["cover.own"], cover_position=0)])
+        c = _a4_zone("e3", reg, hass, serial, cover="cover.third")
+        a.cycle(0)
+        c.cycle(0)
+        assert _cover_calls(hass) == []
+        assert _cover_calls(hass, "cover.own") == [100] and _cover_calls(hass, "cover.third") == [100]
+
+    def test_a_cover_listed_twice_in_a_window_is_commanded_once(self):
+        hass, serial = _world()
+        s = _Scenario(AWNING, covers=[_SHARED, _SHARED], hass=hass, serial=serial, cover_position=0,
+                      cover_ownership=_registry())
+        s.coord.shade_position_defaults = ShadePositionDefaults(
+            light_shade_position=100, normal_shade_position=100, strong_shade_position=100)
+        s.cycle(0)
+        assert _cover_calls(hass) == [100]
+
+    def test_no_override_is_detected_for_a_deduplicated_window(self):
+        hass, serial = _world()
+        reg = _registry(_claim("e1", "w1"), _claim("e2", "w1"))
+        b = _a4_zone("e2", reg, hass, serial, cover_position=40)
+        b.cycle(0)
+        b.set_cover_position(20, cover=_SHARED)            # the owner moved the cover
+        b.cycle(5)
+        data = b.cycle(10)
+        assert b.diag(data).manual_override_active is False
+        assert b.diag(data).cover_ownership_role == "deduplicated"
+
+    def test_control_unique_window_does_detect_a_manual_move(self):
+        hass, serial = _world()
+        a = _a4_zone("e1", _registry(), hass, serial, cover_position=40)
+        a.cycle(0)
+        a.set_cover_position(20, cover=_SHARED)
+        a.cycle(5)
+        assert a.diag(a.cycle(10)).manual_override_active is True
+
+    def test_diagnostics_describe_role_kind_owners_and_aspects(self):
+        hass, serial = _world()
+        reg = _registry(_claim("e1", "w1", target="a"), _claim("e2", "w1", target="b"))
+        a = _a4_zone("e1", reg, hass, serial)
+        d = a.diag(a.cycle(0))
+        assert (d.cover_ownership_role, d.cover_ownership_kind, d.cover_ownership_owner_count) == (
+            "quarantined_safety_only", "conflict", 2)
+        assert d.cover_ownership_aspects == ("targets",)
+        h2, s2 = _world()
+        u = _a4_zone("e9", _registry(), h2, s2, cover="cover.free")
+        assert u.diag(u.cycle(0)).cover_ownership_role == "active"
+
+
+class TestA4PlanInvalidationAndRecovery:
+    @staticmethod
+    def _listener_zone(entry_id, reg, hass, serial, **kw):
+        s = _a4_zone(entry_id, reg, hass, serial, **kw)
+        s.coord.async_request_refresh = MagicMock(return_value=None)
+        s.entry = _make_entry(entry_id)
+        s.coord.async_setup_ownership_listener(s.entry)
+        return s
+
+    def test_a_queued_normal_plan_is_dropped_when_the_cover_is_quarantined_and_never_replayed(self):
+        hass, serial = _world()
+        reg = _registry()
+        a = self._listener_zone("e1", reg, hass, serial)
+
+        async def main():
+            with a._clock(0):
+                await serial.admission.acquire()
+                plan = asyncio.ensure_future(a.coord._async_update_data())
+                for _ in range(300):
+                    if serial.admission.queued_count:
+                        break
+                    await asyncio.sleep(0)
+                gen = a.coord._dispatch_generation
+                reg.update([_claim("e1", "w1", target="a"), _claim("e2", "w1", target="b")])
+                assert a.coord._dispatch_generation == gen + 1       # invalidated at once
+                reg.update([])                                        # ... and the conflict is already gone
+                serial.admission.release()
+                await plan
+
+        asyncio.run(main())
+        assert _cover_calls(hass) == []                              # the old plan is not replayed
+        assert a.coord.async_request_refresh.call_count == 2
+        assert a.coord._ownership_stats["plan_invalidations"] == 2
+
+    def test_a_queued_safety_plan_is_not_sent_once_this_party_is_no_longer_the_sender(self):
+        hass, serial = _world()
+        reg = _registry()
+        a = self._listener_zone("e2", reg, hass, serial, cover_position=100)
+        a.set_rain(True)
+
+        async def main():
+            with a._clock(0):
+                await serial.admission.acquire()
+                plan = asyncio.ensure_future(a.coord._async_update_data())
+                for _ in range(300):
+                    if serial.admission.safety_waiting:
+                        break
+                    await asyncio.sleep(0)
+                # another entry (smaller key) now claims the cover differently: e2 is quarantined
+                reg.update([_claim("e1", "w1", target="a"), _claim("e2", "w1", target="b")])
+                serial.admission.release()
+                await plan
+
+        asyncio.run(main())
+        assert _cover_calls(hass) == []
+
+    def test_a_running_completion_wait_ends_when_the_cover_is_quarantined(self, monkeypatch):
+        TestA2CoordinatorGlobalSafetyPriority._real_completion(monkeypatch)
+        until = TestA2CoordinatorGlobalSafetyPriority._until
+        hass, serial = _world()
+        reg = _registry()
+        a = self._listener_zone("e1", reg, hass, serial,
+                                extra=[_Win("a2", AWNING, ["cover.a2"], cover_position=0)])
+        a.coord.shade_position_defaults = ShadePositionDefaults(
+            light_shade_position=50, normal_shade_position=50, strong_shade_position=50)
+
+        async def main():
+            with a._clock(0):
+                plan = asyncio.ensure_future(a.coord._async_update_data())
+                await until(lambda: _cover_calls(hass) == [50])
+                await asyncio.sleep(0.05)
+                assert not plan.done()                               # parked in a REAL completion wait
+                reg.update([_claim("e1", "w1", target="a"), _claim("e2", "w1", target="b")])
+                await asyncio.wait_for(plan, timeout=2)
+
+        asyncio.run(main())
+        assert _cover_calls(hass) == [50]                            # no further command to that cover
+        assert _cover_calls(hass, "cover.a2") == []                  # the aborted plan is not continued
+        assert _all_services(hass) <= {("cover", "set_cover_position")}   # no stop of a moving cover
+
+    def test_resolution_gives_a_fresh_evaluation_and_the_cover_is_controlled_again(self):
+        hass, serial = _world()
+        reg = _registry(_claim("e1", "w1", target="a"), _claim("e2", "w1", target="b"))
+        a = self._listener_zone("e1", reg, hass, serial)
+        a.cycle(0)
+        assert _cover_calls(hass) == []
+        reg.update([_claim("e1", "w1")])                             # the other party was removed
+        assert a.coord.async_request_refresh.call_count == 1
+        a.cycle(30)
+        assert _cover_calls(hass) == [100]
+
+    def test_listener_is_idempotent_and_removed_on_teardown(self):
+        hass, serial = _world()
+        reg = _registry()
+        a = self._listener_zone("e1", reg, hass, serial)
+        a.coord.async_setup_ownership_listener(a.entry)
+        a.coord.async_setup_ownership_listener(a.entry)
+        assert reg.listener_count() == 1
+        a.coord.async_teardown_ownership_listener()
+        a.coord.async_teardown_ownership_listener()
+        assert reg.listener_count() == 0 and a.coord._unsub_ownership_listener is None
+        a.coord.async_request_refresh.reset_mock()
+        reg.update([_claim("e1", "w1", target="a"), _claim("e2", "w1", target="b")])
+        assert a.coord.async_request_refresh.call_count == 0
+        assert a.coord.async_teardown_ownership_listener in [
+            c.args[0] for c in a.entry.async_on_unload.call_args_list]
+
+    def test_wiring_in_init(self):
+        import ast
+        root = Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
+        tree = ast.parse((root / "__init__.py").read_text(encoding="utf-8"))
+
+        def calls_in(name):
+            fn = next(n for n in ast.walk(tree)
+                      if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef)) and n.name == name)
+            out = set()
+            for c in ast.walk(fn):
+                if isinstance(c, ast.Call):
+                    out.add(c.func.attr if isinstance(c.func, ast.Attribute) else getattr(c.func, "id", ""))
+            return out
+
+        assert "async_sync_cover_ownership" in calls_in("_async_setup_zone_entry")
+        assert "async_setup_ownership_listener" in calls_in("_async_setup_zone_entry")
+        assert "async_sync_cover_ownership" in calls_in("async_remove_entry")
+        assert "async_teardown_ownership_listener" in calls_in("async_unload_entry")

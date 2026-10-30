@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
       "override_fixed_until_required": "Anna kiinteä lopetusaika, kun kesto on asetettu \"Kiinteä aika\"-tilaan.",
       "invalid_custom_azimuth": "Anna mukautettu atsimuutti väliltä 0–359 astetta tai valitse kompassisuunta.",
-      "no_covers_selected": "Valitse vähintään yksi varjostinentiteetti tälle ikkunalle."
+      "no_covers_selected": "Valitse vähintään yksi varjostinentiteetti tälle ikkunalle.",
+      "cover_already_assigned": "Vähintään yksi valittu peite on jo liitetty toiseen SmartShading-ikkunaan. Peite voidaan liittää vain kerran."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-järjestelmämerkinnällä ei ole määritettäviä asetuksia."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Anna häikäisyn vähimmäisvalotus välillä 0–500 W/m².",
       "invalid_heat_hysteresis": "Anna vapautusmarginaali väliltä 0–5 °C.",
       "night_clamp_window_invalid": "Aikaisin yölaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
-      "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin."
+      "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
+      "cover_already_assigned": "Vähintään yksi valittu peite on jo liitetty toiseen SmartShading-ikkunaan. Peite voidaan liittää vain kerran."
     },
     "abort": {
       "single_instance_allowed": "SmartShading on jo määritetty.",
@@ -834,6 +836,20 @@
       "name": "Poista manuaalinen ohitus",
       "description": "Lopettaa aktiivisen manuaalisen ohituksen, jotta SmartShading ottaa automaattisen hallinnan taas käyttöön.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Peite liitetty useammin kuin kerran",
+      "description": "Peite {cover} on liitetty useaan SmartShading-ikkunaan eri asetuksilla: {locations}. Kunnes tämä on korjattu, SmartShading ei liikuta sitä automaattisesti. Vain sade-, tuuli- ja myrskysuojaus pysyy aktiivisena, ja se lähetetään yhdestä ikkunasta. Korjaa pitämällä peite vain yhdessä ikkunassa SmartShading-asetuksissa, poistamalla se muista ja lataamalla sitten asianomaiset SmartShading-kohteet uudelleen."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Peite liitetty useammin kuin kerran eri peitetyypeillä",
+      "description": "Peite {cover} on liitetty useaan SmartShading-ikkunaan eri peitetyypeillä: {locations}. Turvallista asentoa ei voi määrittää yksiselitteisesti, joten kunnes tämä on korjattu, SmartShading ei ohjaa tätä peitettä lainkaan, ei myöskään sade-, tuuli- ja myrskysuojausta. Pidä peite vain yhdessä ikkunassa SmartShading-asetuksissa, poista se muista ja lataa sitten asianomaiset SmartShading-kohteet uudelleen."
+    },
+    "duplicate_cover_identical": {
+      "title": "Peite liitetty kahdesti identtisillä asetuksilla",
+      "description": "Peite {cover} esiintyy useammin kuin kerran identtisillä asetuksilla: {locations}. SmartShading ohjaa sitä vain yhdestä näistä liitoksista. Poista kaksoiskappale SmartShading-asetuksista, jotta jokainen peite liitetään vain kerran."
     }
   }
 }

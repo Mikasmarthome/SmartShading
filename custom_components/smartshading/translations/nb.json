@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Tidligste morgenutløser kan ikke være senere enn seneste.",
       "override_fixed_until_required": "Angi et fast sluttidspunkt når varighet er satt til \"Fast tid\".",
       "invalid_custom_azimuth": "Angi en tilpasset asimut mellom 0 og 359 grader, eller velg en kompassretning.",
-      "no_covers_selected": "Velg minst én solskjermingsentitet for dette vinduet."
+      "no_covers_selected": "Velg minst én solskjermingsentitet for dette vinduet.",
+      "cover_already_assigned": "Minst ett valgt dekke er allerede tilordnet et annet SmartShading-vindu. Et dekke kan bare tilordnes én gang."
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading-systemoppføringen har ingen konfigurerbare alternativer."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Angi en minimum blendingseksponering mellom 0 og 500 W/m².",
       "invalid_heat_hysteresis": "Angi en frigivelsesmargin mellom 0 og 5 °C.",
       "night_clamp_window_invalid": "Tidligste nattutløser kan ikke være senere enn seneste.",
-      "morning_clamp_window_invalid": "Tidligste morgenutløser kan ikke være senere enn seneste."
+      "morning_clamp_window_invalid": "Tidligste morgenutløser kan ikke være senere enn seneste.",
+      "cover_already_assigned": "Minst ett valgt dekke er allerede tilordnet et annet SmartShading-vindu. Et dekke kan bare tilordnes én gang."
     },
     "abort": {
       "single_instance_allowed": "SmartShading er allerede konfigurert.",
@@ -834,6 +836,20 @@
       "name": "Fjern manuell overstyring",
       "description": "Avslutter en aktiv manuell overstyring, slik at SmartShading igjen overtar den automatiske styringen.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Dekke tilordnet mer enn én gang",
+      "description": "Dekket {cover} er tilordnet flere SmartShading-vinduer med ulike innstillinger: {locations}. Inntil dette er rettet, flytter ikke SmartShading det automatisk. Bare beskyttelsen mot regn, vind og storm forblir aktiv og sendes fra ett enkelt vindu. Rett det ved å beholde dekket i bare ett vindu i SmartShading-alternativene, fjerne det fra de andre og deretter laste inn de berørte SmartShading-oppføringene på nytt."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Dekke tilordnet mer enn én gang med ulike dekketyper",
+      "description": "Dekket {cover} er tilordnet flere SmartShading-vinduer med ulike dekketyper: {locations}. Den sikre posisjonen kan ikke fastslås entydig, så inntil dette er rettet styrer SmartShading ikke dette dekket i det hele tatt, heller ikke beskyttelsen mot regn, vind og storm. Behold dekket i bare ett vindu i SmartShading-alternativene, fjern det fra de andre og last deretter inn de berørte SmartShading-oppføringene på nytt."
+    },
+    "duplicate_cover_identical": {
+      "title": "Dekke tilordnet to ganger med identiske innstillinger",
+      "description": "Dekket {cover} forekommer flere ganger med identiske innstillinger: {locations}. SmartShading styrer det bare fra én av disse tilordningene. Fjern duplikatet i SmartShading-alternativene slik at hvert dekke bare tilordnes én gang."
     }
   }
 }

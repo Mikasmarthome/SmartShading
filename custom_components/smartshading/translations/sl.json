@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega.",
       "override_fixed_until_required": "Vnesite fiksni čas zaključka, ko je trajanje nastavljeno na \"Fiksni čas\".",
       "invalid_custom_azimuth": "Vnesite azimut po meri med 0 in 359 stopinjami ali izberite smer kompasa.",
-      "no_covers_selected": "Izberite vsaj eno entiteto senčila za to okno."
+      "no_covers_selected": "Izberite vsaj eno entiteto senčila za to okno.",
+      "cover_already_assigned": "Vsaj eno izbrano senčilo je že dodeljeno drugemu oknu SmartShading. Senčilo je mogoče dodeliti samo enkrat."
     },
     "abort": {
       "no_options_for_system_entry": "Sistemski vnos SmartShading nima nastavljivih možnosti."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Vnesite najmanjšo osvetljenost za bleščanje med 0 in 500 W/m².",
       "invalid_heat_hysteresis": "Vnesite razpon sprostitve med 0 in 5 °C.",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
-      "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega."
+      "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega.",
+      "cover_already_assigned": "Vsaj eno izbrano senčilo je že dodeljeno drugemu oknu SmartShading. Senčilo je mogoče dodeliti samo enkrat."
     },
     "abort": {
       "single_instance_allowed": "SmartShading je že konfiguriran.",
@@ -834,6 +836,20 @@
       "name": "Počisti ročno preglasitev",
       "description": "Konča aktivno ročno preglasitev, tako da SmartShading znova prevzame samodejni nadzor.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Senčilo dodeljeno večkrat",
+      "description": "Senčilo {cover} je dodeljeno več oknom SmartShading z različnimi nastavitvami: {locations}. Dokler to ni odpravljeno, ga SmartShading ne premika samodejno. Aktivna ostane samo zaščita pred dežjem, vetrom in neurjem, ki jo pošilja eno okno. Za odpravo obdržite senčilo samo v enem oknu v možnostih SmartShading, odstranite ga iz drugih in nato znova naložite prizadete vnose SmartShading."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Senčilo dodeljeno večkrat z različnimi tipi senčil",
+      "description": "Senčilo {cover} je dodeljeno več oknom SmartShading z različnimi tipi senčil: {locations}. Varnega položaja ni mogoče enoumno določiti, zato SmartShading tega senčila, dokler to ni odpravljeno, sploh ne upravlja, vključno z zaščito pred dežjem, vetrom in neurjem. Obdržite senčilo samo v enem oknu v možnostih SmartShading, odstranite ga iz drugih in nato znova naložite prizadete vnose SmartShading."
+    },
+    "duplicate_cover_identical": {
+      "title": "Senčilo dvakrat dodeljeno z enakimi nastavitvami",
+      "description": "Senčilo {cover} se pojavi večkrat z enakimi nastavitvami: {locations}. SmartShading ga upravlja samo iz ene od teh dodelitev. Odstranite dvojnik v možnostih SmartShading, da je vsako senčilo dodeljeno samo enkrat."
     }
   }
 }

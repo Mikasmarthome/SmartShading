@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste.",
       "override_fixed_until_required": "Bitte eine feste Endzeit angeben, wenn die Dauer auf \"Feste Uhrzeit\" gesetzt ist.",
       "invalid_custom_azimuth": "Gib einen benutzerdefinierten Azimut zwischen 0 und 359 Grad ein oder wähle eine Himmelsrichtung.",
-      "no_covers_selected": "Wähle mindestens eine Cover-Entität für dieses Fenster aus."
+      "no_covers_selected": "Wähle mindestens eine Cover-Entität für dieses Fenster aus.",
+      "cover_already_assigned": "Mindestens ein ausgewähltes Cover ist bereits einem anderen SmartShading-Fenster zugeordnet. Ein Cover kann nur einmal zugeordnet werden."
     },
     "abort": {
       "no_options_for_system_entry": "Der SmartShading-System-Eintrag hat keine konfigurierbaren Optionen."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Bitte eine Mindestexposition für den Blendschutz zwischen 0 und 500 W/m² eingeben.",
       "invalid_heat_hysteresis": "Gib eine Freigabespanne zwischen 0 und 5 °C ein.",
       "night_clamp_window_invalid": "Der früheste nächtliche Auslöser darf nicht später sein als der späteste.",
-      "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste."
+      "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste.",
+      "cover_already_assigned": "Mindestens ein ausgewähltes Cover ist bereits einem anderen SmartShading-Fenster zugeordnet. Ein Cover kann nur einmal zugeordnet werden."
     },
     "abort": {
       "single_instance_allowed": "SmartShading ist bereits eingerichtet.",
@@ -834,6 +836,20 @@
       "name": "Manuelle Übersteuerung aufheben",
       "description": "Beendet eine aktive manuelle Übersteuerung. SmartShading übernimmt anschließend wieder die automatische Steuerung.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Cover mehrfach zugeordnet",
+      "description": "Das Cover {cover} ist mehreren SmartShading-Fenstern mit unterschiedlichen Einstellungen zugeordnet: {locations}. Bis das behoben ist, fährt SmartShading es nicht automatisch. Nur der Regen-, Wind- und Sturmschutz bleibt aktiv und wird von genau einem Fenster gesendet. Zur Behebung das Cover in den SmartShading-Optionen nur in einem Fenster belassen, aus den anderen entfernen und danach die betroffenen SmartShading-Einträge neu laden."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Cover mehrfach mit unterschiedlichen Cover-Typen zugeordnet",
+      "description": "Das Cover {cover} ist mehreren SmartShading-Fenstern mit unterschiedlichen Cover-Typen zugeordnet: {locations}. Die sichere Position lässt sich nicht eindeutig bestimmen, daher steuert SmartShading dieses Cover bis zur Behebung gar nicht, auch nicht den Regen-, Wind- und Sturmschutz. Das Cover in den SmartShading-Optionen nur in einem Fenster belassen, aus den anderen entfernen und danach die betroffenen SmartShading-Einträge neu laden."
+    },
+    "duplicate_cover_identical": {
+      "title": "Cover doppelt mit identischen Einstellungen zugeordnet",
+      "description": "Das Cover {cover} kommt mehrfach mit identischen Einstellungen vor: {locations}. SmartShading steuert es nur aus einer dieser Zuordnungen. Die doppelte Zuordnung in den SmartShading-Optionen entfernen, damit jedes Cover nur einmal zugeordnet ist."
     }
   }
 }

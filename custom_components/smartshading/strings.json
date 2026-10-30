@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger.",
       "override_fixed_until_required": "Enter a fixed end time when duration is set to \"Fixed time\".",
       "invalid_custom_azimuth": "Enter a custom azimuth between 0 and 359 degrees, or pick a compass direction.",
-      "no_covers_selected": "Select at least one cover entity for this window."
+      "no_covers_selected": "Select at least one cover entity for this window.",
+      "cover_already_assigned": "One or more selected covers are already assigned to another SmartShading window. A cover can be assigned only once."
     },
     "abort": {
       "no_options_for_system_entry": "The SmartShading System entry has no configurable options."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
       "invalid_heat_hysteresis": "Enter a heat protection release margin between 0 and 5 °C.",
       "night_clamp_window_invalid": "Night earliest trigger must not be later than night latest trigger.",
-      "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger."
+      "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger.",
+      "cover_already_assigned": "One or more selected covers are already assigned to another SmartShading window. A cover can be assigned only once."
     },
     "abort": {
       "single_instance_allowed": "SmartShading is already configured.",
@@ -834,6 +836,20 @@
       "name": "Clear manual override",
       "description": "Ends an active manual override so SmartShading takes over automatic control again.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Cover assigned more than once",
+      "description": "The cover {cover} is assigned to several SmartShading windows with different settings: {locations}. Until this is fixed, SmartShading does not move it automatically. Only rain, wind and storm protection stays active, sent from a single window. To fix it, keep the cover in only one window in the SmartShading options, remove it from the others, then reload the affected SmartShading entries."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Cover assigned more than once with different cover types",
+      "description": "The cover {cover} is assigned to several SmartShading windows with different cover types: {locations}. The safe position cannot be determined unambiguously, so until this is fixed SmartShading does not control this cover at all, including rain, wind and storm protection. Keep the cover in only one window in the SmartShading options, remove it from the others, then reload the affected SmartShading entries."
+    },
+    "duplicate_cover_identical": {
+      "title": "Cover assigned twice with identical settings",
+      "description": "The cover {cover} appears more than once with identical settings: {locations}. SmartShading controls it from only one of these assignments. Remove the duplicate in the SmartShading options so that each cover is assigned only once."
     }
   }
 }

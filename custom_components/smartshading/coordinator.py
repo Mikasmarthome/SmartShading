@@ -377,6 +377,14 @@ from .cover_control.dispatch_plan_executor import (
     ValidationAction,
 )
 from .cover_control.dispatch_completion import _sleep_or_abort
+from .engines.cover_ownership import (
+    ROLE_ACTIVE as _OWN_ACTIVE,
+    ROLE_DEDUPLICATED as _OWN_DEDUPLICATED,
+    ROLE_QUARANTINED as _OWN_QUARANTINED,
+    ROLE_SAFETY_ONLY as _OWN_SAFETY_ONLY,
+    CoverOwnershipRegistry,
+    normalize_cover_id as _normalize_cover_id,
+)
 from .cover_control.global_dispatch_throttle import GlobalDispatchThrottle, GlobalSerialDispatch
 from .cover_control.ha_service_adapter import dispatch_cover_intent
 from .cover_control.position_semantics import (
@@ -1377,6 +1385,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         ema_enabled: bool = False,
         ema_alpha: float = 0.3,
         global_serial_dispatch: GlobalSerialDispatch | None = None,
+        cover_ownership: CoverOwnershipRegistry | None = None,
         dispatch_config: DispatchConfig | None = None,
     ) -> None:
         super().__init__(
@@ -1672,6 +1681,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # feeds the wind reading, the band the last evaluation saw, and counters
         # for diagnostics.
         self._unsub_wind_listener: Callable[[], None] | None = None
+        # Cover ownership (A4): which of this coordinator's windows may command
+        # which cover.  None (stub/unit setups) means every cover is active.
+        self._cover_ownership: CoverOwnershipRegistry | None = cover_ownership
+        self._unsub_ownership_listener: Callable[[], None] | None = None
+        self._ownership_stats: dict[str, Any] = {
+            "plan_invalidations": 0, "last_generation": None, "commands_blocked": 0,
+        }
         self._last_wind_band: WindBand | None = None
         self._last_wind_effective_ms: float | None = None
         self._wind_listener_stats: dict[str, Any] = {
@@ -2480,7 +2496,107 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if window.rain_release_delay_min is not None
             else self.global_defaults.rain_release_delay_min
         )
+        # A4: the Safety sender of a conflicting cover protects it if ANY of the
+        # conflicting assignments enabled rain protection.
+        if (
+            not enabled and self._cover_ownership is not None
+            and cover_group is not None and cover_group.cover_ids
+            and self._cover_ownership.rain_union(
+                self.config_entry.entry_id, window.id, cover_group.cover_ids[0])
+        ):
+            enabled = True
         return enabled, safe_internal, delay_min
+
+    # ------------------------------------------------------------------
+    # Cover ownership (A4)
+    # ------------------------------------------------------------------
+
+    def _cover_role(self, window_id: str, cover_id: str) -> str:
+        if self._cover_ownership is None:
+            return _OWN_ACTIVE
+        return self._cover_ownership.role(
+            self.config_entry.entry_id, window_id, _normalize_cover_id(cover_id))
+
+    def _ownership_allows(self, window_id: str, cover_id: str, is_safety: bool) -> bool:
+        """May this window send a command to this cover right now?
+
+        ACTIVE always; SAFETY_ONLY (deterministic Safety sender of a conflicting
+        cover) only for Safety; DEDUPLICATED and QUARANTINED never."""
+        role = self._cover_role(window_id, cover_id)
+        if role == _OWN_ACTIVE:
+            return True
+        return role == _OWN_SAFETY_ONLY and is_safety
+
+    def _dispatchable_cover_ids(self, window: WindowConfig, is_safety: bool) -> list[str]:
+        """The window's covers this window may command: a cover listed twice is
+        commanded once, and covers owned by someone else (or quarantined) are
+        left out entirely, so no intent and no service call exists for them."""
+        group = self.cover_groups.get(window.cover_group_id)
+        if group is None:
+            return []
+        seen: set[str] = set()
+        out: list[str] = []
+        for cover in group.cover_ids:
+            norm = _normalize_cover_id(cover)
+            if norm in seen:
+                continue
+            seen.add(norm)
+            if self._ownership_allows(window.id, cover, is_safety):
+                out.append(cover)
+        return out
+
+    def _window_ownership_info(self, window: WindowConfig) -> tuple[str, str, int, tuple[str, ...]]:
+        """(role, kind, owner_count, differing aspects) of the window's primary cover."""
+        group = self.cover_groups.get(window.cover_group_id)
+        if self._cover_ownership is None or group is None or not group.cover_ids:
+            return _OWN_ACTIVE, "unique", 1, ()
+        cover = group.cover_ids[0]
+        own = self._cover_ownership.result.covers.get(_normalize_cover_id(cover))
+        role = self._cover_role(window.id, cover)
+        if own is None:
+            return role, "unique", 1, ()
+        return role, own.kind, len(own.parties), tuple(own.aspects)
+
+    def _window_ownership_inactive(self, window: WindowConfig) -> bool:
+        """True when the window's primary (observed) cover is deduplicated or
+        quarantined: another party's commands move it, so override detection and
+        learning for this window would read them as manual interference."""
+        group = self.cover_groups.get(window.cover_group_id)
+        if group is None or not group.cover_ids:
+            return False
+        return self._cover_role(window.id, group.cover_ids[0]) in (
+            _OWN_DEDUPLICATED, _OWN_QUARANTINED)
+
+    def async_setup_ownership_listener(self, entry: ConfigEntry) -> None:
+        """Invalidate plans and re-evaluate when this entry's cover roles change
+        (another entry gained or lost a claim, or a conflict was resolved).
+        Idempotent; removed on unload."""
+        self.async_teardown_ownership_listener()
+        if self._cover_ownership is None:
+            return
+
+        def _on_ownership_changed() -> None:
+            self._ownership_stats["plan_invalidations"] += 1
+            self._ownership_stats["last_generation"] = self._cover_ownership.generation
+            # Plans (waiting or running, normal or Safety) built under the old
+            # roles are dropped: nothing of them is replayed, and the fresh
+            # evaluation recomputes under the new roles.
+            self._dispatch_generation += 1
+            if self._active_dispatch_cancellation is not None:
+                self._active_dispatch_cancellation.set()
+            self._create_tracked_background_task(
+                entry, self.async_request_refresh(), "smartshading_ownership_refresh",
+            )
+
+        self._unsub_ownership_listener = self._cover_ownership.add_listener(
+            entry.entry_id, _on_ownership_changed)
+        entry.async_on_unload(self.async_teardown_ownership_listener)
+
+    def async_teardown_ownership_listener(self) -> None:
+        """Remove the ownership listener.  Idempotent."""
+        unsub, self._unsub_ownership_listener = self._unsub_ownership_listener, None
+        if unsub is not None:
+            unsub()
 
     def _window_wind_enabled(self, window: WindowConfig) -> bool:
         """Effective Wind protection (WIND_SAFE) for one window.
@@ -4137,7 +4253,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # effective_zone_execution() applies any runtime switch override (Step 9G11).
             zone = self.zones.get(window.zone_id, ZoneConfig(id=window.zone_id, name=window.zone_id))
             _exec = self.effective_zone_execution(window.zone_id)
-            obs_enabled = _exec.learning_enabled
+            _ownership_inactive = self._window_ownership_inactive(window)
+            obs_enabled = _exec.learning_enabled and not _ownership_inactive
 
             # Capability/Position observation (2026-06-16) is independent
             # of sun data - a cover's position is worth reading even when
@@ -5656,7 +5773,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 )
                 self._override_detector.tick(
                     window_id=window_id,
-                    observed_position=observed_internal,
+                    observed_position=None if _ownership_inactive else observed_internal,
                     smartshading_target=tier_decision.target_position,
                     smartshading_assumed=_override_assumed,
                     prev_state=current_state,
@@ -6812,7 +6929,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             ):
                 _exec_plan = build_execution_plan(
                     window_id=window_id,
-                    cover_entity_ids=self.cover_groups[s.window.cover_group_id].cover_ids,
+                    cover_entity_ids=self._dispatchable_cover_ids(s.window, s.is_safety),
                     filter_result=_exec_filter_for_dispatch,
                     decided_by=s.tier_decided_by or "unknown",
                     now=now,
@@ -7001,6 +7118,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     _exec_results.append(build_not_attempted_result(
                                         _intent, reason="safety_preempted"))
                                     continue
+                            if not self._ownership_allows(
+                                window_id, _intent.cover_entity_id, _intent.is_safety
+                            ):
+                                # Ownership changed while this request waited:
+                                # the plan is dropped, never sent and never replayed.
+                                self._ownership_stats["commands_blocked"] += 1
+                                _exec_results.append(build_not_attempted_result(
+                                    _intent, reason="cover_ownership"))
+                                continue
                             _dispatch_now = dt_util.utcnow()
                             _intent_result = await dispatch_cover_intent(
                                 self.hass, _intent, now_utc=_dispatch_now
@@ -7081,7 +7207,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     max_wait_s=self._dispatch_config.max_travel_wait_s,
                                     cancellation=_safety_yield,
                                     abort_check=self._completion_abort_check(
-                                        _this_dispatch_gen, _intent.is_safety),
+                                        _this_dispatch_gen, _intent.is_safety,
+                                        window_id=window_id, cover_id=_intent.cover_entity_id),
                                 )
                                 _intent_result = replace(
                                     _intent_result,
@@ -7388,6 +7515,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     if _rain_held and not _eval_is_rain
                     else None
                 ),
+                cover_ownership_role=self._window_ownership_info(s.window)[0],
+                cover_ownership_kind=self._window_ownership_info(s.window)[1],
+                cover_ownership_owner_count=self._window_ownership_info(s.window)[2],
+                cover_ownership_aspects=self._window_ownership_info(s.window)[3],
                 wind_protection_effective=self._window_wind_enabled(s.window),
                 wind_band=(
                     self._last_wind_band.value if self._last_wind_band is not None else None
@@ -8078,16 +8209,25 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             oldest = sorted(self._research_daily_buckets)[0]
             del self._research_daily_buckets[oldest]
 
-    def _completion_abort_check(self, dispatch_gen: int, is_safety: bool):
+    def _completion_abort_check(
+        self, dispatch_gen: int, is_safety: bool, *,
+        window_id: str | None = None, cover_id: str | None = None,
+    ):
         """Abort verdict for a completion wait (see wait_for_travel_completion).
 
         Unload always ends the wait.  A superseded generation ends a NORMAL
-        wait only -- Safety is exempt from generation cancellation."""
+        wait only -- Safety is exempt from generation cancellation.  A cover
+        that is no longer ours to command (ownership changed) ends it too."""
         def _check():
             if self._unloading:
                 return (CompletionStatus.UNLOADED, "unloading")
             if not is_safety and self._dispatch_generation != dispatch_gen:
                 return (CompletionStatus.STALE, "generation_superseded")
+            if (
+                window_id is not None and cover_id is not None
+                and not self._ownership_allows(window_id, cover_id, is_safety)
+            ):
+                return (CompletionStatus.CANCELLED, "cover_ownership")
             return None
         return _check
 
@@ -8288,7 +8428,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 continue
             exec_plan = build_execution_plan(
                 window_id=window_id,
-                cover_entity_ids=self.cover_groups[s.window.cover_group_id].cover_ids,
+                cover_entity_ids=self._dispatchable_cover_ids(s.window, s.is_safety),
                 filter_result=exec_filter_for_dispatch,
                 decided_by=s.tier_decided_by or "unknown",
                 now=now,
@@ -8432,6 +8572,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         "slot_granted_mono": slot_granted_mono,
                         "timing_status": timing_status,
                     }
+                    if not self._ownership_allows(window_id, intent.cover_entity_id, False):
+                        self._ownership_stats["commands_blocked"] += 1
+                        return build_not_attempted_result(intent, reason="cover_ownership")
                     dispatch_now = dt_util.utcnow()
                     result = await dispatch_cover_intent(
                         self.hass, intent, now_utc=dispatch_now
@@ -8527,7 +8670,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 ),
                 max_wait_s=self._dispatch_config.max_travel_wait_s,
                 cancellation=cancellation,
-                abort_check=self._completion_abort_check(this_dispatch_gen, False),
+                abort_check=self._completion_abort_check(
+                    this_dispatch_gen, False,
+                    window_id=window_id, cover_id=intent.cover_entity_id),
             )
             exec_result_by_entity[plan_item.cover_entity_id] = replace(
                 prior,
@@ -8610,6 +8755,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             direction. Documented reduced precision, not false confidence.
             """
             window_id, s, intent = intent_by_entity[plan_item.cover_entity_id]
+
+            if not self._ownership_allows(window_id, intent.cover_entity_id, False):
+                return ExecutionValidation(ValidationAction.SKIP, reason="cover_ownership")
 
             fresh_entity_id, fresh_cap, fresh_snapshot = (
                 self._build_cover_entity_snapshot_for_window(s.window, dt_util.utcnow())
@@ -8841,7 +8989,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 continue
             exec_plan = build_execution_plan(
                 window_id=window_id,
-                cover_entity_ids=self.cover_groups[s.window.cover_group_id].cover_ids,
+                cover_entity_ids=self._dispatchable_cover_ids(s.window, s.is_safety),
                 filter_result=exec_filter_for_dispatch,
                 decided_by=s.tier_decided_by or "unknown",
                 now=now,

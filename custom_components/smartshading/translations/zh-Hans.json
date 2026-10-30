@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。",
       "override_fixed_until_required": "当持续时间设置为“固定时间”时，请输入固定结束时间。",
       "invalid_custom_azimuth": "输入 0 到 359 度之间的自定义方位角，或选择一个罗盘方向。",
-      "no_covers_selected": "请为该窗户至少选择一个遮阳帘实体。"
+      "no_covers_selected": "请为该窗户至少选择一个遮阳帘实体。",
+      "cover_already_assigned": "至少有一个所选遮阳设备已分配给另一个 SmartShading 窗口。每个遮阳设备只能分配一次。"
     },
     "abort": {
       "no_options_for_system_entry": "SmartShading 系统条目没有可配置的选项。"
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "请输入 0 到 500 W/m² 之间的眼光最小辐照度。",
       "invalid_heat_hysteresis": "请输入 0 到 5 °C 之间的释放余量。",
       "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
-      "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。"
+      "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。",
+      "cover_already_assigned": "至少有一个所选遮阳设备已分配给另一个 SmartShading 窗口。每个遮阳设备只能分配一次。"
     },
     "abort": {
       "single_instance_allowed": "SmartShading 已配置。",
@@ -834,6 +836,20 @@
       "name": "清除手动覆盖",
       "description": "结束当前生效的手动覆盖，使 SmartShading 重新接管自动控制。",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "遮阳设备被重复分配",
+      "description": "遮阳设备 {cover} 被分配给多个设置不同的 SmartShading 窗口：{locations}。在问题解决之前，SmartShading 不会自动移动它。仅保留防雨、防风和防暴风保护，并由单个窗口发送。解决方法：在 SmartShading 选项中只在一个窗口保留该遮阳设备，从其他窗口移除，然后重新加载受影响的 SmartShading 条目。"
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "遮阳设备被重复分配且设备类型不同",
+      "description": "遮阳设备 {cover} 被分配给多个设备类型不同的 SmartShading 窗口：{locations}。无法明确确定安全位置，因此在问题解决之前，SmartShading 完全不会控制该遮阳设备，包括防雨、防风和防暴风保护。请在 SmartShading 选项中只在一个窗口保留该遮阳设备，从其他窗口移除，然后重新加载受影响的 SmartShading 条目。"
+    },
+    "duplicate_cover_identical": {
+      "title": "遮阳设备被重复分配且设置相同",
+      "description": "遮阳设备 {cover} 以相同设置多次出现：{locations}。SmartShading 仅通过其中一个分配进行控制。请在 SmartShading 选项中删除重复分配，使每个遮阳设备只分配一次。"
     }
   }
 }

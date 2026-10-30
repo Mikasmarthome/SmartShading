@@ -410,7 +410,8 @@
       "morning_clamp_window_invalid": "Najskoršie ranné spustenie nesmie byť neskôr než najneskôršie.",
       "override_fixed_until_required": "Zadajte pevný čas ukončenia, keď je trvanie nastavené na \"Pevný čas\".",
       "invalid_custom_azimuth": "Zadajte vlastný azimut medzi 0 a 359 stupňami, alebo vyberte smer kompasu.",
-      "no_covers_selected": "Vyberte aspoň jednu entitu tienenia pre toto okno."
+      "no_covers_selected": "Vyberte aspoň jednu entitu tienenia pre toto okno.",
+      "cover_already_assigned": "Aspoň jedno vybrané zakrytie je už priradené inému oknu SmartShading. Zakrytie možno priradiť iba raz."
     },
     "abort": {
       "no_options_for_system_entry": "Systémová položka SmartShading nemá žiadne konfigurovateľné možnosti."
@@ -562,7 +563,8 @@
       "invalid_glare_min_exposure": "Zadajte minimálnu intenzitu oslnenia medzi 0 a 500 W/m².",
       "invalid_heat_hysteresis": "Zadajte rozpätie uvoľnenia medzi 0 a 5 °C.",
       "night_clamp_window_invalid": "Najskoršie nočné spustenie nesmie byť neskôr než najneskôršie.",
-      "morning_clamp_window_invalid": "Najskoršie ranné spustenie nesmie byť neskôr než najneskôršie."
+      "morning_clamp_window_invalid": "Najskoršie ranné spustenie nesmie byť neskôr než najneskôršie.",
+      "cover_already_assigned": "Aspoň jedno vybrané zakrytie je už priradené inému oknu SmartShading. Zakrytie možno priradiť iba raz."
     },
     "abort": {
       "single_instance_allowed": "SmartShading je už nakonfigurovaný.",
@@ -834,6 +836,20 @@
       "name": "Zrušiť ručné prepísanie",
       "description": "Ukončí aktívne ručné prepísanie, aby SmartShading opäť prevzal automatické riadenie.",
       "fields": {}
+    }
+  },
+  "issues": {
+    "duplicate_cover_conflict": {
+      "title": "Zakrytie priradené viackrát",
+      "description": "Zakrytie {cover} je priradené viacerým oknám SmartShading s rôznym nastavením: {locations}. Kým sa to neopraví, SmartShading ho automaticky nepohybuje. Aktívna zostáva iba ochrana pred dažďom, vetrom a búrkou, odosielaná z jediného okna. Oprava: ponechajte zakrytie iba v jednom okne v možnostiach SmartShading, odstráňte ho z ostatných a potom znova načítajte dotknuté položky SmartShading."
+    },
+    "duplicate_cover_conflict_no_safety": {
+      "title": "Zakrytie priradené viackrát s rôznymi typmi zakrytia",
+      "description": "Zakrytie {cover} je priradené viacerým oknám SmartShading s rôznymi typmi zakrytia: {locations}. Bezpečnú polohu nemožno jednoznačne určiť, preto SmartShading toto zakrytie, kým sa to neopraví, vôbec neovláda, vrátane ochrany pred dažďom, vetrom a búrkou. Ponechajte zakrytie iba v jednom okne v možnostiach SmartShading, odstráňte ho z ostatných a potom znova načítajte dotknuté položky SmartShading."
+    },
+    "duplicate_cover_identical": {
+      "title": "Zakrytie priradené dvakrát s rovnakým nastavením",
+      "description": "Zakrytie {cover} sa vyskytuje viackrát s rovnakým nastavením: {locations}. SmartShading ho ovláda iba z jedného z týchto priradení. Odstráňte duplicitu v možnostiach SmartShading, aby bolo každé zakrytie priradené iba raz."
     }
   }
 }

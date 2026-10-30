@@ -370,6 +370,7 @@ from .cover_control.dispatch_orchestrator import (
     requires_completion_wait,
 )
 from .cover_control.dispatch_plan_executor import (
+    INTERMEDIATE_POST_COMPLETION_PAUSE_S,
     CompletionOutcome,
     DispatchOutcome,
     DispatchPlanExecutor,
@@ -706,6 +707,10 @@ class _WindowComputeState:
 # window is deliberately acting on safety alone ("sun_unavailable" is already
 # in the same tuple for the cycle).
 _SAFETY_WITHOUT_SUN_CODE = "safety_active_without_sun"
+
+# A5: how long a cover whose completion wait timed out is waited on by travel-time
+# estimate instead of by its (apparently unreliable) reported state.
+_COMPLETION_DOWNGRADE_S = 6 * 3600.0
 
 # Suppressed-hold decisions: the orchestrator/mode-gate produced a result that
 # sent NO cover command (target_position=None), so the state machine must stay at
@@ -1685,6 +1690,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # which cover.  None (stub/unit setups) means every cover is active.
         self._cover_ownership: CoverOwnershipRegistry | None = cover_ownership
         self._unsub_ownership_listener: Callable[[], None] | None = None
+        # A5: covers whose completion wait timed out (monotonic time of the timeout).
+        # Their feedback is not trusted for _COMPLETION_DOWNGRADE_S; the travel-time
+        # estimate is used instead, so a cover that never reports back cannot block
+        # every later sequence.
+        self._completion_downgraded: dict[str, float] = {}
         self._ownership_stats: dict[str, Any] = {
             "plan_invalidations": 0, "last_generation": None, "commands_blocked": 0,
         }
@@ -2510,6 +2520,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
     # ------------------------------------------------------------------
     # Cover ownership (A4)
     # ------------------------------------------------------------------
+
+    def _feedback_trusted(self, cover_id: str, has_reliable_feedback: bool) -> bool:
+        """Whether a completion wait may watch this cover's reported state."""
+        if not has_reliable_feedback:
+            return False
+        since = self._completion_downgraded.get(cover_id)
+        if since is None:
+            return True
+        if _monotonic() - since >= _COMPLETION_DOWNGRADE_S:
+            self._completion_downgraded.pop(cover_id, None)
+            return True
+        return False
 
     def _cover_role(self, window_id: str, cover_id: str) -> str:
         if self._cover_ownership is None:
@@ -8144,6 +8166,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "completion_method": _ctx.get("completion_method"),
             "completion_wait_s": _ctx.get("completion_wait_s"),
             "completion_timed_out": _ctx.get("completion_timed_out"),
+            "completion_expected_s": _ctx.get("completion_expected_s"),
+            "completion_movement_observed": _ctx.get("completion_movement_observed"),
+            "completion_travel_time_source": _ctx.get("completion_travel_time_source"),
+            "completion_settle_s": _ctx.get("completion_settle_s"),
+            "completion_downgraded": _ctx.get("completion_downgraded"),
             "completion_status": _ctx.get("completion_status"),
             "completion_cancel_reason": _ctx.get("completion_cancel_reason"),
             "admission_priority": _ctx.get("admission_priority"),
@@ -8647,6 +8674,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # from here anymore).
             if prior is None:
                 return CompletionOutcome(status="completed")
+            _downgraded = bool(
+                s.exec_cap is not None and s.exec_cap.has_reliable_position_feedback
+                and not self._feedback_trusted(intent.cover_entity_id, True)
+            )
             completion = await wait_for_travel_completion(
                 self.hass,
                 entity_id=intent.cover_entity_id,
@@ -8655,7 +8686,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     s.exec_cap.invert_position if s.exec_cap is not None else False
                 ),
                 has_reliable_position_feedback=(
-                    s.exec_cap.has_reliable_position_feedback
+                    self._feedback_trusted(
+                        intent.cover_entity_id, s.exec_cap.has_reliable_position_feedback)
                     if s.exec_cap is not None else False
                 ),
                 start_position_ha=(
@@ -8681,7 +8713,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 completion_timed_out=completion.timed_out,
                 completion_status=completion.status.value,
                 completion_cancel_reason=completion.cancel_reason,
+                completion_expected_s=completion.expected_s,
+                completion_movement_observed=completion.movement_observed,
+                completion_travel_time_source="default",
+                completion_settle_s=INTERMEDIATE_POST_COMPLETION_PAUSE_S,
+                completion_downgraded=_downgraded,
             )
+            if completion.timed_out and not _downgraded:
+                # A cover that was expected to report back did not: from now on
+                # (for _COMPLETION_DOWNGRADE_S) it is waited on by estimate.
+                self._completion_downgraded[intent.cover_entity_id] = _monotonic()
             if not completion.completed and not completion.timed_out:
                 # Cancelled / stale / unloaded: the plan stops here and is
                 # never replayed; a timeout is NOT folded into this.
@@ -9225,6 +9266,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             "completion_method": getattr(exec_result, "completion_method", None),
             "completion_wait_s": getattr(exec_result, "completion_wait_s", None),
             "completion_timed_out": bool(getattr(exec_result, "completion_timed_out", False)),
+            "completion_expected_s": getattr(exec_result, "completion_expected_s", None),
+            "completion_movement_observed": getattr(exec_result, "completion_movement_observed", None),
+            "completion_travel_time_source": getattr(exec_result, "completion_travel_time_source", None),
+            "completion_settle_s": getattr(exec_result, "completion_settle_s", None),
+            "completion_downgraded": bool(getattr(exec_result, "completion_downgraded", False)),
             "completion_status": getattr(exec_result, "completion_status", None),
             "completion_cancel_reason": getattr(exec_result, "completion_cancel_reason", None),
             "admission_priority": getattr(exec_result, "admission_priority", None),

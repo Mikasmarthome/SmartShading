@@ -220,7 +220,9 @@ class TestIntermediateGroups:
         assert h.dispatch_calls[2] == ("c2", 9.5)
 
     @async_test
-    async def test_timeout_on_one_item_continues_the_queue(self):
+    async def test_timeout_on_one_item_stops_the_rest_of_the_group(self):
+        """A5: a timeout is not a success, so the next 1-99 % cover of the same
+        group is not started on the strength of it."""
         clock = FakeClock()
         h = Harness(clock)
         h.completion_outcomes["c0"] = CompletionOutcome(status="timed_out", completion_method="timeout")
@@ -231,9 +233,10 @@ class TestIntermediateGroups:
                  target_class=DispatchTargetClass.INTERMEDIATE),
         ])
         result = await _executor().execute_plan(plan=plan, **h.kwargs())
-        assert [c for c, _ in h.dispatch_calls] == ["c0", "c1"]
+        assert [c for c, _ in h.dispatch_calls] == ["c0"]
         assert result.item_results[0].status == "timed_out"
-        assert result.item_results[1].status == "completed"
+        assert (result.item_results[1].status, result.item_results[1].reason) == (
+            "skipped", "previous_completion_timed_out")
 
     @async_test
     async def test_blocked_item_within_group_does_not_permanently_block_the_rest(self):

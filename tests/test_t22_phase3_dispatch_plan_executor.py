@@ -449,7 +449,7 @@ class TestIntermediate:
         assert h.sleep_calls == [2.0]
 
     @async_test
-    async def test_timeout_still_gets_pause_and_continues(self):
+    async def test_timeout_still_gets_pause_but_stops_the_group(self):
         clock = FakeClock()
         h = Harness(clock)
         h.completion_outcomes["a"] = CompletionOutcome(status="timed_out")
@@ -460,7 +460,8 @@ class TestIntermediate:
         result = await _executor().execute_plan(plan=plan, **h.kwargs())
         assert result.item_results[0].status == "timed_out"
         assert h.sleep_calls == [2.0]
-        assert h.dispatch_calls[1] == ("b", 2.0)
+        assert [c for c, _ in h.dispatch_calls] == ["a"]       # A5: b is not started after a timeout
+        assert result.item_results[1].reason == "previous_completion_timed_out"
         assert result.status == "completed"
 
     @async_test

@@ -184,6 +184,10 @@ class DispatchPlanExecutor:
         started_at = clock()
         results: list[DispatchItemExecutionResult] = []
         aborted_zones: set[str] = set()
+        # A5: zones whose last completion timed out.  A timeout is not a success,
+        # so the rest of that group is NOT started on the strength of it; the next
+        # fresh evaluation decides again.  Other zones are unaffected.
+        timeout_zones: set[str] = set()
         abort_plan_reason: str | None = None
         preempted = False
 
@@ -218,6 +222,13 @@ class DispatchPlanExecutor:
                 results.append(DispatchItemExecutionResult(
                     item=item, status="skipped", dispatch_started=False,
                     reason="stale_generation",
+                ))
+                continue
+
+            if item.zone_id in timeout_zones:
+                results.append(DispatchItemExecutionResult(
+                    item=item, status="skipped", dispatch_started=False,
+                    reason="previous_completion_timed_out",
                 ))
                 continue
 
@@ -340,6 +351,7 @@ class DispatchPlanExecutor:
                     completion_method=completion.completion_method,
                 ))
             elif completion.status == "timed_out":
+                timeout_zones.add(item.zone_id)
                 results.append(DispatchItemExecutionResult(
                     item=item, status="timed_out", dispatch_started=True,
                     completion_method=completion.completion_method,

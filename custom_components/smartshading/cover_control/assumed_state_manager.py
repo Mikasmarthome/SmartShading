@@ -18,10 +18,14 @@ the coordinator:
     section both expose the resulting confidence/uncertainty/drift values.
 
 Still NOT wired (deferred, no known consumer designed for them yet):
-on_restart()/on_reference_travel()/record_progress() — these require a
-travel-in-progress detector and/or a reference-travel (endstop) event
-source that does not exist in the coordinator today; wiring them without
-that upstream signal would have no real caller. is_drift_suspected() is
+on_restart()/on_reference_travel() — these require a travel-in-progress
+detector and/or a reference-travel (endstop) event source that does not exist
+in the coordinator today.  A5 audited this again: endpoint (0/100 %) targets use
+the fast start-spaced path and never run a completion wait, and a completion of
+the kind "position" is only ever produced for intermediate targets, so there is
+still no clean signal that a cover provably reached an endstop; wiring them would
+have no real caller.  (The unused record_progress() was removed in A5.)
+is_drift_suspected() is
 computed and persisted but not separately consulted anywhere beyond feeding
 is_position_trustworthy()'s underlying confidence value.
 """
@@ -192,18 +196,6 @@ class AssumedStateManager:
             last_commanded_position=position,
         )
 
-    def record_progress(self, cover_id: str, estimated_position: int, now: datetime) -> None:
-        """Lightweight mid-travel update for polling (e.g. from the future
-        Coordinator while TravelTracker reports is_moving()). Unlike
-        update(), this does NOT increment position_uncertainty_pct -
-        uncertainty grows once per commanded travel, not once per poll
-        tick.
-        """
-        record = self._records.get(cover_id)
-        if record is None:
-            return
-        self._records[cover_id] = replace(record, assumed_position=estimated_position)
-
     def observe(
         self,
         cover_id: str,
@@ -222,9 +214,9 @@ class AssumedStateManager:
 
         Unlike update(), this NEVER increments position_uncertainty_pct,
         regardless of reliability - merely observing a number is not the
-        same as SmartShading issuing an unconfirmed command. Unlike
-        record_progress(), this bootstraps a record if the cover has
-        never been seen before, so it works as the very first read too.
+        same as SmartShading issuing an unconfirmed command. It
+        bootstraps a record if the cover has never been seen before, so it
+        works as the very first read too.
 
         For reliable covers, an observed reading IS ground truth (whether
         or not SmartShading commanded it) - confidence resets to "fresh"

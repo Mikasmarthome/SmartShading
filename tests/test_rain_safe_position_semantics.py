@@ -3511,3 +3511,174 @@ class TestA4PlanInvalidationAndRecovery:
         assert "async_setup_ownership_listener" in calls_in("_async_setup_zone_entry")
         assert "async_sync_cover_ownership" in calls_in("async_remove_entry")
         assert "async_teardown_ownership_listener" in calls_in("async_unload_entry")
+
+
+# ---------------------------------------------------------------------------
+# A5 -- trustworthy end of travel and the one-at-a-time rule, through the coordinator
+# ---------------------------------------------------------------------------
+
+
+def _fake_time_completion(monkeypatch):
+    """The REAL wait_for_travel_completion, driven by a fake clock so a 40 s
+    timeout costs no real time."""
+    from custom_components.smartshading.cover_control import dispatch_completion
+
+    clock = {"t": 0.0}
+
+    async def fake_sleep(seconds):
+        clock["t"] += max(0.0, seconds)
+        await asyncio.sleep(0)
+
+    async def wrapped(*args, **kwargs):
+        kwargs.update(mono_clock=lambda: clock["t"], sleep=fake_sleep)
+        return await dispatch_completion.wait_for_travel_completion(*args, **kwargs)
+
+    monkeypatch.setattr(_coord_mod, "wait_for_travel_completion", wrapped)
+    return clock
+
+
+def _two_cover_zone(**kw):
+    s = _Scenario(AWNING, covers=["cover.a", "cover.b"], cover_position=0, **kw)
+    s.coord.shade_position_defaults = ShadePositionDefaults(
+        light_shade_position=50, normal_shade_position=50, strong_shade_position=50)
+    return s
+
+
+class TestA5CoordinatorSequence:
+    def test_a_silent_cover_times_out_and_the_rest_of_the_group_is_not_started(self, monkeypatch):
+        _fake_time_completion(monkeypatch)
+        s = _two_cover_zone()
+        data = s.cycle(0)
+        assert s.calls_for("cover.a") == [50]
+        assert s.calls_for("cover.b") == []                       # a timeout is not a success
+        assert s.coord._completion_downgraded.get("cover.a") is not None
+        assert s.state(data) is not None
+
+    def test_a_downgraded_cover_is_waited_on_by_estimate_so_the_group_is_not_blocked_forever(self, monkeypatch):
+        _fake_time_completion(monkeypatch)
+        s = _two_cover_zone()
+        s.coord._completion_downgraded["cover.a"] = _coord_mod._monotonic()   # an earlier timeout
+        s.cycle(0)
+        assert s.calls_for("cover.a") == [50] and s.calls_for("cover.b") == [50]
+        events = [e for e in s.coord._support_critical_events if e.get("completion_downgraded")]
+        assert events and events[0]["completion_method"] == "time_estimate"
+        assert events[0]["completion_travel_time_source"] == "default"
+        assert events[0]["completion_expected_s"] == pytest.approx(15.0)
+
+    def test_a_cover_that_reports_travel_is_completed_by_observation_and_the_next_one_follows(self, monkeypatch):
+        _fake_time_completion(monkeypatch)
+        s = _two_cover_zone()
+        original = s.hass.services.async_call.side_effect
+
+        async def move(domain, service, data, **kw):
+            if service == "set_cover_position":
+                s.set_cover_position(data["position"], cover=data["entity_id"])
+            return None
+
+        s.hass.services.async_call = AsyncMock(side_effect=move)
+        s.cycle(0)
+        # the stub cover jumps to the target and never shows movement: the estimate decides
+        assert s.calls_for("cover.a") == [50] and s.calls_for("cover.b") == [50]
+        evs = {e["completion_method"] for e in s.coord._support_critical_events if e.get("completion_method")}
+        assert "combined" in evs and "position" not in evs
+
+    def test_feedback_trust_is_restored_after_the_downgrade_period(self, monkeypatch):
+        s = _two_cover_zone()
+        now = {"t": 1000.0}
+        monkeypatch.setattr(_coord_mod, "_monotonic", lambda: now["t"])
+        s.coord._completion_downgraded["cover.a"] = now["t"]
+        assert s.coord._feedback_trusted("cover.a", True) is False
+        assert s.coord._feedback_trusted("cover.a", False) is False
+        now["t"] += _coord_mod._COMPLETION_DOWNGRADE_S + 1
+        assert s.coord._feedback_trusted("cover.a", True) is True
+        assert "cover.a" not in s.coord._completion_downgraded
+
+    def test_safety_between_two_covers_of_a_normal_sequence_overtakes_the_rest(self, monkeypatch):
+        TestA2CoordinatorGlobalSafetyPriority._real_completion(monkeypatch)
+        until = TestA2CoordinatorGlobalSafetyPriority._until
+        s = _two_cover_zone()
+
+        async def main():
+            with s._clock(0):
+                plan = asyncio.ensure_future(s.coord._async_update_data())
+                await until(lambda: s.calls_for("cover.a") == [50])
+                await asyncio.sleep(0.05)
+                assert not plan.done()                            # cover a is in its completion wait
+                s.set_rain(True)
+                with s._clock(1):
+                    await asyncio.wait_for(s.coord._async_update_data(), timeout=5)
+                await asyncio.wait_for(plan, timeout=5)
+
+        asyncio.run(main())
+        assert 50 not in s.calls_for("cover.b")                   # the normal sequence never reached b
+        assert s.calls_for("cover.b") == [0] and s.calls_for("cover.a")[-1] == 0
+        services = {(c.args[0], c.args[1]) for c in s.hass.services.async_call.await_args_list}
+        assert services <= {("cover", "set_cover_position")}      # no stop of the travelling cover
+
+    def test_a_sequence_does_not_resume_after_it_was_cancelled(self, monkeypatch):
+        TestA2CoordinatorGlobalSafetyPriority._real_completion(monkeypatch)
+        until = TestA2CoordinatorGlobalSafetyPriority._until
+        s = _two_cover_zone()
+
+        async def main():
+            with s._clock(0):
+                plan = asyncio.ensure_future(s.coord._async_update_data())
+                await until(lambda: s.calls_for("cover.a") == [50])
+                await asyncio.sleep(0.05)
+                s.coord._dispatch_generation += 1
+                s.coord._active_dispatch_cancellation.set()
+                await asyncio.wait_for(plan, timeout=5)
+                await asyncio.sleep(0.05)
+
+        asyncio.run(main())
+        assert s.calls_for("cover.b") == []
+
+
+class TestA5OwnershipDuringTheSequence:
+    def test_the_next_cover_is_revalidated_against_a_role_change_during_the_wait(self, monkeypatch):
+        from custom_components.smartshading.cover_control import dispatch_completion
+
+        hass, serial = _world()
+        reg = _registry()
+        s = _a4_zone("e1", reg, hass, serial, cover="cover.a")
+        s.coord.shade_position_defaults = ShadePositionDefaults(
+            light_shade_position=50, normal_shade_position=50, strong_shade_position=50)
+        s.coord.cover_groups["cg_w1"].cover_ids = ["cover.a", "cover.b"]    # one window, two covers
+        s.set_cover_position(0, cover="cover.b")
+        s.coord._cover_capabilities["cover.b"] = _capability("cover.b")
+        ticks = {"n": 0}
+        clock = {"t": 0.0}
+
+        async def fake_sleep(seconds):
+            clock["t"] += seconds
+            ticks["n"] += 1
+            if ticks["n"] == 1:
+                s.set_cover_position(25, cover="cover.a", state="opening")
+                # the second cover is claimed by another entry while the first one travels
+                reg.update([_claim("e1", "w1", cover="cover.b", target="a"),
+                            _claim("e2", "w1", cover="cover.b", target="b")])
+            else:
+                s.set_cover_position(50, cover="cover.a")
+            await asyncio.sleep(0)
+
+        async def wrapped(*args, **kwargs):
+            kwargs.update(mono_clock=lambda: clock["t"], sleep=fake_sleep)
+            return await dispatch_completion.wait_for_travel_completion(*args, **kwargs)
+
+        monkeypatch.setattr(_coord_mod, "wait_for_travel_completion", wrapped)
+        s.cycle(0)
+        assert _cover_calls(hass, "cover.a") == [50]
+        assert _cover_calls(hass, "cover.b") == []                 # revalidated under the new roles
+
+
+class TestA5NoBlindReplayAfterRestart:
+    def test_a_rebuilt_coordinator_decides_live_and_sends_nothing_from_an_old_plan(self):
+        s1 = _two_cover_zone()
+        s1.cycle(0)
+        sent_before = len(s1.calls)
+        # a "restart": a brand-new coordinator over the same (already moved) covers
+        s2 = _two_cover_zone(hass=s1.hass, serial=s1.serial)
+        s2.set_cover_position(50, cover="cover.a")
+        s2.set_cover_position(50, cover="cover.b")
+        s2.cycle(30)
+        assert len(s2.calls) == sent_before                       # nothing replayed: both already at target

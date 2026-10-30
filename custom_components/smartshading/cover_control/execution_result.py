@@ -253,6 +253,29 @@ class ExecutionResult:
     """For a Safety dispatch: how many earlier-queued normal requests were
     admitted after it (0 when it was admitted immediately)."""
 
+    completion_expected_s: float | None = None
+    """The distance/direction-scaled travel-time estimate the completion wait was
+    planned with (A5).  None when no completion wait was performed."""
+
+    completion_movement_observed: bool | None = None
+    """A5: True when real travel (a moving state or an intermediate position) was
+    seen before the end of travel was accepted; False when the target was reported
+    without any observed travel (a jump) and the estimate decided; None when the
+    cover is not watched (no feedback)."""
+
+    completion_travel_time_source: str | None = None
+    """Where the travel time came from: "default" (the cover's capability default;
+    there is no configured or learned travel time today), "configured" or "learned"."""
+
+    completion_settle_s: float | None = None
+    """The fixed settle pause applied after an intermediate travel before the next
+    cover of the group may start (dispatch_plan_executor.INTERMEDIATE_POST_
+    COMPLETION_PAUSE_S)."""
+
+    completion_downgraded: bool = False
+    """True when this cover's earlier completion timed out, so its feedback is no
+    longer trusted and the travel-time estimate is used instead (A5)."""
+
     # --- T11.1: PARALLEL-mode concurrent-batch diagnostics (additive) ---
     parallel_batch_id: str | None = None
     """Identifies which concurrently-dispatched batch this result belongs to

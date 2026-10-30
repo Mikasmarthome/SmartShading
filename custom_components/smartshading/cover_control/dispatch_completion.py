@@ -23,6 +23,18 @@ Tiered strategy, most-trustworthy signal first:
 No busy-wait: uses asyncio.sleep(poll_interval_s) between checks (tier 1)
 or a single bounded sleep (tier 2) — never a tight loop.
 
+Trust model (A5): a reported target position is NOT proof of a finished travel --
+some integrations set the attribute to the target the moment the command is
+accepted while the motor still runs.  For covers with feedback the end of travel
+only counts as observed ("position" / "movement_state") when real travel was seen
+before it: a moving state (opening/closing) or a position strictly between start
+and target.  If the target shows up without any observed travel (a jump), the
+distance/direction-scaled travel-time estimate must elapse first and the result is
+"combined" (never "position").  A cover that already was at the target needs no
+wait ("already_at_target").  Covers without usable feedback use the estimate alone
+("time_estimate").  The fixed settle pause that follows every intermediate travel
+is applied by the dispatch executor.  A timeout is never a completion.
+
 Abortable (A2): a caller may pass ``cancellation`` (anything with the
 asyncio.Event interface) and/or ``abort_check`` (returns None while the wait
 is still wanted, else the reason it is not).  Every sleep is then raced
@@ -56,6 +68,11 @@ class CompletionMethod(Enum):
     TIME_ESTIMATE = "time_estimate"
     TIMEOUT = "timeout"
     ABORTED = "aborted"
+    # A5: the position/state reported the target (idle) but no travel was ever
+    # observed -- a "jump".  The finish is then the estimated travel time, so the
+    # method names the combination and never claims a real observed end of travel.
+    COMBINED = "combined"
+    ALREADY_AT_TARGET = "already_at_target"
 
 
 class CompletionStatus(Enum):
@@ -112,6 +129,13 @@ class CompletionResult:
     timed_out: bool
     status: CompletionStatus | None = None
     cancel_reason: str | None = None
+    expected_s: float | None = None
+    """The travel-time estimate this wait was planned with (scaled by distance and
+    direction); None when the wait never needed one."""
+    movement_observed: bool | None = None
+    """True when real travel was seen (movement state or an intermediate position);
+    False when the target was reported without any observed travel (a jump);
+    None for waits that never watch the cover (no feedback)."""
 
     def __post_init__(self) -> None:
         if self.status is None:
@@ -255,13 +279,30 @@ async def wait_for_travel_completion(
     )
 
     if has_reliable_position_feedback:
+        saw_moving = False
+        saw_intermediate = False
         while True:
             elapsed = mono_clock() - started
             if elapsed >= max_wait_s:
-                return CompletionResult(CompletionMethod.TIMEOUT, elapsed, True)
+                return CompletionResult(
+                    CompletionMethod.TIMEOUT, elapsed, True,
+                    expected_s=estimated_s, movement_observed=saw_moving or saw_intermediate)
             entity_state = hass.states.get(entity_id)
             state = entity_state.state if entity_state is not None else None
             attributes = entity_state.attributes if entity_state is not None else {}
+            snap = build_cover_entity_snapshot(
+                entity_id="_dispatch_completion_check", state=state, attributes=attributes,
+                invert=invert_position, has_reliable_position_feedback=True)
+            if snap.available:
+                if snap.is_moving:
+                    saw_moving = True
+                pos = snap.current_position_ha
+                if (
+                    pos is not None
+                    and abs(pos - target_position_ha) > position_tolerance
+                    and (start_position_ha is None or abs(pos - start_position_ha) > position_tolerance)
+                ):
+                    saw_intermediate = True
             method = evaluate_travel_status(
                 state=state,
                 attributes=attributes,
@@ -271,10 +312,24 @@ async def wait_for_travel_completion(
                 position_tolerance=position_tolerance,
             )
             if method is not None:
-                return CompletionResult(method, mono_clock() - started, False)
+                now_elapsed = mono_clock() - started
+                if saw_moving or saw_intermediate:
+                    return CompletionResult(
+                        method, now_elapsed, False, expected_s=estimated_s, movement_observed=True)
+                # Target reported, but no travel was ever observed: a jump.
+                if estimated_s <= 0:
+                    return CompletionResult(
+                        CompletionMethod.ALREADY_AT_TARGET, now_elapsed, False,
+                        expected_s=estimated_s, movement_observed=False)
+                if now_elapsed >= estimated_s:
+                    return CompletionResult(
+                        CompletionMethod.COMBINED, now_elapsed, False,
+                        expected_s=estimated_s, movement_observed=False)
             remaining = max_wait_s - (mono_clock() - started)
-            await _sleep_or_abort(
-                sleep, min(poll_interval_s, max(0.0, remaining)), cancellation)
+            step = min(poll_interval_s, max(0.0, remaining))
+            if method is not None:           # waiting out the estimate after a jump
+                step = min(step, max(0.0, estimated_s - (mono_clock() - started)) or step)
+            await _sleep_or_abort(sleep, step, cancellation)
             aborted = _aborted()
             if aborted is not None:
                 return aborted
@@ -289,8 +344,10 @@ async def wait_for_travel_completion(
         if aborted is not None:
             return aborted
     timed_out = estimated_s > max_wait_s
-    return CompletionResult(
-        CompletionMethod.TIMEOUT if timed_out else CompletionMethod.TIME_ESTIMATE,
-        mono_clock() - started,
-        timed_out,
-    )
+    if timed_out:
+        method = CompletionMethod.TIMEOUT
+    elif estimated_s <= 0:
+        method = CompletionMethod.ALREADY_AT_TARGET
+    else:
+        method = CompletionMethod.TIME_ESTIMATE
+    return CompletionResult(method, mono_clock() - started, timed_out, expected_s=estimated_s)

@@ -49,6 +49,7 @@ from .diagnostics_privacy import (
     pseudonymization_metadata,
     truncate_strings,
 )
+from .export_budget import Slot, json_size, meta_reserve, trim_to_cap, water_fill
 from ..models.runtime_mode import derive_authority
 from ..models.decision_provenance import ProvenanceSummary
 from . import reason_codes as rc
@@ -67,6 +68,12 @@ MAX_RESEARCH_RECORDS_PER_ZONE = 2000
 MAX_RESEARCH_RECORDS_ALL_ZONES = 8000
 MAX_RESEARCH_WINDOW_SUMMARIES = 60
 MAX_RESEARCH_EXPORT_BYTES = 2_000_000
+# The aggregated export projects at most this many stored decisions in total
+# (newest first, shared fairly between all windows).  Projecting every stored
+# decision (up to 5000 per window) cost seconds of event-loop time on large
+# installs although only a few hundred records fit into the byte budget; the
+# records that are not projected are counted in record_accounting.
+MAX_RESEARCH_PROJECTED_TOTAL = 3000
 MIN_BUCKET_SAMPLE = 5  # smaller groups → insufficient_sample (no misleading stats)
 
 # Improvement classification (single attributable thermal objective): neutral band.
@@ -298,7 +305,8 @@ def build_research_export_v3(coordinator, *, now=None, integration_version="unkn
     return contract
 
 
-def _history_metadata(eligible_records, serialized_count, *, store_scope) -> dict:
+def _history_metadata(eligible_records, serialized_count, *, store_scope,
+                      not_projected: int = 0) -> dict:
     """Transparent history span/coverage for an export (privacy-safe — timestamps
     and counts only).  Makes it explicit whether the export is the full persisted
     learning history or a bounded recent sample, and the actual data span."""
@@ -314,9 +322,10 @@ def _history_metadata(eligible_records, serialized_count, *, store_scope) -> dic
         "period_start_utc": stamps[0] if stamps else None,
         "period_end_utc": stamps[-1] if stamps else None,
         "records_total_available": total,
+        "records_not_projected": not_projected,
         "records_exported": serialized_count,
-        "truncated": serialized_count < total,
-        "cap_reason": ("record_cap_or_byte_cap" if serialized_count < total
+        "truncated": serialized_count < total or not_projected > 0,
+        "cap_reason": ("record_cap_or_byte_cap" if serialized_count < total or not_projected > 0
                        else "within_cap"),
         "store_retention_per_window": {
             "decisions": 5000,
@@ -330,16 +339,15 @@ def _history_metadata(eligible_records, serialized_count, *, store_scope) -> dic
     }
 
 
-def _project_store_records(store, pz, accounting, now=None) -> list:
-    """Project a single learning store's persisted decisions into research records.
+def _collect_window_decisions(store, accounting) -> list:
+    """``(window_id, decisions)`` pairs of one learning store.
 
-    Reusable across one store (single-zone export) or many (all-zones export).
-    Every examined decision is counted as eligible or excluded-by-reason so no
-    record silently vanishes (survivorship-bias guard).
+    Read failures are accounted (so no decision silently vanishes from the
+    survivorship count) and never raised.
     """
-    recs: list = []
+    out: list = []
     if store is None:
-        return recs
+        return out
     try:
         window_ids = list(store.window_ids())
     except Exception:
@@ -348,7 +356,7 @@ def _project_store_records(store, pz, accounting, now=None) -> list:
         # is visible instead of silently lowering total_decisions_examined.
         accounting["excluded"]["store_read_error"] = (
             accounting["excluded"].get("store_read_error", 0) + 1)
-        return recs
+        return out
     for wid in window_ids:
         try:
             decs = store.get_decisions(wid)
@@ -358,7 +366,36 @@ def _project_store_records(store, pz, accounting, now=None) -> list:
             accounting["excluded"]["window_read_error"] = (
                 accounting["excluded"].get("window_read_error", 0) + 1)
             continue
-        for d in decs or []:
+        out.append((wid, list(decs or [])))
+    return out
+
+
+def _newest_decisions(decs, limit: int) -> list:
+    """The *limit* newest decisions (by timestamp; ties keep the store's order)."""
+    if limit <= 0:
+        return []
+    try:
+        return sorted(decs, key=lambda d: d.decision_timestamp, reverse=True)[:limit]
+    except Exception:
+        # No usable timestamps: the store hands decisions out newest first.
+        return list(decs)[:limit]
+
+
+def _project_windows(windows, limits, pz, accounting, now=None) -> list:
+    """Project the newest ``limit`` decisions of every window into research records.
+
+    ``limits[i]`` is None for "all".  Decisions beyond the limit are still counted
+    as examined and excluded-by-reason so the accounting stays complete.
+    """
+    recs: list = []
+    for (wid, decs), limit in zip(windows, limits):
+        if limit is not None and limit < len(decs):
+            skipped = len(decs) - limit
+            accounting["examined"] += skipped
+            accounting["excluded"]["projection_limit"] = (
+                accounting["excluded"].get("projection_limit", 0) + skipped)
+            decs = _newest_decisions(decs, limit)
+        for d in decs:
             accounting["examined"] += 1
             # Eligible if it carries EITHER a compact summary (demoted records) OR
             # full provenance (recent records) — reading only `summary` would drop
@@ -377,57 +414,88 @@ def _project_store_records(store, pz, accounting, now=None) -> list:
     return recs
 
 
-def build_research_export_all_zones(coordinators, *, now=None,
-                                    integration_version="unknown") -> dict:
-    """Aggregate, privacy-safe Research Export across ALL active zone coordinators.
+def _project_store_records(store, pz, accounting, now=None) -> list:
+    """Project a single learning store's persisted decisions into research records.
 
-    Collects eligible records from every zone store into one dataset and runs the
-    same aggregation logic, so counts, solar/forecast buckets and per-window
-    summaries are correct cross-zone sums.  No active zone → an honest no-zone
-    section_error (never a misleading healthy empty export).  A single shared
-    pseudonymizer keeps refs stable + namespace-separated within the export.
+    Every examined decision is counted as eligible or excluded-by-reason so no
+    record silently vanishes (survivorship-bias guard).
+    """
+    windows = _collect_window_decisions(store, accounting)
+    return _project_windows(windows, [None] * len(windows), pz, accounting, now=now)
+
+
+def _record_sort_key(r):
+    return (r.get("decision_timestamp_utc") or "", r.get("decision_ref") or "")
+
+
+def _no_zone_research_export(now, integration_version) -> dict:
+    return {
+        "research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
+        "generated_at_utc": _iso_s(now),
+        "integration_version": integration_version,
+        "export_scope": "system_all_zones",
+        "overall_status": "no_active_zone",
+        "system": {"zone_count": 0, "window_count": 0},
+        "research_records": [],
+        "record_accounting": {"total_decisions_examined": 0, "eligible_record_count": 0,
+                              "zone_count": 0},
+        "section_errors": {"zones": {"count": 1,
+                                     "reason_codes": ["no_active_zone_coordinator"]}},
+    }
+
+
+def iter_research_export_all_zones(coordinators, *, now=None, integration_version="unknown",
+                                   byte_cap: int | None = MAX_RESEARCH_EXPORT_BYTES):
+    """Generator form of :func:`build_research_export_all_zones`.
+
+    Yields after every zone so an asynchronous caller can hand control back to the
+    event loop; the return value is the export.  With ``byte_cap=None`` the export
+    is returned assembled but not yet trimmed or sanitised, for a caller that
+    shares one byte budget with another payload (see
+    :func:`research_history_groups` / :func:`finalize_research_all_zones`).
     """
     now = now or datetime.now(timezone.utc)
     coords = [c for c in (coordinators or []) if c is not None]
     errors: dict = {}
     if not coords:
-        return {
-            "research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
-            "generated_at_utc": _iso_s(now),
-            "integration_version": integration_version,
-            "export_scope": "system_all_zones",
-            "overall_status": "no_active_zone",
-            "system": {"zone_count": 0, "window_count": 0},
-            "research_records": [],
-            "record_accounting": {"total_decisions_examined": 0, "eligible_record_count": 0,
-                                  "zone_count": 0},
-            "section_errors": {"zones": {"count": 1,
-                                         "reason_codes": ["no_active_zone_coordinator"]}},
-        }
+        return _no_zone_research_export(now, integration_version)
     # Stable shared pseudonymizer seed (first zone entry id → deterministic).
     seed = getattr(getattr(coords[0], "config_entry", None), "entry_id", None)
     pz = Pseudonymizer(seed)
     accounting = {"examined": 0, "excluded": {}}
-    all_records: list = []
-    per_zone: list = []
+    zone_windows: list = []
     for c in coords:
         store = getattr(c, "_learning_store", None)
+        zone_windows.append(_safe(lambda: _collect_window_decisions(store, accounting),
+                                  errors, "research_records", default=[]))
+    # Fair, bounded projection: newest decisions first, shared between all windows.
+    counts = [len(decs) for wl in zone_windows for _wid, decs in wl]
+    flat_limits = water_fill(counts, MAX_RESEARCH_PROJECTED_TOTAL)
+    all_records: list = []
+    per_zone: list = []
+    pos = 0
+    for c, wl in zip(coords, zone_windows):
         before = accounting["examined"]
-        recs = _safe(lambda: _project_store_records(store, pz, accounting, now=now), errors,
+        limits = flat_limits[pos:pos + len(wl)]
+        pos += len(wl)
+        recs = _safe(lambda: _project_windows(wl, limits, pz, accounting, now=now), errors,
                      "research_records", default=[])
         recs = recs if isinstance(recs, list) else []
-        all_records.extend(recs)
         entry_id = getattr(getattr(c, "config_entry", None), "entry_id", None)
+        zone_ref = pz.ref(NS_ZONE, next(iter(getattr(c, "zones", {}) or {}), None))
+        for r in recs:
+            r["zone_ref"] = zone_ref
+        all_records.extend(recs)
         per_zone.append({
             "entry_ref": pz.ref(NS_ENTRY, entry_id),
-            "zone_ref": pz.ref(NS_ZONE, next(iter(getattr(c, "zones", {}) or {}), None)),
+            "zone_ref": zone_ref,
             "window_count": len(getattr(c, "windows", {}) or {}),
             "runtime_mode": _zone_runtime_mode(c),
             "examined": accounting["examined"] - before,
             "eligible": len(recs),
         })
-    all_records.sort(key=lambda r: (r.get("decision_timestamp_utc") or "",
-                                    r.get("decision_ref") or ""))
+        yield
+    all_records.sort(key=_record_sort_key)
     # F24: stable chronological ordinal across the aggregated all-zones set.
     for _i, _r in enumerate(all_records):
         _r["sample_index"] = _i
@@ -435,6 +503,7 @@ def build_research_export_all_zones(coordinators, *, now=None,
               MAX_RESEARCH_RECORDS_PER_ZONE * len(coords))
     capped, rec_trunc = cap_records(all_records, cap)
     total_windows = sum(len(getattr(c, "windows", {}) or {}) for c in coords)
+    not_projected = accounting["excluded"].get("projection_limit", 0)
     contract: dict = {
         "research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
         "generated_at_utc": _iso_s(now),
@@ -458,7 +527,8 @@ def build_research_export_all_zones(coordinators, *, now=None,
         "research_records": capped,
         "aggregations": _safe(lambda: _aggregations(all_records, coords), errors, "aggregations"),
         "history_metadata": _safe(lambda: _history_metadata(
-            all_records, len(capped), store_scope="persistent_learning_history"),
+            all_records, len(capped), store_scope="persistent_learning_history",
+            not_projected=not_projected),
             errors, "history_metadata"),
         "development_summary": _safe(
             lambda: _development_summary(all_records, coords),
@@ -477,8 +547,10 @@ def build_research_export_all_zones(coordinators, *, now=None,
             "excluded_record_count": sum(accounting["excluded"].values()),
             "excluded_by_reason": dict(sorted(accounting["excluded"].items())),
             "capped_record_count": len(capped),
-            "serialized_record_count": None,
+            "serialized_record_count": len(capped),   # refreshed if the byte budget trims further
             "record_cap": cap,
+            "projection_limit": {"max_projected_records": MAX_RESEARCH_PROJECTED_TOTAL,
+                                 "not_projected_count": not_projected},
             "cap_reason": ("per_zone_cap_times_zones_bounded"
                            if len(all_records) > cap else "within_cap"),
         },
@@ -490,13 +562,112 @@ def build_research_export_all_zones(coordinators, *, now=None,
         },
         "section_errors": errors,
     }
+    if byte_cap is None:
+        return contract
+    groups, commit = research_history_groups(contract)
+    report = trim_to_cap(contract, groups, byte_cap, reserve=meta_reserve(0),
+                         sync=commit)
+    commit()
+    return finalize_research_all_zones(contract, report, now=now)
+
+
+def build_research_export_all_zones(coordinators, *, now=None,
+                                    integration_version="unknown",
+                                    byte_cap: int = MAX_RESEARCH_EXPORT_BYTES) -> dict:
+    """Aggregate, privacy-safe Research Export across ALL active zone coordinators.
+
+    Collects eligible records from every zone store into one dataset and runs the
+    same aggregation logic, so counts, solar/forecast buckets and per-window
+    summaries are correct cross-zone sums.  No active zone → an honest no-zone
+    section_error (never a misleading healthy empty export).  A single shared
+    pseudonymizer keeps refs stable + namespace-separated within the export.
+
+    The byte cap is shared fairly between the zones (every record carries its
+    ``zone_ref``); the newest records of each zone are kept.
+    """
+    gen = iter_research_export_all_zones(coordinators, now=now,
+                                         integration_version=integration_version,
+                                         byte_cap=byte_cap)
+    while True:
+        try:
+            next(gen)
+        except StopIteration as done:
+            return done.value
+
+
+def research_history_groups(contract) -> tuple:
+    """``(groups, commit)`` for the all-zones research records.
+
+    One group per zone (records are partitioned by ``zone_ref``, keeping their
+    chronological order).  Trimming works on the partitions; ``commit`` merges
+    them back into ``contract["research_records"]`` in the original order.
+    """
+    recs = contract.get("research_records") if isinstance(contract, dict) else None
+    parts: dict = {}
+    for r in recs or []:
+        parts.setdefault(r.get("zone_ref") if isinstance(r, dict) else None, []).append(r)
+    slots = [Slot("research_records", parts[k], oldest_first=True)
+             for k in sorted(parts, key=lambda k: (k is None, str(k)))]
+
+    def commit() -> None:
+        if isinstance(contract.get("research_records"), list):
+            merged = [r for sl in slots for r in sl.records]
+            merged.sort(key=_record_sort_key)
+            contract["research_records"] = merged
+
+    return [[sl] for sl in slots], commit
+
+
+def _refresh_research_after_trim(contract: dict) -> None:
+    """Make derived sections describe the records that are actually exported."""
+    recs = contract.get("research_records")
+    if not isinstance(recs, list):
+        return
+    hm = contract.get("history_metadata")
+    if isinstance(hm, dict) and "records_exported" in hm:
+        hm["records_exported"] = len(recs)
+        total = hm.get("records_total_available", len(recs))
+        if len(recs) < total or hm.get("records_not_projected"):
+            hm["truncated"] = True
+            hm["cap_reason"] = "record_cap_or_byte_cap"
+    if isinstance(contract.get("per_window_summaries"), list):
+        contract["per_window_summaries"] = _per_window(recs, None)
+    acct = contract.get("record_accounting")
+    if isinstance(acct, dict):
+        acct["serialized_record_count"] = len(recs)
+
+
+def finalize_research_all_zones(contract: dict, report, *, now=None,
+                                budget_scope: str | None = None) -> dict:
+    """Write truthful truncation metadata, refresh derived sections, sanitise."""
+    now = now or datetime.now(timezone.utc)
+    secs = {}
+    for g in getattr(report, "groups", None) or []:
+        for name, v in g.sections.items():
+            agg = secs.setdefault(name, {"original_count": 0, "final_count": 0, "removed_count": 0})
+            for k in agg:
+                agg[k] += v[k]
+    if report is not None:
+        acct = contract.get("record_accounting") if isinstance(contract, dict) else None
+        if not secs and isinstance(acct, dict):
+            eligible = acct.get("eligible_record_count", 0) or 0
+            kept = acct.get("capped_record_count", eligible) or 0
+            secs = {"research_records": {"truncated": kept < eligible, "total": eligible,
+                                         "kept": kept}}
+        _refresh_research_after_trim(contract)
+        # Exact size of what is exported, measured after the refresh and before the
+        # truncation record (which carries this number) is added.
+        final_bytes = json_size(contract)
+        trunc = {"applied": report.applied, "original_bytes": report.original_bytes,
+                 "final_bytes": final_bytes, "byte_cap": report.byte_cap,
+                 "cap_met": final_bytes <= report.byte_cap, "sections": secs}
+        if budget_scope:
+            trunc["budget_scope"] = budget_scope
+        contract["truncation"] = trunc
+    else:
+        _refresh_research_after_trim(contract)
     contract = enforce_depth(truncate_strings(contract, max_len=MAX_STRING_LENGTH),
                              max_depth=MAX_NESTED_DEPTH)
-    contract = _byte_cap(contract, rec_trunc)
-    if (isinstance(contract.get("record_accounting"), dict)
-            and isinstance(contract.get("research_records"), list)):
-        contract["record_accounting"]["serialized_record_count"] = len(
-            contract["research_records"])
     if not is_json_safe(contract):
         return {"research_export_schema_version": RESEARCH_EXPORT_SCHEMA_VERSION,
                 "generated_at_utc": _iso_s(now), "export_scope": "system_all_zones",
@@ -1044,32 +1215,29 @@ def _per_window(records, pz) -> list:
     return out[:MAX_RESEARCH_WINDOW_SUMMARIES]
 
 
-def _byte_cap(contract: dict, rec_trunc: dict) -> dict:
-    original = _bytes(contract)
-    sections: dict = {}
-    if original <= MAX_RESEARCH_EXPORT_BYTES:
-        contract["truncation"] = {"applied": False, "original_bytes": original,
-                                  "final_bytes": original, "byte_cap": MAX_RESEARCH_EXPORT_BYTES,
-                                  "sections": {"research_records": rec_trunc}}
-        return contract
+def _byte_cap(contract: dict, rec_trunc: dict, cap: int = MAX_RESEARCH_EXPORT_BYTES) -> dict:
+    """Fit one research export into *cap* bytes, dropping the oldest records first.
+
+    Same selection rule as before (oldest record first) but computed from
+    per-record sizes instead of re-serialising after every removal; see
+    :mod:`export_budget`.
+    """
     recs = contract.get("research_records")
-    if isinstance(recs, list):
-        orig = len(recs)
-        while recs and _bytes(contract) > MAX_RESEARCH_EXPORT_BYTES:
-            recs.pop(0)  # oldest-first (records are time-sorted ascending)
-        sections["research_records"] = {"original_count": orig, "final_count": len(recs),
-                                        "removed_count": orig - len(recs)}
-    contract["truncation"] = {"applied": True, "original_bytes": original,
-                              "final_bytes": _bytes(contract),
-                              "byte_cap": MAX_RESEARCH_EXPORT_BYTES, "sections": sections}
+    slots = [Slot("research_records", recs, oldest_first=True)] if isinstance(recs, list) and recs else []
+    report = trim_to_cap(contract, [slots], cap, reserve=meta_reserve(0))
+    sections = report.groups[0].sections if report.applied else {"research_records": rec_trunc}
+    final_bytes = report.final_bytes
+    if report.applied:
+        _refresh_research_after_trim(contract)
+        final_bytes = json_size(contract)   # exact: after the refresh, before the truncation record
+    contract["truncation"] = {"applied": report.applied, "original_bytes": report.original_bytes,
+                              "final_bytes": final_bytes, "byte_cap": cap,
+                              "sections": sections}
     return contract
 
 
 def _bytes(obj) -> int:
-    try:
-        return len(json.dumps(obj, default=str).encode("utf-8"))
-    except Exception:
-        return 0
+    return json_size(obj)
 
 
 def privacy_scan(export: dict) -> list:

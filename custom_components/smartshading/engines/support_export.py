@@ -100,6 +100,7 @@ from . import decision_record as dr
 from . import learning_trace_builder as ltb
 from . import reason_codes as rc
 from .explainability import build_decision_explanation
+from .export_budget import Slot, json_size, meta_reserve, trim_to_cap
 from ..models.runtime_mode import derive_authority
 
 SUPPORT_EXPORT_SCHEMA_VERSION: int = 4
@@ -517,10 +518,29 @@ def _apply_compaction(contract: dict) -> dict:
     return contract
 
 
-def build_support_export_v3(coordinator, *, now=None, integration_version="unknown") -> dict:
-    """Build the v3 support export for one config entry / its zone."""
+_MIN_SCALED_RECORDS = 10
+
+
+def _scaled(cap: int, factor: float) -> int:
+    return max(_MIN_SCALED_RECORDS, int(cap * factor)) if factor < 1.0 else cap
+
+
+def build_support_export_v3(coordinator, *, now=None, integration_version="unknown",
+                            history_factor: float = 1.0,
+                            byte_cap: int | None = MAX_SUPPORT_EXPORT_BYTES) -> dict:
+    """Build the v3 support export for one config entry / its zone.
+
+    ``history_factor`` (0..1) scales the per-zone record caps; the all-zones
+    export lowers it when many zones share one byte budget so that no work is
+    spent on records that cannot fit anyway.  ``byte_cap=None`` skips the
+    per-zone byte cap because the caller trims all zones together afterwards.
+    """
     now = now or datetime.now(timezone.utc)
     c = coordinator
+    _dec_cap = _scaled(MAX_SUPPORT_DECISIONS_PER_ZONE, history_factor)
+    _dispatch_cap = _scaled(MAX_SUPPORT_DISPATCHES_PER_ZONE, history_factor)
+    _no_dispatch_cap = _scaled(MAX_SUPPORT_NO_DISPATCHES_PER_ZONE, history_factor)
+    _timeline_cap = _scaled(MAX_SUPPORT_TIMELINE_EVENTS, history_factor)
     entry_id = getattr(getattr(c, "config_entry", None), "entry_id", None)
     pz = Pseudonymizer(entry_id)
     errors: dict = {}
@@ -1161,7 +1181,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         aggregated_away = len(non_critical_evts) - len(aggregated_non_critical)
 
         # Merge: all guaranteed events + newest aggregated non-critical up to cap.
-        remaining_slots = max(0, MAX_SUPPORT_TIMELINE_EVENTS - len(critical_evts))
+        remaining_slots = max(0, _timeline_cap - len(critical_evts))
         events = critical_evts + aggregated_non_critical[:remaining_slots]
         # Re-sort merged list newest-first for output.
         events.sort(key=lambda e: e.get("ts") or "", reverse=True)
@@ -1301,7 +1321,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         recs = []
         for _zid, z in snap.items():
             recs.extend(z.get("records", []))
-        kept, meta = cap_records(recs, MAX_SUPPORT_DISPATCHES_PER_ZONE)
+        kept, meta = cap_records(recs, _dispatch_cap)
         return {"records": [_pseudo_dispatch(r) for r in kept], "truncation": meta}
 
     def _decisions_snapshot():
@@ -1310,8 +1330,23 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
     def _no_dispatches(dec_records):
         nd = [r for r in dec_records
               if (r.get("no_dispatch") or {}).get("command_sent") is False]
-        kept, meta = cap_records(nd, MAX_SUPPORT_NO_DISPATCHES_PER_ZONE)
-        return {"records": kept, "truncation": meta}
+        kept, meta = cap_records(nd, _no_dispatch_cap)
+        # Every record here is a decision that recent_decisions already carries in
+        # full (candidates, target chain, authorities).  Repeating the whole record
+        # doubled the size of the export, so only the reference to that decision and
+        # the part that is specific to this section (why nothing was dispatched) are
+        # kept; the full detail is found in recent_decisions via decision_ref.
+        compact = [{
+            "decision_ref": r.get("decision_ref"),
+            "window_ref": r.get("window_ref"),
+            "decision_timestamp_utc": r.get("decision_timestamp_utc"),
+            "decision_timestamp_local": r.get("decision_timestamp_local"),
+            "resolved_state": r.get("resolved_state"),
+            "decided_by": r.get("decided_by"),
+            "no_dispatch": r.get("no_dispatch"),
+        } for r in kept]
+        return {"records": compact, "truncation": meta,
+                "record_shape": "compact_reference_to_recent_decisions"}
 
     def _storage():
         sd = getattr(c, "storage_diagnostics", lambda: {})() or {}
@@ -1328,7 +1363,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
     dec_snap = _safe(_decisions_snapshot, errors, "decisions_snapshot", default={})
     recent_dec, dec_trunc = ([], {"truncated": False})
     try:
-        recent_dec, dec_trunc = _decision_records(dec_snap, MAX_SUPPORT_DECISIONS_PER_ZONE)
+        recent_dec, dec_trunc = _decision_records(dec_snap, _dec_cap)
     except Exception:
         errors.setdefault("recent_decisions", {"count": 1, "reason_codes": ["builder_failed"]})
 
@@ -1393,12 +1428,58 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
     contract = enforce_depth(truncate_strings(contract, max_len=MAX_SUPPORT_STRING_LENGTH),
                              max_depth=MAX_SUPPORT_NESTED_DEPTH)
     # byte cap with deterministic oldest-first history truncation.
-    contract = _enforce_byte_cap(contract)
+    if byte_cap is not None:
+        contract = _enforce_byte_cap(contract, byte_cap)
     if not is_json_safe(contract):
         return {"support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
                 "generated_at_utc": _iso_s(now),
                 "section_errors": {"json_safety": {"count": 1, "reason_codes": ["json_unsafe"]}}}
     return contract
+
+
+def zone_history_slots(zone) -> list:
+    """History lists of one zone contract, in shedding order (oldest dropped first)."""
+    slots: list = []
+    if not isinstance(zone, dict):
+        return slots
+    for section in _HISTORY_SECTIONS:
+        val = zone.get(section)
+        recs = val.get("records") if isinstance(val, dict) else (val if isinstance(val, list) else None)
+        if isinstance(recs, list) and recs:
+            slots.append(Slot(section, recs, oldest_first=True))
+    timeline = zone.get("support_timeline")
+    events = timeline.get("events") if isinstance(timeline, dict) else None
+    if isinstance(events, list) and events:
+        # newest-first list: the oldest events sit at the end; last resort only.
+        slots.append(Slot("support_timeline", events, oldest_first=False))
+    return slots
+
+
+def _refresh_zone_after_trim(zone: dict, sections: dict) -> None:
+    """Make the derived zone sections describe what is actually exported."""
+    if not sections or not isinstance(zone, dict):
+        return
+    decisions = zone.get("recent_decisions")
+    hm = zone.get("history_metadata")
+    if isinstance(decisions, list) and isinstance(hm, dict):
+        stamps = sorted(r.get("decision_timestamp_utc") for r in decisions
+                        if isinstance(r, dict) and r.get("decision_timestamp_utc"))
+        hm["records_exported"] = len(decisions)
+        hm["oldest_record_utc"] = stamps[0] if stamps else None
+        hm["newest_record_utc"] = stamps[-1] if stamps else None
+        if "recent_decisions" in sections:
+            hm["truncated"] = True
+            hm["cap_reason"] = "byte_budget"
+    timeline = zone.get("support_timeline")
+    if isinstance(timeline, dict) and isinstance(timeline.get("events"), list):
+        events = timeline["events"]
+        timeline["event_count"] = len(events)
+        timeline["critical_event_count"] = sum(1 for e in events if e.get("is_critical"))
+        timeline["non_critical_event_count"] = len(events) - timeline["critical_event_count"]
+        if "support_timeline" in sections:
+            timeline["truncated_at_cap"] = True
+            timeline["critical_events_guaranteed"] = False
+    zone["reason_codes"] = _collect_reason_codes(zone)
 
 
 def _aggregate_history_metadata(zones) -> dict:
@@ -1431,31 +1512,48 @@ def _aggregate_history_metadata(zones) -> dict:
     }
 
 
-def build_support_export_all_zones(coordinators, *, now=None,
-                                   integration_version="unknown") -> dict:
-    """Aggregate Support Export across ALL active zone coordinators.
+def _history_factor(byte_cap: int, zone_count: int) -> float:
+    """Per-zone record-cap scale for *zone_count* zones sharing *byte_cap* bytes.
 
-    Builds the per-zone v3 support export for every active zone and nests them
-    under ``zones``, with a top-level system summary (zone/window/cover totals,
-    runtime-mode + configured-sensor summary).  A zone that fails to build is
-    captured as a per-zone section_error and degrades ``overall_status`` without
-    aborting the whole export.  No active zone → an honest no-zone status, never
-    a misleading healthy empty export.
+    Twice what an equal share can hold: it spares the work of building records
+    that cannot fit anyway, while the exact fair trim afterwards decides what is
+    kept.
+    """
+    per_zone = byte_cap / max(1, zone_count)
+    return max(0.1, min(1.0, 2.0 * per_zone / MAX_SUPPORT_EXPORT_BYTES))
+
+
+def _no_zone_support_export(now, integration_version) -> dict:
+    return {
+        "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
+        "generated_at_utc": _iso_s(now),
+        "integration_version": integration_version,
+        "export_scope": "system_all_zones",
+        "overall_status": "no_active_zone",
+        "system": {"zone_count": 0, "total_window_count": 0, "total_cover_count": 0},
+        "zones": [],
+        "section_errors": {"zones": {"count": 1,
+                                     "reason_codes": ["no_active_zone_coordinator"]}},
+    }
+
+
+def iter_support_export_all_zones(coordinators, *, now=None, integration_version="unknown",
+                                  byte_cap: int | None = MAX_SUPPORT_EXPORT_BYTES,
+                                  history_factor: float | None = None):
+    """Generator form of :func:`build_support_export_all_zones`.
+
+    Yields once after every zone so an asynchronous caller can hand control back
+    to the event loop between zones; the generator's return value is the export.
+    With ``byte_cap=None`` the export is returned assembled but not yet trimmed
+    or sanitised: the caller shares one byte budget with another payload and then
+    finishes it with :func:`support_history_groups` / :func:`finalize_support_all_zones`.
     """
     now = now or datetime.now(timezone.utc)
     coords = [c for c in (coordinators or []) if c is not None]
     if not coords:
-        return {
-            "support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
-            "generated_at_utc": _iso_s(now),
-            "integration_version": integration_version,
-            "export_scope": "system_all_zones",
-            "overall_status": "no_active_zone",
-            "system": {"zone_count": 0, "total_window_count": 0, "total_cover_count": 0},
-            "zones": [],
-            "section_errors": {"zones": {"count": 1,
-                                         "reason_codes": ["no_active_zone_coordinator"]}},
-        }
+        return _no_zone_support_export(now, integration_version)
+    if history_factor is None:
+        history_factor = _history_factor(byte_cap, len(coords)) if byte_cap is not None else 1.0
     zones: list = []
     total_windows = total_covers = 0
     runtime_modes: set = set()
@@ -1464,7 +1562,8 @@ def build_support_export_all_zones(coordinators, *, now=None,
     degraded = False
     for c in coords:
         try:
-            z = build_support_export_v3(c, now=now, integration_version=integration_version)
+            z = build_support_export_v3(c, now=now, integration_version=integration_version,
+                                        history_factor=history_factor, byte_cap=None)
         except Exception:
             z = {"section_errors": {"zone": {"count": 1,
                                              "reason_codes": ["zone_builder_failed"]}}}
@@ -1479,6 +1578,7 @@ def build_support_export_all_zones(coordinators, *, now=None,
                 sensors_any[k] = True
         if z.get("section_errors"):
             degraded = True
+        yield
     # F24: reuse the already-computed per-zone timezone context (first zone —
     # a single HA instance has one configured timezone) instead of resolving
     # it again at this level.
@@ -1505,9 +1605,86 @@ def build_support_export_all_zones(coordinators, *, now=None,
         "section_errors": ({} if not degraded
                            else {"zones": {"count": 1, "reason_codes": ["zone_degraded"]}}),
     }
+    if byte_cap is None:
+        return contract
+    report = trim_to_cap(contract, support_history_groups(contract), byte_cap,
+                         reserve=support_meta_reserve(contract), fair_sections=True)
+    return finalize_support_all_zones(contract, report, now=now)
+
+
+def build_support_export_all_zones(coordinators, *, now=None,
+                                   integration_version="unknown",
+                                   byte_cap: int = MAX_SUPPORT_EXPORT_BYTES) -> dict:
+    """Aggregate Support Export across ALL active zone coordinators.
+
+    Builds the per-zone v3 support export for every active zone and nests them
+    under ``zones``, with a top-level system summary (zone/window/cover totals,
+    runtime-mode + configured-sensor summary).  A zone that fails to build is
+    captured as a per-zone section_error and degrades ``overall_status`` without
+    aborting the whole export.  No active zone → an honest no-zone status, never
+    a misleading healthy empty export.
+
+    The byte cap applies to the whole aggregate, including everything below
+    ``zones``: the history allowance is shared fairly between the zones, the
+    newest records of each zone are kept, and the truncation metadata states what
+    was really removed.
+    """
+    gen = iter_support_export_all_zones(coordinators, now=now,
+                                        integration_version=integration_version,
+                                        byte_cap=byte_cap)
+    while True:
+        try:
+            next(gen)
+        except StopIteration as done:
+            return done.value
+
+
+def support_history_groups(contract) -> list:
+    """One group of history slots per zone (index-aligned with ``zones``)."""
+    zones = contract.get("zones") if isinstance(contract, dict) else None
+    return [zone_history_slots(z) for z in (zones or [])]
+
+
+def support_meta_reserve(contract) -> int:
+    zones = contract.get("zones") if isinstance(contract, dict) else None
+    return meta_reserve(len(zones or []))
+
+
+def finalize_support_all_zones(contract: dict, report, *, now=None,
+                               budget_scope: str | None = None) -> dict:
+    """Write truthful truncation metadata, refresh derived sections, sanitise."""
+    zones = contract.get("zones") or []
+    reps = list(getattr(report, "groups", None) or [None] * len(zones))
+    for z, rep in zip(zones, reps):
+        if isinstance(z, dict) and rep is not None:
+            _refresh_zone_after_trim(z, rep.sections)
+    contract["history_metadata"] = _aggregate_history_metadata(zones)
+    # Exact size of what is exported, measured after the refresh and before the
+    # truncation records (which carry these numbers) are added.
+    final_bytes = json_size(contract) if report is not None else None
+    for z, rep in zip(zones, reps):
+        if not isinstance(z, dict):
+            continue
+        if rep is None:
+            z["truncation"] = {"applied": False}
+            continue
+        z["truncation"] = {
+            "applied": rep.removed_count > 0,
+            "history_bytes_original": rep.history_bytes_original,
+            "history_bytes_final": rep.history_bytes_final,
+            "history_budget_bytes": rep.allowance,
+            "sections": rep.sections,
+        }
+    if report is not None:
+        trunc = {"applied": report.applied, "original_bytes": report.original_bytes,
+                 "final_bytes": final_bytes, "byte_cap": report.byte_cap,
+                 "cap_met": final_bytes <= report.byte_cap, "sections": {}}
+        if budget_scope:
+            trunc["budget_scope"] = budget_scope
+        contract["truncation"] = trunc
+    now = now or datetime.now(timezone.utc)
     contract = enforce_depth(truncate_strings(contract, max_len=MAX_SUPPORT_STRING_LENGTH),
                              max_depth=MAX_SUPPORT_NESTED_DEPTH)
-    contract = _enforce_byte_cap(contract)
     if not is_json_safe(contract):
         return {"support_export_schema_version": SUPPORT_EXPORT_SCHEMA_VERSION,
                 "generated_at_utc": _iso_s(now), "export_scope": "system_all_zones",
@@ -1521,39 +1698,30 @@ def _collect_reason_codes(contract) -> dict:
     return rc.collect_reason_codes_from_contract(contract)
 
 
-def _enforce_byte_cap(contract: dict) -> dict:
-    original_bytes = _bytes(contract)
-    sections_meta: dict = {}
-    if original_bytes <= MAX_SUPPORT_EXPORT_BYTES:
-        contract["truncation"] = {"applied": False, "original_bytes": original_bytes,
-                                  "final_bytes": original_bytes,
-                                  "byte_cap": MAX_SUPPORT_EXPORT_BYTES, "sections": {}}
-        return contract
-    # Shed oldest history records first (history before current snapshots).
-    for section in _HISTORY_SECTIONS:
-        val = contract.get(section)
-        recs = val.get("records") if isinstance(val, dict) else (val if isinstance(val, list) else None)
-        if not recs:
-            continue
-        orig = len(recs)
-        while recs and _bytes(contract) > MAX_SUPPORT_EXPORT_BYTES:
-            recs.pop(0)  # oldest first
-        sections_meta[section] = {"original_count": orig, "final_count": len(recs),
-                                  "removed_count": orig - len(recs)}
-        if _bytes(contract) <= MAX_SUPPORT_EXPORT_BYTES:
-            break
-    final_bytes = _bytes(contract)
-    contract["truncation"] = {"applied": True, "original_bytes": original_bytes,
-                              "final_bytes": final_bytes, "byte_cap": MAX_SUPPORT_EXPORT_BYTES,
-                              "sections": sections_meta}
+def _enforce_byte_cap(contract: dict, cap: int = MAX_SUPPORT_EXPORT_BYTES) -> dict:
+    """Fit one zone export into *cap* bytes, dropping the oldest history first.
+
+    Same selection rule as before (history sections in ``_HISTORY_SECTIONS``
+    order, oldest record first, then the support timeline as a last resort), but
+    computed from per-record sizes instead of re-serialising after every
+    removal; see :mod:`export_budget`.
+    """
+    report = trim_to_cap(contract, [zone_history_slots(contract)], cap,
+                         reserve=meta_reserve(0))
+    rep = report.groups[0]
+    final_bytes = report.final_bytes
+    if report.applied:
+        _refresh_zone_after_trim(contract, rep.sections)
+        final_bytes = json_size(contract)   # exact: after the refresh, before the truncation record
+    contract["truncation"] = {"applied": report.applied,
+                              "original_bytes": report.original_bytes,
+                              "final_bytes": final_bytes,
+                              "byte_cap": cap, "sections": rep.sections}
     return contract
 
 
 def _bytes(obj) -> int:
-    try:
-        return len(json.dumps(obj, default=str).encode("utf-8"))
-    except Exception:
-        return 0
+    return json_size(obj)
 
 
 def _orientation_category(azimuth) -> str:

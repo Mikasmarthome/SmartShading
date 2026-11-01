@@ -21,6 +21,7 @@ Design invariants
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
@@ -221,16 +222,41 @@ def _build_consolidated(runtime_data: Any) -> dict:
         return {"section_errors": {"builder": 1}}
 
 
+async def _drain(gen):
+    """Run a cooperative export generator, giving control back to the event loop
+    after every step (one zone, one stage).  Each step is a short synchronous
+    slice, so Home Assistant stays responsive while the export is assembled.
+
+    Nothing is spawned in the background, so an unload or reload that happens
+    while the download is being built leaves no task behind.
+    """
+    try:
+        while True:
+            try:
+                next(gen)
+            except StopIteration as done:
+                return done.value
+            await asyncio.sleep(0)
+    finally:
+        gen.close()
+
+
 async def _build_support_and_research_sections(hass: HomeAssistant) -> dict:
-    """Aggregate the same privacy-safe Support/Research Export payloads the
-    (now-removed) /config/www export buttons used to write to an
-    unauthenticated public file — see entities/button.py's own module
-    docstring for why that path was removed. Reuses the existing,
-    already privacy-safe builders unmodified (no entity IDs, no room/window
-    names, no device IDs — see build_support_export_all_zones's and
-    build_research_export_all_zones's own docstrings); this is additive
-    aggregation for the standard HA diagnostics download, never a second
-    export mechanism.
+    """Aggregate the Support/Research Export payloads for the official HA
+    diagnostics download — the only place they are exposed.  They used to be
+    written to an unauthenticated public file by (now-removed) /config/www
+    export buttons — see entities/button.py's own module docstring for why that
+    path was removed.  Reuses the existing, already privacy-safe builders
+    (no entity IDs, no room/window names, no device IDs — see
+    build_support_export_all_zones's and build_research_export_all_zones's own
+    docstrings); this is additive aggregation for the standard HA diagnostics
+    download, never a second export mechanism.
+
+    Both payloads share one hard byte budget (see engines/embedded_exports.py):
+    the fixed overviews are kept, the history lists are trimmed fairly across
+    the zones with the newest records preferred.  The work is cooperative — it
+    yields to the event loop between zones — so a large installation cannot
+    block Home Assistant.
 
     integration_version() reads manifest.json from disk — run in the
     executor so this genuinely async HA hook never blocks the event loop
@@ -241,21 +267,24 @@ async def _build_support_and_research_sections(hass: HomeAssistant) -> dict:
     """
     try:
         from .const import integration_version
-        from .engines.research_export_v3 import build_research_export_all_zones
-        from .engines.support_export import build_support_export_all_zones
+        from .engines.embedded_exports import fit_embedded_exports, support_history_factor
+        from .engines.research_export_v3 import iter_research_export_all_zones
+        from .engines.support_export import iter_support_export_all_zones
         from .entities.button import _active_zone_coordinators
 
         now = datetime.now(timezone.utc)
         coordinators = _active_zone_coordinators(hass)
         version = await hass.async_add_executor_job(integration_version)
-        return {
-            "support_export": build_support_export_all_zones(
-                coordinators, now=now, integration_version=version,
-            ),
-            "research_export": build_research_export_all_zones(
-                coordinators, now=now, integration_version=version,
-            ),
-        }
+        support = await _drain(iter_support_export_all_zones(
+            coordinators, now=now, integration_version=version, byte_cap=None,
+            history_factor=support_history_factor(len(coordinators)),
+        ))
+        research = await _drain(iter_research_export_all_zones(
+            coordinators, now=now, integration_version=version, byte_cap=None,
+        ))
+        await asyncio.sleep(0)
+        support, research, _reports = fit_embedded_exports(support, research, now=now)
+        return {"support_export": support, "research_export": research}
     except Exception:
         _LOGGER.warning(
             "SmartShading: support/research export diagnostics failed — partial"

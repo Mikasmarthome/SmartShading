@@ -217,6 +217,7 @@ class TestDiagnosticsRoute:
         zones = payload["support_export"]["zones"]
         assert zones and "lifecycle" in zones[0]
         lifecycle = zones[0]["lifecycle"]
-        assert {"listeners_active", "safety_holds", "completion_feedback", "refresh_paths"} <= set(lifecycle)
+        assert {"listeners_active", "safety_holds", "completion_feedback", "refresh_paths",
+            "last_plan_completion"} <= set(lifecycle)
         assert "cover." not in json.dumps(lifecycle) and "binary_sensor." not in json.dumps(lifecycle)
         assert before == after

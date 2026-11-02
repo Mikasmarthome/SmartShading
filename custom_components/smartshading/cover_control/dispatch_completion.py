@@ -1,8 +1,8 @@
-"""Tiered travel-completion detection for SEQUENTIAL dispatch mode
-(v1.2.0-beta.1, T11).
+"""Tiered travel-completion detection for intermediate positions (1-99 %).
 
-Only ever consulted when DispatchConfig.mode is SEQUENTIAL — PARALLEL and
-SPACED never call this module.
+Consulted by the dispatch plan executor between two covers of one synchronized
+group: the next cover starts only after this wait reports a trustworthy end of
+travel (followed by the fixed settle pause).
 
 Tiered strategy, most-trustworthy signal first:
   1. Reliable position feedback: poll the cover's real HA state; completed
@@ -16,9 +16,10 @@ Tiered strategy, most-trustworthy signal first:
      numbers cover_control/travel_tracker.py's estimator uses), scaled by
      the fraction of the 0-100 range actually being crossed when the start
      position is known, and simply wait that long.
-  3. Timeout: both tiers are bounded by max_travel_wait_s — a cover that
-     never reports completion (tier 1) or whose estimate somehow exceeds the
-     bound (tier 2) is not waited on forever; the queue continues.
+  3. Timeout: both tiers are bounded by MAX_TRAVEL_WAIT_S -- a cover that never
+     reports completion (tier 1) or whose estimate somehow exceeds the bound
+     (tier 2) is not waited on forever.  A timeout is never a success: the rest
+     of the affected group does not start (see dispatch_plan_executor.py).
 
 No busy-wait: uses asyncio.sleep(poll_interval_s) between checks (tier 1)
 or a single bounded sleep (tier 2) — never a tight loop.
@@ -57,6 +58,11 @@ from .cover_entity_snapshot import build_cover_entity_snapshot
 
 DEFAULT_POLL_INTERVAL_S = 1.0
 DEFAULT_POSITION_TOLERANCE = 5
+MAX_TRAVEL_WAIT_S = 40.0
+"""Fixed upper bound for one cover's completion wait.  Comfortably above the
+default per-cover travel time (30 s, cover_capabilities.py) so a normal
+full-range travel is never mistaken for a timeout.  Internal safety limit; not
+configurable."""
 
 MonoClock = Callable[[], float]
 Sleeper = Callable[[float], "asyncio.Future"]

@@ -364,7 +364,7 @@ class TestCoordinatorAcceptsSerialDispatch:
         assert "_serial_dispatch" in self._src()
 
     def test_coordinator_uses_asyncio_lock_in_dispatch_loop(self):
-        assert "async with self._serial_dispatch.lock" in self._src()
+        assert "async with self._serial_dispatch.admit(" in self._src()
 
     def test_per_coordinator_fallback_creates_serial_dispatch(self):
         # Fallback branch: if global_serial_dispatch is None, create one locally

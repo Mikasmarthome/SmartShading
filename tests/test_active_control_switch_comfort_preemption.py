@@ -12,7 +12,7 @@ fixed this session (presence f71c71e, contact f71c71e, lifecycle-boundary
     stale by this call. The per-item generation checks already proven
     load-bearing elsewhere in this codebase
     (`test_dispatch_safety_generation_exemption_structural.py`,
-    `_dispatch_one_parallel_item`, `_predispatch_sequential_plan`) simply
+    `_predispatch_sequential_plan`) simply
     never trigger for this path, because the value they compare against
     never changes.
   - No `self._active_dispatch_cancellation.set()` — so an already-sleeping
@@ -246,10 +246,6 @@ from custom_components.smartshading.cover_control.shading_group_harmonizer impor
     HarmonizationResult,
 )
 from custom_components.smartshading.models.cover_group import CoverGroup  # noqa: E402
-from custom_components.smartshading.models.dispatch_config import (  # noqa: E402
-    DispatchConfig,
-    DispatchMode,
-)
 from custom_components.smartshading.state_machine.states import ShadingState  # noqa: E402
 
 
@@ -701,7 +697,7 @@ class TestSafetyAndNoToken:
 # (coordinator.py ~4995-4998) with a value freshly re-read from
 # effective_zone_execution() AFTER a real toggle, nor routed the result
 # through the real CommandFilter().evaluate() -> build_execution_plan() ->
-# _predispatch_parallel_batches() -> dispatch_cover_intent() chain. Every
+# _predispatch_sequential_plan() -> dispatch_cover_intent() chain. Every
 # existing test either used _install_fake_cycle() (bypasses ExecutionMode
 # entirely) or hardcoded exec_filter_result.allowed=True (bypasses the gate
 # function itself).
@@ -715,8 +711,8 @@ class TestSafetyAndNoToken:
 # the "before" and "after" _WindowComputeState is `active_control_enabled`,
 # read live from coord.effective_zone_execution(zone_id) -- the exact same
 # source Pass-1 itself reads -- and everything downstream (CommandFilter,
-# build_execution_plan, _predispatch_parallel_batches,
-# _dispatch_one_parallel_item) is the REAL, unmodified production code.
+# build_execution_plan, _predispatch_sequential_plan) is the REAL,
+# unmodified production code.
 # Sun exposure, hold, throttle, deadband, override, contact, absence,
 # lifecycle, sensor validity are never modeled at all here (no tier
 # evaluation happens), so none of them can be the reason a dispatch does or
@@ -797,7 +793,7 @@ def _make_coord_for_fresh_plan(*, zone_ids=("zA",)):
     entry = _make_entry()
     coord = SmartShadingCoordinator(
         hass, entry, lifecycle_config=NightDayLifecycleConfig(id="default"),
-        presence_entity_ids=[], dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL),
+        presence_entity_ids=[],
     )
     coord.zones = {zid: ZoneConfig(id=zid, name=zid) for zid in zone_ids}
     coord.windows = {}
@@ -805,6 +801,45 @@ def _make_coord_for_fresh_plan(*, zone_ids=("zA",)):
     coord._startup_cycles_remaining = 0
     coord.config_entry = entry
     return coord, entry
+
+
+async def _run_fresh_plan(coord, states):
+    """Run the REAL comfort pre-pass (_predispatch_sequential_plan) for the
+    given fresh states. Only the hardware edges are faked: the live HA state
+    each item is re-validated against, and the end-of-travel wait."""
+    from custom_components.smartshading.cover_control import dispatch_plan_executor
+    from custom_components.smartshading.cover_control.dispatch_completion import (
+        CompletionMethod, CompletionResult,
+    )
+    ha_states = {}
+    for s in states:
+        st = MagicMock()
+        st.state = "open"
+        st.attributes = {"current_position": 0}
+        ha_states[s.exec_entity_id] = st
+        coord._cover_capabilities[s.exec_entity_id] = s.exec_cap
+    coord.hass.states.get = MagicMock(side_effect=lambda eid: ha_states.get(eid))
+
+    async def fake_completion(*a, **k):
+        return CompletionResult(method=CompletionMethod.TIMEOUT, elapsed_s=0.01, timed_out=False)
+
+    g = coord._predispatch_sequential_plan.__func__.__globals__
+    orig_wait = g["wait_for_travel_completion"]
+    orig_pause = dispatch_plan_executor.INTERMEDIATE_POST_COMPLETION_PAUSE_S
+    g["wait_for_travel_completion"] = fake_completion
+    dispatch_plan_executor.INTERMEDIATE_POST_COMPLETION_PAUSE_S = 0.0
+    try:
+        zone_order, window_order_in_zone = {}, {}
+        for s in states:
+            zone_order.setdefault(s.zone.id, len(zone_order))
+            window_order_in_zone[s.window.id] = 0
+        return await coord._predispatch_sequential_plan(
+            [(s.window.id, s) for s in states], _harm_for(states), _NOW_FRESH,
+            coord._dispatch_generation, zone_order, window_order_in_zone, asyncio.Event(),
+        )
+    finally:
+        g["wait_for_travel_completion"] = orig_wait
+        dispatch_plan_executor.INTERMEDIATE_POST_COMPLETION_PAUSE_S = orig_pause
 
 
 class _patch_dispatch_cover_intent:
@@ -815,7 +850,7 @@ class _patch_dispatch_cover_intent:
     signature from pytest's fixture introspection."""
 
     def __init__(self, coord, fake):
-        self._globals = coord._predispatch_parallel_batches.__func__.__globals__
+        self._globals = coord._predispatch_sequential_plan.__func__.__globals__
         self._fake = fake
         self._orig = None
 
@@ -868,11 +903,9 @@ class TestFreshPlanExecutionModeGate:
             return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
 
         with _patch_dispatch_cover_intent(coord, fake_dispatch):
-            # 8. Route through the REAL PARALLEL pre-pass -- the exact
+            # 8. Route through the REAL comfort pre-pass -- the exact
             # production dispatch entry point.
-            results = await coord._predispatch_parallel_batches(
-                [("wA", sA)], _harm_for([sA]), _NOW_FRESH, coord._dispatch_generation,
-            )
+            results = await _run_fresh_plan(coord, [sA])
 
         assert dispatch_calls == [], (
             f"expected NO real comfort dispatch for the disabled zone, "
@@ -913,9 +946,7 @@ class TestFreshPlanExecutionModeGate:
             return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
 
         with _patch_dispatch_cover_intent(coord, fake_dispatch):
-            await coord._predispatch_parallel_batches(
-                [("wA", sA), ("wB", sB)], _harm_for([sA, sB]), _NOW_FRESH, coord._dispatch_generation,
-            )
+            await _run_fresh_plan(coord, [sA, sB])
 
         assert dispatch_calls == ["cover.b"], (
             f"expected zone B (enabled) to dispatch and zone A (disabled) not to, "
@@ -954,9 +985,7 @@ class TestFreshPlanExecutionModeGate:
             return build_sent_result(intent, sent_at_utc=now_utc, reason="test")
 
         with _patch_dispatch_cover_intent(coord, fake_dispatch):
-            await coord._predispatch_parallel_batches(
-                [("wA", sA_on)], _harm_for([sA_on]), _NOW_FRESH, coord._dispatch_generation,
-            )
+            await _run_fresh_plan(coord, [sA_on])
 
         assert dispatch_calls == ["cover.a"], (
             f"expected zone A to dispatch again after re-enabling, got {dispatch_calls}"

@@ -129,10 +129,6 @@ from custom_components.smartshading.cover_control.shading_group_harmonizer impor
     HarmonizationResult,
 )
 from custom_components.smartshading.models.cover_group import CoverGroup  # noqa: E402
-from custom_components.smartshading.models.dispatch_config import (  # noqa: E402
-    DispatchConfig,
-    DispatchMode,
-)
 from custom_components.smartshading.models.lifecycle import NightDayLifecycleConfig  # noqa: E402
 from custom_components.smartshading.models.window import WindowConfig  # noqa: E402
 from custom_components.smartshading.models.zone import ZoneConfig  # noqa: E402
@@ -308,7 +304,7 @@ def _fake_completion_factory(on_call=None):
 
 class TestBasicDispatch:
     def test_single_comfort_item_dispatches(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         _setup_coord(coord, [s1])
         calls = []
@@ -350,7 +346,7 @@ class TestBasicDispatch:
         # B3-012: a 0% target must reach the same fast dispatch path as a
         # 100% target -- proven here via the real coordinator wiring
         # (target_position_ha=0 -> FULL_CLOSE, not INTERMEDIATE).
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=0, current_position_ha=100)
         _setup_coord(coord, [s1])
         calls = []
@@ -378,7 +374,7 @@ class TestBasicDispatch:
 
 class TestSafetyExcluded:
     def test_safety_item_never_in_plan(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", is_safety=True)
         _setup_coord(coord, [s1])
         calls = []
@@ -406,7 +402,7 @@ class TestNoMovementExcluded:
         # target_position_ha == current_position_ha -> classify_cover_intent
         # returns NO_MOVEMENT -> must NOT enter the plan (falls through to
         # the legacy path instead of being silently skipped here).
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state(
             "w1", "z1", entity_id="cover.w1",
             target_position_ha=40, current_position_ha=40,
@@ -434,7 +430,7 @@ class TestNoMovementExcluded:
 
 class TestZonePackageDiagnosticsForIntermediate:
     def test_intermediate_item_wait_type_is_completion_plus_pacing(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         _setup_coord(coord, [s1])
 
@@ -461,7 +457,7 @@ class TestLockOwnership:
         # for completion under the T22 target-aware policy; FULL_OPEN never
         # does (Phase 3 design), so a FULL_OPEN target wouldn't exercise the
         # completion-wait code path this test targets at all.
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         _setup_coord(coord, [s1])
 
@@ -491,7 +487,7 @@ class TestLockOwnership:
         )
 
     def test_lock_is_held_during_dispatch_call(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         _setup_coord(coord, [s1])
 
@@ -516,41 +512,9 @@ class TestLockOwnership:
         assert lock_held_during_dispatch["value"] is True
 
 
-class TestStoredModeNoLongerGatesDispatch:
-    # B3-013: _predispatch_sequential_plan is now the ONE, unconditional
-    # comfort dispatch path — it no longer branches on config.mode at all.
-    # A stored PARALLEL (or SEQUENTIAL) value must have zero productive
-    # effect: the plan still dispatches, exactly as it would under SPACED.
-    # This replaces the old TestParallelModeNoOp, which asserted the
-    # opposite (PARALLEL made this method a no-op) — that gating is exactly
-    # what B3-013 removes in favor of one fixed dispatch rule.
-    def test_stored_parallel_mode_does_not_suppress_dispatch(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.PARALLEL))
-        s1 = _state("w1", "z1", entity_id="cover.w1")
-        _setup_coord(coord, [s1])
-        calls = []
-
-        async def fake(hass, intent, *, now_utc):
-            calls.append(intent.cover_entity_id)
-            return await _fake_sent_dispatch(hass, intent, now_utc=now_utc)
-
-        _patch_dispatch_cover_intent(monkeypatch, coord, fake)
-
-        async def _run():
-            zone_order, window_order_in_zone = _zone_maps([s1])
-            return await coord._predispatch_sequential_plan(
-                _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
-                asyncio.Event(),
-            )
-
-        results = asyncio.run(_run())
-        assert calls == ["cover.w1"]
-        assert ("w1", "cover.w1") in results
-
-
 class TestEmptyPlan:
     def test_no_states_returns_empty(self) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         _setup_coord(coord, [])
 
         async def _run():
@@ -566,7 +530,7 @@ class TestEmptyPlan:
 
 class TestStaleGeneration:
     def test_stale_generation_before_dispatch_yields_not_attempted(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         _setup_coord(coord, [s1])
 
@@ -619,3 +583,55 @@ class TestOuterLoopRoutingIsMembershipGated:
             "(still-membership-gated) structure rather than removing the "
             "check."
         )
+
+
+class TestPlanCompletionReason:
+    """The group/package-level completion reason is kept for diagnostics: the
+    executor status plus per-item status:reason counts."""
+
+    def _run_pair(self, monkeypatch, *, timed_out: bool):
+        coord = _make_coord()
+        s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
+        s2 = _state("w2", "z1", entity_id="cover.w2", target_position_ha=40)
+        _setup_coord(coord, [s1, s2])
+        _patch_dispatch_cover_intent(monkeypatch, coord, _fake_sent_dispatch)
+
+        async def fake_completion(*a, **k):
+            from custom_components.smartshading.cover_control.dispatch_completion import (
+                CompletionMethod, CompletionResult,
+            )
+            return CompletionResult(
+                method=CompletionMethod.TIMEOUT if timed_out else CompletionMethod.POSITION,
+                elapsed_s=0.01, timed_out=timed_out,
+            )
+
+        _patch_wait_for_travel_completion(monkeypatch, coord, fake_completion)
+        _real_sleep = asyncio.sleep
+        _patch_asyncio_sleep(monkeypatch, coord, lambda s: _real_sleep(0))
+
+        async def _run():
+            zone_order, window_order_in_zone = _zone_maps([s1, s2])
+            return await coord._predispatch_sequential_plan(
+                _ordered([s1, s2]), _harm([s1, s2]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
+            )
+
+        results = asyncio.run(_run())
+        return coord, results
+
+    def test_timeout_is_recorded_and_the_rest_of_the_group_is_skipped(self, monkeypatch) -> None:
+        coord, results = self._run_pair(monkeypatch, timed_out=True)
+        last = coord.lifecycle_diagnostics()["last_plan_completion"]
+        assert last["items"] == {"timed_out": 1, "skipped:previous_completion_timed_out": 1}
+        assert results[("w2", "cover.w2")].reason == "previous_completion_timed_out"
+
+    def test_a_clean_group_is_recorded_as_completed(self, monkeypatch) -> None:
+        coord, _ = self._run_pair(monkeypatch, timed_out=False)
+        last = coord.lifecycle_diagnostics()["last_plan_completion"]
+        assert last["status"] == "completed" and last["preempted"] is False
+        assert last["items"] == {"completed": 2}
+
+    def test_the_record_is_json_safe(self, monkeypatch) -> None:
+        import json
+        coord, _ = self._run_pair(monkeypatch, timed_out=True)
+        json.dumps(coord.lifecycle_diagnostics())

@@ -8,8 +8,8 @@ cover_control/assumed_state_manager.py):
      Indefinitely, until superseded by the NEXT actual dispatch.
      `smartshading_assumed` is sourced each cycle from
      AssumedStateManager.get_state(cover_id, now).last_commanded_position,
-     which (per its own field comment) is "set ONLY by update() /
-     on_reference_travel(). Never overwritten by observe()" — i.e. it holds
+     which (per its own field comment) is "set ONLY by update().
+     Never overwritten by observe()" — i.e. it holds
      whatever SmartShading last actually commanded until a new command
      replaces it. There is no separate timeout inside the override-detector
      guard itself.

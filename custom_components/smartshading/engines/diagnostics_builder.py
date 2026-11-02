@@ -329,12 +329,8 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
                 "no_dispatch_decisions": no_dispatch}
 
     def _dispatch_strategy_summary():
-        # PUBLIC: configuration + aggregate counts only — no window/cover ids.
-        # Answers T11 §11's "which dispatch mode is active" at the same
-        # counts-only granularity the rest of this contract already uses;
-        # per-event completion detail lives in the (already-existing) support
-        # export timeline, not here.
-        dc = getattr(c, "_dispatch_config", None)
+        # PUBLIC: aggregate counts only — no window/cover ids.  Per-event
+        # completion detail lives in the support export timeline, not here.
         events = list(getattr(c, "_support_critical_events", []) or [])
         timeouts = _dispatch_timeout_count(c)
         completion_counts: dict = {}
@@ -350,11 +346,6 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         admission = getattr(serial, "admission", None)
         admission_stats = admission.stats() if hasattr(admission, "stats") else None
         return {
-            "mode": dc.mode.value if dc is not None else None,
-            "start_interval_s": dc.start_interval_s if dc is not None else None,
-            "max_travel_wait_s": dc.max_travel_wait_s if dc is not None else None,
-            "post_travel_pause_s": dc.post_travel_pause_s if dc is not None else None,
-            "zone_batching": dc.zone_batching if dc is not None else None,
             "completion_method_counts": completion_counts,
             "completion_status_counts": completion_status_counts,
             "completion_timeout_count": timeouts,

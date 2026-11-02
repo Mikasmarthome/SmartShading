@@ -1,7 +1,7 @@
 """Tests for v1.0 — Manual override regression fix.
 
 Covers:
-- AssumedPositionState.last_commanded_position: set only by update() / on_reference_travel(),
+- AssumedPositionState.last_commanded_position: set only by update(),
   never by observe().
 - For reliable covers: observe() after update() preserves last_commanded_position.
 - Override detection after SmartShading shade: user open → detected; own command → not detected.
@@ -96,13 +96,6 @@ class TestUpdateSetsLastCommandedPosition:
         mgr.update("c1", 50, _now(), has_reliable_position_feedback=True)
         st = mgr.get_state("c1", _now())
         assert st.last_commanded_position == 50
-
-    def test_on_reference_travel_sets_field(self):
-        mgr = _manager()
-        mgr.on_reference_travel("c1", "min", 0, _now())
-        st = mgr.get_state("c1", _now())
-        assert st.last_commanded_position == 0
-
 
 # ---------------------------------------------------------------------------
 # 3. observe() does NOT overwrite last_commanded_position

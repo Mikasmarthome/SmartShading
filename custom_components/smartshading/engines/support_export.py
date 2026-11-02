@@ -1044,10 +1044,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                         "global_wait_overrun_ms": pe.get("global_wait_overrun_ms"),
                         "required_global_interval_ms": pe.get(
                             "required_global_interval_ms"),
-                        # T11: active dispatch strategy + SEQUENTIAL-mode
-                        # travel-completion outcome for this event.
-                        "dispatch_mode": pe.get("dispatch_mode"),
-                        "zone_batching_enabled": pe.get("zone_batching_enabled"),
+                        # Travel-completion outcome for this event.
                         "completion_method": pe.get("completion_method"),
                         "completion_wait_s": pe.get("completion_wait_s"),
                         "completion_timed_out": pe.get("completion_timed_out"),
@@ -1061,9 +1058,6 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
                         "admission_priority": pe.get("admission_priority"),
                         "admission_wait_ms": pe.get("admission_wait_ms"),
                         "admission_overtaken": pe.get("admission_overtaken"),
-                        # T11.1: concurrent-batch identity (PARALLEL mode only).
-                        "parallel_batch_id": pe.get("parallel_batch_id"),
-                        "parallel_batch_size": pe.get("parallel_batch_size"),
                     },
                 })
         # Sort newest-first so non-critical fill-up keeps the most recent records.

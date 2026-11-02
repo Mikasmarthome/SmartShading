@@ -3,7 +3,7 @@ confidence-gated tolerance widening, and unload-ordering.
 
 Before T16: AssumedStateManager computed confidence/drift/uncertainty but
 nothing consumed it (zero callers of is_position_trustworthy()/
-is_drift_suspected()), nothing persisted it (on_restart()/
+is_drift_suspected()), nothing persisted it (the restore hooks:
 initialize_from_restore()/export_for_restore() had zero call sites outside
 this module), and it was invisible in the support export.
 

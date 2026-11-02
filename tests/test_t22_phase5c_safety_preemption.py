@@ -129,10 +129,6 @@ from custom_components.smartshading.cover_control.execution_result import (  # n
     ExecutionStatus,
     build_sent_result,
 )
-from custom_components.smartshading.models.dispatch_config import (  # noqa: E402
-    DispatchConfig,
-    DispatchMode,
-)
 from custom_components.smartshading.models.lifecycle import NightDayLifecycleConfig  # noqa: E402
 from custom_components.smartshading.models.window import WindowConfig  # noqa: E402
 from custom_components.smartshading.models.zone import ZoneConfig  # noqa: E402
@@ -245,7 +241,7 @@ class TestCycleHasExecutableSafetyIntent:
 
 class TestPreemptWithoutActivePlan:
     def test_bumps_generation_no_active_task(self) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         gen_before = coord._dispatch_generation
 
         async def _run():
@@ -270,7 +266,7 @@ class TestPreemptCompletesPromptlyNotAfterAFullArtificialWait:
     # near-instantly once cancellation.wait() unblocks it, so preempt()
     # itself must also return near-instantly.
     def test_preempt_returns_promptly_after_signal_not_after_extra_delay(self) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         cancellation = asyncio.Event()
         coord._active_dispatch_cancellation = cancellation
 
@@ -294,7 +290,7 @@ class TestPreemptCompletesPromptlyNotAfterAFullArtificialWait:
 
 class TestPreemptWithActivePlan:
     def test_signals_and_awaits_active_comfort_task_promptly(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         cancellation = asyncio.Event()
         coord._active_dispatch_cancellation = cancellation
 
@@ -314,7 +310,7 @@ class TestPreemptWithActivePlan:
         assert result_gen == 1
 
     def test_leaves_no_new_task_or_cancellation_registered(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         cancellation = asyncio.Event()
         coord._active_dispatch_cancellation = cancellation
 
@@ -356,7 +352,7 @@ async def _run_forever_placeholder(cancellation: asyncio.Event) -> str:
 
 class TestIdempotentDoublePreemption:
     def test_two_preemptions_in_succession_are_safe(self) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
 
         async def _run():
             gen1 = await coord._preempt_active_comfort_plan()
@@ -375,7 +371,7 @@ class TestIdempotentDoublePreemption:
         # a second time while that same (now-already-.set()) Event is
         # still registered as active — proving a duplicate .set() on an
         # already-set Event is never treated as an error.
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         cancellation = asyncio.Event()
         coord._active_dispatch_cancellation = cancellation
 
@@ -474,7 +470,7 @@ class TestSafetyPreemptsActiveComfortPlanMidCompletionWait:
     # promptly without a second dispatch call, and never itself starts a
     # new comfort plan.
     def test_safety_preemption_during_active_completion_wait(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         coord.windows = {"w1": s1.window}
         coord.zones = {"z1": s1.zone}
@@ -596,7 +592,7 @@ class TestSafetyPreemptsDuringFullOpenPacing:
     # preemption must not wait for that pacing interval to elapse and must
     # prevent the second FULL_OPEN item from ever dispatching.
     def test_safety_preemption_during_full_open_pacing_interval(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
         s2 = _state("w2", "z1", entity_id="cover.w2", target_position_ha=100)
         _setup_two_window_coord(coord, s1, s2)
@@ -672,7 +668,7 @@ class TestGlobalLockNotHeldDuringCompletionWaitOrPause:
     # is genuinely stuck mid-completion-wait / mid-pause, not by source
     # inspection alone.
     def test_lock_released_during_completion_wait(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         coord.windows = {"w1": s1.window}
         coord.zones = {"z1": s1.zone}
@@ -725,7 +721,7 @@ class TestSafetyPreemptsDuringIntermediatePostCompletionPause:
     # preemption must interrupt that pause immediately rather than waiting
     # for it to elapse naturally, and prevent the next item from dispatching.
     def test_safety_preemption_during_post_completion_pause(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         s2 = _state("w2", "z1", entity_id="cover.w2", target_position_ha=40)
         _setup_two_window_coord(coord, s1, s2)
@@ -796,27 +792,17 @@ class TestSafetyPreemptsDuringIntermediatePostCompletionPause:
         assert coord._active_dispatch_cancellation is None
 
 
-class TestOldStartIntervalNoLongerThrottlesComfortDispatch:
-    # B3-013: the global-interval throttle-wait inside _dispatch_item_
-    # port's _do_dispatch() (coordinator.py) used to be driven by the
-    # configured (SPACED-mode) start_interval_s — up to 30s — and used to
-    # need its own cancellation-race to stay interruptible by Safety (see
-    # the T22 Phase 5c history this test replaces). B3-013 hardcodes
-    # interval_s=0.0 for comfort dispatch there (all real pacing now lives
-    # in DispatchPlanExecutor's own FULL_OPEN_START_INTERVAL_S /
-    # INTERMEDIATE_POST_COMPLETION_PAUSE_S, keyed off target_class, not
-    # config), so this port-level wait is now always zero: a stale/old
-    # stored start_interval_s=5.0 (tolerantly loaded, never read
-    # productively — see config_flow.py's B3-013 docstring) must have NO
-    # effect at all, even immediately after a real record_dispatch() that
-    # would previously have forced a ~5s wait. This is a real end-to-end
-    # proof using the actual dispatch_config + GlobalSerialDispatch +
-    # _do_dispatch() code path, not a source regex.
-    def test_stale_start_interval_config_no_longer_delays_first_dispatch(self, monkeypatch) -> None:
+class TestRecentGlobalDispatchDoesNotThrottleComfortDispatch:
+    # The global-interval throttle-wait inside the dispatch port's
+    # _do_dispatch() is always zero for comfort dispatch: all real pacing
+    # lives in DispatchPlanExecutor (FULL_OPEN_START_INTERVAL_S /
+    # INTERMEDIATE_POST_COMPLETION_PAUSE_S, keyed off target_class). A real
+    # record_dispatch() immediately before the plan must therefore have NO
+    # effect on the first comfort dispatch. End-to-end proof through the
+    # real GlobalSerialDispatch + _do_dispatch() code path.
+    def test_a_recent_global_dispatch_does_not_delay_the_first_comfort_dispatch(self, monkeypatch) -> None:
         import homeassistant.util.dt as dt_util
-        coord = _make_coord(dispatch_config=DispatchConfig(
-            mode=DispatchMode.SPACED, start_interval_s=5.0,
-        ))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
         coord.windows = {"w1": s1.window}
         coord.zones = {"z1": s1.zone}
@@ -828,8 +814,7 @@ class TestOldStartIntervalNoLongerThrottlesComfortDispatch:
         st.attributes = {"current_position": 0}
         coord.hass.states.get = MagicMock(side_effect=lambda eid: {"cover.w1": st}.get(eid))
         # Pre-B3-013, this record_dispatch() immediately before evaluation
-        # would have forced time_until_next_allowed(min_interval_override=
-        # 5s) to return a real near-5-second remaining wait. B3-013 hard-
+        # would have forced a real near-5-second remaining wait. B3-013 hard-
         # codes interval_s=0.0 for the comfort port, so this must now have
         # zero effect on comfort dispatch timing.
         coord._serial_dispatch.record_dispatch(dt_util.utcnow())
@@ -861,9 +846,9 @@ class TestOldStartIntervalNoLongerThrottlesComfortDispatch:
             await _real_sleep(0)
             await _real_sleep(0)
             assert dispatch_calls == ["cover.w1"], (
-                "a stale/ignored start_interval_s=5.0 must not delay the "
-                "single-item comfort plan's dispatch at all — B3-013 has "
-                "exactly one fixed rule, not a configurable interval"
+                "a recent global dispatch must not delay the single-item "
+                "comfort plan's dispatch at all — there is exactly one fixed "
+                "rule, not a configurable interval"
             )
             assert task_a.done(), (
                 "a single FULL_OPEN item never enters a completion-wait, "
@@ -939,7 +924,7 @@ class TestSafetyNeverEntersComfortPlanExecutorOrLiveValidation:
     # (`if intent.is_safety: continue`) in _predispatch_sequential_plan's
     # plan-item construction loop, using the real dispatch/validate ports.
     def test_safety_window_excluded_from_comfort_plan_even_when_present(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         safety_state = _state(
             "w_safety", "z1", entity_id="cover.safety", is_safety=True,
             filter_allowed=True, target_position_ha=100,
@@ -1019,14 +1004,12 @@ class TestShutdownAfterOldStartIntervalNoLongerThrottles:
     # separately). Since interval_s is hardcoded 0.0 for comfort dispatch,
     # there is no longer a real positive-duration throttle-wait for
     # shutdown to interrupt — a single-item FULL_OPEN plan dispatches and
-    # finishes immediately regardless of a stale start_interval_s=5.0, and
+    # finishes immediately regardless of a recent global dispatch, and
     # a shutdown arriving afterward must still complete cleanly as a
     # no-op.
-    def test_shutdown_after_stale_start_interval_config_is_a_clean_no_op(self, monkeypatch) -> None:
+    def test_shutdown_after_a_recent_global_dispatch_is_a_clean_no_op(self, monkeypatch) -> None:
         import homeassistant.util.dt as dt_util
-        coord = _make_coord(dispatch_config=DispatchConfig(
-            mode=DispatchMode.SPACED, start_interval_s=5.0,
-        ))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
         coord.windows = {"w1": s1.window}
         coord.zones = {"z1": s1.zone}
@@ -1061,8 +1044,8 @@ class TestShutdownAfterOldStartIntervalNoLongerThrottles:
             await _real_sleep(0)
             await _real_sleep(0)
             assert dispatch_calls == ["cover.w1"], (
-                "a stale/ignored start_interval_s=5.0 must not delay the "
-                "single-item comfort plan's dispatch at all"
+                "a recent global dispatch must not delay the single-item "
+                "comfort plan's dispatch at all"
             )
             assert task_a.done()
             assert coord._serial_dispatch.lock.locked() is False
@@ -1162,7 +1145,7 @@ class TestMixedSafetyAndComfortCycle:
     # own `if _cycle_has_executable_safety: await self._preempt_active_
     # comfort_plan() else: ... _run_comfort_dispatch_for_cycle(...)`.
     def test_executable_safety_preempts_and_never_starts_new_comfort_plan(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         safety_state = _state("w_safety", "z1", entity_id="cover.safety", is_safety=True, filter_allowed=True)
         comfort_state = _state("w_comfort", "z1", entity_id="cover.comfort", is_safety=False, filter_allowed=True)
 
@@ -1199,7 +1182,7 @@ class TestBlockedSafetyIntentDoesNotPreempt:
     # proves the actual call-site shape (reused verbatim) correctly skips
     # preemption and takes the normal comfort path instead.
     def test_blocked_safety_intent_leaves_comfort_path_untouched(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         blocked_safety_state = _state(
             "w_safety", "z1", entity_id="cover.safety", is_safety=True, filter_allowed=False,
         )
@@ -1243,7 +1226,7 @@ class TestExceptionInWindingDownPreviousPlanDoesNotBlockSafety:
     # propagate out of _preempt_active_comfort_plan() and must not prevent
     # safety from proceeding this cycle.
     def test_exception_in_previous_task_is_isolated(self) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         cancellation = asyncio.Event()
         coord._active_dispatch_cancellation = cancellation
 
@@ -1269,7 +1252,7 @@ class TestCancellationEventNeverReusedAcrossCycles:
     # and asserting the Event object identity differs, and that the
     # second cycle's Event is not already set when its own plan begins.
     def test_each_cycle_gets_its_own_fresh_unset_event(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
         coord.windows = {"w1": s1.window}
         coord.zones = {"z1": s1.zone}
@@ -1345,7 +1328,7 @@ class TestComfortRestartsAfterSafetyPreemption:
     # be able to start a brand-new, genuine comfort plan after a previous
     # preemption — no leftover registration blocks it.
     def test_comfort_plan_starts_fresh_after_a_prior_preemption(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         # Simulate a prior preemption with no active plan (SP-06 covers the
         # await/signal path; here we only need the generation bump + clean
         # registration state it leaves behind).
@@ -1405,7 +1388,7 @@ class TestFinallyBlockNeverClobbersANewerRegistration:
     # survive untouched afterward — a plain identity check on source code
     # cannot prove this, only exercising the real finally block can.
     def test_a_stale_finally_does_not_clear_a_newer_registration(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
         coord.windows = {"w1": s1.window}
         coord.zones = {"z1": s1.zone}
@@ -1453,7 +1436,7 @@ class TestShutdownDuringSafetyPreemptionRace:
     # Phase 5b's TestShutdown, now driven via the safety-preemption entry
     # point instead of a second overlapping comfort cycle.
     def test_shutdown_concurrent_with_preemption_no_exception_no_orphan(self) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         cancellation = asyncio.Event()
         coord._active_dispatch_cancellation = cancellation
 
@@ -1493,7 +1476,7 @@ class TestSafetyPreemptedSurvivesIntoDiagnostics:
         )
         from custom_components.smartshading.cover_control.command_filter import ExecutionMode
 
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s = _state("w1", "z1", entity_id="cover.w1")
         # decision_id is required for _record_decision_trace()'s own
         # materiality gate (only material decisions get traced).
@@ -1532,7 +1515,7 @@ class TestSafetyPreemptedSurvivesIntoDiagnostics:
         )
         from custom_components.smartshading.cover_control.command_filter import ExecutionMode
 
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s = _state("w1", "z1", entity_id="cover.w1")
 
         intent = CoverIntent(
@@ -1577,24 +1560,14 @@ class TestCallSiteActuallyChecksSafetyCondition:
             "neutralized (e.g. replaced with `if False:`)."
         )
 
-    def test_parallel_pre_pass_is_never_productively_invoked(self) -> None:
-        # B3-013: PARALLEL mode's own pre-pass call site (which this test
-        # used to check was threaded the real safety snapshot) no longer
-        # exists at all — _predispatch_parallel_batches() stays defined
-        # (risk-minimization: not deleted) but coordinator.py's Pass-2 loop
-        # never calls it productively any more; _parallel_results is always
-        # the empty dict. There is therefore no PARALLEL-mode-specific
-        # safety-preemption path left to verify separately — the single
-        # `if _cycle_has_executable_safety:` branch checked above is the
-        # only comfort-dispatch call site there is, for every stored mode.
-        import re
+    def test_legacy_parallel_pre_pass_no_longer_exists(self) -> None:
+        # The legacy PARALLEL pre-pass was removed outright: the single
+        # `if _cycle_has_executable_safety:` branch checked above is the only
+        # comfort-dispatch call site there is.
         from pathlib import Path
         source = (
             Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
             / "coordinator.py"
         ).read_text(encoding="utf-8")
-        assert not re.search(r"await self\._predispatch_parallel_batches\(", source), (
-            "_predispatch_parallel_batches() must stay uninvoked in "
-            "production code — if it is called again, this test (and the "
-            "safety-snapshot threading it used to check) must be revisited"
-        )
+        assert "_predispatch_parallel_batches" not in source
+        assert "_parallel_results" not in source

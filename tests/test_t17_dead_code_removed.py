@@ -8,8 +8,8 @@ plus a fresh full-tree sweep). Two things are guarded:
   these were EXPLICITLY kept, so a future cleanup pass must not mistake them
   for dead code and remove them without re-reading their rationale.
 
-Also covers cover_control/dispatch_orchestrator.py's resolve_pre_dispatch_wait
-removal (zero callers — the coordinator's real dispatch loop computes the
+Also covers the removal of the former dispatch orchestrator's
+resolve_pre_dispatch_wait (zero callers — the coordinator's real dispatch loop computes the
 remainder-against-elapsed-time subtraction inline instead) and the two dead
 timeline event-type strings (contact_event, min_interval_bypass) that were
 never produced by any decision path.
@@ -75,7 +75,6 @@ class TestDeadSymbolsRemainRemoved:
             "safe_number", "normalise_timestamp", "is_valid_count",
             "delta_within_bounds", "dedupe_by_id",
         }),
-        ("cover_control/dispatch_orchestrator.py", {"resolve_pre_dispatch_wait"}),
         ("coordinator.py", {
             "thermal_diagnostics", "experiment_diagnostics", "strategy_diagnostics",
             "solar_threshold_diagnostics", "tier_order_diagnostics",

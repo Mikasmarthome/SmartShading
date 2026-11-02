@@ -215,21 +215,21 @@ class ExecutionResult:
     """The exception CLASS NAME only (privacy-safe, no message/payload) when the
     service call raised.  None on success.  Diagnostics only."""
 
-    # --- T11: SEQUENTIAL-mode travel-completion diagnostics (additive) ---
+    # --- travel-completion diagnostics (additive) ---
     completion_method: str | None = None
     """cover_control.dispatch_completion.CompletionMethod.value ("position",
-    "movement_state", "time_estimate", "timeout") when this dispatch was
-    made under DispatchMode.SEQUENTIAL and a completion wait was performed.
-    None for PARALLEL/SPACED dispatches, or when status is not SENT."""
+    "movement_state", "time_estimate", "timeout") when a completion wait was
+    performed (intermediate positions only).  None otherwise, or when status
+    is not SENT."""
 
     completion_wait_s: float | None = None
-    """Seconds actually spent waiting for travel completion (SEQUENTIAL
-    mode only). None when no completion wait was performed."""
+    """Seconds actually spent waiting for travel completion.  None when no
+    completion wait was performed."""
 
     completion_timed_out: bool = False
-    """True when the SEQUENTIAL completion wait hit max_travel_wait_s
-    without detecting completion — the queue still continues (see
-    cover_control/dispatch_completion.py module docstring)."""
+    """True when the completion wait hit MAX_TRAVEL_WAIT_S without detecting
+    completion.  A timeout is never a success: the rest of the affected group
+    does not start (see cover_control/dispatch_completion.py)."""
 
     completion_status: str | None = None
     """cover_control.dispatch_completion.CompletionStatus.value ("completed",
@@ -276,16 +276,6 @@ class ExecutionResult:
     """True when this cover's earlier completion timed out, so its feedback is no
     longer trusted and the travel-time estimate is used instead (A5)."""
 
-    # --- T11.1: PARALLEL-mode concurrent-batch diagnostics (additive) ---
-    parallel_batch_id: str | None = None
-    """Identifies which concurrently-dispatched batch this result belongs to
-    (PARALLEL mode only) — e.g. "safety", "zone:<zone_id>", or "all". None
-    for SPACED/SEQUENTIAL results (unrelated to batching)."""
-
-    parallel_batch_size: int | None = None
-    """How many intents were dispatched concurrently in this result's batch
-    (PARALLEL mode only). None outside PARALLEL mode."""
-
     # --- B3-012: dispatch target classification diagnostics (additive) -----
     dispatch_target_class: str | None = None
     """engines.dispatch_classification.DispatchTargetClass.value
@@ -294,7 +284,7 @@ class ExecutionResult:
     already-final, already-revalidated target this item was actually
     dispatched with. None when classification was never computed for this
     result (e.g. safety's own fastlane, which bypasses this classifier
-    entirely, or PARALLEL-mode results)."""
+    entirely)."""
 
     # --- B3-013: zone-package / dispatch-order diagnostics (additive) ------
     dispatch_zone_id: str | None = None

@@ -149,12 +149,14 @@ class TestMenuOptionsCompleteness:
                         f"{path.name} {step_id}.menu_options['{key}'] is empty"
                     )
 
-    def test_dispatch_menu_step_id_matches_a_real_step(self) -> None:
-        # "system_dispatch" (T21 Phase C2: Cover Dispatch moved to the
-        # System entry) must actually be a defined options.step (not just a
-        # menu label pointing nowhere).
+    def test_every_menu_option_is_a_defined_step(self) -> None:
+        # A menu label must never point at a step that does not exist (the
+        # removed dispatch step must leave no dangling menu entry).
         data = _load(_STRINGS_PATH)
-        assert "system_dispatch" in data["options"]["step"]
+        steps = data["options"]["step"]
+        for step_id, step in steps.items():
+            for key in step.get("menu_options", {}):
+                assert key in steps, f"{step_id}.menu_options['{key}'] has no matching step"
 
 
 class TestGermanOverrideTerminologyConsistency:

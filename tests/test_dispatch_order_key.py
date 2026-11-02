@@ -1,7 +1,6 @@
 """Tests for coordinator.py's pure dispatch-ordering helpers
-(_dispatch_order_key / _build_zone_dispatch_order — F18, unaffected by T11
-but now load-bearing for DispatchConfig.zone_batching's "first in zone
-group" detection, so explicit direct coverage is added here).
+(_dispatch_order_key / _build_zone_dispatch_order — F18). The order is the
+deterministic comfort-dispatch order, so explicit direct coverage lives here).
 
 Coverage:
   ORD-01  Safety always sorts first, regardless of zone/window order.

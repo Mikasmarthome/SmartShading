@@ -30,13 +30,6 @@ from .models.lifecycle import (
 )
 from .models.manual_override import LEGACY_DURATION_MODE_MIGRATION, OverrideReleaseStrategy
 from .models.obstruction import ObstructionZone
-from .models.dispatch_config import (
-    DEFAULT_MAX_TRAVEL_WAIT_S,
-    DEFAULT_POST_TRAVEL_PAUSE_S,
-    DEFAULT_START_INTERVAL_S,
-    DispatchConfig,
-    DispatchMode,
-)
 from .models.override_policy import OverridePolicyConfig
 from .models.presence import PresencePolicy
 from .models.window import WindowBehaviorMode, WindowConfig
@@ -97,9 +90,6 @@ class SmartShadingConfigEntryData:
     # Manual Override policy (v1.2.0-beta.1, T7). Every field defaults to
     # exactly the pre-T7 legacy behavior — see models/override_policy.py.
     override_policy: OverridePolicyConfig = field(default_factory=OverridePolicyConfig)
-    # Cover dispatch strategy (v1.2.0-beta.1, T11). Defaults reproduce the
-    # pre-T11 fixed 2.0s global interval exactly — see models/dispatch_config.py.
-    dispatch_config: DispatchConfig = field(default_factory=DispatchConfig)
 
 
 def _time_to_storage(value: time | None) -> str | None:
@@ -314,13 +304,6 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             "night_duration_min": data.override_policy.night_duration_min,
             "detection_tolerance": data.override_policy.detection_tolerance,
             "safety_timeout_enabled": data.override_policy.safety_timeout_enabled,
-        },
-        "dispatch_config": {
-            "mode": data.dispatch_config.mode.value,
-            "start_interval_s": data.dispatch_config.start_interval_s,
-            "max_travel_wait_s": data.dispatch_config.max_travel_wait_s,
-            "post_travel_pause_s": data.dispatch_config.post_travel_pause_s,
-            "zone_batching": data.dispatch_config.zone_batching,
         },
     }
 
@@ -567,22 +550,6 @@ def resolve_zone_override_policy(
     return replace(system_policy, detection_tolerance=zone_policy.detection_tolerance)
 
 
-def resolve_zone_dispatch_config(
-    zone_raw: dict[str, Any], system_raw: dict[str, Any] | None
-) -> DispatchConfig:
-    """T21 Phase C2: a zone that already has its own explicit dispatch_config
-    (any pre-C2 install that visited the old zone-level Dispatch step) keeps
-    using it unchanged, byte-for-byte; every other zone (new, or one that
-    never touched Dispatch) uses the System entry's default — Cover Dispatch
-    is a hardware/RF-pacing property of the shared dispatch pipeline, not a
-    per-zone concern (see the Phase C2 ownership analysis)."""
-    stored = zone_raw.get("dispatch_config")
-    if stored:
-        return _dispatch_config_from_storage(stored)
-    system_stored = (system_raw or {}).get("system_dispatch_config")
-    return _dispatch_config_from_storage(system_stored)
-
-
 def resolve_zone_absence_delay_min(
     zone_raw: dict[str, Any], system_raw: dict[str, Any] | None
 ) -> int:
@@ -592,7 +559,7 @@ def resolve_zone_absence_delay_min(
     every existing zone already has a concrete absence_delay_min value
     (a required field, always written by to_storage_dict()) — there is no
     "never configured" signal to key a byte-for-byte-safe default off of
-    the way there was for override_policy/dispatch_config, so the flag
+    the way there was for override_policy, so the flag
     itself defaults to False (use my own stored value) unless explicitly
     set True, which is exactly what "no behavior change for any existing
     install" requires."""
@@ -611,56 +578,6 @@ def _safe_int(value: Any, default: int) -> int:
         return int(value)
     except (ValueError, TypeError):
         return default
-
-
-def _safe_float(value: Any, default: float, *, minimum: float, maximum: float) -> float:
-    """Never raises: missing/non-numeric/out-of-range stored value -> the
-    given default (T11 dispatch timing fields — a malformed or manually-
-    edited ConfigEntry must never crash setup, same discipline as
-    _safe_int())."""
-    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
-        return default
-    try:
-        parsed = float(value)
-    except (ValueError, TypeError):
-        return default
-    if parsed != parsed or parsed in (float("inf"), float("-inf")):  # NaN/inf guard
-        return default
-    if parsed < minimum or parsed > maximum:
-        return default
-    return parsed
-
-
-def _dispatch_config_from_storage(raw: dict[str, Any] | None) -> DispatchConfig:
-    """Backwards compatible: a ConfigEntry without a dispatch_config key
-    (every pre-T11 config) falls back to DispatchConfig defaults — mode=
-    SPACED at start_interval_s=2.0, reproducing the previously hardcoded,
-    always-on DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS exactly. No
-    migration, no rewrite: an invalid/unknown stored value falls back
-    field-by-field, never raising and never crashing the whole ConfigEntry.
-    """
-    if not raw:
-        return DispatchConfig()
-    try:
-        mode = DispatchMode(raw.get("mode", DispatchMode.SPACED.value))
-    except ValueError:
-        mode = DispatchMode.SPACED
-    return DispatchConfig(
-        mode=mode,
-        start_interval_s=_safe_float(
-            raw.get("start_interval_s"), DEFAULT_START_INTERVAL_S,
-            minimum=0.0, maximum=30.0,
-        ),
-        max_travel_wait_s=_safe_float(
-            raw.get("max_travel_wait_s"), DEFAULT_MAX_TRAVEL_WAIT_S,
-            minimum=5.0, maximum=300.0,
-        ),
-        post_travel_pause_s=_safe_float(
-            raw.get("post_travel_pause_s"), DEFAULT_POST_TRAVEL_PAUSE_S,
-            minimum=0.0, maximum=10.0,
-        ),
-        zone_batching=bool(raw.get("zone_batching", False)),
-    )
 
 
 def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
@@ -695,5 +612,4 @@ def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
         indoor_temperature_sensor_ids=_read_indoor_sensor_ids(raw),
         comfort_config=_comfort_config_from_storage(raw.get("comfort_config")),
         override_policy=_override_policy_from_storage(raw.get("override_policy")),
-        dispatch_config=_dispatch_config_from_storage(raw.get("dispatch_config")),
     )

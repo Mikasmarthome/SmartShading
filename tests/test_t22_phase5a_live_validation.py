@@ -116,10 +116,6 @@ from custom_components.smartshading.cover_control.shading_group_harmonizer impor
     HarmonizationResult,
 )
 from custom_components.smartshading.models.cover_group import CoverGroup  # noqa: E402
-from custom_components.smartshading.models.dispatch_config import (  # noqa: E402
-    DispatchConfig,
-    DispatchMode,
-)
 from custom_components.smartshading.models.lifecycle import NightDayLifecycleConfig  # noqa: E402
 from custom_components.smartshading.models.window import WindowConfig  # noqa: E402
 from custom_components.smartshading.models.zone import ZoneConfig  # noqa: E402
@@ -296,7 +292,7 @@ def _run_plan(coord, states, **setup_kwargs):
 
 class TestSamePosition:
     def test_within_tolerance_skips(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         _setup_coord(coord, [s1], current_position_by_entity={"cover.w1": 41})
         # CommandFilter (both Pass-1 and this live re-check) compares
@@ -315,7 +311,7 @@ class TestSamePosition:
         assert calls == []
 
     def test_just_outside_tolerance_still_executes(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         # tolerance is 3 internal units; use a position clearly far enough
         # away that internal-unit conversion still exceeds it.
@@ -327,7 +323,7 @@ class TestSamePosition:
         assert results[("w1", "cover.w1")].status is ExecutionStatus.SENT
 
     def test_target_zero_preserved(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         # current_position_ha=50 on the frozen Pass-1 snapshot so the item
         # is classified as movement-required (target 0 != 50) and enters
         # the plan at all; the live re-fetch below (80) is what
@@ -345,7 +341,7 @@ class TestSamePosition:
         assert results[("w1", "cover.w1")].target_position_ha == 0
 
     def test_unknown_current_position_does_not_auto_skip(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         _setup_coord(coord, [s1])
         # ha_state "open" but no current_position attribute at all -> unknown.
@@ -368,7 +364,7 @@ def _blank_state(state: str) -> MagicMock:
 
 class TestAvailability:
     def test_unavailable_skips_no_dispatch(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         _setup_coord(coord, [s1], ha_state="unavailable")
         calls = []
@@ -387,7 +383,7 @@ class TestAvailability:
 
 class TestManualOverride:
     def test_live_manual_override_skips(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         _setup_coord(coord, [s1])
         calls = []
@@ -410,7 +406,7 @@ class TestManualOverride:
 
 class TestComfortHold:
     def test_live_comfort_hold_skips(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         _setup_coord(coord, [s1])
         calls = []
@@ -433,7 +429,7 @@ class TestComfortHold:
 
 class TestNightHold:
     def test_night_contact_blocked_skips(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         s1.night_contact_blocked = True
         _setup_coord(coord, [s1])
@@ -457,7 +453,7 @@ class TestAlreadyMoving:
         )
 
     def test_moving_toward_target_skips(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         # target_position_ha=100 -> internal target 0 (open). Cover currently
         # "opening" (is_opening) with assumed_position_internal=50 -> moving
         # toward 0, i.e. toward the target. Must skip.
@@ -480,7 +476,7 @@ class TestAlreadyMoving:
         # target_position_ha=100 -> internal target 0. Cover is "closing"
         # (moving toward higher internal values) -> opposite direction from
         # target -> must NOT skip as already_moving_to_target.
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=100)
         _setup_coord(coord, [s1], ha_state="closing", current_position_by_entity={"cover.w1": 50})
         self._seed_assumed_position(coord, "cover.w1", 50)
@@ -493,7 +489,7 @@ class TestAlreadyMoving:
 
 class TestBlockerIsolation:
     def test_blocker_on_one_cover_does_not_affect_another(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         s2 = _state("w2", "z1", entity_id="cover.w2", target_position_ha=100, current_position_ha=0)
         s1.night_contact_blocked = True
@@ -518,7 +514,7 @@ class TestBlockerIsolation:
 
 class TestBlockerCleared:
     def test_blocker_cleared_before_dispatch_still_executes(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         # is_override_active reflects a Pass-1 snapshot only; live query
         # (via _override_detector.get) is what validate_item actually uses.

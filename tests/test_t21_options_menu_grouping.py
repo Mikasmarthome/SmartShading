@@ -8,7 +8,7 @@ path through async_step_init changed. No config data, storage format, or
 entry behavior is affected.
 
 T21 Phase C2 update: Cover Dispatch moved out of the zone Advanced menu
-entirely, onto the System entry (async_step_system_dispatch) — it is a
+entirely, onto the System entry — it is a
 hardware/RF-pacing property of the shared dispatch pipeline, not a per-zone
 concern (see the Phase C2 ownership analysis). The System entry's OptionsFlow
 no longer aborts — it now owns real global settings (Manual Override
@@ -114,7 +114,7 @@ _INTEGRATION_ROOT = Path(__file__).parent.parent / "custom_components" / "smarts
 _WINDOWS_LEAF_STEPS = {"add_window", "edit_window", "remove_window"}
 _ADVANCED_LEAF_STEPS = {"manual_override"}
 _DIRECT_LEAF_STEPS = {"weather", "lifecycle", "presence", "comfort", "behavior"}
-_SYSTEM_INIT_LEAF_STEPS = {"system_manual_override", "system_dispatch", "system_presence"}
+_SYSTEM_INIT_LEAF_STEPS = {"system_manual_override", "system_presence"}
 
 
 def _make_entry(data: dict | None = None):
@@ -185,8 +185,9 @@ class TestNoStepWasDroppedDuringRegrouping:
     """Every step ID that appeared in the pre-Phase-C flat 11-item zone menu
     must still exist as a real options.step entry in strings.json somewhere
     — directly, under "windows"/"advanced" (T21 Phase C), or on the System
-    entry (T21 Phase C2, "dispatch" -> "system_dispatch") — the regrouping/
-    relocation must not have silently orphaned a step."""
+    entry — the regrouping/relocation must not have silently orphaned a
+    step. (The cover-dispatch step was removed outright in 1.2.0: there are
+    no user-selectable dispatch modes any more.)"""
 
     # T21 Phase C3: "lifecycle_profiles" has no successor step at all — the
     # entire named-profile CRUD/selection feature was removed (see the
@@ -197,7 +198,6 @@ class TestNoStepWasDroppedDuringRegrouping:
         "comfort": "comfort", "behavior": "behavior",
         "add_window": "add_window", "edit_window": "edit_window", "remove_window": "remove_window",
         "manual_override": "manual_override",
-        "dispatch": "system_dispatch",
     }
 
     def test_all_eleven_original_steps_present_in_strings_json(self) -> None:

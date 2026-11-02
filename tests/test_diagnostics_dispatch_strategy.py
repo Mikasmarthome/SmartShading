@@ -5,9 +5,8 @@ Uses the same real-Coordinator-construction technique established in
 test_override_policy_e2e_wiring.py / test_diagnostics_manual_override_release_strategy.py.
 
 Coverage:
-  DGD-01  Default summary reports mode="spaced" at the backward-compatible
-          2.0s interval, empty completion counts.
-  DGD-02  A configured non-default mode/zone_batching surfaces correctly.
+  DGD-01  The summary carries only real fields (completion counts, global
+          admission) -- none of the removed pacing options.
   DGD-03  completion_method_counts aggregates recorded support-critical
           events by completion method, with zero window-identifying detail.
   DGD-04  completion_timeout_count reflects timed-out completions.
@@ -106,10 +105,6 @@ sys.modules["homeassistant.helpers.storage"] = _stub("homeassistant.helpers.stor
 sys.modules.pop("custom_components.smartshading.coordinator", None)
 from custom_components.smartshading.coordinator import SmartShadingCoordinator  # noqa: E402
 from custom_components.smartshading.engines.diagnostics_builder import build_consolidated_diagnostics  # noqa: E402
-from custom_components.smartshading.models.dispatch_config import (  # noqa: E402
-    DispatchConfig,
-    DispatchMode,
-)
 from custom_components.smartshading.models.lifecycle import NightDayLifecycleConfig  # noqa: E402
 
 
@@ -143,32 +138,20 @@ def _make_coord(**kwargs) -> SmartShadingCoordinator:
 
 
 class TestDefaultSummary:
-    def test_default_mode_and_interval(self) -> None:
+    def test_summary_has_only_real_fields(self) -> None:
         coord = _make_coord()
         summary = build_consolidated_diagnostics(coord)["dispatch_strategy_summary"]
-        assert summary["mode"] == "spaced"
-        assert summary["start_interval_s"] == 2.0
-        assert summary["zone_batching"] is False
         assert summary["completion_method_counts"] == {}
         assert summary["completion_timeout_count"] == 0
-
-
-class TestConfiguredStrategySurfaces:
-    def test_sequential_zone_batching_surface(self) -> None:
-        coord = _make_coord(
-            dispatch_config=DispatchConfig(
-                mode=DispatchMode.SEQUENTIAL, max_travel_wait_s=55.0, zone_batching=True,
-            )
-        )
-        summary = build_consolidated_diagnostics(coord)["dispatch_strategy_summary"]
-        assert summary["mode"] == "sequential"
-        assert summary["max_travel_wait_s"] == 55.0
-        assert summary["zone_batching"] is True
+        assert "completion_status_counts" in summary and "global_admission" in summary
+        for removed in ("mode", "start_interval_s", "max_travel_wait_s",
+                        "post_travel_pause_s", "zone_batching"):
+            assert removed not in summary, f"removed option {removed!r} reported as active"
 
 
 class TestCompletionAggregation:
     def test_completion_method_counts_and_timeouts(self) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         coord._support_critical_events = [
             {"completion_method": "position", "completion_timed_out": False},
             {"completion_method": "position", "completion_timed_out": False},
@@ -188,7 +171,7 @@ class TestDispatchHealthyReflectsRealCompletionState:
     (no result-dict mutation after the fact)."""
 
     def test_no_timeouts_in_window_is_healthy(self) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         coord._support_critical_events = [
             {"completion_method": "position", "completion_timed_out": False},
             {"completion_method": "position", "completion_timed_out": False},
@@ -198,7 +181,7 @@ class TestDispatchHealthyReflectsRealCompletionState:
         assert contract["health"]["dispatch_healthy"] is True
 
     def test_real_completion_timeout_yields_truthful_unhealthy_state(self) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         coord._support_critical_events = [
             {"completion_method": "position", "completion_timed_out": False},
             {"completion_method": "timeout", "completion_timed_out": True},
@@ -215,14 +198,14 @@ class TestDispatchHealthyReflectsRealCompletionState:
         # _support_critical_events at the most recent 500 entries) — once a
         # timed-out event ages out of that window, dispatch_healthy must
         # reflect the CURRENT window, not a permanent "ever timed out" flag.
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         coord._support_critical_events = [
             {"completion_method": "position", "completion_timed_out": False},
         ]
         assert build_consolidated_diagnostics(coord)["health"]["dispatch_healthy"] is True
 
     def test_privacy_contract_unaffected_no_ids_in_health_section(self) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         coord._support_critical_events = [
             {"completion_method": "timeout", "completion_timed_out": True,
              "window_id": "w-should-not-leak"},

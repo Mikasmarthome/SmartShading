@@ -57,18 +57,6 @@ from .config_entry_data import (
 )
 from .models.comfort import ComfortConfig
 from .models.config import GlobalDefaults, ShadePositionDefaults
-from .models.dispatch_config import (
-    DEFAULT_MAX_TRAVEL_WAIT_S,
-    DEFAULT_POST_TRAVEL_PAUSE_S,
-    DEFAULT_START_INTERVAL_S,
-    DispatchMode,
-    MAX_TRAVEL_WAIT_S_MAX,
-    MAX_TRAVEL_WAIT_S_MIN,
-    POST_TRAVEL_PAUSE_S_MAX,
-    POST_TRAVEL_PAUSE_S_MIN,
-    START_INTERVAL_S_MAX,
-    START_INTERVAL_S_MIN,
-)
 from .models.manual_override import (
     DECISION_FILTER_ANY,
     DECISION_FILTER_COMFORT,
@@ -130,9 +118,6 @@ from .const import (
     CONF_NIGHT_SUN_ELEVATION,
     CONF_NIGHT_TRIGGER,
     CONF_NORMAL_SHADE_POSITION,
-    CONF_DISPATCH_MAX_TRAVEL_WAIT_S,
-    CONF_DISPATCH_POST_TRAVEL_PAUSE_S,
-    CONF_DISPATCH_ZONE_BATCHING,
     CONF_OUTDOOR_TEMPERATURE_SENSOR_ID,
     CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
     CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS,
@@ -277,98 +262,6 @@ def _safe_positive_int(value: Any, default: int, *, maximum: int) -> int:
     except (TypeError, ValueError):
         return default
     return max(1, min(parsed, maximum))
-
-
-def _safe_float_in_range(value: Any, default: float, *, minimum: float, maximum: float) -> float:
-    """Never raises: missing/None/wrong-type/non-numeric -> default. A
-    numeric value outside [minimum, maximum] is clamped into range rather
-    than stored as-is or rejected — same discipline as _safe_positive_int(),
-    generalized to allow a minimum of 0.0 (T11 dispatch timing fields)."""
-    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
-        return default
-    try:
-        parsed = float(value)
-    except (TypeError, ValueError):
-        return default
-    if parsed != parsed or parsed in (float("inf"), float("-inf")):  # NaN/inf guard
-        return default
-    return max(minimum, min(parsed, maximum))
-
-
-# T21 Phase C2: Cover Dispatch moved from a per-zone OptionsFlow step to the
-# System entry (see async_step_system_dispatch below) — extracted here so
-# the System entry's step can reuse the exact same schema/parsing logic that
-# the old zone-level async_step_dispatch used, unchanged in substance.
-
-def _dispatch_schema(stored: dict[str, Any]) -> vol.Schema:
-    # B3-013: the user-facing dispatch-mode selector and the free-form
-    # start-interval field are removed — SmartShading now has exactly one
-    # fixed, non-configurable dispatch rule (FULL_OPEN/FULL_CLOSE: 2.0s
-    # start pacing; INTERMEDIATE: completion wait + 2.0s pause — see
-    # cover_control/dispatch_plan_executor.py). CONF_DISPATCH_MODE and
-    # CONF_DISPATCH_START_INTERVAL_S stay defined (const.py) purely so an
-    # old stored payload still round-trips through _parse_dispatch_
-    # submission() below unchanged — never shown in this form again.
-    # max_travel_wait_s (completion-wait timeout bound) and
-    # post_travel_pause_s (safety's own unmodified fastlane settle pause,
-    # see coordinator.py) remain real, still-consulted settings.
-    return vol.Schema(
-        {
-            vol.Required(
-                CONF_DISPATCH_MAX_TRAVEL_WAIT_S,
-                default=stored.get("max_travel_wait_s", DEFAULT_MAX_TRAVEL_WAIT_S),
-            ): NumberSelector(
-                NumberSelectorConfig(
-                    min=MAX_TRAVEL_WAIT_S_MIN, max=MAX_TRAVEL_WAIT_S_MAX, step=1,
-                    mode=NumberSelectorMode.BOX, unit_of_measurement="s",
-                )
-            ),
-            vol.Required(
-                CONF_DISPATCH_POST_TRAVEL_PAUSE_S,
-                default=stored.get("post_travel_pause_s", DEFAULT_POST_TRAVEL_PAUSE_S),
-            ): NumberSelector(
-                NumberSelectorConfig(
-                    min=POST_TRAVEL_PAUSE_S_MIN, max=POST_TRAVEL_PAUSE_S_MAX, step=0.1,
-                    mode=NumberSelectorMode.BOX, unit_of_measurement="s",
-                )
-            ),
-            vol.Required(
-                CONF_DISPATCH_ZONE_BATCHING,
-                default=stored.get("zone_batching", False),
-            ): BooleanSelector(),
-        }
-    )
-
-
-def _parse_dispatch_submission(
-    user_input: dict[str, Any], stored: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """B3-013: mode/start_interval_s are no longer part of the form — an old
-    stored value is carried through UNCHANGED (tolerant load/ignore, never
-    re-derived from this submission) rather than defaulted back to SPACED/
-    2.0, so a pre-B3-013 install's own stored choice is preserved exactly
-    as-is even though nothing productive reads it anymore."""
-    stored = stored or {}
-    try:
-        mode = DispatchMode(stored.get("mode", DispatchMode.SPACED.value))
-    except ValueError:
-        mode = DispatchMode.SPACED
-    return {
-        "mode": mode.value,
-        "start_interval_s": _safe_float_in_range(
-            stored.get("start_interval_s"), DEFAULT_START_INTERVAL_S,
-            minimum=START_INTERVAL_S_MIN, maximum=START_INTERVAL_S_MAX,
-        ),
-        "max_travel_wait_s": _safe_float_in_range(
-            user_input.get(CONF_DISPATCH_MAX_TRAVEL_WAIT_S), DEFAULT_MAX_TRAVEL_WAIT_S,
-            minimum=MAX_TRAVEL_WAIT_S_MIN, maximum=MAX_TRAVEL_WAIT_S_MAX,
-        ),
-        "post_travel_pause_s": _safe_float_in_range(
-            user_input.get(CONF_DISPATCH_POST_TRAVEL_PAUSE_S), DEFAULT_POST_TRAVEL_PAUSE_S,
-            minimum=POST_TRAVEL_PAUSE_S_MIN, maximum=POST_TRAVEL_PAUSE_S_MAX,
-        ),
-        "zone_batching": bool(user_input.get(CONF_DISPATCH_ZONE_BATCHING, False)),
-    }
 
 
 # T21 Phase C2: extracted so the System entry's async_step_system_manual_override
@@ -1406,15 +1299,12 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
     async def async_step_system_init(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """T21 Phase C2: the System entry now owns real, global settings —
-        Cover Dispatch (a hardware/RF-pacing property shared by every zone's
-        covers via the one GlobalSerialDispatch instance) and the Manual
-        Override default policy (a house-wide philosophy most zones share).
-        See the T21 Phase C2 ownership analysis for the full per-field
-        reasoning behind exactly these two areas and not others."""
+        """The System entry owns the global defaults every zone follows unless
+        it opts into its own settings: the Manual Override default policy and
+        the Presence default."""
         return self.async_show_menu(
             step_id="system_init",
-            menu_options=["system_manual_override", "system_dispatch", "system_presence"],
+            menu_options=["system_manual_override", "system_presence"],
         )
 
     async def _async_step_zone_init(
@@ -2295,33 +2185,6 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
 
         schema = _manual_override_schema(stored)
         return self.async_show_form(step_id="system_manual_override", data_schema=schema, errors=errors)
-
-    # -- Cover Dispatch — System entry only (T21 Phase C2; see the removed
-    # zone-level async_step_dispatch note further below). --
-
-    async def async_step_system_dispatch(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        current = self._config_entry.data
-        stored = current.get("system_dispatch_config") or {}
-
-        if user_input is not None:
-            new_config = _parse_dispatch_submission(user_input, stored)
-            return self._save_system_default_and_reload({"system_dispatch_config": new_config})
-
-        schema = _dispatch_schema(stored)
-        return self.async_show_form(step_id="system_dispatch", data_schema=schema)
-
-    # -- Dispatch strategy (v1.2.0-beta.1, T11) --
-
-    # async_step_dispatch (zone-level) was removed in T21 Phase C2: Cover
-    # Dispatch is a hardware/RF-pacing property of the shared dispatch
-    # pipeline (GlobalSerialDispatch is already one hass.data[DOMAIN]-scoped
-    # singleton for every zone), not a per-zone concern — see the System
-    # entry's async_step_system_dispatch. A zone ConfigEntry that already has
-    # a stored "dispatch_config" from before this change keeps using it
-    # unchanged (config_entry_data.py's _dispatch_config_from_storage() is
-    # untouched); there is just no OptionsFlow surface to create a new one.
 
     # -- Behavior / shade-position defaults --
 

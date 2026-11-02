@@ -5,23 +5,17 @@ DispatchPlan (Phase 2) and orchestrates the EXISTING dispatch primitives
 through injected ports — it computes no shading decision, no
 classification, and no ordering of its own.
 
-Lock-ownership audit (T22 Phase 3, see closing report §11 for the full
-write-up): the CURRENT production dispatch loop
-(coordinator.py, ~L5378-5533) acquires ``self._serial_dispatch.lock``
-BEFORE the throttle-wait and holds it across the dispatch call, the
-SEQUENTIAL-mode completion wait (~L5482), and the post-travel pause
-(~L5529) — one `async with` spanning all of it. That means today a single
-SEQUENTIAL item can hold the global lock for up to
-``max_travel_wait_s`` (default 40s), blocking every other zone's dispatch
-— including a would-be safety dispatch — for that whole window. This
-executor deliberately does NOT reproduce that: it never acquires a lock
-itself. Locking (if any) is entirely the concern of whatever the
-``dispatch_item`` port does internally for its own single call — the
-executor calls ``dispatch_item`` and, as a SEPARATE later call,
-``wait_for_completion``; nothing here spans a lock across both. A future
-wiring phase that implements ``dispatch_item`` against
-``GlobalSerialDispatch`` should acquire+release the lock only for the
-throttle-wait + actual dispatch call, never for the completion wait.
+Lock ownership: this executor never acquires a lock itself.  Locking (the
+global admission) is entirely the concern of the ``dispatch_item`` port for its
+own single call: the executor calls ``dispatch_item`` and, as a SEPARATE later
+call, ``wait_for_completion``; nothing spans an admission across both.  A cover
+that travels (or times out) therefore never blocks another zone's dispatch --
+including Safety.
+
+Fixed rule (not configurable): 0/100 % items start ``FULL_OPEN_START_INTERVAL_S``
+apart and do not wait for the end of travel; intermediate items run strictly one
+at a time per group -- completion wait, then ``INTERMEDIATE_POST_COMPLETION_PAUSE_S``
+settle -- and a timeout is never a success: the rest of the group does not start.
 
 No Home Assistant import. No coordinator import. No asyncio.Lock owned by
 this module. No presence/solar logic. No re-sorting, re-grouping, or

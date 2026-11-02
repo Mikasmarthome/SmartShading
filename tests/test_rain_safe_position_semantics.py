@@ -2624,35 +2624,6 @@ class TestA2CoordinatorGlobalSafetyPriority:
         assert a.calls_for("cover.a2") == []              # aborted plan never continues ...
         assert a.coord.async_request_refresh.call_count == 1   # ... a fresh evaluation is requested
 
-    def test_safety_holder_completion_wait_yields_to_a_second_safety(self, monkeypatch):
-        self._real_completion(monkeypatch)
-        from custom_components.smartshading.models.dispatch_config import (
-            DispatchConfig,
-            DispatchMode,
-        )
-        hass = _make_hass()
-        serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=1))
-        b = self._zone_b(hass, serial)
-        b.coord._dispatch_config = DispatchConfig(
-            mode=DispatchMode.SEQUENTIAL, max_travel_wait_s=40.0, post_travel_pause_s=0.5)
-        c = _Scenario(AWNING, cover_position=100, window_id="c1", zone_id="zc",
-                      covers=["cover.c1"], hass=hass, serial=serial, rain_entity=self._RAIN_C)
-        c.set_rain(True)
-
-        async def main():
-            with b._clock(0):
-                cycle_b = asyncio.ensure_future(b.coord._async_update_data())
-                await self._until(lambda: b.calls_for("cover.b1") == [0])
-                await asyncio.sleep(0.05)
-                assert not cycle_b.done()                 # B's SEQUENTIAL wait holds the admission
-                assert serial.admission.locked()
-                await asyncio.wait_for(c.coord._async_update_data(), timeout=3)
-                await asyncio.wait_for(cycle_b, timeout=3)
-
-        asyncio.run(main())
-        assert c.calls_for("cover.c1") == [0] and b.calls_for("cover.b1") == [0]
-        assert not serial.admission.locked() and serial.admission.queued_count == 0
-
     def test_completion_abort_check_semantics(self):
         s = _Scenario(AWNING)
         from custom_components.smartshading.cover_control.dispatch_completion import (

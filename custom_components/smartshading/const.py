@@ -366,12 +366,6 @@ CONF_OVERRIDE_DETECTION_TOLERANCE = "override_detection_tolerance"
 # ARCHITECTURE ownership analysis) to the System entry's global default.
 CONF_OVERRIDE_USE_SYSTEM_DEFAULT = "override_use_system_default"
 
-# Dispatch strategy (v1.2.0-beta.1, T11).
-CONF_DISPATCH_MODE = "dispatch_mode"
-CONF_DISPATCH_START_INTERVAL_S = "dispatch_start_interval_s"
-CONF_DISPATCH_MAX_TRAVEL_WAIT_S = "dispatch_max_travel_wait_s"
-CONF_DISPATCH_POST_TRAVEL_PAUSE_S = "dispatch_post_travel_pause_s"
-CONF_DISPATCH_ZONE_BATCHING = "dispatch_zone_batching"
 DEFAULT_OVERRIDE_DURATION_MIN = 120
 DEFAULT_OVERRIDE_NIGHT_DURATION_MIN = 720
 DEFAULT_OVERRIDE_DETECTION_TOLERANCE = 10

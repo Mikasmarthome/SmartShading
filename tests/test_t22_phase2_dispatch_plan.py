@@ -500,6 +500,6 @@ class TestArchitectureProtection:
         # Phase 2 must not have modified any pre-existing dispatch execution
         # module — a structural sanity check that the known production
         # entry points these files define are still present and unrenamed.
-        from custom_components.smartshading.cover_control import dispatch_orchestrator
-        assert hasattr(dispatch_orchestrator, "effective_interval_s")
-        assert hasattr(dispatch_orchestrator, "requires_completion_wait")
+        from custom_components.smartshading.cover_control import dispatch_plan_executor
+        assert hasattr(dispatch_plan_executor, "FULL_OPEN_START_INTERVAL_S")
+        assert hasattr(dispatch_plan_executor, "INTERMEDIATE_POST_COMPLETION_PAUSE_S")

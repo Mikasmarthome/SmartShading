@@ -9,37 +9,35 @@ measurement is immune to wall-clock adjustments (NTP, timezone changes).
 
 GlobalSerialDispatch
 --------------------
-Combines an asyncio.Lock with a GlobalDispatchThrottle.  Must be shared
-across ALL zone coordinators so cover service calls from different zones are
-serialised in addition to being throttled.
+Combines the priority-aware admission (``PriorityAdmission``) with a
+GlobalDispatchThrottle.  Must be shared across ALL zone coordinators so cover
+service calls from different zones are serialised in addition to being
+throttled.
 
-  Lock purpose:     Only one coordinator may dispatch at a time.  Without the
-                    lock two coordinators can call time_until_next_allowed()
-                    simultaneously, both see "wait=0", and both dispatch at the
-                    same time — a burst.  The lock prevents that.
+  Admission purpose: Only one coordinator may dispatch at a time.  Without it
+                    two coordinators could both see "wait=0" and dispatch at
+                    the same time -- a burst.  Admission is ordered by class
+                    (Safety before not-yet-admitted normals, arrival order
+                    within a class); it is not a plain FIFO lock.
 
-  Throttle purpose: Even with the lock, the lock holder must still sleep until
-                    the minimum inter-dispatch interval has elapsed since the
-                    *previous* dispatch (which may have come from a different
-                    coordinator zone).
+  Throttle purpose: The holder of the admission still waits until the minimum
+                    inter-dispatch interval has elapsed since the *previous*
+                    dispatch (which may have come from a different zone).
 
-Correct usage in the coordinator dispatch loop::
+Usage in the coordinator's Safety fast lane::
 
-    async with self._serial_dispatch.lock:
+    async with self._serial_dispatch.admit(safety=True) as admission:
         wait = self._serial_dispatch.time_until_next_allowed()
         if wait.total_seconds() > 0:
             await asyncio.sleep(wait.total_seconds())
-        # stale-intent guard (non-safety only)
-        if not intent.is_safety:
-            if generation_changed:
-                continue
         result = await dispatch_cover_intent(hass, intent, now_utc=dt_util.utcnow())
         if result.status is ExecutionStatus.SENT:
             self._serial_dispatch.record_dispatch(dt_util.utcnow())
 
-The asyncio.Lock is held for the full duration of the sleep + service call.
-This means only one cover command is in-flight at any moment, which is the
-desired behaviour for Somfy RTS and similar RF-based systems.
+Comfort dispatch holds the admission only around the service call itself
+(DispatchPlanExecutor paces the covers and waits for completion outside it).
+Only one cover command is in flight at any moment, which is the desired
+behaviour for Somfy RTS and similar RF-based systems.
 
 Safety behavior
 ---------------
@@ -142,9 +140,7 @@ class GlobalDispatchThrottle:
         not used for elapsed-time calculation."""
         return self._last_dispatch_at
 
-    def time_until_next_allowed(
-        self, min_interval_override: timedelta | None = None
-    ) -> timedelta:
+    def time_until_next_allowed(self) -> timedelta:
         """Return the remaining wait before the next dispatch is allowed.
 
         Uses the injectable monotonic clock so the result is immune to
@@ -157,22 +153,11 @@ class GlobalDispatchThrottle:
 
         Returns a positive ``timedelta`` when the minimum interval has not yet
         elapsed and the caller must sleep before dispatching.
-
-        min_interval_override (v1.2.0-beta.1, T11): when given, used instead
-        of the interval configured at construction — lets the caller apply a
-        per-dispatch interval computed from the configured DispatchMode
-        (cover_control/dispatch_orchestrator.py) without needing a
-        differently-configured GlobalDispatchThrottle instance per mode.
-        The tracked last-dispatch timestamp (shared, cross-zone) is
-        unaffected either way.
         """
         if self._last_dispatch_mono is None:
             return timedelta(0)
-        effective_interval = (
-            min_interval_override if min_interval_override is not None else self._min_interval
-        )
         elapsed = self._mono_clock() - self._last_dispatch_mono
-        remaining = effective_interval.total_seconds() - elapsed
+        remaining = self._min_interval.total_seconds() - elapsed
         return timedelta(seconds=remaining) if remaining > 0 else timedelta(0)
 
     def record_dispatch(self, now: datetime) -> None:
@@ -566,14 +551,9 @@ class GlobalSerialDispatch:
         """A signal that fires when any zone's Safety enters admission from now on."""
         return SafetyEpochSignal(self._admission)
 
-    def time_until_next_allowed(
-        self, min_interval_override: timedelta | None = None
-    ) -> timedelta:
-        """Return the remaining wait before the next dispatch is allowed.
-
-        min_interval_override: see GlobalDispatchThrottle.time_until_next_allowed().
-        """
-        return self._throttle.time_until_next_allowed(min_interval_override)
+    def time_until_next_allowed(self) -> timedelta:
+        """Return the remaining wait before the next dispatch is allowed."""
+        return self._throttle.time_until_next_allowed()
 
     def record_dispatch(self, now: datetime) -> None:
         """Record a confirmed SENT dispatch."""

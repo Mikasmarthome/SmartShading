@@ -124,10 +124,6 @@ from custom_components.smartshading.cover_control.shading_group_harmonizer impor
     HarmonizationResult,
 )
 from custom_components.smartshading.models.cover_group import CoverGroup  # noqa: E402
-from custom_components.smartshading.models.dispatch_config import (  # noqa: E402
-    DispatchConfig,
-    DispatchMode,
-)
 from custom_components.smartshading.models.lifecycle import NightDayLifecycleConfig  # noqa: E402
 from custom_components.smartshading.models.window import WindowConfig  # noqa: E402
 from custom_components.smartshading.models.zone import ZoneConfig  # noqa: E402
@@ -303,7 +299,7 @@ def _run_cycle(coord, states):
 
 class TestBasicCycle:
     def test_single_cycle_runs_and_clears_registrations(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         _setup_coord(coord, [s1])
         _patch_dispatch_cover_intent(monkeypatch, coord, _fake_sent_dispatch)
@@ -323,7 +319,7 @@ class TestBasicCycle:
 
 class TestSequentialCycles:
     def test_two_non_overlapping_cycles_each_bump_generation(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         _setup_coord(coord, [s1])
         _patch_dispatch_cover_intent(monkeypatch, coord, _fake_sent_dispatch)
@@ -341,7 +337,7 @@ class TestSequentialCycles:
 
 class TestOverlappingCycles:
     def test_new_cycle_preempts_blocked_previous_cycle_via_cancellation(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         # INTERMEDIATE target so it actually waits for completion.
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         _setup_coord(coord, [s1], current_position_by_entity={"cover.w1": 0})
@@ -393,7 +389,7 @@ class TestOverlappingCycles:
         # awaiting the previous task before starting a new one would let
         # B's own dispatch begin while A's is still (hung-)active —
         # max concurrent must never exceed 1.
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         _setup_coord(coord, [s1], current_position_by_entity={"cover.w1": 0})
         active = {"count": 0, "max": 0}
@@ -439,7 +435,7 @@ class TestOverlappingCycles:
         )
 
     def test_a_dispatches_and_result_status_correct(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         # INTERMEDIATE target so it actually waits for completion.
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         _setup_coord(coord, [s1], current_position_by_entity={"cover.w1": 0})
@@ -495,7 +491,7 @@ class TestOverlappingCycles:
 
 class TestGenerationBumpOrdering:
     def test_generation_bumped_before_awaiting_previous_task(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         _setup_coord(coord, [s1], current_position_by_entity={"cover.w1": 0})
         _patch_dispatch_cover_intent(monkeypatch, coord, _fake_sent_dispatch)
@@ -540,7 +536,7 @@ class TestGenerationBumpOrdering:
 
 class TestTaskLifecycle:
     def test_active_task_registered_during_run_and_cleared_after(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1")
         _setup_coord(coord, [s1])
         seen_during_run = {"task": None, "cancellation": None}
@@ -563,7 +559,7 @@ class TestTaskLifecycle:
 
 class TestShutdown:
     def test_shutdown_awaits_active_comfort_task(self, monkeypatch) -> None:
-        coord = _make_coord(dispatch_config=DispatchConfig(mode=DispatchMode.SEQUENTIAL))
+        coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=40)
         _setup_coord(coord, [s1], current_position_by_entity={"cover.w1": 0})
         _patch_dispatch_cover_intent(monkeypatch, coord, _fake_sent_dispatch)
@@ -599,10 +595,8 @@ class TestShutdown:
 
 
 class TestUnconditionalSafetyVsComfortGuard:
-    # B3-013: DispatchMode no longer gates this call site at all — comfort
-    # dispatch is the one, unconditional path (PARALLEL's own pre-pass is
-    # no longer invoked productively; see coordinator.py's B3-013 comment
-    # directly above this block). This replaces the old
+    # Comfort dispatch is the one, unconditional path (see coordinator.py's
+    # comment directly above this block). This replaces the old
     # TestParallelModeNeverReachesGuard, which asserted a `mode in
     # (SEQUENTIAL, SPACED)` guard that B3-013 deliberately removes.
     def test_safety_vs_comfort_branch_is_the_sole_condition(self) -> None:

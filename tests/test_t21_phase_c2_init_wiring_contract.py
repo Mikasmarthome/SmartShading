@@ -50,13 +50,12 @@ def test_system_entry_data_filters_by_entry_type() -> None:
 
 def test_zone_setup_wires_resolved_policy_not_raw_entry_data() -> None:
     """_async_setup_zone_entry() must pass the RESOLVED values
-    (_effective_override_policy / _effective_dispatch_config, computed via
-    resolve_zone_override_policy()/resolve_zone_dispatch_config() using both
+    (_effective_override_policy, computed via
+    resolve_zone_override_policy() using both
     the zone's own data AND the System entry's) into SmartShadingCoordinator
-    — not entry_data.override_policy/.dispatch_config directly, which would
+    — not entry_data.override_policy directly, which would
     silently ignore the System entry's global defaults entirely."""
     src = _source()
     assert "_effective_override_policy = resolve_zone_override_policy(" in src
-    assert "_effective_dispatch_config = resolve_zone_dispatch_config(" in src
-    assert "dispatch_config=_effective_dispatch_config," in src
-    assert "dispatch_config=entry_data.dispatch_config," not in src
+    assert "dispatch_config" not in src
+    assert "resolve_zone_dispatch_config" not in src

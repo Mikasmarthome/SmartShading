@@ -17,14 +17,10 @@ the coordinator:
   - The diagnostic sensor and engines/support_export.py's assumed_state
     section both expose the resulting confidence/uncertainty/drift values.
 
-Still NOT wired (deferred, no known consumer designed for them yet):
-on_restart()/on_reference_travel() — these require a travel-in-progress
-detector and/or a reference-travel (endstop) event source that does not exist
-in the coordinator today.  A5 audited this again: endpoint (0/100 %) targets use
-the fast start-spaced path and never run a completion wait, and a completion of
-the kind "position" is only ever produced for intermediate targets, so there is
-still no clean signal that a cover provably reached an endstop; wiring them would
-have no real caller.  (The unused record_progress() was removed in A5.)
+There is no endstop or reference-travel signal in the coordinator (0/100 %
+targets use the fast start-spaced path and never run a completion wait), so
+the model has no calibration event: uncertainty only grows until a cover
+reports a position.
 is_drift_suspected() is
 computed and persisted but not separately consulted anywhere beyond feeding
 is_position_trustworthy()'s underlying confidence value.
@@ -79,7 +75,7 @@ class AssumedPositionState:
     position_uncertainty_pct: float  # monotonically grows per unconfirmed travel, see update()
     is_drift_suspected: bool
     interrupted_travel: bool  # True after a restart was detected mid-travel
-    last_commanded_position: int | None = None  # internal convention; set ONLY by update() / on_reference_travel(). Never overwritten by observe().
+    last_commanded_position: int | None = None  # internal convention; set ONLY by update(). Never overwritten by observe().
 
 
 @dataclass
@@ -105,8 +101,7 @@ class AssumedStateManager:
 
     def initialize_from_restore(self, restored: AssumedPositionState) -> None:
         """Hydrate from a previously persisted AssumedPositionState (HA
-        RestoreEntity / Storage, read elsewhere). Use on_restart() right
-        after this if the cover may have been mid-travel when HA stopped.
+        RestoreEntity / Storage, read elsewhere).
         """
         self._records[restored.cover_id] = replace(restored)
 
@@ -119,26 +114,6 @@ class AssumedStateManager:
         """All cover ids this manager currently holds a record for (T16,
         used by the coordinator to build the full persisted snapshot)."""
         return set(self._records.keys())
-
-    # -- Restart-during-travel (ARCHITECTURE.md §6.2) --
-
-    def on_restart(self, cover_id: str, was_traveling: bool, now: datetime) -> None:
-        """Call once per cover after a HA restart/reload, after
-        initialize_from_restore() has hydrated the stored state.
-
-        If `was_traveling` is True, the cover's true position when HA
-        stopped is unknown beyond the last persisted progress snapshot -
-        this is "Drift sicher", not just suspected, per §6.2.
-        """
-        record = self._records.get(cover_id)
-        if record is None:
-            return
-        if was_traveling:
-            self._records[cover_id] = replace(
-                record,
-                interrupted_travel=True,
-                last_commanded_at=now,
-            )
 
     # -- Normal command/observation flow --
 
@@ -159,8 +134,7 @@ class AssumedStateManager:
 
         For covers WITHOUT reliable feedback (Somfy RTS etc.), this models
         one more "travel without external confirmation":
-        position_uncertainty_pct grows monotonically (§6.2) until the next
-        on_reference_travel() calibration.
+        position_uncertainty_pct grows monotonically (§6.2).
         """
         record = self._records.get(cover_id)
 
@@ -223,8 +197,7 @@ class AssumedStateManager:
         just like update() already does for them. For unreliable covers,
         only the displayed position is refreshed; confidence/uncertainty
         are left untouched, since a fundamentally unreliable source being
-        observed once is not a calibration event (only on_reference_travel()
-        is).
+        observed once is not a calibration event.
 
         Reserve update() for once SmartShading itself sends a command
         (later phase) - that is the only case ARCHITECTURE.md §6.2 intends
@@ -274,32 +247,6 @@ class AssumedStateManager:
             )
             return
         self._records[cover_id] = replace(record, assumed_position=position)
-
-    def on_reference_travel(
-        self,
-        cover_id: str,
-        reached_endstop: Literal["min", "max"],
-        position_at_endstop: int,
-        now: datetime,
-    ) -> None:
-        """Calibration (ARCHITECTURE.md §6.2): a cover provably reached a
-        mechanical endstop (full open/close). Resets confidence to 1.0 and
-        uncertainty to 0 - the only way uncertainty decreases for covers
-        without real feedback.
-        """
-        del reached_endstop  # not needed for the reset itself, kept for caller-side logging/clarity
-        self._records[cover_id] = AssumedPositionState(
-            cover_id=cover_id,
-            assumed_position=position_at_endstop,
-            assumed_tilt=None,
-            last_commanded_at=now,
-            last_known_good_at=now,
-            confidence=1.0,
-            position_uncertainty_pct=0.0,
-            is_drift_suspected=False,
-            interrupted_travel=False,
-            last_commanded_position=position_at_endstop,
-        )
 
     # -- Reads (confidence/drift are recomputed against `now`, not stored) --
 

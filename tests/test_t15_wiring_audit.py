@@ -176,39 +176,21 @@ class TestLearningMigrationSchemaAuthorityConsistency:
 
 
 # ---------------------------------------------------------------------------
-# Config -> Runtime wiring: dispatch config values genuinely change behavior
+# Config -> Runtime wiring: the stored pacing keys are tolerated and ignored
 # ---------------------------------------------------------------------------
 
-class TestDispatchConfigFromStorageWiring:
-    def test_zone_batching_true_is_read_into_runtime_config(self) -> None:
+class TestRemovedDispatchConfigIsIgnoredOnLoad:
+    def test_old_dispatch_config_key_is_ignored_and_not_rewritten(self) -> None:
         from custom_components.smartshading.config_entry_data import (
-            _dispatch_config_from_storage,
+            SmartShadingConfigEntryData,
+            from_storage_dict,
+            to_storage_dict,
         )
-        cfg = _dispatch_config_from_storage({"mode": "spaced", "zone_batching": True})
-        assert cfg.zone_batching is True
-
-    def test_zone_batching_false_is_read_into_runtime_config(self) -> None:
-        from custom_components.smartshading.config_entry_data import (
-            _dispatch_config_from_storage,
-        )
-        cfg = _dispatch_config_from_storage({"mode": "spaced", "zone_batching": False})
-        assert cfg.zone_batching is False
-
-    def test_dispatch_mode_is_read_into_runtime_config(self) -> None:
-        from custom_components.smartshading.config_entry_data import (
-            _dispatch_config_from_storage,
-        )
-        from custom_components.smartshading.models.dispatch_config import DispatchMode
-        cfg = _dispatch_config_from_storage({"mode": "parallel"})
-        assert cfg.mode is DispatchMode.PARALLEL
-
-    def test_missing_config_falls_back_to_documented_defaults(self) -> None:
-        from custom_components.smartshading.config_entry_data import (
-            _dispatch_config_from_storage,
-        )
-        from custom_components.smartshading.models.dispatch_config import DispatchConfig
-        cfg = _dispatch_config_from_storage(None)
-        assert cfg == DispatchConfig()
+        raw = to_storage_dict(SmartShadingConfigEntryData(name="x", use_home_location=False))
+        raw["dispatch_config"] = {"mode": "parallel", "zone_batching": True}
+        loaded = from_storage_dict(raw)
+        assert not hasattr(loaded, "dispatch_config")
+        assert "dispatch_config" not in to_storage_dict(loaded)
 
 
 # ---------------------------------------------------------------------------

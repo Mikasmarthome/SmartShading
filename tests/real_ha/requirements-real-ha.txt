@@ -1,0 +1,9 @@
+# Requirements for tests/real_ha/ -- tests that run against a real Home Assistant.
+# Separate from requirements-test.txt (the stub-based suite), which deliberately
+# never installs the real `homeassistant` package.
+#
+# pytest-homeassistant-custom-component pins its matching homeassistant, pytest,
+# pytest-asyncio, freezegun and syrupy releases itself; pinning it fixes them all.
+# Needs Python 3.14 and a POSIX system (homeassistant.runner imports `fcntl`).
+pytest-homeassistant-custom-component==0.13.355
+pytest-timeout==2.4.0

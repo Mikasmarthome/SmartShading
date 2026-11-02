@@ -154,6 +154,11 @@ def _fit(coords):
     return ee.fit_embedded_exports(support, research, now=_NOW)
 
 
+def _fit_budget(coords, budget):
+    support, research = _assemble(coords)
+    return ee.fit_embedded_exports(support, research, budget=budget, now=_NOW)
+
+
 def _without_blocks(support):
     """The support payload without the truncation records written by the trim."""
     s = copy.deepcopy(support)
@@ -379,9 +384,12 @@ class TestNoDuplicateHistory:
             assert nd["record_shape"] == "compact_reference_to_recent_decisions"
             assert nd["records"], "fixture must contain no-dispatch decisions"
             for r in nd["records"]:
-                assert set(r) == {"decision_ref", "window_ref", "decision_timestamp_utc",
-                                  "decision_timestamp_local", "resolved_state", "decided_by",
-                                  "no_dispatch"}
+                expected = {"decision_ref", "window_ref", "decision_timestamp_utc",
+                            "decision_timestamp_local", "resolved_state", "decided_by",
+                            "no_dispatch"}
+                if r["decision_ref"] is None:       # A6: decision trimmed away, reference marked
+                    expected = expected | {"decision_ref_status"}
+                assert set(r) == expected
 
     def test_a_decision_payload_appears_once_in_the_export(self):
         support, _, _ = _fit(_heavy(2))
@@ -402,6 +410,67 @@ class TestNoDuplicateHistory:
         for r in z["recent_no_dispatches"]["records"]:
             assert r["decision_ref"] in decision_refs
             assert r["no_dispatch"]["command_sent"] is False
+
+
+class TestA6DecisionRefsNeverDangle:
+    """After the FINAL trim every no-dispatch reference resolves or is marked."""
+
+    @staticmethod
+    def _check(support):
+        for z in support["zones"]:
+            present = {r["decision_ref"] for r in z["recent_decisions"]}
+            records = z["recent_no_dispatches"]["records"]
+            marked = 0
+            for r in records:
+                if r["decision_ref"] is None:
+                    assert r["decision_ref_status"] == "unresolved_trimmed"
+                    marked += 1
+                else:
+                    assert r["decision_ref"] in present, "dangling decision_ref"
+                    assert "decision_ref_status" not in r
+            assert z["recent_no_dispatches"].get("unresolved_decision_refs", 0) == marked
+
+    def test_tight_budget_leaves_no_dangling_reference(self):
+        support, _, _ = _fit_budget(_heavy(2), 60_000)
+        self._check(support)
+        assert any(r["decision_ref"] is None
+                   for z in support["zones"] for r in z["recent_no_dispatches"]["records"]),             "the budget must be tight enough to drop referenced decisions"
+
+    def test_roomy_budget_marks_nothing(self):
+        support, _, _ = _fit(_heavy(1, ring=40, dispatches=5, learning_per_window=5))
+        self._check(support)
+        z = support["zones"][0]
+        assert "unresolved_decision_refs" not in z["recent_no_dispatches"]
+
+    def test_marking_does_not_copy_the_decision_back(self):
+        support, _, _ = _fit_budget(_heavy(2), 60_000)
+        for z in support["zones"]:
+            for r in z["recent_no_dispatches"]["records"]:
+                assert "candidates" not in r and "target_chain" not in r
+
+    def test_validation_is_idempotent(self):
+        from custom_components.smartshading.engines.support_export import _resolve_no_dispatch_refs
+        support, _, _ = _fit_budget(_heavy(2), 60_000)
+        before = json.dumps(support, sort_keys=True, default=str)
+        for z in support["zones"]:
+            assert _resolve_no_dispatch_refs(z) == z["recent_no_dispatches"].get("unresolved_decision_refs", 0)
+        assert json.dumps(support, sort_keys=True, default=str) == before
+
+
+class TestA6SynchronousSlice:
+    """The trim runs on the event loop on a detached payload.  Its cost is bound
+    by the byte budget, not by the number of zones, and stays far below a second."""
+
+    def test_slice_is_bounded_and_does_not_grow_with_zone_count(self):
+        import time
+        timings = {}
+        for zones in (1, 8):
+            support, research = _assemble(_heavy(zones))
+            t0 = time.perf_counter()
+            ee.fit_embedded_exports(support, research, now=_NOW)
+            timings[zones] = time.perf_counter() - t0
+        assert max(timings.values()) < 2.0, timings          # sub-second in practice (~0.2 s)
+        assert timings[8] < timings[1] * 6 + 0.5, timings     # not proportional to the zone count
 
 
 # ---------------------------------------------------------------------------

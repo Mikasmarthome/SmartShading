@@ -1355,6 +1355,13 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         sd["learning_store_last_save_at_utc"] = _iso_s(last)
         return sd
 
+    def _lifecycle():
+        data = dict((getattr(c, "lifecycle_diagnostics", lambda: {})() or {}))
+        if data:
+            from .. import cover_ownership_runtime as _own  # lazy: HA-side module
+            data["cover_renames"] = dict(_own.get_rename_stats(c.hass)) if hasattr(c, "hass") else {}
+        return data
+
     def _health():
         from .diagnostics_builder import build_consolidated_diagnostics
         return (build_consolidated_diagnostics(c) or {}).get("health", {})
@@ -1402,6 +1409,7 @@ def build_support_export_v3(coordinator, *, now=None, integration_version="unkno
         # recent_decisions + support_timeline.
         "recent_outcomes": _safe(_recent_outcomes, errors, "recent_outcomes"),
         "storage": _safe(_storage, errors, "storage"),
+        "lifecycle": _safe(_lifecycle, errors, "lifecycle"),
         "history_metadata": _safe(
             lambda: _support_history_metadata(recent_dec, dec_trunc), errors,
             "history_metadata"),
@@ -1453,6 +1461,41 @@ def zone_history_slots(zone) -> list:
         # newest-first list: the oldest events sit at the end; last resort only.
         slots.append(Slot("support_timeline", events, oldest_first=False))
     return slots
+
+
+NO_DISPATCH_REF_UNRESOLVED = "unresolved_trimmed"
+
+
+def _resolve_no_dispatch_refs(zone) -> int:
+    """``recent_no_dispatches`` records point at their full decision in
+    ``recent_decisions`` via ``decision_ref``.  After the final trim some of those
+    decisions are gone; a reference that points nowhere is replaced by an explicit
+    marker (the record keeps its own, compact content -- the decision is never
+    copied back).  Returns the number of unresolved references (idempotent)."""
+    if not isinstance(zone, dict):
+        return 0
+    section = zone.get("recent_no_dispatches")
+    records = section.get("records") if isinstance(section, dict) else None
+    if not isinstance(records, list):
+        return 0
+    decisions = zone.get("recent_decisions")
+    present = {r.get("decision_ref") for r in decisions if isinstance(r, dict)}         if isinstance(decisions, list) else set()
+    marked = 0
+    for rec in records:
+        if not isinstance(rec, dict):
+            continue
+        ref = rec.get("decision_ref")
+        if ref is not None and ref in present:
+            rec.pop("decision_ref_status", None)
+            continue
+        rec["decision_ref"] = None
+        rec["decision_ref_status"] = NO_DISPATCH_REF_UNRESOLVED
+        marked += 1
+    if marked:
+        section["unresolved_decision_refs"] = marked
+    else:
+        section.pop("unresolved_decision_refs", None)
+    return marked
 
 
 def _refresh_zone_after_trim(zone: dict, sections: dict) -> None:
@@ -1658,6 +1701,7 @@ def finalize_support_all_zones(contract: dict, report, *, now=None,
     for z, rep in zip(zones, reps):
         if isinstance(z, dict) and rep is not None:
             _refresh_zone_after_trim(z, rep.sections)
+        _resolve_no_dispatch_refs(z)        # after the final trim, always
     contract["history_metadata"] = _aggregate_history_metadata(zones)
     # Exact size of what is exported, measured after the refresh and before the
     # truncation records (which carry these numbers) are added.
@@ -1712,6 +1756,7 @@ def _enforce_byte_cap(contract: dict, cap: int = MAX_SUPPORT_EXPORT_BYTES) -> di
     final_bytes = report.final_bytes
     if report.applied:
         _refresh_zone_after_trim(contract, rep.sections)
+        _resolve_no_dispatch_refs(contract)
         final_bytes = json_size(contract)   # exact: after the refresh, before the truncation record
     contract["truncation"] = {"applied": report.applied,
                               "original_bytes": report.original_bytes,

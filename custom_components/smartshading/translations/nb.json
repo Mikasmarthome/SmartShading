@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Avansert",
-        "description": "Livssyklusprofiler, oppførsel for manuell overstyring og timing for skjermutsendelse — innstillinger de fleste installasjoner ikke trenger å endre.",
+        "description": "Livssyklusprofiler og oppførsel for manuell overstyring — innstillinger de fleste installasjoner ikke trenger å endre.",
         "menu_options": {
-          "manual_override": "Manuell overstyring",
-          "dispatch": "Koordinering av solskjerming"
+          "manual_override": "Manuell overstyring"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Sikkerhetsgrense for en nattlig overstyring. Den egentlige frigivelsen skjer ved morgenens skjemaovergang."
         }
       },
-      "system_dispatch": {
-        "title": "Koordinering av solskjerming",
-        "description": "Angir hvordan SmartShading fordeler skjermkommandoer på tvers av alle soner når flere skjermer avgjøres i samme syklus. Dette er en egenskap ved maskinvaren/radiogatewayen din, delt for hele huset.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Maksimal ventetid på at bevegelsen avsluttes",
-          "dispatch_post_travel_pause_s": "Pause etter at bevegelsen er avsluttet",
-          "dispatch_zone_batching": "Hold soner atskilt"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Brukes kun av \"Én etter én\" — hvor lenge det ventes på at en solskjerming blir ferdig før det fortsettes likevel.",
-          "dispatch_post_travel_pause_s": "Brukes kun av \"Én etter én\" — en kort pause etter at en solskjerming er ferdig, før den neste starter.",
-          "dispatch_zone_batching": "Når aktivert, brukes forsinkelsen mellom startene alltid mellom ulike rom/soner, selv i Parallelt-modus, slik at rom forblir visuelt atskilt."
-        }
-      },
       "system_init": {
         "title": "SmartShading systeminnstillinger",
-        "description": "Globale standarder som hver sone følger med mindre den bruker sine egne innstillinger, pluss systemomfattende timing for skjermutsendelse.",
+        "description": "Globale standarder som hver sone følger med mindre den bruker sine egne innstillinger.",
         "menu_options": {
           "system_manual_override": "Standarder for manuell overstyring",
-          "system_dispatch": "Skjermutsendelse",
           "system_presence": "Standard for tilstedeværelse"
         }
       },

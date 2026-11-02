@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Avancé",
-        "description": "Profils de cycle de vie, comportement de la prise de contrôle manuelle et timing d'envoi des volets — des réglages que la plupart des installations n'ont pas besoin de modifier.",
+        "description": "Profils de cycle de vie et comportement de la prise de contrôle manuelle — des réglages que la plupart des installations n'ont pas besoin de modifier.",
         "menu_options": {
-          "manual_override": "Dérogation manuelle",
-          "dispatch": "Coordination des volets"
+          "manual_override": "Dérogation manuelle"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Limite de sécurité pour une dérogation nocturne. La véritable libération se fait à la transition matinale du cycle."
         }
       },
-      "system_dispatch": {
-        "title": "Coordination des volets",
-        "description": "Définit comment SmartShading espace les commandes de volets sur toutes les zones lorsque plusieurs volets sont décidés dans le même cycle. C'est une propriété de votre matériel/passerelle radio, partagée pour toute la maison.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Attente maximale de fin de mouvement",
-          "dispatch_post_travel_pause_s": "Pause après la fin du mouvement",
-          "dispatch_zone_batching": "Séparer les zones"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Utilisé uniquement par \"Un par un\" — combien de temps attendre qu'un volet termine avant de continuer quand même.",
-          "dispatch_post_travel_pause_s": "Utilisé uniquement par \"Un par un\" — une courte pause de stabilisation après qu'un volet termine, avant que le suivant démarre.",
-          "dispatch_zone_batching": "Si activé, le délai entre les démarrages est toujours appliqué entre différentes pièces/zones, même en mode Parallèle, afin que les pièces restent visuellement séparées."
-        }
-      },
       "system_init": {
         "title": "Paramètres système SmartShading",
-        "description": "Valeurs par défaut globales que suit chaque zone à moins qu'elle n'utilise ses propres réglages, ainsi que la temporisation système de l'envoi des commandes de volets.",
+        "description": "Valeurs par défaut globales que suit chaque zone à moins qu'elle n'utilise ses propres réglages.",
         "menu_options": {
           "system_manual_override": "Valeurs par défaut de la prise de contrôle manuelle",
-          "system_dispatch": "Envoi des commandes de volets",
           "system_presence": "Valeur par défaut de présence"
         }
       },

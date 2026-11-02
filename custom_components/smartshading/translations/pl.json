@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Zaawansowane",
-        "description": "Profile cyklu życia, zachowanie ręcznego zastąpienia i harmonogram wysyłania rolet — ustawienia, których większość instalacji nie musi zmieniać.",
+        "description": "Profile cyklu życia i zachowanie ręcznego zastąpienia — ustawienia, których większość instalacji nie musi zmieniać.",
         "menu_options": {
-          "manual_override": "Ręczne zastąpienie",
-          "dispatch": "Koordynacja osłon"
+          "manual_override": "Ręczne zastąpienie"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Limit bezpieczeństwa dla nocnego zastąpienia. Rzeczywiste zwolnienie następuje przy porannym przejściu harmonogramu."
         }
       },
-      "system_dispatch": {
-        "title": "Koordynacja osłon",
-        "description": "Określa, jak SmartShading rozkłada w czasie polecenia dla rolet we wszystkich strefach, gdy w tym samym cyklu decyduje się o kilku roletach. Jest to właściwość Twojego sprzętu/bramki radiowej, wspólna dla całego domu.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Maksymalny czas oczekiwania na zakończenie ruchu",
-          "dispatch_post_travel_pause_s": "Pauza po zakończeniu ruchu",
-          "dispatch_zone_batching": "Rozdzielaj strefy"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Używane tylko przez \"Jedna po drugiej\" — jak długo czekać na zakończenie ruchu osłony, zanim mimo to nastąpi kontynuacja.",
-          "dispatch_post_travel_pause_s": "Używane tylko przez \"Jedna po drugiej\" — krótka pauza uspokajająca po zakończeniu ruchu osłony, zanim uruchomi się kolejna.",
-          "dispatch_zone_batching": "Gdy włączone, opóźnienie między startami jest zawsze stosowane między różnymi pomieszczeniami/strefami, nawet w trybie Równolegle, dzięki czemu pomieszczenia pozostają wizualnie oddzielone."
-        }
-      },
       "system_init": {
         "title": "Ustawienia systemowe SmartShading",
-        "description": "Globalne ustawienia domyślne, których przestrzega każda strefa, chyba że używa własnych ustawień, oraz ogólnosystemowe taktowanie wysyłania poleceń do rolet.",
+        "description": "Globalne ustawienia domyślne, których przestrzega każda strefa, chyba że używa własnych ustawień.",
         "menu_options": {
           "system_manual_override": "Ustawienia domyślne ręcznego zastąpienia",
-          "system_dispatch": "Wysyłanie poleceń do rolet",
           "system_presence": "Domyślne ustawienie obecności"
         }
       },

@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Lisäasetukset",
-        "description": "Elinkaariprofiilit, manuaalisen ohituksen käyttäytyminen ja verhojen lähetyksen ajoitus — asetuksia, joita useimpien asennusten ei tarvitse muuttaa.",
+        "description": "Elinkaariprofiilit ja manuaalisen ohituksen käyttäytyminen — asetuksia, joita useimpien asennusten ei tarvitse muuttaa.",
         "menu_options": {
-          "manual_override": "Manuaalinen ohitus",
-          "dispatch": "Varjostimien ajoitus"
+          "manual_override": "Manuaalinen ohitus"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Turvaraja yön ohitukselle. Todellinen vapautus tapahtuu aamun aikataulusiirtymässä."
         }
       },
-      "system_dispatch": {
-        "title": "Varjostimien ajoitus",
-        "description": "Määrittää, miten SmartShading ajoittaa verhokomentoja kaikissa vyöhykkeissä, kun useita verhoja päätetään samassa syklissä. Tämä on laitteistosi/radioyhdyskäytäväsi ominaisuus, joka on jaettu koko talolle.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Enimmäisodotus liikkeen päättymiselle",
-          "dispatch_post_travel_pause_s": "Tauko liikkeen päätyttyä",
-          "dispatch_zone_batching": "Pidä vyöhykkeet erillään"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Käytetään vain tilassa \"Peräkkäin\" — kuinka kauan odotetaan varjostimen lopettavan liikkeensä, ennen kuin jatketaan joka tapauksessa.",
-          "dispatch_post_travel_pause_s": "Käytetään vain tilassa \"Peräkkäin\" — lyhyt asettumistauko sen jälkeen, kun varjostin on lopettanut liikkeensä, ennen kuin seuraava käynnistyy.",
-          "dispatch_zone_batching": "Kun käytössä, käynnistysten välinen viive kohdistetaan aina eri huoneiden/vyöhykkeiden välille, myös Rinnakkain-tilassa, jotta huoneet pysyvät visuaalisesti erillään."
-        }
-      },
       "system_init": {
         "title": "SmartShading-järjestelmäasetukset",
-        "description": "Yleiset oletukset, joita jokainen vyöhyke noudattaa, ellei se käytä omia asetuksiaan, sekä järjestelmänlaajuinen verhojen lähetyksen ajoitus.",
+        "description": "Yleiset oletukset, joita jokainen vyöhyke noudattaa, ellei se käytä omia asetuksiaan.",
         "menu_options": {
           "system_manual_override": "Manuaalisen ohituksen oletukset",
-          "system_dispatch": "Verhojen lähetys",
           "system_presence": "Läsnäolon oletus"
         }
       },

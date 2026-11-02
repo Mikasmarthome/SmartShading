@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Avanceret",
-        "description": "Livscyklusprofiler, manuel tilsidesættelsesadfærd og timing for skærmafsendelse — indstillinger, som de fleste installationer ikke behøver at ændre.",
+        "description": "Livscyklusprofiler og manuel tilsidesættelsesadfærd — indstillinger, som de fleste installationer ikke behøver at ændre.",
         "menu_options": {
-          "manual_override": "Manuel tilsidesættelse",
-          "dispatch": "Koordinering af afskærmninger"
+          "manual_override": "Manuel tilsidesættelse"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Sikkerhedsgrænse for en nattilsidesættelse. Den egentlige frigivelse sker ved morgenens skemaovergang."
         }
       },
-      "system_dispatch": {
-        "title": "Koordinering af afskærmninger",
-        "description": "Angiver, hvordan SmartShading fordeler skærmkommandoer på tværs af alle zoner, når flere skærme besluttes i samme cyklus. Dette er en egenskab ved din hardware/radiogateway, som deles for hele huset.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Maksimal ventetid på bevægelse færdig",
-          "dispatch_post_travel_pause_s": "Pause efter bevægelse er færdig",
-          "dispatch_zone_batching": "Hold zoner adskilt"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Bruges kun af \"En ad gangen\" — hvor længe der ventes på, at en afskærmning bliver færdig, før der fortsættes alligevel.",
-          "dispatch_post_travel_pause_s": "Bruges kun af \"En ad gangen\" — en kort pause efter en afskærmning er færdig, før den næste starter.",
-          "dispatch_zone_batching": "Når aktiveret, anvendes forsinkelsen mellem starter altid mellem forskellige rum/zoner, selv i tilstanden Samtidig, så rum forbliver visuelt adskilte."
-        }
-      },
       "system_init": {
         "title": "SmartShading systemindstillinger",
-        "description": "Globale standarder, som hver zone følger, medmindre den bruger sine egne indstillinger, plus systemdækkende timing for skærmudsendelse.",
+        "description": "Globale standarder, som hver zone følger, medmindre den bruger sine egne indstillinger.",
         "menu_options": {
           "system_manual_override": "Standarder for manuel tilsidesættelse",
-          "system_dispatch": "Skærmudsendelse",
           "system_presence": "Standard for tilstedeværelse"
         }
       },

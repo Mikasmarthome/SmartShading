@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Pokročilé",
-        "description": "Profily životního cyklu, chování ručního přepsání a časování dispečinku žaluzií — nastavení, která většina instalací nepotřebuje měnit.",
+        "description": "Profily životního cyklu a chování ručního přepsání — nastavení, která většina instalací nepotřebuje měnit.",
         "menu_options": {
-          "manual_override": "Ruční přepsání",
-          "dispatch": "Koordinace stínění"
+          "manual_override": "Ruční přepsání"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Bezpečnostní limit pro noční přepsání. Skutečné uvolnění nastává při ranním přechodu plánu."
         }
       },
-      "system_dispatch": {
-        "title": "Koordinace stínění",
-        "description": "Určuje, jak SmartShading rozvrhuje příkazy žaluziím napříč všemi zónami, když je ve stejném cyklu rozhodnuto o více žaluziích. Jde o vlastnost vašeho hardwaru/rádiové brány, sdílenou pro celý dům.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Maximální čekání na dokončení pohybu",
-          "dispatch_post_travel_pause_s": "Pauza po dokončení pohybu",
-          "dispatch_zone_batching": "Oddělovat zóny"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Používá se pouze u \"Postupně\" — jak dlouho čekat na dokončení pohybu stínění, než se přesto pokračuje dál.",
-          "dispatch_post_travel_pause_s": "Používá se pouze u \"Postupně\" — krátká klidová pauza po dokončení pohybu stínění, než se spustí další.",
-          "dispatch_zone_batching": "Je-li zapnuto, prodleva mezi starty se vždy uplatní mezi různými místnostmi/zónami, i v režimu Souběžně, aby zůstaly místnosti vizuálně oddělené."
-        }
-      },
       "system_init": {
         "title": "Systémová nastavení SmartShading",
-        "description": "Globální výchozí hodnoty, kterými se řídí každá zóna, pokud nepoužívá vlastní nastavení, a systémové časování ovládání žaluzií.",
+        "description": "Globální výchozí hodnoty, kterými se řídí každá zóna, pokud nepoužívá vlastní nastavení.",
         "menu_options": {
           "system_manual_override": "Výchozí nastavení ručního přepsání",
-          "system_dispatch": "Ovládání žaluzií",
           "system_presence": "Výchozí nastavení přítomnosti"
         }
       },

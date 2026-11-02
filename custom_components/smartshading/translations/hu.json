@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Speciális",
-        "description": "Életciklus-profilok, a kézi felülbírálás viselkedése és az árnyékolás-vezérlés időzítése — olyan beállítások, amelyeket a legtöbb telepítésnél nem kell módosítani.",
+        "description": "Életciklus-profilok és a kézi felülbírálás viselkedése — olyan beállítások, amelyeket a legtöbb telepítésnél nem kell módosítani.",
         "menu_options": {
-          "manual_override": "Kézi felülbírálás",
-          "dispatch": "Árnyékolók ütemezése"
+          "manual_override": "Kézi felülbírálás"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Biztonsági korlát az éjszakai felülbírálásra. A valódi felszabadulás a reggeli ütemezésváltáskor történik."
         }
       },
-      "system_dispatch": {
-        "title": "Árnyékolók ütemezése",
-        "description": "Meghatározza, hogyan ütemezi a SmartShading az árnyékoló parancsokat az összes zónában, amikor több árnyékolóról döntenek ugyanabban a ciklusban. Ez a hardver/rádiós átjáró tulajdonsága, amely az egész házra vonatkozik.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Maximális várakozás a mozgás befejezésére",
-          "dispatch_post_travel_pause_s": "Szünet a mozgás befejezése után",
-          "dispatch_zone_batching": "Zónák elkülönítése"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Csak az \"Egymás után\" módnál használatos — mennyi ideig várjon egy árnyékoló befejezésére, mielőtt mindenképp folytatja.",
-          "dispatch_post_travel_pause_s": "Csak az \"Egymás után\" módnál használatos — rövid megnyugvási szünet azután, hogy egy árnyékoló befejezte a mozgást, mielőtt a következő elindul.",
-          "dispatch_zone_batching": "Ha engedélyezve van, az indítások közötti késleltetés mindig érvényesül a különböző szobák/zónák között, még Párhuzamos módban is, hogy a szobák vizuálisan elkülönüljenek."
-        }
-      },
       "system_init": {
         "title": "SmartShading rendszerbeállítások",
-        "description": "Globális alapértelmezések, amelyeket minden zóna követ, hacsak nem használ saját beállításokat, valamint az árnyékolás-küldés rendszerszintű időzítése.",
+        "description": "Globális alapértelmezések, amelyeket minden zóna követ, hacsak nem használ saját beállításokat.",
         "menu_options": {
           "system_manual_override": "Kézi felülbírálás alapértelmezései",
-          "system_dispatch": "Árnyékolás-vezérlés",
           "system_presence": "Jelenlét alapértelmezése"
         }
       },

@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Pokročilé",
-        "description": "Profily životného cyklu, správanie ručného prepísania a časovanie odosielania žalúzií — nastavenia, ktoré väčšina inštalácií nemusí meniť.",
+        "description": "Profily životného cyklu a správanie ručného prepísania — nastavenia, ktoré väčšina inštalácií nemusí meniť.",
         "menu_options": {
-          "manual_override": "Ručné prepísanie",
-          "dispatch": "Koordinácia tienenia"
+          "manual_override": "Ručné prepísanie"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Bezpečnostný limit pre nočné prepísanie. Skutočné uvoľnenie nastáva pri rannom prechode plánu."
         }
       },
-      "system_dispatch": {
-        "title": "Koordinácia tienenia",
-        "description": "Určuje, ako SmartShading časovo rozvrhuje príkazy žalúzií vo všetkých zónach, keď sa v rovnakom cykle rozhoduje o viacerých žalúziách. Ide o vlastnosť vášho hardvéru/rádiovej brány, spoločnú pre celý dom.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Maximálne čakanie na dokončenie pohybu",
-          "dispatch_post_travel_pause_s": "Pauza po dokončení pohybu",
-          "dispatch_zone_batching": "Oddeľovať zóny"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Používa sa iba pri \"Postupne\" — ako dlho čakať na dokončenie pohybu tienenia, kým sa aj tak pokračuje ďalej.",
-          "dispatch_post_travel_pause_s": "Používa sa iba pri \"Postupne\" — krátka pokojová pauza po dokončení pohybu tienenia, kým sa spustí ďalšie.",
-          "dispatch_zone_batching": "Ak je zapnuté, oneskorenie medzi štartmi sa vždy uplatní medzi rôznymi miestnosťami/zónami, aj v režime Súbežne, aby miestnosti zostali vizuálne oddelené."
-        }
-      },
       "system_init": {
         "title": "Systémové nastavenia SmartShading",
-        "description": "Globálne predvolené hodnoty, ktorými sa riadi každá zóna, pokiaľ nepoužíva vlastné nastavenia, a systémové časovanie odosielania príkazov žalúziám.",
+        "description": "Globálne predvolené hodnoty, ktorými sa riadi každá zóna, pokiaľ nepoužíva vlastné nastavenia.",
         "menu_options": {
           "system_manual_override": "Predvolené nastavenia ručného prepísania",
-          "system_dispatch": "Ovládanie žalúzií",
           "system_presence": "Predvolené nastavenie prítomnosti"
         }
       },

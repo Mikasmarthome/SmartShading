@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Avançat",
-        "description": "Perfils de cicle de vida, comportament de la substitució manual i temporització del control de tendals — configuracions que la majoria d'instal·lacions no necessiten canviar.",
+        "description": "Perfils de cicle de vida i comportament de la substitució manual — configuracions que la majoria d'instal·lacions no necessiten canviar.",
         "menu_options": {
-          "manual_override": "Anul·lació manual",
-          "dispatch": "Coordinació de les persianes"
+          "manual_override": "Anul·lació manual"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Límit de seguretat per a una anul·lació nocturna. L'alliberament real es produeix en la transició de cicle matinal."
         }
       },
-      "system_dispatch": {
-        "title": "Coordinació de les persianes",
-        "description": "Defineix com SmartShading espaia les ordres de les persianes a totes les zones quan diverses persianes es decideixen en el mateix cicle. Això és una propietat del vostre maquinari/passarel·la de ràdio, compartida per tota la casa.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Espera màxima perquè acabi el moviment",
-          "dispatch_post_travel_pause_s": "Pausa després que acabi el moviment",
-          "dispatch_zone_batching": "Mantén les zones separades"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Només s'utilitza amb \"Una darrere l'altra\" — quant de temps s'espera que una persiana acabi abans de continuar igualment.",
-          "dispatch_post_travel_pause_s": "Només s'utilitza amb \"Una darrere l'altra\" — una breu pausa d'assentament després que una persiana acabi, abans que comenci la següent.",
-          "dispatch_zone_batching": "Si està activat, el retard entre inicis s'aplica sempre entre diferents habitacions/zones, fins i tot en mode Simultani, perquè les habitacions es mantinguin visualment separades."
-        }
-      },
       "system_init": {
         "title": "Configuració del sistema SmartShading",
-        "description": "Valors predeterminats globals que segueix cada zona llevat que utilitzi la seva pròpia configuració, més el temporitzat del sistema per a l'enviament d'ordres a les persianes.",
+        "description": "Valors predeterminats globals que segueix cada zona llevat que utilitzi la seva pròpia configuració.",
         "menu_options": {
           "system_manual_override": "Valors predeterminats de substitució manual",
-          "system_dispatch": "Control de persianes",
           "system_presence": "Valor predeterminat de presència"
         }
       },

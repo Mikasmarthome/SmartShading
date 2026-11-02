@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Geavanceerd",
-        "description": "Levenscyclusprofielen, gedrag van handmatige overschrijving en timing van het verzenden van zonwering — instellingen die de meeste installaties niet hoeven te wijzigen.",
+        "description": "Levenscyclusprofielen en gedrag van handmatige overschrijving — instellingen die de meeste installaties niet hoeven te wijzigen.",
         "menu_options": {
-          "manual_override": "Handmatige overschrijving",
-          "dispatch": "Coördinatie van zonweringen"
+          "manual_override": "Handmatige overschrijving"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Veiligheidslimiet voor een nacht-overschrijving. De echte vrijgave gebeurt bij de ochtendlijke schemaovergang."
         }
       },
-      "system_dispatch": {
-        "title": "Coördinatie van zonweringen",
-        "description": "Bepaalt hoe SmartShading zonwering-commando's over alle zones spreidt wanneer meerdere zonweringen in dezelfde cyclus worden beslist. Dit is een eigenschap van uw hardware/radiogateway, gedeeld voor het hele huis.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Maximale wachttijd op einde beweging",
-          "dispatch_post_travel_pause_s": "Pauze na einde beweging",
-          "dispatch_zone_batching": "Zones gescheiden houden"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Wordt alleen gebruikt door \"Na elkaar\" — hoe lang gewacht wordt tot een zonwering klaar is voordat er toch wordt doorgegaan.",
-          "dispatch_post_travel_pause_s": "Wordt alleen gebruikt door \"Na elkaar\" — een korte rustpauze nadat een zonwering klaar is, voordat de volgende start.",
-          "dispatch_zone_batching": "Indien ingeschakeld, wordt de vertraging tussen starts altijd toegepast tussen verschillende kamers/zones, ook in de modus Gelijktijdig, zodat kamers visueel gescheiden blijven."
-        }
-      },
       "system_init": {
         "title": "SmartShading-systeeminstellingen",
-        "description": "Algemene standaardinstellingen die elke zone volgt, tenzij deze eigen instellingen gebruikt, plus systeembrede timing voor het verzenden van zonwering-commando's.",
+        "description": "Algemene standaardinstellingen die elke zone volgt, tenzij deze eigen instellingen gebruikt.",
         "menu_options": {
           "system_manual_override": "Standaardinstellingen handmatige overschrijving",
-          "system_dispatch": "Zonwering-verzending",
           "system_presence": "Aanwezigheidsstandaard"
         }
       },

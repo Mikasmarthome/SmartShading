@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Avançado",
-        "description": "Perfis de ciclo de vida, comportamento de substituição manual e temporização do envio de estores — definições que a maioria das instalações não precisa de alterar.",
+        "description": "Perfis de ciclo de vida e comportamento de substituição manual — definições que a maioria das instalações não precisa de alterar.",
         "menu_options": {
-          "manual_override": "Substituição manual",
-          "dispatch": "Coordenação dos estores"
+          "manual_override": "Substituição manual"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Limite de segurança para uma substituição noturna. A libertação real ocorre na transição do ciclo matinal."
         }
       },
-      "system_dispatch": {
-        "title": "Coordenação dos estores",
-        "description": "Define como o SmartShading espaça os comandos dos estores em todas as zonas quando vários estores são decididos no mesmo ciclo. Isto é uma propriedade do seu hardware/gateway de rádio, partilhada por toda a casa.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Espera máxima para o movimento terminar",
-          "dispatch_post_travel_pause_s": "Pausa após o movimento terminar",
-          "dispatch_zone_batching": "Manter zonas separadas"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Usado apenas por \"Um de cada vez\" — quanto tempo esperar que um estore termine antes de continuar de qualquer forma.",
-          "dispatch_post_travel_pause_s": "Usado apenas por \"Um de cada vez\" — uma breve pausa de estabilização depois de um estore terminar, antes de o seguinte começar.",
-          "dispatch_zone_batching": "Quando ativado, o atraso entre inícios é sempre aplicado entre divisões/zonas diferentes, mesmo no modo Paralelo, para que as divisões permaneçam visualmente separadas."
-        }
-      },
       "system_init": {
         "title": "Definições do sistema SmartShading",
-        "description": "Predefinições globais que cada zona segue, a menos que use as suas próprias definições, além da temporização do sistema para o envio de comandos aos estores.",
+        "description": "Predefinições globais que cada zona segue, a menos que use as suas próprias definições.",
         "menu_options": {
           "system_manual_override": "Predefinições de substituição manual",
-          "system_dispatch": "Envio de comandos aos estores",
           "system_presence": "Predefinição de presença"
         }
       },

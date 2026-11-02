@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Avanzate",
-        "description": "Profili del ciclo di vita, comportamento dell'override manuale e tempistica di invio delle tapparelle — impostazioni che la maggior parte delle installazioni non deve modificare.",
+        "description": "Profili del ciclo di vita e comportamento dell'override manuale — impostazioni che la maggior parte delle installazioni non deve modificare.",
         "menu_options": {
-          "manual_override": "Override manuale",
-          "dispatch": "Coordinamento delle tapparelle"
+          "manual_override": "Override manuale"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Limite di sicurezza per un override notturno. Il vero rilascio avviene alla transizione del ciclo mattutino."
         }
       },
-      "system_dispatch": {
-        "title": "Coordinamento delle tapparelle",
-        "description": "Definisce come SmartShading scagliona i comandi delle tapparelle in tutte le zone quando più tapparelle vengono decise nello stesso ciclo. È una proprietà del tuo hardware/gateway radio, condivisa per tutta la casa.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Attesa massima per il termine del movimento",
-          "dispatch_post_travel_pause_s": "Pausa dopo il termine del movimento",
-          "dispatch_zone_batching": "Mantieni le zone separate"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Usato solo da \"Una alla volta\" — quanto attendere che una tapparella finisca prima di continuare comunque.",
-          "dispatch_post_travel_pause_s": "Usato solo da \"Una alla volta\" — una breve pausa di assestamento dopo che una tapparella finisce, prima che parta la successiva.",
-          "dispatch_zone_batching": "Se attivo, il ritardo tra gli avvii viene sempre applicato tra stanze/zone diverse, anche in modalità Parallelo, così le stanze restano visivamente separate."
-        }
-      },
       "system_init": {
         "title": "Impostazioni di sistema SmartShading",
-        "description": "Valori predefiniti globali seguiti da ogni zona a meno che non usi impostazioni proprie, oltre alla tempistica di sistema per l'invio dei comandi alle tapparelle.",
+        "description": "Valori predefiniti globali seguiti da ogni zona a meno che non usi impostazioni proprie.",
         "menu_options": {
           "system_manual_override": "Valori predefiniti dell'override manuale",
-          "system_dispatch": "Invio comandi tapparelle",
           "system_presence": "Valore predefinito di presenza"
         }
       },

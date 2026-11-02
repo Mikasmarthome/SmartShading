@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Avanzado",
-        "description": "Perfiles de ciclo de vida, comportamiento de la anulación manual y temporización del despacho de toldos — ajustes que la mayoría de las instalaciones no necesitan cambiar.",
+        "description": "Perfiles de ciclo de vida y comportamiento de la anulación manual — ajustes que la mayoría de las instalaciones no necesitan cambiar.",
         "menu_options": {
-          "manual_override": "Anulación manual",
-          "dispatch": "Coordinación de persianas"
+          "manual_override": "Anulación manual"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Límite de seguridad para una anulación nocturna. La liberación real ocurre en la transición del ciclo matutino."
         }
       },
-      "system_dispatch": {
-        "title": "Coordinación de persianas",
-        "description": "Define cómo SmartShading espacia las órdenes de los toldos en todas las zonas cuando se deciden varios toldos en el mismo ciclo. Esto es una propiedad de su hardware/pasarela de radio, compartida por toda la casa.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Espera máxima para que termine el movimiento",
-          "dispatch_post_travel_pause_s": "Pausa tras terminar el movimiento",
-          "dispatch_zone_batching": "Mantener zonas separadas"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Solo se usa con \"Una tras otra\" — cuánto tiempo esperar a que una persiana termine antes de continuar de todos modos.",
-          "dispatch_post_travel_pause_s": "Solo se usa con \"Una tras otra\" — una breve pausa de asentamiento tras terminar una persiana, antes de que empiece la siguiente.",
-          "dispatch_zone_batching": "Si está activado, el retraso entre inicios se aplica siempre entre habitaciones/zonas distintas, incluso en modo Paralelo, para que las habitaciones se mantengan visualmente separadas."
-        }
-      },
       "system_init": {
         "title": "Ajustes del sistema SmartShading",
-        "description": "Valores predeterminados globales que sigue cada zona a menos que use su propia configuración, además de la temporización del sistema para el envío de órdenes a los toldos.",
+        "description": "Valores predeterminados globales que sigue cada zona a menos que use su propia configuración.",
         "menu_options": {
           "system_manual_override": "Valores predeterminados de anulación manual",
-          "system_dispatch": "Control de toldos",
           "system_presence": "Valor predeterminado de presencia"
         }
       },

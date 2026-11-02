@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "高级",
-        "description": "生命周期配置文件、手动覆盖行为和遮阳调度时序——大多数安装不需要更改的设置。",
+        "description": "生命周期配置文件和手动覆盖行为——大多数安装不需要更改的设置。",
         "menu_options": {
-          "manual_override": "手动覆盖",
-          "dispatch": "遮阳帘调度"
+          "manual_override": "手动覆盖"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "夜间覆盖的安全上限。真正的释放发生在早晨的计划转换时。"
         }
       },
-      "system_dispatch": {
-        "title": "遮阳帘调度",
-        "description": "设置当同一周期内决定多个遮阳帘时，SmartShading 如何在所有区域间调度遮阳帘命令。这是您的硬件/无线网关的属性，由整个住宅共享。",
-        "data": {
-          "dispatch_max_travel_wait_s": "等待运行完成的最长时间",
-          "dispatch_post_travel_pause_s": "运行完成后的暂停时间",
-          "dispatch_zone_batching": "保持区域分开"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "仅用于\"依次执行\"模式——在继续执行前，等待遮阳帘完成运行的最长时间。",
-          "dispatch_post_travel_pause_s": "仅用于\"依次执行\"模式——遮阳帘完成运行后、下一个启动前的短暂缓冲暂停。",
-          "dispatch_zone_batching": "启用后，即使在并行模式下，不同房间/区域之间也始终应用启动间隔延迟，使房间在视觉上保持分隔。"
-        }
-      },
       "system_init": {
         "title": "SmartShading 系统设置",
-        "description": "除非某区域使用自己的设置，否则每个区域都遵循的全局默认值，以及系统级的遮阳帘调度时序。",
+        "description": "除非某区域使用自己的设置，否则每个区域都遵循的全局默认值。",
         "menu_options": {
           "system_manual_override": "手动覆盖默认值",
-          "system_dispatch": "遮阳帘调度",
           "system_presence": "在场状态默认值"
         }
       },

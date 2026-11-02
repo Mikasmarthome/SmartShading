@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Avansat",
-        "description": "Profiluri de ciclu de viață, comportamentul suprascrierii manuale și temporizarea trimiterii jaluzelelor — setări pe care majoritatea instalațiilor nu trebuie să le modifice.",
+        "description": "Profiluri de ciclu de viață și comportamentul suprascrierii manuale — setări pe care majoritatea instalațiilor nu trebuie să le modifice.",
         "menu_options": {
-          "manual_override": "Suprascriere manuală",
-          "dispatch": "Coordonarea umbrarelor"
+          "manual_override": "Suprascriere manuală"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Limită de siguranță pentru o suprascriere de noapte. Eliberarea reală are loc la tranziția programului de dimineață."
         }
       },
-      "system_dispatch": {
-        "title": "Coordonarea umbrarelor",
-        "description": "Definește modul în care SmartShading eșalonează comenzile jaluzelelor în toate zonele atunci când mai multe jaluzele sunt decise în același ciclu. Aceasta este o proprietate a hardware-ului/gateway-ului radio, comună pentru întreaga casă.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Așteptare maximă pentru finalizarea mișcării",
-          "dispatch_post_travel_pause_s": "Pauză după finalizarea mișcării",
-          "dispatch_zone_batching": "Menține zonele separate"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Folosit doar de \"Unul după altul\" — cât timp se așteaptă ca un umbrar să termine înainte de a continua oricum.",
-          "dispatch_post_travel_pause_s": "Folosit doar de \"Unul după altul\" — o scurtă pauză de stabilizare după ce un umbrar termină, înainte ca următorul să pornească.",
-          "dispatch_zone_batching": "Dacă este activat, întârzierea între porniri se aplică întotdeauna între camere/zone diferite, chiar și în modul Paralel, astfel încât camerele să rămână separate vizual."
-        }
-      },
       "system_init": {
         "title": "Setări de sistem SmartShading",
-        "description": "Valori implicite globale pe care le urmează fiecare zonă, cu excepția cazului în care utilizează propriile setări, plus temporizarea la nivel de sistem pentru trimiterea comenzilor jaluzelelor.",
+        "description": "Valori implicite globale pe care le urmează fiecare zonă, cu excepția cazului în care utilizează propriile setări.",
         "menu_options": {
           "system_manual_override": "Valori implicite pentru suprascrierea manuală",
-          "system_dispatch": "Trimiterea comenzilor jaluzelelor",
           "system_presence": "Valoare implicită de prezență"
         }
       },

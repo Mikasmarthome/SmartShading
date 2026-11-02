@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Napredno",
-        "description": "Profili življenjskega cikla, obnašanje ročnega preglasitve in časovna razporeditev pošiljanja senčil — nastavitve, ki jih večina namestitev ne potrebuje spreminjati.",
+        "description": "Profili življenjskega cikla in obnašanje ročnega preglasitve — nastavitve, ki jih večina namestitev ne potrebuje spreminjati.",
         "menu_options": {
-          "manual_override": "Ročna preglasitev",
-          "dispatch": "Usklajevanje senčil"
+          "manual_override": "Ročna preglasitev"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Varnostna zgornja meja za nočno preglasitev. Dejanska sprostitev se zgodi ob jutranjem prehodu urnika."
         }
       },
-      "system_dispatch": {
-        "title": "Usklajevanje senčil",
-        "description": "Določa, kako SmartShading razporeja ukaze senčil po vseh conah, ko je v istem ciklu odločenih več senčil. To je lastnost vaše strojne opreme/radijskega prehoda, skupna za celo hišo.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Največje čakanje na konec premika",
-          "dispatch_post_travel_pause_s": "Premor po koncu premika",
-          "dispatch_zone_batching": "Ločuj območja"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Uporablja se samo pri \"Zaporedno\" — kako dolgo čakati na konec premika senčila, preden se kljub temu nadaljuje.",
-          "dispatch_post_travel_pause_s": "Uporablja se samo pri \"Zaporedno\" — kratek premor po koncu premika senčila, preden se zažene naslednje.",
-          "dispatch_zone_batching": "Če je omogočeno, se zamik med zagoni vedno uporabi med različnimi prostori/območji, tudi v načinu Sočasno, tako da prostori ostanejo vizualno ločeni."
-        }
-      },
       "system_init": {
         "title": "Sistemske nastavitve SmartShading",
-        "description": "Globalne privzete vrednosti, ki jim sledi vsaka cona, razen če uporablja lastne nastavitve, ter sistemsko časovno usklajevanje pošiljanja ukazov senčilom.",
+        "description": "Globalne privzete vrednosti, ki jim sledi vsaka cona, razen če uporablja lastne nastavitve.",
         "menu_options": {
           "system_manual_override": "Privzete vrednosti ročne preglasitve",
-          "system_dispatch": "Pošiljanje ukazov senčilom",
           "system_presence": "Privzeta vrednost prisotnosti"
         }
       },

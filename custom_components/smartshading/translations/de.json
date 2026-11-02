@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Erweitert",
-        "description": "Lifecycle-Profile, Verhalten der manuellen Übersteuerung und Timing des Beschattungs-Dispatch — Einstellungen, die die meisten Installationen nicht ändern müssen.",
+        "description": "Lifecycle-Profile und Verhalten der manuellen Übersteuerung — Einstellungen, die die meisten Installationen nicht ändern müssen.",
         "menu_options": {
-          "manual_override": "Manuelle Übersteuerung",
-          "dispatch": "Rollladen-Ansteuerung"
+          "manual_override": "Manuelle Übersteuerung"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Sicherheitsnetz-Obergrenze für eine Nacht-Übersteuerung. Die eigentliche Freigabe erfolgt beim morgendlichen Zeitplan-Übergang."
         }
       },
-      "system_dispatch": {
-        "title": "Rollladen-Ansteuerung",
-        "description": "Legt fest, wie SmartShading Rollladenbefehle über alle Zonen hinweg zeitlich staffelt, wenn mehrere Rollläden im selben Zyklus entschieden werden. Dies ist eine Eigenschaft Ihrer Rollladen-Hardware/Funk-Gateway, die für das ganze Haus gilt.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Maximale Wartezeit auf Fahrtende",
-          "dispatch_post_travel_pause_s": "Pause nach Fahrtende",
-          "dispatch_zone_batching": "Zonen getrennt halten"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Nur bei \"Nacheinander\" verwendet — wie lange auf das Fahrtende eines Rollladens gewartet wird, bevor trotzdem fortgefahren wird.",
-          "dispatch_post_travel_pause_s": "Nur bei \"Nacheinander\" verwendet — eine kurze Ruhepause nach Fahrtende, bevor der nächste Rollladen startet.",
-          "dispatch_zone_batching": "Wenn aktiviert, wird der Abstand zwischen den Starts immer zwischen verschiedenen Räumen/Zonen eingehalten, auch im Modus \"Gleichzeitig\", damit Zonen sichtbar getrennt bleiben."
-        }
-      },
       "system_init": {
         "title": "SmartShading-Systemeinstellungen",
-        "description": "Globale Standardwerte, denen jede Zone folgt, sofern sie keine eigenen Einstellungen verwendet, sowie systemweites Timing für die Rollladenansteuerung.",
+        "description": "Globale Standardwerte, denen jede Zone folgt, sofern sie keine eigenen Einstellungen verwendet.",
         "menu_options": {
           "system_manual_override": "Übersteuerungs-Systemstandard",
-          "system_dispatch": "Rollladenansteuerung",
           "system_presence": "Präsenz-Standard"
         }
       },

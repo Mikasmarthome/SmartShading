@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Advanced",
-        "description": "Lifecycle profiles, manual override behavior, and cover dispatch timing — settings most installations do not need to change.",
+        "description": "Lifecycle profiles and manual override behavior — settings most installations do not need to change.",
         "menu_options": {
-          "manual_override": "Manual Override",
-          "dispatch": "Cover Dispatch"
+          "manual_override": "Manual Override"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Safety-net cap for a night-time override. The real release is the morning schedule transition."
         }
       },
-      "system_dispatch": {
-        "title": "Cover Dispatch",
-        "description": "SmartShading paces cover commands with one fixed rule shared by the whole house: fully open/fully closed covers start 2.0 seconds apart without waiting for travel to finish; a partial position waits for the previous cover to finish moving, then a 2.0 second pause, before the next one starts.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Maximum wait for travel to finish",
-          "dispatch_post_travel_pause_s": "Pause after travel finishes (safety commands)",
-          "dispatch_zone_batching": "Keep zones apart"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "How long to wait for a cover moving to a partial position to finish before continuing anyway.",
-          "dispatch_post_travel_pause_s": "Settle pause after a safety command (storm/wind/rain protection) finishes, before the next one starts.",
-          "dispatch_zone_batching": "When enabled, the 2.0 second delay is always applied between different rooms/zones, so rooms stay visually separated."
-        }
-      },
       "system_init": {
         "title": "SmartShading System settings",
-        "description": "Global defaults every zone follows unless it opts into its own settings, plus system-wide Cover Dispatch timing.",
+        "description": "Global defaults every zone follows unless it opts into its own settings.",
         "menu_options": {
           "system_manual_override": "Manual Override defaults",
-          "system_dispatch": "Cover Dispatch",
           "system_presence": "Presence default"
         }
       },

@@ -297,10 +297,9 @@
       },
       "advanced": {
         "title": "Gelişmiş",
-        "description": "Yaşam döngüsü profilleri, manuel geçersiz kılma davranışı ve perde gönderim zamanlaması — çoğu kurulumun değiştirmesi gerekmeyen ayarlar.",
+        "description": "Yaşam döngüsü profilleri ve manuel geçersiz kılma davranışı — çoğu kurulumun değiştirmesi gerekmeyen ayarlar.",
         "menu_options": {
-          "manual_override": "Manuel geçersiz kılma",
-          "dispatch": "Gölgelik Koordinasyonu"
+          "manual_override": "Manuel geçersiz kılma"
         }
       },
       "manual_override_custom": {
@@ -355,26 +354,11 @@
           "override_night_duration_min": "Bir gece geçersiz kılması için güvenlik sınırı. Gerçek serbest bırakma sabah program geçişinde gerçekleşir."
         }
       },
-      "system_dispatch": {
-        "title": "Gölgelik Koordinasyonu",
-        "description": "Aynı döngüde birden fazla perde kararlaştırıldığında SmartShading'in perde komutlarını tüm bölgelerde nasıl zamanladığını tanımlar. Bu, tüm ev için paylaşılan donanımınızın/radyo ağ geçidinizin bir özelliğidir.",
-        "data": {
-          "dispatch_max_travel_wait_s": "Hareketin bitmesi için maksimum bekleme",
-          "dispatch_post_travel_pause_s": "Hareket bittikten sonraki duraklama",
-          "dispatch_zone_batching": "Bölgeleri ayrı tut"
-        },
-        "data_description": {
-          "dispatch_max_travel_wait_s": "Yalnızca \"Sırayla\" tarafından kullanılır — yine de devam etmeden önce bir gölgeliğin bitmesinin ne kadar bekleneceği.",
-          "dispatch_post_travel_pause_s": "Yalnızca \"Sırayla\" tarafından kullanılır — bir gölgelik bittikten sonra, bir sonraki başlamadan önceki kısa bir yatışma duraklaması.",
-          "dispatch_zone_batching": "Etkinleştirildiğinde, başlangıçlar arasındaki gecikme, Paralel modda bile, farklı odalar/bölgeler arasında her zaman uygulanır; böylece odalar görsel olarak ayrı kalır."
-        }
-      },
       "system_init": {
         "title": "SmartShading sistem ayarları",
-        "description": "Kendi ayarlarını kullanmadığı sürece her bölgenin izlediği genel varsayılanlar ve sistem genelinde perde gönderim zamanlaması.",
+        "description": "Kendi ayarlarını kullanmadığı sürece her bölgenin izlediği genel varsayılanlar.",
         "menu_options": {
           "system_manual_override": "Manuel geçersiz kılma varsayılanları",
-          "system_dispatch": "Perde gönderimi",
           "system_presence": "Bulunma varsayılanı"
         }
       },

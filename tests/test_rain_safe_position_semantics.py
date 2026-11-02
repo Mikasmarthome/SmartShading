@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime as _datetime
+import json
 import re
 import sys
 import types
@@ -70,7 +71,13 @@ class _CoordBase:
         self.hass = hass
         self.config_entry = config_entry
 
-    def async_request_refresh(self) -> None:
+    async def async_request_refresh(self) -> None:
+        pass
+
+    async def async_refresh(self) -> None:
+        await self._async_update_data()
+
+    async def async_shutdown(self) -> None:
         pass
 
     def async_update_listeners(self) -> None:
@@ -297,6 +304,8 @@ def _make_entry(entry_id: str = "e1") -> MagicMock:
     entry.options = {}
     entry.data = {}
     entry.async_on_unload = MagicMock()
+    entry.async_create_background_task = MagicMock(
+        side_effect=lambda hass, coro, name: (getattr(coro, "close", lambda: None)(), MagicMock())[1])
     return entry
 
 
@@ -1229,8 +1238,14 @@ class _FakeBus:
             callback(event)
 
 
+def _rain_refreshes(s) -> int:
+    """Refreshes the rain listener requested: debounced plus immediate ones."""
+    return s.coord.async_request_refresh.call_count + s.coord.async_refresh.call_count
+
+
 def _attach_rain_listener(s: _Scenario, bus: _FakeBus) -> _Scenario:
     s.coord.async_request_refresh = MagicMock(return_value=None)
+    s.coord.async_refresh = MagicMock(return_value=None)
     s.entry = _make_entry()
     with patch.object(_coord_mod, "async_track_state_change_event", side_effect=bus.track):
         s.coord.async_setup_rain_listener(s.entry)
@@ -1260,14 +1275,14 @@ class TestRainSensorListener:
         gen = s.coord._dispatch_generation
         _change_rain(s, bus, "on")
         assert s.coord._dispatch_generation == gen + 1
-        assert s.coord.async_request_refresh.call_count == 1
+        assert _rain_refreshes(s) == 1
 
     def test_raining_to_dry_requests_a_refresh_without_a_generation_bump(self):
         s, bus = _listener_scenario()
         s.set_rain(True)
         gen = s.coord._dispatch_generation
         _change_rain(s, bus, "off")
-        assert s.coord.async_request_refresh.call_count == 1
+        assert _rain_refreshes(s) == 1
         assert s.coord._dispatch_generation == gen       # old plan stays valid
 
     def test_raining_to_dry_starts_the_hold_and_dry_cooldown(self):
@@ -1288,16 +1303,16 @@ class TestRainSensorListener:
         gen = s.coord._dispatch_generation
         for raw in ("0.2", "0.5", "3.4", "12.0", "0.01"):
             _change_rain(s, bus, raw)
-        assert s.coord.async_request_refresh.call_count == 0
+        assert _rain_refreshes(s) == 0
         assert s.coord._dispatch_generation == gen
 
     def test_numeric_status_changes_are_detected(self):
         s, bus = _listener_scenario(rain_entity="sensor.rain_rate")
         gen = s.coord._dispatch_generation
         _change_rain(s, bus, "0.3")                       # 0.0 -> raining
-        assert (s.coord.async_request_refresh.call_count, s.coord._dispatch_generation) == (1, gen + 1)
+        assert (_rain_refreshes(s), s.coord._dispatch_generation) == (1, gen + 1)
         _change_rain(s, bus, "0.0")                       # raining -> dry
-        assert (s.coord.async_request_refresh.call_count, s.coord._dispatch_generation) == (2, gen + 1)
+        assert (_rain_refreshes(s), s.coord._dispatch_generation) == (2, gen + 1)
 
     @pytest.mark.parametrize("raw", ["unavailable", "unknown"])
     def test_unavailable_or_unknown_to_raining_reacts(self, raw):
@@ -1305,14 +1320,14 @@ class TestRainSensorListener:
         s.hass.states.set(_RAIN, raw)
         gen = s.coord._dispatch_generation
         _change_rain(s, bus, "on")
-        assert (s.coord.async_request_refresh.call_count, s.coord._dispatch_generation) == (1, gen + 1)
+        assert (_rain_refreshes(s), s.coord._dispatch_generation) == (1, gen + 1)
 
     def test_raining_to_unavailable_reevaluates_without_a_bump(self):
         s, bus = _listener_scenario()
         s.set_rain(True)
         gen = s.coord._dispatch_generation
         _change_rain(s, bus, "unavailable")
-        assert s.coord.async_request_refresh.call_count == 1
+        assert _rain_refreshes(s) == 1
         assert s.coord._dispatch_generation == gen
 
     def test_dry_and_unavailable_flapping_is_ignored(self):
@@ -1320,22 +1335,22 @@ class TestRainSensorListener:
         s, bus = _listener_scenario()
         for raw in ("unavailable", "off", "unknown", "off", "unavailable"):
             _change_rain(s, bus, raw)
-        assert s.coord.async_request_refresh.call_count == 0
+        assert _rain_refreshes(s) == 0
 
     def test_invalid_values_are_treated_conservatively(self):
         s, bus = _listener_scenario()
         _change_rain(s, bus, "garbage")                   # dry -> unknown: ignored
-        assert s.coord.async_request_refresh.call_count == 0
+        assert _rain_refreshes(s) == 0
         _change_rain(s, bus, "on")                        # unknown -> raining: reacts
-        assert s.coord.async_request_refresh.call_count == 1
+        assert _rain_refreshes(s) == 1
 
     def test_entity_added_or_removed(self):
         s, bus = _listener_scenario()
         s.hass.states._d.pop(_RAIN, None)
         _change_rain(s, bus, "on")                        # appears already raining
-        assert s.coord.async_request_refresh.call_count == 1
+        assert _rain_refreshes(s) == 1
         _change_rain(s, bus, None)                        # removed while raining
-        assert s.coord.async_request_refresh.call_count == 2
+        assert _rain_refreshes(s) == 2
 
     def test_no_listener_without_a_configured_rain_entity(self):
         s = _Scenario(AWNING)
@@ -1358,7 +1373,7 @@ class TestRainSensorListener:
         bus = _FakeBus()
         gen = s.coord._dispatch_generation
         _attach_rain_listener(s, bus)
-        assert s.coord.async_request_refresh.call_count == 0     # nothing missed
+        assert _rain_refreshes(s) == 0     # nothing missed
         assert s.coord._dispatch_generation == gen
 
     def test_rain_that_starts_between_the_first_refresh_and_the_listener_is_caught(self):
@@ -1368,7 +1383,7 @@ class TestRainSensorListener:
         bus = _FakeBus()
         gen = s.coord._dispatch_generation
         _attach_rain_listener(s, bus)
-        assert s.coord.async_request_refresh.call_count == 1
+        assert _rain_refreshes(s) == 1
         assert s.coord._dispatch_generation == gen + 1
 
     def test_repeated_setup_keeps_exactly_one_subscription(self):
@@ -1406,7 +1421,7 @@ class TestRainSensorListener:
         gen = s.coord._dispatch_generation
         _change_rain(s, bus, "on")
         assert s.coord._dispatch_generation == gen
-        assert s.coord.async_request_refresh.call_count == 0
+        assert _rain_refreshes(s) == 0
         assert s.hass.services.async_call.await_count == 0
 
     # -- production-faithful plan invalidation ------------------------------------
@@ -1511,7 +1526,7 @@ class TestRainSensorListener:
         asyncio.run(main())
         for z, gen, after in zip(scenarios, gens, after_event):
             assert after == gen + 1                          # exactly one bump per zone
-            assert z.coord.async_request_refresh.call_count == 1
+            assert _rain_refreshes(z) == 1
         for tag in "abc"[:zones]:
             assert hass_calls(scenarios[0], f"cover.{tag}1") == [0], tag
 
@@ -1547,7 +1562,7 @@ class TestRainSensorListener:
     def test_active_control_off_reacts_but_sends_nothing(self):
         s, bus = _listener_scenario(active_control=False)
         _change_rain(s, bus, "on")
-        assert s.coord.async_request_refresh.call_count == 1
+        assert _rain_refreshes(s) == 1
         data = s.cycle()
         assert s.diag(data).target_position_ha == 0
         assert s.hass.services.async_call.await_count == 0
@@ -3682,3 +3697,602 @@ class TestA5NoBlindReplayAfterRestart:
         s2.set_cover_position(50, cover="cover.b")
         s2.cycle(30)
         assert len(s2.calls) == sent_before                       # nothing replayed: both already at target
+
+
+# ---------------------------------------------------------------------------
+# A6 -- unload / reload hardening
+# ---------------------------------------------------------------------------
+
+
+class TestA6UnloadDuringPlan:
+    _until = staticmethod(TestA2CoordinatorGlobalSafetyPriority._until)
+
+    def test_unload_during_the_completion_wait_ends_the_plan_and_sends_nothing_more(self, monkeypatch):
+        TestA2CoordinatorGlobalSafetyPriority._real_completion(monkeypatch)
+        s = _two_cover_zone()
+
+        async def main():
+            with s._clock(0):
+                plan = asyncio.ensure_future(s.coord._async_update_data())
+                await self._until(lambda: s.calls_for("cover.a") == [50])
+                await asyncio.sleep(0.05)
+                assert not plan.done()
+                await asyncio.wait_for(s.coord.async_shutdown(), timeout=5)
+                assert plan.done(), "unload returned while the cycle was still running"
+                sent = len(s.calls)
+                await asyncio.wait_for(plan, timeout=5)
+                await asyncio.sleep(0.1)
+                return sent
+
+        sent = asyncio.run(main())
+        assert s.calls_for("cover.b") == []
+        assert len(s.calls) == sent
+
+    def test_unload_while_the_plan_waits_for_global_admission_sends_nothing(self, monkeypatch):
+        TestA2CoordinatorGlobalSafetyPriority._real_completion(monkeypatch)
+        s = _two_cover_zone()
+
+        async def main():
+            await s.serial.lock.acquire()
+            with s._clock(0):
+                plan = asyncio.ensure_future(s.coord._async_update_data())
+                await asyncio.sleep(0.1)
+                await asyncio.wait_for(s.coord.async_shutdown(), timeout=5)
+                assert plan.done(), "unload returned while the plan still queued for admission"
+                s.serial.lock.release()
+                await asyncio.wait_for(plan, timeout=5)
+                await asyncio.sleep(0.1)
+
+        asyncio.run(main())
+        assert s.calls == []
+
+    def test_unload_during_the_settle_pause_ends_it_at_once_and_starts_no_further_cover(self, monkeypatch):
+        from custom_components.smartshading.cover_control import dispatch_plan_executor
+        monkeypatch.setattr(dispatch_plan_executor, "INTERMEDIATE_POST_COMPLETION_PAUSE_S", 30.0)
+        s = _two_cover_zone()
+
+        async def main():
+            loop = asyncio.get_running_loop()
+            with s._clock(0):
+                plan = asyncio.ensure_future(s.coord._async_update_data())
+                await self._until(lambda: s.calls_for("cover.a") == [50])
+                await asyncio.sleep(0.05)
+                started = loop.time()
+                await asyncio.wait_for(s.coord.async_shutdown(), timeout=5)
+                await asyncio.wait_for(plan, timeout=5)
+                return loop.time() - started
+
+        took = asyncio.run(main())
+        assert took < 2.0                                          # not the 30 s settle
+        assert s.calls_for("cover.b") == []
+
+    def test_unload_during_a_running_safety_dispatch_sends_no_command_afterwards(self):
+        s = _Scenario(AWNING, covers=["cover.a"], cover_position=100,
+                      extra=[_Win("w2", AWNING, ["cover.b"], cover_position=100)])
+        s.set_rain(True)
+
+        async def main():
+            gate = asyncio.Event()
+
+            async def slow(domain, service, data, **kw):
+                if not gate.is_set():
+                    await gate.wait()
+
+            s.hass.services.async_call = AsyncMock(side_effect=slow)
+            with s._clock(0):
+                cycle = asyncio.ensure_future(s.coord._async_update_data())
+                await self._until(lambda: len(s.calls) == 1)
+                shutdown = asyncio.ensure_future(s.coord.async_shutdown())
+                await asyncio.sleep(0.05)
+                gate.set()
+                await asyncio.wait_for(shutdown, timeout=5)
+                after_unload = len(s.calls)
+                await asyncio.wait_for(cycle, timeout=5)
+                await asyncio.sleep(0.1)
+                return after_unload
+
+        after_unload = asyncio.run(main())
+        assert len(s.calls) == after_unload                        # nothing sent after unload returned
+
+
+# ---------------------------------------------------------------------------
+# A6 -- one refresh rule for every listener
+# ---------------------------------------------------------------------------
+
+_CONTACT = "binary_sensor.window_contact"
+
+
+def _contact_scenario():
+    from dataclasses import replace as _dc_replace
+    bus = _FakeBus()
+    s = _Scenario(AWNING)
+    s.coord.windows["w1"] = _dc_replace(s.coord.windows["w1"], contact_sensor_entity_ids=[_CONTACT])
+    s.coord.async_request_refresh = MagicMock(return_value=None)
+    s.coord.async_refresh = MagicMock(return_value=None)
+    s.entry = _make_entry()
+    with patch.object(_coord_mod, "async_track_state_change_event", side_effect=bus.track):
+        s.coord.async_setup_contact_listeners(s.entry)
+    return s, bus
+
+
+def _change_contact(s, bus, old: str, new: str) -> None:
+    s.hass.states.set(_CONTACT, new)
+    bus.fire(_CONTACT, _State(old), _State(new))
+
+
+class TestA6RefreshSemantics:
+    def test_rain_start_is_evaluated_at_once_not_behind_the_debouncer(self):
+        s, bus = _listener_scenario()
+        _change_rain(s, bus, "on")
+        assert (s.coord.async_refresh.call_count, s.coord.async_request_refresh.call_count) == (1, 0)
+        assert s.coord._refresh_stats["immediate"] == 1
+
+    def test_rain_end_stays_debounced(self):
+        s, bus = _listener_scenario()
+        s.set_rain(True)
+        _change_rain(s, bus, "off")
+        assert (s.coord.async_refresh.call_count, s.coord.async_request_refresh.call_count) == (0, 1)
+        assert s.coord._refresh_stats["debounced"] == 1
+
+    def test_the_old_plan_is_invalidated_before_the_immediate_evaluation(self):
+        s, bus = _listener_scenario()
+        cancellation = asyncio.Event()
+        s.coord._active_dispatch_cancellation = cancellation
+        gen = s.coord._dispatch_generation
+        order: list[str] = []
+        s.coord.async_refresh = MagicMock(
+            side_effect=lambda: order.append(
+                f"refresh gen+{s.coord._dispatch_generation - gen} cancel={cancellation.is_set()}"))
+        _change_rain(s, bus, "on")
+        assert order == ["refresh gen+1 cancel=True"]
+
+    def test_a_contact_that_opens_is_evaluated_at_once(self):
+        s, bus = _contact_scenario()
+        gen = s.coord._dispatch_generation
+        _change_contact(s, bus, "off", "on")
+        assert (s.coord.async_refresh.call_count, s.coord.async_request_refresh.call_count) == (1, 0)
+        assert s.coord._dispatch_generation == gen + 1
+
+    @pytest.mark.parametrize("old,new", [("on", "off"), ("off", "unavailable"), ("unavailable", "off")])
+    def test_a_contact_that_closes_or_goes_unknown_stays_debounced(self, old, new):
+        s, bus = _contact_scenario()
+        _change_contact(s, bus, old, new)
+        assert (s.coord.async_refresh.call_count, s.coord.async_request_refresh.call_count) == (0, 1)
+
+    def test_a_flapping_sensor_costs_one_running_refresh_and_one_follow_up(self):
+        s, bus = _listener_scenario()
+        runs: list[str] = []
+
+        async def main():
+            gate = asyncio.Event()
+
+            async def refresh():
+                runs.append("start")
+                if len(runs) == 1:
+                    await gate.wait()
+                runs.append("end")
+
+            async def debounced():
+                runs.append("debounced")
+
+            s.coord.async_refresh = refresh
+            s.coord.async_request_refresh = debounced
+            s.entry.async_create_background_task = lambda hass, coro, name: asyncio.ensure_future(coro)
+            for raw in ("on", "off", "on", "off", "on", "off", "on"):
+                _change_rain(s, bus, raw)
+            await asyncio.sleep(0.05)
+            assert [r for r in runs if r != "debounced"] == ["start"]   # one refresh is running
+            gate.set()
+            await asyncio.gather(*s.coord._background_tasks)
+
+        asyncio.run(main())
+        assert [r for r in runs if r != "debounced"] == ["start", "end", "start", "end"]  # one follow-up
+        stats = s.coord._refresh_stats
+        assert (stats["immediate"], stats["coalesced"]) == (4, 3)
+
+    def test_nothing_is_requested_once_the_coordinator_unloads(self):
+        s, bus = _listener_scenario()
+        s.coord._unloading = True
+        _change_rain(s, bus, "on")
+        assert s.coord.async_refresh.call_count == 0 and s.coord.async_request_refresh.call_count == 0
+
+    def test_setting_the_listeners_up_twice_leaves_one_subscription(self):
+        s, bus = _contact_scenario()
+        with patch.object(_coord_mod, "async_track_state_change_event", side_effect=bus.track):
+            s.coord.async_setup_contact_listeners(s.entry)
+            s.coord.async_setup_contact_listeners(s.entry)
+        assert len(bus.subs.get(_CONTACT, [])) == 1
+        s.coord.async_teardown_contact_listeners()
+        s.coord.async_teardown_contact_listeners()
+        assert bus.subs.get(_CONTACT, []) == []
+
+
+# ---------------------------------------------------------------------------
+# A6 -- safety release holds across a restart
+# ---------------------------------------------------------------------------
+
+
+class _FakeHoldStore:
+    """Stands in for the storage behind the safety holds."""
+
+    def __init__(self, payload=None, *, fail_save=False) -> None:
+        self.payload = payload
+        self.scheduled: list[dict] = []
+        self.saved: list[dict] = []
+        self.removed = 0
+        self.fail_save = fail_save
+
+    async def async_load(self):
+        return self.payload
+
+    def schedule_save(self, payload) -> bool:
+        if self.fail_save:
+            raise RuntimeError("disk full")
+        self.scheduled.append(payload)
+        return True
+
+    async def async_save_now(self, payload) -> bool:
+        self.saved.append(payload)
+        return True
+
+    async def async_remove(self) -> None:
+        self.removed += 1
+
+
+def _restart(previous: "_Scenario", **kw) -> "_Scenario":
+    """A fresh coordinator (HA restart) that finds what the previous one stored."""
+    store = _FakeHoldStore(previous.coord._safety_hold_store.scheduled[-1])
+    s = _Scenario(AWNING, **kw)
+    s.coord._safety_hold_store = store
+    return s
+
+
+def _storing(s: "_Scenario") -> "_Scenario":
+    s.coord._safety_hold_store = _FakeHoldStore()
+    return s
+
+
+class TestA6SafetyHoldRecovery:
+    def test_a_latched_rain_hold_is_stored(self):
+        s = _storing(_Scenario(AWNING))
+        s.set_rain(True)
+        s.cycle(0)
+        stored = s.coord._safety_hold_store.scheduled[-1]
+        assert list(stored["holds"]["rain"]) == ["w1"]
+
+    def test_nothing_is_written_while_no_hold_is_latched(self):
+        s = _storing(_Scenario(AWNING))
+        s.cycle(0)
+        s.cycle(1)
+        assert s.coord._safety_hold_store.scheduled == []
+
+    def test_at_most_one_write_is_scheduled_per_cycle(self):
+        s = _storing(_Scenario(AWNING))
+        s.set_rain(True)
+        for minute in (0, 1, 2):
+            s.cycle(minute)
+        assert len(s.coord._safety_hold_store.scheduled) <= 3
+
+    def test_restart_inside_the_dry_cooldown_keeps_the_awning_retracted(self):
+        first = _storing(_Scenario(AWNING))
+        first.set_rain(True)
+        first.cycle(0)
+        second = _restart(first, cover_position=0)       # sensor reads dry again, 10 min later
+        data = second.cycle(10)
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert second.diag(data).tier_decided_by == "RainSafeHold"
+        assert all(pos == 0 for _cover, pos in second.calls)   # never an extend command
+        assert second.coord._safety_hold_stats["restored"] == 1
+
+    def test_without_the_stored_hold_the_restart_would_release_at_once(self):
+        # the contrast that proves the storage is what keeps the hold
+        s = _Scenario(AWNING, cover_position=0)
+        assert _state_of(s.cycle(10)) is not ShadingState.RAIN_SAFE
+
+    def test_restart_with_the_rain_sensor_unavailable_keeps_the_hold(self):
+        first = _storing(_Scenario(AWNING))
+        first.set_rain(True)
+        first.cycle(0)
+        second = _restart(first, cover_position=0)
+        second.hass.states.set(_RAIN, "unavailable")
+        data = second.cycle(90)                            # long after the cooldown, no confirmation
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+        assert all(pos == 0 for _cover, pos in second.calls)
+
+    def test_restart_after_the_cooldown_with_a_confirming_dry_sensor_releases(self):
+        first = _storing(_Scenario(AWNING))
+        first.set_rain(True)
+        first.cycle(0)
+        second = _restart(first, cover_position=0)
+        assert _state_of(second.cycle(45)) is not ShadingState.RAIN_SAFE
+
+    def test_a_hold_older_than_the_limit_is_not_restored_even_with_an_unavailable_sensor(self):
+        first = _storing(_Scenario(AWNING))
+        first.set_rain(True)
+        first.cycle(0)
+        second = _restart(first, cover_position=0)
+        second.hass.states.set(_RAIN, "unavailable")
+        data = second.cycle(7 * 60)                        # seven hours later
+        assert _state_of(data) is not ShadingState.RAIN_SAFE
+        assert second.coord._safety_hold_stats["expired"] == 1
+
+    def test_a_storm_hold_is_restored_and_wind_below_the_threshold_does_not_release_it(self):
+        first = _storing(TestA3WindWiring._scenario(AWNING))
+        first.set_wind("25")
+        first.cycle(0)
+        stored = first.coord._safety_hold_store.scheduled[-1]
+        assert "w1" in stored["holds"]["storm"]
+        second = TestA3WindWiring._scenario(AWNING)
+        second.coord._safety_hold_store = _FakeHoldStore(stored)
+        second.set_wind("5")
+        data = second.cycle(5)                             # calm again, inside the 10 minute hold
+        assert _state_of(data) is ShadingState.STORM_SAFE
+        assert second.diag(data).tier_decided_by == "StormSafeHold"
+
+    def test_a_wind_hold_is_not_restored_when_wind_protection_is_off_for_the_window(self):
+        first = _storing(TestA3WindWiring._scenario(AWNING))
+        first.set_wind("16")
+        first.cycle(0)
+        stored = first.coord._safety_hold_store.scheduled[-1]
+        second = TestA3WindWiring._scenario(AWNING, wind_protection_enabled=False)
+        second.coord._safety_hold_store = _FakeHoldStore(stored)
+        second.set_wind("5")
+        data = second.cycle(5)
+        assert _state_of(data) is not ShadingState.WIND_SAFE
+        assert second.coord._safety_hold_stats["protection_off"] >= 1
+
+    def test_the_first_cycle_restores_exactly_once(self):
+        first = _storing(_Scenario(AWNING))
+        first.set_rain(True)
+        first.cycle(0)
+        second = _restart(first, cover_position=0)
+        second.cycle(10)
+        store = second.coord._safety_hold_store
+        store.payload = None                               # a later load would restore nothing
+        second.cycle(11)
+        assert second.coord._safety_hold_stats["restored"] == 1
+
+    def test_unload_writes_the_current_holds_now(self):
+        s = _storing(_Scenario(AWNING))
+        s.set_rain(True)
+        s.cycle(0)
+        with s._clock(0):
+            asyncio.run(s.coord.async_flush_safety_holds())
+        assert list(s.coord._safety_hold_store.saved[-1]["holds"]["rain"]) == ["w1"]
+
+    def test_a_storage_failure_never_breaks_the_evaluation(self):
+        s = _Scenario(AWNING)
+        s.coord._safety_hold_store = _FakeHoldStore(fail_save=True)
+        s.set_rain(True)
+        data = s.cycle(0)
+        assert _state_of(data) is ShadingState.RAIN_SAFE
+
+    def test_an_unreadable_stored_payload_is_ignored(self):
+        s = _Scenario(AWNING, cover_position=0)
+        s.coord._safety_hold_store = _FakeHoldStore({"version": 7, "junk": True})
+        assert _state_of(s.cycle(10)) is not ShadingState.RAIN_SAFE
+
+
+# ---------------------------------------------------------------------------
+# A6 -- a silent cover: downgrade, probation, recovery, no false manual override
+# ---------------------------------------------------------------------------
+
+
+class TestA6SilentCover:
+    def _timed_out_zone(self, monkeypatch):
+        _fake_time_completion(monkeypatch)
+        s = _two_cover_zone()
+        s.cycle(0)                                            # cover.a never answers: timeout
+        assert "cover.a" in s.coord._completion_downgraded
+        return s
+
+    def test_the_timeout_remembers_where_the_silent_cover_stood(self, monkeypatch):
+        s = self._timed_out_zone(monkeypatch)
+        assert s.coord._silent_cover_baseline["cover.a"] == 0
+        assert s.coord._completion_recovery_stats["downgraded"] == 1
+
+    def test_a_silent_cover_that_did_not_move_is_not_a_manual_override(self, monkeypatch):
+        s = self._timed_out_zone(monkeypatch)
+        data = s.cycle(10)                                    # cover.a still at 0
+        assert s.diag(data).manual_override_active is not True
+        assert s.calls_for("cover.a")[-1] == 50 and len(s.calls_for("cover.a")) >= 1
+        assert s.calls_for("cover.b") == [50]                 # the group goes on by estimate
+
+    def test_a_cover_that_was_really_moved_by_someone_is_still_an_override(self, monkeypatch):
+        s = self._timed_out_zone(monkeypatch)
+        s.set_cover_position(90, cover="cover.a")             # a person moved it elsewhere
+        data = s.cycle(10)
+        assert s.diag(data).manual_override_active is True
+
+    def test_a_downgraded_cover_that_answers_again_is_trusted_again(self, monkeypatch):
+        s = self._timed_out_zone(monkeypatch)
+        before = len(s.calls_for("cover.a"))
+
+        async def move(domain, service, data, **kw):
+            if service == "set_cover_position":
+                s.set_cover_position(data["position"], cover=data["entity_id"])
+
+        s.hass.services.async_call = AsyncMock(side_effect=move)
+        s.cycle(10)                                           # now the cover reports the target
+        assert "cover.a" not in s.coord._completion_downgraded
+        assert s.coord._completion_recovery_stats["recovered"] == 1
+        assert before >= 1
+
+    def test_feedback_is_tried_again_after_the_probation(self, monkeypatch):
+        s = self._timed_out_zone(monkeypatch)
+        now = {"t": _coord_mod._monotonic()}
+        monkeypatch.setattr(_coord_mod, "_monotonic", lambda: now["t"])
+        s.coord._completion_downgraded["cover.a"] = now["t"]
+        assert s.coord._feedback_trusted("cover.a", True) is False
+        now["t"] += _coord_mod._COMPLETION_DOWNGRADE_S + 1
+        assert s.coord._feedback_trusted("cover.a", True) is True
+        assert s.coord._completion_recovery_stats["retried"] == 1
+        assert "cover.a" not in s.coord._silent_cover_baseline
+
+    def test_the_probation_is_minutes_not_hours(self):
+        assert _coord_mod._COMPLETION_DOWNGRADE_S <= 3600.0
+
+    def test_a_reload_forgets_the_downgrade_and_tries_the_cover_again_without_replaying_the_plan(self, monkeypatch):
+        s = self._timed_out_zone(monkeypatch)
+        sent = len(s.calls)
+        fresh = _two_cover_zone(hass=s.hass, serial=s.serial)  # rebuilt coordinator
+        assert fresh.coord._completion_downgraded == {}
+        fresh.set_cover_position(50, cover="cover.a")
+        fresh.set_cover_position(50, cover="cover.b")
+        fresh.cycle(30)
+        assert len(s.calls) == sent                           # nothing from the old plan was sent again
+
+    def test_another_zone_keeps_working_while_one_cover_is_silent(self, monkeypatch):
+        s = self._timed_out_zone(monkeypatch)
+        other = _Scenario(AWNING, covers=["cover.z"], cover_position=0, window_id="wz", zone_id="zz",
+                          hass=s.hass, serial=s.serial)
+        other.coord.shade_position_defaults = s.coord.shade_position_defaults
+        other.cycle(1)
+        assert other.calls_for("cover.z") == [50]
+
+
+class TestA6LifecycleDiagnosticsAndRename:
+    def test_diagnostics_are_counts_only_and_reflect_the_state(self, monkeypatch):
+        _fake_time_completion(monkeypatch)
+        s = _two_cover_zone()
+        s.cycle(0)                                            # cover.a never answers
+        diag = s.coord.lifecycle_diagnostics()
+        assert diag["completion_feedback"]["downgraded_now"] == 1
+        assert 0 < diag["completion_feedback"]["max_remaining_s"] <= _coord_mod._COMPLETION_DOWNGRADE_S
+        assert diag["unloading"] is False and diag["background_tasks"] >= 0
+        assert set(diag["listeners_active"]) == {"presence", "contact", "rain", "wind", "sun", "ownership"}
+        assert set(diag["safety_holds"]["latched"]) == {"storm", "wind", "rain"}
+        text = json.dumps(diag)
+        assert "cover." not in text and "binary_sensor" not in text      # no ids
+
+    def test_diagnostics_show_the_shutdown_reason_and_cancelled_tasks(self):
+        s = _two_cover_zone()
+        s.cycle(0)
+        asyncio.run(s.coord.async_shutdown())
+        diag = s.coord.lifecycle_diagnostics()
+        assert diag["unloading"] is True
+        assert diag["lifecycle"]["shutdowns"] == 1 and diag["lifecycle"]["last_shutdown_reason"] == "unload"
+        assert "background_tasks_cancelled" in diag["lifecycle"]
+
+    def test_a_rename_ends_the_plan_and_forgets_the_old_id(self, monkeypatch):
+        _fake_time_completion(monkeypatch)
+        s = _two_cover_zone()
+        s.cycle(0)
+        generation = s.coord._dispatch_generation
+        assert s.coord.async_invalidate_for_cover_identity_change("cover.a", "cover.a_new") == 1
+        assert s.coord._dispatch_generation == generation + 1
+        assert "cover.a" not in s.coord._completion_downgraded
+        assert "cover.a" not in s.coord._silent_cover_baseline
+        assert s.coord.lifecycle_diagnostics()["lifecycle"]["cover_renames"] == 1
+
+    def test_a_rename_of_a_cover_the_zone_does_not_command_changes_nothing(self):
+        s = _two_cover_zone()
+        generation = s.coord._dispatch_generation
+        assert s.coord.async_invalidate_for_cover_identity_change("cover.elsewhere", "cover.x") == 0
+        assert s.coord._dispatch_generation == generation
+
+
+class TestA6ReloadLifecycle:
+    """Setup -> unload -> setup, repeated and parallel: nothing is left behind."""
+
+    @staticmethod
+    def _teardown_all(coord):
+        coord.async_teardown_rain_listener()
+        coord.async_teardown_ownership_listener()
+        coord.async_teardown_wind_listener()
+        coord.async_teardown_sun_listener()
+        coord.async_teardown_presence_listeners()
+        coord.async_teardown_contact_listeners()
+
+    def test_repeated_setup_and_unload_leaves_no_listener_and_no_duplicate(self):
+        bus = _FakeBus()
+        for _ in range(4):
+            s, _b = _listener_scenario()
+            with patch.object(_coord_mod, "async_track_state_change_event", side_effect=bus.track):
+                s.coord.async_setup_rain_listener(s.entry)
+                s.coord.async_setup_rain_listener(s.entry)        # setup twice: still one
+                assert bus.active(s.rain_entity) == 1, "setup is idempotent"
+            asyncio.run(s.coord.async_shutdown())
+            self._teardown_all(s.coord)
+            assert bus.active(s.rain_entity) == 0
+        assert bus.registered >= 4
+
+    def test_shutdown_and_teardown_are_idempotent_and_may_run_in_parallel(self):
+        s, bus = _listener_scenario()
+
+        async def main():
+            await asyncio.gather(*(s.coord.async_shutdown() for _ in range(3)))
+            self._teardown_all(s.coord)
+            self._teardown_all(s.coord)
+            await s.coord.async_shutdown()
+
+        asyncio.run(main())
+        assert bus.active(s.rain_entity) == 0
+        assert s.coord.lifecycle_diagnostics()["listeners_active"]["rain"] == 0
+
+    def test_no_event_after_unload_causes_a_refresh_or_a_service_call(self):
+        s, bus = _listener_scenario()
+        asyncio.run(s.coord.async_shutdown())
+        self._teardown_all(s.coord)
+        _change_rain(s, bus, "on")
+        assert _rain_refreshes(s) == 0 and s.calls == []
+
+    def test_parallel_unload_of_two_zones_leaves_neither_a_task_nor_a_foreign_move(self, monkeypatch):
+        TestA2CoordinatorGlobalSafetyPriority._real_completion(monkeypatch)
+        a = _two_cover_zone()
+        b = _Scenario(AWNING, covers=["cover.z"], cover_position=0, window_id="wz", zone_id="zz",
+                      hass=a.hass, serial=a.serial)
+        b.coord.shade_position_defaults = a.coord.shade_position_defaults
+
+        async def main():
+            before = {t for t in asyncio.all_tasks() if t is not asyncio.current_task()}
+            with a._clock(0):
+                plan = asyncio.ensure_future(a.coord._async_update_data())
+                await TestA2CoordinatorGlobalSafetyPriority._until(lambda: a.calls_for("cover.a") == [50])
+                await asyncio.sleep(0.05)
+                await asyncio.wait_for(asyncio.gather(a.coord.async_shutdown(), b.coord.async_shutdown()), 5)
+                await asyncio.wait_for(plan, 5)
+            await asyncio.sleep(0.1)
+            return {t for t in asyncio.all_tasks() if t is not asyncio.current_task()} - before
+
+        leaked = asyncio.run(main())
+        assert not [t for t in leaked if not t.done()], leaked
+        assert b.calls_for("cover.z") == [] and a.calls_for("cover.b") == []
+        assert a.coord.lifecycle_diagnostics()["running_cycles"] == 0
+
+    def test_a_fresh_coordinator_starts_with_fresh_state_and_replays_nothing(self, monkeypatch):
+        _fake_time_completion(monkeypatch)
+        s = _two_cover_zone()
+        s.cycle(0)
+        sent = len(s.calls)
+        asyncio.run(s.coord.async_shutdown())
+        fresh = _two_cover_zone(hass=s.hass, serial=s.serial)
+        assert fresh.coord._completion_downgraded == {} and fresh.coord._silent_cover_baseline == {}
+        assert fresh.coord._lifecycle_stats["shutdowns"] == 0 and fresh.coord._dispatch_generation <= 1
+        assert len(s.calls) == sent
+
+
+class TestA6StuckCycleAtUnload:
+    def test_a_cycle_that_ignores_the_cancellation_signal_is_waited_for_then_cancelled(self, monkeypatch):
+        s = _two_cover_zone()
+        monkeypatch.setattr(_coord_mod, "_SHUTDOWN_CYCLE_GRACE_S", 0.2)
+        started = asyncio.Event()
+
+        async def stuck_cycle():
+            started.set()
+            await asyncio.sleep(3600)          # never looks at the cancellation event
+
+        s.coord._async_update_data_cycle = stuck_cycle
+
+        async def main():
+            plan = asyncio.ensure_future(s.coord._async_update_data())
+            await started.wait()
+            await asyncio.wait_for(s.coord.async_shutdown(), timeout=5)
+            assert plan.done(), "unload returned with a cycle still running"
+            return plan
+
+        plan = asyncio.run(main())
+        assert plan.cancelled()
+        stats = s.coord.lifecycle_diagnostics()
+        assert stats["running_cycles"] == 0
+        assert stats["lifecycle"]["cycles_waited"] >= 1 and stats["lifecycle"]["cycles_hard_cancelled"] == 1

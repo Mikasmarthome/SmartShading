@@ -346,3 +346,35 @@ class CoverOwnershipRegistry:
             "resolutions": self.resolutions,
             "listeners": self.listener_count(),
         }
+
+
+def rewrite_cover_ids(
+    data: Mapping[str, Any], rename: Mapping[str, str],
+) -> tuple[dict[str, Any], int]:
+    """A copy of the stored entry data with renamed cover entity ids replaced.
+
+    ``rename`` maps the old (normalised) entity id to the new one.  A cover that
+    would appear twice in one group after the rename is kept once.  Returns the
+    new data and the number of ids that were replaced; with nothing to replace
+    the returned data is an unchanged copy and the count is 0.  Never raises."""
+    new_data = dict(data)
+    replaced = 0
+    groups_in = data.get("cover_groups")
+    if not isinstance(groups_in, list):
+        return new_data, 0
+    groups_out: list[Any] = []
+    for group in groups_in:
+        if not isinstance(group, Mapping) or not isinstance(group.get("cover_ids"), list):
+            groups_out.append(group)
+            continue
+        ids: list[Any] = []
+        for cover in group["cover_ids"]:
+            target = rename.get(normalize_cover_id(cover))
+            if target is not None:
+                replaced += 1
+                cover = target
+            if normalize_cover_id(cover) not in {normalize_cover_id(i) for i in ids}:
+                ids.append(cover)
+        groups_out.append({**group, "cover_ids": ids})
+    new_data["cover_groups"] = groups_out
+    return new_data, replaced

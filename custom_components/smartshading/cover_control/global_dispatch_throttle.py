@@ -75,7 +75,7 @@ import heapq
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Callable
+from typing import Callable, Protocol
 
 
 DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS: float = 2.0
@@ -286,6 +286,11 @@ class PriorityAdmission:
     def locked(self) -> bool:
         return self._held
 
+    @property
+    def is_free(self) -> bool:
+        """True when a request would be admitted at once (not held, nobody queued)."""
+        return not self._held and not self._queue
+
     async def acquire(self, priority: int = ADMISSION_NORMAL) -> bool:
         return (await self.acquire_with_info(priority)) is not None
 
@@ -334,10 +339,15 @@ class PriorityAdmission:
     async def __aexit__(self, *exc) -> None:
         self.release()
 
-    def admit(self, *, safety: bool) -> "_Admission":
+    def admit(self, *, safety: bool, abort: "AbortSignal | None" = None) -> "_Admission":
         """Async context manager that admits a request of the given class and
-        exposes its :class:`AdmissionInfo` as ``.info`` once entered."""
-        return _Admission(self, ADMISSION_SAFETY if safety else ADMISSION_NORMAL)
+        exposes its :class:`AdmissionInfo` as ``.info`` once entered.
+
+        With ``abort`` the wait for the admission ends as soon as the signal is
+        set: the context is then entered with ``.aborted`` True, holds nothing
+        and releases nothing on exit (A6: a plan that is cancelled or unloaded
+        must not stay queued behind another holder)."""
+        return _Admission(self, ADMISSION_SAFETY if safety else ADMISSION_NORMAL, abort)
 
     # -- signals ------------------------------------------------------------
 
@@ -457,20 +467,62 @@ class PriorityAdmission:
                 pass
 
 
+class AbortSignal(Protocol):
+    """Anything with ``wait()``/``is_set()`` (an ``asyncio.Event``, a cancellation signal)."""
+
+    def is_set(self) -> bool: ...
+    async def wait(self) -> object: ...
+
+
 class _Admission:
     """``async with admission.admit(safety=...) as adm`` -> ``adm.info``."""
 
-    def __init__(self, admission: PriorityAdmission, priority: int) -> None:
+    def __init__(
+        self, admission: PriorityAdmission, priority: int, abort: AbortSignal | None = None,
+    ) -> None:
         self._admission = admission
         self._priority = priority
+        self._abort = abort
         self.info: AdmissionInfo | None = None
+        self.aborted = False
 
     async def __aenter__(self) -> "_Admission":
-        self.info = await self._admission.acquire_with_info(self._priority)
+        if self._abort is None:
+            self.info = await self._admission.acquire_with_info(self._priority)
+            return self
+        if self._abort.is_set():
+            self.aborted = True
+            return self
+        if self._admission.is_free:
+            # Nothing to wait for: granted without a suspension, exactly as
+            # without an abort signal.
+            self.info = await self._admission.acquire_with_info(self._priority)
+            return self
+        acquire = asyncio.ensure_future(self._admission.acquire_with_info(self._priority))
+        watch = asyncio.ensure_future(self._abort.wait())
+        try:
+            await asyncio.wait({acquire, watch}, return_when=asyncio.FIRST_COMPLETED)
+        except BaseException:
+            acquire.cancel()
+            watch.cancel()
+            raise
+        watch.cancel()
+        if acquire.done() and not acquire.cancelled():
+            self.info = acquire.result()
+            return self
+        # The signal won while still queued: leave the queue (a grant that raced
+        # the cancellation is handed on by acquire_with_info itself).
+        acquire.cancel()
+        try:
+            await acquire
+        except asyncio.CancelledError:
+            pass
+        self.aborted = True
         return self
 
     async def __aexit__(self, *exc) -> None:
-        self._admission.release()
+        if not self.aborted:
+            self._admission.release()
 
 
 class GlobalSerialDispatch:
@@ -506,9 +558,9 @@ class GlobalSerialDispatch:
     def admission(self) -> PriorityAdmission:
         return self._admission
 
-    def admit(self, *, safety: bool) -> "_Admission":
+    def admit(self, *, safety: bool, abort: AbortSignal | None = None) -> "_Admission":
         """Admit one request; Safety is selected before all queued normals."""
-        return self._admission.admit(safety=safety)
+        return self._admission.admit(safety=safety, abort=abort)
 
     def safety_epoch_signal(self) -> SafetyEpochSignal:
         """A signal that fires when any zone's Safety enters admission from now on."""

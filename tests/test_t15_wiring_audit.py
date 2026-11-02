@@ -255,23 +255,30 @@ class TestEventDrivenRefreshTasksAreEntryTracked:
         (which itself calls entry.async_create_background_task — see
         TestCreateTrackedBackgroundTaskWrapsEntryTracking below) instead of
         calling entry.async_create_background_task directly, so the task is
-        ALSO coordinator-tracked for shutdown cancellation."""
+        ALSO coordinator-tracked for shutdown cancellation.
+
+        A6: presence and contact reach the helper through the shared
+        ``_request_refresh`` (debounced or immediate path), which is the one place
+        that creates the refresh task; the boundary timer calls the helper itself."""
         source = _source("coordinator.py")
         tree = ast.parse(source)
-        found: set[str] = set()
+        calls_helper: set[str] = set()
+        calls_request_refresh: set[str] = set()
         for node in ast.walk(tree):
             if not isinstance(node, ast.FunctionDef):
                 continue
-            if node.name not in ("_on_presence_change", "_on_contact_change", "_on_boundary"):
+            if node.name not in (
+                "_on_presence_change", "_on_contact_change", "_on_boundary", "_request_refresh",
+            ):
                 continue
             for call in ast.walk(node):
-                if (
-                    isinstance(call, ast.Call)
-                    and isinstance(call.func, ast.Attribute)
-                    and call.func.attr == "_create_tracked_background_task"
-                ):
-                    found.add(node.name)
-        assert found == {"_on_presence_change", "_on_contact_change", "_on_boundary"}
+                if isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute):
+                    if call.func.attr == "_create_tracked_background_task":
+                        calls_helper.add(node.name)
+                    elif call.func.attr == "_request_refresh":
+                        calls_request_refresh.add(node.name)
+        assert calls_helper == {"_on_boundary", "_request_refresh"}
+        assert {"_on_presence_change", "_on_contact_change"} <= calls_request_refresh
 
     def test_create_tracked_background_task_wraps_entry_tracking(self) -> None:
         """_create_tracked_background_task itself must still call

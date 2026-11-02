@@ -43,7 +43,11 @@ from .const import (
     ZONE_PLATFORMS,
 )
 from .cover_control.global_dispatch_throttle import GlobalSerialDispatch
-from .cover_ownership_runtime import async_sync_cover_ownership
+from .cover_ownership_runtime import (
+    async_setup_cover_rename_listener,
+    async_sync_cover_ownership,
+    async_teardown_cover_rename_listener,
+)
 from .coordinator import SmartShadingCoordinator, SmartShadingRuntimeData
 from .engines.forecast_orchestrator import async_run_startup_matching
 from .engines.forecast_persistence import (
@@ -116,9 +120,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
         coordinator.async_teardown_sun_listener()
         coordinator.async_teardown_lifecycle_boundary_timer()
         await coordinator.async_flush_learning()
+        await coordinator.async_flush_safety_holds()
     unloaded = await hass.config_entries.async_unload_platforms(entry, ZONE_PLATFORMS)
     if unloaded:
         async_unload_services_if_no_zone_entries_remain(hass, entry.entry_id)
+        async_teardown_cover_rename_listener(hass, entry.entry_id)
     return unloaded
 
 
@@ -137,7 +143,9 @@ async def async_remove_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
     async_sync_cover_ownership(hass, exclude_entry_id=entry.entry_id)
 
     from homeassistant.helpers.storage import Store  # lazy HA import
+    from .engines.safety_hold_persistence import SafetyHoldStore
 
+    await SafetyHoldStore(hass, entry.entry_id).async_remove()
     for version, base_key in (
         (LEARNING_STORE_VERSION, LEARNING_STORAGE_KEY),
         (FORECAST_STORAGE_VERSION, FORECAST_STORAGE_KEY),
@@ -290,6 +298,8 @@ async def _async_setup_zone_entry(
     # config of ALL zone entries (never from setup order) before this entry's
     # coordinator exists, so it starts with the correct roles.
     _cover_ownership = async_sync_cover_ownership(hass)
+    # A6: follow a cover that is renamed in the entity registry.
+    async_setup_cover_rename_listener(hass)
 
     # Services (v1.2.0-beta.1, T10.1): registered once regardless of how many
     # zone entries exist — async_setup_services() itself is guarded by

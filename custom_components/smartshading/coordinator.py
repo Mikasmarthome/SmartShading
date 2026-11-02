@@ -85,6 +85,7 @@ from .engines.contact_engine import (
     ContactStatus as _ContactStatus,
     aggregate_contact_readings as _aggregate_contact_readings,
     build_contact_reading as _build_contact_reading,
+    normalize_contact_state as _normalize_contact_state,
 )
 from .engines.night_contact_hold import (
     NightContactAction as _NightContactAction,
@@ -315,6 +316,15 @@ from .engines.safety_hold import (
     WIND_HOLD_S as _WIND_HOLD_S,
     STORM_HOLD_S as _STORM_HOLD_S,
 )
+from .engines.safety_hold_persistence import (
+    KIND_RAIN as _HOLD_KIND_RAIN,
+    KIND_STORM as _HOLD_KIND_STORM,
+    KIND_WIND as _HOLD_KIND_WIND,
+    SafetyHoldStore as _SafetyHoldStore,
+    holds_signature as _holds_signature,
+    parse_holds as _parse_holds,
+    serialize_holds as _serialize_holds,
+)
 from .engines.rain_engine import (
     RainSourceType as _RainSourceType,
     RainStatus as _RainStatus,
@@ -361,6 +371,7 @@ from .cover_control.coordinator_dispatch_adapter import (
 from .cover_control.dispatch_batch import DispatchItem, group_into_batches
 from .engines.dispatch_classification import DispatchTargetClass
 from .cover_control.dispatch_completion import (
+    DEFAULT_POSITION_TOLERANCE as _COMPLETION_POSITION_TOLERANCE,
     AnyOfSignals,
     CompletionStatus,
     wait_for_travel_completion,
@@ -708,9 +719,12 @@ class _WindowComputeState:
 # in the same tuple for the cycle).
 _SAFETY_WITHOUT_SUN_CODE = "safety_active_without_sun"
 
-# A5: how long a cover whose completion wait timed out is waited on by travel-time
+# A5/A6: how long a cover whose completion wait timed out is waited on by travel-time
 # estimate instead of by its (apparently unreliable) reported state.
-_COMPLETION_DOWNGRADE_S = 6 * 3600.0
+_COMPLETION_DOWNGRADE_S = 30 * 60.0
+# A6: how long unload waits for a running update cycle to end on its own before
+# the cycle is cancelled (a cycle normally ends within a poll interval).
+_SHUTDOWN_CYCLE_GRACE_S = 10.0
 
 # Suppressed-hold decisions: the orchestrator/mode-gate produced a result that
 # sent NO cover command (target_position=None), so the state machine must stay at
@@ -1695,6 +1709,34 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # estimate is used instead, so a cover that never reports back cannot block
         # every later sequence.
         self._completion_downgraded: dict[str, float] = {}
+        # A6: where a silent cover stood when it was last commanded (HA position).
+        # A cover that is still there did not answer; that is not a manual move.
+        self._silent_cover_baseline: dict[str, int] = {}
+        self._completion_recovery_stats: dict[str, int] = {"downgraded": 0, "recovered": 0, "retried": 0}
+        # A6: update cycles currently running (so unload can wait for them) and
+        # the lifecycle counters surfaced in the diagnostics.
+        self._active_cycle_tasks: set[asyncio.Task] = set()
+        # A6: the release holds survive a restart (see engines/safety_hold_persistence).
+        self._safety_hold_store = _SafetyHoldStore(hass, config_entry.entry_id if config_entry is not None else "none")
+        self._safety_holds_restored = False
+        self._safety_hold_signature: str | None = None
+        self._safety_hold_stats: dict[str, Any] = {"payload_found": False, "restored": 0, "saves": 0}
+        # A6: how re-evaluations were requested.  "immediate" = evaluated now
+        # (a rise into Safety or into a protective lock), "debounced" = through
+        # the coordinator's debouncer, "coalesced" = an immediate request that
+        # joined the immediate refresh already running (one follow-up run).
+        self._refresh_stats: dict[str, Any] = {
+            "immediate": 0, "debounced": 0, "coalesced": 0, "last_immediate_trigger": None,
+        }
+        self._urgent_refresh_task: asyncio.Task | None = None
+        self._urgent_refresh_pending = False
+        self._lifecycle_stats: dict[str, Any] = {
+            "shutdowns": 0,
+            "cycles_waited": 0,
+            "cycles_hard_cancelled": 0,
+            "dispatches_blocked_unloading": 0,
+            "last_shutdown_reason": None,
+        }
         self._ownership_stats: dict[str, Any] = {
             "plan_invalidations": 0, "last_generation": None, "commands_blocked": 0,
         }
@@ -2159,6 +2201,40 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if not self._learning_dirty:
                 break  # saved_generation == dirty_generation → nothing left
 
+    def lifecycle_diagnostics(self) -> dict:
+        """Counts only (A6): listeners, tasks, waits, safety-hold recovery,
+        completion downgrade and refresh paths.  No entity ids, no payloads."""
+        now = _monotonic()
+        downgrades = [
+            max(0.0, _COMPLETION_DOWNGRADE_S - (now - since))
+            for since in self._completion_downgraded.values()
+        ]
+        return {
+            "unloading": self._unloading,
+            "listeners_active": {
+                "presence": len(self._unsub_presence_listeners),
+                "contact": len(self._unsub_contact_listeners),
+                "rain": int(self._unsub_rain_listener is not None),
+                "wind": int(self._unsub_wind_listener is not None),
+                "sun": int(self._unsub_sun_listener is not None),
+                "ownership": int(self._unsub_ownership_listener is not None),
+            },
+            "background_tasks": len(self._background_tasks),
+            "running_cycles": len(self._active_cycle_tasks),
+            "lifecycle": dict(self._lifecycle_stats),
+            "refresh_paths": dict(self._refresh_stats),
+            "safety_holds": {
+                **{k: v for k, v in self._safety_hold_stats.items() if not isinstance(v, dict)},
+                "latched": {k: len(m) for k, m in self._safety_hold_maps().items()},
+            },
+            "completion_feedback": {
+                **self._completion_recovery_stats,
+                "downgraded_now": len(downgrades),
+                "max_remaining_s": round(max(downgrades), 1) if downgrades else 0.0,
+                "downgrade_window_s": _COMPLETION_DOWNGRADE_S,
+            },
+        }
+
     def storage_diagnostics(self) -> dict:
         """Privacy-safe storage status from CACHED metadata only (no re-serialize,
         no raw IDs/payloads)."""
@@ -2224,10 +2300,70 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         """
         if self._unloading:
             coro.close()
-            return
+            return None
         task = entry.async_create_background_task(self.hass, coro, name)
         self._background_tasks.add(task)
         task.add_done_callback(self._background_tasks.discard)
+        return task
+
+    def _request_refresh(
+        self, entry: ConfigEntry, name: str, *, urgent: bool = False, trigger: str | None = None,
+    ) -> None:
+        """Ask for a fresh evaluation (A6: one rule for every listener).
+
+        ``urgent`` is for a rise into Safety or into a protective lock: it runs
+        ``async_refresh()`` now instead of waiting behind the debouncer's
+        cooldown.  Callers invalidate the old plan (generation bump +
+        cancellation) synchronously BEFORE calling this, so no old plan can run
+        between the event and the fresh evaluation.  Urgent requests never
+        stack: while one is running, further ones only mark a single follow-up
+        run, so a flapping sensor costs at most one extra evaluation.  Everything
+        else (a release, a comfort input) stays debounced."""
+        if self._unloading:
+            return
+        stats = self._refresh_stats
+        if not urgent:
+            stats["debounced"] += 1
+            self._create_tracked_background_task(entry, self.async_request_refresh(), name)
+            return
+        stats["immediate"] += 1
+        stats["last_immediate_trigger"] = trigger or name
+        running = self._urgent_refresh_task
+        if running is not None and not running.done():
+            self._urgent_refresh_pending = True
+            stats["coalesced"] += 1
+            return
+        self._urgent_refresh_pending = False
+        self._urgent_refresh_task = self._create_tracked_background_task(
+            entry, self._run_urgent_refresh(self.async_refresh()), name)
+
+    async def _run_urgent_refresh(self, first) -> None:
+        """Await the first immediate refresh, then at most one follow-up run for
+        everything that was requested meanwhile (the evaluation may have read its
+        inputs before those events)."""
+        await first
+        while self._urgent_refresh_pending and not self._unloading:
+            self._urgent_refresh_pending = False
+            await self.async_refresh()
+
+    async def _async_wait_for_running_cycles(self) -> None:
+        """Wait (bounded) for update cycles that are still running, then cancel them.
+
+        Unload must not return while a cycle can still send a command: the
+        cycle sees ``_unloading`` / the cancellation signal and ends at its next
+        check; a cycle stuck in a service call is cancelled after the grace
+        period instead of hanging the unload."""
+        current = asyncio.current_task()
+        cycles = [t for t in self._active_cycle_tasks if t is not current and not t.done()]
+        if not cycles:
+            return
+        self._lifecycle_stats["cycles_waited"] += len(cycles)
+        _done, pending = await asyncio.wait(cycles, timeout=_SHUTDOWN_CYCLE_GRACE_S)
+        for task in pending:
+            task.cancel()
+        if pending:
+            self._lifecycle_stats["cycles_hard_cancelled"] += len(pending)
+            await asyncio.gather(*pending, return_exceptions=True)
 
     async def async_shutdown(self) -> None:
         """Extend base shutdown: block new background tasks, cancel in-flight ones.
@@ -2266,6 +2402,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         narrow, accepted residual race, unchanged from the T16 audit.
         """
         self._unloading = True
+        self._lifecycle_stats["shutdowns"] += 1
+        self._lifecycle_stats["last_shutdown_reason"] = "unload"
         # T22 Phase 4b/5b: signal any in-flight comfort DispatchPlanExecutor
         # run to stop promptly rather than racing shutdown, then actually
         # wait for it to finish winding down (cooperatively — the signal
@@ -2285,8 +2423,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     "SmartShading: active comfort dispatch task raised during shutdown",
                     exc_info=True,
                 )
+        await self._async_wait_for_running_cycles()
         await super().async_shutdown()
         tasks = list(self._background_tasks)
+        self._lifecycle_stats["background_tasks_cancelled"] = (
+            self._lifecycle_stats.get("background_tasks_cancelled", 0) + len(tasks))
         for task in tasks:
             task.cancel()
         for task in tasks:
@@ -2322,6 +2463,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         Idempotency: teardown cancels all listeners and clears the list, so
         reload/unload can never leave stale subscriptions.
         """
+        self.async_teardown_presence_listeners()
         if not self._presence_entity_ids:
             return
 
@@ -2359,9 +2501,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # here would be untracked and could keep running after unload.
             # T17: also coordinator-tracked so async_shutdown() can cancel and
             # await it synchronously, closing the race documented there.
-            self._create_tracked_background_task(
-                entry, self.async_request_refresh(), "smartshading_presence_refresh",
-            )
+            self._request_refresh(entry, "smartshading_presence_refresh")
 
         for entity_id in self._presence_entity_ids:
             unsub = async_track_state_change_event(
@@ -2401,6 +2541,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         only subscribes to its own windows' contacts.  Idempotent via teardown,
         so reload/restart re-registers cleanly.
         """
+        self.async_teardown_contact_listeners()
         contact_ids: list[str] = []
         for window in self.windows.values():
             for eid in window.contact_entity_ids:
@@ -2431,9 +2572,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._active_dispatch_cancellation.set()
             # T15: tied to the config entry so HA cancels it on unload.
             # T17: also coordinator-tracked (see async_shutdown()).
-            self._create_tracked_background_task(
-                entry, self.async_request_refresh(), "smartshading_contact_refresh",
+            # A window/door that has just been opened is a protective lock (it
+            # must stop a cover from closing onto it): evaluate at once.  Closing
+            # or an unknown reading only releases / re-evaluates: debounced.
+            opened = (
+                _normalize_contact_state(new_state.state) is _ContactStatus.OPEN
+                and _normalize_contact_state(old_state.state) is not _ContactStatus.OPEN
             )
+            self._request_refresh(
+                entry, "smartshading_contact_refresh", urgent=opened,
+                trigger=f"contact_opened:{event.data.get('entity_id')}" if opened else None)
 
         for entity_id in contact_ids:
             unsub = async_track_state_change_event(
@@ -2529,9 +2677,64 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if since is None:
             return True
         if _monotonic() - since >= _COMPLETION_DOWNGRADE_S:
+            # Probation over: the cover's own feedback is tried again.  A cover
+            # that is still silent times out once more (bounded) and is
+            # downgraded again; one that answers is simply trusted again.
             self._completion_downgraded.pop(cover_id, None)
+            self._silent_cover_baseline.pop(cover_id, None)
+            self._completion_recovery_stats["retried"] += 1
             return True
         return False
+
+    def _silent_cover_unchanged(self, cover_id: str | None, observed_internal: int | None) -> bool:
+        """True when ``cover_id`` timed out recently and still stands where it
+        stood when it was commanded (internal convention in, HA baseline stored)."""
+        if cover_id is None or observed_internal is None:
+            return False
+        if cover_id not in self._completion_downgraded:
+            return False
+        baseline_ha = self._silent_cover_baseline.get(cover_id)
+        if baseline_ha is None:
+            return False
+        return abs(observed_internal - (100 - baseline_ha)) <= self._override_detection_tolerance
+
+    def _recover_completion_feedback(self, entity_id: str, target_ha: int, invert: bool) -> bool:
+        """After an estimate-based wait: if the cover now reports the target again,
+        its feedback works and the downgrade ends."""
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            return False
+        snap = build_cover_entity_snapshot(
+            entity_id="_completion_recovery_check", state=state.state,
+            attributes=state.attributes, invert=invert, has_reliable_position_feedback=True)
+        if (
+            snap.available and snap.current_position_ha is not None
+            and abs(snap.current_position_ha - target_ha) <= _COMPLETION_POSITION_TOLERANCE
+        ):
+            self._completion_downgraded.pop(entity_id, None)
+            self._silent_cover_baseline.pop(entity_id, None)
+            self._completion_recovery_stats["recovered"] += 1
+            return True
+        return False
+
+    def async_invalidate_for_cover_identity_change(self, old_id: str, new_id: str) -> int:
+        """A cover of this zone was renamed: plans built under the old identity
+        end now (waiting ones are dropped, the running one is signalled), and
+        what was remembered about the old id is forgotten.  Returns 1 when this
+        coordinator commands the cover, else 0."""
+        known = any(
+            old_id in {str(c).strip().lower() for c in group.cover_ids}
+            for group in self.cover_groups.values()
+        )
+        if not known:
+            return 0
+        self._dispatch_generation += 1
+        if self._active_dispatch_cancellation is not None:
+            self._active_dispatch_cancellation.set()
+        self._completion_downgraded.pop(old_id, None)
+        self._silent_cover_baseline.pop(old_id, None)
+        self._lifecycle_stats["cover_renames"] = self._lifecycle_stats.get("cover_renames", 0) + 1
+        return 1
 
     def _cover_role(self, window_id: str, cover_id: str) -> str:
         if self._cover_ownership is None:
@@ -2606,9 +2809,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self._dispatch_generation += 1
             if self._active_dispatch_cancellation is not None:
                 self._active_dispatch_cancellation.set()
-            self._create_tracked_background_task(
-                entry, self.async_request_refresh(), "smartshading_ownership_refresh",
-            )
+            self._request_refresh(entry, "smartshading_ownership_refresh")
 
         self._unsub_ownership_listener = self._cover_ownership.add_listener(
             entry.entry_id, _on_ownership_changed)
@@ -2716,9 +2917,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._dispatch_generation += 1
                 if self._active_dispatch_cancellation is not None:
                     self._active_dispatch_cancellation.set()
-            self._create_tracked_background_task(
-                entry, self.async_request_refresh(), "smartshading_sun_refresh",
-            )
+            self._request_refresh(entry, "smartshading_sun_refresh")
 
         @callback
         def _on_sun_change(event: Event) -> None:
@@ -2805,20 +3004,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if self._active_dispatch_cancellation is not None:
                     self._active_dispatch_cancellation.set()
             stats["refreshes_requested"] += 1
-            if raised:
-                # Entering a dangerous band is urgent: async_refresh() runs the
-                # evaluation now, whereas async_request_refresh() would sit
-                # behind the debouncer's 10 s cooldown after any recent refresh
-                # (and can be dropped while a refresh is in flight).  Overlapping
-                # cycles are safe: the newer cycle preempts the older comfort
-                # plan.  Leaving a band is not urgent and uses the debouncer.
-                self._create_tracked_background_task(
-                    entry, self.async_refresh(), "smartshading_wind_refresh_now",
-                )
-            else:
-                self._create_tracked_background_task(
-                    entry, self.async_request_refresh(), "smartshading_wind_refresh",
-                )
+            # Entering a dangerous band is urgent: it is evaluated now instead
+            # of sitting behind the debouncer's 10 s cooldown (which can also
+            # drop a request while a refresh is in flight).  Leaving a band is
+            # not urgent and uses the debouncer.
+            self._request_refresh(
+                entry,
+                "smartshading_wind_refresh_now" if raised else "smartshading_wind_refresh",
+                urgent=raised, trigger=trigger if raised else None)
 
         def _evaluate_band(trigger: str) -> None:
             new_band, effective = self._wind_band_of_inputs(self._read_weather_inputs())
@@ -2903,9 +3096,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 self._dispatch_generation += 1
                 if self._active_dispatch_cancellation is not None:
                     self._active_dispatch_cancellation.set()
-            self._create_tracked_background_task(
-                entry, self.async_request_refresh(), "smartshading_rain_refresh",
-            )
+            # Rain starting is a rise into Safety: evaluated now.  Rain ending
+            # only starts the release hold: debounced.
+            self._request_refresh(
+                entry, "smartshading_rain_refresh", urgent=raining_started,
+                trigger="rain_started" if raining_started else None)
 
         @callback
         def _on_rain_change(event: Event) -> None:
@@ -3839,6 +4034,90 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         )
 
     async def _async_update_data(self) -> SmartShadingData:
+        """Run one evaluation cycle, tracked so that unload can wait for it (A6)."""
+        task = asyncio.current_task()
+        if task is not None:
+            self._active_cycle_tasks.add(task)
+        try:
+            if not self._safety_holds_restored:
+                self._safety_holds_restored = True
+                try:
+                    await self._async_restore_safety_holds(dt_util.utcnow())
+                except Exception:  # noqa: BLE001 - never block the first evaluation
+                    _LOGGER.warning("SmartShading: restoring safety holds failed", exc_info=True)
+            result = await self._async_update_data_cycle()
+            self._persist_safety_holds(dt_util.utcnow())
+            return result
+        finally:
+            if task is not None:
+                self._active_cycle_tasks.discard(task)
+
+    def _safety_hold_maps(self) -> dict[str, dict[str, Any]]:
+        return {
+            _HOLD_KIND_STORM: self._storm_holds,
+            _HOLD_KIND_WIND: self._wind_holds,
+            _HOLD_KIND_RAIN: self._rain_holds,
+        }
+
+    def _hold_protection_enabled(self, kind: str, window_id: str) -> bool:
+        window = self.windows.get(window_id)
+        if window is None:
+            return False
+        if kind == _HOLD_KIND_STORM:
+            return True                      # storm protection cannot be switched off
+        if kind == _HOLD_KIND_WIND:
+            return bool(self._window_wind_enabled(window))
+        return bool(self._window_rain_config(window)[0])
+
+    async def _async_restore_safety_holds(self, now: datetime) -> None:
+        """Bring the holds that were latched before the restart back (first cycle).
+
+        The restored hold keeps its original trigger time; the normal hold logic
+        of the first cycle then releases it on a confirming sensor, extends it
+        without a reading, or lets it run out."""
+        payload = await self._safety_hold_store.async_load()
+        result = _parse_holds(
+            payload, now=now, window_ids=set(self.windows),
+            protection_enabled=self._hold_protection_enabled)
+        hold_s = {
+            _HOLD_KIND_STORM: _STORM_HOLD_S, _HOLD_KIND_WIND: _WIND_HOLD_S,
+            _HOLD_KIND_RAIN: _RAIN_HOLD_S,
+        }
+        maps = self._safety_hold_maps()
+        for kind, per_window in result.restored.items():
+            for window_id, triggered in per_window.items():
+                hold = maps[kind].setdefault(window_id, _SafetyHold(_hold_s=hold_s[kind]))
+                hold._last_triggered = triggered
+        self._safety_hold_stats = {**result.stats, "saves": 0}
+        self._safety_hold_signature = _holds_signature(_serialize_holds(maps, now=now))
+        if result.restored:
+            _LOGGER.info(
+                "SmartShading: restored %d safety hold(s) after the restart",
+                result.stats["restored"])
+
+    def _persist_safety_holds(self, now: datetime) -> None:
+        """Write the latched holds when they changed (coalesced, never raises)."""
+        try:
+            payload = _serialize_holds(self._safety_hold_maps(), now=now)
+            signature = _holds_signature(payload)
+            if signature == self._safety_hold_signature:
+                return
+            if self._safety_hold_store.schedule_save(payload):
+                self._safety_hold_stats["saves"] = self._safety_hold_stats.get("saves", 0) + 1
+                self._safety_hold_signature = signature
+        except Exception:  # noqa: BLE001
+            _LOGGER.debug("SmartShading: persisting safety holds failed", exc_info=True)
+
+    async def async_flush_safety_holds(self) -> None:
+        """Write the current holds now (unload); cancels a pending delayed write."""
+        try:
+            payload = _serialize_holds(self._safety_hold_maps(), now=dt_util.utcnow())
+            if await self._safety_hold_store.async_save_now(payload):
+                self._safety_hold_signature = _holds_signature(payload)
+        except Exception:  # noqa: BLE001
+            _LOGGER.debug("SmartShading: flushing safety holds failed", exc_info=True)
+
+    async def _async_update_data_cycle(self) -> SmartShadingData:
         # Phase 9D: restore persisted learning data on the very first cycle.
         # Any failure in async_restore is caught internally — safe to await here.
         if not self._learning_restored:
@@ -5768,7 +6047,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 _prev_obs = self._prev_observed_internal.get(window_id)
                 _last_commanded_was_available = _last_commanded is not None
                 _prev_obs_was_available = _prev_obs is not None
-                if _last_commanded is not None:
+                if self._silent_cover_unchanged(_cov_id, observed_internal):
+                    # The cover timed out after our last command and still stands
+                    # where it stood: it did not answer, nobody moved it.
+                    _override_assumed = observed_internal
+                    _override_ref_source = "silent_cover_unchanged"
+                elif _last_commanded is not None:
                     _override_assumed = _last_commanded
                     _override_ref_source = "last_commanded"
                 elif _prev_obs is not None:
@@ -7149,6 +7433,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 _exec_results.append(build_not_attempted_result(
                                     _intent, reason="cover_ownership"))
                                 continue
+                            if self._unloading:
+                                # The entry is going away: nothing new is started
+                                # (Safety included); the next run decides afresh.
+                                self._lifecycle_stats["dispatches_blocked_unloading"] += 1
+                                _exec_results.append(build_not_attempted_result(
+                                    _intent, reason="unloading"))
+                                continue
                             _dispatch_now = dt_util.utcnow()
                             _intent_result = await dispatch_cover_intent(
                                 self.hass, _intent, now_utc=_dispatch_now
@@ -8518,7 +8809,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             window_id, s, intent = intent_by_entity[plan_item.cover_entity_id]
 
             async def _do_dispatch():
-                async with self._serial_dispatch.admit(safety=False) as _admission:
+                async with self._serial_dispatch.admit(
+                    safety=False, abort=cancellation,
+                ) as _admission:
+                    if _admission.aborted:
+                        return build_not_attempted_result(intent, reason="safety_preempted")
                     # T22 Phase 5c final completion: this global-interval
                     # throttle-wait is the ONLY sleep in the comfort
                     # dispatch path that runs INSIDE self._serial_dispatch.
@@ -8602,6 +8897,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     if not self._ownership_allows(window_id, intent.cover_entity_id, False):
                         self._ownership_stats["commands_blocked"] += 1
                         return build_not_attempted_result(intent, reason="cover_ownership")
+                    if self._unloading:
+                        self._lifecycle_stats["dispatches_blocked_unloading"] += 1
+                        return build_not_attempted_result(intent, reason="unloading")
                     dispatch_now = dt_util.utcnow()
                     result = await dispatch_cover_intent(
                         self.hass, intent, now_utc=dispatch_now
@@ -8723,6 +9021,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 # A cover that was expected to report back did not: from now on
                 # (for _COMPLETION_DOWNGRADE_S) it is waited on by estimate.
                 self._completion_downgraded[intent.cover_entity_id] = _monotonic()
+                self._completion_recovery_stats["downgraded"] += 1
+                if s.exec_snapshot is not None and s.exec_snapshot.current_position_ha is not None:
+                    self._silent_cover_baseline[intent.cover_entity_id] = (
+                        s.exec_snapshot.current_position_ha)
+            elif _downgraded and completion.completed and s.exec_cap is not None:
+                # Estimated, not observed -- but the cover may answer again now.
+                self._recover_completion_feedback(
+                    intent.cover_entity_id, intent.target_position_ha,
+                    s.exec_cap.invert_position)
             if not completion.completed and not completion.timed_out:
                 # Cancelled / stale / unloaded: the plan stops here and is
                 # never replayed; a timeout is NOT folded into this.
@@ -9212,6 +9519,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             ):
                 return replace(
                     build_not_attempted_result(intent, reason="safety_preempted"),
+                    parallel_batch_id=batch_id, parallel_batch_size=batch_size,
+                )
+            if self._unloading:
+                self._lifecycle_stats["dispatches_blocked_unloading"] += 1
+                return replace(
+                    build_not_attempted_result(intent, reason="unloading"),
                     parallel_batch_id=batch_id, parallel_batch_size=batch_size,
                 )
             _dispatch_now = dt_util.utcnow()

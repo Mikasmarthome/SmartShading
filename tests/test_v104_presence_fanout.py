@@ -50,6 +50,9 @@ class _CoordBase:
     def async_request_refresh(self) -> None:
         self._refresh_task_created += 1
 
+    def async_refresh(self) -> None:
+        self._refresh_task_created += 1
+
 
 class _StoreStub:
     def __init__(self, hass, version, key) -> None: pass
@@ -129,6 +132,8 @@ def _make_entry() -> MagicMock:
     entry.options = {}
     entry.data = {}
     entry.async_on_unload = MagicMock()
+    entry.async_create_background_task = MagicMock(
+        side_effect=lambda hass, coro, name: (getattr(coro, "close", lambda: None)(), MagicMock())[1])
     return entry
 
 

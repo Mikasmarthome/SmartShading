@@ -110,7 +110,10 @@ class _RealBehaviorDataUpdateCoordinator:
     Debouncer algorithm — see module docstring. Verified 2026-07-30 against
     installed homeassistant==2026.6.4."""
 
-    COOLDOWN = 10  # REQUEST_REFRESH_DEFAULT_COOLDOWN
+    # Real HA: REQUEST_REFRESH_DEFAULT_COOLDOWN = 10 s.  The control flow below is
+    # unchanged; only the length of the cooldown is shortened so the tests need
+    # no multi-second real-time waits and keep a wide margin to their timeouts.
+    COOLDOWN = 0.3
     IMMEDIATE = True  # REQUEST_REFRESH_DEFAULT_IMMEDIATE
 
     def __class_getitem__(cls, item):
@@ -364,20 +367,31 @@ async def _run_until(coro, seconds: float):
     return task
 
 
-async def _wait_for_recompute_count(call_count: dict, target: int, timeout: float = 12.0) -> None:
-    """Poll up to `timeout` seconds. Must cover the real Debouncer's full
-    10s cooldown window (REQUEST_REFRESH_DEFAULT_COOLDOWN): the fix's
-    guarantee is "not stuck until the next periodic cycle (up to 5 min)",
-    not "instant" — the deferred refresh may legitimately take up to ~10s
-    if async_request_refresh()'s own task happens to run its
-    lock-availability check before the old cycle has fully released the
-    lock, in which case it correctly falls back to the cooldown-timer path
-    (see _RealBehaviorDataUpdateCoordinator._async_schedule_or_call_now)."""
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if call_count["n"] >= target:
-            return
-        await asyncio.sleep(0.05)
+async def _wait_for_recompute_count(call_count: dict, target: int, timeout: float = 8.0) -> None:
+    """Wait until ``call_count["n"]`` reaches ``target``; FAIL if it does not
+    within ``timeout`` seconds (never return silently).  The guarantee under
+    test is "not stuck until the next periodic cycle (up to 5 min)": a deferred
+    refresh may legitimately take up to one (shortened) debouncer cooldown if
+    async_request_refresh()'s own task checks the lock before the old cycle has
+    released it (see _RealBehaviorDataUpdateCoordinator._async_schedule_or_call_now)."""
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
+    while call_count["n"] < target:
+        if loop.time() >= deadline:
+            raise AssertionError(
+                f"recompute count {call_count['n']} did not reach {target} within {timeout}s")
+        await asyncio.sleep(0.01)
+
+
+async def _wait_until(predicate, what: str, timeout: float = 5.0) -> None:
+    """Wait for an observable condition; FAIL with ``what`` if it does not hold
+    within ``timeout`` seconds (never return silently)."""
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
+    while not predicate():
+        if loop.time() >= deadline:
+            raise AssertionError(f"{what} (not reached within {timeout}s)")
+        await asyncio.sleep(0.01)
 
 
 def async_test(fn):
@@ -410,7 +424,7 @@ class TestDebouncerRefreshLoss:
         coord._dispatch_generation += 1
         asyncio.ensure_future(coord.async_request_refresh())
 
-        await asyncio.sleep(30)  # past both the 10s cooldown AND cycle1's own end
+        await asyncio.sleep(2)  # well past the (shortened) cooldown while cycle1 still holds the lock
         assert call_count["n"] == 1, (
             f"expected the refresh to be lost (count stays 1), got {call_count['n']}: {events}"
         )
@@ -449,9 +463,9 @@ class TestDebouncerRefreshLoss:
         # scheduling race (see _async_schedule_or_call_now), not a defect.
         # The property that matters (and that TC-D1 proves fails without the
         # fix) is: it does NOT wait for the up-to-5-minute periodic update.
-        assert new_cycle_start_delay < 11.0, (
+        assert new_cycle_start_delay < 5.0, (
             f"new recompute took {new_cycle_start_delay}s to start — expected it bounded "
-            f"by the ~10s Debouncer cooldown, nowhere near the periodic update interval"
+            f"by the Debouncer cooldown, nowhere near the periodic update interval"
         )
         coord._active_comfort_dispatch_task.cancel()
         try:
@@ -486,6 +500,9 @@ class TestContactSafety:
     @async_test
     async def test_TC_S1_contact_open_preempts_old_comfort_new_safety_dispatches(self):
         coord = _make_coord()
+        # A debounced refresh would wait an hour: the new cycle can only start in
+        # time through the immediate path an opening contact takes (A6).
+        coord.COOLDOWN = 3600
         events: list = []
         call_count = {"n": 0}
 
@@ -525,14 +542,15 @@ class TestContactSafety:
         assert call_count["n"] == 1
 
         listener = _LISTENERS["binary_sensor.contact1"]
-        listener(_event("binary_sensor.contact1", "closed", "open"))
+        listener(_event("binary_sensor.contact1", "off", "on"))
 
         await asyncio.wait_for(cycle1, timeout=2.0)
-        await _wait_for_recompute_count(call_count, 2)
+        # The count only says the new cycle STARTED; its safety work runs in its
+        # own task a moment later, so wait for that observable event itself.
+        await _wait_until(
+            lambda: ("safety_dispatched", 2) in events,
+            f"new cycle's own safety work must dispatch, events={events}", timeout=3.0)
         assert ("comfort_cancelled", 1) in events, events
-        assert ("safety_dispatched", 2) in events, (
-            f"new cycle's own safety work must dispatch, events={events}"
-        )
 
     @async_test
     async def test_TC_S2_already_dispatched_safety_never_touched_by_new_event(self):
@@ -747,11 +765,11 @@ class TestOwnershipAndCleanup:
         await _wait_for_recompute_count(call_count, 2)
 
         # Let cycle 2's own (short) comfort dispatch finish naturally too.
-        deadline = time.monotonic() + 11.0
+        deadline = time.monotonic() + 5.0
         while time.monotonic() < deadline:
             if coord._active_comfort_dispatch_task is None:
                 break
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.01)
         assert coord._active_comfort_dispatch_task is None, (
             "cycle 2's own comfort dispatch never completed/cleared its registration"
         )
@@ -765,3 +783,28 @@ class TestOwnershipAndCleanup:
             if t.done() and not t.cancelled():
                 exc = t.exception()
                 assert exc is None, f"task raised unexpectedly: {exc!r}"
+
+
+# ---------------------------------------------------------------------------
+# The wait helpers must fail loudly: a silent timeout is how this suite once
+# hid a lost refresh behind a later, unrelated assertion.
+# ---------------------------------------------------------------------------
+
+
+class TestWaitHelpersFailLoudly:
+    @async_test
+    async def test_recompute_wait_raises_when_the_count_is_never_reached(self):
+        with pytest.raises(AssertionError, match="did not reach 2"):
+            await _wait_for_recompute_count({"n": 1}, 2, timeout=0.05)
+
+    @async_test
+    async def test_condition_wait_raises_when_the_condition_never_holds(self):
+        with pytest.raises(AssertionError, match="never happens"):
+            await _wait_until(lambda: False, "never happens", timeout=0.05)
+
+    @async_test
+    async def test_condition_wait_returns_as_soon_as_the_condition_holds(self):
+        box = {"v": False}
+        asyncio.get_running_loop().call_later(0.03, box.__setitem__, "v", True)
+        await _wait_until(lambda: box["v"], "flag set", timeout=2.0)
+        assert box["v"]

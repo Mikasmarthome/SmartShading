@@ -351,7 +351,6 @@ adjust most runtime settings through the integration's options (three-dot menu �
 | Presence entities and absence delay | Options → Presence settings |
 | Comfort goals and temperature thresholds | Options → Comfort settings |
 | Shade-position defaults | Options → Shading behavior |
-| Cover dispatch pacing (parallel / spaced / sequential, zone batching) | Options → Cover Dispatch |
 | Learning Mode per zone | Zone switch entity |
 | Active Control per zone | Zone switch entity |
 
@@ -370,14 +369,21 @@ Each page saves only its own settings and keeps the others untouched. A window c
 sensors**; the night/ventilation logic then reacts to the aggregated contact state (open if any selected
 sensor is open). Existing single-contact configurations remain compatible.
 
-### Cover dispatch pacing
+### How covers are moved
 
-When several covers are decided in the same cycle, **Options → Cover Dispatch** controls how their commands
-are paced: **Parallel** starts every command without delay, **With a time gap** waits a fixed number of
-seconds between starts, and **One after another** waits for each cover to finish moving before starting the
-next (with a configurable maximum wait and settle pause). **Keep zones apart** additionally enforces the
-start delay between different rooms/zones even in Parallel mode, so rooms stay visually separated. The
-default (**With a time gap**, 2 seconds, no zone batching) reproduces the pre-1.2 behavior.
+Cover movement follows one fixed rule; there are no pacing modes to choose from.
+
+- **Partial positions (1–99 %)** — within a synchronized group exactly one cover moves at a time, in a fixed
+  order. The next cover starts only after the end of the previous one's travel has been detected (from the
+  cover's own feedback, or from its configured travel time for covers without feedback), followed by a fixed
+  2-second settle pause. If a cover does not finish within the time limit, the remaining covers of that group
+  are not started — a timeout is never treated as success — and other zones keep working.
+- **Fully open / fully closed (0 / 100 %)** — covers start 2 seconds apart without waiting for the end of travel.
+- **Safety first** — storm, wind and rain protection are served before comfort movements that are still
+  waiting, across all zones, and can interrupt a running wait or settle pause.
+
+Installations that were set up with the earlier pacing options keep working unchanged; those stored values are
+ignored.
 
 When referring to covers or sensors, use your own entity IDs. Generic examples:
 

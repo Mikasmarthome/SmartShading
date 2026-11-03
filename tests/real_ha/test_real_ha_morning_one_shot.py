@@ -734,31 +734,53 @@ def _multi_window_entry_data(
     return to_storage_dict(data)
 
 
+def _seed_multi_covers(hass) -> None:
+    for eid in ("cover.a1", "cover.b1", "cover.b2"):
+        hass.states.async_set(eid, "closed", {
+            "current_position": 0,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        })
+
+
+async def _setup_multi_zone(hass, *, morning_time: dt_time, evidence_day: date):
+    """Real zone with two windows / three covers, night evidence seeded for
+    `evidence_day`; the lifecycle boundary timer is torn down (the claim of
+    the callers is the catch-up path, not the live timer)."""
+    await _seed_night_evidence(
+        hass, "e_multi", window_ids=["windowA", "windowB"], today=evidence_day,
+    )
+    recorder = _StateFeedbackRecorder(hass)
+    recorder.install()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            **_multi_window_entry_data(morning_fixed_time=morning_time),
+            CONF_ENTRY_TYPE: ENTRY_TYPE_ZONE,
+        },
+        entry_id="e_multi",
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = entry.runtime_data.coordinator
+    coordinator.async_teardown_lifecycle_boundary_timer()
+    return coordinator, recorder
+
+
 class TestRealHAMultipleWindowsAndCovers:
     async def test_multiple_windows_same_zone_and_multiple_covers_one_window_each_get_exactly_one_dispatch(
         self, hass,
     ) -> None:
-        """B3-010 R14 correction: rebuilt on REAL wall-clock time, no
-        freeze_time anywhere in this test -- freezegun's `real_asyncio=True`
-        mode (used by every other test in this file) keeps the event loop's
-        OWN scheduling clock (loop.time(), built on asyncio's internal
-        time.monotonic() usage) real while it freezes dt_util.utcnow(), but
-        this test's own real run repeatedly showed a genuine, real
-        multi-second-to-indefinite stall inside the dispatch pipeline even
-        with that mode on (confirmed via a temporary, since-removed
-        wait_for_travel_completion() entry/exit trace: the stall is BEFORE
-        that function is ever entered, most likely in code that reads
-        time.monotonic() directly rather than through loop.time(), e.g.
-        GlobalDispatchThrottle -- cover_control/global_dispatch_throttle.py
-        -- which freezegun's real_asyncio mode does not document as
-        exempting). Rather than fight that interaction further, this test
-        follows this round's own prescribed harness-fix fallback: use real
-        current time throughout, with the Morning trigger's configured
-        time-of-day computed a few minutes into the past relative to the
-        real "now" this test actually runs at, and Night evidence seeded
-        for the real current date -- exactly reproducing the "missed
-        Morning event, real trigger already due" scenario without ever
-        touching time.monotonic()/loop.time() via freeze_time.
+        """Fixed scenario: the clock is frozen at _MORNING_INSTANT (10:00
+        UTC, squarely in the day phase) and the Morning trigger is the
+        default _MORNING_TIME, so the missed-event catch-up is due at every
+        run, whatever the wall clock or time zone of the machine is.  An
+        earlier version derived the trigger from the real "now" minus five
+        minutes; between 22:00 and 24:00 local time that is inside the Night
+        phase, no Morning occurrence exists, and the test failed depending
+        on the time of day (the boundary behaviour itself is pinned by
+        TestRealHAMorningNightBoundary).  The real lifecycle state machine
+        runs unchanged.
 
         The registered cover service feeds back a real position
         confirmation after each dispatch (_StateFeedbackRecorder), so the
@@ -766,80 +788,103 @@ class TestRealHAMultipleWindowsAndCovers:
         confirmation for all three covers, never a long real timeout."""
         await hass.config.async_set_time_zone("UTC")
         _set_sun_above_horizon(hass)
-        for eid in ("cover.a1", "cover.b1", "cover.b2"):
-            hass.states.async_set(eid, "closed", {
-                "current_position": 0,
-                "supported_features": CoverEntityFeature.SET_POSITION,
-            })
+        _seed_multi_covers(hass)
 
-        import homeassistant.util.dt as _dt_util
-        real_now = _dt_util.utcnow()
-        # A few minutes into the past relative to the real "now" this test
-        # actually runs at -- always already due, never dependent on a
-        # hardcoded instant. dt_time() naturally wraps a negative minute
-        # component correctly via the datetime arithmetic below.
-        morning_time_of_day = (real_now - timedelta(minutes=5)).time().replace(microsecond=0)
+        with freeze_time(_MORNING_INSTANT, real_asyncio=True):
+            coordinator, recorder = await _setup_multi_zone(
+                hass, morning_time=_MORNING_TIME, evidence_day=_MORNING_INSTANT.date(),
+            )
 
-        await _seed_night_evidence(
-            hass, "e_multi", window_ids=["windowA", "windowB"],
-            today=real_now.date(),
-        )
-        recorder = _StateFeedbackRecorder(hass)
-        recorder.install()
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            data={
-                **_multi_window_entry_data(morning_fixed_time=morning_time_of_day),
-                CONF_ENTRY_TYPE: ENTRY_TYPE_ZONE,
-            },
-            entry_id="e_multi",
-        )
-        entry.add_to_hass(hass)
+            occ_a = _occurrence(coordinator, "windowA")
+            occ_b = _occurrence(coordinator, "windowB")
+            assert occ_a is not None and occ_b is not None
+            assert occ_a.dispatch_attempted is False
+            assert occ_b.dispatch_attempted is False
+            assert recorder.position_calls == []
 
-        assert await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-        coordinator = entry.runtime_data.coordinator
-        # Real current time is used throughout this test, but the real
-        # lifecycle-boundary timer (coordinator.py's
-        # _schedule_next_lifecycle_boundary()) would still schedule a real,
-        # potentially many-hours-away wait for the next boundary -- torn
-        # down immediately for the same reason _setup_zone_no_jump()'s own
-        # docstring documents (this test's own claim is the missed-event
-        # catch-up path, not the live boundary timer).
-        coordinator.async_teardown_lifecycle_boundary_timer()
+            await coordinator.async_refresh()
+            await hass.async_block_till_done()
 
-        occ_a = _occurrence(coordinator, "windowA")
-        occ_b = _occurrence(coordinator, "windowB")
-        assert occ_a is not None and occ_b is not None
-        assert occ_a.dispatch_attempted is False
-        assert occ_b.dispatch_attempted is False
-        assert recorder.position_calls == []
+            called_entities = {c["entity_id"] for c in recorder.position_calls}
+            assert called_entities == {"cover.a1", "cover.b1", "cover.b2"}, (
+                f"exactly one real dispatch per cover across both windows, "
+                f"got {recorder.position_calls}"
+            )
+            assert len(recorder.position_calls) == 3, (
+                "each expected cover ID exactly once, no duplicate/foreign result"
+            )
+            assert all(c["position"] == 70 for c in recorder.position_calls)
+            occ_a = _occurrence(coordinator, "windowA")
+            occ_b = _occurrence(coordinator, "windowB")
+            assert occ_a.status == "dispatched" and occ_a.dispatch_attempted is True
+            assert occ_b.status == "dispatched" and occ_b.dispatch_attempted is True
 
-        await coordinator.async_refresh()
-        await hass.async_block_till_done()
+            # A further periodic cycle must not re-dispatch EITHER window's
+            # covers -- the one-shot bound is per-occurrence, not merely
+            # per-coordinator-cycle.
+            await coordinator.async_refresh()
+            await hass.async_block_till_done()
+            assert len(recorder.position_calls) == 3, (
+                f"no window/cover may compete again, got {recorder.position_calls}"
+            )
 
-        called_entities = {c["entity_id"] for c in recorder.position_calls}
-        assert called_entities == {"cover.a1", "cover.b1", "cover.b2"}, (
-            f"exactly one real dispatch per cover across both windows, "
-            f"got {recorder.position_calls}"
-        )
-        assert len(recorder.position_calls) == 3, (
-            "each expected cover ID exactly once, no duplicate/foreign result"
-        )
-        assert all(c["position"] == 70 for c in recorder.position_calls)
-        occ_a = _occurrence(coordinator, "windowA")
-        occ_b = _occurrence(coordinator, "windowB")
-        assert occ_a.status == "dispatched" and occ_a.dispatch_attempted is True
-        assert occ_b.status == "dispatched" and occ_b.dispatch_attempted is True
 
-        # A further periodic cycle must not re-dispatch EITHER window's
-        # covers -- the one-shot bound is per-occurrence, not merely
-        # per-coordinator-cycle.
-        await coordinator.async_refresh()
-        await hass.async_block_till_done()
-        assert len(recorder.position_calls) == 3, (
-            f"no window/cover may compete again, got {recorder.position_calls}"
-        )
+# (time zone, local clock time of the run, Morning dispatch expected).  The
+# Night phase starts at 22:00 HA-local time; the Morning trigger of each case
+# is five minutes before the run, so it is "already due" exactly when the day
+# phase is active.  21:59 is day, 22:00 / 22:05 / 23:59 are night, 00:05 is
+# day again (trigger 00:00).
+_BOUNDARY_CASES = [
+    pytest.param("UTC", dt_time(21, 59), True, id="utc-21:59-day"),
+    pytest.param("UTC", dt_time(22, 0), False, id="utc-22:00-night"),
+    pytest.param("UTC", dt_time(22, 5), False, id="utc-22:05-night"),
+    pytest.param("UTC", dt_time(23, 59), False, id="utc-23:59-night"),
+    pytest.param("UTC", dt_time(0, 5), True, id="utc-00:05-day"),
+    pytest.param("Europe/Berlin", dt_time(21, 59), True, id="berlin-21:59-day"),
+    pytest.param("Europe/Berlin", dt_time(22, 0), False, id="berlin-22:00-night"),
+    pytest.param("Europe/Berlin", dt_time(22, 5), False, id="berlin-22:05-night"),
+    pytest.param("Europe/Berlin", dt_time(23, 59), False, id="berlin-23:59-night"),
+    pytest.param("Europe/Berlin", dt_time(0, 5), True, id="berlin-00:05-day"),
+]
+
+
+class TestRealHAMorningNightBoundary:
+    @pytest.mark.parametrize("tz_name,local_time,expect_dispatch", _BOUNDARY_CASES)
+    async def test_morning_catch_up_follows_the_local_night_boundary(
+        self, hass, tz_name, local_time, expect_dispatch,
+    ) -> None:
+        """Same three-cover scenario as the fixed test, run at controlled
+        local times around the 22:00 Night boundary in two time zones.  In the
+        day phase the due Morning trigger yields exactly one dispatch per
+        cover; in the night phase it yields none -- the genuinely different
+        expectations of the two phases, not a weakened assertion."""
+        from zoneinfo import ZoneInfo
+
+        await hass.config.async_set_time_zone(tz_name)
+        _set_sun_above_horizon(hass)
+        _seed_multi_covers(hass)
+
+        tz = ZoneInfo(tz_name)
+        local_now = datetime.combine(date(2026, 8, 11), local_time, tzinfo=tz)
+        morning_time = (local_now - timedelta(minutes=5)).time().replace(microsecond=0)
+
+        with freeze_time(local_now.astimezone(timezone.utc), real_asyncio=True):
+            coordinator, recorder = await _setup_multi_zone(
+                hass, morning_time=morning_time, evidence_day=local_now.date(),
+            )
+            await coordinator.async_refresh()
+            await hass.async_block_till_done()
+
+            if expect_dispatch:
+                assert {c["entity_id"] for c in recorder.position_calls} == {
+                    "cover.a1", "cover.b1", "cover.b2",
+                }
+                assert len(recorder.position_calls) == 3
+                assert all(c["position"] == 70 for c in recorder.position_calls)
+            else:
+                assert recorder.position_calls == []
+                assert _occurrence(coordinator, "windowA") is None
+                assert _occurrence(coordinator, "windowB") is None
 
 
 class TestRealHAMorningProtectionInteraction:

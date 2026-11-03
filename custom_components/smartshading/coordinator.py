@@ -719,6 +719,11 @@ _SAFETY_WITHOUT_SUN_CODE = "safety_active_without_sun"
 # A5/A6: how long a cover whose completion wait timed out is waited on by travel-time
 # estimate instead of by its (apparently unreliable) reported state.
 _COMPLETION_DOWNGRADE_S = 30 * 60.0
+# How long after SmartShading's own command to a window's observed cover a position
+# between where it stood and the commanded target is read as that command's own
+# (still unreported or in-flight) travel instead of a manual move.  Added to the
+# estimated travel time; the window is bounded, never open-ended.
+_OWN_MOTION_MARGIN_S = 60.0
 # A6: how long unload waits for a running update cycle to end on its own before
 # the cycle is cancelled (a cycle normally ends within a poll interval).
 _SHUTDOWN_CYCLE_GRACE_S = 10.0
@@ -1673,6 +1678,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # A6: where a silent cover stood when it was last commanded (HA position).
         # A cover that is still there did not answer; that is not a manual move.
         self._silent_cover_baseline: dict[str, int] = {}
+        # Own commands whose travel may not be reported yet, per observed cover
+        # (normalized id): (position before, commanded target, both internal; monotonic
+        # end of the bounded window).  Instance state: gone with unload/reload.
+        self._own_motion: dict[str, tuple[int, int, float]] = {}
         self._completion_recovery_stats: dict[str, int] = {"downgraded": 0, "recovered": 0, "retried": 0}
         # A6: update cycles currently running (so unload can wait for them) and
         # the lifecycle counters surfaced in the diagnostics.
@@ -2694,6 +2703,52 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             return False
         return abs(observed_internal - (100 - baseline_ha)) <= self._override_detection_tolerance
 
+    def _record_own_motion(
+        self, window_id: str, entity_id: str, target_internal: int, cap,
+        *, travel_ended: bool,
+    ) -> None:
+        """Remember that SmartShading just commanded the window's observed (first)
+        cover: where it stood in this cycle's evaluation, where it was sent, and how
+        long that travel can plausibly stay unreported.  A travel whose end was seen
+        or estimated within the plan leaves nothing to remember: what the cover
+        reports afterwards is judged against the target alone."""
+        group = self.cover_groups.get(self._window_cover_group_id(window_id))
+        if group is None or not group.cover_ids:
+            return
+        key = _normalize_cover_id(entity_id)
+        if key != _normalize_cover_id(group.cover_ids[0]):
+            return
+        start = self._prev_observed_internal.get(window_id)
+        if travel_ended or start is None:
+            self._own_motion.pop(key, None)
+            return
+        estimate = estimate_travel_duration_s(
+            start_position_ha=100 - start, target_position_ha=100 - target_internal,
+            travel_time_open_s=cap.travel_time_open_s, travel_time_close_s=cap.travel_time_close_s)
+        self._own_motion[key] = (start, target_internal, _monotonic() + estimate + _OWN_MOTION_MARGIN_S)
+
+    def _window_cover_group_id(self, window_id: str) -> str | None:
+        window = self.windows.get(window_id)
+        return window.cover_group_id if window is not None else None
+
+    def _own_motion_explains(self, cover_id: str | None, observed_internal: int | None) -> bool:
+        """True while ``observed_internal`` lies between where the cover stood when
+        SmartShading last commanded it and that command's target (within the override
+        tolerance), inside the bounded window.  A position outside that span, or any
+        position once the window is over, is not explained by the own command."""
+        if cover_id is None or observed_internal is None:
+            return False
+        key = _normalize_cover_id(cover_id)
+        entry = self._own_motion.get(key)
+        if entry is None:
+            return False
+        start, target, until = entry
+        tolerance = self._override_detection_tolerance
+        if _monotonic() > until or abs(observed_internal - target) <= tolerance:
+            self._own_motion.pop(key, None)
+            return False
+        return min(start, target) - tolerance <= observed_internal <= max(start, target) + tolerance
+
     def _recover_completion_feedback(self, entity_id: str, target_ha: int, invert: bool) -> bool:
         """After an estimate-based wait: if the cover now reports the target again,
         its feedback works and the downgrade ends."""
@@ -2729,6 +2784,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             self._active_dispatch_cancellation.set()
         self._completion_downgraded.pop(old_id, None)
         self._silent_cover_baseline.pop(old_id, None)
+        self._own_motion.pop(_normalize_cover_id(old_id), None)
         self._lifecycle_stats["cover_renames"] = self._lifecycle_stats.get("cover_renames", 0) + 1
         return 1
 
@@ -6077,6 +6133,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     # where it stood: it did not answer, nobody moved it.
                     _override_assumed = observed_internal
                     _override_ref_source = "silent_cover_unchanged"
+                elif self._own_motion_explains(_cov_id, observed_internal):
+                    # Our own command is still on its way (its travel was cut short by
+                    # Safety or a newer plan, or the feedback lags): the position is
+                    # between where the cover stood and the target we sent.
+                    _override_assumed = observed_internal
+                    _override_ref_source = "own_motion_in_flight"
                 elif _last_commanded is not None:
                     _override_assumed = _last_commanded
                     _override_ref_source = "last_commanded"
@@ -7613,6 +7675,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                             # trustworthy immediately.
                             if not _sent_cap.has_reliable_position_feedback:
                                 self._override_detector.suppress_next_override_tick(window_id)
+                            self._record_own_motion(
+                                window_id, _sent_result.entity_id,
+                                _sent_result.target_position_internal, _sent_cap,
+                                travel_ended=_sent_result.completion_status == "completed")
 
             _last_exec_result = (
                 _exec_plan_result.results[0]

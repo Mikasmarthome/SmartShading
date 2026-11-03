@@ -244,13 +244,13 @@ class Sim:
         self.hass.services.async_register("cover", "set_cover_tilt_position", noop)
 
 
-def zone_entry(entry_id: str, windows: dict, shade: int, rain=None) -> MockConfigEntry:
+def zone_entry(entry_id: str, windows: dict, shade: int, rain=None, learning: bool = False) -> MockConfigEntry:
     """One zone = one config entry.  ``windows`` maps window id -> cover ids (one
     cover group per window)."""
     zone_id = f"z_{entry_id}"
     zone = ZoneConfig(
         id=zone_id, name=zone_id,
-        execution=ZoneExecutionConfig(learning_enabled=False, active_control_enabled=True))
+        execution=ZoneExecutionConfig(learning_enabled=learning, active_control_enabled=True))
     wins, groups = [], []
     for window_id, covers in windows.items():
         wins.append(WindowConfig(id=window_id, name=window_id, zone_id=zone_id, azimuth=180.0,
@@ -288,8 +288,9 @@ class ZoneHarness:
         self.rains: list[str] = []
 
     # -- setup -----------------------------------------------------------------
-    async def boot(self, specs, *, initial=None, silent=()):
-        """``specs``: list of ``(entry_id, windows, shade, rain_entity_or_None)``."""
+    async def boot(self, specs, *, initial=None, silent=(), learning=()):
+        """``specs``: list of ``(entry_id, windows, shade, rain_entity_or_None)``;
+        ``learning``: entry ids whose zone has Learning Mode on."""
         hass, clock = self.hass, self.clock
         await hass.config.async_set_time_zone("UTC")
         hass.states.async_set("sun.sun", "above_horizon", {**SUN, "azimuth": 0.0, "elevation": 30.0})
@@ -319,7 +320,7 @@ class ZoneHarness:
 
         self.monkeypatch.setattr(cm, "wait_for_travel_completion", wrapped)
         for entry_id, windows, shade, rain in specs:
-            await self.add_zone(entry_id, windows, shade, rain)
+            await self.add_zone(entry_id, windows, shade, rain, entry_id in learning)
         for entry in self.entries.values():
             await entry.runtime_data.coordinator.async_refresh()
             await hass.async_block_till_done()
@@ -327,8 +328,8 @@ class ZoneHarness:
         clock.t = 0.0
         return self
 
-    async def add_zone(self, entry_id, windows, shade, rain=None):
-        entry = zone_entry(entry_id, windows, shade, rain)
+    async def add_zone(self, entry_id, windows, shade, rain=None, learning=False):
+        entry = zone_entry(entry_id, windows, shade, rain, learning)
         entry.add_to_hass(self.hass)
         assert await self.hass.config_entries.async_setup(entry.entry_id)
         await self.hass.async_block_till_done()

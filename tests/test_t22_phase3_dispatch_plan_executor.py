@@ -457,9 +457,15 @@ class TestIntermediate:
             _item(cover_entity_id="a", target_ha=40),
             _item(cover_entity_id="b", target_ha=40, cover_index=1),
         ])
-        result = await _executor().execute_plan(plan=plan, **h.kwargs())
+        from custom_components.smartshading.cover_control.normal_pacing import NormalPacing
+        pacing = NormalPacing()
+        result = await _executor().execute_plan(plan=plan, pacing=pacing, **h.kwargs())
         assert result.item_results[0].status == "timed_out"
-        assert h.sleep_calls == [2.0]
+        # The settle after the timed-out cover is not slept for a start that never
+        # follows; it stays in the shared pacing and holds the next normal start.
+        assert h.sleep_calls == []
+        assert pacing.remaining(clock.now()) == 2.0
+        assert pacing.basis == "timeout_unconfirmed"
         assert [c for c, _ in h.dispatch_calls] == ["a"]       # A5: b is not started after a timeout
         assert result.item_results[1].reason == "previous_completion_timed_out"
         assert result.status == "completed"

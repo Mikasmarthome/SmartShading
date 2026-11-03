@@ -409,7 +409,7 @@ class TestNoHardCancel:
         ).read_text(encoding="utf-8")
         # Extract just the _preempt_active_comfort_plan method body.
         match = re.search(
-            r"async def _preempt_active_comfort_plan\(self\).*?\n"
+            r"async def _preempt_active_comfort_plan\(self(?:, \*, keep_slot: bool = False)?\).*?\n"
             r"(?:.*\n)*?"
             r"        return this_dispatch_gen\n",
             source,

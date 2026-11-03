@@ -1607,11 +1607,10 @@ def hass_calls(s: _Scenario, cover: str) -> list[int]:
 class TestGlobalDispatchQueue:
     def test_rain_command_waits_fifo_behind_intents_other_zones_already_queued(self):
         # The rain listener invalidates the old plan of ITS OWN coordinator only.
-        # Intents other zones already queued in the global dispatch lock are
-        # served first (plain FIFO, same as wind/storm; the zones' items take their
-        # dispatch slots alternately); a global safety priority is a separate,
-        # later change.  If it is added, "x1" moves ahead of the still-queued
-        # intents.
+        # Normal travel is worked off zone by zone (one package per zone, FIFO):
+        # zone A's items run contiguously, then zone B's -- the zones no longer
+        # take their dispatch slots alternately.  "x1" is sent once and after the
+        # normal items that were already admitted.
         hass = _make_hass()
         serial = GlobalSerialDispatch(min_interval=timedelta(milliseconds=500))
         zone_a = _Scenario(ROLLER, hass=hass, serial=serial, window_id="a1", zone_id="za",
@@ -1637,7 +1636,7 @@ class TestGlobalDispatchQueue:
                 await asyncio.gather(task_a, task_b, task_x)
 
         asyncio.run(main())
-        assert order == ["a1", "b1", "a2", "b2", "x1"]
+        assert order == ["a1", "a2", "b1", "b2", "x1"]
         assert order.index("x1") > order.index("b1")           # waited behind queued intents
         assert order.count("x1") == 1                          # and was sent exactly once
 

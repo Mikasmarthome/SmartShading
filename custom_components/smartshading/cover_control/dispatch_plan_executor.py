@@ -17,6 +17,15 @@ apart and do not wait for the end of travel; intermediate items run strictly one
 at a time per group -- completion wait, then ``INTERMEDIATE_POST_COMPLETION_PAUSE_S``
 settle -- and a timeout is never a success: the rest of the group does not start.
 
+Pacing is ONE shared state (``NormalPacing``): before every normal start the
+executor waits until the earliest permitted start recorded there, and records
+what the command it actually sent requires from the next one (start + interval
+for an end position; completion + settle for an intermediate position).  The
+settle is therefore never slept twice, it also holds after the last cover of a
+plan, and a following plan -- of this or of another zone -- starts only after it.
+The coordinator passes the integration-wide instance; without one the executor
+uses a private one (a single plan on its own).
+
 No Home Assistant import. No coordinator import. No asyncio.Lock owned by
 this module. No presence/solar logic. No re-sorting, re-grouping, or
 re-deduplication of the plan (Phase 2 is the sole authority for order).
@@ -30,7 +39,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Awaitable, Callable, Protocol
 
+from .dispatch_completion import MAX_TRAVEL_WAIT_S
 from .dispatch_plan import DispatchPlan, DispatchPlanItem
+from .normal_pacing import NormalPacing
 from ..engines.dispatch_classification import DispatchTargetClass
 
 # Fixed, non-configurable pacing constants (T22 design decision — no user
@@ -81,6 +92,12 @@ class DispatchOutcome:
 
     success: bool
     error_type: str | None = None
+    attempted: bool | None = None
+    """Whether a service call was actually started.  ``None`` (not reported) is
+    treated as attempted when the dispatch did not succeed, as before."""
+    expected_travel_s: float | None = None
+    """Model estimate of the travel that was started (intermediate targets);
+    bounds the conservative pacing if the plan ends before the travel is resolved."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,6 +191,25 @@ class DispatchPlanExecutor:
         cancellation: CancellationSignal,
         sleep: SleepPort,
         clock: ClockPort,
+        pacing: NormalPacing | None = None,
+    ) -> DispatchPlanExecutionResult:
+        pacing = pacing if pacing is not None else NormalPacing()
+        try:
+            return await self._execute(
+                plan=plan, dispatch_item=dispatch_item,
+                wait_for_completion=wait_for_completion, validate_item=validate_item,
+                is_generation_current=is_generation_current, cancellation=cancellation,
+                sleep=sleep, clock=clock, pacing=pacing,
+            )
+        finally:
+            # A travel that was started and never resolved (cancellation, Safety,
+            # unload, an error) keeps a bounded conservative boundary; nothing is
+            # forgotten just because this plan ended.
+            pacing.resolve_pending(clock())
+
+    async def _execute(
+        self, *, plan, dispatch_item, wait_for_completion, validate_item,
+        is_generation_current, cancellation, sleep, clock, pacing,
     ) -> DispatchPlanExecutionResult:
         started_at = clock()
         results: list[DispatchItemExecutionResult] = []
@@ -185,17 +221,7 @@ class DispatchPlanExecutor:
         abort_plan_reason: str | None = None
         preempted = False
 
-        # anchor: the earliest permitted start time for the NEXT paced item
-        # (FULL_OPEN/FULL_CLOSE-to-FULL_OPEN/FULL_CLOSE, and the single
-        # FULL_OPEN/FULL_CLOSE-to-first-INTERMEDIATE transition) — None
-        # until the first no-completion-wait item starts. The variable name
-        # predates B3-012's FULL_CLOSE class but the same anchor now covers
-        # both (see _NO_COMPLETION_WAIT_CLASSES).
-        next_paced_start: float | None = None
-        any_full_open_dispatched = False
         had_error = False
-
-        executable_items = [i for i in plan.items if i.target_class in _EXECUTABLE_CLASSES]
 
         for item in plan.items:
             if preempted or abort_plan_reason is not None:
@@ -226,28 +252,14 @@ class DispatchPlanExecutor:
                 ))
                 continue
 
-            # --- pacing: wait until this item's earliest permitted start ---
-            is_first_intermediate_after_full_open = (
-                item.target_class is DispatchTargetClass.INTERMEDIATE
-                and any_full_open_dispatched
-                and next_paced_start is not None
-            )
-            needs_start_pacing = (
-                item.target_class in _NO_COMPLETION_WAIT_CLASSES
-                or is_first_intermediate_after_full_open
-            )
-            if needs_start_pacing and next_paced_start is not None:
-                remaining = next_paced_start - clock()
-                if remaining > 0:
-                    _, was_preempted = await _race_against_cancellation(sleep(remaining), cancellation)
-                    if was_preempted:
-                        preempted = True
-                        break
-            # after the first INTERMEDIATE consumes the FULL_OPEN anchor, no
-            # further INTERMEDIATE item uses start-to-start pacing — it is
-            # purely completion-gated below.
-            if item.target_class is DispatchTargetClass.INTERMEDIATE:
-                next_paced_start = None
+            # --- pacing: wait until the earliest permitted start of a normal
+            # command (shared with every other zone) ---
+            remaining = pacing.remaining(clock())
+            if remaining > 0:
+                _, was_preempted = await _race_against_cancellation(sleep(remaining), cancellation)
+                if was_preempted:
+                    preempted = True
+                    break
 
             if cancellation.is_set():
                 preempted = True
@@ -301,8 +313,7 @@ class DispatchPlanExecutor:
                     error_type=type(exc).__name__,
                 ))
                 if item.target_class in _NO_COMPLETION_WAIT_CLASSES:
-                    any_full_open_dispatched = True
-                    next_paced_start = dispatch_start_time + FULL_OPEN_START_INTERVAL_S
+                    pacing.note_endpoint_start(dispatch_start_time, FULL_OPEN_START_INTERVAL_S)
                 continue
 
             if not outcome.success:
@@ -311,22 +322,29 @@ class DispatchPlanExecutor:
                     item=item, status="dispatch_failed", dispatch_started=False,
                     error_type=outcome.error_type,
                 ))
-                # A dispatch that failed BEFORE actually starting never
-                # anchors the next FULL_OPEN/FULL_CLOSE pacing to a real
-                # start time — but pacing must still not go backwards for
-                # later items, so anchor at "now" defensively.
-                if item.target_class in _NO_COMPLETION_WAIT_CLASSES:
-                    any_full_open_dispatched = True
-                    next_paced_start = dispatch_start_time + FULL_OPEN_START_INTERVAL_S
+                # A call that was started but failed still used the radio, so
+                # the end-position spacing applies; one that was never started
+                # (refused before the send) creates no pacing at all.
+                if (
+                    item.target_class in _NO_COMPLETION_WAIT_CLASSES
+                    and outcome.attempted is not False
+                ):
+                    pacing.note_endpoint_start(dispatch_start_time, FULL_OPEN_START_INTERVAL_S)
                 continue
 
             if item.target_class in _NO_COMPLETION_WAIT_CLASSES:
-                any_full_open_dispatched = True
-                next_paced_start = dispatch_start_time + FULL_OPEN_START_INTERVAL_S
+                pacing.note_endpoint_start(dispatch_start_time, FULL_OPEN_START_INTERVAL_S)
                 results.append(DispatchItemExecutionResult(
                     item=item, status="dispatched", dispatch_started=True,
                 ))
                 continue
+
+            pacing.begin_travel(
+                dispatch_start_time,
+                outcome.expected_travel_s if outcome.expected_travel_s is not None
+                else MAX_TRAVEL_WAIT_S,
+                INTERMEDIATE_POST_COMPLETION_PAUSE_S,
+            )
 
             # --- INTERMEDIATE: wait for completion, then fixed pause ---
             completion, was_preempted = await _race_against_cancellation(
@@ -340,11 +358,14 @@ class DispatchPlanExecutor:
                 break
 
             if completion.status == "completed":
+                pacing.finish_travel(
+                    clock(), INTERMEDIATE_POST_COMPLETION_PAUSE_S, completion.completion_method)
                 results.append(DispatchItemExecutionResult(
                     item=item, status="completed", dispatch_started=True,
                     completion_method=completion.completion_method,
                 ))
             elif completion.status == "timed_out":
+                pacing.finish_travel(clock(), INTERMEDIATE_POST_COMPLETION_PAUSE_S, "timeout")
                 timeout_zones.add(item.zone_id)
                 results.append(DispatchItemExecutionResult(
                     item=item, status="timed_out", dispatch_started=True,
@@ -358,23 +379,14 @@ class DispatchPlanExecutor:
                 break
             else:  # "failed"
                 had_error = True
+                pacing.finish_travel(clock(), INTERMEDIATE_POST_COMPLETION_PAUSE_S, None)
                 results.append(DispatchItemExecutionResult(
                     item=item, status="completion_failed", dispatch_started=True,
                     error_type=completion.error_type,
                 ))
-
-            # Post-completion pause applies whenever a dispatch genuinely
-            # started (regardless of completed/timed_out/completion_failed)
-            # — only skipped when the dispatch itself never started (handled
-            # above via `continue`), and skipped after the last item in the
-            # plan (nothing left to pace against).
-            if item is not executable_items[-1]:
-                _, was_preempted = await _race_against_cancellation(
-                    sleep(INTERMEDIATE_POST_COMPLETION_PAUSE_S), cancellation,
-                )
-                if was_preempted:
-                    preempted = True
-                    break
+            # The settle after this travel is recorded in the shared pacing above
+            # (whatever the completion outcome) and enforced before the NEXT
+            # normal start -- also across plans and zones, never slept twice.
 
         finished_at = clock()
         if preempted:

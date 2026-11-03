@@ -307,7 +307,9 @@ class TestSamePosition:
         )
         results = asyncio.run(_run_plan(coord, [s1]))
         assert results[("w1", "cover.w1")].status is ExecutionStatus.NOT_ATTEMPTED
-        assert results[("w1", "cover.w1")].reason == "already_at_target"
+        # The cover's own live position is within tolerance already when the plan
+        # is classified: the item is a skipped NO_MOVEMENT item and never sent.
+        assert results[("w1", "cover.w1")].reason == "no_movement:within_tolerance"
         assert calls == []
 
     def test_just_outside_tolerance_still_executes(self, monkeypatch) -> None:

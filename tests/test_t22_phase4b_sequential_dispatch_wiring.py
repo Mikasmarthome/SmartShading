@@ -43,6 +43,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from unittest.mock import MagicMock
 
+import pytest
+
 
 def _stub(name: str, **attrs: Any) -> types.ModuleType:
     m = types.ModuleType(name)
@@ -348,7 +350,8 @@ class TestBasicDispatch:
         # (target_position_ha=0 -> FULL_CLOSE, not INTERMEDIATE).
         coord = _make_coord()
         s1 = _state("w1", "z1", entity_id="cover.w1", target_position_ha=0, current_position_ha=100)
-        _setup_coord(coord, [s1])
+        # the cover really is at 100 %: the plan is classified from its own live state
+        _setup_coord(coord, [s1], current_position_by_entity={"cover.w1": 100})
         calls = []
 
         async def fake(hass, intent, *, now_utc):
@@ -398,10 +401,12 @@ class TestSafetyExcluded:
 
 
 class TestNoMovementExcluded:
-    def test_already_at_target_item_not_in_plan(self, monkeypatch) -> None:
+    def test_already_at_target_item_is_a_skipped_plan_item_never_sent(self, monkeypatch) -> None:
         # target_position_ha == current_position_ha -> classify_cover_intent
-        # returns NO_MOVEMENT -> must NOT enter the plan (falls through to
-        # the legacy path instead of being silently skipped here).
+        # returns NO_MOVEMENT.  The item stays in the plan as a skipped item (it
+        # no longer falls through to a separate send path, which would have
+        # bypassed the package and the pacing): reported as not attempted with
+        # the classification reason, and nothing is sent.
         coord = _make_coord()
         s1 = _state(
             "w1", "z1", entity_id="cover.w1",
@@ -424,7 +429,9 @@ class TestNoMovementExcluded:
             )
 
         results = asyncio.run(_run())
-        assert results == {}
+        result = results[("w1", "cover.w1")]
+        assert result.status is ExecutionStatus.NOT_ATTEMPTED
+        assert result.reason.startswith("no_movement")
         assert calls == []
 
 
@@ -635,3 +642,130 @@ class TestPlanCompletionReason:
         import json
         coord, _ = self._run_pair(monkeypatch, timed_out=True)
         json.dumps(coord.lifecycle_diagnostics())
+
+
+class TestCoverSpecificValidation:
+    """A group of three covers: every cover is classified, validated and awaited by
+    its OWN live state.  The first cover stands for the window in the whole-window
+    evaluation only; it must never decide for the others (the base read cover 1
+    for everything and skipped covers 2..n)."""
+
+    COVERS = ("cover.c1", "cover.c2", "cover.c3")
+
+    def _run_group(self, monkeypatch, *, target_ha: int, states: dict):
+        """``states``: cover -> (ha_state, position) or None (no state object)."""
+        coord = _make_coord()
+        first = states[self.COVERS[0]]
+        s1 = _state("w1", "z1", entity_id=self.COVERS[0], target_position_ha=target_ha,
+                    current_position_ha=(first[1] if first else 0))
+        _setup_coord(coord, [s1], current_position_by_entity={})
+        coord.cover_groups["cg_w1"] = CoverGroup(
+            id="cg_w1", window_id="w1", cover_ids=list(self.COVERS))
+        ha_states: dict[str, Any] = {}
+        for cover in self.COVERS:
+            coord._cover_capabilities[cover] = s1.exec_cap
+            spec = states[cover]
+            if spec is None:
+                continue
+            st = MagicMock()
+            st.state = spec[0]
+            st.attributes = {"current_position": spec[1]} if spec[1] is not None else {}
+            ha_states[cover] = st
+        coord.hass.states.get = MagicMock(side_effect=lambda eid: ha_states.get(eid))
+        sent: list[str] = []
+        waited: list[str] = []
+
+        async def fake_dispatch(hass, intent, *, now_utc):
+            sent.append(intent.cover_entity_id)
+            return await _fake_sent_dispatch(hass, intent, now_utc=now_utc)
+
+        async def fake_completion(*a, **k):
+            waited.append(k.get("entity_id"))
+            from custom_components.smartshading.cover_control.dispatch_completion import (
+                CompletionMethod, CompletionResult,
+            )
+            return CompletionResult(method=CompletionMethod.POSITION, elapsed_s=0.01, timed_out=False)
+
+        _patch_dispatch_cover_intent(monkeypatch, coord, fake_dispatch)
+        _patch_wait_for_travel_completion(monkeypatch, coord, fake_completion)
+        _real_sleep = asyncio.sleep
+        _patch_asyncio_sleep(monkeypatch, coord, lambda s: _real_sleep(0))
+
+        async def _run():
+            zone_order, window_order_in_zone = _zone_maps([s1])
+            return await coord._predispatch_sequential_plan(
+                _ordered([s1]), _harm([s1]), _NOW, 0, zone_order, window_order_in_zone,
+                asyncio.Event(),
+            )
+
+        results = asyncio.run(_run())
+        return sent, waited, results
+
+    # HA 0 = closed (target 0, covers standing open at 100); HA 100 = open (covers standing at 0)
+    ENDS = (
+        pytest.param(0, 100, "closing", id="ha-0"),
+        pytest.param(100, 0, "opening", id="ha-100"),
+    )
+
+    @pytest.mark.parametrize("target,away,moving", ENDS)
+    def test_first_cover_travelling_to_the_target_does_not_hide_the_others(
+        self, monkeypatch, target, away, moving,
+    ) -> None:
+        mid = 60 if target == 0 else 40
+        sent, _, results = self._run_group(monkeypatch, target_ha=target, states={
+            "cover.c1": (moving, mid), "cover.c2": ("open", away), "cover.c3": ("open", away)})
+        assert sent == ["cover.c2", "cover.c3"]
+        assert results[("w1", "cover.c1")].reason == "already_moving_to_target"
+        assert results[("w1", "cover.c2")].status is ExecutionStatus.SENT
+
+    @pytest.mark.parametrize("target,away,moving", ENDS)
+    def test_first_cover_standing_at_the_target_does_not_hide_the_others(
+        self, monkeypatch, target, away, moving,
+    ) -> None:
+        sent, _, results = self._run_group(monkeypatch, target_ha=target, states={
+            "cover.c1": ("open", target), "cover.c2": ("open", away), "cover.c3": ("open", away)})
+        assert sent == ["cover.c2", "cover.c3"]
+        assert results[("w1", "cover.c1")].reason.startswith("no_movement")
+
+    @pytest.mark.parametrize("target,away,moving", ENDS)
+    def test_second_cover_already_travelling_to_the_target_is_not_sent_again(
+        self, monkeypatch, target, away, moving,
+    ) -> None:
+        mid = 60 if target == 0 else 40
+        sent, _, results = self._run_group(monkeypatch, target_ha=target, states={
+            "cover.c1": ("open", away), "cover.c2": (moving, mid), "cover.c3": ("open", away)})
+        assert sent == ["cover.c1", "cover.c3"]
+        assert results[("w1", "cover.c2")].reason == "already_moving_to_target"
+
+    @pytest.mark.parametrize("target,away,moving", ENDS)
+    def test_a_cover_travelling_away_from_the_target_is_still_commanded(
+        self, monkeypatch, target, away, moving,
+    ) -> None:
+        opposite = "opening" if moving == "closing" else "closing"
+        sent, _, _ = self._run_group(monkeypatch, target_ha=target, states={
+            "cover.c1": ("open", away), "cover.c2": (opposite, 50), "cover.c3": ("open", away)})
+        assert sent == ["cover.c1", "cover.c2", "cover.c3"]
+
+    @pytest.mark.parametrize("target,away,moving", ENDS)
+    def test_unknown_or_missing_states_are_skipped_the_rest_still_moves(
+        self, monkeypatch, target, away, moving,
+    ) -> None:
+        sent, _, results = self._run_group(monkeypatch, target_ha=target, states={
+            "cover.c1": ("open", away), "cover.c2": None, "cover.c3": ("unavailable", None)})
+        assert sent == ["cover.c1"]
+        assert results[("w1", "cover.c2")].status is ExecutionStatus.NOT_ATTEMPTED
+        assert results[("w1", "cover.c3")].status is ExecutionStatus.NOT_ATTEMPTED
+
+    def test_intermediate_positions_use_each_covers_actual_position_and_wait_on_that_cover(
+        self, monkeypatch,
+    ) -> None:
+        sent, waited, results = self._run_group(monkeypatch, target_ha=50, states={
+            "cover.c1": ("open", 50), "cover.c2": ("open", 100), "cover.c3": ("open", 20)})
+        assert sent == ["cover.c2", "cover.c3"]
+        assert waited == ["cover.c2", "cover.c3"], "the completion wait must read the cover that was sent"
+        assert results[("w1", "cover.c1")].reason.startswith("no_movement")
+
+    def test_every_cover_of_the_group_at_its_target_sends_nothing(self, monkeypatch) -> None:
+        sent, waited, _ = self._run_group(monkeypatch, target_ha=50, states={
+            "cover.c1": ("open", 50), "cover.c2": ("open", 50), "cover.c3": ("open", 51)})
+        assert sent == [] and waited == []

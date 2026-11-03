@@ -371,6 +371,7 @@ from .engines.dispatch_classification import DispatchTargetClass
 from .cover_control.dispatch_completion import (
     DEFAULT_POSITION_TOLERANCE as _COMPLETION_POSITION_TOLERANCE,
     MAX_TRAVEL_WAIT_S,
+    estimate_travel_duration_s,
     AnyOfSignals,
     CompletionStatus,
     wait_for_travel_completion,
@@ -396,6 +397,7 @@ from .cover_control.global_dispatch_throttle import GlobalDispatchThrottle, Glob
 from .cover_control.ha_service_adapter import dispatch_cover_intent
 from .cover_control.position_semantics import (
     clamp_position,
+    positions_within_tolerance,
     to_ha_position,
     to_internal_position,
 )
@@ -1752,6 +1754,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Completion reason of the last comfort plan (package/group level):
         # executor status, abort reason and per-item status/reason counts.
         self._last_plan_completion: dict = {}
+        # Zone-package coordination (the one gate lives in GlobalSerialDispatch):
+        # none | waiting | active.  Counts and primitive facts only.
+        self._package_state: str = "none"
+        self._package_stats: dict = {
+            "granted": 0, "aborted": 0, "superseded": 0, "withdrawn": 0,
+            "refused_after_grant": 0, "normal_bypass_refused": 0,
+        }
+        self._last_package: dict = {}
         # Learning Loop Closure (9F15): per-window AdaptiveProfile cache.
         # Updated each sun-path cycle; carries the last computed profile for
         # windows that hit the no-sun path.
@@ -2178,6 +2188,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             },
             "background_tasks": len(self._background_tasks),
             "running_cycles": len(self._active_cycle_tasks),
+            "packages": self.package_diagnostics(),
             "last_plan_completion": {
                 **{k: v for k, v in self._last_plan_completion.items() if k != "items"},
                 "items": dict(self._last_plan_completion.get("items", {})),
@@ -2194,6 +2205,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 "max_remaining_s": round(max(downgrades), 1) if downgrades else 0.0,
                 "downgrade_window_s": _COMPLETION_DOWNGRADE_S,
             },
+        }
+
+    def package_diagnostics(self) -> dict:
+        """Zone-package coordination: primitives only (no ids, no payloads)."""
+        packages = self._serial_dispatch.packages
+        waiting = packages.waiting_position(self.config_entry.entry_id, self)
+        return {
+            "this_zone": (
+                "active" if packages.holds(self.config_entry.entry_id, self)
+                else ("waiting" if waiting is not None else "idle")),
+            "this_zone_queue_place": waiting,
+            "package_state": self._package_state,
+            "stats": dict(self._package_stats),
+            "last": dict(self._last_package),
+            "global": packages.stats(),
+            "pacing": self._serial_dispatch.pacing.stats(_monotonic()),
         }
 
     def storage_diagnostics(self) -> dict:
@@ -2285,6 +2312,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         stats = self._refresh_stats
         if not urgent:
             stats["debounced"] += 1
+            if self._package_state == "waiting" and self._active_dispatch_cancellation is not None:
+                # The plan waiting for its turn was computed from older inputs and
+                # would hold the refresh lock the new evaluation needs: it is
+                # dropped (not replayed) and the fresh evaluation queues anew.
+                self._active_dispatch_cancellation.set()
             self._create_tracked_background_task(entry, self.async_request_refresh(), name)
             return
         stats["immediate"] += 1
@@ -2385,6 +2417,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     exc_info=True,
                 )
         await self._async_wait_for_running_cycles()
+        # This instance's waiting package tickets go with it; a successor of the
+        # same zone keeps its own.
+        self._serial_dispatch.packages.discard_owner(self)
         await super().async_shutdown()
         tasks = list(self._background_tasks)
         self._lifecycle_stats["background_tasks_cancelled"] = (
@@ -2730,6 +2765,27 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if self._ownership_allows(window.id, cover, is_safety):
                 out.append(cover)
         return out
+
+    def _group_member_off_target(
+        self, window: WindowConfig, target_internal: int | None, now: datetime,
+    ) -> bool:
+        """True when a cover of the window OTHER than its first one is available,
+        reports a live position and stands outside the tolerance of the target.
+
+        The whole-window evaluation reads the first cover only, so "the window is
+        already at its target" would otherwise hide a sibling that is not."""
+        if target_internal is None:
+            return False
+        tolerance = ExecutionCapability().position_tolerance
+        for cover in self._dispatchable_cover_ids(window, False)[1:]:
+            _, _, snap = self._build_cover_entity_snapshot_for_window(window, now, cover)
+            if snap is None or not snap.available or snap.current_position_internal is None:
+                continue
+            if not positions_within_tolerance(
+                target_internal, snap.current_position_internal, tolerance,
+            ):
+                return True
+        return False
 
     def _window_ownership_info(self, window: WindowConfig) -> tuple[str, str, int, tuple[str, ...]]:
         """(role, kind, owner_count, differing aspects) of the window's primary cover."""
@@ -3797,8 +3853,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self,
         window: WindowConfig,
         now: datetime,
+        cover_entity_id: str | None = None,
     ) -> tuple[str | None, CoverCapability | None, CoverEntitySnapshot | None]:
-        """Build a CoverEntitySnapshot from live HA state for the window's first cover.
+        """Build a CoverEntitySnapshot from live HA state for one cover of the window.
+
+        Without ``cover_entity_id`` this is the window's first cover, which stands
+        for the window in the whole-window evaluation.  Anything that acts on ONE
+        cover (classification, validation right before its command, its completion
+        wait) must pass that cover: the first cover's state says nothing about the
+        others.
 
         Returns (cover_entity_id, capability, snapshot).
         All three are None when the window has no cover group or no covers.
@@ -3814,7 +3877,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         if cover_group is None or not cover_group.cover_ids:
             return None, None, None
 
-        cover_entity_id = cover_group.cover_ids[0]
+        if cover_entity_id is None or cover_entity_id not in cover_group.cover_ids:
+            cover_entity_id = cover_group.cover_ids[0]
         capability = self._get_or_detect_capability(cover_entity_id)
 
         state_obj = self.hass.states.get(cover_entity_id)
@@ -6641,6 +6705,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     self.guard.can_send_action(window_id, new_state, now)
                     or _min_interval_bypassed
                 )
+                # The first cover stands for the window.  When it is at the target
+                # but another cover of the group is not, "same position" must not
+                # block the window: each cover is validated on its own later.
+                _filter_current_internal = _exec_snapshot.assumed_position_internal
+                if (
+                    not _is_safety
+                    and self._group_member_off_target(window, _exec_target_internal, now)
+                ):
+                    _filter_current_internal = None
                 # T16: widen the position-tolerance check instead of trusting
                 # a low-confidence assumed position enough to keep issuing
                 # corrective commands (ARCHITECTURE.md §6.2). No-op for
@@ -6650,7 +6723,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 )
                 _exec_filter_result = CommandFilter().evaluate(
                     target_position_internal=_exec_target_internal,
-                    current_position_internal=_exec_snapshot.assumed_position_internal,
+                    current_position_internal=_filter_current_internal,
                     execution_mode=_exec_mode,
                     is_safety=_is_safety,
                     is_manual_override=current_override is not None,
@@ -7263,6 +7336,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                         _exec_results.append(build_not_attempted_result(
                             _intent, reason="safety_preempted",
                         ))
+                    elif not _intent.is_safety:
+                        # Every normal command belongs to the cycle's plan and goes
+                        # through its package and pacing.  One that is somehow not
+                        # part of it is refused here instead of being sent around
+                        # them; the next evaluation decides afresh.
+                        self._package_stats["normal_bypass_refused"] += 1
+                        _exec_results.append(build_not_attempted_result(
+                            _intent, reason="normal_dispatch_requires_package"))
                     else:
                         # Serial Dispatch (Step 10): acquire the integration-wide
                         # lock before every cover command.  The lock is shared
@@ -8406,7 +8487,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             return None
         return _check
 
-    async def _preempt_active_comfort_plan(self) -> int:
+    async def _preempt_active_comfort_plan(self, *, keep_slot: bool = False) -> int:
         """T22 Phase 5b/5c: bump the shared generation counter and signal +
         await any still-active comfort DispatchPlanExecutor task, WITHOUT
         starting a new one. Returns the freshly-bumped generation value.
@@ -8440,6 +8521,18 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # Step 1: this cycle becomes authoritative immediately.
         self._dispatch_generation += 1
         this_dispatch_gen = self._dispatch_generation
+
+        # A normal package of this zone that is still WAITING for its turn is
+        # replaced, never revived: its waiter ends here.  When a new comfort plan
+        # follows (``keep_slot``) it takes over the waiting package's place in
+        # the queue; otherwise nothing is kept.  A package that is already ACTIVE
+        # is not touched here -- its holder winds down through the cancellation
+        # below and the replacement registers anew at the tail.
+        _packages = self._serial_dispatch.packages
+        if keep_slot:
+            _packages.retain_slot(self.config_entry.entry_id, self)
+        else:
+            _packages.withdraw(self.config_entry.entry_id, self)
 
         # Steps 2-3: signal and await any still-active previous plan.
         prev_cancellation = self._active_dispatch_cancellation
@@ -8495,7 +8588,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         once, earlier, at the top of Pass-2) — no second generation counter.
         Safety is exempt from all generation checks.
         """
-        this_dispatch_gen = await self._preempt_active_comfort_plan()
+        this_dispatch_gen = await self._preempt_active_comfort_plan(keep_slot=True)
 
         # Step 4: this cycle's own plan.
         cancellation = asyncio.Event()
@@ -8519,6 +8612,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         try:
             return await task
         finally:
+            # A kept queue position that no package claimed is forgotten here.
+            self._serial_dispatch.packages.drop_slot(self.config_entry.entry_id, self)
             if self._active_comfort_dispatch_task is task:
                 self._active_comfort_dispatch_task = None
             if self._active_dispatch_cancellation is cancellation:
@@ -8573,6 +8668,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         intent_by_entity: dict[str, tuple] = {}
         exec_result_by_entity: dict[str, object] = {}
         throttle_by_entity: dict[str, dict] = {}
+        # (capability, snapshot) of the cover a command is about: filled when the
+        # plan is built, refreshed by the live validation right before the send.
+        cover_state_by_entity: dict[str, tuple] = {}
 
         for window_id, s in ordered_window_states:
             harm = harmonization[window_id]
@@ -8600,28 +8698,25 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     continue  # main loop builds the BLOCKED result itself
                 if self._startup_cycles_remaining > 0:
                     continue  # main loop builds the NOT_ATTEMPTED result itself
+                # Classify by THIS cover's own position: the first cover of the
+                # window says nothing about the others.
+                _own_id, _own_cap, _own_snap = self._build_cover_entity_snapshot_for_window(
+                    s.window, now, intent.cover_entity_id)
+                if _own_snap is not None and _own_cap is not None:
+                    cover_state_by_entity[intent.cover_entity_id] = (_own_cap, _own_snap)
                 classification = classify_cover_intent(
                     intent,
                     current_position_ha=(
-                        s.exec_snapshot.current_position_ha
-                        if s.exec_snapshot is not None else None
+                        _own_snap.current_position_ha if _own_snap is not None
+                        else (
+                            s.exec_snapshot.current_position_ha
+                            if s.exec_snapshot is not None else None)
                     ),
                 )
-                if not classification.movement_required:
-                    # CommandFilter already gated same-position/no-target
-                    # intents to allowed=False (BLOCKED_SAME_POSITION /
-                    # BLOCKED_NO_TARGET_POSITION, both handled above via
-                    # `if not intent.allowed`) before this pre-pass ever
-                    # runs. If classify_cover_intent nonetheless disagrees
-                    # for an allowed=True intent here (e.g. a tolerance-
-                    # scale mismatch between CommandFilter's internal-unit
-                    # tolerance and this module's HA-scale default), do NOT
-                    # silently skip a movement CommandFilter approved —
-                    # leave it out of this plan entirely so it falls through
-                    # to the legacy dispatch_cover_intent() call below
-                    # (same as any other item this pre-pass doesn't own),
-                    # never a synthesized NOT_ATTEMPTED result.
-                    continue
+                # An allowed intent whose cover is already at its target is still a
+                # plan item (class NO_MOVEMENT): the executor reports it as skipped
+                # and the main loop records why.  It is never sent from anywhere
+                # else, so no normal command can bypass the package and the pacing.
                 item = build_dispatch_plan_item(
                     zone_id=s.window.zone_id,
                     zone_index=zone_idx,
@@ -8737,12 +8832,24 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 ),
             )
             exec_result_by_entity[plan_item.cover_entity_id] = result
+            _expected_s = None
+            _cover_state = cover_state_by_entity.get(plan_item.cover_entity_id)
+            if _cover_state is not None and plan_item.target_class is DispatchTargetClass.INTERMEDIATE:
+                _cap, _snap = _cover_state
+                _expected_s = min(MAX_TRAVEL_WAIT_S, estimate_travel_duration_s(
+                    start_position_ha=_snap.current_position_ha,
+                    target_position_ha=intent.target_position_ha,
+                    travel_time_open_s=_cap.travel_time_open_s,
+                    travel_time_close_s=_cap.travel_time_close_s,
+                ))
             return DispatchOutcome(
                 success=result.status in (ExecutionStatus.SENT,),
                 error_type=(
                     result.failure_exception_type
                     if result.status is ExecutionStatus.FAILED else None
                 ),
+                attempted=result.status in (ExecutionStatus.SENT, ExecutionStatus.FAILED),
+                expected_travel_s=_expected_s,
             )
 
         async def _wait_for_completion_port(plan_item, cancellation):
@@ -8754,32 +8861,27 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # requires a real completion wait for those.
             if prior is None:
                 return CompletionOutcome(status="completed")
+            # THIS cover's capability and its state from right before the send --
+            # not the first cover of the window.
+            _cap, _snap = cover_state_by_entity.get(
+                plan_item.cover_entity_id, (s.exec_cap, s.exec_snapshot))
             _downgraded = bool(
-                s.exec_cap is not None and s.exec_cap.has_reliable_position_feedback
+                _cap is not None and _cap.has_reliable_position_feedback
                 and not self._feedback_trusted(intent.cover_entity_id, True)
             )
             completion = await wait_for_travel_completion(
                 self.hass,
                 entity_id=intent.cover_entity_id,
                 target_position_ha=intent.target_position_ha,
-                invert_position=(
-                    s.exec_cap.invert_position if s.exec_cap is not None else False
-                ),
+                invert_position=(_cap.invert_position if _cap is not None else False),
                 has_reliable_position_feedback=(
                     self._feedback_trusted(
-                        intent.cover_entity_id, s.exec_cap.has_reliable_position_feedback)
-                    if s.exec_cap is not None else False
+                        intent.cover_entity_id, _cap.has_reliable_position_feedback)
+                    if _cap is not None else False
                 ),
-                start_position_ha=(
-                    s.exec_snapshot.current_position_ha
-                    if s.exec_snapshot is not None else None
-                ),
-                travel_time_open_s=(
-                    s.exec_cap.travel_time_open_s if s.exec_cap is not None else 30.0
-                ),
-                travel_time_close_s=(
-                    s.exec_cap.travel_time_close_s if s.exec_cap is not None else 30.0
-                ),
+                start_position_ha=(_snap.current_position_ha if _snap is not None else None),
+                travel_time_open_s=(_cap.travel_time_open_s if _cap is not None else 30.0),
+                travel_time_close_s=(_cap.travel_time_close_s if _cap is not None else 30.0),
                 max_wait_s=MAX_TRAVEL_WAIT_S,
                 cancellation=cancellation,
                 abort_check=self._completion_abort_check(
@@ -8804,14 +8906,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 # (for _COMPLETION_DOWNGRADE_S) it is waited on by estimate.
                 self._completion_downgraded[intent.cover_entity_id] = _monotonic()
                 self._completion_recovery_stats["downgraded"] += 1
-                if s.exec_snapshot is not None and s.exec_snapshot.current_position_ha is not None:
+                if _snap is not None and _snap.current_position_ha is not None:
                     self._silent_cover_baseline[intent.cover_entity_id] = (
-                        s.exec_snapshot.current_position_ha)
-            elif _downgraded and completion.completed and s.exec_cap is not None:
+                        _snap.current_position_ha)
+            elif _downgraded and completion.completed and _cap is not None:
                 # Estimated, not observed -- but the cover may answer again now.
                 self._recover_completion_feedback(
                     intent.cover_entity_id, intent.target_position_ha,
-                    s.exec_cap.invert_position)
+                    _cap.invert_position)
             if not completion.completed and not completion.timed_out:
                 # Cancelled / stale / unloaded: the plan stops here and is
                 # never replayed; a timeout is NOT folded into this.
@@ -8889,13 +8991,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if not self._ownership_allows(window_id, intent.cover_entity_id, False):
                 return ExecutionValidation(ValidationAction.SKIP, reason="cover_ownership")
 
+            # The cover this command is about -- not the window's first cover.
             fresh_entity_id, fresh_cap, fresh_snapshot = (
-                self._build_cover_entity_snapshot_for_window(s.window, dt_util.utcnow())
+                self._build_cover_entity_snapshot_for_window(
+                    s.window, dt_util.utcnow(), intent.cover_entity_id)
             )
             if fresh_snapshot is None or fresh_cap is None or fresh_entity_id is None:
                 return ExecutionValidation(ValidationAction.SKIP, reason="cover_unavailable")
             if not fresh_snapshot.available:
                 return ExecutionValidation(ValidationAction.SKIP, reason="cover_unavailable")
+            cover_state_by_entity[intent.cover_entity_id] = (fresh_cap, fresh_snapshot)
 
             if s.night_contact_blocked:
                 return ExecutionValidation(ValidationAction.SKIP, reason="night_hold")
@@ -8925,9 +9030,16 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             except ValueError:
                 execution_mode = ExecutionMode.AUTOMATIC
 
+            # Only the window's first cover has an assumed position from the
+            # whole-window evaluation; any other cover is judged by what it reports.
+            _own_position_internal = (
+                fresh_snapshot.assumed_position_internal
+                if fresh_snapshot.assumed_position_internal is not None
+                else fresh_snapshot.current_position_internal
+            )
             filt = CommandFilter().evaluate(
                 target_position_internal=intent.target_position_internal,
-                current_position_internal=fresh_snapshot.assumed_position_internal,
+                current_position_internal=_own_position_internal,
                 execution_mode=execution_mode,
                 is_safety=False,
                 is_manual_override=current_override is not None,
@@ -8952,10 +9064,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
             if (
                 fresh_snapshot.is_moving
-                and fresh_snapshot.assumed_position_internal is not None
+                and _own_position_internal is not None
                 and intent.target_position_internal is not None
             ):
-                delta = intent.target_position_internal - fresh_snapshot.assumed_position_internal
+                delta = intent.target_position_internal - _own_position_internal
                 # internal convention: 0=open, 100=shaded. is_closing moves
                 # toward higher internal values, is_opening toward lower.
                 moving_toward_target = (
@@ -8980,25 +9092,77 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
 
         executor = DispatchPlanExecutor()
-        plan_execution_result = await executor.execute_plan(
-            plan=plan,
-            dispatch_item=_dispatch_item_port,
-            wait_for_completion=_wait_for_completion_port,
-            validate_item=_validate_item_port,
-            is_generation_current=_is_generation_current_port,
-            cancellation=cancellation,
-            sleep=_sleep_port,
-            clock=_clock_port,
-        )
+        _entry_id = self.config_entry.entry_id
+        _skip_reason: str | None = None
+        plan_execution_result = None
+        _package_facts: dict = {"outcome": "none"}
+        self._package_state = "waiting"
+        try:
+            async with self._serial_dispatch.package(
+                _entry_id, self, abort=cancellation, clock=lambda: _monotonic(),
+            ) as _package:
+                _package_facts = {"outcome": _package.outcome}
+                if _package.info is not None:
+                    _package_facts.update(
+                        wait_ms=round(_package.info.wait_ms, 1),
+                        position=_package.info.position,
+                        inherited_slot=_package.info.inherited_slot,
+                    )
+                if not _package.granted:
+                    self._package_stats[
+                        "aborted" if _package.outcome == "aborted" else _package.outcome
+                    ] += 1
+                    _skip_reason = (
+                        "safety_preempted" if getattr(cancellation, "fired", None) == "safety"
+                        else f"package_{_package.outcome}"
+                    )
+                elif (
+                    cancellation.is_set() or self._unloading
+                    or self._dispatch_generation != this_dispatch_gen
+                ):
+                    # Granted, but this plan is no longer the current one: nothing
+                    # from it is sent, and it is not replayed.
+                    self._package_stats["refused_after_grant"] += 1
+                    _skip_reason = (
+                        "unloading" if self._unloading
+                        else "stale_generation" if self._dispatch_generation != this_dispatch_gen
+                        else None)
+                    _package.reason = "stale_after_grant"
+                else:
+                    self._package_state = "active"
+                    self._package_stats["granted"] += 1
+                    plan_execution_result = await executor.execute_plan(
+                        plan=plan,
+                        dispatch_item=_dispatch_item_port,
+                        wait_for_completion=_wait_for_completion_port,
+                        validate_item=_validate_item_port,
+                        is_generation_current=_is_generation_current_port,
+                        cancellation=cancellation,
+                        sleep=_sleep_port,
+                        clock=_clock_port,
+                        pacing=self._serial_dispatch.pacing,
+                    )
+                    _package.reason = plan_execution_result.status
+        finally:
+            self._package_state = "none"
+        _gate_stats = self._serial_dispatch.packages.stats()
+        _package_facts["release_reason"] = _gate_stats.get("last_release_reason")
+        _package_facts["pacing_basis"] = self._serial_dispatch.pacing.basis
+        _package_facts["pacing_remaining_ms"] = round(
+            self._serial_dispatch.pacing.remaining(_monotonic()) * 1000.0)
+        self._last_package = _package_facts
 
         # T22 Phase 5a: an item never reaching dispatch_item is not always
         # generation-staleness anymore — it may be a genuine validate_item
         # SKIP (already_at_target, manual_override, night_hold, ...). Use
         # the executor's OWN per-item reason (item_results, keyed by
         # cover_entity_id) rather than a single blanket fallback string.
+        _item_results = (
+            plan_execution_result.item_results if plan_execution_result is not None else ()
+        )
         item_result_by_entity = {
             item_result.item.cover_entity_id: item_result
-            for item_result in plan_execution_result.item_results
+            for item_result in _item_results
         }
 
         results: dict[tuple[str, str], object] = {}
@@ -9009,7 +9173,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 reason = (
                     item_result.reason
                     if item_result is not None and item_result.reason
-                    else "stale_presence_superseded"
+                    else (_skip_reason or "stale_presence_superseded")
                 )
                 exec_result = build_not_attempted_result(intent, reason=reason)
             results[(window_id, cover_entity_id)] = exec_result
@@ -9020,14 +9184,21 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             })
         self._last_sequential_throttle_by_entity = throttle_by_entity
         reason_counts: dict[str, int] = {}
-        for item_result in plan_execution_result.item_results:
+        for item_result in _item_results:
             key = f"{item_result.status}:{item_result.reason}" if item_result.reason else item_result.status
             reason_counts[key] = reason_counts.get(key, 0) + 1
         self._last_plan_completion = {
-            "status": plan_execution_result.status,
-            "abort_reason": plan_execution_result.abort_reason,
-            "preempted": plan_execution_result.preempted,
+            "status": (
+                plan_execution_result.status if plan_execution_result is not None
+                else "not_started"),
+            "abort_reason": (
+                plan_execution_result.abort_reason if plan_execution_result is not None
+                else _skip_reason),
+            "preempted": (
+                plan_execution_result.preempted if plan_execution_result is not None
+                else _skip_reason == "safety_preempted"),
             "items": reason_counts,
+            "package": dict(self._last_package),
         }
         return results
 

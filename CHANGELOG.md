@@ -1,5 +1,83 @@
 # Changelog
 
+## v1.2.0-beta.3
+
+**This is a pre-release.** It is intended for testing on suitable Home
+Assistant systems, not for production use. Please take a backup before
+installing. Stable users should stay on the current stable release (v1.1.13);
+installing the beta requires deliberately opting into a pre-release.
+
+The real-world test in a live installation is still open. This beta is not
+declared stable-ready and has not been fully tested on real devices yet.
+Feedback and diagnostics exports are welcome via
+[GitHub Issues](https://github.com/Mikasmarthome/SmartShading/issues).
+
+### Highlights
+
+- **Rain, wind and storm safety, also without a usable sun.** Tier-1 safety
+  now runs when `sun.sun` data is missing or unusable, rain is treated as
+  Tier-1 safety in the state guard and transitions, rain-safe targets and
+  exterior screen safety positions were corrected, wind protection is wired
+  into the production path, and wind/storm events trigger an immediate
+  reaction.
+- **Global safety priority and plan preemption.** Safety commands are admitted
+  ahead of comfort commands by one global, priority-aware admission. A safety
+  condition interrupts a running comfort plan, including its completion waits
+  and settle pauses. Interrupted comfort commands are not replayed.
+- **Duplicate-cover ownership.** A cover can only be controlled by one
+  SmartShading assignment. Conflicting duplicate assignments are quarantined
+  and reported as Home Assistant repairs instead of being driven by two zones.
+- **Trustworthy travel-end detection.** The end of a cover movement is
+  recognised from real state reports. A timeout is never treated as success:
+  the rest of that group is stopped (other zones continue).
+- **One fixed driving rule inside a synchronized group:**
+  - Normal targets between 1 % and 99 % run one cover at a time. Each cover
+    must report completion, followed by a 2 s settle pause, before the next
+    cover starts.
+  - Normal end positions 0 % and 100 % are started with a 2 s spacing between
+    starts, without waiting for completion.
+  - Safety always takes precedence over both.
+- **Removed dispatch mode and pacing selection.** The old dispatch mode and
+  pacing options are gone from the UI and translations. Previously stored
+  dispatch settings are ignored; no migration is needed.
+- **Lifecycle hardening.** Unload, reload and recovery were hardened, hazard
+  states are refreshed immediately, and diagnostics references stay
+  resolvable across reloads.
+- **Diagnostics.** The diagnostics download is bounded by one shared size
+  budget with linear-time size accounting (this includes the correction
+  already released in v1.1.13), and lifecycle state is now reported.
+- **Morning one-shot position** in the shared dispatch pipeline, and a fix for
+  a crash when the morning position resolved to `None`.
+- **Compatibility.** `smartshading.clear_manual_override` works again on
+  current Home Assistant releases (relocated target API, with a fallback for
+  older versions). `integration_type` and documentation metadata were aligned
+  with the stable line.
+- **Tests and CI.** The test suite is now fully tracked in the repository. CI
+  runs the stub suite and a suite against a real Home Assistant installation,
+  with a gate that fails when a tracked real-HA test file is not collected.
+
+### Notes and limits
+
+- Beta 3 does not yet contain the dynamic percent model planned for Beta 4.
+- Existing learning data is preserved; this release adds no new travel-time
+  learning.
+- Computed positions for radio-controlled (RTS) covers are estimates, not
+  physically confirmed motor positions.
+- Radio delivery is not guaranteed, and no general Safety reaction time is
+  promised.
+
+### Please test
+
+Before installing, take a backup. After installing, check in your own
+installation:
+
+1. An intermediate position (1–99 %) with several covers: the driving order
+   must be one cover after another.
+2. 0 % / 100 % moves: starts are about 2 s apart.
+3. Your normal automation.
+4. Reloading the integration and downloading the official diagnostics.
+5. Safety behaviour, only where it can be tested safely.
+
 ## v1.2.0-beta.2.1
 
 **This is a pre-release.** It is a narrow compatibility hotfix on top of

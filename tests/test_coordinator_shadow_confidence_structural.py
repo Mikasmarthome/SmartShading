@@ -13,7 +13,7 @@ test_dispatch_safety_generation_exemption_structural.py).
 """
 from __future__ import annotations
 
-import re
+import ast
 from pathlib import Path
 
 _COORDINATOR_PATH = (
@@ -22,26 +22,46 @@ _COORDINATOR_PATH = (
 )
 
 
-def _source() -> str:
-    return _COORDINATOR_PATH.read_text(encoding="utf-8")
+def _tree() -> ast.Module:
+    return ast.parse(_COORDINATOR_PATH.read_text(encoding="utf-8"))
+
+
+def _maybe_shadow() -> ast.FunctionDef:
+    functions = [
+        node for node in ast.walk(_tree())
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "_maybe_shadow"
+    ]
+    assert len(functions) == 1
+    return functions[0]
+
+
+def _maturity_calls(root: ast.AST) -> list[ast.Call]:
+    return [
+        node for node in ast.walk(root)
+        if isinstance(node, ast.Call)
+        and getattr(node.func, "id", getattr(node.func, "attr", "")) == "compute_sample_maturity_confidence"
+    ]
 
 
 class TestShadowConfidenceUsesSharedFormula:
     def test_maybe_shadow_calls_compute_sample_maturity_confidence(self) -> None:
-        source = _source()
-        assert "compute_sample_maturity_confidence" in source, (
-            "coordinator.py must import and use the shared evidence-maturity "
-            "ramp from confidence_engine — a hand-rolled ad-hoc formula here "
+        assert _maturity_calls(_maybe_shadow()), (
+            "_maybe_shadow must call the shared evidence-maturity ramp from "
+            "confidence_engine — a hand-rolled ad-hoc formula here "
             "would re-introduce a duplicate, divergeable confidence concept."
         )
 
     def test_call_uses_documented_targets(self) -> None:
-        source = _source()
-        pattern = re.compile(
-            r"compute_sample_maturity_confidence\(\s*neg_count,\s*"
-            r"count_target=8\.0,\s*distinct_days=days,\s*day_target=3\.0,?\s*\)",
-        )
-        assert pattern.search(source), (
+        calls = _maturity_calls(_maybe_shadow())
+        assert len(calls) == 1
+        call = calls[0]
+        assert [ast.unparse(arg) for arg in call.args] == ["neg_count"]
+        keywords = {kw.arg: ast.unparse(kw.value) for kw in call.keywords}
+        assert keywords == {
+            "count_target": "8.0",
+            "distinct_days": "days",
+            "day_target": "3.0",
+        }, (
             "The shadow-candidate maturity call must use count_target=8.0 / "
             "day_target=3.0 (the historical constants) via the shared "
             "helper — a changed target would silently alter shadow-proposal "
@@ -49,11 +69,12 @@ class TestShadowConfidenceUsesSharedFormula:
         )
 
     def test_no_hand_rolled_min_ratio_formula_remains_in_shadow_block(self) -> None:
-        source = _source()
-        maybe_shadow_start = source.index("def _maybe_shadow(")
-        maybe_shadow_end = source.index("\n    def ", maybe_shadow_start + 10)
-        block = source[maybe_shadow_start:maybe_shadow_end]
-        assert "neg_count / 8.0" not in block, (
-            "A literal 'neg_count / 8.0' inside _maybe_shadow indicates the "
-            "ad-hoc formula was reintroduced instead of the shared helper."
-        )
+        for node in ast.walk(_maybe_shadow()):
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+                assert not (
+                    isinstance(node.left, ast.Name) and node.left.id == "neg_count"
+                    and isinstance(node.right, ast.Constant) and node.right.value == 8.0
+                ), (
+                    "A literal 'neg_count / 8.0' inside _maybe_shadow indicates the "
+                    "ad-hoc formula was reintroduced instead of the shared helper."
+                )

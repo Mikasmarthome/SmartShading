@@ -458,19 +458,49 @@ class TestA6DecisionRefsNeverDangle:
 
 
 class TestA6SynchronousSlice:
-    """The trim runs on the event loop on a detached payload.  Its cost is bound
-    by the byte budget, not by the number of zones, and stays far below a second."""
+    """The trim runs on the event loop on a detached payload.  Its work is counted
+    in serialisations, not measured in seconds: every history record is
+    serialised exactly once and the whole payload at most a fixed number of
+    times, however many zones or removal rounds there are."""
 
-    def test_slice_is_bounded_and_does_not_grow_with_zone_count(self):
-        import time
-        timings = {}
+    @staticmethod
+    def _trim(zones):
+        from custom_components.smartshading.engines import export_budget as eb
+
+        support, research = _assemble(_heavy(zones))
+        groups = list(ee.support_history_groups(support)) + list(ee.research_history_groups(research)[0])
+        records = sum(len(slot.records) for group in groups for slot in group)
+        real = eb.json_size
+        calls = {"n": 0}
+
+        def counting(obj):
+            calls["n"] += 1
+            return real(obj)
+
+        eb.json_size = counting
+        try:
+            _, _, reports = ee.fit_embedded_exports(support, research, now=_NOW)
+        finally:
+            eb.json_size = real
+        return records, calls["n"], reports
+
+    def test_every_record_is_serialised_exactly_once(self):
         for zones in (1, 8):
-            support, research = _assemble(_heavy(zones))
-            t0 = time.perf_counter()
-            ee.fit_embedded_exports(support, research, now=_NOW)
-            timings[zones] = time.perf_counter() - t0
-        assert max(timings.values()) < 2.0, timings          # sub-second in practice (~0.2 s)
-        assert timings[8] < timings[1] * 6 + 0.5, timings     # not proportional to the zone count
+            records, calls, _ = self._trim(zones)
+            assert records > 0
+            assert calls == records, (zones, records, calls)
+
+    def test_work_does_not_grow_with_the_number_of_removal_rounds(self):
+        from custom_components.smartshading.engines.export_budget import _MAX_TIGHTEN_PASSES
+
+        for zones in (1, 8):
+            _, _, reports = self._trim(zones)
+            for report in reports:
+                assert report.measurements <= 2 + _MAX_TIGHTEN_PASSES, report.measurements
+
+    def test_the_trim_really_removes_records(self):
+        _, _, reports = self._trim(8)
+        assert any(report.applied for report in reports)
 
 
 # ---------------------------------------------------------------------------

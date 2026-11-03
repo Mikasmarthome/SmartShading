@@ -8,7 +8,7 @@ All position values use the integration-internal convention:
   0  = fully open  (no shading)
   100 = fully shaded / closed
 
-CoverController (cover_control/cover_controller.py) is the only place that
+to_ha_position() (cover_control/position_semantics.py) is the only place that
 converts these values back to the HA cover convention (0=closed, 100=open)
 when actually commanding a physical device.  Nothing else in the integration
 should perform this conversion.

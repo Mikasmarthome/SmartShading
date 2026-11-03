@@ -6,7 +6,7 @@ No Home Assistant dependency.  No service calls.  No async.
 PURPOSE
 -------
 ExecutionResult closes the audit loop: after CoverIntent says "we want to do
-this", and CoverController translates it into a low-level CoverCommand,
+this", and the dispatch layer sends it to Home Assistant,
 ExecutionResult records what actually happened.  It is the primary source
 for diagnostics, logging, and RuntimeData.
 
@@ -36,8 +36,8 @@ EXECUTION STATUS SEMANTICS
                     target positions are still populated for diagnostics.
 
     SKIPPED         The intent was allowed, but execution was deliberately
-                    deferred this cycle (e.g. TravelTracker reports the cover
-                    is still moving from a previous command).  Reserved for
+                    deferred this cycle (e.g. the cover is still moving from a
+                    previous command).  Reserved for
                     Step 9G4 — no factory provided in 9G3b.
 
     SENT            The HA service call was dispatched (fire-and-forget mode).
@@ -445,7 +445,7 @@ def build_blocked_result(
 
     Typically used when CommandFilter returned allowed=False.  The
     blocked_reason is taken from intent.blocked_reason by default; supply an
-    explicit value when a different gate (e.g. TravelTracker.is_moving) blocks
+    explicit value when a different gate (e.g. a cover that is still moving) blocks
     an otherwise-allowed intent.
 
     Target positions are preserved from the intent so diagnostics can show

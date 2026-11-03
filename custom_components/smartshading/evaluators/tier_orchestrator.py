@@ -53,10 +53,9 @@ Tier 2 — Manual Override Policy (v1.2.0-beta.1, T7 restructure):
   The one true gate — "is this decision allowed to proceed given the
   currently active override, if any?" — is then applied ONCE, centrally, by
   evaluate_manual_override_policy(). No other tier or evaluator contains an
-  `if active_override:` check; ManualOverrideEvaluator (evaluators/
-  manual_override_evaluator.py) still exists as a small standalone/tested
-  unit but is no longer called from this pipeline — evaluate_manual_override_policy()
-  constructs the same MANUAL_OVERRIDE shape itself when blocking a candidate.
+  `if active_override:` check; there is no separate manual-override evaluator
+  module — evaluate_manual_override_policy() constructs the MANUAL_OVERRIDE
+  shape itself when blocking a candidate.
 
 Invariants:
   - INV-18: evaluators receive a pre-resolved WindowDecisionInput; no config

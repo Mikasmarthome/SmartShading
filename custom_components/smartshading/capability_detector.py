@@ -2,8 +2,8 @@
 from a real Home Assistant cover entity.
 
 This is deliberately the ONE place in the cover-related code that imports
-Home Assistant - cover_control/ stays HA-independent and unit-testable
-(see scripts/smoke_test_core.py). Only the pure classification logic
+Home Assistant - cover_control/ stays HA-independent and unit-testable.
+Only the pure classification logic
 (classify_cover_profile) lives there; everything that needs `hass.states`
 or the entity registry lives here.
 
@@ -108,6 +108,6 @@ class CapabilityDetector:
         if not supports_position:
             # Nothing to be "reliable" about - no continuous position to
             # report in the first place. AssumedStateManager still tracks
-            # these via TravelTracker-based estimation once commands exist.
+            # these through its own estimated position once commands exist.
             return False
         return True

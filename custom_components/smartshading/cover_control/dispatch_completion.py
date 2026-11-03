@@ -12,10 +12,10 @@ Tiered strategy, most-trustworthy signal first:
      guard's unreliable-feedback handling in engines/override_detector.py:
      a stale/misleading reported position must not drive logic).
   2. No reliable feedback: reuse the per-cover travel_time_open_s /
-     travel_time_close_s already modeled in cover_capabilities.py (the same
-     numbers cover_control/travel_tracker.py's estimator uses), scaled by
-     the fraction of the 0-100 range actually being crossed when the start
-     position is known, and simply wait that long.
+     travel_time_close_s already modeled in cover_capabilities.py (see
+     estimate_travel_duration_s() below), scaled by the fraction of the 0-100
+     range actually being crossed when the start position is known, and simply
+     wait that long.
   3. Timeout: both tiers are bounded by MAX_TRAVEL_WAIT_S -- a cover that never
      reports completion (tier 1) or whose estimate somehow exceeds the bound
      (tier 2) is not waited on forever.  A timeout is never a success: the rest

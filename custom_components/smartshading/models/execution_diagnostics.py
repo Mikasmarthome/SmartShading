@@ -126,7 +126,7 @@ class WindowExecutionDiagnostics:
     Current values:
       "startup_grace_active"  — dispatch suppressed during the post-restart hydration
                                 period (_startup_cycles_remaining > 0) for non-safety intents.
-    Reserved for future suppression reasons (TravelTracker, maintenance mode, etc.)."""
+    Reserved for future suppression reasons (maintenance mode, etc.)."""
 
     night_hard_hold_applied: bool = False
     """True when Night Hard Hold suppressed a non-safety OPEN/raise command that

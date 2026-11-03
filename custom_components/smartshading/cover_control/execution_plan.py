@@ -1,7 +1,7 @@
 """Cover Execution Plan — Phase 9G2.
 
 Semantic command layer between WindowDecision / CommandFilter and the
-low-level CoverCommand in cover_controller.py.
+actual Home Assistant service call (HAServiceAdapter).
 
 No Home Assistant dependency.  No service calls.  No async.
 
@@ -15,19 +15,18 @@ LAYER OVERVIEW
   CoverIntent               semantic intent: WHAT to do, with full context  ← THIS MODULE
   ExecutionPlan             all intents for one window (1 per cover entity)  ← THIS MODULE
   ↓
-  CoverController           HOW to execute: SET_POSITION vs OPEN/CLOSE       (existing)
-  CoverCommand (low-level)  action + target in HA convention                 (existing)
+  DispatchPlanExecutor      HOW to execute: order, pacing, completion wait   (dispatch_plan_executor.py)
   ↓
   HAServiceAdapter          hass.services.async_call                          (Step 9G3)
 
 NAMING RATIONALE
 ----------------
-The low-level execution primitive is CoverCommand (cover_controller.py), which
-represents the HA service call strategy (SET_POSITION / OPEN / CLOSE / STOP).
+The low-level execution primitive is the Home Assistant service call itself
+(SET_POSITION / OPEN / CLOSE / STOP).
 
 CoverIntent is the semantic counterpart at a higher abstraction level: it
 captures the *decision* (what was chosen and why) independently of *how* the
-hardware is driven.  A single CoverIntent fans out to one CoverCommand per
+hardware is driven.  A single CoverIntent fans out to one service call per
 execution; the mapping depends on CoverCapability (supports_position, etc.).
 
 POSITION CONVENTION
@@ -81,11 +80,10 @@ from .command_filter import (
 class CoverCommandType(Enum):
     """Semantic command type at the decision layer.
 
-    Values map one-to-one to what CoverController will execute in a later step.
-    The mapping from CoverCommandType to CoverAction (cover_controller.py) is:
-        MOVE_TO_POSITION  → CoverAction.SET_POSITION (or OPEN/CLOSE for Somfy)
-        STOP              → CoverAction.STOP
-        NO_OP / BLOCKED   → CoverAction.NONE (nothing sent to HA)
+    Values map one-to-one to what the dispatch layer executes:
+        MOVE_TO_POSITION  → SET_POSITION service call (or OPEN/CLOSE for Somfy)
+        STOP              → STOP service call
+        NO_OP / BLOCKED   → nothing sent to HA
     """
 
     NO_OP = "no_op"
@@ -156,9 +154,8 @@ class CoverIntent:
     - Whether execution is permitted (allowed, blocked_reason)
     - Full context for diagnostics and explainability
 
-    CoverController (cover_controller.py) translates this into the low-level
-    CoverCommand (SET_POSITION vs OPEN/CLOSE strategy, TravelTracker update,
-    AssumedStateManager update).
+    The dispatch layer translates this into the service call (SET_POSITION vs
+    OPEN/CLOSE strategy, AssumedStateManager update).
 
     All position fields use the documented convention:
       target_position_internal: 0=open, 100=shaded (SmartShading internal)
@@ -195,7 +192,7 @@ class CoverIntent:
 
     allowed: bool
     """True when CommandFilter permitted execution for this cycle.
-    When True, this intent may proceed to CoverController."""
+    When True, this intent may proceed to the dispatch layer."""
 
     blocked_reason: str | None
     """BLOCKED_* constant from command_filter.py.  None when allowed=True."""
@@ -219,7 +216,7 @@ class ExecutionPlan:
 
     Contains one CoverIntent per cover entity in the window's CoverGroup.
     When a window has multiple covers (synchronized group), each cover gets
-    the same intent; CoverController may later differentiate by capability.
+    the same intent; the dispatch layer may differentiate by capability.
 
     ExecutionPlan is the unit passed from the Coordinator to the future
     HAServiceAdapter (Step 9G3).
@@ -300,8 +297,8 @@ def build_execution_plan(
     """Build an ExecutionPlan for all covers in one window.
 
     Applies the same CommandFilterResult to every cover entity in the window's
-    CoverGroup: all covers receive the same intent this cycle.  CoverController
-    may later differentiate behavior per cover based on CoverCapability (e.g.
+    CoverGroup: all covers receive the same intent this cycle.  The dispatch layer
+    may differentiate behavior per cover based on CoverCapability (e.g.
     Somfy vs. standard positioning covers).
 
     Parameters

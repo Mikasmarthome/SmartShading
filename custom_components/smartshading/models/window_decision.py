@@ -17,7 +17,7 @@ class WindowDecision:
     """What the evaluator tier that fired decided to do for one window.
 
     target_position uses the internal convention: 0 = fully open,
-    100 = fully shaded / closed.  CoverController handles conversion to the
+    100 = fully shaded / closed.  to_ha_position() converts to the
     HA cover convention when commanding a physical device.
 
     target_tilt is Phase 2 only and is always None in this version.

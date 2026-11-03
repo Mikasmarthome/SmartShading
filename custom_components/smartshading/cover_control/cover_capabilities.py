@@ -97,5 +97,5 @@ class CoverCapability:
     def supports_continuous_positioning(self) -> bool:
         """True if the cover can be driven to an arbitrary intermediate
         position. False for Somfy RTS / open-close-only hardware, which
-        CoverController must drive via full OPEN/CLOSE instead."""
+        the dispatch layer must drive via full OPEN/CLOSE instead."""
         return self.supports_position and not self.supports_open_close_only

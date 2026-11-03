@@ -15,7 +15,7 @@ handled in one place.
 The Coordinator reads hass.states.get(entity_id) and passes the raw state
 string and attributes dict to build_cover_entity_snapshot() — the only function
 that touches HA-source data.  Everything downstream (CommandFilter, CoverIntent,
-CoverController) sees only CoverEntitySnapshot, never raw HA attributes.
+the dispatch layer) sees only CoverEntitySnapshot, never raw HA attributes.
 
 POSITION CONVENTIONS IN THIS MODULE
 ------------------------------------
@@ -257,7 +257,7 @@ def build_cover_entity_snapshot(
     -------
     CoverEntitySnapshot
         Fully-populated, immutable snapshot ready for CommandFilter and
-        CoverController.
+        the dispatch layer.
     """
     # ------------------------------------------------------------------
     # Availability: None state, or "unknown"/"unavailable" → not available.

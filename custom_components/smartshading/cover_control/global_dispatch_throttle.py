@@ -57,6 +57,26 @@ wait while Safety queues up: waits performed under admission end as soon as
 other zones that are waiting outside the admission are ended by the
 integration-wide ``safety_epoch`` signal (see ``SafetyEpochSignal``).
 
+Zone packages and normal pacing (one global coordination)
+---------------------------------------------------------
+Admission orders single service calls.  It does NOT decide which zone's normal
+travel may run, because a zone's completion wait and settle pause happen outside
+it.  Two additional pieces of the SAME component close that gap, for normal
+(non-Safety) travel only:
+
+  ZonePackageGate  -- at most one zone's current normal package runs at a time;
+                      waiting zones are served FIFO, one waiting ticket per zone.
+                      Whoever holds the package does its own pacing; the gate
+                      never sends anything and never touches Safety.
+  NormalPacing     -- the earliest permitted start of the next normal command
+                      (2 s after an end-position command start, completion plus
+                      2 s settle after an intermediate command), kept across
+                      packages and zones.
+
+Safety never takes a package and never consults the pacing; it only goes through
+the admission, exactly as before.  Waiting for a package is abortable by the
+same signals as every other normal wait (local cancellation, any zone's Safety).
+
 Monotonic clock
 ---------------
 Elapsed time is measured with a monotonic clock (``time.monotonic`` by
@@ -74,6 +94,8 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Callable, Protocol
+
+from .normal_pacing import NormalPacing
 
 
 DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS: float = 2.0
@@ -510,6 +532,352 @@ class _Admission:
             self._admission.release()
 
 
+# ---------------------------------------------------------------------------
+# Zone package gate
+# ---------------------------------------------------------------------------
+
+PACKAGE_GRANTED = "granted"
+PACKAGE_ABORTED = "aborted"
+PACKAGE_SUPERSEDED = "superseded"
+PACKAGE_WITHDRAWN = "withdrawn"
+
+_ST_WAITING = "waiting"
+_ST_SLOT = "slot"          # keeps a replaced waiting ticket's queue position; never granted
+_ST_ACTIVE = "active"
+_ST_DONE = "done"
+
+
+class _PackageTicket:
+    __slots__ = ("zone_key", "owner", "seq", "future", "state", "enqueued_mono",
+                 "position", "inherited")
+
+    def __init__(self, zone_key: str, owner: object, seq: int, enqueued_mono: float) -> None:
+        self.zone_key = zone_key
+        self.owner = owner
+        self.seq = seq
+        self.future: asyncio.Future | None = None
+        self.state = _ST_WAITING
+        self.enqueued_mono = enqueued_mono
+        self.position = 0
+        self.inherited = False
+
+
+@dataclass(frozen=True, slots=True)
+class PackageInfo:
+    """What one package request experienced (diagnostics only)."""
+
+    wait_ms: float
+    position: int
+    """Number of packages (active one included) that were ahead when this request queued."""
+    inherited_slot: bool
+    """True when a replaced waiting ticket's queue position was taken over."""
+
+
+class ZonePackageGate:
+    """At most one zone's current normal package runs at a time.
+
+    A zone is identified by ``zone_key`` (its config entry); ``owner`` is the
+    coordinator instance, so that tearing down an old instance never removes the
+    tickets of its successor.
+
+    Invariants
+    ----------
+    * Grants are atomic: ``release`` hands the package straight to the oldest
+      waiting ticket in the same synchronous step; there is no window in which it
+      is free while somebody waits, and no wake-up can be lost.
+    * FIFO by first arrival.  A zone has at most one waiting ticket: a newer
+      request of the same zone replaces it and takes over its position (a stale
+      package is never revived, and the zone is neither promoted nor demoted).
+      A zone that finished or lost its ACTIVE package registers anew at the tail.
+    * ``release`` is identity-guarded and idempotent.  A waiter cancelled while
+      queued leaves the queue; one cancelled right after it was granted passes
+      the package on.
+    * The gate owns no lock that is held across anything else: it never awaits
+      while mutating, and Safety does not use it.
+    """
+
+    def __init__(self, pacing: NormalPacing, mono_clock: Callable[[], float] | None = None) -> None:
+        self._pacing = pacing
+        self._mono: Callable[[], float] = mono_clock or time.monotonic
+        self._active: _PackageTicket | None = None
+        self._active_since: float = 0.0
+        self._queue: list[_PackageTicket] = []
+        self._seq = 0
+        self._granted_total = 0
+        self._superseded_total = 0
+        self._withdrawn_total = 0
+        self._cancelled_waiting_total = 0
+        self._last_release_reason: str | None = None
+        self._last_wait_ms: float | None = None
+
+    # -- request ---------------------------------------------------------------
+
+    async def acquire(self, zone_key: str, owner: object):
+        """Wait for the package.  Returns ``(ticket, outcome, info)``; ``ticket`` is
+        only set for ``PACKAGE_GRANTED`` and must be released by the caller."""
+        started = self._mono()
+        inherited_seq: int | None = None
+        for old in list(self._queue):
+            if old.zone_key != zone_key:
+                continue
+            inherited_seq = old.seq if inherited_seq is None else min(inherited_seq, old.seq)
+            self._queue.remove(old)
+            if old.state == _ST_WAITING and old.future is not None and not old.future.done():
+                old.future.set_result(PACKAGE_SUPERSEDED)
+                self._superseded_total += 1
+            old.state = _ST_DONE
+        self._seq += 1
+        ticket = _PackageTicket(
+            zone_key, owner, inherited_seq if inherited_seq is not None else self._seq, started)
+        ticket.inherited = inherited_seq is not None
+        ahead = sum(1 for w in self._queue if w.state == _ST_WAITING and w.seq < ticket.seq)
+        ticket.position = ahead + (1 if self._active is not None else 0)
+        if self._active is None and not any(w.state == _ST_WAITING for w in self._queue):
+            return self._activate(ticket, started)
+        loop = asyncio.get_running_loop()
+        ticket.future = loop.create_future()
+        self._insert(ticket)
+        try:
+            outcome = await ticket.future
+        except asyncio.CancelledError:
+            if ticket.state == _ST_ACTIVE:
+                self.release(ticket, reason="cancelled_after_grant")
+            else:
+                self._remove(ticket)
+                self._cancelled_waiting_total += 1
+            raise
+        if outcome != PACKAGE_GRANTED:
+            return None, outcome, None
+        info = self._info(ticket, started)
+        self._last_wait_ms = info.wait_ms
+        return ticket, outcome, info
+
+    def _activate(self, ticket: _PackageTicket, started: float):
+        ticket.state = _ST_ACTIVE
+        self._active = ticket
+        self._active_since = self._mono()
+        self._granted_total += 1
+        info = self._info(ticket, started)
+        self._last_wait_ms = info.wait_ms
+        return ticket, PACKAGE_GRANTED, info
+
+    def _info(self, ticket: _PackageTicket, started: float) -> PackageInfo:
+        return PackageInfo(
+            wait_ms=max(0.0, (self._mono() - started) * 1000.0),
+            position=ticket.position,
+            inherited_slot=ticket.inherited,
+        )
+
+    # -- release / replacement --------------------------------------------------
+
+    def release(self, ticket: _PackageTicket, *, now: float | None = None,
+                reason: str | None = None) -> bool:
+        """Free the package (identity-guarded, idempotent) and hand it on.
+
+        ``now`` is the plan clock's current time: a travel that was started and
+        never resolved keeps its bounded conservative boundary in the pacing."""
+        if self._active is not ticket:
+            return False
+        if now is not None:
+            self._pacing.resolve_pending(now)
+        self._active = None
+        ticket.state = _ST_DONE
+        self._last_release_reason = reason
+        self._grant_next()
+        return True
+
+    def retain_slot(self, zone_key: str, owner: object) -> bool:
+        """The zone's waiting ticket is being replaced by a fresh evaluation:
+        its waiter ends (superseded) and its queue position is kept for the
+        replacement.  False when the zone had no waiting ticket."""
+        for t in self._queue:
+            if t.zone_key == zone_key and t.owner is owner and t.state == _ST_WAITING:
+                t.state = _ST_SLOT
+                if t.future is not None and not t.future.done():
+                    t.future.set_result(PACKAGE_SUPERSEDED)
+                self._superseded_total += 1
+                return True
+        return False
+
+    def drop_slot(self, zone_key: str, owner: object) -> None:
+        """Forget a kept position that was never claimed (idempotent)."""
+        for t in list(self._queue):
+            if t.zone_key == zone_key and t.owner is owner and t.state == _ST_SLOT:
+                self._queue.remove(t)
+                t.state = _ST_DONE
+
+    def withdraw(self, zone_key: str, owner: object) -> int:
+        """Remove the zone's waiting ticket and kept position (no replacement is
+        coming).  The ACTIVE package is not touched: its holder releases it."""
+        removed = 0
+        for t in list(self._queue):
+            if t.zone_key != zone_key or t.owner is not owner:
+                continue
+            self._queue.remove(t)
+            if t.state == _ST_WAITING and t.future is not None and not t.future.done():
+                t.future.set_result(PACKAGE_WITHDRAWN)
+                self._withdrawn_total += 1
+            t.state = _ST_DONE
+            removed += 1
+        return removed
+
+    def discard_owner(self, owner: object) -> int:
+        """Teardown of one coordinator instance: remove only ITS waiting tickets and
+        kept positions (a successor instance of the same zone is not affected)."""
+        removed = 0
+        for t in list(self._queue):
+            if t.owner is not owner:
+                continue
+            self._queue.remove(t)
+            if t.state == _ST_WAITING and t.future is not None and not t.future.done():
+                t.future.set_result(PACKAGE_WITHDRAWN)
+                self._withdrawn_total += 1
+            t.state = _ST_DONE
+            removed += 1
+        return removed
+
+    # -- internals ----------------------------------------------------------------
+
+    def _insert(self, ticket: _PackageTicket) -> None:
+        idx = len(self._queue)
+        for i, other in enumerate(self._queue):
+            if other.seq > ticket.seq:
+                idx = i
+                break
+        self._queue.insert(idx, ticket)
+
+    def _remove(self, ticket: _PackageTicket) -> None:
+        try:
+            self._queue.remove(ticket)
+        except ValueError:
+            pass
+        ticket.state = _ST_DONE
+
+    def _grant_next(self) -> None:
+        for t in list(self._queue):
+            if t.state != _ST_WAITING:
+                continue
+            if t.future is None or t.future.done():      # cancelled while queued
+                self._queue.remove(t)
+                continue
+            self._queue.remove(t)
+            t.state = _ST_ACTIVE
+            self._active = t
+            self._active_since = self._mono()
+            self._granted_total += 1
+            t.future.set_result(PACKAGE_GRANTED)
+            return
+
+    # -- diagnostics ----------------------------------------------------------------
+
+    @property
+    def is_free(self) -> bool:
+        return self._active is None and not any(t.state == _ST_WAITING for t in self._queue)
+
+    @property
+    def active(self) -> bool:
+        return self._active is not None
+
+    @property
+    def queued_count(self) -> int:
+        return sum(1 for t in self._queue if t.state == _ST_WAITING)
+
+    @property
+    def slot_count(self) -> int:
+        return sum(1 for t in self._queue if t.state == _ST_SLOT)
+
+    def waiting_position(self, zone_key: str, owner: object) -> int | None:
+        """1-based place of the zone's waiting ticket in the FIFO order, else None."""
+        place = 0
+        for t in self._queue:
+            if t.state != _ST_WAITING:
+                continue
+            place += 1
+            if t.zone_key == zone_key and t.owner is owner:
+                return place
+        return None
+
+    def holds(self, zone_key: str, owner: object) -> bool:
+        a = self._active
+        return a is not None and a.zone_key == zone_key and a.owner is owner
+
+    def stats(self) -> dict:
+        return {
+            "active": self._active is not None,
+            "active_ms": (
+                round(max(0.0, self._mono() - self._active_since) * 1000.0)
+                if self._active is not None else None),
+            "queued": self.queued_count,
+            "kept_positions": self.slot_count,
+            "granted_total": self._granted_total,
+            "superseded_total": self._superseded_total,
+            "withdrawn_total": self._withdrawn_total,
+            "cancelled_while_waiting_total": self._cancelled_waiting_total,
+            "last_release_reason": self._last_release_reason,
+            "last_wait_ms": (None if self._last_wait_ms is None else round(self._last_wait_ms, 1)),
+        }
+
+
+class _PackageContext:
+    """``async with serial.package(key, owner, abort=..., clock=...) as pkg`` ->
+    ``pkg.outcome`` / ``pkg.info``.  Not granted (aborted, replaced, withdrawn):
+    the context holds nothing and releases nothing on exit."""
+
+    def __init__(self, gate: ZonePackageGate, zone_key: str, owner: object,
+                 abort: "AbortSignal | None", clock: Callable[[], float] | None) -> None:
+        self._gate = gate
+        self._zone_key = zone_key
+        self._owner = owner
+        self._abort = abort
+        self._clock = clock
+        self._ticket: _PackageTicket | None = None
+        self.outcome: str = PACKAGE_ABORTED
+        self.info: PackageInfo | None = None
+        self.reason: str | None = None
+
+    @property
+    def granted(self) -> bool:
+        return self.outcome == PACKAGE_GRANTED
+
+    async def __aenter__(self) -> "_PackageContext":
+        gate = self._gate
+        if self._abort is not None and self._abort.is_set():
+            self.outcome = PACKAGE_ABORTED
+            return self
+        if self._abort is None or gate.is_free:
+            ticket, self.outcome, self.info = await gate.acquire(self._zone_key, self._owner)
+            self._ticket = ticket
+            return self
+        acquire = asyncio.ensure_future(gate.acquire(self._zone_key, self._owner))
+        watch = asyncio.ensure_future(self._abort.wait())
+        try:
+            await asyncio.wait({acquire, watch}, return_when=asyncio.FIRST_COMPLETED)
+        except BaseException:
+            acquire.cancel()
+            watch.cancel()
+            raise
+        watch.cancel()
+        if acquire.done() and not acquire.cancelled():
+            ticket, self.outcome, self.info = acquire.result()
+            self._ticket = ticket
+            return self
+        acquire.cancel()                      # a grant that raced is handed on by acquire()
+        try:
+            await acquire
+        except asyncio.CancelledError:
+            pass
+        self.outcome = PACKAGE_ABORTED
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        ticket, self._ticket = self._ticket, None
+        if ticket is None:
+            return
+        reason = self.reason or ("error" if exc_type is not None else "released")
+        now = self._clock() if self._clock is not None else None
+        self._gate.release(ticket, now=now, reason=reason)
+
+
 class GlobalSerialDispatch:
     """Integration-wide serial cover dispatch: PriorityAdmission + GlobalDispatchThrottle.
 
@@ -532,6 +900,10 @@ class GlobalSerialDispatch:
         self._throttle: GlobalDispatchThrottle = GlobalDispatchThrottle(
             min_interval, mono_clock
         )
+        # Normal-travel coordination (zone packages + shared pacing); Safety
+        # uses neither.  Same component, same lifetime, no second dispatcher.
+        self._pacing: NormalPacing = NormalPacing()
+        self._packages: ZonePackageGate = ZonePackageGate(self._pacing, mono_clock)
 
     @property
     def lock(self) -> PriorityAdmission:
@@ -546,6 +918,19 @@ class GlobalSerialDispatch:
     def admit(self, *, safety: bool, abort: AbortSignal | None = None) -> "_Admission":
         """Admit one request; Safety is selected before all queued normals."""
         return self._admission.admit(safety=safety, abort=abort)
+
+    @property
+    def pacing(self) -> NormalPacing:
+        return self._pacing
+
+    @property
+    def packages(self) -> ZonePackageGate:
+        return self._packages
+
+    def package(self, zone_key: str, owner: object, *, abort: AbortSignal | None = None,
+                clock: Callable[[], float] | None = None) -> "_PackageContext":
+        """Reserve the one normal-travel package for this zone (never for Safety)."""
+        return _PackageContext(self._packages, zone_key, owner, abort, clock)
 
     def safety_epoch_signal(self) -> SafetyEpochSignal:
         """A signal that fires when any zone's Safety enters admission from now on."""

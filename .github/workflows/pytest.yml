@@ -55,5 +55,16 @@ jobs:
           echo "collected: $count"
           test "$count" -ge 40
 
+      - name: Every tracked real-HA test file is collected
+        run: |
+          missing=0
+          for f in $(git ls-files 'tests/real_ha/test_*.py'); do
+            if ! grep -q "\(^\|/\)$(basename "$f")::" collected.txt; then
+              echo "not collected: $f"
+              missing=1
+            fi
+          done
+          test "$missing" -eq 0
+
       - name: Run tests
         run: python -m pytest tests/real_ha --confcutdir=tests/real_ha -p no:cacheprovider -q --timeout=180 -rw

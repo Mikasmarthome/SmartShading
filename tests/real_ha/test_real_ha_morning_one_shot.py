@@ -116,18 +116,24 @@ from custom_components.smartshading.models.zone_execution_config import ZoneExec
 _MORNING_TIME = dt_time(6, 30)
 
 @pytest.fixture(autouse=True)
-def _no_real_dispatch_pacing(monkeypatch, virtual_completion_clock):
-    """The 2 s start spacing, the 2 s post-completion settle and the 2 s global
-    minimum interval between two sent commands are real waits.  These scenarios
-    are about Morning entitlement and release, not about spacing (covered by the
-    A5 and A7 suites), so the three constants are zeroed instead of waiting in
-    real time."""
+def _no_real_settle_pause(monkeypatch, virtual_completion_clock):
+    """Time acceleration only; the production path is unchanged.
+
+    * ``virtual_completion_clock`` (conftest) lets the real completion logic run
+      against a virtual clock, so an estimated travel time is not waited out.
+    * The fixed 2 s settle between two covers of one group is a real
+      ``asyncio.sleep`` in the executor; the multi-cover scenario would wait it
+      out twice (measured: about 4 s).  It is read from the executor module at
+      call time, so zeroing it takes effect.  Settle behaviour itself is covered
+      by the A5, A7 and A8 suites.
+
+    ``FULL_OPEN_START_INTERVAL_S`` (only used for 0/100 % targets, which these
+    scenarios never dispatch) and the global minimum dispatch interval (not
+    consulted by the comfort path) are deliberately left at their real values.
+    """
     from custom_components.smartshading.cover_control import dispatch_plan_executor as _executor
-    from custom_components.smartshading.cover_control import global_dispatch_throttle as _throttle
 
     monkeypatch.setattr(_executor, "INTERMEDIATE_POST_COMPLETION_PAUSE_S", 0.0)
-    monkeypatch.setattr(_executor, "FULL_OPEN_START_INTERVAL_S", 0.0)
-    monkeypatch.setattr(_throttle, "DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS", 0.0)
 
 
 _NIGHT_TIME = dt_time(22, 0)

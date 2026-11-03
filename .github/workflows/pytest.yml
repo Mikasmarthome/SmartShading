@@ -57,13 +57,19 @@ jobs:
 
       - name: Every tracked real-HA test file is collected
         run: |
+          # Whole relative paths, recursively: nested folders are covered and two
+          # files with the same name in different folders are never confused.
+          sed 's/::.*//' collected.txt | sort -u > collected_files.txt
+          git ls-files -- tests/real_ha | grep -E '(^|/)(test_[^/]*|[^/]*_test)\.py$' > tracked_files.txt
+          test -s tracked_files.txt
           missing=0
-          for f in $(git ls-files 'tests/real_ha/test_*.py'); do
-            if ! grep -q "\(^\|/\)$(basename "$f")::" collected.txt; then
+          while IFS= read -r f; do
+            rel="${f#tests/real_ha/}"
+            if ! grep -Fxq -e "$rel" -e "$f" collected_files.txt; then
               echo "not collected: $f"
               missing=1
             fi
-          done
+          done < tracked_files.txt
           test "$missing" -eq 0
 
       - name: Run tests

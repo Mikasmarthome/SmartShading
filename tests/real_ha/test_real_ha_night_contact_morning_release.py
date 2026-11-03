@@ -41,18 +41,11 @@ from custom_components.smartshading.models.zone_execution_config import ZoneExec
 
 
 @pytest.fixture(autouse=True)
-def _no_real_dispatch_pacing(monkeypatch, virtual_completion_clock):
-    """The 2 s start spacing, the 2 s post-completion settle and the 2 s global
-    minimum interval between two sent commands are real waits.  These scenarios
-    are about Morning entitlement and release, not about spacing (covered by the
-    A5 and A7 suites), so the three constants are zeroed instead of waiting in
-    real time."""
-    from custom_components.smartshading.cover_control import dispatch_plan_executor as _executor
-    from custom_components.smartshading.cover_control import global_dispatch_throttle as _throttle
-
-    monkeypatch.setattr(_executor, "INTERMEDIATE_POST_COMPLETION_PAUSE_S", 0.0)
-    monkeypatch.setattr(_executor, "FULL_OPEN_START_INTERVAL_S", 0.0)
-    monkeypatch.setattr(_throttle, "DEFAULT_GLOBAL_DISPATCH_INTERVAL_SECONDS", 0.0)
+def _virtual_completion_time(virtual_completion_clock):
+    """Time acceleration only: the real completion logic runs against a virtual
+    clock (conftest), so an estimated travel time is not waited out.  This
+    scenario dispatches a single cover, so no settle pause occurs and no pacing
+    constant is touched."""
 
 
 _NIGHT_TIME = dt_time(22, 0)

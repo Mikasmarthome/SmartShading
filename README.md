@@ -129,8 +129,8 @@ Safety conditions take priority over normal automatic shading decisions:
   retracted to Home Assistant position `0` and an exterior screen is raised to position `100`. Rain is
   evaluated as soon as the rain sensor changes (not only on the periodic cycle). Like wind and storm, rain
   protection overrides a manual override and is not delayed by the startup grace period or the minimum
-  action interval; the command is sent in the global dispatch order, so it can wait briefly behind commands
-  other zones have already queued.
+  action interval; it never waits for normal movements, only for the one command that is being handed to
+  Home Assistant at that moment and for safety commands that were queued before it.
 - For wind and storm an awning is retracted to position `0`, while exterior screens, roller shutters and
   venetian blinds are raised to position `100`.
 - An active safety condition remains latched for a release period rather than clearing the instant the
@@ -373,14 +373,39 @@ sensor is open). Existing single-contact configurations remain compatible.
 
 Cover movement follows one fixed rule; there are no pacing modes to choose from.
 
-- **Partial positions (1–99 %)** — within a synchronized group exactly one cover moves at a time, in a fixed
-  order. The next cover starts only after the end of the previous one's travel has been detected (from the
-  cover's own feedback, or from its configured travel time for covers without feedback), followed by a fixed
-  2-second settle pause. If a cover does not finish within the time limit, the remaining covers of that group
-  are not started — a timeout is never treated as success — and other zones keep working.
-- **Fully open / fully closed (0 / 100 %)** — covers start 2 seconds apart without waiting for the end of travel.
-- **Safety first** — storm, wind and rain protection are served before comfort movements that are still
-  waiting, across all zones, and can interrupt a running wait or settle pause.
+- **Zone by zone** — the normal movements of all zones form one sequence for the whole installation. The
+  movements one zone currently needs (all its windows and covers, in a fixed order) run as one uninterrupted
+  package before the next zone's package starts; zones take their turn in the order in which they became
+  ready. A zone has at most one package waiting: if its evaluation changes while it waits, the waiting
+  package is replaced by the newer one — targets of the old one are never carried out — and the zone keeps
+  its place in the line. A package that is replaced while it is running ends there, and the zone's fresh
+  evaluation queues up behind those already waiting.
+- **Partial positions (1–99 %)** — exactly one cover moves at a time, in a fixed order, also from the last
+  cover of one zone to the first cover of the next. The next cover starts only after the end of the previous
+  one's travel has been detected (from the cover's own feedback, or from its configured travel time for
+  covers without feedback), followed by a fixed 2-second settle pause. The pause is applied once, not twice,
+  where one group or zone hands over to the next. If a cover does not finish within the time limit, the
+  remaining covers of that group are not started — a timeout is never treated as success — and other zones
+  keep working.
+- **Fully open / fully closed (0 / 100 %)** — covers are started at least 2 seconds apart without waiting for
+  the end of travel, also from one group or zone to the next. SmartShading does not wait for these covers to
+  arrive and does not claim that they travel one after another.
+- **Mixed targets** — the command that was actually sent last decides when the next one may start: after a
+  partial position the end of its travel plus the 2-second pause, after a 0 / 100 % command 2 seconds after
+  its start.
+- **Each cover on its own** — a cover is judged by its own state, not by the first cover of its window. One
+  that is already at its target, already travelling there, unavailable or not controlled by this zone is
+  skipped individually and causes no waiting time.
+- **Safety first** — storm, wind and rain protection never wait for a package. They are served before
+  normal movements that are still waiting, across all zones, and they end running waits and settle pauses of
+  normal movements. Nothing of the interrupted movements is replayed: the affected zones evaluate afresh
+  afterwards. SmartShading does not send stop commands to movements that were already running.
+
+Limits: for covers without position feedback (for example radio-controlled blinds) the end of travel is
+computed from the configured travel time. When a package is replaced, cancelled or unloaded, or a cover does
+not confirm within the time limit, SmartShading keeps a bounded safety margin — the estimated end of that
+travel plus the 2-second pause — before the next normal movement starts. This is an estimate, not proof that
+a motor has stopped, and SmartShading cannot guarantee that covers are physically at rest.
 
 Installations that were set up with the earlier pacing options keep working unchanged; those stored values are
 ignored.

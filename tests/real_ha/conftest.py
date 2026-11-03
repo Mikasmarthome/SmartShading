@@ -61,3 +61,38 @@ def _b3013_real_wait_for_completion_safe_sleep(monkeypatch):
         _safe_wait_for_travel_completion,
     )
     yield
+
+
+@pytest.fixture
+def virtual_completion_clock(monkeypatch):
+    """Run the real completion logic against a virtual monotonic clock.
+
+    A cover that jumps to its target without reporting movement is judged by an
+    estimated travel time.  Against the wall clock that estimate would be waited
+    out for real (tens of seconds per cover); here every ``sleep`` simply
+    advances a virtual clock, so the production arithmetic (observed movement,
+    estimate, timeout) runs unchanged and the test stays deterministic.
+    Returns the clock state; ``state["t"]`` is the virtual elapsed seconds.
+    """
+    import asyncio as _asyncio
+
+    from custom_components.smartshading import coordinator as _coordinator_module
+    from custom_components.smartshading.cover_control.dispatch_completion import (
+        wait_for_travel_completion as _real_wait_for_travel_completion,
+    )
+
+    state = {"t": 0.0}
+
+    async def _advance(seconds):
+        state["t"] += max(0.0, seconds)
+        await _asyncio.sleep(0)
+
+    async def _virtual_wait_for_travel_completion(*args, **kwargs):
+        kwargs.update(mono_clock=lambda: state["t"], sleep=_advance)
+        return await _real_wait_for_travel_completion(*args, **kwargs)
+
+    monkeypatch.setattr(
+        _coordinator_module, "wait_for_travel_completion",
+        _virtual_wait_for_travel_completion,
+    )
+    yield state

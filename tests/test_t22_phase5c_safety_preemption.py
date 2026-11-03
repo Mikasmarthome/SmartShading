@@ -35,9 +35,10 @@ Coverage:
 """
 from __future__ import annotations
 
+import ast
 import asyncio
 import sys
-import time
+from pathlib import Path
 import types
 from datetime import datetime, timezone
 from typing import Any
@@ -261,10 +262,12 @@ class TestPreemptCompletesPromptlyNotAfterAFullArtificialWait:
     # that legitimate signal+await before control returns to the safety
     # caller, e.g. someone reintroducing a "wait for the full plan
     # duration" idea on top of the already-correct cooperative signal.
-    # Proven via real monotonic elapsed-time measurement (not merely a
-    # generous pass/fail timeout) — the underlying prev_task resolves
-    # near-instantly once cancellation.wait() unblocks it, so preempt()
-    # itself must also return near-instantly.
+    # Proven by event-loop turns, not by a clock: preempt() runs as its own task
+    # and must finish within a handful of bare yields (`sleep(0)`).  Any timer
+    # added after the cooperative signal+await -- even a fraction of a second --
+    # cannot complete within those yields, so the latency regression is caught
+    # without depending on machine speed.  The prior task resolves as soon as
+    # cancellation.wait() unblocks it, so preempt() must too.
     def test_preempt_returns_promptly_after_signal_not_after_extra_delay(self) -> None:
         coord = _make_coord()
         cancellation = asyncio.Event()
@@ -274,18 +277,26 @@ class TestPreemptCompletesPromptlyNotAfterAFullArtificialWait:
             task = asyncio.ensure_future(_run_forever_placeholder(cancellation))
             coord._active_comfort_dispatch_task = task
             await asyncio.sleep(0)
-            started = time.monotonic()
-            await asyncio.wait_for(coord._preempt_active_comfort_plan(), timeout=2.0)
-            elapsed = time.monotonic() - started
-            return elapsed
+            preempt = asyncio.ensure_future(coord._preempt_active_comfort_plan())
+            turns = 0
+            try:
+                while not preempt.done() and turns < 50:
+                    await asyncio.sleep(0)
+                    turns += 1
+                done = preempt.done()
+            finally:
+                if not preempt.done():
+                    preempt.cancel()
+            return done, turns
 
-        elapsed = asyncio.run(_run())
-        assert elapsed < 0.3, (
-            f"_preempt_active_comfort_plan() must return promptly once its "
-            f"own signal+await of the previous task resolves — took "
-            f"{elapsed:.3f}s, suggesting an unnecessary extra wait was "
-            f"added after the legitimate cooperative signal/await"
+        done, turns = asyncio.run(_run())
+        assert done, (
+            "_preempt_active_comfort_plan() must return within a few event-loop "
+            "turns once its own signal+await of the previous task resolves — "
+            "an unnecessary timer-based wait was added after the legitimate "
+            "cooperative signal/await"
         )
+        assert turns <= 10, turns
 
 
 class TestPreemptWithActivePlan:
@@ -871,6 +882,48 @@ class TestRecentGlobalDispatchDoesNotThrottleComfortDispatch:
         assert coord._active_dispatch_cancellation is None
 
 
+def _coordinator_ast() -> ast.Module:
+    path = (
+        Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
+        / "coordinator.py"
+    )
+    return ast.parse(path.read_text(encoding="utf-8"))
+
+
+def _call_name(call: ast.Call) -> str:
+    func = call.func
+    return func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", "")
+
+
+def _presence_identifiers(function: ast.AST) -> list[str]:
+    """Names, attributes, arguments, keywords and string literals in the code of
+    *function* that mention presence.  Docstrings and comments do not count."""
+    docstrings = set()
+    for node in ast.walk(function):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            first = node.body[0] if node.body else None
+            if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) \
+                    and isinstance(first.value.value, str):
+                docstrings.add(id(first.value))
+    found = []
+    for node in ast.walk(function):
+        if isinstance(node, ast.Name):
+            text = node.id
+        elif isinstance(node, ast.Attribute):
+            text = node.attr
+        elif isinstance(node, ast.arg):
+            text = node.arg
+        elif isinstance(node, ast.keyword):
+            text = node.arg or ""
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in docstrings:
+            text = node.value
+        else:
+            continue
+        if "presence" in text.lower():
+            found.append(text)
+    return found
+
+
 class TestSafetyIntentNeverReassignedBeforeDispatch:
     # Audit item #14 ("Safety-Ziel wird neu berechnet"): the legacy
     # per-window loop's safety dispatch call
@@ -885,26 +938,37 @@ class TestSafetyIntentNeverReassignedBeforeDispatch:
     # architectural-boundary check: confirm no `_intent = ` reassignment
     # exists anywhere between the intent's binding and its dispatch call.
     def test_no_intent_reassignment_between_binding_and_dispatch(self) -> None:
-        import re
-        from pathlib import Path
-        source = (
-            Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
-            / "coordinator.py"
-        ).read_text(encoding="utf-8")
-        start = source.index("for _intent in _exec_plan.intents:")
-        end = source.index(
-            "_intent_result = await dispatch_cover_intent(\n"
-            "                                self.hass, _intent, now_utc=_dispatch_now\n"
-            "                            )",
-            start,
-        )
-        body = source[start:end]
-        # Exclude the loop header's own binding and attribute reads
-        # (`_intent.foo`) / comparisons (`_intent ==`, `_intent is`) —
-        # only a bare reassignment (`_intent = ...` / `_intent=...`) is
-        # the defect this guards against.
-        reassignment = re.search(r"(?<!for )\b_intent\s*=(?!=)", body)
-        assert reassignment is None, (
+        tree = _coordinator_ast()
+        loops = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.For)
+            and isinstance(node.target, ast.Name) and node.target.id == "_intent"
+            and ast.unparse(node.iter) == "_exec_plan.intents"
+        ]
+        assert len(loops) == 1, "the safety per-intent loop must exist exactly once"
+        loop = loops[0]
+
+        # The real dispatch: dispatch_cover_intent(self.hass, _intent, now_utc=...)
+        # receiving the loop variable itself, not an expression derived from it.
+        dispatches = [
+            node for stmt in loop.body for node in ast.walk(stmt)
+            if isinstance(node, ast.Call) and _call_name(node) == "dispatch_cover_intent"
+        ]
+        assert len(dispatches) == 1, "exactly one dispatch call inside the safety loop"
+        dispatch = dispatches[0]
+        assert [ast.unparse(arg) for arg in dispatch.args] == ["self.hass", "_intent"]
+        assert {kw.arg for kw in dispatch.keywords} == {"now_utc"}
+        dispatch_pos = (dispatch.lineno, dispatch.col_offset)
+
+        # Any store to `_intent` (assignment, augmented/annotated/walrus, nested
+        # for/with/except/comprehension target, del) located before that call.
+        stores = [
+            node for stmt in loop.body for node in ast.walk(stmt)
+            if isinstance(node, ast.Name) and node.id == "_intent"
+            and isinstance(node.ctx, (ast.Store, ast.Del))
+            and (node.lineno, node.col_offset) < dispatch_pos
+        ]
+        assert stores == [], (
             "the safety dispatch intent must never be reassigned between "
             "its binding and the real dispatch_cover_intent() call — a "
             "reassignment here would let the actually-dispatched target "
@@ -1303,23 +1367,18 @@ class TestPresenceLogicNotSneakedIntoPhase5cCode:
     # Phase 5c-owned functions must stay fully independent of any
     # presence/occupancy concept per the ticket's explicit scope-out.
     def test_no_presence_reference_in_safety_preemption_functions(self) -> None:
-        import re
-        from pathlib import Path
-        source = (
-            Path(__file__).resolve().parent.parent / "custom_components" / "smartshading"
-            / "coordinator.py"
-        ).read_text(encoding="utf-8")
-        for fn_name, end_marker in (
-            ("_cycle_has_executable_safety_intent", "\ndef "),
-            ("_preempt_active_comfort_plan", "\n    async def _run_comfort_dispatch_for_cycle"),
-        ):
-            start = source.index(f"def {fn_name}(")
-            end = source.index(end_marker, start + 10)
-            body = source[start:end]
-            assert "presence" not in body.lower(), (
+        tree = _coordinator_ast()
+        for fn_name in ("_cycle_has_executable_safety_intent", "_preempt_active_comfort_plan"):
+            functions = [
+                node for node in ast.walk(tree)
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == fn_name
+            ]
+            assert len(functions) == 1, f"{fn_name}() must exist exactly once"
+            offending = _presence_identifiers(functions[0])
+            assert offending == [], (
                 f"{fn_name}() must stay fully independent of presence/"
                 f"occupancy logic per the ticket's explicit scope-out — "
-                f"found a 'presence' reference in its body"
+                f"found {offending} in its code"
             )
 
 

@@ -525,3 +525,46 @@ async def test_the_explanation_by_own_travel_ends_with_the_window(zones):
     h.hass.states.async_set("cover.a1", "closing", {"supported_features": 15, "current_position": 75})
     await h.pass_time(max(window_end - h.clock.t + 1, GUARD_WAIT_S * 4))
     assert _override(h, "ea", "wa") is not None, "an open-ended explanation would hide this for ever"
+
+
+async def test_three_cover_group_stop_seen_after_the_window_holds_back_only_the_stopped_cover(zones):
+    covers = ("cover.a1", "cover.a2", "cover.a3")
+    h = await zones.boot([("ea", {"wa": list(covers)}, 50, None)])
+    await _cut_during_second_cover(h)
+    _stop_halfway(h, "cover.a2", 75)
+    window_end = _window_end(h, "cover.a2")
+    _retarget(h, "ea", 30)
+    cycles = _count_cycles(h)
+    await h.pass_time(max(window_end - h.clock.t + 1, GUARD_WAIT_S * 4))
+    assert cycles and min(cycles) > window_end, "first looked at after the own-motion window"
+    assert _sent_to(h, "cover.a1", 30) and _sent_to(h, "cover.a3", 30), h.clock.calls()
+    assert _sent_to(h, "cover.a2", 30) == [], f"the stopped cover was driven again: {h.clock.calls()}"
+    assert len(h.clock.calls_of("cover.a2")) == 1
+
+
+async def test_a_plan_made_invalid_by_a_new_decision_does_not_get_round_the_stop_hold(zones):
+    covers = ("cover.a1", "cover.a2", "cover.a3")
+    h = await zones.boot([("ea", {"wa": list(covers)}, 50, None)])
+    await _cut_during_second_cover(h)
+    _stop_halfway(h, "cover.a2", 75)
+    _retarget(h, "ea", 30)
+    await h.fire_ha_timers(GUARD_WAIT_S * 4)
+    await h.drive(h.refresh("ea"))
+    assert "cover.a2" in h.coord("ea")._cover_stop_holds
+    # a new trip begins; while the first cover is under way a newer decision invalidates the plan
+    _retarget(h, "ea", 20)
+    await h.fire_ha_timers(GUARD_WAIT_S * 4)
+    started = len(h.clock.times_of("WAIT_START", "cover.a1"))
+    tasks = h.refresh("ea")
+    await h.drive(tasks, until=lambda: len(h.clock.times_of("WAIT_START", "cover.a1")) > started)
+    assert _sent_to(h, "cover.a1", 20)
+    calls_at_cut = len(h.clock.calls())
+    for callback in list(h.coord("ea")._cover_ownership._listeners["ea"]):
+        callback()
+    await h.settle()
+    await h.drive(tasks)
+    await h.drive(horizon=h.clock.t + 600)
+    assert len(h.clock.calls_of("cover.a2")) == 1, f"the old plan got round the hold: {h.clock.calls()}"
+    assert len(_sent_to(h, "cover.a3", 20)) <= 1, f"the old plan was replayed: {h.clock.calls()}"
+    assert "cover.a2" in h.coord("ea")._cover_stop_holds
+    assert len(h.clock.calls()) - calls_at_cut <= 1, h.clock.calls()[calls_at_cut:]

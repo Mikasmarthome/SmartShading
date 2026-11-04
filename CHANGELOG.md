@@ -1,5 +1,81 @@
 # Changelog
 
+## v1.2.0-beta.3.1
+
+**This is a pre-release.** It is intended for testing on suitable Home
+Assistant systems, not for production use. Please take a backup before
+installing. Stable users should stay on the current stable release (v1.1.13);
+installing the beta requires deliberately opting into a pre-release.
+
+Practical verification of this exact Beta 3.1 release in a live installation is
+still pending. Feedback and diagnostics exports are welcome via
+[GitHub Issues](https://github.com/Mikasmarthome/SmartShading/issues).
+
+No configuration changes and no manual migration are required. Existing
+installations upgrade without reconfiguration.
+
+### Changes since v1.2.0-beta.3
+
+- **Zone by zone.** Normal cover movements are serialized globally across all
+  zones. The movements one zone currently needs run as one uninterrupted
+  package that is never interleaved with another zone's package. Packages are
+  processed in the order in which the zones became ready (first in, first
+  out). A zone has at most one package waiting; a newer evaluation replaces it
+  and the old targets are never carried out.
+- **Intermediate targets (1–99 %)** are completed one cover after another, with
+  one 2 s settle pause between movements. This also holds from the last cover
+  of one zone to the first cover of the next. The pause is applied once, not
+  twice, at a hand-over.
+- **Fully open / fully closed (0 % / 100 %)** are started at least 2 s apart
+  across the whole installation, without waiting for the movement to complete.
+  For mixed targets, the command that was actually sent last decides when the
+  next one may start.
+- **Each cover on its own.** Every cover is checked individually before it is
+  sent. A cover that is already at its target, already travelling there,
+  unavailable or not controlled by this zone is skipped without causing a
+  waiting time for the others.
+- **Manual stop of a cover.** A manual stop of a further cover of a group is
+  recognised more reliably, also in the regular evaluation cycle after the
+  cover's own-motion window has ended.
+- **No unintended re-commanding.** A recognised manual stop keeps protecting
+  the cover beyond the own-motion window, even if the target changes, until it
+  is released like a manual override (duration, fixed time, lifecycle, manual
+  clear or one of the `FIRST_*` release strategies). Safety is never held back
+  by it, and the other covers of the group keep moving.
+- **Restart.** A recognised stop is kept across a restart or reload with its
+  original end time. Expired or no longer valid entries are discarded, and no
+  old command is replayed.
+- **Consistent `FIRST_*` release.** The `FIRST_COMFORT`, `FIRST_PROTECTION` and
+  `FIRST_ANY_DECISION` strategies release a stopped cover by the same rule as
+  the window's override.
+- **Unreported own movements.** A cover's own movement whose state was not
+  reported in time is no longer read as a manual override.
+- **Tests.** Real Home Assistant regression tests were added for zone order and
+  timing, per-cover handling, manual stop and its release, and restart.
+
+### Notes and limits
+
+- Recognising a manual stop requires usable cover state feedback and may happen
+  during a later evaluation cycle, not instantly.
+- Radio-controlled (RTS) covers without reliable physical feedback keep their
+  existing limitations: their positions are computed estimates, not physically
+  confirmed motor positions.
+- SmartShading cannot guarantee that covers are physically at rest, and radio
+  delivery is not guaranteed.
+
+### Please test
+
+Before installing, take a backup. After installing, check in your own
+installation:
+
+1. An intermediate position (1–99 %) with several zones: the movements must run
+   one cover after another, zone by zone.
+2. 0 % / 100 % moves: starts are at least 2 s apart.
+3. Stop a cover of a group by hand: it must not be driven again until the
+   override ends, while the other covers continue.
+4. Reload the integration after such a stop: the stopped cover stays protected.
+5. Your normal automation and, only where it can be tested safely, Safety.
+
 ## v1.2.0-beta.3
 
 **This is a pre-release.** It is intended for testing on suitable Home

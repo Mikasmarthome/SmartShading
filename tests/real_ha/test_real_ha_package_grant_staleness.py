@@ -37,7 +37,7 @@ class _HookedPackage:
         return await self._context.__aexit__(*exc)
 
 
-def _stale_after_grant(h, coordinator, how, probe):
+def _stale_after_grant(h, coordinator, how, probe, delay=0.0):
     """Make the zone's next package, once granted, belong to a plan that is no longer
     current: replaced (generation bump), cancelled or both -- exactly where a newer
     evaluation or an ownership change can arrive."""
@@ -49,6 +49,19 @@ def _stale_after_grant(h, coordinator, how, probe):
             return
         pacing = serial.pacing
         probe.update(basis=pacing.basis, remaining=pacing.remaining(h.clock.t))
+        if delay:
+            # the plan turns stale while it waits out the boundary of the previous zone
+            import asyncio
+
+            async def later():
+                await h.clock.sleep(delay)
+                bump()
+
+            probe["task"] = asyncio.ensure_future(later())
+        else:
+            bump()
+
+    def bump():
         if how in ("generation", "both"):
             coordinator._dispatch_generation += 1
         if how in ("cancelled", "both"):
@@ -65,21 +78,24 @@ def _restore(h):
     h.serial.__dict__.pop("package", None)
 
 
+@pytest.mark.parametrize("delay", [0.0, 1.0], ids=["at-grant", "during-boundary-wait"])
 @pytest.mark.parametrize("how", ["generation", "cancelled", "both"])
-async def test_a_plan_made_stale_right_after_the_grant_sends_nothing_and_frees_the_line(zones, how):
+async def test_a_plan_made_stale_right_after_the_grant_sends_nothing_and_frees_the_line(zones, how, delay):
     h = await zones.boot([
         ("ea", {"wa": ["cover.a1", "cover.a2"]}, 50, None),
         ("eb", {"wb": ["cover.b1", "cover.b2"]}, 50, None),
         ("ec", {"wc": ["cover.c1"]}, 50, None),
     ])
     probe: dict = {}
-    _stale_after_grant(h, h.coord("eb"), how, probe)
+    _stale_after_grant(h, h.coord("eb"), how, probe, delay)
     h.sun_up()
     tasks = h.refresh("ea", "eb", "ec")
     await h.drive(tasks)
     _restore(h)
     sent = [c[1] for c in h.clock.calls()]
     assert probe, "zone B's package was granted"
+    if delay:
+        assert probe["remaining"] > delay, "the stale moment lies inside the boundary wait"
     assert not any(c.startswith("cover.b") for c in sent), f"the old plan sent {sent}"
     # the line moved on: zone C's package was granted after B's was handed back
     assert sent == ["cover.a1", "cover.a2", "cover.c1"], sent

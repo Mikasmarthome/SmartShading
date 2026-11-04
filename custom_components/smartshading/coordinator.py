@@ -1682,6 +1682,9 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # (normalized id): (position before, commanded target, both internal; monotonic
         # end of the bounded window).  Instance state: gone with unload/reload.
         self._own_motion: dict[str, tuple[int, int, float]] = {}
+        # Where a cover stood in the live reading taken right before its command (consumed
+        # when the sent command is recorded above).
+        self._send_start_internal: dict[str, int] = {}
         self._completion_recovery_stats: dict[str, int] = {"downgraded": 0, "recovered": 0, "retried": 0}
         # A6: update cycles currently running (so unload can wait for them) and
         # the lifecycle counters surfaced in the diagnostics.
@@ -2712,13 +2715,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         long that travel can plausibly stay unreported.  A travel whose end was seen
         or estimated within the plan leaves nothing to remember: what the cover
         reports afterwards is judged against the target alone."""
-        group = self.cover_groups.get(self._window_cover_group_id(window_id))
-        if group is None or not group.cover_ids:
-            return
         key = _normalize_cover_id(entity_id)
-        if key != _normalize_cover_id(group.cover_ids[0]):
-            return
-        start = self._prev_observed_internal.get(window_id)
+        # Where THIS cover stood: the fresh reading taken right before it was sent;
+        # for a command that did not pass a live validation (Safety), the window's
+        # evaluation reading, which is only valid for the window's first cover.
+        start = self._send_start_internal.pop(key, None)
+        if start is None:
+            group = self.cover_groups.get(self._window_cover_group_id(window_id))
+            if group is not None and group.cover_ids and key == _normalize_cover_id(group.cover_ids[0]):
+                start = self._prev_observed_internal.get(window_id)
         if travel_ended or start is None:
             self._own_motion.pop(key, None)
             return
@@ -2731,11 +2736,42 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         window = self.windows.get(window_id)
         return window.cover_group_id if window is not None else None
 
-    def _own_motion_explains(self, cover_id: str | None, observed_internal: int | None) -> bool:
+    def _own_motion_stopped_halfway(self, cover_id: str | None, snapshot) -> bool:
+        """True when the cover SmartShading commanded (inside the bounded window) now
+        stands still clearly between where it started and where it was sent.
+
+        A cover that has not reported yet still stands where it started, or reports
+        opening/closing; one that arrived is at the target.  A cover with reliable
+        position feedback that reports a stationary state at a position clearly short of
+        both was stopped on its way -- by a person, or by anything else that is not
+        SmartShading -- and what it reports is not the command's own travel.  Covers
+        without reliable position feedback give no such signal (their position is a
+        calculation, not a measurement), so nothing is concluded for them."""
+        if cover_id is None or snapshot is None or not snapshot.available:
+            return False
+        if not snapshot.has_position_feedback or snapshot.is_moving:
+            return False
+        observed = snapshot.current_position_internal
+        entry = self._own_motion.get(_normalize_cover_id(cover_id))
+        if observed is None or entry is None:
+            return False
+        start, target, until = entry
+        tolerance = self._override_detection_tolerance
+        return (
+            _monotonic() <= until
+            and abs(observed - start) > tolerance
+            and abs(observed - target) > tolerance
+            and min(start, target) <= observed <= max(start, target)
+        )
+
+    def _own_motion_explains(
+        self, cover_id: str | None, observed_internal: int | None, snapshot=None,
+    ) -> bool:
         """True while ``observed_internal`` lies between where the cover stood when
         SmartShading last commanded it and that command's target (within the override
-        tolerance), inside the bounded window.  A position outside that span, or any
-        position once the window is over, is not explained by the own command."""
+        tolerance), inside the bounded window, and the cover was not stopped on the
+        way.  A position outside that span, any position once the window is over and a
+        stop short of the target are not explained by the own command."""
         if cover_id is None or observed_internal is None:
             return False
         key = _normalize_cover_id(cover_id)
@@ -2746,6 +2782,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         tolerance = self._override_detection_tolerance
         if _monotonic() > until or abs(observed_internal - target) <= tolerance:
             self._own_motion.pop(key, None)
+            return False
+        if self._own_motion_stopped_halfway(cover_id, snapshot):
             return False
         return min(start, target) - tolerance <= observed_internal <= max(start, target) + tolerance
 
@@ -6133,7 +6171,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                     # where it stood: it did not answer, nobody moved it.
                     _override_assumed = observed_internal
                     _override_ref_source = "silent_cover_unchanged"
-                elif self._own_motion_explains(_cov_id, observed_internal):
+                elif self._own_motion_explains(
+                    _cov_id, observed_internal,
+                    self._build_cover_entity_snapshot_for_window(window, now, _cov_id)[2]
+                    if _cov_id is not None else None,
+                ):
                     # Our own command is still on its way (its travel was cut short by
                     # Safety or a newer plan, or the feedback lags): the position is
                     # between where the cover stood and the target we sent.
@@ -9067,12 +9109,14 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             if not fresh_snapshot.available:
                 return ExecutionValidation(ValidationAction.SKIP, reason="cover_unavailable")
             cover_state_by_entity[intent.cover_entity_id] = (fresh_cap, fresh_snapshot)
+            if fresh_snapshot.current_position_internal is not None:
+                self._send_start_internal[_normalize_cover_id(intent.cover_entity_id)] = (
+                    fresh_snapshot.current_position_internal)
 
             if s.night_contact_blocked:
                 return ExecutionValidation(ValidationAction.SKIP, reason="night_hold")
 
             current_override = self._override_detector.get(window_id, dt_util.utcnow())
-
             comfort_hold = self._comfort_movement_holds.setdefault(
                 window_id, _ComfortMovementHold()
             )

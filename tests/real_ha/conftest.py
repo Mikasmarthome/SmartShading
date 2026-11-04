@@ -388,6 +388,15 @@ class ZoneHarness:
         async_fire_time_changed(self.hass, datetime.now(timezone.utc))
         await self.settle()
 
+    async def pass_time(self, seconds: float) -> None:
+        """Let ``seconds`` pass for Home Assistant's clock AND for the integration's
+        monotonic clock (``fire_ha_timers`` alone moves only the first, so the bounded
+        own-motion window would never run out), then fire what is due -- the
+        coordinator's own periodic refresh included."""
+        self.clock.t += seconds
+        await self.fire_ha_timers(seconds)
+        await self.drive()
+
     async def cleanup(self, tasks=()) -> None:
         for task in tasks:
             if not task.done():

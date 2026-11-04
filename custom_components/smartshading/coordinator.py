@@ -112,6 +112,7 @@ from .engines.presence_engine import evaluate_presence_policy
 from .models.presence import PresencePolicy, PresenceReading
 from .models.learning import OverrideRecord, StateTransitionRecord, WindowCycleSnapshot
 from .engines.override_detector import OverrideDetector
+from .engines.override_release import compute_expiry
 from .engines.observability_evaluator import (
     HYSTERESIS_THRESHOLDS,
     CoverPositionObservation,
@@ -724,6 +725,27 @@ _COMPLETION_DOWNGRADE_S = 30 * 60.0
 # (still unreported or in-flight) travel instead of a manual move.  Added to the
 # estimated travel time; the window is bounded, never open-ended.
 _OWN_MOTION_MARGIN_S = 60.0
+# After that window the reference (where the cover stood, where it was sent) is kept for
+# judging only: the first looks of the regular cycle that follow may still recognise a
+# cover that stands still between the two as stopped on its way -- travel plus margin
+# have then run out, so it is no longer a delayed report.  Two poll intervals: the first
+# regular look after the window lies at most one interval away, the second one is the
+# spare for a late or skipped cycle.  Past it the reference is dropped unused: an old
+# start/target pair is no evidence for a position the cover shows much later.
+_OWN_MOTION_JUDGE_GRACE_S = 2 * DEFAULT_UPDATE_INTERVAL.total_seconds()
+
+
+@dataclass(frozen=True)
+class _CoverStopHold:
+    """A cover that was stopped on its way to SmartShading's own target and is not
+    driven again by the automation until the hold ends.  The hold belongs to this one
+    cover (never to its window or group) and is kept in memory only."""
+    window_id: str
+    position_internal: int
+    started_at: datetime
+    expires_at: datetime
+
+
 # A6: how long unload waits for a running update cycle to end on its own before
 # the cycle is cancelled (a cycle normally ends within a poll interval).
 _SHUTDOWN_CYCLE_GRACE_S = 10.0
@@ -1682,6 +1704,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # (normalized id): (position before, commanded target, both internal; monotonic
         # end of the bounded window).  Instance state: gone with unload/reload.
         self._own_motion: dict[str, tuple[int, int, float]] = {}
+        # Covers (normalized id) recognised as stopped on the way to our own target, other
+        # than the window's first cover (that one is the window override's business).
+        # Instance state like the override: gone with unload/reload.
+        self._cover_stop_holds: dict[str, _CoverStopHold] = {}
         # Where a cover stood in the live reading taken right before its command (consumed
         # when the sent command is recorded above).
         self._send_start_internal: dict[str, int] = {}
@@ -2407,6 +2433,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         narrow, accepted residual race, unchanged from the T16 audit.
         """
         self._unloading = True
+        self._own_motion.clear()
+        self._cover_stop_holds.clear()
         self._lifecycle_stats["shutdowns"] += 1
         self._lifecycle_stats["last_shutdown_reason"] = "unload"
         # T22 Phase 4b/5b: signal any in-flight comfort DispatchPlanExecutor
@@ -2758,7 +2786,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         start, target, until = entry
         tolerance = self._override_detection_tolerance
         return (
-            _monotonic() <= until
+            _monotonic() <= until + _OWN_MOTION_JUDGE_GRACE_S
             and abs(observed - start) > tolerance
             and abs(observed - target) > tolerance
             and min(start, target) <= observed <= max(start, target)
@@ -2780,12 +2808,121 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             return False
         start, target, until = entry
         tolerance = self._override_detection_tolerance
-        if _monotonic() > until or abs(observed_internal - target) <= tolerance:
+        if abs(observed_internal - target) <= tolerance:
             self._own_motion.pop(key, None)
+            return False
+        if _monotonic() > until:
+            # The explanation ends with the window; the reference itself lives on for the
+            # judgment of _judge_own_motion (a stop recognised late).
             return False
         if self._own_motion_stopped_halfway(cover_id, snapshot):
             return False
         return min(start, target) - tolerance <= observed_internal <= max(start, target) + tolerance
+
+    def _judge_own_motion(self, window_id: str, cover_id: str | None, snapshot) -> bool:
+        """Judge the own-command reference of ``cover_id`` against what the cover reports.
+
+        True when the cover is recognised as stopped on its way (see
+        _own_motion_stopped_halfway): the reference is consumed and, for a cover other
+        than the window's first, turned into a hold for that cover.  Anything else
+        leaves the reference alone while the window runs; once the window is over it is
+        dropped at the first look at a settled cover and, at the latest, after the judge
+        grace -- a position seen long after the command is not read against an old pair.
+        What tells a late report from a stop: until travel plus margin are over a cover
+        may still be reporting nothing new (it stands at its start), moving, or arriving;
+        afterwards a cover with reliable feedback that stands still strictly between
+        start and target did not carry the command out to the end."""
+        if cover_id is None:
+            return False
+        key = _normalize_cover_id(cover_id)
+        entry = self._own_motion.get(key)
+        if entry is None:
+            return False
+        until = entry[2]
+        if self._own_motion_stopped_halfway(cover_id, snapshot):
+            self._own_motion.pop(key, None)
+            self._hold_stopped_cover(window_id, key, snapshot)
+            return True
+        settled = snapshot is not None and snapshot.available and not snapshot.is_moving
+        now_mono = _monotonic()
+        if now_mono > until + _OWN_MOTION_JUDGE_GRACE_S or (now_mono > until and settled):
+            self._own_motion.pop(key, None)
+        return False
+
+    def _scan_own_motion(self, window: WindowConfig, now: datetime) -> None:
+        """Every regular look: judge the references of all covers of the window's group,
+        so a stop is recognised by the cover itself, not only when a command to it
+        happens to be planned."""
+        if self._window_ownership_inactive(window) or not self._own_motion:
+            return
+        group = self.cover_groups.get(window.cover_group_id)
+        if group is None:
+            return
+        for cover_id in group.cover_ids:
+            if _normalize_cover_id(cover_id) not in self._own_motion:
+                continue
+            snapshot = self._build_cover_entity_snapshot_for_window(window, now, cover_id)[2]
+            self._judge_own_motion(window.id, cover_id, snapshot)
+
+    def _hold_stopped_cover(self, window_id: str, key: str, snapshot) -> None:
+        """Hold a cover recognised as stopped, other than the window's first cover.
+
+        Duration and release follow the override rule the zone is configured with: the
+        window override is created for the first cover only and ends by the configured
+        release strategy; this hold is for the group's other covers.  It ends by
+        expiry (``fixed_time``: the configured clock time; every other strategy: the
+        override duration of the current scope -- it has no policy decision of its own to
+        wait for, so it never outlives that duration), by the same explicit releases
+        (lifecycle transition of the LIFECYCLE strategy, the clear service, Active
+        Control switched on), or when this zone no longer commands the cover.  A Safety
+        command does not end it."""
+        group = self.cover_groups.get(self._window_cover_group_id(window_id))
+        if group is None or not group.cover_ids or key == _normalize_cover_id(group.cover_ids[0]):
+            return
+        observed = snapshot.current_position_internal if snapshot is not None else None
+        if observed is None:
+            return
+        now = dt_util.utcnow()
+        night = self._lifecycle_state is LifecycleState.NIGHT
+        duration_min = self._override_night_duration_min if night else self._override_duration_min
+        if self._override_release_strategy is OverrideReleaseStrategy.FIXED_TIME:
+            expires_at = compute_expiry(
+                strategy=self._override_release_strategy, now=now, now_local=dt_util.as_local(now),
+                duration_min=duration_min, fixed_until=self._override_fixed_until,
+                safety_timeout_enabled=self._override_safety_timeout_enabled)
+        else:
+            expires_at = now + timedelta(minutes=duration_min)
+        self._cover_stop_holds[key] = _CoverStopHold(window_id, observed, now, expires_at)
+
+    def _cover_stop_hold_active(self, cover_id: str | None, now: datetime) -> bool:
+        if cover_id is None:
+            return False
+        key = _normalize_cover_id(cover_id)
+        hold = self._cover_stop_holds.get(key)
+        if hold is None:
+            return False
+        if now >= hold.expires_at:
+            del self._cover_stop_holds[key]
+            return False
+        return True
+
+    def _release_cover_stop_holds(self, window_id: str) -> int:
+        """End the stop holds of a window's covers (explicit release); returns how many."""
+        keys = [k for k, hold in self._cover_stop_holds.items() if hold.window_id == window_id]
+        for key in keys:
+            del self._cover_stop_holds[key]
+        return len(keys)
+
+    def _forget_covers_not_commanded_here(self) -> None:
+        """This zone lost the claim on a cover: what it knows about that cover's own
+        travel and stop is no longer its to act on."""
+        for window_id, window in self.windows.items():
+            group = self.cover_groups.get(window.cover_group_id)
+            for cover_id in (group.cover_ids if group is not None else ()):
+                if self._cover_role(window_id, cover_id) != _OWN_ACTIVE:
+                    key = _normalize_cover_id(cover_id)
+                    self._own_motion.pop(key, None)
+                    self._cover_stop_holds.pop(key, None)
 
     def _recover_completion_feedback(self, entity_id: str, target_ha: int, invert: bool) -> bool:
         """After an estimate-based wait: if the cover now reports the target again,
@@ -2823,6 +2960,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         self._completion_downgraded.pop(old_id, None)
         self._silent_cover_baseline.pop(old_id, None)
         self._own_motion.pop(_normalize_cover_id(old_id), None)
+        self._cover_stop_holds.pop(_normalize_cover_id(old_id), None)
         self._lifecycle_stats["cover_renames"] = self._lifecycle_stats.get("cover_renames", 0) + 1
         return 1
 
@@ -2917,6 +3055,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Plans (waiting or running, normal or Safety) built under the old
             # roles are dropped: nothing of them is replayed, and the fresh
             # evaluation recomputes under the new roles.
+            self._forget_covers_not_commanded_here()
             self._dispatch_generation += 1
             if self._active_dispatch_cancellation is not None:
                 self._active_dispatch_cancellation.set()
@@ -3557,6 +3696,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if window.zone_id == zone_id:
                     self._override_detector.clear(window_id)
                     self._override_detector.suppress_next_override_tick(window_id)
+                    self._release_cover_stop_holds(window_id)
         self._persist_zone_controls()
         # Event-Triggered Comfort Preemption (same pattern as f71c71e /
         # 69224fd): a still-running comfort dispatch plan was built using
@@ -3594,8 +3734,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             return False
         now = dt_util.utcnow()
         active = self._override_detector.get(window_id, now)
+        released_holds = self._release_cover_stop_holds(window_id)
         if active is None:
-            return False
+            if released_holds:
+                await self.async_request_refresh()
+            return bool(released_holds)
         zone_id = self.windows[window_id].zone_id
         if self.effective_zone_execution(zone_id).learning_enabled:
             try:
@@ -4688,6 +4831,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # always carries a fresh (or None) active_override this cycle.
             active_override = self._override_detector.get(window_id, now)
 
+            # A cover other than the window's first that SmartShading commanded and that
+            # now stands still short of its target is recognised here, in the regular
+            # look, not only when a command to it is planned.
+            self._scan_own_motion(window, now)
+
             # T10.1: an explicit, out-of-band clear (async_clear_manual_override(),
             # called from the clear_manual_override service) happened between
             # cycles — consume its recorded reason here so it is reported
@@ -4778,14 +4926,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # a spurious previous→current "transition" that must NOT break a
             # restored override.  A genuine later transition (e.g. morning) still
             # breaks it (grace is over by then).
-            if (self._startup_cycles_remaining == 0
-                    and lifecycle_should_break_override(
-                        prev=_prev_lifecycle_state,
-                        new=self._lifecycle_state,
-                        break_enabled=(
-                            self._override_release_strategy is OverrideReleaseStrategy.LIFECYCLE
-                        ),
-                    ) and active_override is not None):
+            _lifecycle_break = (
+                self._startup_cycles_remaining == 0
+                and lifecycle_should_break_override(
+                    prev=_prev_lifecycle_state,
+                    new=self._lifecycle_state,
+                    break_enabled=(
+                        self._override_release_strategy is OverrideReleaseStrategy.LIFECYCLE
+                    ),
+                )
+            )
+            if _lifecycle_break:
+                self._release_cover_stop_holds(window_id)
+            if _lifecycle_break and active_override is not None:
                 # Phase 9C: record lifecycle clear before removing the override.
                 # Learning write is gated — functional clear always runs.
                 if obs_enabled:
@@ -9117,16 +9270,20 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 return ExecutionValidation(ValidationAction.SKIP, reason="night_hold")
 
             current_override = self._override_detector.get(window_id, dt_util.utcnow())
-            if current_override is None and self._own_motion_stopped_halfway(
-                intent.cover_entity_id, fresh_snapshot,
+            # THIS cover may have been stopped on its way to our earlier target after the
+            # plan was made: judged now, on the live reading taken right before the send.
+            stopped_now = self._judge_own_motion(window_id, intent.cover_entity_id, fresh_snapshot)
+            if current_override is None and (
+                stopped_now or self._cover_stop_hold_active(intent.cover_entity_id, dt_util.utcnow())
             ):
-                # THIS cover was stopped on its way to our earlier target.  The window
-                # override (OverrideDetector) reads the window's first cover only and holds
-                # the whole window; it cannot speak for a further cover of the group, and a
-                # stop of one cover must not lock its siblings.  So the stop is respected per
-                # cover, here, immediately before the send, whatever the automation wants
-                # now.  The signal is the cover's own record (never another cover's) and
-                # lasts as long as that record: the bounded window of the command.
+                # The window override (OverrideDetector) reads the window's first cover only
+                # and holds the whole window; it cannot speak for a further cover of the
+                # group, and a stop of one cover must not lock its siblings.  So the stop is
+                # respected per cover, here, immediately before the send, whatever the
+                # automation wants now: while the cover's stop hold lasts (see
+                # _hold_stopped_cover), not just as long as the command's own-motion window.
+                # An existing window override keeps its own policy (allowed protection or
+                # comfort actions pass as the user configured it).
                 return ExecutionValidation(ValidationAction.SKIP, reason="manual_stop")
             comfort_hold = self._comfort_movement_holds.setdefault(
                 window_id, _ComfortMovementHold()

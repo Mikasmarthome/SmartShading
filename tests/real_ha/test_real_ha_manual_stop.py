@@ -111,11 +111,9 @@ async def test_stopped_sibling_is_not_driven_again(zones):
     assert len(_sent_to(h, "cover.a2", 50)) == 1
     _stop_halfway(h, "cover.a2", 75)
     await _later(h, 4)
-    # a sibling's live validation judges it by SmartShading's own last command (the assumed
-    # position equals the target), so the stopped cover reads as "already at target"
     assert len(_sent_to(h, "cover.a2", 50)) == 1, "the stopped sibling is not driven again"
     items = h.coord("ea")._last_plan_completion["items"]
-    assert "skipped:already_at_target" in items, items
+    assert "skipped:manual_stop" in items, items
 
 
 async def test_cover_without_reliable_position_feedback_gives_no_stop_signal(zones):
@@ -143,3 +141,102 @@ async def test_cover_standing_at_its_start_is_no_manual_stop(zones):
     await _later(h, 3)
     assert _override(h, "ea", "wa") is None, "no movement happened, so nobody stopped anything"
     assert h.coord("ea")._learning_store.get_overrides("wa") == []
+
+
+# --- a stop at a further cover of the group, whatever the automation wants next ----------------
+
+def _retarget(h, entry, ha_position):
+    """The automation wants another position now.  The 60-minute comfort position hold is
+    taken as elapsed (it is a rule of its own, not what these tests are about)."""
+    from custom_components.smartshading.models.config import ShadePositionDefaults
+    coordinator = h.coord(entry)
+    coordinator.shade_position_defaults = ShadePositionDefaults(
+        light_shade_position=ha_position, normal_shade_position=ha_position,
+        strong_shade_position=ha_position)
+    coordinator._comfort_movement_holds.clear()
+
+
+async def _cut_during_second_cover(h, entry="ea", covers=("cover.a1", "cover.a2")):
+    """The first cover of the group arrives at 50, the second one is under way when the
+    plan is cut (the roles of the covers change under the running plan)."""
+    h.sun_up()
+    tasks = h.refresh(entry)
+    await h.drive(tasks, until=lambda: h.clock.times_of("WAIT_START", covers[1]))
+    for callback in list(h.coord(entry)._cover_ownership._listeners[entry]):
+        callback()
+    await h.settle()
+    await h.drive(tasks)
+    assert len(_sent_to(h, covers[1], 50)) == 1
+
+
+async def _group_after_new_target(h, stop):
+    await _cut_during_second_cover(h)
+    if stop:
+        _stop_halfway(h, "cover.a2", 75)         # between its start (100) and its target (50)
+    _retarget(h, "ea", 30)                       # the automation now wants 30: a real trip for both
+    await h.fire_ha_timers(GUARD_WAIT_S * 4)     # past the minimum action interval
+    await h.drive(h.refresh("ea"))
+
+
+async def test_stopped_second_cover_is_not_driven_to_a_new_target(zones):
+    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2"]}, 50, None)])
+    await _group_after_new_target(h, stop=True)
+    assert _sent_to(h, "cover.a1", 30), "the other cover of the group still makes its legitimate trip"
+    assert _sent_to(h, "cover.a2", 30) == [], f"the stopped cover was driven again: {h.clock.calls()}"
+    assert len(h.clock.calls_of("cover.a2")) == 1
+    items = h.coord("ea")._last_plan_completion["items"]
+    assert "skipped:manual_stop" in items, items          # the cover-specific check, no other guard
+
+
+async def test_second_cover_without_a_stop_is_driven_to_the_new_target(zones):
+    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2"]}, 50, None)])
+    await _group_after_new_target(h, stop=False)
+    assert _sent_to(h, "cover.a1", 30) and _sent_to(h, "cover.a2", 30), h.clock.calls()
+
+
+async def _waiting_package_after_stop(h, stop):
+    """Zone B's second cover was commanded, the plan cut; zone A then holds the package, zone B
+    plans a new target and waits; only now does the cover stop -- before B may send."""
+    await _cut_during_second_cover(h, "eb", ("cover.b1", "cover.b2"))
+    _retarget(h, "eb", 30)
+    await h.fire_ha_timers(GUARD_WAIT_S * 4)            # past the minimum action interval of B
+    tasks_a = h.refresh("ea")
+    await h.drive(tasks_a, until=lambda: h.clock.times_of("WAIT_START", "cover.a1"))
+    tasks_b = h.refresh("eb")
+    await h.drive(tasks_b + tasks_a, until=lambda: h.coord("eb")._package_state == "waiting")
+    assert h.coord("eb")._package_state == "waiting", "B must plan its package while A holds the line"
+    if stop:
+        _stop_halfway(h, "cover.b2", 75)
+    await h.drive(tasks_a + tasks_b)
+
+
+async def test_stop_after_planning_is_caught_by_the_revalidation_before_sending(zones):
+    h = await zones.boot([
+        ("ea", {"wa": ["cover.a1"]}, 50, None),
+        ("eb", {"wb": ["cover.b1", "cover.b2"]}, 50, None),
+    ])
+    await _waiting_package_after_stop(h, stop=True)
+    assert _sent_to(h, "cover.b1", 30), "the other cover of the group is driven"
+    assert _sent_to(h, "cover.b2", 30) == [], f"sent past the stop: {h.clock.calls()}"
+    items = h.coord("eb")._last_plan_completion["items"]
+    assert "skipped:manual_stop" in items, items          # the revalidation itself, no other guard
+
+
+async def test_waiting_package_without_a_stop_sends_the_second_cover(zones):
+    h = await zones.boot([
+        ("ea", {"wa": ["cover.a1"]}, 50, None),
+        ("eb", {"wb": ["cover.b1", "cover.b2"]}, 50, None),
+    ])
+    await _waiting_package_after_stop(h, stop=False)
+    assert _sent_to(h, "cover.b1", 30) and _sent_to(h, "cover.b2", 30), h.clock.calls()
+
+
+async def test_a_stop_does_not_hold_back_the_covers_after_it_in_the_group(zones):
+    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2", "cover.a3"]}, 50, None)])
+    await _cut_during_second_cover(h)
+    _stop_halfway(h, "cover.a2", 75)
+    _retarget(h, "ea", 30)
+    await h.fire_ha_timers(GUARD_WAIT_S * 4)
+    await h.drive(h.refresh("ea"))
+    assert _sent_to(h, "cover.a1", 30) and _sent_to(h, "cover.a3", 30), h.clock.calls()
+    assert _sent_to(h, "cover.a2", 30) == []

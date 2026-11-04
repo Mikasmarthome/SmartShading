@@ -9117,6 +9117,17 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 return ExecutionValidation(ValidationAction.SKIP, reason="night_hold")
 
             current_override = self._override_detector.get(window_id, dt_util.utcnow())
+            if current_override is None and self._own_motion_stopped_halfway(
+                intent.cover_entity_id, fresh_snapshot,
+            ):
+                # THIS cover was stopped on its way to our earlier target.  The window
+                # override (OverrideDetector) reads the window's first cover only and holds
+                # the whole window; it cannot speak for a further cover of the group, and a
+                # stop of one cover must not lock its siblings.  So the stop is respected per
+                # cover, here, immediately before the send, whatever the automation wants
+                # now.  The signal is the cover's own record (never another cover's) and
+                # lasts as long as that record: the bounded window of the command.
+                return ExecutionValidation(ValidationAction.SKIP, reason="manual_stop")
             comfort_hold = self._comfort_movement_holds.setdefault(
                 window_id, _ComfortMovementHold()
             )

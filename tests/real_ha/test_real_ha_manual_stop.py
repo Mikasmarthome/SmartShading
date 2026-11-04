@@ -11,6 +11,9 @@ Real coordinators, the real shared dispatch, simulated covers and virtual time.
 """
 from __future__ import annotations
 
+from datetime import timedelta
+
+import pytest
 from homeassistant.util import dt as dt_util
 
 GUARD_WAIT_S = 100
@@ -444,20 +447,6 @@ async def test_losing_the_claim_on_the_cover_drops_what_this_zone_knew(zones):
     assert coordinator._cover_stop_holds == {} and coordinator._own_motion == {}
 
 
-async def test_unload_and_reload_forget_the_stop_without_replay(zones):
-    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2"]}, 50, None)])
-    await _group_after_new_target(h, stop=True)
-    old = h.coord("ea")
-    assert "cover.a2" in old._cover_stop_holds
-    calls_before = len(h.clock.calls())
-    assert await h.hass.config_entries.async_reload("ea")
-    await h.settle()
-    assert old._cover_stop_holds == {} and old._own_motion == {}, "unload empties the old coordinator"
-    new = h.coord("ea")
-    assert new is not old and new._cover_stop_holds == {} and new._own_motion == {}
-    assert len(h.clock.calls()) == calls_before, "nothing is replayed by the reload"
-
-
 async def test_safety_drives_a_held_cover_and_does_not_end_the_hold(zones):
     h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2"]}, 50, "binary_sensor.rain_a")])
     await _group_after_new_target(h, stop=True)
@@ -470,6 +459,7 @@ async def test_safety_drives_a_held_cover_and_does_not_end_the_hold(zones):
 
 
 async def test_hold_protects_a_waiting_package_after_the_window(zones):
+    from datetime import datetime, timezone
     h = await zones.boot([
         ("ea", {"wa": ["cover.a1"]}, 50, None),
         ("eb", {"wb": ["cover.b1", "cover.b2"]}, 50, None),
@@ -480,13 +470,21 @@ async def test_hold_protects_a_waiting_package_after_the_window(zones):
     await h.fire_ha_timers(GUARD_WAIT_S * 4)
     await h.drive(h.refresh("eb"))
     assert "cover.b2" in h.coord("eb")._cover_stop_holds        # recognised, protected beyond the window
-    await h.pass_time(max(window_end - h.clock.t + 1, 1))
+    # let the window run out on both clocks without firing the zones' own periodic timers,
+    # so the order of the two zones is the one this test sets up
+    skip = max(window_end - h.clock.t + 1, 1) + GUARD_WAIT_S * 4
+    h.clock.t += skip
+    h.frozen.move_to(datetime.now(timezone.utc) + timedelta(seconds=skip))
     assert h.clock.t > window_end
     _retarget(h, "eb", 20)
-    _retarget(h, "ea", 20)                       # both zones have a trip to make
-    await h.pass_time(GUARD_WAIT_S * 4)          # their own periodic cycles fire together: B waits behind A
-    package = h.coord("eb")._last_plan_completion["package"]
-    assert package["position"] >= 1, f"zone B must have queued behind zone A: {package}"
+    _retarget(h, "ea", 20)                       # zone A has a trip of its own to make
+    started = len(h.clock.times_of("WAIT_START", "cover.a1"))
+    tasks_a = h.refresh("ea")
+    await h.drive(tasks_a, until=lambda: len(h.clock.times_of("WAIT_START", "cover.a1")) > started)
+    tasks_b = h.refresh("eb")
+    await h.drive(tasks_b + tasks_a, until=lambda: h.coord("eb")._package_state == "waiting")
+    assert h.coord("eb")._package_state == "waiting", "zone B must plan its package behind zone A"
+    await h.drive(tasks_a + tasks_b)
     assert _sent_to(h, "cover.a1", 20)
     assert _sent_to(h, "cover.b1", 20), "the other cover of the waiting package is driven"
     assert _sent_to(h, "cover.b2", 20) == [], f"sent past the hold: {h.clock.calls()}"
@@ -568,3 +566,190 @@ async def test_a_plan_made_invalid_by_a_new_decision_does_not_get_round_the_stop
     assert len(_sent_to(h, "cover.a3", 20)) <= 1, f"the old plan was replayed: {h.clock.calls()}"
     assert "cover.a2" in h.coord("ea")._cover_stop_holds
     assert len(h.clock.calls()) - calls_at_cut <= 1, h.clock.calls()[calls_at_cut:]
+
+
+# --- the hold survives a restart (same storage as the override) -----------------------------------
+
+def _raw_hold(window="wa", **changes):
+    now = dt_util.utcnow()
+    entry = {"window_id": window, "position": 25, "started_at": now.isoformat(),
+             "expires_at": (now + timedelta(minutes=90)).isoformat()}
+    entry.update(changes)
+    return entry
+
+
+async def test_active_stop_hold_survives_a_restart_and_keeps_protecting_until_released(zones):
+    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2"]}, 50, None)])
+    await _group_after_new_target(h, stop=True)
+    old = h.coord("ea")
+    assert "cover.a2" in old._cover_stop_holds
+    expires_at = old._cover_stop_holds["cover.a2"].expires_at
+    calls_before = list(h.clock.calls())
+    h.frozen.move_to(dt_util.utcnow() + timedelta(minutes=30))     # half an hour passes before the restart
+    assert await h.hass.config_entries.async_reload("ea")
+    await h.settle()
+    new = h.coord("ea")
+    assert new is not old
+    restored = new._cover_stop_holds.get("cover.a2")
+    assert restored is not None and restored.expires_at == expires_at, "same expiry, not renewed"
+    assert list(h.clock.calls()) == calls_before, "the restart replays nothing"
+    _retarget(h, "ea", 20)
+    await h.fire_ha_timers(GUARD_WAIT_S * 4)
+    await h.drive(h.refresh("ea"))
+    assert _sent_to(h, "cover.a1", 20), "the other cover keeps driving"
+    assert _sent_to(h, "cover.a2", 20) == [], f"the restored hold did not protect: {h.clock.calls()}"
+    assert await new.async_clear_manual_override("wa") is True            # the legitimate release
+    await h.fire_ha_timers(GUARD_WAIT_S * 4)
+    await h.drive(h.refresh("ea"))
+    assert _sent_to(h, "cover.a2", 20), "after the release the cover is driven again"
+
+
+async def test_expired_stop_hold_is_not_restored(zones):
+    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2"]}, 50, None)])
+    await _group_after_new_target(h, stop=True)
+    await h.pass_time(121 * 60)                              # past the end of the hold
+    assert await h.hass.config_entries.async_reload("ea")
+    await h.settle()
+    assert h.coord("ea")._cover_stop_holds == {}
+
+
+async def test_only_a_valid_hold_of_a_further_cover_this_zone_commands_is_restored(zones):
+    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2"]}, 50, None)])
+    coordinator = h.coord("ea")
+    now = dt_util.utcnow()
+    raw = {
+        "cover.a2": _raw_hold(),
+        "cover.zz": _raw_hold(),                                       # no such cover
+        "cover.a1": _raw_hold(),                                       # the window's first cover
+        "cover.a3": _raw_hold(window="wx"),                            # no such window
+        "cover.old": _raw_hold(expires_at=(now - timedelta(minutes=1)).isoformat()),   # expired
+        "cover.nz": _raw_hold(expires_at=(now + timedelta(hours=1)).replace(tzinfo=None).isoformat()),
+        "cover.bad1": _raw_hold(position="far"),
+        "cover.bad2": {"window_id": "wa"},
+        "cover.bad3": "garbage",
+        "cover.bad4": None,
+    }
+    coordinator._restore_cover_stop_holds(raw, now)
+    assert set(coordinator._cover_stop_holds) == {"cover.a2"}
+    coordinator._cover_stop_holds.clear()
+    coordinator._restore_cover_stop_holds({"cover.a2": _raw_hold(window="wx")}, now)
+    assert coordinator._cover_stop_holds == {}
+    coordinator._restore_cover_stop_holds(
+        {"cover.a2": _raw_hold(expires_at=(now - timedelta(seconds=1)).isoformat())}, now)
+    assert coordinator._cover_stop_holds == {}, "an expired hold is never resurrected"
+    h.monkeypatch.setattr(coordinator, "_cover_role", lambda window_id, cover_id: "quarantined")
+    coordinator._restore_cover_stop_holds({"cover.a2": _raw_hold()}, now)
+    assert coordinator._cover_stop_holds == {}, "a cover this zone no longer commands gets no hold"
+
+
+async def test_a_cover_removed_from_the_group_does_not_regain_its_hold_after_a_restart(zones):
+    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2", "cover.a3"]}, 50, None)])
+    await _group_after_new_target(h, stop=True)
+    coordinator = h.coord("ea")
+    assert "cover.a2" in coordinator._cover_stop_holds
+    saved = coordinator._cover_stop_holds_snapshot(dt_util.utcnow())
+    assert "cover.a2" in saved
+    group = coordinator.cover_groups["cg_wa"]
+    object.__setattr__(group, "cover_ids", ["cover.a1", "cover.a3"])      # a2 is gone from the new configuration
+    coordinator._cover_stop_holds.clear()
+    coordinator._restore_cover_stop_holds(saved, dt_util.utcnow())
+    assert coordinator._cover_stop_holds == {}
+
+
+@pytest.mark.parametrize("raw", [None, [], "x", 7, {"cover.a2": 1}, {1: {"window_id": "wa"}}])
+def test_corrupt_stored_holds_never_break_the_start(raw):
+    from datetime import datetime, timezone
+    from custom_components.smartshading.engines.learning_persistence import (
+        LearningPersistenceConfig, deserialize_into_learning_store, serialize_learning_store,
+    )
+    from custom_components.smartshading.engines.learning_store import LearningStore
+    now = datetime(2026, 8, 11, 12, 0, tzinfo=timezone.utc)
+    data = serialize_learning_store(LearningStore(), LearningPersistenceConfig(), now)
+    data["cover_stop_holds"] = raw
+    extras = deserialize_into_learning_store(data, LearningStore(), LearningPersistenceConfig(), now)
+    assert isinstance(extras.cover_stop_holds, dict)
+    assert all(isinstance(k, str) and isinstance(v, dict) for k, v in extras.cover_stop_holds.items())
+
+
+# --- the release strategies of the override release the stop hold too ------------------------------
+
+def _decide_as(h, category):
+    """Make the decision of this cycle a ``category`` one (the real release path stays in use)."""
+    from dataclasses import replace
+    from custom_components.smartshading.state_machine.states import DecisionCategory
+    orchestrator = h.coord("ea")._tier_orchestrator
+    original = orchestrator.evaluate_window
+
+    def evaluate_window(wdi):
+        return replace(original(wdi), category=DecisionCategory[category])
+
+    h.monkeypatch.setattr(orchestrator, "evaluate_window", evaluate_window)
+
+
+@pytest.mark.parametrize("strategy, category, released", [
+    ("FIRST_COMFORT", "COMFORT", True),
+    ("FIRST_COMFORT", "PROTECTION", False),
+    ("FIRST_PROTECTION", "PROTECTION", True),
+    ("FIRST_PROTECTION", "COMFORT", False),
+    ("FIRST_ANY_DECISION", "COMFORT", True),
+    ("FIRST_ANY_DECISION", "PROTECTION", True),
+    ("DURATION", "COMFORT", False),
+    ("DURATION", "PROTECTION", False),
+    ("MANUAL", "COMFORT", False),
+    ("LIFECYCLE", "PROTECTION", False),
+])
+async def test_the_release_strategy_decides_whether_a_decision_releases_the_stop_hold(
+    zones, strategy, category, released,
+):
+    from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy
+    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2"]}, 50, None)])
+    h.coord("ea")._override_release_strategy = OverrideReleaseStrategy[strategy]
+    await _group_after_new_target(h, stop=True)
+    assert "cover.a2" in h.coord("ea")._cover_stop_holds, "not released by the decision of its own cycle"
+    assert _sent_to(h, "cover.a2", 30) == []
+    _decide_as(h, category)
+    _retarget(h, "ea", 20)
+    await h.fire_ha_timers(GUARD_WAIT_S * 4)
+    await h.drive(h.refresh("ea"))
+    assert _sent_to(h, "cover.a1", 20), "the other cover drives on in either case"
+    if released:
+        assert "cover.a2" not in h.coord("ea")._cover_stop_holds
+        assert _sent_to(h, "cover.a2", 20), f"released by the decision, the cover drives: {h.clock.calls()}"
+    else:
+        assert "cover.a2" in h.coord("ea")._cover_stop_holds
+        assert _sent_to(h, "cover.a2", 20) == [], f"released by a decision that does not qualify: {h.clock.calls()}"
+
+
+async def test_a_release_decision_only_releases_the_holds_of_its_own_window(zones):
+    from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy
+    from custom_components.smartshading.state_machine.states import DecisionCategory
+    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2"], "wb": ["cover.b1", "cover.b2"]}, 50, None)])
+    coordinator = h.coord("ea")
+    coordinator._override_release_strategy = OverrideReleaseStrategy.FIRST_ANY_DECISION
+    now = dt_util.utcnow()
+    coordinator._restore_cover_stop_holds(
+        {"cover.a2": _raw_hold("wa"), "cover.b2": _raw_hold("wb")}, now)
+    assert set(coordinator._cover_stop_holds) == {"cover.a2", "cover.b2"}
+    later = now + timedelta(minutes=5)
+    coordinator._release_stop_holds_by_policy("wa", DecisionCategory.HOLD, later)
+    assert set(coordinator._cover_stop_holds) == {"cover.a2", "cover.b2"}, "no such decision, nothing released"
+    coordinator._release_stop_holds_by_policy("wb", DecisionCategory.COMFORT, later)
+    assert set(coordinator._cover_stop_holds) == {"cover.a2"}
+
+
+async def test_a_stop_recognised_in_a_cycle_is_not_released_by_that_cycles_own_decision(zones):
+    from custom_components.smartshading.models.manual_override import OverrideReleaseStrategy
+    h = await zones.boot([("ea", {"wa": ["cover.a1", "cover.a2"]}, 50, None)])
+    h.coord("ea")._override_release_strategy = OverrideReleaseStrategy.FIRST_PROTECTION   # the decision here is a protection one
+    await _cut_during_second_cover(h)
+    _stop_halfway(h, "cover.a2", 75)
+    window_end = _window_end(h, "cover.a2")
+    _retarget(h, "ea", 30)
+    await h.pass_time(max(window_end - h.clock.t + 1, GUARD_WAIT_S * 4))     # the look that recognises it
+    assert "cover.a2" in h.coord("ea")._cover_stop_holds
+    assert _sent_to(h, "cover.a1", 30) and _sent_to(h, "cover.a2", 30) == [], h.clock.calls()
+    _retarget(h, "ea", 20)                                                    # the next decision releases it
+    await h.fire_ha_timers(GUARD_WAIT_S * 4)
+    await h.drive(h.refresh("ea"))
+    assert "cover.a2" not in h.coord("ea")._cover_stop_holds
+    assert _sent_to(h, "cover.a2", 20)

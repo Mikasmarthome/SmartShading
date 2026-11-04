@@ -112,7 +112,7 @@ from .engines.presence_engine import evaluate_presence_policy
 from .models.presence import PresencePolicy, PresenceReading
 from .models.learning import OverrideRecord, StateTransitionRecord, WindowCycleSnapshot
 from .engines.override_detector import OverrideDetector
-from .engines.override_release import compute_expiry
+from .engines.override_release import compute_expiry, resolve_candidate_release
 from .engines.observability_evaluator import (
     HYSTERESIS_THRESHOLDS,
     CoverPositionObservation,
@@ -1996,6 +1996,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # re-asserted after restart/reload).  Bounded by per-override expiry.
             "active_overrides": self._override_detector.active_overrides_snapshot(
                 dt_util.utcnow()),
+            # Restart-safe stop holds of a group's further covers (bounded by expiry).
+            "cover_stop_holds": self._cover_stop_holds_snapshot(dt_util.utcnow()),
             # Restart-safe per-window shading state — see restore site for why
             # (absence-release recovery after HA restart/reload).
             "current_states": {
@@ -2434,7 +2436,6 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         """
         self._unloading = True
         self._own_motion.clear()
-        self._cover_stop_holds.clear()
         self._lifecycle_stats["shutdowns"] += 1
         self._lifecycle_stats["last_shutdown_reason"] = "unload"
         # T22 Phase 4b/5b: signal any in-flight comfort DispatchPlanExecutor
@@ -2893,6 +2894,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         else:
             expires_at = now + timedelta(minutes=duration_min)
         self._cover_stop_holds[key] = _CoverStopHold(window_id, observed, now, expires_at)
+        self._request_important_save()
 
     def _cover_stop_hold_active(self, cover_id: str | None, now: datetime) -> bool:
         if cover_id is None:
@@ -2911,7 +2913,69 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         keys = [k for k, hold in self._cover_stop_holds.items() if hold.window_id == window_id]
         for key in keys:
             del self._cover_stop_holds[key]
+        if keys:
+            self._request_important_save()
         return len(keys)
+
+    def _release_stop_holds_by_policy(
+        self, window_id: str, category: DecisionCategory, now: datetime,
+    ) -> None:
+        """The decision the zone's release strategy waits for (FIRST_COMFORT,
+        FIRST_PROTECTION, FIRST_ANY_DECISION -- the same resolve_candidate_release()
+        the window override's policy uses) ends the stop holds of this window's further
+        covers too.  Only holds of this window, and only holds that already existed when
+        this cycle began: a hold recognised in this very cycle is not released by the
+        decision that is being made now, just as an override created by this cycle's
+        tick() is first met by the next decision."""
+        if not self._cover_stop_holds or not resolve_candidate_release(
+            strategy=self._override_release_strategy, category=category,
+        ):
+            return
+        keys = [
+            k for k, hold in self._cover_stop_holds.items()
+            if hold.window_id == window_id and hold.started_at < now
+        ]
+        for key in keys:
+            del self._cover_stop_holds[key]
+        if keys:
+            self._request_important_save()
+
+    def _cover_stop_holds_snapshot(self, now: datetime) -> dict[str, dict[str, Any]]:
+        """The minimum a restart needs: which cover, in which window, and until when."""
+        return {
+            key: {
+                "window_id": hold.window_id,
+                "position": hold.position_internal,
+                "started_at": hold.started_at.isoformat(),
+                "expires_at": hold.expires_at.isoformat(),
+            }
+            for key, hold in self._cover_stop_holds.items()
+            if now < hold.expires_at and hold.window_id in self.windows
+        }
+
+    def _restore_cover_stop_holds(self, raw: dict, now: datetime) -> None:
+        """Bring the holds back that were active before the restart (first cycle, before
+        any dispatch).  Nothing is replayed.  An entry is skipped individually when it is
+        malformed, expired, or no longer describes a further cover of that window's group
+        that this zone commands (renamed, removed, moved to the first place, other owner)."""
+        for key, entry in raw.items():
+            try:
+                window_id = str(entry["window_id"])
+                started_at = datetime.fromisoformat(entry["started_at"])
+                expires_at = datetime.fromisoformat(entry["expires_at"])
+                position = int(entry["position"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if started_at.tzinfo is None or expires_at.tzinfo is None or now >= expires_at:
+                continue
+            window = self.windows.get(window_id)
+            group = self.cover_groups.get(window.cover_group_id) if window is not None else None
+            if group is None:
+                continue
+            further = [_normalize_cover_id(c) for c in group.cover_ids[1:]]
+            if key not in further or self._cover_role(window_id, key) != _OWN_ACTIVE:
+                continue
+            self._cover_stop_holds[key] = _CoverStopHold(window_id, position, started_at, expires_at)
 
     def _forget_covers_not_commanded_here(self) -> None:
         """This zone lost the claim on a cover: what it knows about that cover's own
@@ -2922,7 +2986,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 if self._cover_role(window_id, cover_id) != _OWN_ACTIVE:
                     key = _normalize_cover_id(cover_id)
                     self._own_motion.pop(key, None)
-                    self._cover_stop_holds.pop(key, None)
+                    if self._cover_stop_holds.pop(key, None) is not None:
+                        self._request_important_save()
 
     def _recover_completion_feedback(self, entity_id: str, target_ha: int, invert: bool) -> bool:
         """After an estimate-based wait: if the cover now reports the target again,
@@ -4524,6 +4589,11 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                 )
                         except Exception:
                             _LOGGER.warning("Learning: active-override restore failed (non-fatal)")
+                        try:
+                            self._restore_cover_stop_holds(
+                                getattr(_extras, "cover_stop_holds", {}) or {}, _restore_now)
+                        except Exception:
+                            _LOGGER.warning("Learning: stop-hold restore failed (non-fatal)")
                         # Restart-safe: restore per-window shading state BEFORE the
                         # first dispatch decision.  Without this, current_state
                         # resets to the OPEN default on every restart, which can
@@ -6242,6 +6312,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 # (FIRST_COMFORT / FIRST_PROTECTION / FIRST_ANY_DECISION) was
                 # waiting for — clear it now, before tick() runs, same
                 # pattern as the lifecycle-transition clear above.
+                # The same decision releases the stop holds of this window's further
+                # covers (see _release_stop_holds_by_policy), with or without an
+                # override of the window.
+                self._release_stop_holds_by_policy(window_id, tier_decision.category, now)
                 if tier_decision.release_override and active_override is not None:
                     if obs_enabled:
                         try:

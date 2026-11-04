@@ -471,6 +471,7 @@ def serialize_learning_store(
     consumed_experiment_ledger: dict | None = None,
     shadow_tombstones: list | None = None,
     active_overrides: list | None = None,
+    cover_stop_holds: dict | None = None,
     current_states: dict | None = None,
     assumed_state: dict | None = None,
     config_snapshot: dict | None = None,
@@ -576,6 +577,9 @@ def serialize_learning_store(
         "shadow_tombstones": shadow_tombstones or [],
         # Restart-safe active manual overrides (additive; bounded by expiry).
         "active_overrides": active_overrides or [],
+        # Restart-safe per-cover stop holds of a group's further covers (additive;
+        # bounded by expiry).  {cover_id: {window_id, position, started_at, expires_at}}.
+        "cover_stop_holds": dict(cover_stop_holds or {}),
         # Restart-safe per-window shading state (additive).  Without this, a
         # window's FSM state resets to the OPEN default on restart, which can
         # permanently strand an ABSENCE_ONLY/ABSENCE_AND_SCHEDULE window: the
@@ -797,6 +801,7 @@ class RestoreExtras:
     restore_diagnostics: dict  # P10 structured per-section reason counts (privacy-safe)
     config_snapshot: dict  # P10 previous normalised config snapshot (for typed diff)
     active_overrides: list = field(default_factory=list)  # raw active-override dicts
+    cover_stop_holds: dict = field(default_factory=dict)  # cover_id -> raw stop-hold dict
     current_states: dict = field(default_factory=dict)  # window_id -> ShadingState.value
     support_critical_events: list = field(default_factory=list)  # P4c compact critical events
     research_daily_buckets: dict = field(default_factory=dict)  # P4c date → counts
@@ -1187,6 +1192,10 @@ def deserialize_into_learning_store(
         # Raw active-override dicts; the coordinator restores them into the
         # override detector (validating expiry) before the first dispatch.
         active_overrides=(data.get("active_overrides") or []),
+        cover_stop_holds={
+            k: v for k, v in (data.get("cover_stop_holds") or {}).items()
+            if isinstance(k, str) and isinstance(v, dict)
+        } if isinstance(data.get("cover_stop_holds") or {}, dict) else {},
         current_states=current_states,
         support_critical_events=support_critical_events,
         research_daily_buckets=research_daily_buckets,
@@ -1345,6 +1354,7 @@ class LearningPersistenceAdapter:
         consumed_experiment_ledger: dict | None = None,
         shadow_tombstones: list | None = None,
         active_overrides: list | None = None,
+        cover_stop_holds: dict | None = None,
         current_states: dict | None = None,
         assumed_state: dict | None = None,
         config_snapshot: dict | None = None,
@@ -1376,6 +1386,7 @@ class LearningPersistenceAdapter:
                 consumed_experiment_ledger=consumed_experiment_ledger,
                 shadow_tombstones=shadow_tombstones,
                 active_overrides=active_overrides,
+                cover_stop_holds=cover_stop_holds,
                 current_states=current_states,
                 assumed_state=assumed_state,
                 config_snapshot=config_snapshot,

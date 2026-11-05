@@ -1897,10 +1897,11 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 return self._save_and_reload(self._pending_presence_updates)
             return await self.async_step_presence_custom()
 
-        # Prefill absence_position from the first zone's stored value; fall back to default.
+        # Prefill absence_position from the first zone's stored value; fall back to
+        # the default only when nothing is stored (0 is a valid stored position).
+        stored_absence_position = ((current.get("zones") or [{}])[0]).get("absence_position")
         current_absence_position = (
-            ((current.get("zones") or [{}])[0]).get("absence_position")
-            or DEFAULT_ABSENCE_POSITION
+            DEFAULT_ABSENCE_POSITION if stored_absence_position is None else stored_absence_position
         )
 
         schema = vol.Schema(

@@ -63,12 +63,6 @@ class SmartShadingConfigEntryData:
     cloud_cover_sensor_id: str | None = None
     wind_speed_sensor_id: str | None = None
     rain_sensor_id: str | None = None
-    # EMA sensor smoothing (v1.2.0-beta.1, T4): optional, house-wide, same
-    # scope as the weather sensors above. False/0.3 defaults reproduce
-    # exact pre-T4 behavior for every existing config (EMA off = raw values
-    # pass through unchanged).
-    ema_enabled: bool = False
-    ema_alpha: float = 0.3
     lifecycle_config: NightDayLifecycleConfig = field(
         default_factory=lambda: NightDayLifecycleConfig(id="default")
     )
@@ -173,17 +167,6 @@ def _presence_policy_from_storage(value: Any) -> PresencePolicy:
         return PresencePolicy.ANY_HOME
 
 
-def _ema_alpha_from_storage(value: Any) -> float:
-    """Never raises: missing, non-numeric, or out-of-[0.05, 1.0]-range ->
-    the default 0.3, same "never crash on stored data, safe default on
-    anything implausible" principle as the rest of this module."""
-    if not isinstance(value, (int, float)) or isinstance(value, bool):
-        return 0.3
-    if not (0.05 <= float(value) <= 1.0):
-        return 0.3
-    return float(value)
-
-
 def _sun_event_from_storage(value: Any) -> SunEvent | None:
     """Never raises: missing, None, or an unrecognized value -> None (v1.2.0-
     beta.1's "no override" default — falls back to night_fixed_time /
@@ -277,8 +260,6 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
         "cloud_cover_sensor_id": data.cloud_cover_sensor_id,
         "wind_speed_sensor_id": data.wind_speed_sensor_id,
         "rain_sensor_id": data.rain_sensor_id,
-        "ema_enabled": data.ema_enabled,
-        "ema_alpha": data.ema_alpha,
         "lifecycle_config": _lifecycle_config_to_storage_dict(lifecycle),
         "presence_entity_ids": data.presence_entity_ids,
         "absence_delay_min": data.absence_delay_min,
@@ -602,8 +583,6 @@ def from_storage_dict(raw: dict[str, Any]) -> SmartShadingConfigEntryData:
         cloud_cover_sensor_id=raw.get("cloud_cover_sensor_id"),
         wind_speed_sensor_id=raw.get("wind_speed_sensor_id"),
         rain_sensor_id=raw.get("rain_sensor_id"),
-        ema_enabled=bool(raw.get("ema_enabled", False)),
-        ema_alpha=_ema_alpha_from_storage(raw.get("ema_alpha")),
         lifecycle_config=_lifecycle_config_from_storage(_resolve_lifecycle_config_dict(raw)),
         presence_entity_ids=raw.get("presence_entity_ids", []),
         absence_delay_min=raw.get("absence_delay_min", 30),

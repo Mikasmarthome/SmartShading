@@ -66,7 +66,7 @@ import pytest
 
 # ---------------------------------------------------------------------------
 # HA stubs — must precede any coordinator import in this module (mirrors the
-# proven-working pattern in tests/test_coordinator_ema_integration.py /
+# proven-working pattern in tests/test_sensor_inputs_without_smoothing.py /
 # tests/test_v104_presence_fanout.py).
 # ---------------------------------------------------------------------------
 

@@ -330,8 +330,6 @@ async def _async_setup_zone_entry(
         presence_policy=entry_data.presence_policy,
         indoor_temperature_sensor_ids=entry_data.indoor_temperature_sensor_ids,
         comfort_config=entry_data.comfort_config,
-        ema_enabled=entry_data.ema_enabled,
-        ema_alpha=entry_data.ema_alpha,
         global_serial_dispatch=serial_dispatch,
         cover_ownership=_cover_ownership,
         # Resolved through resolve_zone_override_policy() above, not

@@ -168,12 +168,6 @@ from .const import (
     CONF_NIGHT_NOT_AFTER,
     CONF_MORNING_NOT_BEFORE,
     CONF_MORNING_NOT_AFTER,
-    CONF_EMA_ENABLED,
-    CONF_EMA_ALPHA,
-    DEFAULT_EMA_ENABLED,
-    DEFAULT_EMA_ALPHA,
-    EMA_ALPHA_MIN,
-    EMA_ALPHA_MAX,
     CONF_PRESENCE_POLICY,
     DEFAULT_PRESENCE_POLICY,
     PRESENCE_POLICY_OPTIONS,
@@ -508,8 +502,6 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._cloud_cover_sensor_id: str | None = None
         self._wind_speed_sensor_id: str | None = None
         self._rain_sensor_id: str | None = None
-        self._ema_enabled: bool = DEFAULT_EMA_ENABLED
-        self._ema_alpha: float = DEFAULT_EMA_ALPHA
         self._night_trigger: NightTrigger = NightTrigger(DEFAULT_NIGHT_TRIGGER)
         self._night_fixed_time: time = time.fromisoformat(DEFAULT_NIGHT_FIXED_TIME)
         self._night_sun_elevation: float = DEFAULT_NIGHT_SUN_ELEVATION
@@ -581,8 +573,6 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._cloud_cover_sensor_id = user_input.get(CONF_CLOUD_COVER_SENSOR_ID)
             self._wind_speed_sensor_id = user_input.get(CONF_WIND_SPEED_SENSOR_ID)
             self._rain_sensor_id = user_input.get(CONF_RAIN_SENSOR_ID)
-            self._ema_enabled = bool(user_input.get(CONF_EMA_ENABLED, DEFAULT_EMA_ENABLED))
-            self._ema_alpha = float(user_input.get(CONF_EMA_ALPHA, DEFAULT_EMA_ALPHA))
             return await self.async_step_comfort()
 
         # Prefill weather fields from first existing zone entry so the user
@@ -599,8 +589,6 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if src:
             for key in prefill:
                 prefill[key] = src.get(key)
-        _prefill_ema_enabled = bool(src.get(CONF_EMA_ENABLED, DEFAULT_EMA_ENABLED)) if src else DEFAULT_EMA_ENABLED
-        _prefill_ema_alpha = float(src.get(CONF_EMA_ALPHA, DEFAULT_EMA_ALPHA)) if src else DEFAULT_EMA_ALPHA
 
         schema = vol.Schema(
             {
@@ -615,10 +603,6 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_WIND_SPEED_SENSOR_ID, description={"suggested_value": prefill[CONF_WIND_SPEED_SENSOR_ID]}): EntitySelector(EntitySelectorConfig(domain="sensor")),
                 vol.Optional(CONF_RAIN_SENSOR_ID, description={"suggested_value": prefill[CONF_RAIN_SENSOR_ID]}): EntitySelector(
                     EntitySelectorConfig(domain=["sensor", "binary_sensor"])
-                ),
-                vol.Required(CONF_EMA_ENABLED, default=_prefill_ema_enabled): BooleanSelector(),
-                vol.Optional(CONF_EMA_ALPHA, default=_prefill_ema_alpha): NumberSelector(
-                    NumberSelectorConfig(min=EMA_ALPHA_MIN, max=EMA_ALPHA_MAX, step=0.05, mode=NumberSelectorMode.BOX)
                 ),
             }
         )
@@ -1238,8 +1222,6 @@ class SmartShadingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             cloud_cover_sensor_id=self._cloud_cover_sensor_id,
             wind_speed_sensor_id=self._wind_speed_sensor_id,
             rain_sensor_id=self._rain_sensor_id,
-            ema_enabled=self._ema_enabled,
-            ema_alpha=self._ema_alpha,
             indoor_temperature_sensor_ids=self._indoor_temperature_sensor_ids,
             comfort_config=ComfortConfig(
                 heat_protection_enabled=self._heat_protection_enabled,
@@ -1353,8 +1335,6 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 CONF_CLOUD_COVER_SENSOR_ID: user_input.get(CONF_CLOUD_COVER_SENSOR_ID),
                 CONF_WIND_SPEED_SENSOR_ID: user_input.get(CONF_WIND_SPEED_SENSOR_ID),
                 CONF_RAIN_SENSOR_ID: user_input.get(CONF_RAIN_SENSOR_ID),
-                CONF_EMA_ENABLED: bool(user_input.get(CONF_EMA_ENABLED, DEFAULT_EMA_ENABLED)),
-                CONF_EMA_ALPHA: float(user_input.get(CONF_EMA_ALPHA, DEFAULT_EMA_ALPHA)),
             })
 
         current = self._config_entry.data
@@ -1384,16 +1364,6 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                     CONF_RAIN_SENSOR_ID,
                     description={"suggested_value": current.get(CONF_RAIN_SENSOR_ID)},
                 ): EntitySelector(EntitySelectorConfig(domain=["sensor", "binary_sensor"])),
-                vol.Required(
-                    CONF_EMA_ENABLED,
-                    default=bool(current.get(CONF_EMA_ENABLED, DEFAULT_EMA_ENABLED)),
-                ): BooleanSelector(),
-                vol.Optional(
-                    CONF_EMA_ALPHA,
-                    default=float(current.get(CONF_EMA_ALPHA, DEFAULT_EMA_ALPHA)),
-                ): NumberSelector(
-                    NumberSelectorConfig(min=EMA_ALPHA_MIN, max=EMA_ALPHA_MAX, step=0.05, mode=NumberSelectorMode.BOX)
-                ),
             }
         )
         return self.async_show_form(step_id="weather", data_schema=schema)
@@ -2784,7 +2754,10 @@ class SmartShadingOptionsFlow(config_entries.OptionsFlow):
                 merged["lifecycle_config"] = resolved
         new_data = {
             k: v for k, v in merged.items()
-            if k not in ("lifecycle_profiles", "active_lifecycle_profile_id")
+            if k not in (
+                "lifecycle_profiles", "active_lifecycle_profile_id",
+                "ema_enabled", "ema_alpha",
+            )
         }
         self.hass.config_entries.async_update_entry(self._config_entry, data=new_data)
         self.hass.async_create_task(

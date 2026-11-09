@@ -19,8 +19,7 @@ Coverage:
   EDGE-04  Initial (non-options) ConfigFlow never writes an override_policy
            key.
   EDGE-05  A save never touches lifecycle_profiles, active_lifecycle_profile_id,
-           presence_policy, presence_entity_ids, ema_enabled, ema_alpha, or
-           lifecycle_config.
+           presence_policy, presence_entity_ids, or lifecycle_config.
   EDGE-06  Duration/tolerance fields carry sensible NumberSelector min/max
            bounds in the schema.
   EDGE-07  Zero, negative, and wrong-type numeric input are handled safely
@@ -312,8 +311,6 @@ class TestSaveDoesNotTouchUnrelatedFeatureKeys:
         original = {
             "presence_policy": "all_home",
             "presence_entity_ids": ["person.alice"],
-            "ema_enabled": True,
-            "ema_alpha": 0.4,
             "lifecycle_config": {"id": "default", "night_position": 55},
         }
         flow = _make_options_flow(data=dict(original))
@@ -339,6 +336,54 @@ class TestSaveDoesNotTouchUnrelatedFeatureKeys:
         assert "lifecycle_profiles" not in kwargs["data"]
         assert "active_lifecycle_profile_id" not in kwargs["data"]
         assert kwargs["data"]["lifecycle_config"]["night_position"] == 77
+
+
+class TestRemovedSensorSmoothingOption:
+    """The sensor-smoothing option no longer exists: no form offers it and
+    any options save retires the keys an older version stored."""
+
+    @staticmethod
+    def _field_names(form: dict) -> set[str]:
+        return {str(getattr(k, "schema", k)) for k in form["data_schema"].schema}
+
+    @staticmethod
+    def _options_form(flow: SmartShadingOptionsFlow) -> dict:
+        flow.async_show_form = lambda **kw: kw  # type: ignore[method-assign]
+        return asyncio.run(flow.async_step_weather(user_input=None))
+
+    def test_options_weather_step_has_no_smoothing_fields(self) -> None:
+        flow = _make_options_flow(data={"ema_enabled": True, "ema_alpha": 0.4})
+        names = self._field_names(self._options_form(flow))
+        assert "ema_enabled" not in names and "ema_alpha" not in names
+        assert "weather_entity_id" in names and "rain_sensor_id" in names
+
+    def test_setup_weather_step_has_no_smoothing_fields(self) -> None:
+        flow = _make_config_flow()
+        flow.hass = MagicMock()
+        flow.hass.config_entries.async_entries.return_value = []
+        names = self._field_names(asyncio.run(flow.async_step_weather(user_input=None)))
+        assert "ema_enabled" not in names and "ema_alpha" not in names
+        assert "weather_entity_id" in names and "rain_sensor_id" in names
+
+    def test_saving_the_weather_step_retires_old_keys_and_keeps_the_rest(self) -> None:
+        flow = _make_options_flow(data={
+            "ema_enabled": True, "ema_alpha": 0.4, "presence_policy": "all_home",
+            "lifecycle_config": {"id": "default", "night_position": 55},
+        })
+        asyncio.run(flow.async_step_weather(user_input={"weather_entity_id": "weather.home"}))
+        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
+        saved = kwargs["data"]
+        assert "ema_enabled" not in saved and "ema_alpha" not in saved
+        assert saved["weather_entity_id"] == "weather.home"
+        assert saved["presence_policy"] == "all_home"
+        assert saved["lifecycle_config"]["night_position"] == 55
+
+    def test_any_other_save_retires_old_keys_too(self) -> None:
+        flow = _make_options_flow(data={"ema_enabled": True, "ema_alpha": 0.4})
+        _opt_out_of_system_default(flow)
+        asyncio.run(flow.async_step_manual_override_custom(user_input=dict(_BASE_TIME_BASED_INPUT)))
+        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
+        assert "ema_enabled" not in kwargs["data"] and "ema_alpha" not in kwargs["data"]
 
 
 class TestNumberSelectorBounds:

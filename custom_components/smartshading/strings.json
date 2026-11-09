@@ -23,9 +23,7 @@
           "outdoor_temperature_sensor_id": "Outdoor temperature sensor",
           "cloud_cover_sensor_id": "Cloud cover sensor (0–100 %)",
           "wind_speed_sensor_id": "Wind speed sensor (m/s) — use wind gust for awnings/screens if available",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
-          "ema_enabled": "Smooth sensor readings (EMA)",
-          "ema_alpha": "EMA smoothing factor (0.05–1.0) — lower = smoother, higher = more responsive"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {
@@ -419,9 +417,7 @@
           "outdoor_temperature_sensor_id": "Outdoor temperature sensor",
           "cloud_cover_sensor_id": "Cloud cover sensor (0–100 %)",
           "wind_speed_sensor_id": "Wind speed sensor (m/s) — use wind gust for awnings/screens if available",
-          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional",
-          "ema_enabled": "Smooth sensor readings (EMA)",
-          "ema_alpha": "EMA smoothing factor (0.05–1.0) — lower = smoother, higher = more responsive"
+          "rain_sensor_id": "Rain sensor (binary on/off or numeric mm/h rate) — optional"
         }
       },
       "lifecycle": {

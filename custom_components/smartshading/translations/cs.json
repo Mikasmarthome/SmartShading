@@ -23,9 +23,7 @@
           "outdoor_temperature_sensor_id": "Senzor venkovní teploty",
           "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
           "wind_speed_sensor_id": "Senzor rychlosti větru (m/s) — pro markýzy/screeny použijte nárazy větru, pokud jsou k dispozici",
-          "rain_sensor_id": "Snímač deště (binární zap/vyp nebo číselná hodnota mm/h) – volitelné",
-          "ema_enabled": "Vyhlazovat hodnoty senzorů (EMA)",
-          "ema_alpha": "Faktor vyhlazení EMA (0,05–1,0) — nižší = hladkéjší, vyšší = citlivější"
+          "rain_sensor_id": "Snímač deště (binární zap/vyp nebo číselná hodnota mm/h) – volitelné"
         }
       },
       "lifecycle": {
@@ -419,9 +417,7 @@
           "outdoor_temperature_sensor_id": "Senzor venkovní teploty",
           "cloud_cover_sensor_id": "Senzor oblačnosti (0–100 %)",
           "wind_speed_sensor_id": "Senzor rychlosti větru (m/s) — pro markýzy/screeny použijte nárazy větru, pokud jsou k dispozici",
-          "rain_sensor_id": "Snímač deště (binární zap/vyp nebo číselná hodnota mm/h) – volitelné",
-          "ema_enabled": "Vyhlazovat hodnoty senzorů (EMA)",
-          "ema_alpha": "Faktor vyhlazení EMA (0,05–1,0) — nižší = hladkéjší, vyšší = citlivější"
+          "rain_sensor_id": "Snímač deště (binární zap/vyp nebo číselná hodnota mm/h) – volitelné"
         }
       },
       "lifecycle": {

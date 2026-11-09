@@ -23,9 +23,7 @@
           "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
           "cloud_cover_sensor_id": "Sensor de nuvolositat (0–100 %)",
           "wind_speed_sensor_id": "Sensor de velocitat del vent (m/s) — fes servir la ratxa de vent per a tendals/screens si està disponible",
-          "rain_sensor_id": "Sensor de pluja (binari encès/apagat o valor numèric mm/h) – opcional",
-          "ema_enabled": "Suavitza les lectures dels sensors (EMA)",
-          "ema_alpha": "Factor de suavitzat EMA (0,05–1,0) — més baix = més suau, més alt = més reactiu"
+          "rain_sensor_id": "Sensor de pluja (binari encès/apagat o valor numèric mm/h) – opcional"
         }
       },
       "lifecycle": {
@@ -419,9 +417,7 @@
           "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
           "cloud_cover_sensor_id": "Sensor de nuvolositat (0–100 %)",
           "wind_speed_sensor_id": "Sensor de velocitat del vent (m/s) — fes servir la ratxa de vent per a tendals/screens si està disponible",
-          "rain_sensor_id": "Sensor de pluja (binari encès/apagat o valor numèric mm/h) – opcional",
-          "ema_enabled": "Suavitza les lectures dels sensors (EMA)",
-          "ema_alpha": "Factor de suavitzat EMA (0,05–1,0) — més baix = més suau, més alt = més reactiu"
+          "rain_sensor_id": "Sensor de pluja (binari encès/apagat o valor numèric mm/h) – opcional"
         }
       },
       "lifecycle": {

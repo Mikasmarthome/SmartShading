@@ -23,9 +23,7 @@
           "outdoor_temperature_sensor_id": "Kültéri hőmérséklet-érzékelő",
           "cloud_cover_sensor_id": "Felhőzet-érzékelő (0–100 %)",
           "wind_speed_sensor_id": "Szélsebesség-érzékelő (m/s) — napellenzőkhöz/screenekhez használjon széllökést, ha elérhető",
-          "rain_sensor_id": "Esőérzékelő (bináris be/ki vagy numerikus mm/h érték) – opcionális",
-          "ema_enabled": "Érzékelőértékek simítása (EMA)",
-          "ema_alpha": "EMA simítási tényező (0,05–1,0) — alacsonyabb = simább, magasabb = érzékenyebb"
+          "rain_sensor_id": "Esőérzékelő (bináris be/ki vagy numerikus mm/h érték) – opcionális"
         }
       },
       "lifecycle": {
@@ -419,9 +417,7 @@
           "outdoor_temperature_sensor_id": "Kültéri hőmérséklet-érzékelő",
           "cloud_cover_sensor_id": "Felhőzet-érzékelő (0–100 %)",
           "wind_speed_sensor_id": "Szélsebesség-érzékelő (m/s) — napellenzőkhöz/screenekhez használjon széllökést, ha elérhető",
-          "rain_sensor_id": "Esőérzékelő (bináris be/ki vagy numerikus mm/h érték) – opcionális",
-          "ema_enabled": "Érzékelőértékek simítása (EMA)",
-          "ema_alpha": "EMA simítási tényező (0,05–1,0) — alacsonyabb = simább, magasabb = érzékenyebb"
+          "rain_sensor_id": "Esőérzékelő (bináris be/ki vagy numerikus mm/h érték) – opcionális"
         }
       },
       "lifecycle": {

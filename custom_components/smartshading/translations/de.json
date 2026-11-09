@@ -23,9 +23,7 @@
           "outdoor_temperature_sensor_id": "Außentemperatursensor",
           "cloud_cover_sensor_id": "Bewölkungsgrad (0–100 %)",
           "wind_speed_sensor_id": "Windgeschwindigkeit (m/s) – bei Markisen/Screens möglichst Böengeschwindigkeit verwenden",
-          "rain_sensor_id": "Regensensor (binär oder mm/h) – optional",
-          "ema_enabled": "Sensorwerte glätten (EMA)",
-          "ema_alpha": "EMA-Glättungsfaktor (0,05–1,0) — niedriger = glatter, höher = reaktionsschneller"
+          "rain_sensor_id": "Regensensor (binär oder mm/h) – optional"
         }
       },
       "lifecycle": {
@@ -419,9 +417,7 @@
           "outdoor_temperature_sensor_id": "Außentemperatursensor",
           "cloud_cover_sensor_id": "Bewölkungsgrad (0–100 %)",
           "wind_speed_sensor_id": "Windgeschwindigkeit (m/s) – bei Markisen/Screens möglichst Böengeschwindigkeit verwenden",
-          "rain_sensor_id": "Regensensor (binär oder mm/h) – optional",
-          "ema_enabled": "Sensorwerte glätten (EMA)",
-          "ema_alpha": "EMA-Glättungsfaktor (0,05–1,0) — niedriger = glatter, höher = reaktionsschneller"
+          "rain_sensor_id": "Regensensor (binär oder mm/h) – optional"
         }
       },
       "lifecycle": {

@@ -202,12 +202,7 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
             if prov.get("forecast", {}).get("forecast_configured"):
                 forecast_configured += 1
         return {"windows": len(windows), "solar_source_status": solar,
-                "indoor_missing": indoor_missing, "forecast_configured": forecast_configured,
-                # EMA (v1.2.0-beta.1, T4): configuration state only, never a raw
-                # or smoothed sensor reading — consistent with this section's
-                # existing counts/status-only, no-raw-value discipline.
-                "ema_enabled": bool(getattr(c, "_ema_enabled", False)),
-                "ema_alpha": getattr(c, "_ema_alpha", 0.3)}
+                "indoor_missing": indoor_missing, "forecast_configured": forecast_configured}
 
     def _presence_summary():
         # PUBLIC: policy/config + aggregate status only — no entity ids, no

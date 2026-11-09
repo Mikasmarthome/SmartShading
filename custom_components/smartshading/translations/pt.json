@@ -23,9 +23,7 @@
           "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
           "cloud_cover_sensor_id": "Sensor de nebulosidade (0–100 %)",
           "wind_speed_sensor_id": "Sensor de velocidade do vento (m/s) — use a rajada para toldos/telas se disponível",
-          "rain_sensor_id": "Sensor de chuva (binário ligado/desligado ou taxa numérica mm/h) – opcional",
-          "ema_enabled": "Suavizar leituras dos sensores (EMA)",
-          "ema_alpha": "Fator de suavização EMA (0,05–1,0) — menor = mais suave, maior = mais responsivo"
+          "rain_sensor_id": "Sensor de chuva (binário ligado/desligado ou taxa numérica mm/h) – opcional"
         }
       },
       "lifecycle": {
@@ -419,9 +417,7 @@
           "outdoor_temperature_sensor_id": "Sensor de temperatura exterior",
           "cloud_cover_sensor_id": "Sensor de nebulosidade (0–100 %)",
           "wind_speed_sensor_id": "Sensor de velocidade do vento (m/s) — use a rajada para toldos/telas se disponível",
-          "rain_sensor_id": "Sensor de chuva (binário ligado/desligado ou taxa numérica mm/h) – opcional",
-          "ema_enabled": "Suavizar leituras dos sensores (EMA)",
-          "ema_alpha": "Fator de suavização EMA (0,05–1,0) — menor = mais suave, maior = mais responsivo"
+          "rain_sensor_id": "Sensor de chuva (binário ligado/desligado ou taxa numérica mm/h) – opcional"
         }
       },
       "lifecycle": {

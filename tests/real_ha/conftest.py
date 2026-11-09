@@ -132,6 +132,7 @@ from custom_components.smartshading.const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_
 from custom_components.smartshading.cover_control.dispatch_completion import (
     wait_for_travel_completion as real_wait,
 )
+from custom_components.smartshading.models.comfort import ComfortConfig
 from custom_components.smartshading.models.config import ShadePositionDefaults
 from custom_components.smartshading.models.cover_group import CoverGroup, CoverHardwareType
 from custom_components.smartshading.models.window import WindowConfig
@@ -244,12 +245,14 @@ class Sim:
         self.hass.services.async_register("cover", "set_cover_tilt_position", noop)
 
 
-def zone_entry(entry_id: str, windows: dict, shade: int, rain=None, learning: bool = False) -> MockConfigEntry:
+def zone_entry(entry_id: str, windows: dict, shade: int, rain=None, learning: bool = False,
+               presence=None, absence_position=None, comfort_off: bool = False,
+               solar_sensor=None) -> MockConfigEntry:
     """One zone = one config entry.  ``windows`` maps window id -> cover ids (one
     cover group per window)."""
     zone_id = f"z_{entry_id}"
     zone = ZoneConfig(
-        id=zone_id, name=zone_id,
+        id=zone_id, name=zone_id, absence_position=absence_position,
         execution=ZoneExecutionConfig(learning_enabled=learning, active_control_enabled=True))
     wins, groups = [], []
     for window_id, covers in windows.items():
@@ -259,7 +262,10 @@ def zone_entry(entry_id: str, windows: dict, shade: int, rain=None, learning: bo
                                  hardware_type=CoverHardwareType.AWNING))
     data = SmartShadingConfigEntryData(
         name=entry_id, use_home_location=False, zones=[zone], windows=wins, cover_groups=groups,
-        rain_sensor_id=rain,
+        rain_sensor_id=rain, solar_radiation_sensor_id=solar_sensor,
+        presence_entity_ids=list(presence or []), absence_delay_min=0,
+        **({"comfort_config": ComfortConfig(heat_protection_enabled=False, glare_protection_enabled=False,
+                                           solar_gain_enabled=False)} if comfort_off else {}),
         shade_position_defaults=ShadePositionDefaults(
             light_shade_position=shade, normal_shade_position=shade, strong_shade_position=shade))
     return MockConfigEntry(
@@ -286,6 +292,9 @@ class ZoneHarness:
         self.sim: Sim | None = None
         self.entries: dict[str, MockConfigEntry] = {}
         self.rains: list[str] = []
+        #: per entry id: extra ``zone_entry`` keywords (``presence``, ``absence_position``,
+        #: ``comfort_off``, ``solar_sensor``)
+        self.zone_extra: dict[str, dict] = {}
 
     # -- setup -----------------------------------------------------------------
     async def boot(self, specs, *, initial=None, silent=(), learning=()):
@@ -329,7 +338,8 @@ class ZoneHarness:
         return self
 
     async def add_zone(self, entry_id, windows, shade, rain=None, learning=False):
-        entry = zone_entry(entry_id, windows, shade, rain, learning)
+        entry = zone_entry(entry_id, windows, shade, rain, learning,
+                           **self.zone_extra.get(entry_id, {}))
         entry.add_to_hass(self.hass)
         assert await self.hass.config_entries.async_setup(entry.entry_id)
         await self.hass.async_block_till_done()

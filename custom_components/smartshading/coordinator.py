@@ -1654,9 +1654,10 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # engines/presence_engine.py module docstring for the separation).
         self._presence_policy: PresencePolicy = presence_policy
         self._presence_debouncer = PresenceDebouncer()
-        # Latest cycle's presence reading, for diagnostics only (never
-        # consumed by any decision logic — _read_presence()'s return value
-        # and the debouncer's own state are the actual control-flow inputs).
+        # Latest cycle's presence reading.  Diagnostics, plus ONE decision
+        # input: the F29 absence-release exception needs a definitive PRESENT
+        # (see the should_delay_fallback_open call).  Everything else is driven
+        # by _read_presence()'s return value and the debouncer's own state.
         self._cycle_presence_reading: PresenceReading | None = None
         self._cycle_absence_active: bool | None = None
         # Unsubscribe callbacks for presence state change listeners.
@@ -3897,8 +3898,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         Only a definitive ABSENT verdict returns False.
 
         Stores the raw PresenceReading on self._cycle_presence_reading for
-        diagnostics only (see diagnostics_builder.py presence_summary) -
-        nothing downstream of this method reads that attribute.
+        diagnostics (see diagnostics_builder.py presence_summary) and for the
+        F29 absence-release exception, which needs a definitive PRESENT.
         """
         if not self._presence_entity_ids:
             self._cycle_presence_reading = PresenceReading.INDETERMINATE
@@ -6891,9 +6892,22 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             # Updates the window's consecutive-fallback-cycle counter as a
             # side effect — must run every cycle regardless of dispatch
             # capability, same as should_hold() above.
+            #
+            # An absence release is not such an outlier: the F29 debounce is
+            # skipped when the window was ABSENCE_CLOSED at the start of this
+            # cycle (current_state is the state committed by the previous
+            # cycle) AND presence is definitively home now.  The definitive
+            # reading matters: after a restart while still away the absence
+            # debouncer starts over, which makes absence look inactive without
+            # anyone being home.
+            _presence_confirmed_home = (
+                self._cycle_presence_reading is PresenceReading.PRESENT
+            )
             _fallback_open_release_pending = _comfort_hold.should_delay_fallback_open(
                 proposed_decided_by=tier_decision.decided_by,
                 is_confirmed_exit=_is_fallback_confirmed_exit,
+                absence_release_started=current_state is ShadingState.ABSENCE_CLOSED,
+                presence_confirmed_home=_presence_confirmed_home,
             )
             # F31a: raw ComfortMovementHold / F29 state for support-export
             # diagnostics, beyond the derived ages/minutes above.

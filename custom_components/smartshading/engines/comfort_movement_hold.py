@@ -136,6 +136,27 @@ F29 field fix — exit-debounce / confirmed release for Fallback/Open:
   solar-sector exit (`is_confirmed_exit`, same hysteresis-free fact used by
   the F27/v1.1.2 carve-outs above) skips the debounce, exactly like it
   already skips the movement-stability hold itself.
+
+Absence release is not a comfort release:
+  The debounce exists to absorb ONE outlier cycle in which heat/glare/solar
+  protection seems to clear.  Leaving an absence close is a different event:
+  presence is released at once (no release delay), and ABSENCE_CLOSED -> OPEN
+  is a direct, ungated transition (state_machine/transitions.py).  Without an
+  exception the first fallback proposal after an absence reset the counter to
+  zero and was delayed by one full cycle for every window INSIDE its solar
+  sector (windows outside it already skipped the debounce as confirmed exits).
+  The coordinator therefore passes `absence_release_started` - the committed
+  state at the start of the cycle was ABSENCE_CLOSED AND presence is
+  definitively home this cycle - and the first fallback open is allowed.  If
+  that first attempt does not go out (cover unavailable, action interval, ...)
+  the release stays recognised through `absence_release_open_pending`, so the
+  retry is not debounced either.  That flag is runtime-only per-window state
+  with a deliberately short life: it ends with the first sent dispatch, with
+  any decision other than the fallback open (a protective decision, Night,
+  Manual Override, Safety, ... - the release is then superseded or done), and
+  whenever presence is no longer definitively home.  A historical absence
+  dispatch therefore never keeps the debounce off for a later, ordinary
+  comfort release.
 """
 from __future__ import annotations
 
@@ -220,6 +241,11 @@ class ComfortMovementHold:
     #: run (F29 exit-debounce). Runtime-only, resets to 0 on HA restart —
     #: same non-persistence as every other field on this class.
     pending_fallback_open_release_count: int = 0
+    #: True from the first fallback proposal that releases an absence close
+    #: until that release is carried out or superseded (see the module
+    #: docstring, "Absence release is not a comfort release").  Runtime-only,
+    #: like every other field on this class.
+    absence_release_open_pending: bool = False
 
     def should_hold(
         self,
@@ -339,6 +365,8 @@ class ComfortMovementHold:
         *,
         proposed_decided_by: str,
         is_confirmed_exit: bool = False,
+        absence_release_started: bool = False,
+        presence_confirmed_home: bool = False,
         required_consecutive_cycles: int = FALLBACK_OPEN_RELEASE_CYCLES,
     ) -> bool:
         """True when this cycle's "TierOrchestrator:fallback" OPEN proposal
@@ -359,13 +387,32 @@ class ComfortMovementHold:
             counter and returns False: a confirmed sector exit is trusted
             immediately, exactly like it already skips the movement
             stability hold.
+          - A genuine absence release also skips the debounce.  The caller
+            passes `absence_release_started=True` when the committed state at
+            the start of this cycle was ABSENCE_CLOSED and
+            `presence_confirmed_home=True` when presence is definitively home
+            (a restart while still away resets the absence debouncer without
+            anyone being home, which is NOT a release).  The release is then
+            remembered in `absence_release_open_pending` so that a retry after
+            a first attempt that did not go out is not debounced either.  The
+            flag is dropped as soon as presence is no longer confirmed, on
+            any decision other than the fallback open, and by
+            `record_dispatch()`.
           - Otherwise the counter increments, and this cycle's proposal is
             held back (returns True) until it has been observed for
             `required_consecutive_cycles` consecutive cycles in a row —
             i.e. a single free cycle is treated as a possible
             threshold-hovering outlier, never as a confirmed release.
         """
-        if proposed_decided_by != "TierOrchestrator:fallback" or is_confirmed_exit:
+        if proposed_decided_by != "TierOrchestrator:fallback":
+            self.pending_fallback_open_release_count = 0
+            self.absence_release_open_pending = False
+            return False
+        if not presence_confirmed_home:
+            self.absence_release_open_pending = False
+        elif absence_release_started:
+            self.absence_release_open_pending = True
+        if is_confirmed_exit or self.absence_release_open_pending:
             self.pending_fallback_open_release_count = 0
             return False
         self.pending_fallback_open_release_count += 1
@@ -394,3 +441,5 @@ class ComfortMovementHold:
         self.last_decided_by = decided_by
         self.last_target_ha = target_ha
         self.last_dispatch_at = now
+        # A sent dispatch carries out (or supersedes) a pending absence release.
+        self.absence_release_open_pending = False

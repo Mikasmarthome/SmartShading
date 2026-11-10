@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Prise de contrôle manuelle — réglages de cette zone",
-        "description": "Définit le comportement d'une prise de contrôle manuelle active dans cette zone : sa durée, et si les actions de confort ou de protection peuvent continuer à s'exécuter pendant qu'elle est active.",
+        "description": "Choisissez quand SmartShading reprend le contrôle après un déplacement manuel d'un volet. Les détails ne sont demandés que pour les choix qui en ont besoin.",
         "data": {
-          "override_release_mode": "Comment se termine la dérogation",
-          "override_time_based_kind": "Type de minuteur",
-          "override_decision_filter": "Quelles décisions la libèrent",
-          "override_fixed_until": "Heure de fin fixe",
+          "override_release_choice": "Rendre le contrôle",
           "override_allow_comfort_actions": "Autoriser les actions de confort pendant la dérogation",
           "override_allow_protection_actions": "Autoriser les actions de protection pendant la dérogation",
-          "override_safety_timeout_enabled": "Délai de sécurité",
-          "override_duration_min": "Durée de dérogation classique (minutes)",
-          "override_night_duration_min": "Durée de dérogation nocturne (minutes)"
+          "override_edit_timeouts": "Régler aussi le délai de sécurité"
         },
         "data_description": {
-          "override_release_mode": "Choisissez le concept de libération : une minuterie/horloge, la prochaine transition d'horaire, la prochaine décision automatique, ou un effacement manuel uniquement.",
-          "override_time_based_kind": "Pertinent uniquement si le mode de libération ci-dessus est réglé sur une option minuterie/horloge : libération après une durée fixe ou à une heure fixe.",
-          "override_decision_filter": "Pertinent uniquement si le mode de libération ci-dessus est réglé sur l'option « prochaine décision » : libération sur n'importe quelle décision, uniquement sur les décisions de confort, ou uniquement sur les décisions de protection.",
-          "override_fixed_until": "Pertinent uniquement si le mode de libération est une option minuterie/horloge et que le type de minuterie est une heure fixe. Si l'heure est déjà passée aujourd'hui, la dérogation se termine à cette heure demain.",
+          "override_release_choice": "Quand SmartShading pilote de nouveau le volet.",
           "override_allow_comfort_actions": "Si activé, les mouvements de confort réguliers peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
           "override_allow_protection_actions": "Si activé, les actions de protection (absence, chaleur, éblouissement) peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
-          "override_safety_timeout_enabled": "Durée maximale optionnelle comme filet de sécurité pour les stratégies ouvertes, afin qu'une dérogation ne soit jamais oubliée définitivement.",
-          "override_duration_min": "Durée d'une dérogation de jour avant que SmartShading ne reprenne le contrôle normal (mode classique).",
-          "override_night_duration_min": "Limite de sécurité pour une dérogation nocturne. La véritable libération se fait à la transition matinale du cycle."
+          "override_edit_timeouts": "Ouvre une page supplémentaire. Ne concerne que le changement de programme, la décision et l'effacement manuel."
         }
       },
       "system_manual_override": {
         "title": "Valeurs par défaut de la prise de contrôle manuelle",
-        "description": "Le comportement de prise de contrôle manuelle que suit chaque zone à moins qu'elle n'utilise ses propres réglages : la durée d'une prise de contrôle et si les actions de confort ou de protection peuvent continuer à s'exécuter pendant qu'elle est active.",
+        "description": "La valeur par défaut de toutes les zones sans réglages propres : choisissez quand SmartShading reprend le contrôle après un déplacement manuel d'un volet. Les détails ne sont demandés que pour les choix qui en ont besoin.",
         "data": {
-          "override_release_mode": "Comment se termine la dérogation",
-          "override_time_based_kind": "Type de minuteur",
-          "override_decision_filter": "Quelles décisions la libèrent",
-          "override_fixed_until": "Heure de fin fixe",
+          "override_release_choice": "Rendre le contrôle",
           "override_allow_comfort_actions": "Autoriser les actions de confort pendant la dérogation",
           "override_allow_protection_actions": "Autoriser les actions de protection pendant la dérogation",
-          "override_safety_timeout_enabled": "Délai de sécurité",
-          "override_duration_min": "Durée de dérogation classique (minutes)",
-          "override_night_duration_min": "Durée de dérogation nocturne (minutes)"
+          "override_edit_timeouts": "Régler aussi le délai de sécurité"
         },
         "data_description": {
-          "override_release_mode": "Choisissez le concept de libération : une minuterie/horloge, la prochaine transition d'horaire, la prochaine décision automatique, ou un effacement manuel uniquement.",
-          "override_time_based_kind": "Pertinent uniquement si le mode de libération ci-dessus est réglé sur une option minuterie/horloge : libération après une durée fixe ou à une heure fixe.",
-          "override_decision_filter": "Pertinent uniquement si le mode de libération ci-dessus est réglé sur l'option « prochaine décision » : libération sur n'importe quelle décision, uniquement sur les décisions de confort, ou uniquement sur les décisions de protection.",
-          "override_fixed_until": "Pertinent uniquement si le mode de libération est une option minuterie/horloge et que le type de minuterie est une heure fixe. Si l'heure est déjà passée aujourd'hui, la dérogation se termine à cette heure demain.",
+          "override_release_choice": "Quand SmartShading pilote de nouveau le volet.",
           "override_allow_comfort_actions": "Si activé, les mouvements de confort réguliers peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
           "override_allow_protection_actions": "Si activé, les actions de protection (absence, chaleur, éblouissement) peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
-          "override_safety_timeout_enabled": "Durée maximale optionnelle comme filet de sécurité pour les stratégies ouvertes, afin qu'une dérogation ne soit jamais oubliée définitivement.",
-          "override_duration_min": "Durée d'une dérogation de jour avant que SmartShading ne reprenne le contrôle normal (mode classique).",
-          "override_night_duration_min": "Limite de sécurité pour une dérogation nocturne. La véritable libération se fait à la transition matinale du cycle."
+          "override_edit_timeouts": "Ouvre une page supplémentaire. Ne concerne que le changement de programme, la décision et l'effacement manuel."
+        }
+      },
+      "override_duration": {
+        "title": "Durée de la priorité manuelle",
+        "description": "SmartShading reprend le contrôle après ce délai. Un changement de jour utilise la durée de jour, un changement de nuit la durée de nuit.",
+        "data": {
+          "override_duration_min": "Durée de jour (minutes)",
+          "override_night_duration_min": "Durée de nuit (minutes)"
+        },
+        "data_description": {
+          "override_duration_min": "Durée pendant laquelle un changement fait de jour est maintenu. Les autres choix l'utilisent comme délai de sécurité et comme durée de maintien d'un volet arrêté à la main.",
+          "override_night_duration_min": "Durée pendant laquelle un changement fait de nuit est maintenu. Les autres choix l'utilisent comme délai de sécurité nocturne et comme durée de maintien d'un volet arrêté à la main."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Heure de fin de la priorité manuelle",
+        "description": "SmartShading reprend le contrôle à la prochaine occurrence de cette heure : aujourd'hui si elle est encore à venir, sinon demain.",
+        "data": {
+          "override_fixed_until": "Heure de fin"
+        },
+        "data_description": {
+          "override_fixed_until": "Heure locale à laquelle le contrôle est rendu."
+        }
+      },
+      "override_decision": {
+        "title": "Décisions libératrices",
+        "description": "SmartShading reprend le contrôle à sa prochaine décision du type choisi.",
+        "data": {
+          "override_decision_filter": "Quelles décisions la libèrent"
+        },
+        "data_description": {
+          "override_decision_filter": "Toute décision de confort ou de protection, confort seul ou protection seule."
+        }
+      },
+      "override_timeout": {
+        "title": "Délai de sécurité",
+        "description": "Une limite supérieure facultative pour qu'une priorité manuelle oubliée ne bloque pas un volet indéfiniment. Les durées fixent aussi combien de temps un volet arrêté à la main est maintenu.",
+        "data": {
+          "override_safety_timeout_enabled": "Limiter la priorité manuelle par un délai de sécurité",
+          "override_duration_min": "Durée de jour (minutes)",
+          "override_night_duration_min": "Durée de nuit (minutes)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Si activé, la priorité manuelle se termine au plus tard après la durée de jour ou de nuit. Si désactivé, seule la libération choisie y met fin.",
+          "override_duration_min": "Durée pendant laquelle un changement fait de jour est maintenu. Les autres choix l'utilisent comme délai de sécurité et comme durée de maintien d'un volet arrêté à la main.",
+          "override_night_duration_min": "Durée pendant laquelle un changement fait de nuit est maintenu. Les autres choix l'utilisent comme délai de sécurité nocturne et comme durée de maintien d'un volet arrêté à la main."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "L'option B nécessite la sélection d'un capteur de contact.",
       "night_clamp_window_invalid": "Le déclencheur nocturne au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
       "morning_clamp_window_invalid": "Le déclencheur matinal au plus tôt ne doit pas être postérieur au déclencheur au plus tard.",
-      "override_fixed_until_required": "Indiquez une heure de fin fixe lorsque la durée est réglée sur \"Heure fixe\".",
+      "override_fixed_until_required": "Saisissez l'heure à laquelle le contrôle doit être rendu.",
       "invalid_custom_azimuth": "Saisissez un azimut personnalisé entre 0 et 359 degrés, ou choisissez une direction de boussole.",
       "no_covers_selected": "Sélectionnez au moins une entité de volet pour cette fenêtre.",
       "cover_already_assigned": "Au moins un volet sélectionné est déjà affecté à une autre fenêtre SmartShading. Un volet ne peut être affecté qu'une seule fois."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Inversé (quelqu'un à la maison = absent)"
       }
     },
-    "override_release_mode": {
-      "options": {
-        "time_based": "Après une minuterie ou une heure",
-        "lifecycle": "À la prochaine transition d'horaire",
-        "next_decision": "À la prochaine décision automatique",
-        "manual": "Effacement manuel uniquement"
-      }
-    },
-    "override_time_based_kind": {
+    "override_release_choice": {
       "options": {
         "duration": "Après une durée fixe",
-        "fixed_time": "À une heure fixe"
+        "fixed_time": "À une heure précise",
+        "lifecycle": "Au prochain changement de programme",
+        "next_decision": "À la prochaine décision de confort ou de protection correspondante",
+        "manual": "Seulement quand je l'efface"
       }
     },
     "override_decision_filter": {

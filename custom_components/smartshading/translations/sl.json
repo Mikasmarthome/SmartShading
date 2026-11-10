@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Ročna preglasitev — nastavitve te cone",
-        "description": "Določa vedenje aktivne ročne preglasitve v tej coni: kako dolgo traja in ali lahko dejanja udobja ali zaščite še vedno tečejo, ko je aktivna.",
+        "description": "Izberite, kdaj SmartShading znova prevzame nadzor, ko ste senčilo premaknili ročno. Podrobnosti se vprašajo samo pri izbirah, ki jih potrebujejo.",
         "data": {
-          "override_release_mode": "Kako se preglasitev konča",
-          "override_time_based_kind": "Vrsta časovnika",
-          "override_decision_filter": "Katere odločitve jo sprostijo",
-          "override_fixed_until": "Fiksni čas zaključka",
+          "override_release_choice": "Vrnitev nadzora",
           "override_allow_comfort_actions": "Dovoli dejanja udobja med preglasitvijo",
           "override_allow_protection_actions": "Dovoli zaščitna dejanja med preglasitvijo",
-          "override_safety_timeout_enabled": "Varnostna časovna omejitev",
-          "override_duration_min": "Klasično trajanje preglasitve (minute)",
-          "override_night_duration_min": "Nočno trajanje preglasitve (minute)"
+          "override_edit_timeouts": "Prilagodi tudi varnostno omejitev"
         },
         "data_description": {
-          "override_release_mode": "Izberite koncept sprostitve: časovnik/ura, naslednji prehod urnika, naslednja samodejna odločitev ali samo ročna izbris.",
-          "override_time_based_kind": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost časovnika/ure: sprostitev po fiksnem trajanju ali ob fiksni uri.",
-          "override_decision_filter": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost naslednje odločitve: sprostitev ob kateri koli odločitvi, samo pri odločitvah udobja ali samo pri zaščitnih odločitvah.",
-          "override_fixed_until": "Pomembno samo, če je način sprostitve možnost časovnika/ure in je vrsta časovnika fiksna ura. Če je ta ura danes že minila, se preglasitev konča jutri ob tej uri.",
+          "override_release_choice": "Kdaj SmartShading spet upravlja senčilo.",
           "override_allow_comfort_actions": "Če je omogočeno, lahko običajno senčenje udobja še vedno poteka med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
           "override_allow_protection_actions": "Če je omogočeno, lahko zaščitna dejanja (odsotnost, vročina, bleščanje) še vedno potekajo med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
-          "override_safety_timeout_enabled": "Neobvezno največje trajanje kot varnostna mreža za odprte strategije, da preglasitev nikoli ni trajno pozabljena.",
-          "override_duration_min": "Kako dolgo traja dnevna preglasitev, preden SmartShading nadaljuje običajno upravljanje (klasični način trajanja).",
-          "override_night_duration_min": "Varnostna zgornja meja za nočno preglasitev. Dejanska sprostitev se zgodi ob jutranjem prehodu urnika."
+          "override_edit_timeouts": "Odpre dodatno stran. Pomembno le za spremembo urnika, odločitev in ročno počiščenje."
         }
       },
       "system_manual_override": {
         "title": "Privzete vrednosti ročne preglasitve",
-        "description": "Vedenje ročne preglasitve, ki mu sledi vsaka cona, razen če uporablja lastne nastavitve: kako dolgo traja preglasitev in ali lahko dejanja udobja ali zaščite še vedno tečejo, ko je aktivna.",
+        "description": "Privzeto za vsa območja brez lastnih nastavitev: izberite, kdaj SmartShading znova prevzame nadzor, ko je bilo senčilo premaknjeno ročno. Podrobnosti se vprašajo samo pri izbirah, ki jih potrebujejo.",
         "data": {
-          "override_release_mode": "Kako se preglasitev konča",
-          "override_time_based_kind": "Vrsta časovnika",
-          "override_decision_filter": "Katere odločitve jo sprostijo",
-          "override_fixed_until": "Fiksni čas zaključka",
+          "override_release_choice": "Vrnitev nadzora",
           "override_allow_comfort_actions": "Dovoli dejanja udobja med preglasitvijo",
           "override_allow_protection_actions": "Dovoli zaščitna dejanja med preglasitvijo",
-          "override_safety_timeout_enabled": "Varnostna časovna omejitev",
-          "override_duration_min": "Klasično trajanje preglasitve (minute)",
-          "override_night_duration_min": "Nočno trajanje preglasitve (minute)"
+          "override_edit_timeouts": "Prilagodi tudi varnostno omejitev"
         },
         "data_description": {
-          "override_release_mode": "Izberite koncept sprostitve: časovnik/ura, naslednji prehod urnika, naslednja samodejna odločitev ali samo ročna izbris.",
-          "override_time_based_kind": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost časovnika/ure: sprostitev po fiksnem trajanju ali ob fiksni uri.",
-          "override_decision_filter": "Pomembno samo, če je zgornji način sprostitve nastavljen na možnost naslednje odločitve: sprostitev ob kateri koli odločitvi, samo pri odločitvah udobja ali samo pri zaščitnih odločitvah.",
-          "override_fixed_until": "Pomembno samo, če je način sprostitve možnost časovnika/ure in je vrsta časovnika fiksna ura. Če je ta ura danes že minila, se preglasitev konča jutri ob tej uri.",
+          "override_release_choice": "Kdaj SmartShading spet upravlja senčilo.",
           "override_allow_comfort_actions": "Če je omogočeno, lahko običajno senčenje udobja še vedno poteka med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
           "override_allow_protection_actions": "Če je omogočeno, lahko zaščitna dejanja (odsotnost, vročina, bleščanje) še vedno potekajo med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
-          "override_safety_timeout_enabled": "Neobvezno največje trajanje kot varnostna mreža za odprte strategije, da preglasitev nikoli ni trajno pozabljena.",
-          "override_duration_min": "Kako dolgo traja dnevna preglasitev, preden SmartShading nadaljuje običajno upravljanje (klasični način trajanja).",
-          "override_night_duration_min": "Varnostna zgornja meja za nočno preglasitev. Dejanska sprostitev se zgodi ob jutranjem prehodu urnika."
+          "override_edit_timeouts": "Odpre dodatno stran. Pomembno le za spremembo urnika, odločitev in ročno počiščenje."
+        }
+      },
+      "override_duration": {
+        "title": "Trajanje ročnega posega",
+        "description": "SmartShading prevzame nadzor po tem času. Sprememba čez dan uporabi dnevno trajanje, sprememba ponoči nočno.",
+        "data": {
+          "override_duration_min": "Dnevno trajanje (minute)",
+          "override_night_duration_min": "Nočno trajanje (minute)"
+        },
+        "data_description": {
+          "override_duration_min": "Kako dolgo se drži sprememba, narejena čez dan. Ostale izbire vrednost uporabljajo kot varnostno omejitev in kot čas zadržanja ročno ustavljenega senčila.",
+          "override_night_duration_min": "Kako dolgo se drži sprememba, narejena ponoči. Ostale izbire vrednost uporabljajo kot nočno varnostno omejitev in kot čas zadržanja ročno ustavljenega senčila."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Končni čas ročnega posega",
+        "description": "SmartShading prevzame nadzor ob naslednji pojavitvi te ure: danes, če je še pred nami, sicer jutri.",
+        "data": {
+          "override_fixed_until": "Končni čas"
+        },
+        "data_description": {
+          "override_fixed_until": "Lokalni čas, ob katerem se nadzor vrne."
+        }
+      },
+      "override_decision": {
+        "title": "Sprostitvene odločitve",
+        "description": "SmartShading prevzame nadzor ob naslednji odločitvi izbrane vrste.",
+        "data": {
+          "override_decision_filter": "Katere odločitve jo sprostijo"
+        },
+        "data_description": {
+          "override_decision_filter": "Katera koli odločitev o udobju ali zaščiti, samo udobje ali samo zaščita."
+        }
+      },
+      "override_timeout": {
+        "title": "Varnostna omejitev",
+        "description": "Izbirna zgornja meja, da pozabljen ročni poseg senčila ne zadrži za vedno. Trajanja določajo tudi, kako dolgo se zadrži ročno ustavljeno senčilo.",
+        "data": {
+          "override_safety_timeout_enabled": "Omeji ročni poseg z varnostno omejitvijo",
+          "override_duration_min": "Dnevno trajanje (minute)",
+          "override_night_duration_min": "Nočno trajanje (minute)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Če je vklopljeno, se ročni poseg konča najpozneje po dnevnem ali nočnem trajanju. Če je izklopljeno, ga konča le izbrana sprostitev.",
+          "override_duration_min": "Kako dolgo se drži sprememba, narejena čez dan. Ostale izbire vrednost uporabljajo kot varnostno omejitev in kot čas zadržanja ročno ustavljenega senčila.",
+          "override_night_duration_min": "Kako dolgo se drži sprememba, narejena ponoči. Ostale izbire vrednost uporabljajo kot nočno varnostno omejitev in kot čas zadržanja ročno ustavljenega senčila."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "Možnost B zahteva izbiro kontaktnega senzorja.",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
       "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega.",
-      "override_fixed_until_required": "Vnesite fiksni čas zaključka, ko je trajanje nastavljeno na \"Fiksni čas\".",
+      "override_fixed_until_required": "Vnesite uro, ob kateri naj se nadzor vrne.",
       "invalid_custom_azimuth": "Vnesite azimut po meri med 0 in 359 stopinjami ali izberite smer kompasa.",
       "no_covers_selected": "Izberite vsaj eno entiteto senčila za to okno.",
       "cover_already_assigned": "Vsaj eno izbrano senčilo je že dodeljeno drugemu oknu SmartShading. Senčilo je mogoče dodeliti samo enkrat."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Obrnjeno (nekdo doma = odsoten)"
       }
     },
-    "override_release_mode": {
+    "override_release_choice": {
       "options": {
-        "time_based": "Po časovniku ali ob določeni uri",
-        "lifecycle": "Ob naslednjem prehodu urnika",
-        "next_decision": "Ob naslednji samodejni odločitvi",
-        "manual": "Samo ročni izbris"
-      }
-    },
-    "override_time_based_kind": {
-      "options": {
-        "duration": "Po fiksnem trajanju",
-        "fixed_time": "Ob fiksni uri"
+        "duration": "Po določenem času",
+        "fixed_time": "Ob določeni uri",
+        "lifecycle": "Ob naslednji spremembi urnika",
+        "next_decision": "Ob naslednji ustrezni odločitvi o udobju ali zaščiti",
+        "manual": "Samo ko ga jaz počistim"
       }
     },
     "override_decision_filter": {

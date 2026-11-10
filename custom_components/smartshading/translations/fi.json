@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Manuaalinen ohitus — tämän vyöhykkeen asetukset",
-        "description": "Määrittää, miten aktiivinen manuaalinen ohitus käyttäytyy tässä vyöhykkeessä: kuinka kauan se kestää ja voivatko mukavuus- tai suojaustoiminnot silti toimia sen aikana.",
+        "description": "Valitse, milloin SmartShading ottaa ohjauksen takaisin, kun olet siirtänyt peitettä käsin. Lisätietoja kysytään vain valinnoista, jotka niitä tarvitsevat.",
         "data": {
-          "override_release_mode": "Miten ohitus päättyy",
-          "override_time_based_kind": "Ajastimen tyyppi",
-          "override_decision_filter": "Mitkä päätökset vapauttavat sen",
-          "override_fixed_until": "Kiinteä lopetusaika",
+          "override_release_choice": "Ohjauksen palautus",
           "override_allow_comfort_actions": "Salli mukavuustoiminnot ohituksen aikana",
           "override_allow_protection_actions": "Salli suojaustoiminnot ohituksen aikana",
-          "override_safety_timeout_enabled": "Turva-aikakatkaisu",
-          "override_duration_min": "Perinteinen ohituksen kesto (minuuttia)",
-          "override_night_duration_min": "Yön ohituksen kesto (minuuttia)"
+          "override_edit_timeouts": "Säädä myös turvaraja"
         },
         "data_description": {
-          "override_release_mode": "Valitse vapautuskonsepti: ajastin/kello, seuraava aikataulusiirtymä, seuraava automaattinen päätös tai vain manuaalinen tyhjennys.",
-          "override_time_based_kind": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu ajastin-/kelloasetukseen: vapautus kiinteän keston jälkeen tai kiinteänä kellonaikana.",
-          "override_decision_filter": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu seuraava päätös -asetukseen: vapautus millä tahansa päätöksellä, vain mukavuuspäätöksillä tai vain suojauspäätöksillä.",
-          "override_fixed_until": "Merkityksellinen vain, kun vapautustila on ajastin-/kelloasetus ja ajastimen tyyppi on kiinteä kellonaika. Jos kellonaika on jo tänään ohi, ohitus päättyy huomenna tähän aikaan.",
+          "override_release_choice": "Milloin SmartShading ohjaa peitettä taas itse.",
           "override_allow_comfort_actions": "Kun käytössä, tavallinen mukavuusvarjostus voi silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
           "override_allow_protection_actions": "Kun käytössä, suojaustoiminnot (poissaolo, kuumuus, häikäisy) voivat silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
-          "override_safety_timeout_enabled": "Valinnainen enimmäiskesto turvaverkkona avoimille strategioille, jotta ohitus ei jää pysyvästi unohduksiin.",
-          "override_duration_min": "Kuinka kauan päiväohitus kestää ennen kuin SmartShading jatkaa normaalia ohjausta (perinteinen kestomoodi).",
-          "override_night_duration_min": "Turvaraja yön ohitukselle. Todellinen vapautus tapahtuu aamun aikataulusiirtymässä."
+          "override_edit_timeouts": "Avaa lisäsivun. Vaikuttaa vain aikataulun vaihdon, päätöksen ja käsin poiston valintoihin."
         }
       },
       "system_manual_override": {
         "title": "Manuaalisen ohituksen oletukset",
-        "description": "Manuaalisen ohituksen käyttäytyminen, jota jokainen vyöhyke noudattaa, ellei se käytä omia asetuksiaan: kuinka kauan ohitus kestää ja voivatko mukavuus- tai suojaustoiminnot silti toimia sen aikana.",
+        "description": "Oletus kaikille vyöhykkeille, joilla ei ole omia asetuksia: valitse, milloin SmartShading ottaa ohjauksen takaisin, kun peitettä on siirretty käsin. Lisätietoja kysytään vain valinnoista, jotka niitä tarvitsevat.",
         "data": {
-          "override_release_mode": "Miten ohitus päättyy",
-          "override_time_based_kind": "Ajastimen tyyppi",
-          "override_decision_filter": "Mitkä päätökset vapauttavat sen",
-          "override_fixed_until": "Kiinteä lopetusaika",
+          "override_release_choice": "Ohjauksen palautus",
           "override_allow_comfort_actions": "Salli mukavuustoiminnot ohituksen aikana",
           "override_allow_protection_actions": "Salli suojaustoiminnot ohituksen aikana",
-          "override_safety_timeout_enabled": "Turva-aikakatkaisu",
-          "override_duration_min": "Perinteinen ohituksen kesto (minuuttia)",
-          "override_night_duration_min": "Yön ohituksen kesto (minuuttia)"
+          "override_edit_timeouts": "Säädä myös turvaraja"
         },
         "data_description": {
-          "override_release_mode": "Valitse vapautuskonsepti: ajastin/kello, seuraava aikataulusiirtymä, seuraava automaattinen päätös tai vain manuaalinen tyhjennys.",
-          "override_time_based_kind": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu ajastin-/kelloasetukseen: vapautus kiinteän keston jälkeen tai kiinteänä kellonaikana.",
-          "override_decision_filter": "Merkityksellinen vain, kun yllä oleva vapautustila on asetettu seuraava päätös -asetukseen: vapautus millä tahansa päätöksellä, vain mukavuuspäätöksillä tai vain suojauspäätöksillä.",
-          "override_fixed_until": "Merkityksellinen vain, kun vapautustila on ajastin-/kelloasetus ja ajastimen tyyppi on kiinteä kellonaika. Jos kellonaika on jo tänään ohi, ohitus päättyy huomenna tähän aikaan.",
+          "override_release_choice": "Milloin SmartShading ohjaa peitettä taas itse.",
           "override_allow_comfort_actions": "Kun käytössä, tavallinen mukavuusvarjostus voi silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
           "override_allow_protection_actions": "Kun käytössä, suojaustoiminnot (poissaolo, kuumuus, häikäisy) voivat silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
-          "override_safety_timeout_enabled": "Valinnainen enimmäiskesto turvaverkkona avoimille strategioille, jotta ohitus ei jää pysyvästi unohduksiin.",
-          "override_duration_min": "Kuinka kauan päiväohitus kestää ennen kuin SmartShading jatkaa normaalia ohjausta (perinteinen kestomoodi).",
-          "override_night_duration_min": "Turvaraja yön ohitukselle. Todellinen vapautus tapahtuu aamun aikataulusiirtymässä."
+          "override_edit_timeouts": "Avaa lisäsivun. Vaikuttaa vain aikataulun vaihdon, päätöksen ja käsin poiston valintoihin."
+        }
+      },
+      "override_duration": {
+        "title": "Ohituksen kesto",
+        "description": "SmartShading ottaa ohjauksen takaisin tämän ajan jälkeen. Päivällä tehty muutos käyttää päiväkestoa, yöllä tehty yökestoa.",
+        "data": {
+          "override_duration_min": "Päiväkesto (minuuttia)",
+          "override_night_duration_min": "Yökesto (minuuttia)"
+        },
+        "data_description": {
+          "override_duration_min": "Kuinka kauan päivällä tehtyä muutosta pidetään. Muut valinnat käyttävät arvoa turvarajana ja käsin pysäytetyn peitteen pitoaikana.",
+          "override_night_duration_min": "Kuinka kauan yöllä tehtyä muutosta pidetään. Muut valinnat käyttävät arvoa yön turvarajana ja käsin pysäytetyn peitteen pitoaikana."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Ohituksen päättymisaika",
+        "description": "SmartShading ottaa ohjauksen takaisin tämän kellonajan seuraavalla kerralla: tänään, jos se on vielä edessä, muuten huomenna.",
+        "data": {
+          "override_fixed_until": "Päättymisaika"
+        },
+        "data_description": {
+          "override_fixed_until": "Paikallinen kellonaika, jolloin ohjaus palautetaan."
+        }
+      },
+      "override_decision": {
+        "title": "Vapauttavat päätökset",
+        "description": "SmartShading ottaa ohjauksen takaisin valitun lajin seuraavassa päätöksessä.",
+        "data": {
+          "override_decision_filter": "Mitkä päätökset vapauttavat sen"
+        },
+        "data_description": {
+          "override_decision_filter": "Mikä tahansa mukavuus- tai suojauspäätös, vain mukavuus tai vain suojaus."
+        }
+      },
+      "override_timeout": {
+        "title": "Turvaraja",
+        "description": "Valinnainen yläraja, jotta unohtunut ohitus ei pidä peitettä paikallaan ikuisesti. Kestot määräävät myös, kuinka kauan käsin pysäytettyä peitettä pidetään.",
+        "data": {
+          "override_safety_timeout_enabled": "Rajoita ohitus turvarajalla",
+          "override_duration_min": "Päiväkesto (minuuttia)",
+          "override_night_duration_min": "Yökesto (minuuttia)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Kun päällä, ohitus päättyy viimeistään päivä- tai yökeston jälkeen. Kun pois, vain valittu vapautus päättää sen.",
+          "override_duration_min": "Kuinka kauan päivällä tehtyä muutosta pidetään. Muut valinnat käyttävät arvoa turvarajana ja käsin pysäytetyn peitteen pitoaikana.",
+          "override_night_duration_min": "Kuinka kauan yöllä tehtyä muutosta pidetään. Muut valinnat käyttävät arvoa yön turvarajana ja käsin pysäytetyn peitteen pitoaikana."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "Vaihtoehto B vaatii kosketusanturin valitsemisen.",
       "night_clamp_window_invalid": "Aikaisin yölaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
       "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
-      "override_fixed_until_required": "Anna kiinteä lopetusaika, kun kesto on asetettu \"Kiinteä aika\"-tilaan.",
+      "override_fixed_until_required": "Anna kellonaika, jolloin ohjaus palautetaan.",
       "invalid_custom_azimuth": "Anna mukautettu atsimuutti väliltä 0–359 astetta tai valitse kompassisuunta.",
       "no_covers_selected": "Valitse vähintään yksi varjostinentiteetti tälle ikkunalle.",
       "cover_already_assigned": "Vähintään yksi valittu peite on jo liitetty toiseen SmartShading-ikkunaan. Peite voidaan liittää vain kerran."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Käänteinen (joku kotona = poissa)"
       }
     },
-    "override_release_mode": {
+    "override_release_choice": {
       "options": {
-        "time_based": "Ajastimen tai kellonajan jälkeen",
-        "lifecycle": "Seuraavassa aikataulusiirtymässä",
-        "next_decision": "Seuraavassa automaattisessa päätöksessä",
-        "manual": "Vain manuaalinen tyhjennys"
-      }
-    },
-    "override_time_based_kind": {
-      "options": {
-        "duration": "Kiinteän keston jälkeen",
-        "fixed_time": "Kiinteänä kellonaikana"
+        "duration": "Asetetun keston jälkeen",
+        "fixed_time": "Tiettynä kellonaikana",
+        "lifecycle": "Aikataulun seuraavassa vaihdossa",
+        "next_decision": "Seuraavassa sopivassa mukavuus- tai suojauspäätöksessä",
+        "manual": "Vain kun poistan sen"
       }
     },
     "override_decision_filter": {

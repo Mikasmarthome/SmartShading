@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Manuell overstyring — denne sonens innstillinger",
-        "description": "Angir hvordan en aktiv manuell overstyring oppfører seg i denne sonen: hvor lenge den varer, og om komfort- eller beskyttelseshandlinger fortsatt kan kjøre mens den er aktiv.",
+        "description": "Velg når SmartShading overtar styringen igjen etter at du har flyttet en solskjerming for hånd. Detaljer spørres bare om for valg som trenger dem.",
         "data": {
-          "override_release_mode": "Hvordan overstyringen avsluttes",
-          "override_time_based_kind": "Timertype",
-          "override_decision_filter": "Hvilke beslutninger som frigir den",
-          "override_fixed_until": "Fast sluttidspunkt",
+          "override_release_choice": "Gi tilbake styringen",
           "override_allow_comfort_actions": "Tillat komforthandlinger under overstyring",
           "override_allow_protection_actions": "Tillat beskyttelseshandlinger under overstyring",
-          "override_safety_timeout_enabled": "Sikkerhetstidsavbrudd",
-          "override_duration_min": "Klassisk overstyringsvarighet (minutter)",
-          "override_night_duration_min": "Nattlig overstyringsvarighet (minutter)"
+          "override_edit_timeouts": "Juster også sikkerhetsgrensen"
         },
         "data_description": {
-          "override_release_mode": "Velg frigivelseskonseptet: en timer/klokke, neste tidsplanovergang, neste automatiske beslutning, eller kun manuell fjerning.",
-          "override_time_based_kind": "Kun relevant når frigivelsesmodusen ovenfor er satt til et timer-/klokkealternativ: frigivelse etter en fast varighet eller på et fast klokkeslett.",
-          "override_decision_filter": "Kun relevant når frigivelsesmodusen ovenfor er satt til alternativet neste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
-          "override_fixed_until": "Kun relevant når frigivelsesmodusen er et timer-/klokkealternativ og timertypen er et fast klokkeslett. Hvis klokkeslettet allerede er passert i dag, avsluttes overstyringen i morgen på dette tidspunktet.",
+          "override_release_choice": "Når SmartShading styrer solskjermingen igjen.",
           "override_allow_comfort_actions": "Når aktivert, kan vanlig komfortskygging fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
           "override_allow_protection_actions": "Når aktivert, kan beskyttelseshandlinger (fravær, varme, blending) fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
-          "override_safety_timeout_enabled": "Valgfri maksimal varighet som sikkerhetsnett for åpne strategier, slik at en overstyring aldri blir permanent glemt.",
-          "override_duration_min": "Hvor lenge en dagovertyring varer før SmartShading gjenopptar normal styring (klassisk varighetsmodus).",
-          "override_night_duration_min": "Sikkerhetsgrense for en nattlig overstyring. Den egentlige frigivelsen skjer ved morgenens skjemaovergang."
+          "override_edit_timeouts": "Åpner en ekstra side. Har bare betydning for tidsplanskifte, beslutning og manuell fjerning."
         }
       },
       "system_manual_override": {
         "title": "Standarder for manuell overstyring",
-        "description": "Oppførselen for manuell overstyring som hver sone følger med mindre den bruker sine egne innstillinger: hvor lenge en overstyring varer, og om komfort- eller beskyttelseshandlinger fortsatt kan kjøre mens en er aktiv.",
+        "description": "Standarden for alle soner uten egne innstillinger: Velg når SmartShading overtar styringen igjen etter at en solskjerming er flyttet for hånd. Detaljer spørres bare om for valg som trenger dem.",
         "data": {
-          "override_release_mode": "Hvordan overstyringen avsluttes",
-          "override_time_based_kind": "Timertype",
-          "override_decision_filter": "Hvilke beslutninger som frigir den",
-          "override_fixed_until": "Fast sluttidspunkt",
+          "override_release_choice": "Gi tilbake styringen",
           "override_allow_comfort_actions": "Tillat komforthandlinger under overstyring",
           "override_allow_protection_actions": "Tillat beskyttelseshandlinger under overstyring",
-          "override_safety_timeout_enabled": "Sikkerhetstidsavbrudd",
-          "override_duration_min": "Klassisk overstyringsvarighet (minutter)",
-          "override_night_duration_min": "Nattlig overstyringsvarighet (minutter)"
+          "override_edit_timeouts": "Juster også sikkerhetsgrensen"
         },
         "data_description": {
-          "override_release_mode": "Velg frigivelseskonseptet: en timer/klokke, neste tidsplanovergang, neste automatiske beslutning, eller kun manuell fjerning.",
-          "override_time_based_kind": "Kun relevant når frigivelsesmodusen ovenfor er satt til et timer-/klokkealternativ: frigivelse etter en fast varighet eller på et fast klokkeslett.",
-          "override_decision_filter": "Kun relevant når frigivelsesmodusen ovenfor er satt til alternativet neste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
-          "override_fixed_until": "Kun relevant når frigivelsesmodusen er et timer-/klokkealternativ og timertypen er et fast klokkeslett. Hvis klokkeslettet allerede er passert i dag, avsluttes overstyringen i morgen på dette tidspunktet.",
+          "override_release_choice": "Når SmartShading styrer solskjermingen igjen.",
           "override_allow_comfort_actions": "Når aktivert, kan vanlig komfortskygging fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
           "override_allow_protection_actions": "Når aktivert, kan beskyttelseshandlinger (fravær, varme, blending) fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
-          "override_safety_timeout_enabled": "Valgfri maksimal varighet som sikkerhetsnett for åpne strategier, slik at en overstyring aldri blir permanent glemt.",
-          "override_duration_min": "Hvor lenge en dagovertyring varer før SmartShading gjenopptar normal styring (klassisk varighetsmodus).",
-          "override_night_duration_min": "Sikkerhetsgrense for en nattlig overstyring. Den egentlige frigivelsen skjer ved morgenens skjemaovergang."
+          "override_edit_timeouts": "Åpner en ekstra side. Har bare betydning for tidsplanskifte, beslutning og manuell fjerning."
+        }
+      },
+      "override_duration": {
+        "title": "Varighet for manuell overstyring",
+        "description": "SmartShading overtar igjen etter denne tiden. En endring på dagtid bruker dagsvarigheten, en endring om natten nattvarigheten.",
+        "data": {
+          "override_duration_min": "Dagsvarighet (minutter)",
+          "override_night_duration_min": "Nattvarighet (minutter)"
+        },
+        "data_description": {
+          "override_duration_min": "Hvor lenge en endring på dagtid holdes. De andre valgene bruker verdien som sikkerhetsgrense og som holdetid for en manuelt stoppen solskjerming.",
+          "override_night_duration_min": "Hvor lenge en endring om natten holdes. De andre valgene bruker verdien som nattlig sikkerhetsgrense og som holdetid for en manuelt stoppen solskjerming."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Sluttidspunkt for manuell overstyring",
+        "description": "SmartShading overtar igjen ved neste forekomst av dette klokkeslettet: i dag hvis det ligger foran, ellers i morgen.",
+        "data": {
+          "override_fixed_until": "Sluttidspunkt"
+        },
+        "data_description": {
+          "override_fixed_until": "Lokalt klokkeslett da styringen gis tilbake."
+        }
+      },
+      "override_decision": {
+        "title": "Utløsende beslutninger",
+        "description": "SmartShading overtar igjen ved neste beslutning av den valgte typen.",
+        "data": {
+          "override_decision_filter": "Hvilke beslutninger som frigir den"
+        },
+        "data_description": {
+          "override_decision_filter": "Enhver komfort- eller beskyttelsesbeslutning, bare komfort eller bare beskyttelse."
+        }
+      },
+      "override_timeout": {
+        "title": "Sikkerhetsgrense",
+        "description": "En valgfri øvre grense, slik at en glemt overstyring ikke holder en solskjerming fast for alltid. Varighetene bestemmer også hvor lenge en manuelt stoppen solskjerming holdes.",
+        "data": {
+          "override_safety_timeout_enabled": "Begrens overstyringen med en sikkerhetsgrense",
+          "override_duration_min": "Dagsvarighet (minutter)",
+          "override_night_duration_min": "Nattvarighet (minutter)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Når den er på, slutter overstyringen senest etter dags- eller nattvarigheten. Når den er av, avslutter bare den valgte frigivelsen den.",
+          "override_duration_min": "Hvor lenge en endring på dagtid holdes. De andre valgene bruker verdien som sikkerhetsgrense og som holdetid for en manuelt stoppen solskjerming.",
+          "override_night_duration_min": "Hvor lenge en endring om natten holdes. De andre valgene bruker verdien som nattlig sikkerhetsgrense og som holdetid for en manuelt stoppen solskjerming."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "Alternativ B krever at en kontaktsensor er valgt.",
       "night_clamp_window_invalid": "Tidligste nattutløser kan ikke være senere enn seneste.",
       "morning_clamp_window_invalid": "Tidligste morgenutløser kan ikke være senere enn seneste.",
-      "override_fixed_until_required": "Angi et fast sluttidspunkt når varighet er satt til \"Fast tid\".",
+      "override_fixed_until_required": "Angi klokkeslettet da styringen skal gis tilbake.",
       "invalid_custom_azimuth": "Angi en tilpasset asimut mellom 0 og 359 grader, eller velg en kompassretning.",
       "no_covers_selected": "Velg minst én solskjermingsentitet for dette vinduet.",
       "cover_already_assigned": "Minst ett valgt dekke er allerede tilordnet et annet SmartShading-vindu. Et dekke kan bare tilordnes én gang."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Invertert (noen hjemme = borte)"
       }
     },
-    "override_release_mode": {
-      "options": {
-        "time_based": "Etter en timer eller et klokkeslett",
-        "lifecycle": "Ved neste tidsplanovergang",
-        "next_decision": "Ved neste automatiske beslutning",
-        "manual": "Kun manuell fjerning"
-      }
-    },
-    "override_time_based_kind": {
+    "override_release_choice": {
       "options": {
         "duration": "Etter en fast varighet",
-        "fixed_time": "På et fast klokkeslett"
+        "fixed_time": "På et fast klokkeslett",
+        "lifecycle": "Ved neste skifte i tidsplanen",
+        "next_decision": "Ved neste passende komfort- eller beskyttelsesbeslutning",
+        "manual": "Bare når jeg fjerner den"
       }
     },
     "override_decision_filter": {

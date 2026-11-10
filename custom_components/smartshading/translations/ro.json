@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Suprascriere manuală — setările acestei zone",
-        "description": "Definește comportamentul unei suprascrieri manuale active în această zonă: cât durează și dacă acțiunile de confort sau protecție pot continua să ruleze cât timp este activă.",
+        "description": "Alegeți când preia SmartShading din nou controlul după ce ați mutat manual o jaluzea. Detaliile se cer doar pentru opțiunile care le necesită.",
         "data": {
-          "override_release_mode": "Cum se termină suprascrierea",
-          "override_time_based_kind": "Tip de temporizator",
-          "override_decision_filter": "Ce decizii o eliberează",
-          "override_fixed_until": "Oră de încheiere fixă",
+          "override_release_choice": "Returnarea controlului",
           "override_allow_comfort_actions": "Permite acțiuni de confort în timpul suprascrierii",
           "override_allow_protection_actions": "Permite acțiuni de protecție în timpul suprascrierii",
-          "override_safety_timeout_enabled": "Interval de siguranță",
-          "override_duration_min": "Durata clasică a suprascrierii (minute)",
-          "override_night_duration_min": "Durata suprascrierii de noapte (minute)"
+          "override_edit_timeouts": "Reglați și limita de siguranță"
         },
         "data_description": {
-          "override_release_mode": "Alegeți conceptul de eliberare: un temporizator/ceas, următoarea tranziție de program, următoarea decizie automată, sau doar ștergere manuală.",
-          "override_time_based_kind": "Relevant doar când modul de eliberare de mai sus este setat la o opțiune temporizator/ceas: eliberare după o durată fixă sau la o oră fixă.",
-          "override_decision_filter": "Relevant doar când modul de eliberare de mai sus este setat la opțiunea următoarea decizie: eliberare la orice decizie, doar la deciziile de confort, sau doar la deciziile de protecție.",
-          "override_fixed_until": "Relevant doar când modul de eliberare este o opțiune temporizator/ceas, iar tipul de temporizator este o oră fixă. Dacă a trecut deja azi, suprascrierea se încheie mâine la această oră.",
+          "override_release_choice": "Când controlează SmartShading din nou jaluzeaua.",
           "override_allow_comfort_actions": "Dacă este activat, umbrirea obișnuită de confort poate rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
           "override_allow_protection_actions": "Dacă este activat, acțiunile de protecție (absență, căldură, orbire) pot rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
-          "override_safety_timeout_enabled": "Durată maximă opțională ca plasă de siguranță pentru strategiile deschise, astfel încât o suprascriere să nu fie niciodată uitată permanent.",
-          "override_duration_min": "Cât durează o suprascriere de zi înainte ca SmartShading să reia controlul normal (mod de durată clasic).",
-          "override_night_duration_min": "Limită de siguranță pentru o suprascriere de noapte. Eliberarea reală are loc la tranziția programului de dimineață."
+          "override_edit_timeouts": "Deschide o pagină suplimentară. Contează doar pentru schimbarea programului, decizie și ștergere manuală."
         }
       },
       "system_manual_override": {
         "title": "Valori implicite pentru suprascrierea manuală",
-        "description": "Comportamentul suprascrierii manuale pe care îl urmează fiecare zonă, cu excepția cazului în care utilizează propriile setări: cât durează o suprascriere și dacă acțiunile de confort sau protecție pot continua să ruleze cât timp este activă una.",
+        "description": "Valoarea implicită pentru toate zonele fără setări proprii: alegeți când preia SmartShading din nou controlul după ce o jaluzea a fost mutată manual. Detaliile se cer doar pentru opțiunile care le necesită.",
         "data": {
-          "override_release_mode": "Cum se termină suprascrierea",
-          "override_time_based_kind": "Tip de temporizator",
-          "override_decision_filter": "Ce decizii o eliberează",
-          "override_fixed_until": "Oră de încheiere fixă",
+          "override_release_choice": "Returnarea controlului",
           "override_allow_comfort_actions": "Permite acțiuni de confort în timpul suprascrierii",
           "override_allow_protection_actions": "Permite acțiuni de protecție în timpul suprascrierii",
-          "override_safety_timeout_enabled": "Interval de siguranță",
-          "override_duration_min": "Durata clasică a suprascrierii (minute)",
-          "override_night_duration_min": "Durata suprascrierii de noapte (minute)"
+          "override_edit_timeouts": "Reglați și limita de siguranță"
         },
         "data_description": {
-          "override_release_mode": "Alegeți conceptul de eliberare: un temporizator/ceas, următoarea tranziție de program, următoarea decizie automată, sau doar ștergere manuală.",
-          "override_time_based_kind": "Relevant doar când modul de eliberare de mai sus este setat la o opțiune temporizator/ceas: eliberare după o durată fixă sau la o oră fixă.",
-          "override_decision_filter": "Relevant doar când modul de eliberare de mai sus este setat la opțiunea următoarea decizie: eliberare la orice decizie, doar la deciziile de confort, sau doar la deciziile de protecție.",
-          "override_fixed_until": "Relevant doar când modul de eliberare este o opțiune temporizator/ceas, iar tipul de temporizator este o oră fixă. Dacă a trecut deja azi, suprascrierea se încheie mâine la această oră.",
+          "override_release_choice": "Când controlează SmartShading din nou jaluzeaua.",
           "override_allow_comfort_actions": "Dacă este activat, umbrirea obișnuită de confort poate rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
           "override_allow_protection_actions": "Dacă este activat, acțiunile de protecție (absență, căldură, orbire) pot rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
-          "override_safety_timeout_enabled": "Durată maximă opțională ca plasă de siguranță pentru strategiile deschise, astfel încât o suprascriere să nu fie niciodată uitată permanent.",
-          "override_duration_min": "Cât durează o suprascriere de zi înainte ca SmartShading să reia controlul normal (mod de durată clasic).",
-          "override_night_duration_min": "Limită de siguranță pentru o suprascriere de noapte. Eliberarea reală are loc la tranziția programului de dimineață."
+          "override_edit_timeouts": "Deschide o pagină suplimentară. Contează doar pentru schimbarea programului, decizie și ștergere manuală."
+        }
+      },
+      "override_duration": {
+        "title": "Durata suprascrierii manuale",
+        "description": "SmartShading preia controlul după acest timp. O modificare ziua folosește durata de zi, una noaptea durata de noapte.",
+        "data": {
+          "override_duration_min": "Durata de zi (minute)",
+          "override_night_duration_min": "Durata de noapte (minute)"
+        },
+        "data_description": {
+          "override_duration_min": "Cât timp este păstrată o modificare făcută ziua. Celelalte opțiuni o folosesc ca limită de siguranță și ca timp de reținere a unei jaluzele oprite manual.",
+          "override_night_duration_min": "Cât timp este păstrată o modificare făcută noaptea. Celelalte opțiuni o folosesc ca limită de siguranță nocturnă și ca timp de reținere a unei jaluzele oprite manual."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Ora de încheiere a suprascrierii manuale",
+        "description": "SmartShading preia controlul la următoarea apariție a acestei ore: astăzi, dacă încă nu a trecut, altfel mâine.",
+        "data": {
+          "override_fixed_until": "Ora de încheiere"
+        },
+        "data_description": {
+          "override_fixed_until": "Ora locală la care se returnează controlul."
+        }
+      },
+      "override_decision": {
+        "title": "Decizii eliberatoare",
+        "description": "SmartShading preia controlul la următoarea decizie de tipul ales.",
+        "data": {
+          "override_decision_filter": "Ce decizii o eliberează"
+        },
+        "data_description": {
+          "override_decision_filter": "Orice decizie de confort sau protecție, doar confort sau doar protecție."
+        }
+      },
+      "override_timeout": {
+        "title": "Limită de siguranță",
+        "description": "O limită maximă opțională, ca o suprascriere uitată să nu țină o jaluzea blocată la nesfârșit. Duratele stabilesc și cât timp este reținută o jaluzea oprită manual.",
+        "data": {
+          "override_safety_timeout_enabled": "Limitați suprascrierea cu o limită de siguranță",
+          "override_duration_min": "Durata de zi (minute)",
+          "override_night_duration_min": "Durata de noapte (minute)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Când este activată, suprascrierea se încheie cel târziu după durata de zi sau de noapte. Când este dezactivată, o încheie doar eliberarea aleasă.",
+          "override_duration_min": "Cât timp este păstrată o modificare făcută ziua. Celelalte opțiuni o folosesc ca limită de siguranță și ca timp de reținere a unei jaluzele oprite manual.",
+          "override_night_duration_min": "Cât timp este păstrată o modificare făcută noaptea. Celelalte opțiuni o folosesc ca limită de siguranță nocturnă și ca timp de reținere a unei jaluzele oprite manual."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "Opțiunea B necesită selectarea unui senzor de contact.",
       "night_clamp_window_invalid": "Declanșatorul de noapte cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
       "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
-      "override_fixed_until_required": "Introduceți o oră de încheiere fixă când durata este setată pe \"Oră fixă\".",
+      "override_fixed_until_required": "Introduceți ora la care trebuie returnat controlul.",
       "invalid_custom_azimuth": "Introduceți un azimut personalizat între 0 și 359 de grade sau alegeți o direcție a busolei.",
       "no_covers_selected": "Selectați cel puțin o entitate de umbrar pentru această fereastră.",
       "cover_already_assigned": "Cel puțin o acoperire selectată este deja atribuită altei ferestre SmartShading. O acoperire poate fi atribuită o singură dată."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Inversat (cineva acasă = plecat)"
       }
     },
-    "override_release_mode": {
-      "options": {
-        "time_based": "După un temporizator sau o oră",
-        "lifecycle": "La următoarea tranziție de program",
-        "next_decision": "La următoarea decizie automată",
-        "manual": "Doar ștergere manuală"
-      }
-    },
-    "override_time_based_kind": {
+    "override_release_choice": {
       "options": {
         "duration": "După o durată fixă",
-        "fixed_time": "La o oră fixă"
+        "fixed_time": "La o oră fixă",
+        "lifecycle": "La următoarea schimbare de program",
+        "next_decision": "La următoarea decizie de confort sau protecție potrivită",
+        "manual": "Doar când o șterg eu"
       }
     },
     "override_decision_filter": {

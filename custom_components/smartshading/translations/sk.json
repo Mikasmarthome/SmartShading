@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Ručné prepísanie — nastavenia tejto zóny",
-        "description": "Určuje správanie aktívneho ručného prepísania v tejto zóne: ako dlho trvá a či môžu komfortné alebo ochranné akcie bežať aj počas neho.",
+        "description": "Vyberte, kedy SmartShading prevezme riadenie späť po ručnom posunutí žalúzie. Podrobnosti sa pýtajú len pri voľbách, ktoré ich potrebujú.",
         "data": {
-          "override_release_mode": "Ako sa prepísanie ukončí",
-          "override_time_based_kind": "Typ časovača",
-          "override_decision_filter": "Ktoré rozhodnutia ho uvoľnia",
-          "override_fixed_until": "Pevný čas ukončenia",
+          "override_release_choice": "Vrátenie riadenia",
           "override_allow_comfort_actions": "Povoliť akcie komfortu počas prepísania",
           "override_allow_protection_actions": "Povoliť ochranné akcie počas prepísania",
-          "override_safety_timeout_enabled": "Bezpečnostný časový limit",
-          "override_duration_min": "Klasické trvanie prepísania (minúty)",
-          "override_night_duration_min": "Nočné trvanie prepísania (minúty)"
+          "override_edit_timeouts": "Upraviť aj bezpečnostný limit"
         },
         "data_description": {
-          "override_release_mode": "Vyberte koncept uvoľnenia: časovač/hodiny, ďalší prechod plánu, ďalšie automatické rozhodnutie, alebo iba manuálne vymazanie.",
-          "override_time_based_kind": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť časovač/hodiny: uvoľnenie po pevnej dobe trvania alebo v pevnom čase.",
-          "override_decision_filter": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť ďalšie rozhodnutie: uvoľnenie pri akomkoľvek rozhodnutí, len komfortných rozhodnutiach, alebo len ochranných rozhodnutiach.",
-          "override_fixed_until": "Relevantné len ak je režim uvoľnenia možnosť časovač/hodiny a typ časovača je pevný čas. Ak už dnes tento čas uplynul, prepísanie sa skončí zajtra v tomto čase.",
+          "override_release_choice": "Kedy SmartShading znova prevezme riadenie žalúzie.",
           "override_allow_comfort_actions": "Ak je povolené, bežné komfortné tienenie môže naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
           "override_allow_protection_actions": "Ak je povolené, ochranné akcie (neprítomnosť, teplo, oslnenie) môžu naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
-          "override_safety_timeout_enabled": "Voliteľná maximálna doba ako poistka pre otvorené stratégie, aby prepísanie nezostalo natrvalo zabudnuté.",
-          "override_duration_min": "Ako dlho trvá denné prepísanie, kým SmartShading obnoví normálne ovládanie (klasický režim trvania).",
-          "override_night_duration_min": "Bezpečnostný limit pre nočné prepísanie. Skutočné uvoľnenie nastáva pri rannom prechode plánu."
+          "override_edit_timeouts": "Otvorí ďalšiu stránku. Týka sa len volieb zmena rozvrhu, rozhodnutie a ručné zrušenie."
         }
       },
       "system_manual_override": {
         "title": "Predvolené nastavenia ručného prepísania",
-        "description": "Správanie ručného prepísania, ktorým sa riadi každá zóna, pokiaľ nepoužíva vlastné nastavenia: ako dlho prepísanie trvá a či môžu komfortné alebo ochranné akcie bežať aj počas neho.",
+        "description": "Predvolené nastavenie pre všetky zóny bez vlastných nastavení: vyberte, kedy SmartShading prevezme riadenie späť po ručnom posunutí žalúzie. Podrobnosti sa pýtajú len pri voľbách, ktoré ich potrebujú.",
         "data": {
-          "override_release_mode": "Ako sa prepísanie ukončí",
-          "override_time_based_kind": "Typ časovača",
-          "override_decision_filter": "Ktoré rozhodnutia ho uvoľnia",
-          "override_fixed_until": "Pevný čas ukončenia",
+          "override_release_choice": "Vrátenie riadenia",
           "override_allow_comfort_actions": "Povoliť akcie komfortu počas prepísania",
           "override_allow_protection_actions": "Povoliť ochranné akcie počas prepísania",
-          "override_safety_timeout_enabled": "Bezpečnostný časový limit",
-          "override_duration_min": "Klasické trvanie prepísania (minúty)",
-          "override_night_duration_min": "Nočné trvanie prepísania (minúty)"
+          "override_edit_timeouts": "Upraviť aj bezpečnostný limit"
         },
         "data_description": {
-          "override_release_mode": "Vyberte koncept uvoľnenia: časovač/hodiny, ďalší prechod plánu, ďalšie automatické rozhodnutie, alebo iba manuálne vymazanie.",
-          "override_time_based_kind": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť časovač/hodiny: uvoľnenie po pevnej dobe trvania alebo v pevnom čase.",
-          "override_decision_filter": "Relevantné len ak je vyššie uvedený režim uvoľnenia nastavený na možnosť ďalšie rozhodnutie: uvoľnenie pri akomkoľvek rozhodnutí, len komfortných rozhodnutiach, alebo len ochranných rozhodnutiach.",
-          "override_fixed_until": "Relevantné len ak je režim uvoľnenia možnosť časovač/hodiny a typ časovača je pevný čas. Ak už dnes tento čas uplynul, prepísanie sa skončí zajtra v tomto čase.",
+          "override_release_choice": "Kedy SmartShading znova prevezme riadenie žalúzie.",
           "override_allow_comfort_actions": "Ak je povolené, bežné komfortné tienenie môže naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
           "override_allow_protection_actions": "Ak je povolené, ochranné akcie (neprítomnosť, teplo, oslnenie) môžu naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
-          "override_safety_timeout_enabled": "Voliteľná maximálna doba ako poistka pre otvorené stratégie, aby prepísanie nezostalo natrvalo zabudnuté.",
-          "override_duration_min": "Ako dlho trvá denné prepísanie, kým SmartShading obnoví normálne ovládanie (klasický režim trvania).",
-          "override_night_duration_min": "Bezpečnostný limit pre nočné prepísanie. Skutočné uvoľnenie nastáva pri rannom prechode plánu."
+          "override_edit_timeouts": "Otvorí ďalšiu stránku. Týka sa len volieb zmena rozvrhu, rozhodnutie a ručné zrušenie."
+        }
+      },
+      "override_duration": {
+        "title": "Trvanie ručného zásahu",
+        "description": "SmartShading prevezme riadenie po tomto čase. Zmena cez deň používa denné trvanie, zmena v noci nočné.",
+        "data": {
+          "override_duration_min": "Denné trvanie (minúty)",
+          "override_night_duration_min": "Nočné trvanie (minúty)"
+        },
+        "data_description": {
+          "override_duration_min": "Ako dlho sa drží zmena vykonaná cez deň. Ostatné voľby ho používajú ako bezpečnostný limit a ako čas podržania ručne zastavenej žalúzie.",
+          "override_night_duration_min": "Ako dlho sa drží zmena vykonaná v noci. Ostatné voľby ho používajú ako nočný bezpečnostný limit a ako čas podržania ručne zastavenej žalúzie."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Čas ukončenia ručného zásahu",
+        "description": "SmartShading prevezme riadenie pri najbližšom výskyte tohto času: dnes, ak ešte nenastal, inak zajtra.",
+        "data": {
+          "override_fixed_until": "Čas ukončenia"
+        },
+        "data_description": {
+          "override_fixed_until": "Miestny čas, kedy sa riadenie vracia."
+        }
+      },
+      "override_decision": {
+        "title": "Uvoľňujúce rozhodnutia",
+        "description": "SmartShading prevezme riadenie pri ďalšom rozhodnutí zvoleného druhu.",
+        "data": {
+          "override_decision_filter": "Ktoré rozhodnutia ho uvoľnia"
+        },
+        "data_description": {
+          "override_decision_filter": "Akékoľvek rozhodnutie o komforte alebo ochrane, len komfort alebo len ochrana."
+        }
+      },
+      "override_timeout": {
+        "title": "Bezpečnostný limit",
+        "description": "Voliteľná horná hranica, aby zabudnutý ručný zásah nedržal žalúziu navždy. Trvania určujú aj to, ako dlho sa drží ručne zastavená žalúzia.",
+        "data": {
+          "override_safety_timeout_enabled": "Obmedziť ručný zásah bezpečnostným limitom",
+          "override_duration_min": "Denné trvanie (minúty)",
+          "override_night_duration_min": "Nočné trvanie (minúty)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Ak je zapnuté, ručný zásah skončí najneskôr po dennom alebo nočnom trvaní. Ak je vypnuté, ukončí ho len zvolené uvoľnenie.",
+          "override_duration_min": "Ako dlho sa drží zmena vykonaná cez deň. Ostatné voľby ho používajú ako bezpečnostný limit a ako čas podržania ručne zastavenej žalúzie.",
+          "override_night_duration_min": "Ako dlho sa drží zmena vykonaná v noci. Ostatné voľby ho používajú ako nočný bezpečnostný limit a ako čas podržania ručne zastavenej žalúzie."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "Možnosť B vyžaduje výber kontaktného senzora.",
       "night_clamp_window_invalid": "Najskoršie nočné spustenie nesmie byť neskôr než najneskôršie.",
       "morning_clamp_window_invalid": "Najskoršie ranné spustenie nesmie byť neskôr než najneskôršie.",
-      "override_fixed_until_required": "Zadajte pevný čas ukončenia, keď je trvanie nastavené na \"Pevný čas\".",
+      "override_fixed_until_required": "Zadajte čas, kedy sa má riadenie vrátiť.",
       "invalid_custom_azimuth": "Zadajte vlastný azimut medzi 0 a 359 stupňami, alebo vyberte smer kompasu.",
       "no_covers_selected": "Vyberte aspoň jednu entitu tienenia pre toto okno.",
       "cover_already_assigned": "Aspoň jedno vybrané zakrytie je už priradené inému oknu SmartShading. Zakrytie možno priradiť iba raz."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Invertované (niekto doma = preč)"
       }
     },
-    "override_release_mode": {
+    "override_release_choice": {
       "options": {
-        "time_based": "Po časovači alebo v určenom čase",
-        "lifecycle": "Pri ďalšom prechode plánu",
-        "next_decision": "Pri ďalšom automatickom rozhodnutí",
-        "manual": "Iba manuálne vymazanie"
-      }
-    },
-    "override_time_based_kind": {
-      "options": {
-        "duration": "Po pevnej dobe trvania",
-        "fixed_time": "V pevnom čase"
+        "duration": "Po nastavenom čase",
+        "fixed_time": "V pevne stanovený čas",
+        "lifecycle": "Pri ďalšej zmene rozvrhu",
+        "next_decision": "Pri ďalšom zodpovedajúcom rozhodnutí o komforte alebo ochrane",
+        "manual": "Len keď ho zruším"
       }
     },
     "override_decision_filter": {

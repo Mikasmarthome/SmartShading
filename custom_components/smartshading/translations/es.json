@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Anulación manual — configuración de esta zona",
-        "description": "Define cómo se comporta una anulación manual activa en esta zona: cuánto dura y si las acciones de confort o protección pueden seguir ejecutándose mientras está activa.",
+        "description": "Elige cuándo SmartShading recupera el control después de mover una persiana a mano. Solo se piden detalles para las opciones que los necesitan.",
         "data": {
-          "override_release_mode": "Cómo termina la anulación",
-          "override_time_based_kind": "Tipo de temporizador",
-          "override_decision_filter": "Qué decisiones la liberan",
-          "override_fixed_until": "Hora de fin fija",
+          "override_release_choice": "Devolver el control",
           "override_allow_comfort_actions": "Permitir acciones de confort durante la anulación",
           "override_allow_protection_actions": "Permitir acciones de protección durante la anulación",
-          "override_safety_timeout_enabled": "Tiempo de seguridad",
-          "override_duration_min": "Duración de anulación clásica (minutos)",
-          "override_night_duration_min": "Duración de anulación nocturna (minutos)"
+          "override_edit_timeouts": "Ajustar también el tiempo de seguridad"
         },
         "data_description": {
-          "override_release_mode": "Elija el concepto de liberación: un temporizador/reloj, la siguiente transición de horario, la siguiente decisión automática o solo borrado manual.",
-          "override_time_based_kind": "Solo relevante cuando el modo de liberación anterior está establecido en una opción de temporizador/reloj: liberar tras una duración fija o a una hora fija.",
-          "override_decision_filter": "Solo relevante cuando el modo de liberación anterior está establecido en la opción de próxima decisión: liberar en cualquier decisión, solo decisiones de confort o solo decisiones de protección.",
-          "override_fixed_until": "Solo relevante cuando el modo de liberación es una opción de temporizador/reloj y el tipo de temporizador es una hora fija. Si ya ha pasado hoy, la anulación termina a esta hora mañana.",
+          "override_release_choice": "Cuándo SmartShading vuelve a controlar la persiana.",
           "override_allow_comfort_actions": "Si está activado, el sombreado de confort habitual puede seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
           "override_allow_protection_actions": "Si está activado, las acciones de protección (ausencia, calor, deslumbramiento) pueden seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
-          "override_safety_timeout_enabled": "Duración máxima opcional como red de seguridad para estrategias abiertas, para que una anulación nunca quede olvidada permanentemente.",
-          "override_duration_min": "Cuánto dura una anulación diurna antes de que SmartShading reanude el control normal (modo de duración clásico).",
-          "override_night_duration_min": "Límite de seguridad para una anulación nocturna. La liberación real ocurre en la transición del ciclo matutino."
+          "override_edit_timeouts": "Abre una página adicional. Solo importa para transición de horario, decisión y borrado manual."
         }
       },
       "system_manual_override": {
         "title": "Valores predeterminados de anulación manual",
-        "description": "El comportamiento de anulación manual que sigue cada zona a menos que use su propia configuración: cuánto dura una anulación y si las acciones de confort o protección pueden seguir ejecutándose mientras hay una activa.",
+        "description": "El valor por defecto de todas las zonas sin ajustes propios: elige cuándo SmartShading recupera el control después de mover una persiana a mano. Solo se piden detalles para las opciones que los necesitan.",
         "data": {
-          "override_release_mode": "Cómo termina la anulación",
-          "override_time_based_kind": "Tipo de temporizador",
-          "override_decision_filter": "Qué decisiones la liberan",
-          "override_fixed_until": "Hora de fin fija",
+          "override_release_choice": "Devolver el control",
           "override_allow_comfort_actions": "Permitir acciones de confort durante la anulación",
           "override_allow_protection_actions": "Permitir acciones de protección durante la anulación",
-          "override_safety_timeout_enabled": "Tiempo de seguridad",
-          "override_duration_min": "Duración de anulación clásica (minutos)",
-          "override_night_duration_min": "Duración de anulación nocturna (minutos)"
+          "override_edit_timeouts": "Ajustar también el tiempo de seguridad"
         },
         "data_description": {
-          "override_release_mode": "Elija el concepto de liberación: un temporizador/reloj, la siguiente transición de horario, la siguiente decisión automática o solo borrado manual.",
-          "override_time_based_kind": "Solo relevante cuando el modo de liberación anterior está establecido en una opción de temporizador/reloj: liberar tras una duración fija o a una hora fija.",
-          "override_decision_filter": "Solo relevante cuando el modo de liberación anterior está establecido en la opción de próxima decisión: liberar en cualquier decisión, solo decisiones de confort o solo decisiones de protección.",
-          "override_fixed_until": "Solo relevante cuando el modo de liberación es una opción de temporizador/reloj y el tipo de temporizador es una hora fija. Si ya ha pasado hoy, la anulación termina a esta hora mañana.",
+          "override_release_choice": "Cuándo SmartShading vuelve a controlar la persiana.",
           "override_allow_comfort_actions": "Si está activado, el sombreado de confort habitual puede seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
           "override_allow_protection_actions": "Si está activado, las acciones de protección (ausencia, calor, deslumbramiento) pueden seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
-          "override_safety_timeout_enabled": "Duración máxima opcional como red de seguridad para estrategias abiertas, para que una anulación nunca quede olvidada permanentemente.",
-          "override_duration_min": "Cuánto dura una anulación diurna antes de que SmartShading reanude el control normal (modo de duración clásico).",
-          "override_night_duration_min": "Límite de seguridad para una anulación nocturna. La liberación real ocurre en la transición del ciclo matutino."
+          "override_edit_timeouts": "Abre una página adicional. Solo importa para transición de horario, decisión y borrado manual."
+        }
+      },
+      "override_duration": {
+        "title": "Duración de la anulación manual",
+        "description": "SmartShading recupera el control pasado este tiempo. Un cambio de día usa la duración diurna; un cambio de noche, la nocturna.",
+        "data": {
+          "override_duration_min": "Duración diurna (minutos)",
+          "override_night_duration_min": "Duración nocturna (minutos)"
+        },
+        "data_description": {
+          "override_duration_min": "Cuánto se mantiene un cambio hecho de día. Las otras opciones lo usan como tiempo de seguridad y como tiempo de retención de una persiana detenida a mano.",
+          "override_night_duration_min": "Cuánto se mantiene un cambio hecho de noche. Las otras opciones lo usan como tiempo de seguridad nocturno y como tiempo de retención de una persiana detenida a mano."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Hora de fin de la anulación manual",
+        "description": "SmartShading recupera el control la próxima vez que llegue esta hora: hoy si aún no ha pasado, si no mañana.",
+        "data": {
+          "override_fixed_until": "Hora de fin"
+        },
+        "data_description": {
+          "override_fixed_until": "Hora local a la que se devuelve el control."
+        }
+      },
+      "override_decision": {
+        "title": "Decisiones que lo liberan",
+        "description": "SmartShading recupera el control en la próxima decisión del tipo elegido.",
+        "data": {
+          "override_decision_filter": "Qué decisiones la liberan"
+        },
+        "data_description": {
+          "override_decision_filter": "Cualquier decisión de confort o protección, solo confort o solo protección."
+        }
+      },
+      "override_timeout": {
+        "title": "Tiempo de seguridad",
+        "description": "Un límite máximo opcional para que una anulación olvidada no retenga una persiana para siempre. Las duraciones también fijan cuánto se retiene una persiana detenida a mano.",
+        "data": {
+          "override_safety_timeout_enabled": "Limitar la anulación con un tiempo de seguridad",
+          "override_duration_min": "Duración diurna (minutos)",
+          "override_night_duration_min": "Duración nocturna (minutos)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Si está activado, la anulación termina como mucho tras la duración diurna o nocturna. Si no, solo la termina la liberación elegida.",
+          "override_duration_min": "Cuánto se mantiene un cambio hecho de día. Las otras opciones lo usan como tiempo de seguridad y como tiempo de retención de una persiana detenida a mano.",
+          "override_night_duration_min": "Cuánto se mantiene un cambio hecho de noche. Las otras opciones lo usan como tiempo de seguridad nocturno y como tiempo de retención de una persiana detenida a mano."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "La opción B requiere seleccionar un sensor de contacto.",
       "night_clamp_window_invalid": "El activador nocturno más temprano no debe ser posterior al más tardío.",
       "morning_clamp_window_invalid": "El activador matutino más temprano no debe ser posterior al más tardío.",
-      "override_fixed_until_required": "Introduzca una hora de fin fija cuando la duración esté configurada como \"Hora fija\".",
+      "override_fixed_until_required": "Introduce la hora a la que debe devolverse el control.",
       "invalid_custom_azimuth": "Introduce un acimut personalizado entre 0 y 359 grados, o elige una dirección de la brújula.",
       "no_covers_selected": "Selecciona al menos una entidad de persiana para esta ventana.",
       "cover_already_assigned": "Al menos una cubierta seleccionada ya está asignada a otra ventana de SmartShading. Una cubierta solo puede asignarse una vez."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Invertido (alguien en casa = ausente)"
       }
     },
-    "override_release_mode": {
-      "options": {
-        "time_based": "Tras un temporizador o una hora",
-        "lifecycle": "En la siguiente transición de horario",
-        "next_decision": "En la siguiente decisión automática",
-        "manual": "Solo borrado manual"
-      }
-    },
-    "override_time_based_kind": {
+    "override_release_choice": {
       "options": {
         "duration": "Tras una duración fija",
-        "fixed_time": "A una hora fija"
+        "fixed_time": "A una hora fija",
+        "lifecycle": "En la próxima transición del horario",
+        "next_decision": "En la próxima decisión de confort o protección que corresponda",
+        "manual": "Solo cuando yo lo borre"
       }
     },
     "override_decision_filter": {

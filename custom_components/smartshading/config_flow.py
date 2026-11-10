@@ -53,6 +53,7 @@ from homeassistant.helpers.selector import (
 
 from .config_entry_data import (
     SmartShadingConfigEntryData,
+    _override_policy_from_storage,
     _resolve_lifecycle_config_dict,
     from_storage_dict,
     to_storage_dict,
@@ -63,12 +64,15 @@ from .models.manual_override import (
     DECISION_FILTER_ANY,
     DECISION_FILTER_COMFORT,
     DECISION_FILTER_PROTECTION,
-    TIME_BASED_KIND_DURATION,
-    TIME_BASED_KIND_FIXED_TIME,
-    OverrideReleaseMode,
+    RELEASE_CHOICE_DURATION,
+    RELEASE_CHOICE_FIXED_TIME,
+    RELEASE_CHOICE_LIFECYCLE,
+    RELEASE_CHOICE_MANUAL,
+    RELEASE_CHOICE_NEXT_DECISION,
+    RELEASE_CHOICES,
     OverrideReleaseStrategy,
-    release_mode_to_strategy,
-    release_strategy_to_mode,
+    release_choice_to_strategy,
+    release_strategy_to_choice,
 )
 from .models.cover_group import CoverGroup, CoverHardwareType, CoverSyncMode, cover_hardware_type_from_str
 from .models.presence import PresencePolicy
@@ -126,8 +130,8 @@ from .const import (
     CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
     CONF_OVERRIDE_DETECTION_TOLERANCE,
     CONF_OVERRIDE_DURATION_MIN,
-    CONF_OVERRIDE_RELEASE_MODE,
-    CONF_OVERRIDE_TIME_BASED_KIND,
+    CONF_OVERRIDE_EDIT_TIMEOUTS,
+    CONF_OVERRIDE_RELEASE_CHOICE,
     CONF_OVERRIDE_DECISION_FILTER,
     CONF_OVERRIDE_FIXED_UNTIL,
     CONF_OVERRIDE_NIGHT_DURATION_MIN,
@@ -254,131 +258,144 @@ def _safe_positive_int(value: Any, default: int, *, maximum: int) -> int:
     return max(1, min(parsed, maximum))
 
 
-# T21 Phase C2: extracted so the System entry's async_step_system_manual_override
-# and the zone's async_step_manual_override_custom (shown only once a zone opts
-# out of the System default) share the exact same 7-field form/parsing logic
-# unchanged from T21 Phase B — detection_tolerance is deliberately NOT part of
-# this shared form (it stays zone-only, see ownership analysis; collected
-# separately by the zone's gate step, async_step_manual_override).
+# ---------------------------------------------------------------------------
+# Manual Override policy form (Phase 5).  The System entry's default and a
+# zone's own policy share the same pages:
+#
+#   page 1  release choice (5 options) + allow comfort / protection actions
+#           + "also adjust the safety timeout"
+#   page 2  only the one detail page the choice needs:
+#             after a duration            -> daytime / night duration
+#             at a fixed clock time       -> the clock time
+#             next matching decision      -> which decisions release it
+#             schedule transition, manual -> no detail page
+#   page 3  optional safety-timeout page (timeout switch + the two durations),
+#           only when asked for on page 1 and only for the choices it affects
+#
+# Every value that a page does not show stays exactly as stored (partial merge).
+# The five choices map onto the unchanged seven stored release strategies, see
+# models/manual_override.release_choice_to_strategy().
+# ---------------------------------------------------------------------------
 
-def _manual_override_schema(stored: dict[str, Any]) -> vol.Schema:
-    try:
-        _stored_strategy = OverrideReleaseStrategy(
-            stored.get("release_strategy", OverrideReleaseStrategy.LIFECYCLE.value)
+# Keys of the pre-T10 policy format; superseded by release_strategy and inert
+# once it is stored, so a save writes the current format only.
+_SUPERSEDED_OVERRIDE_KEYS = frozenset({"duration_mode", "break_on_lifecycle"})
+
+# Complete stored shape: a save fills in what an older / partial entry lacks,
+# never replaces what is there.
+_OVERRIDE_POLICY_DEFAULTS: dict[str, Any] = {
+    "release_strategy": OverrideReleaseStrategy.LIFECYCLE.value,
+    "fixed_until": None,
+    "allow_comfort_actions": False,
+    "allow_protection_actions": False,
+    "duration_min": DEFAULT_OVERRIDE_DURATION_MIN,
+    "night_duration_min": DEFAULT_OVERRIDE_NIGHT_DURATION_MIN,
+    "safety_timeout_enabled": True,
+}
+
+# Choices for which the optional safety-timeout page is meaningful: the other
+# two end by their own deadline and never use the safety timeout.
+_OVERRIDE_TIMEOUT_CHOICES = frozenset({
+    RELEASE_CHOICE_LIFECYCLE, RELEASE_CHOICE_NEXT_DECISION, RELEASE_CHOICE_MANUAL,
+})
+
+_OVERRIDE_DETAIL_STEP = {
+    RELEASE_CHOICE_DURATION: "override_duration",
+    RELEASE_CHOICE_FIXED_TIME: "override_fixed_time",
+    RELEASE_CHOICE_NEXT_DECISION: "override_decision",
+}
+
+
+def _override_minutes_selector() -> NumberSelector:
+    return NumberSelector(
+        NumberSelectorConfig(
+            min=1, max=OVERRIDE_DURATION_MIN_MAX, step=1,
+            mode=NumberSelectorMode.BOX, unit_of_measurement="min",
         )
-    except ValueError:
-        _stored_strategy = OverrideReleaseStrategy.LIFECYCLE
-    _stored_mode, _stored_sub = release_strategy_to_mode(_stored_strategy)
-    _stored_time_based_kind = (
-        _stored_sub if _stored_mode is OverrideReleaseMode.TIME_BASED else TIME_BASED_KIND_DURATION
     )
-    _stored_decision_filter = (
-        _stored_sub if _stored_mode is OverrideReleaseMode.NEXT_DECISION else DECISION_FILTER_ANY
-    )
-    release_mode_selector = SelectSelector(
-        SelectSelectorConfig(
-            options=[m.value for m in OverrideReleaseMode],
-            mode=SelectSelectorMode.DROPDOWN,
-            translation_key="override_release_mode",
-        )
-    )
-    time_based_kind_selector = SelectSelector(
-        SelectSelectorConfig(
-            options=[TIME_BASED_KIND_DURATION, TIME_BASED_KIND_FIXED_TIME],
-            mode=SelectSelectorMode.DROPDOWN,
-            translation_key="override_time_based_kind",
-        )
-    )
-    decision_filter_selector = SelectSelector(
-        SelectSelectorConfig(
-            options=[DECISION_FILTER_ANY, DECISION_FILTER_COMFORT, DECISION_FILTER_PROTECTION],
-            mode=SelectSelectorMode.DROPDOWN,
-            translation_key="override_decision_filter",
-        )
-    )
+
+
+def _override_minutes_default(values: dict[str, Any], key: str, default: int) -> int:
+    return _safe_positive_int(values.get(key), default, maximum=OVERRIDE_DURATION_MIN_MAX)
+
+
+def _override_choice_schema(values: dict[str, Any]) -> vol.Schema:
+    choice, _ = release_strategy_to_choice(_override_policy_from_storage(values).release_strategy)
     return vol.Schema(
         {
-            vol.Required(CONF_OVERRIDE_RELEASE_MODE, default=_stored_mode.value): release_mode_selector,
-            vol.Required(
-                CONF_OVERRIDE_TIME_BASED_KIND, default=_stored_time_based_kind,
-            ): time_based_kind_selector,
-            vol.Required(
-                CONF_OVERRIDE_DECISION_FILTER, default=_stored_decision_filter,
-            ): decision_filter_selector,
-            vol.Optional(
-                CONF_OVERRIDE_FIXED_UNTIL,
-                description={"suggested_value": stored.get("fixed_until")},
-            ): TimeSelector(),
-            vol.Required(
-                CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS, default=stored.get("allow_comfort_actions", False),
-            ): BooleanSelector(),
-            vol.Required(
-                CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS, default=stored.get("allow_protection_actions", False),
-            ): BooleanSelector(),
-            vol.Required(
-                CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED, default=stored.get("safety_timeout_enabled", True),
-            ): BooleanSelector(),
-            vol.Required(
-                CONF_OVERRIDE_DURATION_MIN,
-                default=stored.get("duration_min", DEFAULT_OVERRIDE_DURATION_MIN),
-            ): NumberSelector(
-                NumberSelectorConfig(
-                    min=1, max=OVERRIDE_DURATION_MIN_MAX, step=1,
-                    mode=NumberSelectorMode.BOX, unit_of_measurement="min",
+            vol.Required(CONF_OVERRIDE_RELEASE_CHOICE, default=choice): SelectSelector(
+                SelectSelectorConfig(
+                    options=list(RELEASE_CHOICES),
+                    mode=SelectSelectorMode.DROPDOWN,
+                    translation_key="override_release_choice",
                 )
             ),
             vol.Required(
+                CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
+                default=bool(values.get("allow_comfort_actions", False)),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS,
+                default=bool(values.get("allow_protection_actions", False)),
+            ): BooleanSelector(),
+            vol.Required(CONF_OVERRIDE_EDIT_TIMEOUTS, default=False): BooleanSelector(),
+        }
+    )
+
+
+def _override_duration_schema(values: dict[str, Any]) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_OVERRIDE_DURATION_MIN,
+                default=_override_minutes_default(values, "duration_min", DEFAULT_OVERRIDE_DURATION_MIN),
+            ): _override_minutes_selector(),
+            vol.Required(
                 CONF_OVERRIDE_NIGHT_DURATION_MIN,
-                default=stored.get("night_duration_min", DEFAULT_OVERRIDE_NIGHT_DURATION_MIN),
-            ): NumberSelector(
-                NumberSelectorConfig(
-                    min=1, max=OVERRIDE_DURATION_MIN_MAX, step=1,
-                    mode=NumberSelectorMode.BOX, unit_of_measurement="min",
+                default=_override_minutes_default(
+                    values, "night_duration_min", DEFAULT_OVERRIDE_NIGHT_DURATION_MIN),
+            ): _override_minutes_selector(),
+        }
+    )
+
+
+def _override_fixed_time_schema(suggested: Any) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Optional(
+                CONF_OVERRIDE_FIXED_UNTIL, description={"suggested_value": suggested},
+            ): TimeSelector(),
+        }
+    )
+
+
+def _override_decision_schema(values: dict[str, Any]) -> vol.Schema:
+    _, decision_filter = release_strategy_to_choice(_override_policy_from_storage(values).release_strategy)
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_OVERRIDE_DECISION_FILTER, default=decision_filter or DECISION_FILTER_ANY,
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=[DECISION_FILTER_ANY, DECISION_FILTER_COMFORT, DECISION_FILTER_PROTECTION],
+                    mode=SelectSelectorMode.DROPDOWN,
+                    translation_key="override_decision_filter",
                 )
             ),
         }
     )
 
 
-def _parse_manual_override_submission(
-    user_input: dict[str, Any],
-) -> tuple[dict[str, Any], dict[str, str]]:
-    errors: dict[str, str] = {}
-    try:
-        release_mode = OverrideReleaseMode(
-            user_input.get(CONF_OVERRIDE_RELEASE_MODE, OverrideReleaseMode.LIFECYCLE.value)
-        )
-    except ValueError:
-        release_mode = OverrideReleaseMode.LIFECYCLE
-    if release_mode is OverrideReleaseMode.TIME_BASED:
-        sub_choice = user_input.get(CONF_OVERRIDE_TIME_BASED_KIND, TIME_BASED_KIND_DURATION)
-    elif release_mode is OverrideReleaseMode.NEXT_DECISION:
-        sub_choice = user_input.get(CONF_OVERRIDE_DECISION_FILTER, DECISION_FILTER_ANY)
-    else:
-        sub_choice = None
-    release_strategy = release_mode_to_strategy(release_mode, sub_choice)
-    fixed_until = _parse_optional_time_input(user_input.get(CONF_OVERRIDE_FIXED_UNTIL))
-    if release_strategy is OverrideReleaseStrategy.FIXED_TIME and fixed_until is None:
-        errors["base"] = "override_fixed_until_required"
-    duration_min = _safe_positive_int(
-        user_input.get(CONF_OVERRIDE_DURATION_MIN), DEFAULT_OVERRIDE_DURATION_MIN,
-        maximum=OVERRIDE_DURATION_MIN_MAX,
+def _override_timeout_schema(values: dict[str, Any]) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
+                default=bool(values.get("safety_timeout_enabled", True)),
+            ): BooleanSelector(),
+        }
+        | _override_duration_schema(values).schema
     )
-    night_duration_min = _safe_positive_int(
-        user_input.get(CONF_OVERRIDE_NIGHT_DURATION_MIN), DEFAULT_OVERRIDE_NIGHT_DURATION_MIN,
-        maximum=OVERRIDE_DURATION_MIN_MAX,
-    )
-    if errors:
-        return {}, errors
-    return {
-        "release_strategy": release_strategy.value,
-        "fixed_until": fixed_until.isoformat() if fixed_until is not None else None,
-        "allow_comfort_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS, False)),
-        "allow_protection_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS, False)),
-        "duration_min": duration_min,
-        "night_duration_min": night_duration_min,
-        "safety_timeout_enabled": bool(user_input.get(CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED, True)),
-    }, {}
 
 
 def _parse_optional_time_input(value: Any) -> time | None:
@@ -1387,6 +1404,10 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         self._edit_window_id: str | None = None
         # Manual Override gate->custom flow state (T21 Phase C2)
         self._pending_override_detection_tolerance: int | None = None
+        # Manual Override pages (Phase 5): which policy is being edited and what the pages collected.
+        self._override_scope: str | None = None
+        self._override_draft: dict[str, Any] = {}
+        self._override_queue: list[str] = []
         # Presence gate->custom flow state (T21 Phase C3)
         self._pending_presence_updates: dict[str, Any] = {}
 
@@ -1942,44 +1963,149 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         )
         return self.async_show_form(step_id="manual_override", data_schema=schema)
 
+    # -- Manual Override policy form (Phase 5): shared by the zone's own policy
+    # and the System entry's default.  See the module-level comment above
+    # _OVERRIDE_POLICY_DEFAULTS for the page structure. --
+
+    def _override_stored(self) -> dict[str, Any]:
+        key = "system_override_policy" if self._override_scope == "system" else "override_policy"
+        stored = self._config_entry.data.get(key)
+        return dict(stored) if isinstance(stored, dict) else {}
+
+    def _override_values(self) -> dict[str, Any]:
+        """Stored policy overlaid with what this run of the pages collected so
+        far; the pre-T10 keys are left out (release_strategy supersedes them)."""
+        merged = {**self._override_stored(), **self._override_draft}
+        if "release_strategy" not in merged:
+            # Pre-T10 entry: what the loader makes of its old keys is what runs.
+            merged["release_strategy"] = _override_policy_from_storage(merged).release_strategy.value
+        return {k: v for k, v in merged.items() if k not in _SUPERSEDED_OVERRIDE_KEYS}
+
+    def _override_begin(self, scope: str) -> None:
+        self._override_scope = scope
+        self._override_draft = {}
+        self._override_queue = []
+
+    async def _override_advance(self) -> config_entries.ConfigFlowResult:
+        if self._override_queue:
+            return await getattr(self, f"async_step_{self._override_queue.pop(0)}")()
+        return self._override_finish()
+
+    def _override_finish(self) -> config_entries.ConfigFlowResult:
+        policy = {**_OVERRIDE_POLICY_DEFAULTS, **self._override_values()}
+        if self._override_scope == "system":
+            return self._save_system_default_and_reload({"system_override_policy": policy})
+        tolerance = self._pending_override_detection_tolerance
+        if tolerance is None:
+            tolerance = _safe_positive_int(
+                self._override_stored().get("detection_tolerance"), DEFAULT_OVERRIDE_DETECTION_TOLERANCE,
+                maximum=OVERRIDE_DETECTION_TOLERANCE_MAX,
+            )
+        policy["use_system_default"] = False
+        policy["detection_tolerance"] = tolerance
+        return self._save_and_reload({"override_policy": policy})
+
+    async def _override_choice_step(
+        self, step_id: str, scope: str, user_input: dict[str, Any] | None
+    ) -> config_entries.ConfigFlowResult:
+        self._override_begin(scope)
+        if user_input is None:
+            return self.async_show_form(
+                step_id=step_id, data_schema=_override_choice_schema(self._override_values()))
+        choice = user_input.get(CONF_OVERRIDE_RELEASE_CHOICE)
+        if choice not in RELEASE_CHOICES:
+            choice = RELEASE_CHOICE_LIFECYCLE
+        _, stored_filter = release_strategy_to_choice(
+            _override_policy_from_storage(self._override_stored()).release_strategy)
+        self._override_draft = {
+            "release_strategy": release_choice_to_strategy(choice, stored_filter).value,
+            "allow_comfort_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS, False)),
+            "allow_protection_actions": bool(user_input.get(CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS, False)),
+        }
+        detail = _OVERRIDE_DETAIL_STEP.get(choice)
+        self._override_queue = [detail] if detail is not None else []
+        if choice in _OVERRIDE_TIMEOUT_CHOICES and bool(user_input.get(CONF_OVERRIDE_EDIT_TIMEOUTS, False)):
+            self._override_queue.append("override_timeout")
+        return await self._override_advance()
+
     async def async_step_manual_override_custom(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
         """Reached only when the gate step (above) is answered with "use my
-        own settings" — the unchanged T21 Phase B 7-field form."""
-        current = self._config_entry.data
-        stored = current.get("override_policy") or {}
-        errors: dict[str, str] = {}
-
-        if user_input is not None:
-            new_policy, errors = _parse_manual_override_submission(user_input)
-            if not errors:
-                new_policy["use_system_default"] = False
-                new_policy["detection_tolerance"] = getattr(
-                    self, "_pending_override_detection_tolerance",
-                    stored.get("detection_tolerance", DEFAULT_OVERRIDE_DETECTION_TOLERANCE),
-                )
-                return self._save_and_reload({"override_policy": new_policy})
-
-        schema = _manual_override_schema(stored)
-        return self.async_show_form(step_id="manual_override_custom", data_schema=schema, errors=errors)
+        own settings"."""
+        return await self._override_choice_step("manual_override_custom", "zone", user_input)
 
     # -- Manual Override policy — System entry default (T21 Phase C2) --
 
     async def async_step_system_manual_override(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        current = self._config_entry.data
-        stored = current.get("system_override_policy") or {}
-        errors: dict[str, str] = {}
+        return await self._override_choice_step("system_manual_override", "system", user_input)
 
+    async def async_step_override_duration(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        if self._override_scope is None:
+            return await self.async_step_init()
         if user_input is not None:
-            new_policy, errors = _parse_manual_override_submission(user_input)
-            if not errors:
-                return self._save_system_default_and_reload({"system_override_policy": new_policy})
+            values = self._override_values()
+            self._override_draft["duration_min"] = _override_minutes_default(
+                user_input, CONF_OVERRIDE_DURATION_MIN,
+                _override_minutes_default(values, "duration_min", DEFAULT_OVERRIDE_DURATION_MIN))
+            self._override_draft["night_duration_min"] = _override_minutes_default(
+                user_input, CONF_OVERRIDE_NIGHT_DURATION_MIN,
+                _override_minutes_default(values, "night_duration_min", DEFAULT_OVERRIDE_NIGHT_DURATION_MIN))
+            return await self._override_advance()
+        return self.async_show_form(
+            step_id="override_duration", data_schema=_override_duration_schema(self._override_values()))
 
-        schema = _manual_override_schema(stored)
-        return self.async_show_form(step_id="system_manual_override", data_schema=schema, errors=errors)
+    async def async_step_override_fixed_time(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        if self._override_scope is None:
+            return await self.async_step_init()
+        errors: dict[str, str] = {}
+        suggested = self._override_values().get("fixed_until")
+        if user_input is not None:
+            fixed_until = _parse_optional_time_input(user_input.get(CONF_OVERRIDE_FIXED_UNTIL))
+            if fixed_until is None:
+                errors["base"] = "override_fixed_until_required"
+            else:
+                self._override_draft["fixed_until"] = fixed_until.isoformat()
+                return await self._override_advance()
+        return self.async_show_form(
+            step_id="override_fixed_time", data_schema=_override_fixed_time_schema(suggested), errors=errors)
+
+    async def async_step_override_decision(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        if self._override_scope is None:
+            return await self.async_step_init()
+        if user_input is not None:
+            self._override_draft["release_strategy"] = release_choice_to_strategy(
+                RELEASE_CHOICE_NEXT_DECISION, user_input.get(CONF_OVERRIDE_DECISION_FILTER)).value
+            return await self._override_advance()
+        return self.async_show_form(
+            step_id="override_decision", data_schema=_override_decision_schema(self._override_values()))
+
+    async def async_step_override_timeout(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        if self._override_scope is None:
+            return await self.async_step_init()
+        if user_input is not None:
+            values = self._override_values()
+            self._override_draft["safety_timeout_enabled"] = bool(
+                user_input.get(CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED, values.get("safety_timeout_enabled", True)))
+            self._override_draft["duration_min"] = _override_minutes_default(
+                user_input, CONF_OVERRIDE_DURATION_MIN,
+                _override_minutes_default(values, "duration_min", DEFAULT_OVERRIDE_DURATION_MIN))
+            self._override_draft["night_duration_min"] = _override_minutes_default(
+                user_input, CONF_OVERRIDE_NIGHT_DURATION_MIN,
+                _override_minutes_default(values, "night_duration_min", DEFAULT_OVERRIDE_NIGHT_DURATION_MIN))
+            return await self._override_advance()
+        return self.async_show_form(
+            step_id="override_timeout", data_schema=_override_timeout_schema(self._override_values()))
 
     # -- Behavior / shade-position defaults --
 

@@ -334,8 +334,11 @@ GLARE_MIN_EXPOSURE_WM2 = 100.0
 # CONF_OVERRIDE_RELEASE_STRATEGY (T10's flat 7-value form field) was removed
 # in T21 — the persisted "release_strategy" storage key and its 7 possible
 # values are UNCHANGED, only the OptionsFlow's form fields changed.
-CONF_OVERRIDE_RELEASE_MODE = "override_release_mode"
-CONF_OVERRIDE_TIME_BASED_KIND = "override_time_based_kind"
+# Phase 5: one 5-way choice (models/manual_override.RELEASE_CHOICES) replaced the
+# 4-mode + timer-type pair; the stored strategy values are still the same seven.
+CONF_OVERRIDE_RELEASE_CHOICE = "override_release_choice"
+# Transient form field (never stored): also show the safety-timeout page.
+CONF_OVERRIDE_EDIT_TIMEOUTS = "override_edit_timeouts"
 CONF_OVERRIDE_DECISION_FILTER = "override_decision_filter"
 CONF_OVERRIDE_FIXED_UNTIL = "override_fixed_until"
 CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS = "override_allow_comfort_actions"

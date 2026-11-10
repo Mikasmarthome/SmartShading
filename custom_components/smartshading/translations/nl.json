@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Handmatige overschrijving — instellingen van deze zone",
-        "description": "Bepaalt hoe een actieve handmatige overschrijving zich gedraagt in deze zone: hoe lang deze duurt en of comfort- of beschermingsacties nog mogen doorlopen terwijl deze actief is.",
+        "description": "Kies wanneer SmartShading de sturing terugneemt nadat je een zonwering met de hand hebt verplaatst. Details worden alleen gevraagd voor keuzes die ze nodig hebben.",
         "data": {
-          "override_release_mode": "Hoe de overschrijving eindigt",
-          "override_time_based_kind": "Type timer",
-          "override_decision_filter": "Welke beslissingen deze vrijgeven",
-          "override_fixed_until": "Vaste eindtijd",
+          "override_release_choice": "Sturing teruggeven",
           "override_allow_comfort_actions": "Comfortacties toestaan tijdens overschrijving",
           "override_allow_protection_actions": "Beschermingsacties toestaan tijdens overschrijving",
-          "override_safety_timeout_enabled": "Veiligheidstime-out",
-          "override_duration_min": "Klassieke overschrijvingsduur (minuten)",
-          "override_night_duration_min": "Nacht-overschrijvingsduur (minuten)"
+          "override_edit_timeouts": "Ook de veiligheidslimiet aanpassen"
         },
         "data_description": {
-          "override_release_mode": "Kies het vrijgaveconcept: een timer/klok, de volgende schemaovergang, de volgende automatische beslissing, of alleen handmatig wissen.",
-          "override_time_based_kind": "Alleen relevant als de vrijgavemodus hierboven is ingesteld op een timer-/kloktijdoptie: vrijgave na een vaste duur of op een vast tijdstip.",
-          "override_decision_filter": "Alleen relevant als de vrijgavemodus hierboven is ingesteld op de optie 'volgende beslissing': vrijgave bij elke beslissing, alleen comfortbeslissingen, of alleen beschermingsbeslissingen.",
-          "override_fixed_until": "Alleen relevant als de vrijgavemodus een timer-/kloktijdoptie is en het type timer een vast tijdstip is. Als dit tijdstip vandaag al voorbij is, eindigt de overschrijving morgen op dit tijdstip.",
+          "override_release_choice": "Wanneer SmartShading de zonwering weer zelf aanstuurt.",
           "override_allow_comfort_actions": "Indien ingeschakeld, kan de reguliere comfortbeschaduwing nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
           "override_allow_protection_actions": "Indien ingeschakeld, kunnen beschermingsacties (afwezigheid, hitte, verblinding) nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
-          "override_safety_timeout_enabled": "Optionele maximale duur als vangnet voor open strategieën, zodat een overschrijving nooit permanent vergeten wordt.",
-          "override_duration_min": "Hoe lang een dag-overschrijving duurt voordat SmartShading de normale besturing hervat (klassieke duurmodus).",
-          "override_night_duration_min": "Veiligheidslimiet voor een nacht-overschrijving. De echte vrijgave gebeurt bij de ochtendlijke schemaovergang."
+          "override_edit_timeouts": "Opent een extra pagina. Alleen relevant voor schemawissel, beslissing en handmatig wissen."
         }
       },
       "system_manual_override": {
         "title": "Standaardinstellingen handmatige overschrijving",
-        "description": "Het gedrag van handmatige overschrijving dat elke zone volgt, tenzij deze eigen instellingen gebruikt: hoe lang een overschrijving duurt en of comfort- of beschermingsacties nog mogen doorlopen terwijl er een actief is.",
+        "description": "De standaard voor alle zones zonder eigen instellingen: kies wanneer SmartShading de sturing terugneemt nadat een zonwering met de hand is verplaatst. Details worden alleen gevraagd voor keuzes die ze nodig hebben.",
         "data": {
-          "override_release_mode": "Hoe de overschrijving eindigt",
-          "override_time_based_kind": "Type timer",
-          "override_decision_filter": "Welke beslissingen deze vrijgeven",
-          "override_fixed_until": "Vaste eindtijd",
+          "override_release_choice": "Sturing teruggeven",
           "override_allow_comfort_actions": "Comfortacties toestaan tijdens overschrijving",
           "override_allow_protection_actions": "Beschermingsacties toestaan tijdens overschrijving",
-          "override_safety_timeout_enabled": "Veiligheidstime-out",
-          "override_duration_min": "Klassieke overschrijvingsduur (minuten)",
-          "override_night_duration_min": "Nacht-overschrijvingsduur (minuten)"
+          "override_edit_timeouts": "Ook de veiligheidslimiet aanpassen"
         },
         "data_description": {
-          "override_release_mode": "Kies het vrijgaveconcept: een timer/klok, de volgende schemaovergang, de volgende automatische beslissing, of alleen handmatig wissen.",
-          "override_time_based_kind": "Alleen relevant als de vrijgavemodus hierboven is ingesteld op een timer-/kloktijdoptie: vrijgave na een vaste duur of op een vast tijdstip.",
-          "override_decision_filter": "Alleen relevant als de vrijgavemodus hierboven is ingesteld op de optie 'volgende beslissing': vrijgave bij elke beslissing, alleen comfortbeslissingen, of alleen beschermingsbeslissingen.",
-          "override_fixed_until": "Alleen relevant als de vrijgavemodus een timer-/kloktijdoptie is en het type timer een vast tijdstip is. Als dit tijdstip vandaag al voorbij is, eindigt de overschrijving morgen op dit tijdstip.",
+          "override_release_choice": "Wanneer SmartShading de zonwering weer zelf aanstuurt.",
           "override_allow_comfort_actions": "Indien ingeschakeld, kan de reguliere comfortbeschaduwing nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
           "override_allow_protection_actions": "Indien ingeschakeld, kunnen beschermingsacties (afwezigheid, hitte, verblinding) nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
-          "override_safety_timeout_enabled": "Optionele maximale duur als vangnet voor open strategieën, zodat een overschrijving nooit permanent vergeten wordt.",
-          "override_duration_min": "Hoe lang een dag-overschrijving duurt voordat SmartShading de normale besturing hervat (klassieke duurmodus).",
-          "override_night_duration_min": "Veiligheidslimiet voor een nacht-overschrijving. De echte vrijgave gebeurt bij de ochtendlijke schemaovergang."
+          "override_edit_timeouts": "Opent een extra pagina. Alleen relevant voor schemawissel, beslissing en handmatig wissen."
+        }
+      },
+      "override_duration": {
+        "title": "Duur van de handmatige overname",
+        "description": "SmartShading neemt na deze tijd de sturing terug. Een wijziging overdag gebruikt de dagduur, een wijziging 's nachts de nachtduur.",
+        "data": {
+          "override_duration_min": "Dagduur (minuten)",
+          "override_night_duration_min": "Nachtduur (minuten)"
+        },
+        "data_description": {
+          "override_duration_min": "Hoelang een wijziging overdag wordt vastgehouden. De andere keuzes gebruiken de waarde als veiligheidslimiet en als houdtijd van een met de hand gestopte zonwering.",
+          "override_night_duration_min": "Hoelang een wijziging 's nachts wordt vastgehouden. De andere keuzes gebruiken de waarde als nachtelijke veiligheidslimiet en als houdtijd van een met de hand gestopte zonwering."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Eindtijd van de handmatige overname",
+        "description": "SmartShading neemt de sturing terug op het eerstvolgende voorkomen van dit tijdstip: vandaag als het nog komt, anders morgen.",
+        "data": {
+          "override_fixed_until": "Eindtijd"
+        },
+        "data_description": {
+          "override_fixed_until": "Lokaal tijdstip waarop de sturing wordt teruggegeven."
+        }
+      },
+      "override_decision": {
+        "title": "Vrijgevende beslissingen",
+        "description": "SmartShading neemt de sturing terug bij de volgende beslissing van het gekozen type.",
+        "data": {
+          "override_decision_filter": "Welke beslissingen deze vrijgeven"
+        },
+        "data_description": {
+          "override_decision_filter": "Elke comfort- of beschermingsbeslissing, alleen comfort of alleen bescherming."
+        }
+      },
+      "override_timeout": {
+        "title": "Veiligheidslimiet",
+        "description": "Een optionele bovengrens zodat een vergeten handmatige overname een zonwering niet eeuwig vasthoudt. De duren bepalen ook hoelang een met de hand gestopte zonwering wordt vastgehouden.",
+        "data": {
+          "override_safety_timeout_enabled": "Handmatige overname beperken met een veiligheidslimiet",
+          "override_duration_min": "Dagduur (minuten)",
+          "override_night_duration_min": "Nachtduur (minuten)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Indien aan, eindigt de handmatige overname uiterlijk na de dag- of nachtduur. Indien uit, beëindigt alleen de gekozen vrijgave haar.",
+          "override_duration_min": "Hoelang een wijziging overdag wordt vastgehouden. De andere keuzes gebruiken de waarde als veiligheidslimiet en als houdtijd van een met de hand gestopte zonwering.",
+          "override_night_duration_min": "Hoelang een wijziging 's nachts wordt vastgehouden. De andere keuzes gebruiken de waarde als nachtelijke veiligheidslimiet en als houdtijd van een met de hand gestopte zonwering."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "Optie B vereist dat er een contactsensor is geselecteerd.",
       "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
       "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste.",
-      "override_fixed_until_required": "Voer een vaste eindtijd in wanneer de duur is ingesteld op \"Vaste tijd\".",
+      "override_fixed_until_required": "Voer het tijdstip in waarop de sturing moet worden teruggegeven.",
       "invalid_custom_azimuth": "Voer een aangepaste azimut tussen 0 en 359 graden in, of kies een kompasrichting.",
       "no_covers_selected": "Selecteer ten minste één zonweringsentiteit voor dit venster.",
       "cover_already_assigned": "Minstens één geselecteerde afdekking is al aan een ander SmartShading-raam toegewezen. Een afdekking kan maar één keer worden toegewezen."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Omgekeerd (iemand thuis = afwezig)"
       }
     },
-    "override_release_mode": {
-      "options": {
-        "time_based": "Na een timer of tijdstip",
-        "lifecycle": "Bij de volgende schemaovergang",
-        "next_decision": "Bij de volgende automatische beslissing",
-        "manual": "Alleen handmatig wissen"
-      }
-    },
-    "override_time_based_kind": {
+    "override_release_choice": {
       "options": {
         "duration": "Na een vaste duur",
-        "fixed_time": "Op een vast tijdstip"
+        "fixed_time": "Op een vast tijdstip",
+        "lifecycle": "Bij de volgende schemawissel",
+        "next_decision": "Bij de volgende passende comfort- of beschermingsbeslissing",
+        "manual": "Alleen als ik het wis"
       }
     },
     "override_decision_filter": {

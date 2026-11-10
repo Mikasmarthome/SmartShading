@@ -1,52 +1,34 @@
-"""OptionsFlow schema/save coverage for the Manual Override policy step —
-v1.2.0-beta.1, T7; simplified 4-concept release-mode UI T21 Phase B;
-zone gate -> System-default-or-custom split T21 Phase C2.
+"""OptionsFlow coverage for the Manual Override policy pages.
 
 Same real-selector-stub technique established in
 tests/test_config_flow_presence_policy.py (T5) / test_config_flow_lifecycle_profile.py (T6).
 
-T21 Phase B replaced the flat 7-value "release strategy" dropdown with a
-3-field simplified model: release_mode (4 concepts) + time_based_kind (2,
-relevant only for TIME_BASED) + decision_filter (3, relevant only for
-NEXT_DECISION). The persisted "release_strategy" storage key and its 7
-possible string values are completely UNCHANGED — only the form fields
-changed; models/manual_override.py's release_mode_to_strategy() /
-release_strategy_to_mode() do the (lossless, bijective) mapping in both
-directions.
+History: T7 introduced the policy, T21 Phase B reduced the seven stored
+release strategies to a 4-mode UI, T21 Phase C2 split the zone's policy into a
+gate (System default or own settings + detection tolerance) and a custom form,
+and Phase 5 replaced the single seven-field custom form by a short chain of
+pages.  The persisted "release_strategy" key and its seven values never changed.
 
-T21 Phase C2 split the single manual_override step into:
-  - async_step_manual_override (the gate): "use the System entry's default"
-    toggle + the zone-only detection_tolerance field.
-  - async_step_manual_override_custom (reached only when the gate is
-    answered "no, use my own settings"): the unchanged 7-field T21 Phase B
-    form (everything except detection_tolerance).
-  - async_step_system_manual_override (on the System entry): the exact same
-    7-field form, writing to "system_override_policy" instead.
+Pages (the System entry's default uses the very same ones):
+  page 1  release choice (5 options) + allow comfort / protection + "also
+          adjust the safety timeout"
+  page 2  override_duration / override_fixed_time / override_decision - only
+          the one the choice needs; lifecycle and manual have none
+  page 3  override_timeout - only when requested, only for the choices the
+          safety timeout affects
 
 Coverage:
-  CFMO-01  Menu reaches "manual_override" (reachability, via "advanced").
-  CFMO-02  Gate defaults: unconfigured zone starts at use_system_default=True;
-           a zone with an explicit pre-C2 release_strategy stored starts at
-           use_system_default=False (migration-safe, byte-for-byte behavior
-           preservation).
-  CFMO-03  Gate save with use_system_default=True persists the flag +
-           detection_tolerance only, no crash, no custom-form round trip.
-  CFMO-04  Gate save with use_system_default=False advances to the custom
-           step instead of saving immediately.
-  CFMO-05  Custom step: stored values (including pre-T21 stored strategy
-           strings) pre-selected on reopen, correctly mapped to the new
-           fields.
-  CFMO-06  Custom step save persists every field into "override_policy"
-           using the UNCHANGED "release_strategy" storage key, plus
-           use_system_default=False and the detection_tolerance carried
-           over from the gate step.
-  CFMO-07  fixed_time mode without a fixed_until value is rejected with an
-           error, no save happens (no crash, deterministic).
-  CFMO-08  Form render (user_input=None) does not mutate ConfigEntry.data.
-  CFMO-09  Unrelated top-level keys untouched by a save.
-  CFMO-10  Translation/selector-key parity across all 25 files, no English
-           leftovers, no unimplemented-feature strings (e.g. sun event
-           expiry, select entity, presence-bound strategy, staged actions).
+  CFMO-01..04  menu, gate defaults, gate save, gate -> page 1
+  CFMO-05      page 1 shows only what every choice needs; stored / legacy /
+               invalid strategies are pre-selected as what actually runs
+  CFMO-06      routing: irrelevant pages are skipped, each detail page saves
+               its values and the strategy
+  CFMO-07      optional safety-timeout page
+  CFMO-08      hidden settings are never reset (partial merge)
+  CFMO-09      all seven strategies survive an unchanged save + reload
+  CFMO-10      isolation / no mutation / unrelated keys
+  CFMO-11      System default pages
+  CFMO-12      translations
 """
 from __future__ import annotations
 
@@ -58,6 +40,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
 
+import pytest
 import voluptuous as vol
 
 # ---------------------------------------------------------------------------
@@ -141,6 +124,7 @@ sys.modules["homeassistant.helpers.selector"] = _stub(
 )
 
 sys.modules.pop("custom_components.smartshading.config_flow", None)
+from custom_components.smartshading.config_entry_data import _override_policy_from_storage  # noqa: E402
 from custom_components.smartshading.config_flow import SmartShadingOptionsFlow  # noqa: E402
 from custom_components.smartshading.const import (  # noqa: E402
     CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
@@ -148,18 +132,15 @@ from custom_components.smartshading.const import (  # noqa: E402
     CONF_OVERRIDE_DECISION_FILTER,
     CONF_OVERRIDE_DETECTION_TOLERANCE,
     CONF_OVERRIDE_DURATION_MIN,
+    CONF_OVERRIDE_EDIT_TIMEOUTS,
     CONF_OVERRIDE_FIXED_UNTIL,
     CONF_OVERRIDE_NIGHT_DURATION_MIN,
-    CONF_OVERRIDE_RELEASE_MODE,
+    CONF_OVERRIDE_RELEASE_CHOICE,
     CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
-    CONF_OVERRIDE_TIME_BASED_KIND,
     CONF_OVERRIDE_USE_SYSTEM_DEFAULT,
 )
 from custom_components.smartshading.models.manual_override import (  # noqa: E402
-    DECISION_FILTER_ANY,
-    TIME_BASED_KIND_DURATION,
-    TIME_BASED_KIND_FIXED_TIME,
-    OverrideReleaseMode,
+    RELEASE_CHOICES,
     OverrideReleaseStrategy,
 )
 
@@ -188,28 +169,54 @@ def _make_options_flow(data: dict | None = None) -> SmartShadingOptionsFlow:
     return flow
 
 
-# The 7-field "custom" form input (everything except use_system_default /
-# detection_tolerance, which the gate step owns).
-_CUSTOM_INPUT = {
-    CONF_OVERRIDE_RELEASE_MODE: OverrideReleaseMode.TIME_BASED.value,
-    CONF_OVERRIDE_TIME_BASED_KIND: TIME_BASED_KIND_FIXED_TIME,
-    CONF_OVERRIDE_DECISION_FILTER: DECISION_FILTER_ANY,
-    CONF_OVERRIDE_FIXED_UNTIL: "08:00:00",
-    CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS: True,
-    CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS: True,
-    CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED: False,
-    CONF_OVERRIDE_DURATION_MIN: 90,
-    CONF_OVERRIDE_NIGHT_DURATION_MIN: 600,
-}
+def _field_names(schema: vol.Schema) -> set[str]:
+    return {str(k) for k in schema.schema}
+
+
+def _page1(choice, comfort=False, protection=False, edit_timeouts=False) -> dict:
+    return {
+        CONF_OVERRIDE_RELEASE_CHOICE: choice,
+        CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS: comfort,
+        CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS: protection,
+        CONF_OVERRIDE_EDIT_TIMEOUTS: edit_timeouts,
+    }
 
 
 def _opt_out_of_system_default(flow: SmartShadingOptionsFlow, detection_tolerance: int = 15):
-    """Drives the gate step with use_system_default=False, landing on the
-    custom-form step — the precondition every custom-step test needs."""
+    """Drives the gate step with use_system_default=False, landing on page 1
+    of the zone's own policy."""
     return asyncio.run(flow.async_step_manual_override(user_input={
         CONF_OVERRIDE_USE_SYSTEM_DEFAULT: False,
         CONF_OVERRIDE_DETECTION_TOLERANCE: detection_tolerance,
     }))
+
+
+def _zone_page1(flow, **kw):
+    return asyncio.run(flow.async_step_manual_override_custom(user_input=_page1(**kw)))
+
+
+def _system_page1(flow, **kw):
+    return asyncio.run(flow.async_step_system_manual_override(user_input=_page1(**kw)))
+
+
+def _detail(flow, step: str, user_input):
+    return asyncio.run(getattr(flow, f"async_step_{step}")(user_input=user_input))
+
+
+def _saved(flow, key="override_policy") -> dict:
+    _, kwargs = flow.hass.config_entries.async_update_entry.call_args
+    return kwargs["data"][key]
+
+
+def _not_saved(flow) -> bool:
+    return not flow.hass.config_entries.async_update_entry.called
+
+
+_STORED_FULL = {
+    "release_strategy": "fixed_time", "fixed_until": "09:00:00", "allow_comfort_actions": True,
+    "allow_protection_actions": False, "duration_min": 33, "night_duration_min": 444,
+    "safety_timeout_enabled": False, "detection_tolerance": 25, "use_system_default": False,
+}
 
 
 class TestMenuReachability:
@@ -234,9 +241,6 @@ class TestGateDefaults:
         assert _schema_field_key(schema, CONF_OVERRIDE_DETECTION_TOLERANCE).default() == 10
 
     def test_zone_with_explicit_pre_c2_strategy_defaults_to_its_own_settings(self):
-        # Migration guarantee: a zone that already configured Manual Override
-        # before T21 Phase C2 (has "release_strategy" stored) must NOT be
-        # silently switched onto the System default.
         flow = _make_options_flow(data={
             "override_policy": {"release_strategy": "fixed_time", "detection_tolerance": 25},
         })
@@ -262,15 +266,11 @@ class TestGateSaveUsingSystemDefault:
             CONF_OVERRIDE_DETECTION_TOLERANCE: 30,
         }))
         assert result["type"] == "create_entry"
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        saved = kwargs["data"]["override_policy"]
+        saved = _saved(flow)
         assert saved["use_system_default"] is True
         assert saved["detection_tolerance"] == 30
 
     def test_preserves_previously_stored_custom_fields_as_inert_prefill(self):
-        # Switching back to "use my own settings" later should re-show the
-        # zone's last custom values, not blank defaults — so flipping the
-        # gate to True must not wipe them from storage.
         flow = _make_options_flow(data={
             "override_policy": {
                 "release_strategy": "fixed_time", "fixed_until": "09:00:00",
@@ -281,262 +281,535 @@ class TestGateSaveUsingSystemDefault:
             CONF_OVERRIDE_USE_SYSTEM_DEFAULT: True,
             CONF_OVERRIDE_DETECTION_TOLERANCE: 10,
         }))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        saved = kwargs["data"]["override_policy"]
+        saved = _saved(flow)
         assert saved["use_system_default"] is True
         assert saved["release_strategy"] == "fixed_time"
         assert saved["duration_min"] == 77
 
 
 class TestGateAdvancesToCustomStep:
-    def test_opting_out_advances_to_custom_form(self):
+    def test_opting_out_advances_to_page_one(self):
         flow = _make_options_flow(data={})
         result = _opt_out_of_system_default(flow)
         assert result["type"] == "form"
         assert result["step_id"] == "manual_override_custom"
-        assert not flow.hass.config_entries.async_update_entry.called
+        assert _not_saved(flow)
 
 
-class TestCustomStepDefaultsPreselected:
-    def test_defaults_when_nothing_stored(self):
+class TestPageOneShowsOnlyWhatEveryChoiceNeeds:
+    def test_fields_and_defaults_when_nothing_is_stored(self):
         flow = _make_options_flow(data={})
         result = _opt_out_of_system_default(flow)
         schema: vol.Schema = result["data_schema"]
-        assert _schema_field_key(schema, CONF_OVERRIDE_RELEASE_MODE).default() == (
-            OverrideReleaseMode.LIFECYCLE.value
-        )
-        assert _schema_field_key(schema, CONF_OVERRIDE_TIME_BASED_KIND).default() == (
-            TIME_BASED_KIND_DURATION
-        )
-        assert _schema_field_key(schema, CONF_OVERRIDE_DECISION_FILTER).default() == (
-            DECISION_FILTER_ANY
-        )
+        assert _field_names(schema) == {
+            CONF_OVERRIDE_RELEASE_CHOICE, CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
+            CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS, CONF_OVERRIDE_EDIT_TIMEOUTS,
+        }
+        assert _schema_field_key(schema, CONF_OVERRIDE_RELEASE_CHOICE).default() == "lifecycle"
         assert _schema_field_key(schema, CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS).default() is False
         assert _schema_field_key(schema, CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS).default() is False
-        assert _schema_field_key(schema, CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED).default() is True
-        assert _schema_field_key(schema, CONF_OVERRIDE_DURATION_MIN).default() == 120
-        assert _schema_field_key(schema, CONF_OVERRIDE_NIGHT_DURATION_MIN).default() == 720
-        assert _schema_field_key(schema, CONF_OVERRIDE_DETECTION_TOLERANCE) is None
+        assert _schema_field_key(schema, CONF_OVERRIDE_EDIT_TIMEOUTS).default() is False
 
-
-class TestCustomStepStoredValuesPreselected:
-    def test_stored_fixed_time_strategy_maps_to_time_based_mode(self):
-        flow = _make_options_flow(data={
-            "override_policy": {
-                "release_strategy": "fixed_time", "fixed_until": "09:30:00",
-                "allow_comfort_actions": True, "allow_protection_actions": False,
-                "duration_min": 60, "night_duration_min": 500,
-                "detection_tolerance": 20, "safety_timeout_enabled": False,
-            }
-        })
-        result = _opt_out_of_system_default(flow)
-        schema: vol.Schema = result["data_schema"]
-        assert _schema_field_key(schema, CONF_OVERRIDE_RELEASE_MODE).default() == "time_based"
-        assert _schema_field_key(schema, CONF_OVERRIDE_TIME_BASED_KIND).default() == "fixed_time"
-        assert _schema_field_key(schema, CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS).default() is True
-        assert _schema_field_key(schema, CONF_OVERRIDE_DURATION_MIN).default() == 60
-        assert _schema_field_key(schema, CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED).default() is False
-
-    def test_stored_first_comfort_strategy_maps_to_next_decision_comfort_filter(self):
-        flow = _make_options_flow(data={
-            "override_policy": {"release_strategy": "first_comfort"},
-        })
-        result = _opt_out_of_system_default(flow)
-        schema: vol.Schema = result["data_schema"]
-        assert _schema_field_key(schema, CONF_OVERRIDE_RELEASE_MODE).default() == "next_decision"
-        assert _schema_field_key(schema, CONF_OVERRIDE_DECISION_FILTER).default() == "comfort"
-
-    def test_stored_manual_strategy_maps_to_manual_mode(self):
-        flow = _make_options_flow(data={"override_policy": {"release_strategy": "manual"}})
-        result = _opt_out_of_system_default(flow)
-        schema: vol.Schema = result["data_schema"]
-        assert _schema_field_key(schema, CONF_OVERRIDE_RELEASE_MODE).default() == "manual"
-
-
-class TestCustomStepSavePersistsEveryField:
-    def test_full_input_saved(self):
+    def test_the_selector_offers_exactly_the_five_choices(self):
         flow = _make_options_flow(data={})
-        _opt_out_of_system_default(flow, detection_tolerance=15)
-        asyncio.run(flow.async_step_manual_override_custom(user_input=dict(_CUSTOM_INPUT)))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        saved = kwargs["data"]["override_policy"]
-        # Storage key/value UNCHANGED — TIME_BASED + fixed_time maps to the
-        # original "fixed_time" OverrideReleaseStrategy value.
-        assert saved["release_strategy"] == "fixed_time"
-        assert saved["fixed_until"] == "08:00:00"
-        assert saved["allow_comfort_actions"] is True
-        assert saved["allow_protection_actions"] is True
-        assert saved["safety_timeout_enabled"] is False
-        assert saved["duration_min"] == 90
-        assert saved["night_duration_min"] == 600
+        schema: vol.Schema = _opt_out_of_system_default(flow)["data_schema"]
+        key = _schema_field_key(schema, CONF_OVERRIDE_RELEASE_CHOICE)
+        cfg = schema.schema[key].config
+        assert list(cfg.options) == ["duration", "fixed_time", "lifecycle", "next_decision", "manual"]
+        assert cfg.translation_key == "override_release_choice"
+
+    def test_no_irrelevant_field_is_on_the_first_page(self):
+        flow = _make_options_flow(data={})
+        names = _field_names(_opt_out_of_system_default(flow)["data_schema"])
+        for gone in (CONF_OVERRIDE_DURATION_MIN, CONF_OVERRIDE_NIGHT_DURATION_MIN, CONF_OVERRIDE_FIXED_UNTIL,
+                     CONF_OVERRIDE_DECISION_FILTER, CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
+                     "override_release_mode", "override_time_based_kind"):
+            assert gone not in names
+
+    @pytest.mark.parametrize("stored,expected", [
+        ("duration", "duration"), ("fixed_time", "fixed_time"), ("lifecycle", "lifecycle"),
+        ("first_comfort", "next_decision"), ("first_protection", "next_decision"),
+        ("first_any_decision", "next_decision"), ("manual", "manual"),
+    ])
+    def test_every_stored_strategy_is_preselected(self, stored, expected):
+        flow = _make_options_flow(data={"override_policy": {
+            "release_strategy": stored, "fixed_until": "08:00:00", "use_system_default": False}})
+        schema = _opt_out_of_system_default(flow)["data_schema"]
+        assert _schema_field_key(schema, CONF_OVERRIDE_RELEASE_CHOICE).default() == expected
+
+    @pytest.mark.parametrize("policy,expected", [
+        ({"release_strategy": "bogus"}, "lifecycle"),
+        ({"release_strategy": "fixed_time"}, "duration"),            # no time -> runtime falls back to duration
+        ({"break_on_lifecycle": False}, "duration"),                  # pre-T10 format
+        ({"break_on_lifecycle": False, "duration_mode": "fixed_time", "fixed_until": "06:00:00"}, "fixed_time"),
+        ({"break_on_lifecycle": True}, "lifecycle"),
+        ({}, "lifecycle"),
+    ])
+    def test_legacy_and_invalid_storage_preselect_what_runs(self, policy, expected):
+        flow = _make_options_flow(data={"override_policy": {**policy, "use_system_default": False}})
+        schema = _opt_out_of_system_default(flow)["data_schema"]
+        assert _schema_field_key(schema, CONF_OVERRIDE_RELEASE_CHOICE).default() == expected
+
+    def test_stored_allow_flags_are_prefilled(self):
+        flow = _make_options_flow(data={"override_policy": dict(_STORED_FULL)})
+        schema = _opt_out_of_system_default(flow)["data_schema"]
+        assert _schema_field_key(schema, CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS).default() is True
+        assert _schema_field_key(schema, CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS).default() is False
+
+
+class TestRoutingSkipsIrrelevantPages:
+    def test_lifecycle_saves_without_a_detail_page(self):
+        flow = _make_options_flow(data={})
+        _opt_out_of_system_default(flow, 15)
+        result = _zone_page1(flow, choice="lifecycle")
+        assert result["type"] == "create_entry"
+        saved = _saved(flow)
+        assert saved["release_strategy"] == "lifecycle"
         assert saved["use_system_default"] is False
         assert saved["detection_tolerance"] == 15
 
-    def test_time_based_duration_saved_without_fixed_until(self):
+    def test_manual_saves_without_a_detail_page(self):
         flow = _make_options_flow(data={})
         _opt_out_of_system_default(flow)
-        duration_input = dict(_CUSTOM_INPUT)
-        duration_input[CONF_OVERRIDE_TIME_BASED_KIND] = TIME_BASED_KIND_DURATION
-        duration_input.pop(CONF_OVERRIDE_FIXED_UNTIL, None)
-        asyncio.run(flow.async_step_manual_override_custom(user_input=duration_input))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        saved = kwargs["data"]["override_policy"]
-        assert saved["release_strategy"] == "duration"
-        assert saved["fixed_until"] is None
+        assert _zone_page1(flow, choice="manual")["type"] == "create_entry"
+        assert _saved(flow)["release_strategy"] == "manual"
 
-    def test_next_decision_protection_filter_saves_first_protection_strategy(self):
+    def test_duration_shows_both_durations_only(self):
         flow = _make_options_flow(data={})
         _opt_out_of_system_default(flow)
-        protection_input = dict(_CUSTOM_INPUT)
-        protection_input[CONF_OVERRIDE_RELEASE_MODE] = OverrideReleaseMode.NEXT_DECISION.value
-        protection_input[CONF_OVERRIDE_DECISION_FILTER] = "protection"
-        protection_input.pop(CONF_OVERRIDE_FIXED_UNTIL, None)
-        asyncio.run(flow.async_step_manual_override_custom(user_input=protection_input))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        saved = kwargs["data"]["override_policy"]
-        assert saved["release_strategy"] == "first_protection"
+        result = _zone_page1(flow, choice="duration")
+        assert result["type"] == "form" and result["step_id"] == "override_duration"
+        schema = result["data_schema"]
+        assert _field_names(schema) == {CONF_OVERRIDE_DURATION_MIN, CONF_OVERRIDE_NIGHT_DURATION_MIN}
+        assert _schema_field_key(schema, CONF_OVERRIDE_DURATION_MIN).default() == 120
+        assert _schema_field_key(schema, CONF_OVERRIDE_NIGHT_DURATION_MIN).default() == 720
+        assert _not_saved(flow)
+        done = _detail(flow, "override_duration", {CONF_OVERRIDE_DURATION_MIN: 45, CONF_OVERRIDE_NIGHT_DURATION_MIN: 600})
+        assert done["type"] == "create_entry"
+        saved = _saved(flow)
+        assert (saved["release_strategy"], saved["duration_min"], saved["night_duration_min"]) == ("duration", 45, 600)
 
-    def test_lifecycle_mode_saves_lifecycle_strategy(self):
+    def test_fixed_time_shows_the_clock_time_only(self):
         flow = _make_options_flow(data={})
         _opt_out_of_system_default(flow)
-        lifecycle_input = dict(_CUSTOM_INPUT)
-        lifecycle_input[CONF_OVERRIDE_RELEASE_MODE] = OverrideReleaseMode.LIFECYCLE.value
-        lifecycle_input.pop(CONF_OVERRIDE_FIXED_UNTIL, None)
-        asyncio.run(flow.async_step_manual_override_custom(user_input=lifecycle_input))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["override_policy"]["release_strategy"] == "lifecycle"
+        result = _zone_page1(flow, choice="fixed_time")
+        assert result["type"] == "form" and result["step_id"] == "override_fixed_time"
+        assert _field_names(result["data_schema"]) == {CONF_OVERRIDE_FIXED_UNTIL}
+        done = _detail(flow, "override_fixed_time", {CONF_OVERRIDE_FIXED_UNTIL: "07:30:00"})
+        assert done["type"] == "create_entry"
+        saved = _saved(flow)
+        assert (saved["release_strategy"], saved["fixed_until"]) == ("fixed_time", "07:30:00")
 
-
-class TestFixedTimeRequiresFixedUntil:
-    def test_missing_fixed_until_rejected(self):
+    def test_fixed_time_without_a_time_is_rejected_and_nothing_is_saved(self):
         flow = _make_options_flow(data={})
         _opt_out_of_system_default(flow)
-        bad_input = dict(_CUSTOM_INPUT)
-        bad_input.pop(CONF_OVERRIDE_FIXED_UNTIL, None)
-        result = asyncio.run(flow.async_step_manual_override_custom(user_input=bad_input))
-        assert result["type"] == "form"
-        assert result["errors"].get("base") == "override_fixed_until_required"
-        assert not flow.hass.config_entries.async_update_entry.called
+        _zone_page1(flow, choice="fixed_time")
+        result = _detail(flow, "override_fixed_time", {})
+        assert result["type"] == "form" and result["step_id"] == "override_fixed_time"
+        assert result["errors"] == {"base": "override_fixed_until_required"}
+        assert _not_saved(flow)
+        for bad in (None, "", "25:99", 7):
+            res = _detail(flow, "override_fixed_time", {CONF_OVERRIDE_FIXED_UNTIL: bad})
+            assert res["errors"] == {"base": "override_fixed_until_required"}
+        assert _not_saved(flow)
+        done = _detail(flow, "override_fixed_time", {CONF_OVERRIDE_FIXED_UNTIL: "06:15:00"})
+        assert done["type"] == "create_entry" and _saved(flow)["fixed_until"] == "06:15:00"
+
+    def test_fixed_time_page_shows_the_stored_time(self):
+        flow = _make_options_flow(data={"override_policy": {
+            "release_strategy": "duration", "fixed_until": "07:15:00", "use_system_default": False}})
+        _opt_out_of_system_default(flow)
+        result = _zone_page1(flow, choice="fixed_time")
+        key = _schema_field_key(result["data_schema"], CONF_OVERRIDE_FIXED_UNTIL)
+        assert key.description == {"suggested_value": "07:15:00"}
+
+    @pytest.mark.parametrize("flt,strategy", [("any", "first_any_decision"), ("comfort", "first_comfort"),
+                                              ("protection", "first_protection")])
+    def test_next_decision_asks_for_the_filter(self, flt, strategy):
+        flow = _make_options_flow(data={})
+        _opt_out_of_system_default(flow)
+        result = _zone_page1(flow, choice="next_decision")
+        assert result["type"] == "form" and result["step_id"] == "override_decision"
+        assert _field_names(result["data_schema"]) == {CONF_OVERRIDE_DECISION_FILTER}
+        assert _schema_field_key(result["data_schema"], CONF_OVERRIDE_DECISION_FILTER).default() == "any"
+        done = _detail(flow, "override_decision", {CONF_OVERRIDE_DECISION_FILTER: flt})
+        assert done["type"] == "create_entry"
+        assert _saved(flow)["release_strategy"] == strategy
+
+    @pytest.mark.parametrize("stored,expected", [("first_comfort", "comfort"), ("first_protection", "protection"),
+                                                 ("first_any_decision", "any"), ("manual", "any")])
+    def test_decision_filter_default_is_the_stored_one(self, stored, expected):
+        flow = _make_options_flow(data={"override_policy": {"release_strategy": stored, "use_system_default": False}})
+        _opt_out_of_system_default(flow)
+        result = _zone_page1(flow, choice="next_decision")
+        assert _schema_field_key(result["data_schema"], CONF_OVERRIDE_DECISION_FILTER).default() == expected
+
+    def test_an_unknown_filter_or_choice_degrades_to_the_defaults(self):
+        flow = _make_options_flow(data={})
+        _opt_out_of_system_default(flow)
+        _zone_page1(flow, choice="next_decision")
+        _detail(flow, "override_decision", {CONF_OVERRIDE_DECISION_FILTER: "bogus"})
+        assert _saved(flow)["release_strategy"] == "first_any_decision"
+        flow = _make_options_flow(data={})
+        _opt_out_of_system_default(flow)
+        assert _zone_page1(flow, choice="bogus")["type"] == "create_entry"
+        assert _saved(flow)["release_strategy"] == "lifecycle"
 
 
-class TestNoMutationOnRender:
-    def test_gate_render_does_not_touch_entry(self):
-        original = {"override_policy": {"release_strategy": "duration"}}
-        flow = _make_options_flow(data=dict(original))
+class TestOptionalSafetyTimeoutPage:
+    @pytest.mark.parametrize("choice", ["lifecycle", "manual"])
+    def test_requested_page_follows_for_open_ended_choices(self, choice):
+        flow = _make_options_flow(data={"override_policy": {**_STORED_FULL, "release_strategy": "lifecycle"}})
+        _opt_out_of_system_default(flow)
+        result = _zone_page1(flow, choice=choice, edit_timeouts=True)
+        assert result["type"] == "form" and result["step_id"] == "override_timeout"
+        schema = result["data_schema"]
+        assert _field_names(schema) == {
+            CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED, CONF_OVERRIDE_DURATION_MIN, CONF_OVERRIDE_NIGHT_DURATION_MIN}
+        # prefilled with the stored values - a stored "off" is NOT shown as on
+        assert _schema_field_key(schema, CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED).default() is False
+        assert _schema_field_key(schema, CONF_OVERRIDE_DURATION_MIN).default() == 33
+        assert _schema_field_key(schema, CONF_OVERRIDE_NIGHT_DURATION_MIN).default() == 444
+        assert _not_saved(flow)
+
+    def test_the_timeout_can_be_switched_on_and_the_durations_changed(self):
+        flow = _make_options_flow(data={"override_policy": dict(_STORED_FULL)})
+        _opt_out_of_system_default(flow)
+        _zone_page1(flow, choice="manual", edit_timeouts=True)
+        done = _detail(flow, "override_timeout", {
+            CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED: True,
+            CONF_OVERRIDE_DURATION_MIN: 90, CONF_OVERRIDE_NIGHT_DURATION_MIN: 500})
+        assert done["type"] == "create_entry"
+        saved = _saved(flow)
+        assert (saved["release_strategy"], saved["safety_timeout_enabled"],
+                saved["duration_min"], saved["night_duration_min"]) == ("manual", True, 90, 500)
+
+    def test_next_decision_shows_the_filter_page_then_the_timeout_page(self):
+        flow = _make_options_flow(data={})
+        _opt_out_of_system_default(flow)
+        assert _zone_page1(flow, choice="next_decision", edit_timeouts=True)["step_id"] == "override_decision"
+        nxt = _detail(flow, "override_decision", {CONF_OVERRIDE_DECISION_FILTER: "protection"})
+        assert nxt["type"] == "form" and nxt["step_id"] == "override_timeout"
+        assert _not_saved(flow)
+        _detail(flow, "override_timeout", {
+            CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED: False,
+            CONF_OVERRIDE_DURATION_MIN: 120, CONF_OVERRIDE_NIGHT_DURATION_MIN: 720})
+        saved = _saved(flow)
+        assert (saved["release_strategy"], saved["safety_timeout_enabled"]) == ("first_protection", False)
+
+    @pytest.mark.parametrize("choice", ["duration", "fixed_time"])
+    def test_no_timeout_page_for_choices_that_have_their_own_deadline(self, choice):
+        flow = _make_options_flow(data={})
+        _opt_out_of_system_default(flow)
+        result = _zone_page1(flow, choice=choice, edit_timeouts=True)
+        assert result["step_id"] in ("override_duration", "override_fixed_time")
+        done = _detail(
+            flow, result["step_id"],
+            {CONF_OVERRIDE_DURATION_MIN: 50, CONF_OVERRIDE_NIGHT_DURATION_MIN: 60}
+            if choice == "duration" else {CONF_OVERRIDE_FIXED_UNTIL: "05:00:00"})
+        assert done["type"] == "create_entry"
+
+    def test_the_default_case_does_not_ask(self):
+        flow = _make_options_flow(data={})
+        _opt_out_of_system_default(flow)
+        assert _zone_page1(flow, choice="lifecycle")["type"] == "create_entry"
+
+
+class TestHiddenSettingsAreNeverReset:
+    @pytest.mark.parametrize("choice,detail", [
+        ("lifecycle", None), ("manual", None), ("duration", None),
+    ])
+    def test_switching_strategy_keeps_every_other_stored_value(self, choice, detail):
+        flow = _make_options_flow(data={"override_policy": dict(_STORED_FULL)})
+        _opt_out_of_system_default(flow, 25)
+        result = _zone_page1(flow, choice=choice, comfort=True, protection=False)
+        if choice == "duration":
+            result = _detail(flow, "override_duration", {
+                CONF_OVERRIDE_DURATION_MIN: 33, CONF_OVERRIDE_NIGHT_DURATION_MIN: 444})
+        assert result["type"] == "create_entry"
+        saved = _saved(flow)
+        assert saved["release_strategy"] == choice
+        assert saved["safety_timeout_enabled"] is False          # not forced back to True
+        assert saved["fixed_until"] == "09:00:00"                # hidden, kept
+        assert (saved["duration_min"], saved["night_duration_min"]) == (33, 444)
+        assert saved["allow_comfort_actions"] is True and saved["allow_protection_actions"] is False
+
+    def test_leaving_fixed_time_and_coming_back_keeps_the_time(self):
+        flow = _make_options_flow(data={"override_policy": dict(_STORED_FULL)})
+        _opt_out_of_system_default(flow)
+        _zone_page1(flow, choice="manual")
+        stored = _saved(flow)
+        flow2 = _make_options_flow(data={"override_policy": stored})
+        _opt_out_of_system_default(flow2)
+        result = _zone_page1(flow2, choice="fixed_time")
+        key = _schema_field_key(result["data_schema"], CONF_OVERRIDE_FIXED_UNTIL)
+        assert key.description == {"suggested_value": "09:00:00"}
+
+    def test_the_allow_flags_are_saved_from_page_one_and_can_be_switched_off(self):
+        flow = _make_options_flow(data={"override_policy": dict(_STORED_FULL)})
+        _opt_out_of_system_default(flow)
+        _zone_page1(flow, choice="lifecycle", comfort=False, protection=True)
+        saved = _saved(flow)
+        assert saved["allow_comfort_actions"] is False and saved["allow_protection_actions"] is True
+
+    def test_stop_hold_durations_never_change_with_a_strategy_switch(self):
+        policy = {**_STORED_FULL, "duration_min": 61, "night_duration_min": 307}
+        for choice in ("lifecycle", "manual", "next_decision", "fixed_time", "duration"):
+            flow = _make_options_flow(data={"override_policy": dict(policy)})
+            _opt_out_of_system_default(flow)
+            result = _zone_page1(flow, choice=choice)
+            while result["type"] == "form":
+                step = result["step_id"]
+                user_input = {
+                    "override_duration": {CONF_OVERRIDE_DURATION_MIN: 61, CONF_OVERRIDE_NIGHT_DURATION_MIN: 307},
+                    "override_fixed_time": {CONF_OVERRIDE_FIXED_UNTIL: "09:00:00"},
+                    "override_decision": {CONF_OVERRIDE_DECISION_FILTER: "comfort"},
+                }[step]
+                result = _detail(flow, step, user_input)
+            saved = _saved(flow)
+            assert (saved["duration_min"], saved["night_duration_min"]) == (61, 307), choice
+
+    def test_malformed_hidden_values_are_not_rewritten_and_still_load_safely(self):
+        stored = {**_STORED_FULL, "duration_min": "abc", "night_duration_min": None, "fixed_until": "oops",
+                  "safety_timeout_enabled": 0}
+        flow = _make_options_flow(data={"override_policy": stored})
+        _opt_out_of_system_default(flow)
+        _zone_page1(flow, choice="lifecycle")
+        saved = _saved(flow)
+        assert (saved["duration_min"], saved["night_duration_min"], saved["fixed_until"]) == ("abc", None, "oops")
+        cfg = _override_policy_from_storage(saved)
+        assert (cfg.duration_min, cfg.night_duration_min, cfg.fixed_until, cfg.release_strategy) == (
+            120, 720, None, OverrideReleaseStrategy.LIFECYCLE)
+
+    def test_malformed_values_are_shown_as_safe_defaults_on_the_pages(self):
+        stored = {**_STORED_FULL, "release_strategy": "lifecycle", "duration_min": "abc", "night_duration_min": -5}
+        flow = _make_options_flow(data={"override_policy": stored})
+        _opt_out_of_system_default(flow)
+        result = _zone_page1(flow, choice="lifecycle", edit_timeouts=True)
+        schema = result["data_schema"]
+        assert _schema_field_key(schema, CONF_OVERRIDE_DURATION_MIN).default() == 120
+        assert _schema_field_key(schema, CONF_OVERRIDE_NIGHT_DURATION_MIN).default() == 1
+
+    def test_a_fresh_zone_gets_the_complete_default_shape(self):
+        flow = _make_options_flow(data={})
+        _opt_out_of_system_default(flow)
+        _zone_page1(flow, choice="lifecycle")
+        assert _saved(flow) == {
+            "release_strategy": "lifecycle", "fixed_until": None, "allow_comfort_actions": False,
+            "allow_protection_actions": False, "duration_min": 120, "night_duration_min": 720,
+            "safety_timeout_enabled": True, "use_system_default": False, "detection_tolerance": 15,
+        }
+
+    def test_superseded_pre_t10_keys_are_not_written_back(self):
+        flow = _make_options_flow(data={"override_policy": {
+            "duration_mode": "fixed_time", "break_on_lifecycle": False, "use_system_default": False}})
+        _opt_out_of_system_default(flow)
+        _zone_page1(flow, choice="manual")
+        saved = _saved(flow)
+        assert "duration_mode" not in saved and "break_on_lifecycle" not in saved
+        assert saved["release_strategy"] == "manual"
+
+
+class TestRoundTripOfAllSevenStrategies:
+    @pytest.mark.parametrize("strategy", [s.value for s in OverrideReleaseStrategy])
+    def test_each_stored_strategy_survives_an_unchanged_save_and_reload(self, strategy):
+        stored = {"release_strategy": strategy, "fixed_until": "08:00:00", "duration_min": 50,
+                  "night_duration_min": 500, "use_system_default": False}
+        flow = _make_options_flow(data={"override_policy": dict(stored)})
+        schema = _opt_out_of_system_default(flow)["data_schema"]
+        choice = _schema_field_key(schema, CONF_OVERRIDE_RELEASE_CHOICE).default()
+        result = _zone_page1(flow, choice=choice)
+        while result["type"] == "form":
+            step = result["step_id"]
+            default_filter = _schema_field_key(result["data_schema"], CONF_OVERRIDE_DECISION_FILTER).default() \
+                if step == "override_decision" else None
+            result = _detail(flow, step, {
+                "override_duration": {CONF_OVERRIDE_DURATION_MIN: 50, CONF_OVERRIDE_NIGHT_DURATION_MIN: 500},
+                "override_fixed_time": {CONF_OVERRIDE_FIXED_UNTIL: "08:00:00"},
+                "override_decision": {CONF_OVERRIDE_DECISION_FILTER: default_filter},
+            }[step])
+        saved = _saved(flow)
+        assert saved["release_strategy"] == strategy
+        assert _override_policy_from_storage(saved).release_strategy is OverrideReleaseStrategy(strategy)
+
+
+class TestPolicyIsolationAndNoMutation:
+    def test_page_renders_do_not_touch_the_entry(self):
+        flow = _make_options_flow(data={"override_policy": dict(_STORED_FULL)})
         asyncio.run(flow.async_step_manual_override(user_input=None))
-        assert flow._config_entry.data == original
-        assert not flow.hass.config_entries.async_update_entry.called
-
-    def test_custom_render_does_not_touch_entry(self):
-        original = {"override_policy": {"release_strategy": "duration"}}
-        flow = _make_options_flow(data=dict(original))
         _opt_out_of_system_default(flow)
-        assert flow._config_entry.data == original
-        assert not flow.hass.config_entries.async_update_entry.called
+        asyncio.run(flow.async_step_manual_override_custom(user_input=None))
+        assert _not_saved(flow)
+        assert flow._config_entry.data["override_policy"] == _STORED_FULL
 
-
-class TestUnrelatedKeysUntouched:
-    def test_unrelated_keys_preserved(self):
-        flow = _make_options_flow(data={"name": "Zone A", "windows": ["do-not-touch"]})
+    def test_a_zone_save_does_not_touch_the_system_policy_and_vice_versa(self):
+        original_system = {"release_strategy": "manual", "duration_min": 99}
+        flow = _make_options_flow(data={"system_override_policy": dict(original_system)})
         _opt_out_of_system_default(flow)
-        asyncio.run(flow.async_step_manual_override_custom(user_input=dict(_CUSTOM_INPUT)))
+        _zone_page1(flow, choice="lifecycle")
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["name"] == "Zone A"
-        assert kwargs["data"]["windows"] == ["do-not-touch"]
+        assert kwargs["data"]["system_override_policy"] == original_system
+        flow = _make_options_flow(data={"override_policy": dict(_STORED_FULL)})
+        _system_page1(flow, choice="lifecycle")
+        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
+        assert kwargs["data"]["override_policy"] == _STORED_FULL
+
+    def test_unrelated_keys_preserved(self):
+        flow = _make_options_flow(data={"presence_policy": "all_home", "other": {"x": 1}})
+        _opt_out_of_system_default(flow)
+        _zone_page1(flow, choice="manual")
+        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
+        assert kwargs["data"]["presence_policy"] == "all_home" and kwargs["data"]["other"] == {"x": 1}
+
+    def test_a_second_flow_run_does_not_inherit_a_stale_draft(self):
+        flow = _make_options_flow(data={})
+        _opt_out_of_system_default(flow)
+        _zone_page1(flow, choice="duration")                    # abandoned on the detail page
+        flow.hass.config_entries.async_update_entry.reset_mock()
+        _opt_out_of_system_default(flow)
+        _zone_page1(flow, choice="lifecycle")
+        assert _saved(flow)["release_strategy"] == "lifecycle"
+
+    def test_detail_steps_without_a_started_flow_fall_back_to_the_menu(self):
+        flow = _make_options_flow(data={})
+        for step in ("override_duration", "override_fixed_time", "override_decision", "override_timeout"):
+            result = _detail(flow, step, None)
+            assert result["type"] == "menu"
+        assert _not_saved(flow)
 
 
 class TestSystemManualOverrideStep:
-    """T21 Phase C2: the System entry's own step, using the exact same
-    7-field custom form, writing to "system_override_policy" instead."""
-
-    def test_full_input_saved(self):
+    def test_page_one_has_the_same_fields_and_no_gate(self):
         flow = _make_options_flow(data={})
-        asyncio.run(flow.async_step_system_manual_override(user_input=dict(_CUSTOM_INPUT)))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        saved = kwargs["data"]["system_override_policy"]
-        assert saved["release_strategy"] == "fixed_time"
-        assert saved["duration_min"] == 90
-        assert "detection_tolerance" not in saved
+        result = asyncio.run(flow.async_step_system_manual_override(user_input=None))
+        assert result["step_id"] == "system_manual_override"
+        assert _field_names(result["data_schema"]) == {
+            CONF_OVERRIDE_RELEASE_CHOICE, CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS,
+            CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS, CONF_OVERRIDE_EDIT_TIMEOUTS}
 
-    def test_missing_fixed_until_rejected(self):
+    def test_the_default_strategy_saves_in_one_page(self):
         flow = _make_options_flow(data={})
-        bad_input = dict(_CUSTOM_INPUT)
-        bad_input.pop(CONF_OVERRIDE_FIXED_UNTIL, None)
-        result = asyncio.run(flow.async_step_system_manual_override(user_input=bad_input))
-        assert result["type"] == "form"
-        assert result["errors"].get("base") == "override_fixed_until_required"
+        assert _system_page1(flow, choice="lifecycle")["type"] == "create_entry"
+        saved = _saved(flow, "system_override_policy")
+        assert saved["release_strategy"] == "lifecycle"
+        assert "use_system_default" not in saved and "detection_tolerance" not in saved
+
+    def test_detail_pages_and_hidden_values_work_for_the_system_policy(self):
+        stored = {"release_strategy": "manual", "safety_timeout_enabled": False, "duration_min": 40,
+                  "night_duration_min": 410, "fixed_until": "10:00:00", "allow_protection_actions": True}
+        flow = _make_options_flow(data={"system_override_policy": dict(stored)})
+        result = _system_page1(flow, choice="duration", protection=True)
+        assert result["step_id"] == "override_duration"
+        _detail(flow, "override_duration", {CONF_OVERRIDE_DURATION_MIN: 25, CONF_OVERRIDE_NIGHT_DURATION_MIN: 410})
+        saved = _saved(flow, "system_override_policy")
+        assert saved["release_strategy"] == "duration" and saved["duration_min"] == 25
+        assert saved["safety_timeout_enabled"] is False and saved["fixed_until"] == "10:00:00"
+        assert saved["allow_protection_actions"] is True
+
+    def test_fixed_time_is_required_for_the_system_policy_too(self):
+        flow = _make_options_flow(data={})
+        _system_page1(flow, choice="fixed_time")
+        res = _detail(flow, "override_fixed_time", {})
+        assert res["errors"] == {"base": "override_fixed_until_required"} and _not_saved(flow)
+        _detail(flow, "override_fixed_time", {CONF_OVERRIDE_FIXED_UNTIL: "22:00:00"})
+        assert _saved(flow, "system_override_policy")["fixed_until"] == "22:00:00"
+
+    def test_a_system_save_reloads_the_zone_entries(self):
+        flow = _make_options_flow(data={})
+        zone = MagicMock()
+        zone.entry_id = "zone1"
+        zone.data = {}
+        flow.hass.config_entries.async_entries.return_value = [zone]
+        _system_page1(flow, choice="manual")
+        reloaded = [c.args[0] for c in flow.hass.config_entries.async_reload.call_args_list]
+        assert "zone1" in reloaded and "e1" in reloaded
 
 
 class TestTranslationCompleteness:
+    _STEPS = ("manual_override", "manual_override_custom", "system_manual_override", "override_duration",
+              "override_fixed_time", "override_decision", "override_timeout")
+
     def _all_i18n_files(self):
         yield _INTEGRATION_ROOT / "strings.json"
         yield from sorted((_INTEGRATION_ROOT / "translations").glob("*.json"))
 
-    def test_every_file_has_manual_override_strings(self):
+    def _load(self, path):
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def test_every_file_has_the_manual_override_strings(self):
         files = list(self._all_i18n_files())
         assert len(files) == 25
         for path in files:
-            data = json.loads(path.read_text(encoding="utf-8"))
+            data = self._load(path)
             opt = data["options"]
             assert "manual_override" in opt["step"]["advanced"]["menu_options"], path.name
-            for step_id in ("manual_override", "manual_override_custom", "system_manual_override"):
-                assert step_id in opt["step"], f"{path.name}: missing step {step_id}"
-                assert opt["step"][step_id]["title"], f"{path.name}: missing title for {step_id}"
-            assert "override_use_system_default" in opt["step"]["manual_override"]["data"], path.name
-            assert "override_detection_tolerance" in opt["step"]["manual_override"]["data"], path.name
-            for key in (
-                "override_release_mode", "override_time_based_kind",
-                "override_decision_filter", "override_fixed_until",
-                "override_allow_comfort_actions", "override_allow_protection_actions",
-                "override_safety_timeout_enabled", "override_duration_min",
-                "override_night_duration_min",
-            ):
-                assert key in opt["step"]["manual_override_custom"]["data"], f"{path.name}: missing {key}"
-                assert key in opt["step"]["system_manual_override"]["data"], f"{path.name}: missing {key}"
-            assert "override_fixed_until_required" in opt.get("error", {}), path.name
-            assert "override_release_strategy" not in data.get("selector", {}), (
-                f"{path.name}: T10's flat release-strategy selector must be gone "
-                "(T21 Phase B replaced it with override_release_mode/"
-                "override_time_based_kind/override_decision_filter)"
-            )
-            assert "override_release_mode" in data.get("selector", {}), path.name
-            assert set(data["selector"]["override_release_mode"]["options"].keys()) == {
-                m.value for m in OverrideReleaseMode
-            }, path.name
-            assert set(data["selector"]["override_time_based_kind"]["options"].keys()) == {
-                TIME_BASED_KIND_DURATION, TIME_BASED_KIND_FIXED_TIME,
-            }, path.name
-            assert set(data["selector"]["override_decision_filter"]["options"].keys()) == {
-                "any", "comfort", "protection",
-            }, path.name
+            for step_id in self._STEPS:
+                assert opt["step"][step_id]["title"].strip(), f"{path.name}: {step_id}"
+                assert opt["step"][step_id].get("description", "").strip(), f"{path.name}: {step_id} description"
+            expected = {
+                "manual_override_custom": {"override_release_choice", "override_allow_comfort_actions",
+                                           "override_allow_protection_actions", "override_edit_timeouts"},
+                "system_manual_override": {"override_release_choice", "override_allow_comfort_actions",
+                                           "override_allow_protection_actions", "override_edit_timeouts"},
+                "override_duration": {"override_duration_min", "override_night_duration_min"},
+                "override_fixed_time": {"override_fixed_until"},
+                "override_decision": {"override_decision_filter"},
+                "override_timeout": {"override_safety_timeout_enabled", "override_duration_min",
+                                     "override_night_duration_min"},
+                "manual_override": {"override_use_system_default", "override_detection_tolerance"},
+            }
+            for step_id, fields in expected.items():
+                step = opt["step"][step_id]
+                assert set(step["data"]) == fields, f"{path.name}: {step_id} data"
+                assert set(step["data_description"]) == fields, f"{path.name}: {step_id} data_description"
+                for f in fields:
+                    assert step["data"][f].strip() and step["data_description"][f].strip(), (path.name, step_id, f)
+            assert opt["error"]["override_fixed_until_required"].strip(), path.name
 
-    def test_no_english_leftovers_in_translations(self):
-        en = json.loads((_INTEGRATION_ROOT / "translations" / "en.json").read_text(encoding="utf-8"))
-        en_strings = {
-            en["options"]["step"]["advanced"]["menu_options"]["manual_override"],
-            en["options"]["step"]["manual_override"]["title"],
-            en["options"]["error"]["override_fixed_until_required"],
-        }
+    def test_selectors(self):
+        for path in self._all_i18n_files():
+            data = self._load(path)
+            sel = data.get("selector", {})
+            for old in ("override_release_strategy", "override_release_mode", "override_time_based_kind"):
+                assert old not in sel, f"{path.name}: obsolete selector {old}"
+            assert set(sel["override_release_choice"]["options"]) == set(RELEASE_CHOICES), path.name
+            assert all(v.strip() for v in sel["override_release_choice"]["options"].values()), path.name
+            assert set(sel["override_decision_filter"]["options"]) == {"any", "comfort", "protection"}, path.name
+
+    def test_no_obsolete_wording_in_any_file(self):
+        for path in self._all_i18n_files():
+            text = path.read_text(encoding="utf-8")
+            for old in ("override_release_mode", "override_time_based_kind"):
+                assert old not in text, f"{path.name}: {old}"
+        en = self._load(_INTEGRATION_ROOT / "strings.json")
+        steps = json.dumps({k: en["options"]["step"][k] for k in self._STEPS}) + json.dumps(
+            en["selector"]["override_release_choice"])
+        assert "legacy" not in steps.lower()
+        assert 'set to "Fixed time"' not in en["options"]["error"]["override_fixed_until_required"]
+
+    def test_day_and_night_values_are_explained_on_the_duration_page(self):
+        en = self._load(_INTEGRATION_ROOT / "strings.json")["options"]["step"]["override_duration"]
+        assert "daytime" in en["data"]["override_duration_min"].lower()
+        assert "night" in en["data"]["override_night_duration_min"].lower()
+        assert "night" in en["description"].lower() and "day" in en["description"].lower()
+
+    def test_the_translations_are_translated(self):
+        en = self._load(_INTEGRATION_ROOT / "translations" / "en.json")["options"]
+        keys = [("step", s, "title") for s in self._STEPS] + [("error", "override_fixed_until_required")]
         for path in sorted((_INTEGRATION_ROOT / "translations").glob("*.json")):
             if path.name == "en.json":
                 continue
-            data = json.loads(path.read_text(encoding="utf-8"))
-            opt = data["options"]
-            strings = {
-                opt["step"]["advanced"]["menu_options"]["manual_override"],
-                opt["step"]["manual_override"]["title"],
-                opt["error"]["override_fixed_until_required"],
-            }
-            assert not (strings & en_strings), f"{path.name} has untranslated English text"
+            opt = self._load(path)["options"]
+            for k in keys:
+                a, b = en, opt
+                for part in k:
+                    a, b = a[part], b[part]
+                assert a != b, f"{path.name} has untranslated English text at {'/'.join(k)}"
+            for step in ("override_duration", "override_timeout", "override_fixed_time", "override_decision"):
+                assert en["step"][step]["description"] != opt["step"][step]["description"], (path.name, step)
 
     def test_no_unimplemented_feature_strings_referenced(self):
-        """T7 scope decision: no sun-event expiry, no select entity, no
-        presence-bound strategy, no staged actions, no per-profile override
-        config — none of these should be implied anywhere in the shipped
-        UI strings for this feature."""
-        en = json.loads((_INTEGRATION_ROOT / "strings.json").read_text(encoding="utf-8"))
-        haystack = json.dumps(en["options"]["step"]["manual_override_custom"]).lower()
-        for forbidden in (
-            "sunset", "sunrise", "select entity", "presence", "staged", "profile",
-        ):
+        en = self._load(_INTEGRATION_ROOT / "strings.json")
+        haystack = json.dumps({k: en["options"]["step"][k] for k in self._STEPS}).lower()
+        for forbidden in ("sunset", "sunrise", "select entity", "presence", "staged", "profile"):
             assert forbidden not in haystack, forbidden

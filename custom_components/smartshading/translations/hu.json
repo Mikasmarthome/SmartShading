@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Kézi felülbírálás — a zóna saját beállításai",
-        "description": "Meghatározza, hogyan viselkedik egy aktív kézi felülbírálás ebben a zónában: mennyi ideig tart, és hogy a komfort- vagy védelmi műveletek futhatnak-e közben.",
+        "description": "Válassza ki, mikor veszi vissza a SmartShading az irányítást, miután kézzel elmozdított egy árnyékolót. Részleteket csak az ezeket igénylő választásoknál kér.",
         "data": {
-          "override_release_mode": "Hogyan ér véget a felülbírálás",
-          "override_time_based_kind": "Időzítő típusa",
-          "override_decision_filter": "Mely döntések oldják fel",
-          "override_fixed_until": "Rögzített befejezési idő",
+          "override_release_choice": "Irányítás visszaadása",
           "override_allow_comfort_actions": "Kényelmi műveletek engedélyezése felülbírálás alatt",
           "override_allow_protection_actions": "Védelmi műveletek engedélyezése felülbírálás alatt",
-          "override_safety_timeout_enabled": "Biztonsági időkorlát",
-          "override_duration_min": "Klasszikus felülbírálási időtartam (perc)",
-          "override_night_duration_min": "Éjszakai felülbírálási időtartam (perc)"
+          "override_edit_timeouts": "A biztonsági korlát módosítása is"
         },
         "data_description": {
-          "override_release_mode": "Válassza ki a feloldási koncepciót: időzítő/óra, a következő ütemezési átmenet, a következő automatikus döntés, vagy csak kézi törlés.",
-          "override_time_based_kind": "Csak akkor releváns, ha a fenti feloldási mód időzítő/óra opcióra van állítva: feloldás rögzített időtartam után vagy rögzített időpontban.",
-          "override_decision_filter": "Csak akkor releváns, ha a fenti feloldási mód a következő döntés opcióra van állítva: feloldás bármely döntésnél, csak kényelmi döntéseknél, vagy csak védelmi döntéseknél.",
-          "override_fixed_until": "Csak akkor releváns, ha a feloldási mód időzítő/óra opció, és az időzítő típusa rögzített időpont. Ha ez az időpont ma már elmúlt, a felülbírálás holnap ekkor ér véget.",
+          "override_release_choice": "Mikor vezérli újra a SmartShading az árnyékolót.",
           "override_allow_comfort_actions": "Ha engedélyezve van, a szokásos kényelmi árnyékolás továbbra is futhat aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
           "override_allow_protection_actions": "Ha engedélyezve van, a védelmi műveletek (távollét, hőség, vakítás) továbbra is futhatnak aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
-          "override_safety_timeout_enabled": "Opcionális maximális időtartam biztonsági hálóként a nyitott végű stratégiákhoz, hogy a felülbírálás sose maradjon véglegesen elfeledve.",
-          "override_duration_min": "Meddig tart egy nappali felülbírálás, mielőtt a SmartShading folytatja a normál vezérlést (klasszikus időtartam mód).",
-          "override_night_duration_min": "Biztonsági korlát az éjszakai felülbírálásra. A valódi felszabadulás a reggeli ütemezésváltáskor történik."
+          "override_edit_timeouts": "Egy további oldalt nyit meg. Csak a menetrendváltás, a döntés és a kézi törlés választásnál számít."
         }
       },
       "system_manual_override": {
         "title": "Kézi felülbírálás alapértelmezései",
-        "description": "A kézi felülbírálás viselkedése, amelyet minden zóna követ, hacsak nem használ saját beállításokat: mennyi ideig tart a felülbírálás, és hogy a komfort- vagy védelmi műveletek futhatnak-e közben.",
+        "description": "Az alapértelmezés minden saját beállítás nélküli zónához: válassza ki, mikor veszi vissza a SmartShading az irányítást, miután kézzel elmozdítottak egy árnyékolót. Részleteket csak az ezeket igénylő választásoknál kér.",
         "data": {
-          "override_release_mode": "Hogyan ér véget a felülbírálás",
-          "override_time_based_kind": "Időzítő típusa",
-          "override_decision_filter": "Mely döntések oldják fel",
-          "override_fixed_until": "Rögzített befejezési idő",
+          "override_release_choice": "Irányítás visszaadása",
           "override_allow_comfort_actions": "Kényelmi műveletek engedélyezése felülbírálás alatt",
           "override_allow_protection_actions": "Védelmi műveletek engedélyezése felülbírálás alatt",
-          "override_safety_timeout_enabled": "Biztonsági időkorlát",
-          "override_duration_min": "Klasszikus felülbírálási időtartam (perc)",
-          "override_night_duration_min": "Éjszakai felülbírálási időtartam (perc)"
+          "override_edit_timeouts": "A biztonsági korlát módosítása is"
         },
         "data_description": {
-          "override_release_mode": "Válassza ki a feloldási koncepciót: időzítő/óra, a következő ütemezési átmenet, a következő automatikus döntés, vagy csak kézi törlés.",
-          "override_time_based_kind": "Csak akkor releváns, ha a fenti feloldási mód időzítő/óra opcióra van állítva: feloldás rögzített időtartam után vagy rögzített időpontban.",
-          "override_decision_filter": "Csak akkor releváns, ha a fenti feloldási mód a következő döntés opcióra van állítva: feloldás bármely döntésnél, csak kényelmi döntéseknél, vagy csak védelmi döntéseknél.",
-          "override_fixed_until": "Csak akkor releváns, ha a feloldási mód időzítő/óra opció, és az időzítő típusa rögzített időpont. Ha ez az időpont ma már elmúlt, a felülbírálás holnap ekkor ér véget.",
+          "override_release_choice": "Mikor vezérli újra a SmartShading az árnyékolót.",
           "override_allow_comfort_actions": "Ha engedélyezve van, a szokásos kényelmi árnyékolás továbbra is futhat aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
           "override_allow_protection_actions": "Ha engedélyezve van, a védelmi műveletek (távollét, hőség, vakítás) továbbra is futhatnak aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
-          "override_safety_timeout_enabled": "Opcionális maximális időtartam biztonsági hálóként a nyitott végű stratégiákhoz, hogy a felülbírálás sose maradjon véglegesen elfeledve.",
-          "override_duration_min": "Meddig tart egy nappali felülbírálás, mielőtt a SmartShading folytatja a normál vezérlést (klasszikus időtartam mód).",
-          "override_night_duration_min": "Biztonsági korlát az éjszakai felülbírálásra. A valódi felszabadulás a reggeli ütemezésváltáskor történik."
+          "override_edit_timeouts": "Egy további oldalt nyit meg. Csak a menetrendváltás, a döntés és a kézi törlés választásnál számít."
+        }
+      },
+      "override_duration": {
+        "title": "A kézi felülbírálás időtartama",
+        "description": "A SmartShading ennyi idő után veszi vissza az irányítást. A nappali módosítás a nappali, az éjszakai az éjszakai időtartamot használja.",
+        "data": {
+          "override_duration_min": "Nappali időtartam (perc)",
+          "override_night_duration_min": "Éjszakai időtartam (perc)"
+        },
+        "data_description": {
+          "override_duration_min": "Meddig marad érvényben a nappal végzett módosítás. A többi választásnál ez a biztonsági korlát és a kézzel megállított árnyékoló tartási ideje.",
+          "override_night_duration_min": "Meddig marad érvényben az éjszaka végzett módosítás. A többi választásnál ez az éjszakai biztonsági korlát és a kézzel megállított árnyékoló tartási ideje."
+        }
+      },
+      "override_fixed_time": {
+        "title": "A kézi felülbírálás záró időpontja",
+        "description": "A SmartShading e időpont következő elérésekor veszi vissza az irányítást: ma, ha még nem múlt el, különben holnap.",
+        "data": {
+          "override_fixed_until": "Záró időpont"
+        },
+        "data_description": {
+          "override_fixed_until": "Helyi időpont, amikor az irányítás visszatér."
+        }
+      },
+      "override_decision": {
+        "title": "Feloldó döntések",
+        "description": "A SmartShading a kiválasztott fajta következő döntésénél veszi vissza az irányítást.",
+        "data": {
+          "override_decision_filter": "Mely döntések oldják fel"
+        },
+        "data_description": {
+          "override_decision_filter": "Bármely komfort- vagy védelmi döntés, csak komfort vagy csak védelem."
+        }
+      },
+      "override_timeout": {
+        "title": "Biztonsági korlát",
+        "description": "Választható felső határ, hogy egy elfelejtett felülbírálás ne tartson örökre egy árnyékolót. Az időtartamok azt is meghatározzák, meddig tart egy kézzel megállított árnyékoló.",
+        "data": {
+          "override_safety_timeout_enabled": "A felülbírálás korlátozása biztonsági korláttal",
+          "override_duration_min": "Nappali időtartam (perc)",
+          "override_night_duration_min": "Éjszakai időtartam (perc)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Bekapcsolva a felülbírálás legkésőbb a nappali vagy éjszakai időtartam után véget ér. Kikapcsolva csak a választott feloldás szünteti meg.",
+          "override_duration_min": "Meddig marad érvényben a nappal végzett módosítás. A többi választásnál ez a biztonsági korlát és a kézzel megállított árnyékoló tartási ideje.",
+          "override_night_duration_min": "Meddig marad érvényben az éjszaka végzett módosítás. A többi választásnál ez az éjszakai biztonsági korlát és a kézzel megállított árnyékoló tartási ideje."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "A B lehetőséghez kontaktusérzékelő kiválasztása szükséges.",
       "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",
       "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél.",
-      "override_fixed_until_required": "Adjon meg egy rögzített befejezési időt, ha az időtartam \"Rögzített idő\"-re van állítva.",
+      "override_fixed_until_required": "Adja meg az időpontot, amikor az irányítás visszatér.",
       "invalid_custom_azimuth": "Adjon meg egy egyéni azimutot 0 és 359 fok között, vagy válasszon iránytű-irányt.",
       "no_covers_selected": "Válasszon legalább egy árnyékoló entitást ehhez az ablakhoz.",
       "cover_already_assigned": "Legalább egy kiválasztott árnyékoló már hozzá van rendelve egy másik SmartShading ablakhoz. Egy árnyékoló csak egyszer rendelhető hozzá."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Fordított (valaki otthon = távol)"
       }
     },
-    "override_release_mode": {
+    "override_release_choice": {
       "options": {
-        "time_based": "Időzítő vagy óra után",
-        "lifecycle": "A következő ütemezési átmenetkor",
-        "next_decision": "A következő automatikus döntésnél",
-        "manual": "Csak kézi törlés"
-      }
-    },
-    "override_time_based_kind": {
-      "options": {
-        "duration": "Rögzített időtartam után",
-        "fixed_time": "Rögzített időpontban"
+        "duration": "Meghatározott idő elteltével",
+        "fixed_time": "Meghatározott időpontban",
+        "lifecycle": "A menetrend következő váltásakor",
+        "next_decision": "A következő megfelelő komfort- vagy védelmi döntésnél",
+        "manual": "Csak ha én törlöm"
       }
     },
     "override_decision_filter": {

@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Manuelle Übersteuerung — Einstellungen dieser Zone",
-        "description": "Legt fest, wie eine aktive manuelle Übersteuerung in dieser Zone sich verhält: wie lange sie dauert und ob Komfort- oder Schutzaktionen währenddessen weiterhin ausgeführt werden dürfen.",
+        "description": "Lege fest, wann SmartShading die Steuerung zurückbekommt, nachdem du eine Beschattung von Hand bewegt hast. Details werden nur für die Auswahl abgefragt, die sie braucht.",
         "data": {
-          "override_time_based_kind": "Timer-Art",
-          "override_decision_filter": "Welche Entscheidungen sie freigeben",
-          "override_fixed_until": "Feste Endzeit",
+          "override_release_choice": "Steuerung zurückgeben",
           "override_allow_comfort_actions": "Komfortaktionen während der Übersteuerung erlauben",
           "override_allow_protection_actions": "Schutzaktionen während der Übersteuerung erlauben",
-          "override_safety_timeout_enabled": "Sicherheits-Timeout",
-          "override_duration_min": "Legacy-Dauer der Übersteuerung (Minuten)",
-          "override_night_duration_min": "Dauer der Nacht-Übersteuerung (Minuten)",
-          "override_release_mode": "Wie die Übersteuerung endet"
+          "override_edit_timeouts": "Auch die Sicherheitsfrist anpassen"
         },
         "data_description": {
-          "override_release_mode": "Wählen Sie das Freigabekonzept: ein Timer/eine Uhrzeit, der nächste Zeitplan-Übergang, die nächste automatische Entscheidung oder nur manuelles Löschen.",
-          "override_time_based_kind": "Nur relevant, wenn oben als Freigabe-Modus eine Timer-/Uhrzeit-Option gewählt ist: Freigabe nach einer festen Dauer oder zu einer festen Uhrzeit.",
-          "override_decision_filter": "Nur relevant, wenn oben als Freigabe-Modus die Option „nächste Entscheidung“ gewählt ist: Freigabe bei jeder Entscheidung, nur bei Komfortentscheidungen oder nur bei Schutzentscheidungen.",
-          "override_fixed_until": "Nur relevant, wenn der Freigabe-Modus eine Timer-/Uhrzeit-Option ist und als Timer-Art eine feste Uhrzeit gewählt ist. Ist die Uhrzeit heute bereits vorbei, endet die Übersteuerung morgen zu dieser Uhrzeit.",
+          "override_release_choice": "Wann SmartShading die Beschattung wieder selbst steuert.",
           "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
           "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
-          "override_safety_timeout_enabled": "Optionale maximale Dauer als Sicherheitsnetz für offene Strategien, damit eine Übersteuerung niemals dauerhaft vergessen wird.",
-          "override_duration_min": "Wie lange eine Tages-Übersteuerung dauert, bevor SmartShading die normale Steuerung fortsetzt (Legacy-Dauermodus).",
-          "override_night_duration_min": "Sicherheitsnetz-Obergrenze für eine Nacht-Übersteuerung. Die eigentliche Freigabe erfolgt beim morgendlichen Zeitplan-Übergang."
+          "override_edit_timeouts": "Öffnet eine zusätzliche Seite. Sie ist nur für Zeitplanwechsel, Entscheidung und manuelles Aufheben relevant."
         }
       },
       "system_manual_override": {
         "title": "Übersteuerungs-Systemstandard",
-        "description": "Das Verhalten der manuellen Übersteuerung, dem jede Zone folgt, sofern sie keine eigenen Einstellungen verwendet: wie lange eine Übersteuerung dauert und ob Komfort- oder Schutzaktionen währenddessen weiterhin ausgeführt werden dürfen.",
+        "description": "Die Vorgabe für alle Zonen ohne eigene Einstellungen: Lege fest, wann SmartShading die Steuerung zurückbekommt, nachdem eine Beschattung von Hand bewegt wurde. Details werden nur für die Auswahl abgefragt, die sie braucht.",
         "data": {
-          "override_time_based_kind": "Timer-Art",
-          "override_decision_filter": "Welche Entscheidungen sie freigeben",
-          "override_fixed_until": "Feste Endzeit",
+          "override_release_choice": "Steuerung zurückgeben",
           "override_allow_comfort_actions": "Komfortaktionen während der Übersteuerung erlauben",
           "override_allow_protection_actions": "Schutzaktionen während der Übersteuerung erlauben",
-          "override_safety_timeout_enabled": "Sicherheits-Timeout",
-          "override_duration_min": "Legacy-Dauer der Übersteuerung (Minuten)",
-          "override_night_duration_min": "Dauer der Nacht-Übersteuerung (Minuten)",
-          "override_release_mode": "Wie die Übersteuerung endet"
+          "override_edit_timeouts": "Auch die Sicherheitsfrist anpassen"
         },
         "data_description": {
-          "override_release_mode": "Wählen Sie das Freigabekonzept: ein Timer/eine Uhrzeit, der nächste Zeitplan-Übergang, die nächste automatische Entscheidung oder nur manuelles Löschen.",
-          "override_time_based_kind": "Nur relevant, wenn oben als Freigabe-Modus eine Timer-/Uhrzeit-Option gewählt ist: Freigabe nach einer festen Dauer oder zu einer festen Uhrzeit.",
-          "override_decision_filter": "Nur relevant, wenn oben als Freigabe-Modus die Option „nächste Entscheidung“ gewählt ist: Freigabe bei jeder Entscheidung, nur bei Komfortentscheidungen oder nur bei Schutzentscheidungen.",
-          "override_fixed_until": "Nur relevant, wenn der Freigabe-Modus eine Timer-/Uhrzeit-Option ist und als Timer-Art eine feste Uhrzeit gewählt ist. Ist die Uhrzeit heute bereits vorbei, endet die Übersteuerung morgen zu dieser Uhrzeit.",
+          "override_release_choice": "Wann SmartShading die Beschattung wieder selbst steuert.",
           "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
           "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
-          "override_safety_timeout_enabled": "Optionale maximale Dauer als Sicherheitsnetz für offene Strategien, damit eine Übersteuerung niemals dauerhaft vergessen wird.",
-          "override_duration_min": "Wie lange eine Tages-Übersteuerung dauert, bevor SmartShading die normale Steuerung fortsetzt (Legacy-Dauermodus).",
-          "override_night_duration_min": "Sicherheitsnetz-Obergrenze für eine Nacht-Übersteuerung. Die eigentliche Freigabe erfolgt beim morgendlichen Zeitplan-Übergang."
+          "override_edit_timeouts": "Öffnet eine zusätzliche Seite. Sie ist nur für Zeitplanwechsel, Entscheidung und manuelles Aufheben relevant."
+        }
+      },
+      "override_duration": {
+        "title": "Dauer der Übersteuerung",
+        "description": "SmartShading übernimmt nach dieser Zeit wieder. Eine Änderung am Tag nutzt die Tagesdauer, eine Änderung in der Nacht die Nachtdauer.",
+        "data": {
+          "override_duration_min": "Tagesdauer (Minuten)",
+          "override_night_duration_min": "Nachtdauer (Minuten)"
+        },
+        "data_description": {
+          "override_duration_min": "Wie lange eine Änderung am Tag gehalten wird. Die anderen Auswahlmöglichkeiten nutzen den Wert als Sicherheitsfrist und als Haltezeit eines von Hand gestoppten Behangs.",
+          "override_night_duration_min": "Wie lange eine Änderung in der Nacht gehalten wird. Die anderen Auswahlmöglichkeiten nutzen den Wert als nächtliche Sicherheitsfrist und als Haltezeit eines von Hand gestoppten Behangs."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Endzeit der Übersteuerung",
+        "description": "SmartShading übernimmt zum nächsten Auftreten dieser Uhrzeit wieder: heute, wenn sie noch bevorsteht, sonst morgen.",
+        "data": {
+          "override_fixed_until": "Endzeit"
+        },
+        "data_description": {
+          "override_fixed_until": "Lokale Uhrzeit, zu der die Steuerung zurückgegeben wird."
+        }
+      },
+      "override_decision": {
+        "title": "Auslösende Entscheidungen",
+        "description": "SmartShading übernimmt bei der nächsten Entscheidung der gewählten Art wieder.",
+        "data": {
+          "override_decision_filter": "Welche Entscheidungen sie freigeben"
+        },
+        "data_description": {
+          "override_decision_filter": "Jede Komfort- oder Schutzentscheidung, nur Komfort oder nur Schutz."
+        }
+      },
+      "override_timeout": {
+        "title": "Sicherheitsfrist",
+        "description": "Eine optionale Obergrenze, damit eine vergessene Übersteuerung eine Beschattung nicht ewig festhält. Die Dauern bestimmen außerdem, wie lange ein von Hand gestoppter Behang gehalten wird.",
+        "data": {
+          "override_safety_timeout_enabled": "Übersteuerung mit einer Sicherheitsfrist begrenzen",
+          "override_duration_min": "Tagesdauer (Minuten)",
+          "override_night_duration_min": "Nachtdauer (Minuten)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Wenn aktiv, endet die Übersteuerung spätestens nach der Tages- bzw. Nachtdauer. Wenn aus, beendet sie nur die gewählte Freigabe.",
+          "override_duration_min": "Wie lange eine Änderung am Tag gehalten wird. Die anderen Auswahlmöglichkeiten nutzen den Wert als Sicherheitsfrist und als Haltezeit eines von Hand gestoppten Behangs.",
+          "override_night_duration_min": "Wie lange eine Änderung in der Nacht gehalten wird. Die anderen Auswahlmöglichkeiten nutzen den Wert als nächtliche Sicherheitsfrist und als Haltezeit eines von Hand gestoppten Behangs."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "Für Option B muss ein Kontaktsensor ausgewählt sein.",
       "night_clamp_window_invalid": "Der früheste nächtliche Auslöser darf nicht später sein als der späteste.",
       "morning_clamp_window_invalid": "Der früheste morgendliche Auslöser darf nicht später sein als der späteste.",
-      "override_fixed_until_required": "Bitte eine feste Endzeit angeben, wenn die Dauer auf \"Feste Uhrzeit\" gesetzt ist.",
+      "override_fixed_until_required": "Gib die Uhrzeit ein, zu der die Steuerung zurückgegeben werden soll.",
       "invalid_custom_azimuth": "Gib einen benutzerdefinierten Azimut zwischen 0 und 359 Grad ein oder wähle eine Himmelsrichtung.",
       "no_covers_selected": "Wähle mindestens eine Cover-Entität für dieses Fenster aus.",
       "cover_already_assigned": "Mindestens ein ausgewähltes Cover ist bereits einem anderen SmartShading-Fenster zugeordnet. Ein Cover kann nur einmal zugeordnet werden."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Invertiert (jemand zuhause = abwesend)"
       }
     },
-    "override_release_mode": {
-      "options": {
-        "time_based": "Nach einem Timer oder einer Uhrzeit",
-        "lifecycle": "Am Ende des Tag-/Nacht-Zyklus",
-        "next_decision": "Bei der nächsten automatischen Entscheidung",
-        "manual": "Nur manuell löschen"
-      }
-    },
-    "override_time_based_kind": {
+    "override_release_choice": {
       "options": {
         "duration": "Nach einer festen Dauer",
-        "fixed_time": "Zu einer festen Uhrzeit"
+        "fixed_time": "Zu einer festen Uhrzeit",
+        "lifecycle": "Beim nächsten Zeitplanwechsel",
+        "next_decision": "Bei der nächsten passenden Komfort- oder Schutzentscheidung",
+        "manual": "Nur wenn ich ihn aufhebe"
       }
     },
     "override_decision_filter": {

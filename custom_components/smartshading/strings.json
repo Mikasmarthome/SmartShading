@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Manual Override — this zone's settings",
-        "description": "Configure how an active Manual Override behaves for this zone: how long it lasts, and whether Comfort or Protection actions may still run while it is active.",
+        "description": "Choose when SmartShading takes control back after you move a cover by hand. Only the choices that need details ask for them.",
         "data": {
-          "override_release_mode": "How the override ends",
-          "override_time_based_kind": "Timer type",
-          "override_decision_filter": "Which decisions release it",
-          "override_fixed_until": "Fixed end time",
+          "override_release_choice": "Release control",
           "override_allow_comfort_actions": "Allow comfort actions during override",
           "override_allow_protection_actions": "Allow protection actions during override",
-          "override_safety_timeout_enabled": "Safety timeout",
-          "override_duration_min": "Legacy override duration (minutes)",
-          "override_night_duration_min": "Night override duration (minutes)"
+          "override_edit_timeouts": "Also adjust the safety timeout"
         },
         "data_description": {
-          "override_release_mode": "Choose the release concept: a timer/clock, the next schedule transition, the next automatic decision, or manual clearing only.",
-          "override_time_based_kind": "Only relevant when the release mode above is set to a timer/clock option: release after a fixed duration, or at a fixed clock time.",
-          "override_decision_filter": "Only relevant when the release mode above is set to the next-decision option: release on any decision, comfort decisions only, or protection decisions only.",
-          "override_fixed_until": "Only relevant when the release mode is a timer/clock option and the timer type is a fixed clock time. If already passed today, the override ends at this time tomorrow.",
+          "override_release_choice": "When SmartShading takes control of the cover again.",
           "override_allow_comfort_actions": "When enabled, regular comfort shading may still run while an override is active. The override itself stays active.",
           "override_allow_protection_actions": "When enabled, protection actions (absence, heat, glare) may still run while an override is active. The override itself stays active.",
-          "override_safety_timeout_enabled": "Optional maximum duration as a safety net for open-ended strategies, so an override is never permanently forgotten.",
-          "override_duration_min": "How long a daytime override lasts before SmartShading resumes normal control (legacy duration mode).",
-          "override_night_duration_min": "Safety-net cap for a night-time override. The real release is the morning schedule transition."
+          "override_edit_timeouts": "Opens an extra page. It only matters for the schedule-transition, decision and manual-clear choices."
         }
       },
       "system_manual_override": {
         "title": "Manual Override defaults",
-        "description": "The Manual Override behavior every zone follows unless it opts into its own settings: how long an override lasts, and whether Comfort or Protection actions may still run while one is active.",
+        "description": "The default for all zones without their own settings: choose when SmartShading takes control back after you move a cover by hand. Only the choices that need details ask for them.",
         "data": {
-          "override_release_mode": "How the override ends",
-          "override_time_based_kind": "Timer type",
-          "override_decision_filter": "Which decisions release it",
-          "override_fixed_until": "Fixed end time",
+          "override_release_choice": "Release control",
           "override_allow_comfort_actions": "Allow comfort actions during override",
           "override_allow_protection_actions": "Allow protection actions during override",
-          "override_safety_timeout_enabled": "Safety timeout",
-          "override_duration_min": "Legacy override duration (minutes)",
-          "override_night_duration_min": "Night override duration (minutes)"
+          "override_edit_timeouts": "Also adjust the safety timeout"
         },
         "data_description": {
-          "override_release_mode": "Choose the release concept: a timer/clock, the next schedule transition, the next automatic decision, or manual clearing only.",
-          "override_time_based_kind": "Only relevant when the release mode above is set to a timer/clock option: release after a fixed duration, or at a fixed clock time.",
-          "override_decision_filter": "Only relevant when the release mode above is set to the next-decision option: release on any decision, comfort decisions only, or protection decisions only.",
-          "override_fixed_until": "Only relevant when the release mode is a timer/clock option and the timer type is a fixed clock time. If already passed today, the override ends at this time tomorrow.",
+          "override_release_choice": "When SmartShading takes control of the cover again.",
           "override_allow_comfort_actions": "When enabled, regular comfort shading may still run while an override is active. The override itself stays active.",
           "override_allow_protection_actions": "When enabled, protection actions (absence, heat, glare) may still run while an override is active. The override itself stays active.",
-          "override_safety_timeout_enabled": "Optional maximum duration as a safety net for open-ended strategies, so an override is never permanently forgotten.",
-          "override_duration_min": "How long a daytime override lasts before SmartShading resumes normal control (legacy duration mode).",
-          "override_night_duration_min": "Safety-net cap for a night-time override. The real release is the morning schedule transition."
+          "override_edit_timeouts": "Opens an extra page. It only matters for the schedule-transition, decision and manual-clear choices."
+        }
+      },
+      "override_duration": {
+        "title": "Override duration",
+        "description": "SmartShading takes control back after this time. A change made during the day uses the daytime duration, a change made at night uses the night duration.",
+        "data": {
+          "override_duration_min": "Daytime duration (minutes)",
+          "override_night_duration_min": "Night duration (minutes)"
+        },
+        "data_description": {
+          "override_duration_min": "How long a change made during the day is held. Other release choices use it as the safety timeout and as the hold time of a manually stopped cover.",
+          "override_night_duration_min": "How long a change made at night is held. Other release choices use it as the night safety timeout and as the hold time of a manually stopped cover."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Override end time",
+        "description": "SmartShading takes control back at the next occurrence of this clock time: today if it is still ahead, otherwise tomorrow.",
+        "data": {
+          "override_fixed_until": "End time"
+        },
+        "data_description": {
+          "override_fixed_until": "Local clock time at which control returns."
+        }
+      },
+      "override_decision": {
+        "title": "Releasing decisions",
+        "description": "SmartShading takes control back at its next decision of the selected kind.",
+        "data": {
+          "override_decision_filter": "Which decisions release it"
+        },
+        "data_description": {
+          "override_decision_filter": "Any comfort or protection decision, comfort only, or protection only."
+        }
+      },
+      "override_timeout": {
+        "title": "Safety timeout",
+        "description": "An optional upper limit so a forgotten override cannot hold a cover forever. The durations also set how long a manually stopped cover is held.",
+        "data": {
+          "override_safety_timeout_enabled": "Limit the override with a safety timeout",
+          "override_duration_min": "Daytime duration (minutes)",
+          "override_night_duration_min": "Night duration (minutes)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "When on, the override ends after the daytime or night duration at the latest. When off, only the chosen release ends it.",
+          "override_duration_min": "How long a change made during the day is held. Other release choices use it as the safety timeout and as the hold time of a manually stopped cover.",
+          "override_night_duration_min": "How long a change made at night is held. Other release choices use it as the night safety timeout and as the hold time of a manually stopped cover."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
       "night_clamp_window_invalid": "Night earliest trigger must not be later than night latest trigger.",
       "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger.",
-      "override_fixed_until_required": "Enter a fixed end time when duration is set to \"Fixed time\".",
+      "override_fixed_until_required": "Enter the clock time at which control should return.",
       "invalid_custom_azimuth": "Enter a custom azimuth between 0 and 359 degrees, or pick a compass direction.",
       "no_covers_selected": "Select at least one cover entity for this window.",
       "cover_already_assigned": "One or more selected covers are already assigned to another SmartShading window. A cover can be assigned only once."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Inverted (anyone home = away)"
       }
     },
-    "override_release_mode": {
+    "override_release_choice": {
       "options": {
-        "time_based": "After a timer or clock time",
+        "duration": "After a set duration",
+        "fixed_time": "At a fixed clock time",
         "lifecycle": "At the next schedule transition",
-        "next_decision": "On the next automatic decision",
-        "manual": "Manually cleared only"
-      }
-    },
-    "override_time_based_kind": {
-      "options": {
-        "duration": "After a fixed duration",
-        "fixed_time": "At a fixed clock time"
+        "next_decision": "At the next matching comfort or protection decision",
+        "manual": "Only when I clear it"
       }
     },
     "override_decision_filter": {

@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "手动覆盖——此区域的设置",
-        "description": "设置此区域中活动手动覆盖的行为方式：持续多长时间，以及在其激活期间舒适或保护操作是否仍可运行。",
+        "description": "选择在您手动移动遮阳后，SmartShading 何时重新接管控制。仅对需要详细设置的选项才会询问细节。",
         "data": {
-          "override_release_mode": "覆盖如何结束",
-          "override_time_based_kind": "计时器类型",
-          "override_decision_filter": "哪些决策会释放它",
-          "override_fixed_until": "固定结束时间",
+          "override_release_choice": "归还控制权",
           "override_allow_comfort_actions": "覆盖期间允许舒适动作",
           "override_allow_protection_actions": "覆盖期间允许保护动作",
-          "override_safety_timeout_enabled": "安全超时",
-          "override_duration_min": "传统覆盖持续时间（分钟）",
-          "override_night_duration_min": "夜间覆盖持续时间（分钟）"
+          "override_edit_timeouts": "同时调整安全超时"
         },
         "data_description": {
-          "override_release_mode": "选择释放方式:定时器/时钟、下一次日程切换、下一次自动决策,或仅手动清除。",
-          "override_time_based_kind": "仅当上方释放模式设置为定时器/时钟选项时才有意义:在固定时长后释放,或在固定时间释放。",
-          "override_decision_filter": "仅当上方释放模式设置为“下一次决策”选项时才有意义:在任意决策时释放、仅在舒适度决策时释放,或仅在保护决策时释放。",
-          "override_fixed_until": "仅当释放模式为定时器/时钟选项且计时器类型为固定时间时才有意义。如果今天该时间已过,覆盖将在明天此时结束。",
+          "override_release_choice": "SmartShading 何时重新控制遮阳。",
           "override_allow_comfort_actions": "启用后，常规舒适遮阳仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
           "override_allow_protection_actions": "启用后，保护动作（离家、高温、眩光）仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
-          "override_safety_timeout_enabled": "为开放式策略提供的可选最大时长安全网，确保覆盖不会被永久遗忘。",
-          "override_duration_min": "在 SmartShading 恢复正常控制之前，白天覆盖持续多长时间（传统持续时间模式）。",
-          "override_night_duration_min": "夜间覆盖的安全上限。真正的释放发生在早晨的计划转换时。"
+          "override_edit_timeouts": "打开额外页面。仅对日程切换、决策和手动清除这几个选项有意义。"
         }
       },
       "system_manual_override": {
         "title": "手动覆盖默认值",
-        "description": "除非某区域使用自己的设置，否则每个区域都遵循的手动覆盖行为：覆盖持续多长时间，以及在其激活期间舒适或保护操作是否仍可运行。",
+        "description": "适用于所有没有自有设置的区域的默认值：选择在手动移动遮阳后，SmartShading 何时重新接管控制。仅对需要详细设置的选项才会询问细节。",
         "data": {
-          "override_release_mode": "覆盖如何结束",
-          "override_time_based_kind": "计时器类型",
-          "override_decision_filter": "哪些决策会释放它",
-          "override_fixed_until": "固定结束时间",
+          "override_release_choice": "归还控制权",
           "override_allow_comfort_actions": "覆盖期间允许舒适动作",
           "override_allow_protection_actions": "覆盖期间允许保护动作",
-          "override_safety_timeout_enabled": "安全超时",
-          "override_duration_min": "传统覆盖持续时间（分钟）",
-          "override_night_duration_min": "夜间覆盖持续时间（分钟）"
+          "override_edit_timeouts": "同时调整安全超时"
         },
         "data_description": {
-          "override_release_mode": "选择释放方式:定时器/时钟、下一次日程切换、下一次自动决策,或仅手动清除。",
-          "override_time_based_kind": "仅当上方释放模式设置为定时器/时钟选项时才有意义:在固定时长后释放,或在固定时间释放。",
-          "override_decision_filter": "仅当上方释放模式设置为“下一次决策”选项时才有意义:在任意决策时释放、仅在舒适度决策时释放,或仅在保护决策时释放。",
-          "override_fixed_until": "仅当释放模式为定时器/时钟选项且计时器类型为固定时间时才有意义。如果今天该时间已过,覆盖将在明天此时结束。",
+          "override_release_choice": "SmartShading 何时重新控制遮阳。",
           "override_allow_comfort_actions": "启用后，常规舒适遮阳仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
           "override_allow_protection_actions": "启用后，保护动作（离家、高温、眩光）仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
-          "override_safety_timeout_enabled": "为开放式策略提供的可选最大时长安全网，确保覆盖不会被永久遗忘。",
-          "override_duration_min": "在 SmartShading 恢复正常控制之前，白天覆盖持续多长时间（传统持续时间模式）。",
-          "override_night_duration_min": "夜间覆盖的安全上限。真正的释放发生在早晨的计划转换时。"
+          "override_edit_timeouts": "打开额外页面。仅对日程切换、决策和手动清除这几个选项有意义。"
+        }
+      },
+      "override_duration": {
+        "title": "手动干预时长",
+        "description": "超过此时间后 SmartShading 重新接管。白天所做的更改使用白天时长，夜间所做的更改使用夜间时长。",
+        "data": {
+          "override_duration_min": "白天时长（分钟）",
+          "override_night_duration_min": "夜间时长（分钟）"
+        },
+        "data_description": {
+          "override_duration_min": "白天所做更改的保持时间。其他选项将其用作安全超时，以及手动停止的遮阳的保持时间。",
+          "override_night_duration_min": "夜间所做更改的保持时间。其他选项将其用作夜间安全超时，以及手动停止的遮阳的保持时间。"
+        }
+      },
+      "override_fixed_time": {
+        "title": "手动干预结束时间",
+        "description": "SmartShading 在该时刻下一次出现时重新接管：若今天尚未到达则为今天，否则为明天。",
+        "data": {
+          "override_fixed_until": "结束时间"
+        },
+        "data_description": {
+          "override_fixed_until": "归还控制权的本地时间。"
+        }
+      },
+      "override_decision": {
+        "title": "触发释放的决策",
+        "description": "SmartShading 在所选类型的下一次决策时重新接管。",
+        "data": {
+          "override_decision_filter": "哪些决策会释放它"
+        },
+        "data_description": {
+          "override_decision_filter": "任何舒适或防护决策、仅舒适，或仅防护。"
+        }
+      },
+      "override_timeout": {
+        "title": "安全超时",
+        "description": "可选的上限，避免被遗忘的手动干预永远占用遮阳。时长同时决定手动停止的遮阳被保持多久。",
+        "data": {
+          "override_safety_timeout_enabled": "用安全超时限制手动干预",
+          "override_duration_min": "白天时长（分钟）",
+          "override_night_duration_min": "夜间时长（分钟）"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "开启时，手动干预最迟在白天或夜间时长结束后终止。关闭时，仅由所选的释放方式终止。",
+          "override_duration_min": "白天所做更改的保持时间。其他选项将其用作安全超时，以及手动停止的遮阳的保持时间。",
+          "override_night_duration_min": "夜间所做更改的保持时间。其他选项将其用作夜间安全超时，以及手动停止的遮阳的保持时间。"
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "选项 B 需要选择一个接触传感器。",
       "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
       "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。",
-      "override_fixed_until_required": "当持续时间设置为“固定时间”时，请输入固定结束时间。",
+      "override_fixed_until_required": "请输入应归还控制权的时间。",
       "invalid_custom_azimuth": "输入 0 到 359 度之间的自定义方位角，或选择一个罗盘方向。",
       "no_covers_selected": "请为该窗户至少选择一个遮阳帘实体。",
       "cover_already_assigned": "至少有一个所选遮阳设备已分配给另一个 SmartShading 窗口。每个遮阳设备只能分配一次。"
@@ -746,18 +772,13 @@
         "inverted_any_home": "反转（有人在家=离开）"
       }
     },
-    "override_release_mode": {
+    "override_release_choice": {
       "options": {
-        "time_based": "定时器或时间之后",
+        "duration": "经过设定时长后",
+        "fixed_time": "在固定时刻",
         "lifecycle": "在下一次日程切换时",
-        "next_decision": "在下一次自动决策时",
-        "manual": "仅手动清除"
-      }
-    },
-    "override_time_based_kind": {
-      "options": {
-        "duration": "固定时长后",
-        "fixed_time": "固定时间"
+        "next_decision": "在下一次匹配的舒适或防护决策时",
+        "manual": "仅当我手动清除时"
       }
     },
     "override_decision_filter": {

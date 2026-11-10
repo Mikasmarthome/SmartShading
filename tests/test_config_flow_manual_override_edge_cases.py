@@ -11,11 +11,8 @@ repeated here).
 Coverage:
   EDGE-01  Unknown/invalid stored release_strategy is pre-selected as
            LIFECYCLE in the OptionsFlow (not just at the storage layer).
-  EDGE-02  Switching Fixed Time -> Duration preserves the stored
-           fixed_until value (documented, intentional — see config_flow.py
-           comment).
-  EDGE-03  Switching Duration -> Fixed Time re-displays a previously stored
-           fixed_until value.
+  EDGE-02  A stored fixed_until survives switching to another strategy.
+  EDGE-03  The stored fixed_until is re-displayed when fixed_time is chosen.
   EDGE-04  Initial (non-options) ConfigFlow never writes an override_policy
            key.
   EDGE-05  A save never touches lifecycle_profiles, active_lifecycle_profile_id,
@@ -25,9 +22,10 @@ Coverage:
   EDGE-07  Zero, negative, and wrong-type numeric input are handled safely
            (clamped to a sane default/bound, never crash, never stored
            as-is).
-  EDGE-08  release_mode_to_strategy() / release_strategy_to_mode() round-trip
-           losslessly for all 7 legacy OverrideReleaseStrategy values (the
-           mapping table T21 Phase B introduced).
+  EDGE-08  release_mode_to_strategy() / release_strategy_to_mode() (T21
+           Phase B) and release_choice_to_strategy() /
+           release_strategy_to_choice() (Phase 5) round-trip losslessly for
+           all 7 OverrideReleaseStrategy values.
 """
 from __future__ import annotations
 
@@ -132,21 +130,23 @@ from custom_components.smartshading.const import (  # noqa: E402
     CONF_OVERRIDE_DURATION_MIN,
     CONF_OVERRIDE_FIXED_UNTIL,
     CONF_OVERRIDE_NIGHT_DURATION_MIN,
-    CONF_OVERRIDE_RELEASE_MODE,
+    CONF_OVERRIDE_EDIT_TIMEOUTS,
+    CONF_OVERRIDE_RELEASE_CHOICE,
     CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED,
-    CONF_OVERRIDE_TIME_BASED_KIND,
     CONF_OVERRIDE_USE_SYSTEM_DEFAULT,
     OVERRIDE_DETECTION_TOLERANCE_MAX,
     OVERRIDE_DURATION_MIN_MAX,
 )
 from custom_components.smartshading.models.manual_override import (  # noqa: E402
-    DECISION_FILTER_ANY,
-    TIME_BASED_KIND_DURATION,
-    TIME_BASED_KIND_FIXED_TIME,
-    OverrideReleaseMode,
+    RELEASE_CHOICE_DURATION,
+    RELEASE_CHOICE_FIXED_TIME,
+    RELEASE_CHOICE_LIFECYCLE,
+    RELEASE_CHOICE_MANUAL,
+    RELEASE_CHOICE_NEXT_DECISION,
+    RELEASE_CHOICES,
     OverrideReleaseStrategy,
-    release_mode_to_strategy,
-    release_strategy_to_mode,
+    release_choice_to_strategy,
+    release_strategy_to_choice,
 )
 
 
@@ -191,39 +191,38 @@ def _opt_out_of_system_default(flow: SmartShadingOptionsFlow, detection_toleranc
     }))
 
 
-_BASE_TIME_BASED_INPUT = {
-    CONF_OVERRIDE_RELEASE_MODE: OverrideReleaseMode.TIME_BASED.value,
-    CONF_OVERRIDE_TIME_BASED_KIND: TIME_BASED_KIND_DURATION,
-    CONF_OVERRIDE_DECISION_FILTER: DECISION_FILTER_ANY,
-    CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS: False,
-    CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS: False,
-    CONF_OVERRIDE_SAFETY_TIMEOUT_ENABLED: True,
-    CONF_OVERRIDE_DURATION_MIN: 120,
-    CONF_OVERRIDE_NIGHT_DURATION_MIN: 720,
-    CONF_OVERRIDE_DETECTION_TOLERANCE: 10,
-}
+def _page1(choice, **kw):
+    return {
+        CONF_OVERRIDE_RELEASE_CHOICE: choice,
+        CONF_OVERRIDE_ALLOW_COMFORT_ACTIONS: kw.get("comfort", False),
+        CONF_OVERRIDE_ALLOW_PROTECTION_ACTIONS: kw.get("protection", False),
+        CONF_OVERRIDE_EDIT_TIMEOUTS: kw.get("edit_timeouts", False),
+    }
+
+
+def _save_lifecycle(flow) -> None:
+    """Page 1 with the default choice: saves immediately (no detail page)."""
+    asyncio.run(flow.async_step_manual_override_custom(user_input=_page1(RELEASE_CHOICE_LIFECYCLE)))
+
+
+def _saved(flow) -> dict:
+    _, kwargs = flow.hass.config_entries.async_update_entry.call_args
+    return kwargs["data"]["override_policy"]
 
 
 class TestUnknownStoredStrategyPreselectsLifecycle:
-    def test_invalid_release_strategy_preselects_lifecycle_mode(self) -> None:
+    def test_invalid_release_strategy_preselects_lifecycle_choice(self) -> None:
         flow = _make_options_flow(data={
             "override_policy": {"release_strategy": "some_future_mode_v99", "use_system_default": False},
         })
         result = _opt_out_of_system_default(flow)
         schema: vol.Schema = result["data_schema"]
-        # An unrecognized stored strategy string falls back to LIFECYCLE at
-        # the config_flow layer (mirrors config_entry_data.py's storage-level
-        # fallback, already tested in test_override_policy_storage.py) —
-        # confirm the schema's own default reflects that fallback, not the
-        # raw invalid string, and that the mode selector's own option list
-        # only contains the 4 real OverrideReleaseMode values.
-        key = _schema_field_key(schema, CONF_OVERRIDE_RELEASE_MODE)
-        assert key.default() == OverrideReleaseMode.LIFECYCLE.value
-        selector_instance = schema.schema[key]
-        assert set(selector_instance.config.options) == {m.value for m in OverrideReleaseMode}
+        key = _schema_field_key(schema, CONF_OVERRIDE_RELEASE_CHOICE)
+        assert key.default() == RELEASE_CHOICE_LIFECYCLE
+        assert tuple(schema.schema[key].config.options) == RELEASE_CHOICES
 
 
-class TestFixedUntilPreservedAcrossModeSwitch:
+class TestFixedUntilPreservedAcrossStrategySwitch:
     def test_switching_to_duration_preserves_stored_fixed_until(self) -> None:
         flow = _make_options_flow(data={
             "override_policy": {
@@ -231,65 +230,44 @@ class TestFixedUntilPreservedAcrossModeSwitch:
             },
         })
         _opt_out_of_system_default(flow)
-        asyncio.run(flow.async_step_manual_override_custom(user_input={
-            **_BASE_TIME_BASED_INPUT,
-            CONF_OVERRIDE_TIME_BASED_KIND: TIME_BASED_KIND_DURATION,
-            CONF_OVERRIDE_FIXED_UNTIL: "07:15:00",  # form still carries the previously-shown value
-        }))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        saved = kwargs["data"]["override_policy"]
+        asyncio.run(flow.async_step_manual_override_custom(user_input=_page1(RELEASE_CHOICE_DURATION)))
+        asyncio.run(flow.async_step_override_duration(user_input={
+            CONF_OVERRIDE_DURATION_MIN: 120, CONF_OVERRIDE_NIGHT_DURATION_MIN: 720}))
+        saved = _saved(flow)
         assert saved["release_strategy"] == "duration"
-        assert saved["fixed_until"] == "07:15:00"  # preserved, not cleared
+        assert saved["fixed_until"] == "07:15:00"  # hidden on the duration page, kept
 
-    def test_switching_back_to_fixed_time_shows_the_preserved_value(self) -> None:
+    def test_choosing_fixed_time_again_shows_the_preserved_value(self) -> None:
         flow = _make_options_flow(data={
             "override_policy": {
                 "release_strategy": "duration", "fixed_until": "07:15:00", "use_system_default": False,
             },
         })
-        result = _opt_out_of_system_default(flow)
-        schema: vol.Schema = result["data_schema"]
-        key = _schema_field_key(schema, CONF_OVERRIDE_FIXED_UNTIL)
-        # vol.Optional with description={"suggested_value": ...} — inspect
-        # the field's description attribute HA would use to prefill the form.
+        _opt_out_of_system_default(flow)
+        result = asyncio.run(flow.async_step_manual_override_custom(user_input=_page1(RELEASE_CHOICE_FIXED_TIME)))
+        key = _schema_field_key(result["data_schema"], CONF_OVERRIDE_FIXED_UNTIL)
         assert key.description == {"suggested_value": "07:15:00"}
 
 
-class TestThreeStepModeRoundTrip:
-    def test_fixed_time_to_duration_to_fixed_time_preserves_value_throughout(self) -> None:
+class TestThreeStepStrategyRoundTrip:
+    def test_fixed_time_to_manual_to_fixed_time_preserves_value_throughout(self) -> None:
         flow = _make_options_flow(data={
             "override_policy": {
                 "release_strategy": "fixed_time", "fixed_until": "06:45:00", "use_system_default": False,
             },
         })
-        # Step 1: save switching to duration (value still present in the form).
         _opt_out_of_system_default(flow)
-        asyncio.run(flow.async_step_manual_override_custom(user_input={
-            **_BASE_TIME_BASED_INPUT,
-            CONF_OVERRIDE_TIME_BASED_KIND: TIME_BASED_KIND_DURATION,
-            CONF_OVERRIDE_FIXED_UNTIL: "06:45:00",
-        }))
-        _, kwargs1 = flow.hass.config_entries.async_update_entry.call_args
-        saved1 = kwargs1["data"]["override_policy"]
-        assert saved1["release_strategy"] == "duration"
-        assert saved1["fixed_until"] == "06:45:00"
+        asyncio.run(flow.async_step_manual_override_custom(user_input=_page1(RELEASE_CHOICE_MANUAL)))
+        saved1 = _saved(flow)
+        assert saved1["release_strategy"] == "manual" and saved1["fixed_until"] == "06:45:00"
 
-        # Step 2: reopen a NEW flow instance against the just-saved data
-        # (mirrors a real reload) and confirm the field is still shown.
-        flow2 = _make_options_flow(data=kwargs1["data"])
-        prefill = _opt_out_of_system_default(flow2)
-        schema: vol.Schema = prefill["data_schema"]
-        key = _schema_field_key(schema, CONF_OVERRIDE_FIXED_UNTIL)
+        flow2 = _make_options_flow(data={"override_policy": saved1})
+        _opt_out_of_system_default(flow2)
+        result = asyncio.run(flow2.async_step_manual_override_custom(user_input=_page1(RELEASE_CHOICE_FIXED_TIME)))
+        key = _schema_field_key(result["data_schema"], CONF_OVERRIDE_FIXED_UNTIL)
         assert key.description == {"suggested_value": "06:45:00"}
-
-        # Step 3: switch back to fixed_time using that same preserved value.
-        asyncio.run(flow2.async_step_manual_override_custom(user_input={
-            **_BASE_TIME_BASED_INPUT,
-            CONF_OVERRIDE_TIME_BASED_KIND: TIME_BASED_KIND_FIXED_TIME,
-            CONF_OVERRIDE_FIXED_UNTIL: "06:45:00",
-        }))
-        _, kwargs3 = flow2.hass.config_entries.async_update_entry.call_args
-        saved3 = kwargs3["data"]["override_policy"]
+        asyncio.run(flow2.async_step_override_fixed_time(user_input={CONF_OVERRIDE_FIXED_UNTIL: "06:45:00"}))
+        saved3 = _saved(flow2)
         assert saved3["release_strategy"] == "fixed_time"
         assert saved3["fixed_until"] == "06:45:00"
 
@@ -315,7 +293,7 @@ class TestSaveDoesNotTouchUnrelatedFeatureKeys:
         }
         flow = _make_options_flow(data=dict(original))
         _opt_out_of_system_default(flow)
-        asyncio.run(flow.async_step_manual_override_custom(user_input=dict(_BASE_TIME_BASED_INPUT)))
+        _save_lifecycle(flow)
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         for key, value in original.items():
             assert kwargs["data"][key] == value, f"{key} was unexpectedly modified"
@@ -331,7 +309,7 @@ class TestSaveDoesNotTouchUnrelatedFeatureKeys:
             "lifecycle_config": {"id": "default", "night_position": 55},
         })
         _opt_out_of_system_default(flow)
-        asyncio.run(flow.async_step_manual_override_custom(user_input=dict(_BASE_TIME_BASED_INPUT)))
+        _save_lifecycle(flow)
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         assert "lifecycle_profiles" not in kwargs["data"]
         assert "active_lifecycle_profile_id" not in kwargs["data"]
@@ -381,7 +359,7 @@ class TestRemovedSensorSmoothingOption:
     def test_any_other_save_retires_old_keys_too(self) -> None:
         flow = _make_options_flow(data={"ema_enabled": True, "ema_alpha": 0.4})
         _opt_out_of_system_default(flow)
-        asyncio.run(flow.async_step_manual_override_custom(user_input=dict(_BASE_TIME_BASED_INPUT)))
+        _save_lifecycle(flow)
         _, kwargs = flow.hass.config_entries.async_update_entry.call_args
         assert "ema_enabled" not in kwargs["data"] and "ema_alpha" not in kwargs["data"]
 
@@ -389,7 +367,8 @@ class TestRemovedSensorSmoothingOption:
 class TestNumberSelectorBounds:
     def test_duration_fields_have_sensible_bounds(self) -> None:
         flow = _make_options_flow(data={})
-        result = _opt_out_of_system_default(flow)
+        _opt_out_of_system_default(flow)
+        result = asyncio.run(flow.async_step_manual_override_custom(user_input=_page1(RELEASE_CHOICE_DURATION)))
         schema: vol.Schema = result["data_schema"]
         for field in (CONF_OVERRIDE_DURATION_MIN, CONF_OVERRIDE_NIGHT_DURATION_MIN):
             key = _schema_field_key(schema, field)
@@ -412,12 +391,12 @@ class TestInvalidNumericInputHandledSafely:
     def _submit(self, duration_min_value):
         flow = _make_options_flow(data={})
         _opt_out_of_system_default(flow)
-        asyncio.run(flow.async_step_manual_override_custom(user_input={
-            **_BASE_TIME_BASED_INPUT,
+        asyncio.run(flow.async_step_manual_override_custom(user_input=_page1(RELEASE_CHOICE_DURATION)))
+        asyncio.run(flow.async_step_override_duration(user_input={
             CONF_OVERRIDE_DURATION_MIN: duration_min_value,
+            CONF_OVERRIDE_NIGHT_DURATION_MIN: 720,
         }))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        return kwargs["data"]["override_policy"]["duration_min"]
+        return _saved(flow)["duration_min"]
 
     def test_zero_is_clamped_to_minimum(self) -> None:
         assert self._submit(0) == 1
@@ -440,35 +419,42 @@ class TestInvalidNumericInputHandledSafely:
         for bad_value in (0, -1, "abc", None, 999999, [], {}, True):
             flow = _make_options_flow(data={})
             _opt_out_of_system_default(flow)
-            asyncio.run(flow.async_step_manual_override_custom(user_input={
-                **_BASE_TIME_BASED_INPUT,
+            asyncio.run(flow.async_step_manual_override_custom(user_input=_page1(RELEASE_CHOICE_DURATION)))
+            asyncio.run(flow.async_step_override_duration(user_input={
                 CONF_OVERRIDE_DURATION_MIN: bad_value,
                 CONF_OVERRIDE_NIGHT_DURATION_MIN: bad_value,
             }))  # must not raise
 
 
-class TestReleaseModeMappingRoundTrip:
-    """T21 Phase B's mapping table: every one of the 7 legacy
-    OverrideReleaseStrategy values must round-trip losslessly through
-    release_strategy_to_mode() -> release_mode_to_strategy()."""
+class TestReleaseChoiceMapping:
+    """Phase 5: the five user-facing choices map onto the unchanged seven
+    stored strategies, losslessly in both directions."""
 
-    def test_all_seven_legacy_strategies_round_trip_losslessly(self) -> None:
+    def test_all_seven_strategies_round_trip_losslessly(self) -> None:
         for strategy in OverrideReleaseStrategy:
-            mode, sub_choice = release_strategy_to_mode(strategy)
-            back = release_mode_to_strategy(mode, sub_choice)
-            assert back is strategy, f"{strategy} -> {mode}/{sub_choice} -> {back}"
+            choice, flt = release_strategy_to_choice(strategy)
+            assert release_choice_to_strategy(choice, flt) is strategy, strategy
 
     def test_mapping_table_exact_values(self) -> None:
         expected = {
-            OverrideReleaseStrategy.DURATION: (OverrideReleaseMode.TIME_BASED, TIME_BASED_KIND_DURATION),
-            OverrideReleaseStrategy.FIXED_TIME: (OverrideReleaseMode.TIME_BASED, TIME_BASED_KIND_FIXED_TIME),
-            OverrideReleaseStrategy.LIFECYCLE: (OverrideReleaseMode.LIFECYCLE, None),
-            OverrideReleaseStrategy.FIRST_COMFORT: (OverrideReleaseMode.NEXT_DECISION, "comfort"),
-            OverrideReleaseStrategy.FIRST_PROTECTION: (OverrideReleaseMode.NEXT_DECISION, "protection"),
-            OverrideReleaseStrategy.FIRST_ANY_DECISION: (OverrideReleaseMode.NEXT_DECISION, "any"),
-            OverrideReleaseStrategy.MANUAL: (OverrideReleaseMode.MANUAL, None),
+            OverrideReleaseStrategy.DURATION: (RELEASE_CHOICE_DURATION, None),
+            OverrideReleaseStrategy.FIXED_TIME: (RELEASE_CHOICE_FIXED_TIME, None),
+            OverrideReleaseStrategy.LIFECYCLE: (RELEASE_CHOICE_LIFECYCLE, None),
+            OverrideReleaseStrategy.FIRST_COMFORT: (RELEASE_CHOICE_NEXT_DECISION, "comfort"),
+            OverrideReleaseStrategy.FIRST_PROTECTION: (RELEASE_CHOICE_NEXT_DECISION, "protection"),
+            OverrideReleaseStrategy.FIRST_ANY_DECISION: (RELEASE_CHOICE_NEXT_DECISION, "any"),
+            OverrideReleaseStrategy.MANUAL: (RELEASE_CHOICE_MANUAL, None),
         }
-        for strategy, (expected_mode, expected_sub) in expected.items():
-            mode, sub = release_strategy_to_mode(strategy)
-            assert mode is expected_mode
-            assert sub == expected_sub
+        assert {s: release_strategy_to_choice(s) for s in OverrideReleaseStrategy} == expected
+
+    def test_unknown_values_degrade_to_the_documented_defaults(self) -> None:
+        assert release_choice_to_strategy("bogus") is OverrideReleaseStrategy.LIFECYCLE
+        assert release_choice_to_strategy(
+            RELEASE_CHOICE_NEXT_DECISION, "bogus") is OverrideReleaseStrategy.FIRST_ANY_DECISION
+        assert release_choice_to_strategy(
+            RELEASE_CHOICE_NEXT_DECISION) is OverrideReleaseStrategy.FIRST_ANY_DECISION
+
+    def test_stored_strategy_values_are_unchanged(self) -> None:
+        assert [s.value for s in OverrideReleaseStrategy] == [
+            "duration", "fixed_time", "lifecycle", "first_comfort", "first_protection",
+            "first_any_decision", "manual"]

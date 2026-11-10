@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Manuel tilsidesættelse — denne zones indstillinger",
-        "description": "Angiver, hvordan en aktiv manuel tilsidesættelse opfører sig i denne zone: hvor længe den varer, og om komfort- eller beskyttelseshandlinger stadig må køre, mens den er aktiv.",
+        "description": "Vælg, hvornår SmartShading overtager styringen igen, efter du har flyttet et betræk i hånden. Detaljer spørges kun om for valg, der har brug for dem.",
         "data": {
-          "override_release_mode": "Hvordan tilsidesættelsen slutter",
-          "override_time_based_kind": "Timertype",
-          "override_decision_filter": "Hvilke beslutninger frigiver den",
-          "override_fixed_until": "Fast sluttidspunkt",
+          "override_release_choice": "Returnér styringen",
           "override_allow_comfort_actions": "Tillad komforthandlinger under tilsidesættelse",
           "override_allow_protection_actions": "Tillad beskyttelseshandlinger under tilsidesættelse",
-          "override_safety_timeout_enabled": "Sikkerhedstimeout",
-          "override_duration_min": "Klassisk tilsidesættelsesvarighed (minutter)",
-          "override_night_duration_min": "Nattilsidesættelsesvarighed (minutter)"
+          "override_edit_timeouts": "Juster også sikkerhedsgrænsen"
         },
         "data_description": {
-          "override_release_mode": "Vælg frigivelseskonceptet: en timer/et klokkeslæt, den næste tidsplanovergang, den næste automatiske beslutning, eller kun manuel rydning.",
-          "override_time_based_kind": "Kun relevant når frigivelsestilstanden ovenfor er sat til en timer-/klokkeslætsindstilling: frigivelse efter en fast varighed eller på et fast klokkeslæt.",
-          "override_decision_filter": "Kun relevant når frigivelsestilstanden ovenfor er sat til indstillingen næste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
-          "override_fixed_until": "Kun relevant når frigivelsestilstanden er en timer-/klokkeslætsindstilling, og timertypen er et fast klokkeslæt. Hvis klokkeslættet allerede er passeret i dag, slutter tilsidesættelsen i morgen på dette tidspunkt.",
+          "override_release_choice": "Hvornår SmartShading styrer betrækket igen.",
           "override_allow_comfort_actions": "Når aktiveret, kan almindelig komfortafskærmning stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
           "override_allow_protection_actions": "Når aktiveret, kan beskyttelseshandlinger (fravær, varme, blænding) stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
-          "override_safety_timeout_enabled": "Valgfri maksimal varighed som sikkerhedsnet for åbne strategier, så en tilsidesættelse aldrig bliver permanent glemt.",
-          "override_duration_min": "Hvor længe en dagtilsidesættelse varer, før SmartShading genoptager normal styring (klassisk varighedstilstand).",
-          "override_night_duration_min": "Sikkerhedsgrænse for en nattilsidesættelse. Den egentlige frigivelse sker ved morgenens skemaovergang."
+          "override_edit_timeouts": "Åbner en ekstra side. Har kun betydning for tidsplanskift, beslutning og manuel rydning."
         }
       },
       "system_manual_override": {
         "title": "Standarder for manuel tilsidesættelse",
-        "description": "Adfærden for manuel tilsidesættelse, som hver zone følger, medmindre den bruger sine egne indstillinger: hvor længe en tilsidesættelse varer, og om komfort- eller beskyttelseshandlinger stadig må køre, mens en er aktiv.",
+        "description": "Standarden for alle zoner uden egne indstillinger: Vælg, hvornår SmartShading overtager styringen igen, efter et betræk er flyttet i hånden. Detaljer spørges kun om for valg, der har brug for dem.",
         "data": {
-          "override_release_mode": "Hvordan tilsidesættelsen slutter",
-          "override_time_based_kind": "Timertype",
-          "override_decision_filter": "Hvilke beslutninger frigiver den",
-          "override_fixed_until": "Fast sluttidspunkt",
+          "override_release_choice": "Returnér styringen",
           "override_allow_comfort_actions": "Tillad komforthandlinger under tilsidesættelse",
           "override_allow_protection_actions": "Tillad beskyttelseshandlinger under tilsidesættelse",
-          "override_safety_timeout_enabled": "Sikkerhedstimeout",
-          "override_duration_min": "Klassisk tilsidesættelsesvarighed (minutter)",
-          "override_night_duration_min": "Nattilsidesættelsesvarighed (minutter)"
+          "override_edit_timeouts": "Juster også sikkerhedsgrænsen"
         },
         "data_description": {
-          "override_release_mode": "Vælg frigivelseskonceptet: en timer/et klokkeslæt, den næste tidsplanovergang, den næste automatiske beslutning, eller kun manuel rydning.",
-          "override_time_based_kind": "Kun relevant når frigivelsestilstanden ovenfor er sat til en timer-/klokkeslætsindstilling: frigivelse efter en fast varighed eller på et fast klokkeslæt.",
-          "override_decision_filter": "Kun relevant når frigivelsestilstanden ovenfor er sat til indstillingen næste beslutning: frigivelse ved enhver beslutning, kun komfortbeslutninger, eller kun beskyttelsesbeslutninger.",
-          "override_fixed_until": "Kun relevant når frigivelsestilstanden er en timer-/klokkeslætsindstilling, og timertypen er et fast klokkeslæt. Hvis klokkeslættet allerede er passeret i dag, slutter tilsidesættelsen i morgen på dette tidspunkt.",
+          "override_release_choice": "Hvornår SmartShading styrer betrækket igen.",
           "override_allow_comfort_actions": "Når aktiveret, kan almindelig komfortafskærmning stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
           "override_allow_protection_actions": "Når aktiveret, kan beskyttelseshandlinger (fravær, varme, blænding) stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
-          "override_safety_timeout_enabled": "Valgfri maksimal varighed som sikkerhedsnet for åbne strategier, så en tilsidesættelse aldrig bliver permanent glemt.",
-          "override_duration_min": "Hvor længe en dagtilsidesættelse varer, før SmartShading genoptager normal styring (klassisk varighedstilstand).",
-          "override_night_duration_min": "Sikkerhedsgrænse for en nattilsidesættelse. Den egentlige frigivelse sker ved morgenens skemaovergang."
+          "override_edit_timeouts": "Åbner en ekstra side. Har kun betydning for tidsplanskift, beslutning og manuel rydning."
+        }
+      },
+      "override_duration": {
+        "title": "Varighed af manuel tilsidesættelse",
+        "description": "SmartShading overtager igen efter denne tid. En ændring om dagen bruger dagsvarigheden, en ændring om natten natvarigheden.",
+        "data": {
+          "override_duration_min": "Dagsvarighed (minutter)",
+          "override_night_duration_min": "Natvarighed (minutter)"
+        },
+        "data_description": {
+          "override_duration_min": "Hvor længe en ændring om dagen holdes. De andre valg bruger værdien som sikkerhedsgrænse og som holdetid for et manuelt stoppet betræk.",
+          "override_night_duration_min": "Hvor længe en ændring om natten holdes. De andre valg bruger værdien som natlig sikkerhedsgrænse og som holdetid for et manuelt stoppet betræk."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Sluttidspunkt for manuel tilsidesættelse",
+        "description": "SmartShading overtager igen ved næste forekomst af dette klokkeslæt: i dag, hvis det ligger forude, ellers i morgen.",
+        "data": {
+          "override_fixed_until": "Sluttidspunkt"
+        },
+        "data_description": {
+          "override_fixed_until": "Lokalt klokkeslæt, hvor styringen returneres."
+        }
+      },
+      "override_decision": {
+        "title": "Udløsende beslutninger",
+        "description": "SmartShading overtager igen ved næste beslutning af den valgte art.",
+        "data": {
+          "override_decision_filter": "Hvilke beslutninger frigiver den"
+        },
+        "data_description": {
+          "override_decision_filter": "Enhver komfort- eller beskyttelsesbeslutning, kun komfort eller kun beskyttelse."
+        }
+      },
+      "override_timeout": {
+        "title": "Sikkerhedsgrænse",
+        "description": "En valgfri øvre grænse, så en glemt tilsidesættelse ikke holder et betræk fast for evigt. Varighederne bestemmer også, hvor længe et manuelt stoppet betræk holdes.",
+        "data": {
+          "override_safety_timeout_enabled": "Begræns tilsidesættelsen med en sikkerhedsgrænse",
+          "override_duration_min": "Dagsvarighed (minutter)",
+          "override_night_duration_min": "Natvarighed (minutter)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Når den er slået til, slutter tilsidesættelsen senest efter dags- eller natvarigheden. Når den er slået fra, afslutter kun den valgte frigivelse den.",
+          "override_duration_min": "Hvor længe en ændring om dagen holdes. De andre valg bruger værdien som sikkerhedsgrænse og som holdetid for et manuelt stoppet betræk.",
+          "override_night_duration_min": "Hvor længe en ændring om natten holdes. De andre valg bruger værdien som natlig sikkerhedsgrænse og som holdetid for et manuelt stoppet betræk."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "Mulighed B kræver, at der vælges en kontaktsensor.",
       "night_clamp_window_invalid": "Tidligste natudløser må ikke være senere end seneste.",
       "morning_clamp_window_invalid": "Tidligste morgenudløser må ikke være senere end seneste.",
-      "override_fixed_until_required": "Angiv et fast sluttidspunkt, når varighed er sat til \"Fast tid\".",
+      "override_fixed_until_required": "Angiv det klokkeslæt, hvor styringen skal returneres.",
       "invalid_custom_azimuth": "Angiv en tilpasset azimut mellem 0 og 359 grader, eller vælg en kompasretning.",
       "no_covers_selected": "Vælg mindst én afskærmningsentitet for dette vindue.",
       "cover_already_assigned": "Mindst ét valgt dæksel er allerede tildelt et andet SmartShading-vindue. Et dæksel kan kun tildeles én gang."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Inverteret (nogen hjemme = væk)"
       }
     },
-    "override_release_mode": {
-      "options": {
-        "time_based": "Efter en timer eller et klokkeslæt",
-        "lifecycle": "Ved den næste tidsplanovergang",
-        "next_decision": "Ved den næste automatiske beslutning",
-        "manual": "Kun manuel rydning"
-      }
-    },
-    "override_time_based_kind": {
+    "override_release_choice": {
       "options": {
         "duration": "Efter en fast varighed",
-        "fixed_time": "På et fast klokkeslæt"
+        "fixed_time": "På et fast klokkeslæt",
+        "lifecycle": "Ved næste skift i tidsplanen",
+        "next_decision": "Ved næste passende komfort- eller beskyttelsesbeslutning",
+        "manual": "Kun når jeg rydder den"
       }
     },
     "override_decision_filter": {

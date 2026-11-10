@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Manuell åsidosättning — denna zons inställningar",
-        "description": "Anger hur en aktiv manuell åsidosättning beter sig i denna zon: hur länge den varar och om komfort- eller skyddsåtgärder fortfarande får köras medan den är aktiv.",
+        "description": "Välj när SmartShading tar över styrningen igen efter att du flyttat en solskydd för hand. Detaljer frågas bara efter för val som behöver dem.",
         "data": {
-          "override_release_mode": "Hur åsidosättningen avslutas",
-          "override_time_based_kind": "Timertyp",
-          "override_decision_filter": "Vilka beslut som släpper den",
-          "override_fixed_until": "Fast sluttid",
+          "override_release_choice": "Lämna tillbaka styrningen",
           "override_allow_comfort_actions": "Tillåt komfortåtgärder under åsidosättning",
           "override_allow_protection_actions": "Tillåt skyddsåtgärder under åsidosättning",
-          "override_safety_timeout_enabled": "Säkerhetstimeout",
-          "override_duration_min": "Klassisk åsidosättningsvaraktighet (minuter)",
-          "override_night_duration_min": "Nattens åsidosättningsvaraktighet (minuter)"
+          "override_edit_timeouts": "Justera även säkerhetsgränsen"
         },
         "data_description": {
-          "override_release_mode": "Välj frisläppningskonceptet: en timer/klocka, nästa schemaövergång, nästa automatiska beslut, eller endast manuell rensning.",
-          "override_time_based_kind": "Endast relevant när frisläppningsläget ovan är inställt på ett timer-/klockalternativ: frisläppning efter en fast varaktighet eller vid en fast klockslag.",
-          "override_decision_filter": "Endast relevant när frisläppningsläget ovan är inställt på alternativet nästa beslut: frisläppning vid vilket beslut som helst, endast komfortbeslut, eller endast skyddsbeslut.",
-          "override_fixed_until": "Endast relevant när frisläppningsläget är ett timer-/klockalternativ och timertypen är ett fast klockslag. Om klockslaget redan har passerat idag avslutas åsidosättningen imorgon vid denna tid.",
+          "override_release_choice": "När SmartShading styr solskyddet igen.",
           "override_allow_comfort_actions": "När aktiverad kan vanlig komfortskuggning fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
           "override_allow_protection_actions": "När aktiverad kan skyddsåtgärder (frånvaro, värme, bländning) fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
-          "override_safety_timeout_enabled": "Valfri maximal varaktighet som säkerhetsnät för öppna strategier, så att en åsidosättning aldrig glöms bort permanent.",
-          "override_duration_min": "Hur länge en dagåsidosättning varar innan SmartShading återupptar normal styrning (klassiskt varaktighetsläge).",
-          "override_night_duration_min": "Säkerhetsgräns för en nattåsidosättning. Den verkliga frigivningen sker vid den morgonens schemaövergång."
+          "override_edit_timeouts": "Öppnar en extra sida. Spelar bara roll för schemabyte, beslut och manuell rensning."
         }
       },
       "system_manual_override": {
         "title": "Standarder för manuell åsidosättning",
-        "description": "Beteendet för manuell åsidosättning som varje zon följer om den inte använder egna inställningar: hur länge en åsidosättning varar och om komfort- eller skyddsåtgärder fortfarande får köras medan en är aktiv.",
+        "description": "Standard för alla zoner utan egna inställningar: välj när SmartShading tar över styrningen igen efter att ett solskydd flyttats för hand. Detaljer frågas bara efter för val som behöver dem.",
         "data": {
-          "override_release_mode": "Hur åsidosättningen avslutas",
-          "override_time_based_kind": "Timertyp",
-          "override_decision_filter": "Vilka beslut som släpper den",
-          "override_fixed_until": "Fast sluttid",
+          "override_release_choice": "Lämna tillbaka styrningen",
           "override_allow_comfort_actions": "Tillåt komfortåtgärder under åsidosättning",
           "override_allow_protection_actions": "Tillåt skyddsåtgärder under åsidosättning",
-          "override_safety_timeout_enabled": "Säkerhetstimeout",
-          "override_duration_min": "Klassisk åsidosättningsvaraktighet (minuter)",
-          "override_night_duration_min": "Nattens åsidosättningsvaraktighet (minuter)"
+          "override_edit_timeouts": "Justera även säkerhetsgränsen"
         },
         "data_description": {
-          "override_release_mode": "Välj frisläppningskonceptet: en timer/klocka, nästa schemaövergång, nästa automatiska beslut, eller endast manuell rensning.",
-          "override_time_based_kind": "Endast relevant när frisläppningsläget ovan är inställt på ett timer-/klockalternativ: frisläppning efter en fast varaktighet eller vid en fast klockslag.",
-          "override_decision_filter": "Endast relevant när frisläppningsläget ovan är inställt på alternativet nästa beslut: frisläppning vid vilket beslut som helst, endast komfortbeslut, eller endast skyddsbeslut.",
-          "override_fixed_until": "Endast relevant när frisläppningsläget är ett timer-/klockalternativ och timertypen är ett fast klockslag. Om klockslaget redan har passerat idag avslutas åsidosättningen imorgon vid denna tid.",
+          "override_release_choice": "När SmartShading styr solskyddet igen.",
           "override_allow_comfort_actions": "När aktiverad kan vanlig komfortskuggning fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
           "override_allow_protection_actions": "När aktiverad kan skyddsåtgärder (frånvaro, värme, bländning) fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
-          "override_safety_timeout_enabled": "Valfri maximal varaktighet som säkerhetsnät för öppna strategier, så att en åsidosättning aldrig glöms bort permanent.",
-          "override_duration_min": "Hur länge en dagåsidosättning varar innan SmartShading återupptar normal styrning (klassiskt varaktighetsläge).",
-          "override_night_duration_min": "Säkerhetsgräns för en nattåsidosättning. Den verkliga frigivningen sker vid den morgonens schemaövergång."
+          "override_edit_timeouts": "Öppnar en extra sida. Spelar bara roll för schemabyte, beslut och manuell rensning."
+        }
+      },
+      "override_duration": {
+        "title": "Varaktighet för manuell åsidosättning",
+        "description": "SmartShading tar över igen efter denna tid. En ändring på dagen använder dagsvaraktigheten, en ändring på natten nattvaraktigheten.",
+        "data": {
+          "override_duration_min": "Dagsvaraktighet (minuter)",
+          "override_night_duration_min": "Nattvaraktighet (minuter)"
+        },
+        "data_description": {
+          "override_duration_min": "Hur länge en ändring på dagen hålls. De andra valen använder värdet som säkerhetsgräns och som hålltid för ett manuellt stoppat solskydd.",
+          "override_night_duration_min": "Hur länge en ändring på natten hålls. De andra valen använder värdet som nattlig säkerhetsgräns och som hålltid för ett manuellt stoppat solskydd."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Sluttid för manuell åsidosättning",
+        "description": "SmartShading tar över igen vid nästa förekomst av denna tid: i dag om den ännu inte passerat, annars i morgon.",
+        "data": {
+          "override_fixed_until": "Sluttid"
+        },
+        "data_description": {
+          "override_fixed_until": "Lokal tid då styrningen lämnas tillbaka."
+        }
+      },
+      "override_decision": {
+        "title": "Frigörande beslut",
+        "description": "SmartShading tar över igen vid nästa beslut av vald typ.",
+        "data": {
+          "override_decision_filter": "Vilka beslut som släpper den"
+        },
+        "data_description": {
+          "override_decision_filter": "Vilket komfort- eller skyddsbeslut som helst, bara komfort eller bara skydd."
+        }
+      },
+      "override_timeout": {
+        "title": "Säkerhetsgräns",
+        "description": "En valfri övre gräns så att en bortglömd åsidosättning inte håller ett solskydd fast för alltid. Varaktigheterna avgör också hur länge ett manuellt stoppat solskydd hålls.",
+        "data": {
+          "override_safety_timeout_enabled": "Begränsa åsidosättningen med en säkerhetsgräns",
+          "override_duration_min": "Dagsvaraktighet (minuter)",
+          "override_night_duration_min": "Nattvaraktighet (minuter)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "När den är på slutar åsidosättningen senast efter dags- eller nattvaraktigheten. När den är av avslutar bara det valda frigörandet den.",
+          "override_duration_min": "Hur länge en ändring på dagen hålls. De andra valen använder värdet som säkerhetsgräns och som hålltid för ett manuellt stoppat solskydd.",
+          "override_night_duration_min": "Hur länge en ändring på natten hålls. De andra valen använder värdet som nattlig säkerhetsgräns och som hålltid för ett manuellt stoppat solskydd."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "Alternativ B kräver att en kontaktsensor väljs.",
       "night_clamp_window_invalid": "Tidigaste nattutlösaren får inte vara senare än senaste.",
       "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste.",
-      "override_fixed_until_required": "Ange en fast sluttid när varaktighet är satt till \"Fast tid\".",
+      "override_fixed_until_required": "Ange den tid då styrningen ska lämnas tillbaka.",
       "invalid_custom_azimuth": "Ange en anpassad azimut mellan 0 och 359 grader, eller välj en kompassriktning.",
       "no_covers_selected": "Välj minst en solskyddsentitet för det här fönstret.",
       "cover_already_assigned": "Minst ett valt skydd är redan tilldelat ett annat SmartShading-fönster. Ett skydd kan bara tilldelas en gång."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Inverterad (någon hemma = borta)"
       }
     },
-    "override_release_mode": {
-      "options": {
-        "time_based": "Efter en timer eller ett klockslag",
-        "lifecycle": "Vid nästa schemaövergång",
-        "next_decision": "Vid nästa automatiska beslut",
-        "manual": "Endast manuell rensning"
-      }
-    },
-    "override_time_based_kind": {
+    "override_release_choice": {
       "options": {
         "duration": "Efter en fast varaktighet",
-        "fixed_time": "Vid ett fast klockslag"
+        "fixed_time": "Vid en fast tid",
+        "lifecycle": "Vid nästa byte i schemat",
+        "next_decision": "Vid nästa passande komfort- eller skyddsbeslut",
+        "manual": "Bara när jag rensar den"
       }
     },
     "override_decision_filter": {

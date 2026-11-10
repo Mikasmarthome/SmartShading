@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Substituição manual — definições desta zona",
-        "description": "Define o comportamento de uma substituição manual ativa nesta zona: quanto tempo dura e se as ações de conforto ou proteção podem continuar a ser executadas enquanto está ativa.",
+        "description": "Escolha quando o SmartShading retoma o controlo depois de mover um estore à mão. Os detalhes só são pedidos nas opções que deles precisam.",
         "data": {
-          "override_release_mode": "Como a substituição termina",
-          "override_time_based_kind": "Tipo de temporizador",
-          "override_decision_filter": "Quais decisões a libertam",
-          "override_fixed_until": "Hora de término fixa",
+          "override_release_choice": "Devolver o controlo",
           "override_allow_comfort_actions": "Permitir ações de conforto durante a substituição",
           "override_allow_protection_actions": "Permitir ações de proteção durante a substituição",
-          "override_safety_timeout_enabled": "Tempo limite de segurança",
-          "override_duration_min": "Duração de substituição clássica (minutos)",
-          "override_night_duration_min": "Duração de substituição noturna (minutos)"
+          "override_edit_timeouts": "Ajustar também o limite de segurança"
         },
         "data_description": {
-          "override_release_mode": "Escolha o conceito de libertação: um temporizador/relógio, a próxima transição de horário, a próxima decisão automática, ou apenas limpeza manual.",
-          "override_time_based_kind": "Apenas relevante quando o modo de libertação acima está definido como uma opção de temporizador/relógio: libertar após uma duração fixa ou a uma hora fixa.",
-          "override_decision_filter": "Apenas relevante quando o modo de libertação acima está definido como a opção de próxima decisão: libertar em qualquer decisão, apenas decisões de conforto, ou apenas decisões de proteção.",
-          "override_fixed_until": "Apenas relevante quando o modo de libertação é uma opção de temporizador/relógio e o tipo de temporizador é uma hora fixa. Se já tiver passado hoje, a substituição termina amanhã a esta hora.",
+          "override_release_choice": "Quando o SmartShading volta a controlar o estore.",
           "override_allow_comfort_actions": "Quando ativado, o sombreamento de conforto normal ainda pode ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
           "override_allow_protection_actions": "Quando ativado, as ações de proteção (ausência, calor, encandeamento) ainda podem ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
-          "override_safety_timeout_enabled": "Duração máxima opcional como rede de segurança para estratégias abertas, para que uma substituição nunca fique permanentemente esquecida.",
-          "override_duration_min": "Quanto tempo dura uma substituição diurna antes de o SmartShading retomar o controlo normal (modo de duração clássico).",
-          "override_night_duration_min": "Limite de segurança para uma substituição noturna. A libertação real ocorre na transição do ciclo matinal."
+          "override_edit_timeouts": "Abre uma página adicional. Só importa para transição de horário, decisão e limpeza manual."
         }
       },
       "system_manual_override": {
         "title": "Predefinições de substituição manual",
-        "description": "O comportamento de substituição manual que cada zona segue, a menos que use as suas próprias definições: quanto tempo dura uma substituição e se as ações de conforto ou proteção podem continuar a ser executadas enquanto está ativa.",
+        "description": "O valor predefinido para todas as zonas sem definições próprias: escolha quando o SmartShading retoma o controlo depois de um estore ser movido à mão. Os detalhes só são pedidos nas opções que deles precisam.",
         "data": {
-          "override_release_mode": "Como a substituição termina",
-          "override_time_based_kind": "Tipo de temporizador",
-          "override_decision_filter": "Quais decisões a libertam",
-          "override_fixed_until": "Hora de término fixa",
+          "override_release_choice": "Devolver o controlo",
           "override_allow_comfort_actions": "Permitir ações de conforto durante a substituição",
           "override_allow_protection_actions": "Permitir ações de proteção durante a substituição",
-          "override_safety_timeout_enabled": "Tempo limite de segurança",
-          "override_duration_min": "Duração de substituição clássica (minutos)",
-          "override_night_duration_min": "Duração de substituição noturna (minutos)"
+          "override_edit_timeouts": "Ajustar também o limite de segurança"
         },
         "data_description": {
-          "override_release_mode": "Escolha o conceito de libertação: um temporizador/relógio, a próxima transição de horário, a próxima decisão automática, ou apenas limpeza manual.",
-          "override_time_based_kind": "Apenas relevante quando o modo de libertação acima está definido como uma opção de temporizador/relógio: libertar após uma duração fixa ou a uma hora fixa.",
-          "override_decision_filter": "Apenas relevante quando o modo de libertação acima está definido como a opção de próxima decisão: libertar em qualquer decisão, apenas decisões de conforto, ou apenas decisões de proteção.",
-          "override_fixed_until": "Apenas relevante quando o modo de libertação é uma opção de temporizador/relógio e o tipo de temporizador é uma hora fixa. Se já tiver passado hoje, a substituição termina amanhã a esta hora.",
+          "override_release_choice": "Quando o SmartShading volta a controlar o estore.",
           "override_allow_comfort_actions": "Quando ativado, o sombreamento de conforto normal ainda pode ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
           "override_allow_protection_actions": "Quando ativado, as ações de proteção (ausência, calor, encandeamento) ainda podem ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
-          "override_safety_timeout_enabled": "Duração máxima opcional como rede de segurança para estratégias abertas, para que uma substituição nunca fique permanentemente esquecida.",
-          "override_duration_min": "Quanto tempo dura uma substituição diurna antes de o SmartShading retomar o controlo normal (modo de duração clássico).",
-          "override_night_duration_min": "Limite de segurança para uma substituição noturna. A libertação real ocorre na transição do ciclo matinal."
+          "override_edit_timeouts": "Abre uma página adicional. Só importa para transição de horário, decisão e limpeza manual."
+        }
+      },
+      "override_duration": {
+        "title": "Duração da substituição manual",
+        "description": "O SmartShading retoma o controlo passado este tempo. Uma alteração de dia usa a duração diurna; de noite, a noturna.",
+        "data": {
+          "override_duration_min": "Duração diurna (minutos)",
+          "override_night_duration_min": "Duração noturna (minutos)"
+        },
+        "data_description": {
+          "override_duration_min": "Quanto tempo uma alteração feita de dia é mantida. As outras opções usam-na como limite de segurança e como tempo de retenção de um estore parado à mão.",
+          "override_night_duration_min": "Quanto tempo uma alteração feita de noite é mantida. As outras opções usam-na como limite de segurança noturno e como tempo de retenção de um estore parado à mão."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Hora de fim da substituição manual",
+        "description": "O SmartShading retoma o controlo na próxima ocorrência desta hora: hoje, se ainda não passou, caso contrário amanhã.",
+        "data": {
+          "override_fixed_until": "Hora de fim"
+        },
+        "data_description": {
+          "override_fixed_until": "Hora local a que o controlo é devolvido."
+        }
+      },
+      "override_decision": {
+        "title": "Decisões libertadoras",
+        "description": "O SmartShading retoma o controlo na próxima decisão do tipo escolhido.",
+        "data": {
+          "override_decision_filter": "Quais decisões a libertam"
+        },
+        "data_description": {
+          "override_decision_filter": "Qualquer decisão de conforto ou proteção, só conforto ou só proteção."
+        }
+      },
+      "override_timeout": {
+        "title": "Limite de segurança",
+        "description": "Um limite máximo opcional para que uma substituição esquecida não prenda um estore para sempre. As durações também definem quanto tempo um estore parado à mão é retido.",
+        "data": {
+          "override_safety_timeout_enabled": "Limitar a substituição com um limite de segurança",
+          "override_duration_min": "Duração diurna (minutos)",
+          "override_night_duration_min": "Duração noturna (minutos)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Se ativo, a substituição termina, no máximo, após a duração diurna ou noturna. Se inativo, só a termina a libertação escolhida.",
+          "override_duration_min": "Quanto tempo uma alteração feita de dia é mantida. As outras opções usam-na como limite de segurança e como tempo de retenção de um estore parado à mão.",
+          "override_night_duration_min": "Quanto tempo uma alteração feita de noite é mantida. As outras opções usam-na como limite de segurança noturno e como tempo de retenção de um estore parado à mão."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "A opção B requer a seleção de um sensor de contacto.",
       "night_clamp_window_invalid": "O gatilho noturno mais cedo não pode ser posterior ao mais tarde.",
       "morning_clamp_window_invalid": "O gatilho matinal mais cedo não pode ser posterior ao mais tarde.",
-      "override_fixed_until_required": "Indique uma hora de término fixa quando a duração estiver definida como \"Hora fixa\".",
+      "override_fixed_until_required": "Introduza a hora a que o controlo deve ser devolvido.",
       "invalid_custom_azimuth": "Introduza um azimute personalizado entre 0 e 359 graus, ou escolha uma direção da bússola.",
       "no_covers_selected": "Selecione pelo menos uma entidade de estore para esta janela.",
       "cover_already_assigned": "Pelo menos uma cobertura selecionada já está atribuída a outra janela do SmartShading. Uma cobertura só pode ser atribuída uma vez."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Invertido (alguém em casa = ausente)"
       }
     },
-    "override_release_mode": {
-      "options": {
-        "time_based": "Após um temporizador ou hora",
-        "lifecycle": "Na próxima transição de horário",
-        "next_decision": "Na próxima decisão automática",
-        "manual": "Apenas limpeza manual"
-      }
-    },
-    "override_time_based_kind": {
+    "override_release_choice": {
       "options": {
         "duration": "Após uma duração fixa",
-        "fixed_time": "A uma hora fixa"
+        "fixed_time": "A uma hora fixa",
+        "lifecycle": "Na próxima transição de horário",
+        "next_decision": "Na próxima decisão de conforto ou proteção correspondente",
+        "manual": "Só quando eu a apagar"
       }
     },
     "override_decision_filter": {

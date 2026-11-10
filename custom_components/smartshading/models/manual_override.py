@@ -100,6 +100,11 @@ class OverrideReleaseMode(Enum):
     MANUAL         — no automatic release; unchanged 1:1 mapping onto
                      OverrideReleaseStrategy.MANUAL.
 
+    Phase 5 note: the OptionsFlow no longer presents this 4-mode model - it
+    offers the five RELEASE_CHOICES below (duration and fixed time are two
+    top-level choices instead of a timer type under TIME_BASED).  This enum and
+    its mapping are kept as the tested T21 Phase B mapping.
+
     This enum and its mapping functions are a presentation-layer
     simplification ONLY. The internal decision engine
     (engines/override_release.py), the persisted ManualOverride.release_strategy
@@ -171,6 +176,63 @@ def release_mode_to_strategy(
             return OverrideReleaseStrategy.FIRST_PROTECTION
         return OverrideReleaseStrategy.FIRST_ANY_DECISION
     return OverrideReleaseStrategy.MANUAL
+
+
+# ---------------------------------------------------------------------------
+# User-facing release CHOICE (Phase 5): the five answers the Options Flow offers
+# to "when should SmartShading get control back?".  A presentation-layer mapping
+# onto the unchanged seven OverrideReleaseStrategy values - the persisted
+# "release_strategy" key and the engines never see these constants.  The
+# decision-based choice carries its DECISION_FILTER_* sub-choice.
+# ---------------------------------------------------------------------------
+RELEASE_CHOICE_DURATION = "duration"
+RELEASE_CHOICE_FIXED_TIME = "fixed_time"
+RELEASE_CHOICE_LIFECYCLE = "lifecycle"
+RELEASE_CHOICE_NEXT_DECISION = "next_decision"
+RELEASE_CHOICE_MANUAL = "manual"
+RELEASE_CHOICES = (
+    RELEASE_CHOICE_DURATION,
+    RELEASE_CHOICE_FIXED_TIME,
+    RELEASE_CHOICE_LIFECYCLE,
+    RELEASE_CHOICE_NEXT_DECISION,
+    RELEASE_CHOICE_MANUAL,
+)
+
+
+def release_strategy_to_choice(strategy: OverrideReleaseStrategy) -> tuple[str, str | None]:
+    """Stored strategy -> (user-facing choice, decision filter or None)."""
+    if strategy is OverrideReleaseStrategy.DURATION:
+        return RELEASE_CHOICE_DURATION, None
+    if strategy is OverrideReleaseStrategy.FIXED_TIME:
+        return RELEASE_CHOICE_FIXED_TIME, None
+    if strategy is OverrideReleaseStrategy.LIFECYCLE:
+        return RELEASE_CHOICE_LIFECYCLE, None
+    if strategy is OverrideReleaseStrategy.FIRST_COMFORT:
+        return RELEASE_CHOICE_NEXT_DECISION, DECISION_FILTER_COMFORT
+    if strategy is OverrideReleaseStrategy.FIRST_PROTECTION:
+        return RELEASE_CHOICE_NEXT_DECISION, DECISION_FILTER_PROTECTION
+    if strategy is OverrideReleaseStrategy.FIRST_ANY_DECISION:
+        return RELEASE_CHOICE_NEXT_DECISION, DECISION_FILTER_ANY
+    return RELEASE_CHOICE_MANUAL, None
+
+
+def release_choice_to_strategy(choice: str, decision_filter: str | None = None) -> OverrideReleaseStrategy:
+    """User-facing choice -> stored strategy.  Inverse of
+    release_strategy_to_choice(); an unknown choice yields LIFECYCLE (the
+    default), an unknown / missing decision filter yields FIRST_ANY_DECISION."""
+    if choice == RELEASE_CHOICE_DURATION:
+        return OverrideReleaseStrategy.DURATION
+    if choice == RELEASE_CHOICE_FIXED_TIME:
+        return OverrideReleaseStrategy.FIXED_TIME
+    if choice == RELEASE_CHOICE_NEXT_DECISION:
+        if decision_filter == DECISION_FILTER_COMFORT:
+            return OverrideReleaseStrategy.FIRST_COMFORT
+        if decision_filter == DECISION_FILTER_PROTECTION:
+            return OverrideReleaseStrategy.FIRST_PROTECTION
+        return OverrideReleaseStrategy.FIRST_ANY_DECISION
+    if choice == RELEASE_CHOICE_MANUAL:
+        return OverrideReleaseStrategy.MANUAL
+    return OverrideReleaseStrategy.LIFECYCLE
 
 
 @dataclass(frozen=True)

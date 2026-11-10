@@ -352,54 +352,80 @@
       },
       "manual_override_custom": {
         "title": "Substitució manual — configuració d'aquesta zona",
-        "description": "Defineix com es comporta una substitució manual activa en aquesta zona: quant dura i si les accions de confort o protecció poden continuar executant-se mentre és activa.",
+        "description": "Trieu quan SmartShading recupera el control després que moveu una persiana a mà. Només es demanen detalls per a les opcions que els necessiten.",
         "data": {
-          "override_release_mode": "Com finalitza la substitució",
-          "override_time_based_kind": "Tipus de temporitzador",
-          "override_decision_filter": "Quines decisions l'alliberen",
-          "override_fixed_until": "Hora de finalització fixa",
+          "override_release_choice": "Retorn del control",
           "override_allow_comfort_actions": "Permet accions de confort durant l'anul·lació",
           "override_allow_protection_actions": "Permet accions de protecció durant l'anul·lació",
-          "override_safety_timeout_enabled": "Temps de seguretat",
-          "override_duration_min": "Durada d'anul·lació clàssica (minuts)",
-          "override_night_duration_min": "Durada d'anul·lació nocturna (minuts)"
+          "override_edit_timeouts": "Ajusta també el temps de seguretat"
         },
         "data_description": {
-          "override_release_mode": "Trieu el concepte d'alliberament: un temporitzador/rellotge, la propera transició d'horari, la propera decisió automàtica, o només esborrat manual.",
-          "override_time_based_kind": "Només rellevant quan el mode d'alliberament de dalt està configurat en una opció de temporitzador/rellotge: alliberament després d'una durada fixa o a una hora fixa.",
-          "override_decision_filter": "Només rellevant quan el mode d'alliberament de dalt està configurat en l'opció de propera decisió: alliberament en qualsevol decisió, només decisions de confort, o només decisions de protecció.",
-          "override_fixed_until": "Només rellevant quan el mode d'alliberament és una opció de temporitzador/rellotge i el tipus de temporitzador és una hora fixa. Si aquesta hora ja ha passat avui, la substitució finalitza demà a aquesta hora.",
+          "override_release_choice": "Quan SmartShading torna a controlar la persiana.",
           "override_allow_comfort_actions": "Si està activat, l'ombreig de confort habitual pot continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
           "override_allow_protection_actions": "Si està activat, les accions de protecció (absència, calor, enlluernament) poden continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
-          "override_safety_timeout_enabled": "Durada màxima opcional com a xarxa de seguretat per a estratègies obertes, perquè una anul·lació mai quedi oblidada permanentment.",
-          "override_duration_min": "Quant dura una anul·lació diürna abans que SmartShading reprengui el control normal (mode de durada clàssic).",
-          "override_night_duration_min": "Límit de seguretat per a una anul·lació nocturna. L'alliberament real es produeix en la transició de cicle matinal."
+          "override_edit_timeouts": "Obre una pàgina addicional. Només importa per a transició d'horari, decisió i esborrat manual."
         }
       },
       "system_manual_override": {
         "title": "Valors predeterminats de substitució manual",
-        "description": "El comportament de la substitució manual que segueix cada zona llevat que utilitzi la seva pròpia configuració: quant dura una substitució i si les accions de confort o protecció poden continuar executant-se mentre n'hi ha una activa.",
+        "description": "El valor per defecte de totes les zones sense configuració pròpia: trieu quan SmartShading recupera el control després que es mogui una persiana a mà. Només es demanen detalls per a les opcions que els necessiten.",
         "data": {
-          "override_release_mode": "Com finalitza la substitució",
-          "override_time_based_kind": "Tipus de temporitzador",
-          "override_decision_filter": "Quines decisions l'alliberen",
-          "override_fixed_until": "Hora de finalització fixa",
+          "override_release_choice": "Retorn del control",
           "override_allow_comfort_actions": "Permet accions de confort durant l'anul·lació",
           "override_allow_protection_actions": "Permet accions de protecció durant l'anul·lació",
-          "override_safety_timeout_enabled": "Temps de seguretat",
-          "override_duration_min": "Durada d'anul·lació clàssica (minuts)",
-          "override_night_duration_min": "Durada d'anul·lació nocturna (minuts)"
+          "override_edit_timeouts": "Ajusta també el temps de seguretat"
         },
         "data_description": {
-          "override_release_mode": "Trieu el concepte d'alliberament: un temporitzador/rellotge, la propera transició d'horari, la propera decisió automàtica, o només esborrat manual.",
-          "override_time_based_kind": "Només rellevant quan el mode d'alliberament de dalt està configurat en una opció de temporitzador/rellotge: alliberament després d'una durada fixa o a una hora fixa.",
-          "override_decision_filter": "Només rellevant quan el mode d'alliberament de dalt està configurat en l'opció de propera decisió: alliberament en qualsevol decisió, només decisions de confort, o només decisions de protecció.",
-          "override_fixed_until": "Només rellevant quan el mode d'alliberament és una opció de temporitzador/rellotge i el tipus de temporitzador és una hora fixa. Si aquesta hora ja ha passat avui, la substitució finalitza demà a aquesta hora.",
+          "override_release_choice": "Quan SmartShading torna a controlar la persiana.",
           "override_allow_comfort_actions": "Si està activat, l'ombreig de confort habitual pot continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
           "override_allow_protection_actions": "Si està activat, les accions de protecció (absència, calor, enlluernament) poden continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
-          "override_safety_timeout_enabled": "Durada màxima opcional com a xarxa de seguretat per a estratègies obertes, perquè una anul·lació mai quedi oblidada permanentment.",
-          "override_duration_min": "Quant dura una anul·lació diürna abans que SmartShading reprengui el control normal (mode de durada clàssic).",
-          "override_night_duration_min": "Límit de seguretat per a una anul·lació nocturna. L'alliberament real es produeix en la transició de cicle matinal."
+          "override_edit_timeouts": "Obre una pàgina addicional. Només importa per a transició d'horari, decisió i esborrat manual."
+        }
+      },
+      "override_duration": {
+        "title": "Durada de l'anul·lació manual",
+        "description": "SmartShading recupera el control passat aquest temps. Un canvi de dia usa la durada diürna; un canvi de nit, la nocturna.",
+        "data": {
+          "override_duration_min": "Durada diürna (minuts)",
+          "override_night_duration_min": "Durada nocturna (minuts)"
+        },
+        "data_description": {
+          "override_duration_min": "Quant temps es manté un canvi fet de dia. Les altres opcions l'usen com a temps de seguretat i com a retenció d'una persiana aturada a mà.",
+          "override_night_duration_min": "Quant temps es manté un canvi fet de nit. Les altres opcions l'usen com a temps de seguretat nocturn i com a retenció d'una persiana aturada a mà."
+        }
+      },
+      "override_fixed_time": {
+        "title": "Hora final de l'anul·lació manual",
+        "description": "SmartShading recupera el control la propera vegada que arribi aquesta hora: avui si encara no ha passat, si no demà.",
+        "data": {
+          "override_fixed_until": "Hora final"
+        },
+        "data_description": {
+          "override_fixed_until": "Hora local en què es retorna el control."
+        }
+      },
+      "override_decision": {
+        "title": "Decisions alliberadores",
+        "description": "SmartShading recupera el control a la propera decisió del tipus triat.",
+        "data": {
+          "override_decision_filter": "Quines decisions l'alliberen"
+        },
+        "data_description": {
+          "override_decision_filter": "Qualsevol decisió de confort o protecció, només confort o només protecció."
+        }
+      },
+      "override_timeout": {
+        "title": "Temps de seguretat",
+        "description": "Un límit superior opcional perquè una anul·lació oblidada no retingui una persiana per sempre. Les durades també fixen quant temps es reté una persiana aturada a mà.",
+        "data": {
+          "override_safety_timeout_enabled": "Limita l'anul·lació amb un temps de seguretat",
+          "override_duration_min": "Durada diürna (minuts)",
+          "override_night_duration_min": "Durada nocturna (minuts)"
+        },
+        "data_description": {
+          "override_safety_timeout_enabled": "Si està activat, l'anul·lació acaba com a molt tard després de la durada diürna o nocturna. Si no, només l'acaba l'alliberament triat.",
+          "override_duration_min": "Quant temps es manté un canvi fet de dia. Les altres opcions l'usen com a temps de seguretat i com a retenció d'una persiana aturada a mà.",
+          "override_night_duration_min": "Quant temps es manté un canvi fet de nit. Les altres opcions l'usen com a temps de seguretat nocturn i com a retenció d'una persiana aturada a mà."
         }
       },
       "system_init": {
@@ -438,7 +464,7 @@
       "contact_sensor_required_for_lift": "L'opció B requereix seleccionar un sensor de contacte.",
       "night_clamp_window_invalid": "L'activador nocturn més aviat no pot ser posterior al més tard.",
       "morning_clamp_window_invalid": "L'activador matinal més aviat no pot ser posterior al més tard.",
-      "override_fixed_until_required": "Introduïu una hora de finalització fixa quan la durada estigui establerta a \"Hora fixa\".",
+      "override_fixed_until_required": "Introduïu l'hora a la qual s'ha de retornar el control.",
       "invalid_custom_azimuth": "Introdueix un azimut personalitzat entre 0 i 359 graus, o tria una direcció de la brúixola.",
       "no_covers_selected": "Selecciona almenys una entitat de persiana per a aquesta finestra.",
       "cover_already_assigned": "Almenys una coberta seleccionada ja està assignada a una altra finestra de SmartShading. Una coberta només es pot assignar una vegada."
@@ -746,18 +772,13 @@
         "inverted_any_home": "Invertit (algú a casa = absent)"
       }
     },
-    "override_release_mode": {
-      "options": {
-        "time_based": "Després d'un temporitzador o una hora",
-        "lifecycle": "A la propera transició d'horari",
-        "next_decision": "A la propera decisió automàtica",
-        "manual": "Només esborrat manual"
-      }
-    },
-    "override_time_based_kind": {
+    "override_release_choice": {
       "options": {
         "duration": "Després d'una durada fixa",
-        "fixed_time": "A una hora fixa"
+        "fixed_time": "A una hora concreta",
+        "lifecycle": "A la propera transició d'horari",
+        "next_decision": "A la propera decisió de confort o protecció que correspongui",
+        "manual": "Només quan jo ho esborri"
       }
     },
     "override_decision_filter": {

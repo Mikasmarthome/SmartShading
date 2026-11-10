@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import SOURCE_IGNORE, ConfigEntry, UnknownEntry
 from homeassistant.core import HomeAssistant
 
 from .config_entry_data import (
@@ -130,32 +130,40 @@ async def async_unload_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
 async def async_remove_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry) -> None:
     """Clean up SmartShading-owned persistent storage on entry removal.
 
-    System entry: no scoped storage — returns immediately.
-    Zone entry: removes scoped learning and forecast storage files.
+    System entry: no scoped storage — returns immediately.  It never touches
+    the other entries, so removing the System entry cannot recurse.
+    Zone entry: removes scoped learning and forecast storage files, then — if it
+    was the last zone — the System entry, which has no Remove button of its own
+    (its source is "system") and would otherwise stay behind for good.
     """
     entry_type = entry.data.get(CONF_ENTRY_TYPE, ENTRY_TYPE_ZONE)
     if entry_type == ENTRY_TYPE_SYSTEM:
         return
 
-    # A4: the entry is still listed while HA removes it; recompute without it so
-    # the remaining owner becomes unique and its repair issue closes.
+    # A4: recompute cover ownership without the entry being removed so the
+    # remaining owner becomes unique and its repair issue closes.
     async_sync_cover_ownership(hass, exclude_entry_id=entry.entry_id)
 
-    from homeassistant.helpers.storage import Store  # lazy HA import
-    from .engines.safety_hold_persistence import SafetyHoldStore
+    try:
+        from homeassistant.helpers.storage import Store  # lazy HA import
+        from .engines.safety_hold_persistence import SafetyHoldStore
 
-    await SafetyHoldStore(hass, entry.entry_id).async_remove()
-    for version, base_key in (
-        (LEARNING_STORE_VERSION, LEARNING_STORAGE_KEY),
-        (FORECAST_STORAGE_VERSION, FORECAST_STORAGE_KEY),
-    ):
-        key = f"{base_key}_{entry.entry_id}"
-        try:
-            await Store(hass, version, key).async_remove()
-        except Exception:
-            _LOGGER.warning(
-                "SmartShading: failed to remove storage %s during entry removal", key
-            )
+        await SafetyHoldStore(hass, entry.entry_id).async_remove()
+        for version, base_key in (
+            (LEARNING_STORE_VERSION, LEARNING_STORAGE_KEY),
+            (FORECAST_STORAGE_VERSION, FORECAST_STORAGE_KEY),
+        ):
+            key = f"{base_key}_{entry.entry_id}"
+            try:
+                await Store(hass, version, key).async_remove()
+            except Exception:
+                _LOGGER.warning(
+                    "SmartShading: failed to remove storage %s during entry removal", key
+                )
+    finally:
+        # Even if the storage cleanup failed, the last zone must not leave the
+        # System entry orphaned.
+        await _async_remove_orphaned_system_entry(hass, removed_entry_id=entry.entry_id)
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +182,14 @@ async def _async_setup_system_entry(
     Propagates the persisted debug_logging flag to hass.data so zone
     coordinators can read it without re-looking up the system entry each cycle.
     """
+    # A System entry with no zone behind it (its last zone was removed by an
+    # older version, or the removal was interrupted) cannot be removed by the
+    # user.  By the time any entry is set up Home Assistant has loaded every
+    # stored entry, so "no zone entry" is genuine here.  The removal waits for
+    # this setup to finish (it takes the entry's setup lock) and re-checks.
+    if not _zone_entries(hass):
+        hass.async_create_task(_async_remove_orphaned_system_entry(hass))
+
     # Propagate the debug flag to hass.data so zone coordinators can read it.
     hass.data.setdefault(DOMAIN, {})[DATA_DEBUG_LOGGING] = entry.options.get(
         CONF_DEBUG_LOGGING, False
@@ -194,6 +210,57 @@ async def _async_setup_system_entry(
 # ---------------------------------------------------------------------------
 # Zone entry setup
 # ---------------------------------------------------------------------------
+
+
+def _zone_entries(hass: HomeAssistant, exclude_entry_id: str | None = None) -> list[ConfigEntry]:
+    """The zone entries that exist, whatever their state (disabled ones count).
+
+    Ignored discovery entries carry no data and are not zones.  Entries created
+    before the System-entry separation have no CONF_ENTRY_TYPE: zones.
+    """
+    return [
+        e
+        for e in hass.config_entries.async_entries(DOMAIN)
+        if e.entry_id != exclude_entry_id
+        and e.source != SOURCE_IGNORE
+        and e.data.get(CONF_ENTRY_TYPE, ENTRY_TYPE_ZONE) == ENTRY_TYPE_ZONE
+    ]
+
+
+async def _async_remove_orphaned_system_entry(
+    hass: HomeAssistant, removed_entry_id: str | None = None
+) -> None:
+    """Remove the System entry when no zone entry exists any more.
+
+    The System entry's source is "system", for which Home Assistant offers no
+    Remove button, so SmartShading removes it itself once its last zone is gone
+    - and when it finds one that was orphaned earlier.  Only the supported
+    ConfigEntries API is used; the entry's own removal hook does nothing, so this
+    cannot recurse, and nothing here creates an entry.
+
+    Zones are counted at the moment of the decision (the entry being removed is
+    no longer listed while Home Assistant calls async_remove_entry; it is
+    excluded explicitly anyway).  A zone added while the removal was in flight
+    may have found the System entry still present and not recreated it; that is
+    healed at the end.  Failures are logged and never propagate: they must not
+    disturb the removal of the zone that triggered this.
+    """
+    try:
+        if _zone_entries(hass, removed_entry_id):
+            return
+        for system in [
+            e
+            for e in hass.config_entries.async_entries(DOMAIN)
+            if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM
+        ]:
+            try:
+                await hass.config_entries.async_remove(system.entry_id)
+            except UnknownEntry:
+                continue                       # already gone (concurrent removal)
+        if _zone_entries(hass):
+            _ensure_system_entry(hass)
+    except Exception:  # noqa: BLE001 - never break the zone removal
+        _LOGGER.warning("SmartShading: removing the orphaned System entry failed", exc_info=True)
 
 
 def _ensure_system_entry(hass: HomeAssistant) -> None:

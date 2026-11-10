@@ -126,10 +126,10 @@
           "active_months": "Aktiiviset kuukaudet (lisäasetus)"
         },
         "data_description": {
-          "night_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan yöajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "night_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa asetetun yöajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
           "night_not_before": "Valinnainen. Jos ratkaistu yölaukaisu tapahtuisi tätä aikaa aiemmin, se siirretään tähän aikaan.",
           "night_not_after": "Valinnainen. Jos ratkaistu yölaukaisu tapahtuisi tätä aikaa myöhemmin, se aikaistetaan tähän aikaan.",
-          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa asetetun aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
           "morning_not_before": "Valinnainen. Jos ratkaistu aamulaukaisu tapahtuisi tätä aikaa aiemmin, se siirretään tähän aikaan.",
           "morning_not_after": "Valinnainen. Jos ratkaistu aamulaukaisu tapahtuisi tätä aikaa myöhemmin, se aikaistetaan tähän aikaan.",
           "active_months": "Jätä tyhjäksi, jos tätä aikataulua käytetään joka kuukausi. Valitse tietyt kuukaudet rajoittaaksesi sitä — esimerkiksi syyskuusta maaliskuuhun talviaikataululle."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Sisälämpötila-anturit (valinnainen)",
           "heat_protection_enabled": "Ota käyttöön lämpösuojaus",
           "glare_protection_enabled": "Ota käyttöön häikäisysuojaus",
-          "solar_gain_enabled": "Ota käyttöön aurinkolämpö (talviaurinko)",
-          "glare_min_exposure_wm2": "Häikäisysuojauksen vähimmäisvalotus",
-          "heat_protection_hysteresis_c": "Lämpösuojauksen vapautusmarginaali"
+          "solar_gain_enabled": "Ota käyttöön aurinkolämpö (talviaurinko)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Yksi tai useampi sisäanturi. Kun useita antureita on määritetty, käytetään kaikkien kelvollisten lukemien keskiarvoa.",
           "heat_protection_enabled": "Estää ylikuumenemisen varjostamalla ennakoivasti auringon sijainnin, sään ja lämpötilojen perusteella.",
           "glare_protection_enabled": "Vähentää suoraa auringonvaloa, kun aurinko osuu ikkunaan.",
-          "solar_gain_enabled": "Pitää varjostuksen avoimempana viileällä säällä passiivisen lämpenemisen tukemiseksi. Lämpösuojaus on etusijalla.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Kuinka monta astetta lämpötilan on laskettava lämpösuojan kynnysarvon alle, ennen kuin varjostus vapautetaan uudelleen. Estää nopean edestakaisin kytkeytymisen kynnyksen lähellä. Arvolla 0 vapautus tapahtuu tarkalleen kynnyksellä (aiempi toiminta)."
+          "solar_gain_enabled": "Pitää varjostuksen avoimempana viileällä säällä passiivisen lämpenemisen tukemiseksi. Lämpösuojaus on etusijalla."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "”Estetty korkeudesta” ei saa olla suurempi kuin ”Estetty korkeuteen asti”.",
       "contact_sensor_required_for_block": "Vaihtoehto A vaatii kosketusanturin valitsemisen.",
       "contact_sensor_required_for_lift": "Vaihtoehto B vaatii kosketusanturin valitsemisen.",
-      "invalid_glare_min_exposure": "Anna häikäisyn vähimmäisvalotus välillä 0–500 W/m².",
-      "invalid_heat_hysteresis": "Anna vapautusmarginaali väliltä 0–5 °C.",
       "night_clamp_window_invalid": "Aikaisin yölaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
       "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
       "override_fixed_until_required": "Anna kiinteä lopetusaika, kun kesto on asetettu \"Kiinteä aika\"-tilaan.",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Sisälämpötila-anturit (valinnainen)",
           "heat_protection_enabled": "Ota käyttöön lämpösuojaus",
           "glare_protection_enabled": "Ota käyttöön häikäisysuojaus",
-          "solar_gain_enabled": "Ota käyttöön aurinkolämpö (talviaurinko)",
-          "glare_min_exposure_wm2": "Häikäisysuojauksen vähimmäisvalotus",
-          "heat_protection_hysteresis_c": "Lämpösuojauksen vapautusmarginaali"
+          "solar_gain_enabled": "Ota käyttöön aurinkolämpö (talviaurinko)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Yksi tai useampi sisäanturi. Kun useita antureita on määritetty, käytetään kaikkien kelvollisten lukemien keskiarvoa.",
           "heat_protection_enabled": "Estää ylikuumenemisen varjostamalla ennakoivasti auringon sijainnin, sään ja lämpötilojen perusteella.",
           "glare_protection_enabled": "Vähentää suoraa auringonvaloa, kun aurinko osuu ikkunaan.",
-          "solar_gain_enabled": "Pitää varjostuksen avoimempana viileällä säällä passiivisen lämpenemisen tukemiseksi. Lämpösuojaus on etusijalla.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Kuinka monta astetta lämpötilan on laskettava lämpösuojan kynnysarvon alle, ennen kuin varjostus vapautetaan uudelleen. Estää nopean edestakaisin kytkeytymisen kynnyksen lähellä. Arvolla 0 vapautus tapahtuu tarkalleen kynnyksellä (aiempi toiminta)."
+          "solar_gain_enabled": "Pitää varjostuksen avoimempana viileällä säällä passiivisen lämpenemisen tukemiseksi. Lämpösuojaus on etusijalla."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "”Estetty korkeudesta” ei saa olla suurempi kuin ”Estetty korkeuteen asti”.",
       "contact_sensor_required_for_block": "Vaihtoehto A vaatii kosketusanturin valitsemisen.",
       "contact_sensor_required_for_lift": "Vaihtoehto B vaatii kosketusanturin valitsemisen.",
-      "invalid_glare_min_exposure": "Anna häikäisyn vähimmäisvalotus välillä 0–500 W/m².",
-      "invalid_heat_hysteresis": "Anna vapautusmarginaali väliltä 0–5 °C.",
       "night_clamp_window_invalid": "Aikaisin yölaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
       "morning_clamp_window_invalid": "Aikaisin aamulaukaisu ei saa olla myöhäisempi kuin myöhäisin.",
       "cover_already_assigned": "Vähintään yksi valittu peite on jo liitetty toiseen SmartShading-ikkunaan. Peite voidaan liittää vain kerran."

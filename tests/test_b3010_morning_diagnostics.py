@@ -298,7 +298,7 @@ class TestMorningDiagnosticsFromARealDecision:
         now = datetime(2026, 6, 15, 6, 30, 0, tzinfo=timezone.utc)
         hot = ComfortConfig(
             heat_protection_enabled=True, heat_protection_outdoor_temp_c=25.0,
-            heat_protection_indoor_temp_c=24.0, heat_protection_hysteresis_c=1.0,
+            heat_protection_indoor_temp_c=24.0,
         )
         lc = _run_real_cycle_and_record(
             coord, now, window, zone, previous_lifecycle_state=LifecycleState.NIGHT,

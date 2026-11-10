@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ..const import GLARE_MIN_EXPOSURE_WM2, HEAT_RELEASE_HYSTERESIS_C
 from ..engines.contact_engine import ContactStatus
 from ..engines.exposure_engine import WindowExposure
 from ..engines.rain_engine import RainStatus
@@ -218,7 +219,6 @@ def build_window_decision_input(
     else:
         heat_outdoor_threshold_c = None
         heat_indoor_threshold_c = None
-    heat_hysteresis_c = _comfort.heat_protection_hysteresis_c
 
     # --- Resolve inherited behavior flags and positions ---------------------
     night_shading_enabled: bool = ConfigResolver.resolve(
@@ -308,9 +308,9 @@ def build_window_decision_input(
         ),
         heat_outdoor_threshold_c=heat_outdoor_threshold_c,
         heat_indoor_threshold_c=heat_indoor_threshold_c,
-        heat_hysteresis_c=heat_hysteresis_c,
+        heat_hysteresis_c=HEAT_RELEASE_HYSTERESIS_C,
         glare_protection_enabled=_comfort.glare_protection_enabled,
-        glare_min_exposure_wm2=_comfort.glare_min_exposure_wm2,
+        glare_min_exposure_wm2=GLARE_MIN_EXPOSURE_WM2,
         solar_gain_suppresses_shading=_solar_gain_suppresses,
         night_block_on_window_open=night_block_on_window_open,
         night_lift_on_window_open=night_lift_on_window_open,

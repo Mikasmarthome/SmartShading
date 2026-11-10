@@ -125,7 +125,7 @@ class TestHeatWinsOutrightSingleFinalDecision:
         now = datetime(2026, 6, 15, 6, 30, 0, tzinfo=_UTC)
         hot_comfort = ComfortConfig(
             heat_protection_enabled=True, heat_protection_outdoor_temp_c=25.0,
-            heat_protection_indoor_temp_c=24.0, heat_protection_hysteresis_c=1.0,
+            heat_protection_indoor_temp_c=24.0,
         )
         state, decision = _decide(
             now, _window(), _zone(), _config(morning_position=70), prev=LifecycleState.NIGHT,
@@ -186,7 +186,7 @@ class TestMorningToDayTransitionResolvesToARealDifferentDecision:
         cfg = _config(morning_position=70)
         hot = ComfortConfig(
             heat_protection_enabled=True, heat_protection_outdoor_temp_c=25.0,
-            heat_protection_indoor_temp_c=24.0, heat_protection_hysteresis_c=1.0,
+            heat_protection_indoor_temp_c=24.0,
         )
         # Cycle 1: MORNING transition.
         now1 = datetime(2026, 6, 15, 6, 30, 0, tzinfo=_UTC)
@@ -223,7 +223,7 @@ class TestMultiWindowSameZoneCoordination:
         cfg = _config(morning_position=70)
         hot_comfort = ComfortConfig(
             heat_protection_enabled=True, heat_protection_outdoor_temp_c=25.0,
-            heat_protection_indoor_temp_c=24.0, heat_protection_hysteresis_c=1.0,
+            heat_protection_indoor_temp_c=24.0,
         )
         w_heat = WindowConfig(id="w-heat", name="Heat", zone_id="z1", azimuth=180.0, floor_level=0, cover_group_id="cg-heat")
         w_plain = WindowConfig(id="w-plain", name="Plain", zone_id="z1", azimuth=180.0, floor_level=0, cover_group_id="cg-plain")

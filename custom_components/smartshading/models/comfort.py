@@ -83,17 +83,10 @@ class ComfortConfig:
     solar_gain_enabled: bool = True
     heat_protection_indoor_temp_c: float = 24.0
     heat_protection_outdoor_temp_c: float = 26.0
-    # How many degrees below the threshold the temperature must drop before
-    # heat protection releases (hysteresis, v1.2.0-beta.1, T9). Applied
-    # symmetrically to both the indoor and outdoor threshold. 0.0 reproduces
-    # the pre-T9 exact-threshold behavior (no hysteresis band).
-    heat_protection_hysteresis_c: float = 1.0
     solar_gain_max_outdoor_temp_c: float = 12.0
-    # Minimum effective window exposure (W/m²) for glare to be plausible.  Glare
-    # must not fire on geometry alone: the window must also be meaningfully lit.
-    # Kept BELOW the solar light-shade threshold (default 150) so diffuse glare
-    # still applies before full solar shading, but above trivial diffuse levels.
-    glare_min_exposure_wm2: float = 100.0
+    # The glare minimum exposure and the heat release hysteresis are internal
+    # policy (const.GLARE_MIN_EXPOSURE_WM2 / HEAT_RELEASE_HYSTERESIS_C), not part
+    # of this configuration.
 
 
 @dataclass(frozen=True)

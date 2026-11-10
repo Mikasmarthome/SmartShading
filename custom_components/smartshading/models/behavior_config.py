@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ..const import GLARE_MIN_EXPOSURE_WM2, HEAT_RELEASE_HYSTERESIS_C
 from .manual_override import OverrideReleaseStrategy
 
 
@@ -110,11 +111,11 @@ class BehaviorConfig:
     heat_outdoor_threshold_c: float | None = 26.0
     heat_indoor_threshold_c: float | None = 24.0
 
-    # Heat protection release hysteresis (v1.2.0-beta.1, T9). Degrees below
-    # the entry threshold the temperature must drop before heat protection
-    # releases — applied symmetrically to outdoor/indoor. 0.0 reproduces the
-    # pre-T9 exact-threshold behavior. See engines/heat_hysteresis.py.
-    heat_hysteresis_c: float = 1.0
+    # Heat protection release hysteresis: degrees below the entry threshold the
+    # temperature must drop before heat protection releases — applied
+    # symmetrically to outdoor/indoor.  Internal policy
+    # (const.HEAT_RELEASE_HYSTERESIS_C); see engines/heat_hysteresis.py.
+    heat_hysteresis_c: float = HEAT_RELEASE_HYSTERESIS_C
 
     # Glare protection enabled flag.
     # False = GlareEvaluator always returns None for this window.
@@ -123,10 +124,8 @@ class BehaviorConfig:
 
     # Minimum effective window exposure (W/m²) required for glare protection.
     # Glare must not be triggered by geometry (in-sector) alone — the window must
-    # also be meaningfully lit.  Pre-resolved from ComfortConfig.  Kept below the
-    # solar light-shade threshold so diffuse glare still applies before full solar
-    # shading.
-    glare_min_exposure_wm2: float = 100.0
+    # also be meaningfully lit.  Internal policy (const.GLARE_MIN_EXPOSURE_WM2).
+    glare_min_exposure_wm2: float = GLARE_MIN_EXPOSURE_WM2
 
     # Solar gain suppression flag.
     # True = GlareEvaluator and SolarEvaluator both return None so that

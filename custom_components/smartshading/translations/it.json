@@ -126,10 +126,10 @@
           "active_months": "Mesi attivi (avanzato)"
         },
         "data_description": {
-          "night_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario notturno sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "night_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario notturno impostato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
           "night_not_before": "Opzionale. Se l'attivazione notturna risolta avvenisse prima di quest'ora, viene posticipata a quest'ora.",
           "night_not_after": "Opzionale. Se l'attivazione notturna risolta avvenisse dopo quest'ora, viene anticipata a quest'ora.",
-          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino impostato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
           "morning_not_before": "Opzionale. Se l'attivazione mattutina risolta avvenisse prima di quest'ora, viene posticipata a quest'ora.",
           "morning_not_after": "Opzionale. Se l'attivazione mattutina risolta avvenisse dopo quest'ora, viene anticipata a quest'ora.",
           "active_months": "Lascia vuoto per applicare questa pianificazione ogni mese. Seleziona mesi specifici per limitarla — ad esempio da settembre a marzo per una pianificazione invernale."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Sensori di temperatura interna (facoltativo)",
           "heat_protection_enabled": "Abilita protezione dal caldo",
           "glare_protection_enabled": "Abilita protezione dall'abbagliamento",
-          "solar_gain_enabled": "Abilita guadagno solare (sole invernale)",
-          "glare_min_exposure_wm2": "Esposizione minima per la protezione dall'abbagliamento",
-          "heat_protection_hysteresis_c": "Margine di rilascio della protezione dal calore"
+          "solar_gain_enabled": "Abilita guadagno solare (sole invernale)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Uno o più sensori interni. Quando sono configurati più sensori, viene usata la media di tutte le letture valide.",
           "heat_protection_enabled": "Previene il surriscaldamento ombreggiando in modo proattivo in base alla posizione del sole, al meteo e alle temperature.",
           "glare_protection_enabled": "Riduce la luce solare diretta quando il sole colpisce la finestra.",
-          "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Di quanti gradi la temperatura deve scendere sotto la soglia di protezione dal calore prima che l'ombreggiatura venga nuovamente rilasciata. Evita commutazioni rapide vicino alla soglia. Con 0 il rilascio avviene esattamente alla soglia (comportamento precedente)."
+          "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione».",
       "contact_sensor_required_for_block": "L'opzione A richiede la selezione di un sensore di contatto.",
       "contact_sensor_required_for_lift": "L'opzione B richiede la selezione di un sensore di contatto.",
-      "invalid_glare_min_exposure": "Inserire un'esposizione minima di abbagliamento tra 0 e 500 W/m².",
-      "invalid_heat_hysteresis": "Inserisci un margine di rilascio tra 0 e 5 °C.",
       "night_clamp_window_invalid": "L'attivazione notturna più presto non deve essere successiva a quella più tardi.",
       "morning_clamp_window_invalid": "L'attivazione mattutina più presto non deve essere successiva a quella più tardi.",
       "override_fixed_until_required": "Inserire un'ora di fine fissa quando la durata è impostata su \"Ora fissa\".",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Sensori di temperatura interna (facoltativo)",
           "heat_protection_enabled": "Abilita protezione dal caldo",
           "glare_protection_enabled": "Abilita protezione dall'abbagliamento",
-          "solar_gain_enabled": "Abilita guadagno solare (sole invernale)",
-          "glare_min_exposure_wm2": "Esposizione minima per la protezione dall'abbagliamento",
-          "heat_protection_hysteresis_c": "Margine di rilascio della protezione dal calore"
+          "solar_gain_enabled": "Abilita guadagno solare (sole invernale)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Uno o più sensori interni. Quando sono configurati più sensori, viene usata la media di tutte le letture valide.",
           "heat_protection_enabled": "Previene il surriscaldamento ombreggiando in modo proattivo in base alla posizione del sole, al meteo e alle temperature.",
           "glare_protection_enabled": "Riduce la luce solare diretta quando il sole colpisce la finestra.",
-          "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Di quanti gradi la temperatura deve scendere sotto la soglia di protezione dal calore prima che l'ombreggiatura venga nuovamente rilasciata. Evita commutazioni rapide vicino alla soglia. Con 0 il rilascio avviene esattamente alla soglia (comportamento precedente)."
+          "solar_gain_enabled": "Mantiene l'ombreggiatura più aperta con clima fresco per favorire il riscaldamento passivo. La protezione dal caldo ha priorità."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "«Bloccata dall'elevazione» non deve essere maggiore di «Bloccata fino all'elevazione».",
       "contact_sensor_required_for_block": "L'opzione A richiede la selezione di un sensore di contatto.",
       "contact_sensor_required_for_lift": "L'opzione B richiede la selezione di un sensore di contatto.",
-      "invalid_glare_min_exposure": "Inserire un'esposizione minima di abbagliamento tra 0 e 500 W/m².",
-      "invalid_heat_hysteresis": "Inserisci un margine di rilascio tra 0 e 5 °C.",
       "night_clamp_window_invalid": "L'attivazione notturna più presto non deve essere successiva a quella più tardi.",
       "morning_clamp_window_invalid": "L'attivazione mattutina più presto non deve essere successiva a quella più tardi.",
       "cover_already_assigned": "Almeno una copertura selezionata è già assegnata a un'altra finestra SmartShading. Una copertura può essere assegnata una sola volta."

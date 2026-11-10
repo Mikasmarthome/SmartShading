@@ -126,10 +126,10 @@
           "active_months": "Luni active (avansat)"
         },
         "data_description": {
-          "night_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de noapte de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "night_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de noapte setată. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
           "night_not_before": "Opțional. Dacă declanșatorul de noapte rezolvat ar surveni mai devreme decât această oră, este amânat până la această oră.",
           "night_not_after": "Opțional. Dacă declanșatorul de noapte rezolvat ar surveni mai târziu decât această oră, este devansat la această oră.",
-          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață setată. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
           "morning_not_before": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai devreme decât această oră, este amânat până la această oră.",
           "morning_not_after": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai târziu decât această oră, este devansat la această oră.",
           "active_months": "Lăsați necompletat pentru a aplica acest program în fiecare lună. Selectați anumite luni pentru a-l restricționa — de exemplu, din septembrie până în martie pentru un program de iarnă."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Senzori de temperatură interioară (opțional)",
           "heat_protection_enabled": "Activați protecția împotriva căldurii",
           "glare_protection_enabled": "Activați protecția împotriva strălucirii",
-          "solar_gain_enabled": "Activați câștigul solar (soare de iarnă)",
-          "glare_min_exposure_wm2": "Expunere minimă pentru protecția la orbire",
-          "heat_protection_hysteresis_c": "Marja de eliberare a protecției termice"
+          "solar_gain_enabled": "Activați câștigul solar (soare de iarnă)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Unul sau mai mulți senzori interiori. Când sunt configurați mai mulți senzori, se folosește media tuturor citirilor valide.",
           "heat_protection_enabled": "Previne supraîncălzirea umbrind proactiv pe baza poziției soarelui, a vremii și a temperaturilor.",
           "glare_protection_enabled": "Reduce lumina solară directă când soarele lovește fereastra.",
-          "solar_gain_enabled": "Menține umbrirea mai deschisă pe vreme rece pentru a sprijini încălzirea pasivă. Protecția împotriva căldurii are prioritate.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Cu câte grade trebuie să scadă temperatura sub pragul de protecție termică înainte ca umbrirea să fie eliberată din nou. Previne comutarea rapidă în apropierea pragului. La 0, eliberarea are loc exact la prag (comportamentul anterior)."
+          "solar_gain_enabled": "Menține umbrirea mai deschisă pe vreme rece pentru a sprijini încălzirea pasivă. Protecția împotriva căldurii are prioritate."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "„Blocată de la înălțimea” nu trebuie să fie mai mare decât „Blocată până la înălțimea”.",
       "contact_sensor_required_for_block": "Opțiunea A necesită selectarea unui senzor de contact.",
       "contact_sensor_required_for_lift": "Opțiunea B necesită selectarea unui senzor de contact.",
-      "invalid_glare_min_exposure": "Introduceți o expunere minimă la orbire între 0 și 500 W/m².",
-      "invalid_heat_hysteresis": "Introduceți o marjă de eliberare între 0 și 5 °C.",
       "night_clamp_window_invalid": "Declanșatorul de noapte cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
       "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
       "override_fixed_until_required": "Introduceți o oră de încheiere fixă când durata este setată pe \"Oră fixă\".",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Senzori de temperatură interioară (opțional)",
           "heat_protection_enabled": "Activați protecția împotriva căldurii",
           "glare_protection_enabled": "Activați protecția împotriva strălucirii",
-          "solar_gain_enabled": "Activați câștigul solar (soare de iarnă)",
-          "glare_min_exposure_wm2": "Expunere minimă pentru protecția la orbire",
-          "heat_protection_hysteresis_c": "Marja de eliberare a protecției termice"
+          "solar_gain_enabled": "Activați câștigul solar (soare de iarnă)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Unul sau mai mulți senzori interiori. Când sunt configurați mai mulți senzori, se folosește media tuturor citirilor valide.",
           "heat_protection_enabled": "Previne supraîncălzirea umbrind proactiv pe baza poziției soarelui, a vremii și a temperaturilor.",
           "glare_protection_enabled": "Reduce lumina solară directă când soarele lovește fereastra.",
-          "solar_gain_enabled": "Menține umbrirea mai deschisă pe vreme rece pentru a sprijini încălzirea pasivă. Protecția împotriva căldurii are prioritate.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Cu câte grade trebuie să scadă temperatura sub pragul de protecție termică înainte ca umbrirea să fie eliberată din nou. Previne comutarea rapidă în apropierea pragului. La 0, eliberarea are loc exact la prag (comportamentul anterior)."
+          "solar_gain_enabled": "Menține umbrirea mai deschisă pe vreme rece pentru a sprijini încălzirea pasivă. Protecția împotriva căldurii are prioritate."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "„Blocată de la înălțimea” nu trebuie să fie mai mare decât „Blocată până la înălțimea”.",
       "contact_sensor_required_for_block": "Opțiunea A necesită selectarea unui senzor de contact.",
       "contact_sensor_required_for_lift": "Opțiunea B necesită selectarea unui senzor de contact.",
-      "invalid_glare_min_exposure": "Introduceți o expunere minimă la orbire între 0 și 500 W/m².",
-      "invalid_heat_hysteresis": "Introduceți o marjă de eliberare între 0 și 5 °C.",
       "night_clamp_window_invalid": "Declanșatorul de noapte cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
       "morning_clamp_window_invalid": "Declanșatorul de dimineață cel mai devreme nu trebuie să fie mai târziu decât cel mai târziu.",
       "cover_already_assigned": "Cel puțin o acoperire selectată este deja atribuită altei ferestre SmartShading. O acoperire poate fi atribuită o singură dată."

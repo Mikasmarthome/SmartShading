@@ -99,11 +99,10 @@ class HeatEvaluator:
         # it makes HeatEvaluator more conservative on weak/uncertain solar input,
         # never more aggressive.
         #
-        # The floor reuses the SAME user-configurable "meaningful effective exposure"
-        # value that already gates glare — glare_min_exposure_wm2, exposed in the HA
-        # options flow as "Minimum exposure for glare protection" — so there is one
-        # visible knob for "is there real sun at this window", not a second hidden
-        # constant.  It is additionally capped at the window's own light-shade
+        # The floor reuses the SAME "meaningful effective exposure" value that
+        # already gates glare — glare_min_exposure_wm2 (internal policy,
+        # const.GLARE_MIN_EXPOSURE_WM2) — so there is one definition of "is there
+        # real sun at this window", not a second hidden constant.  It is additionally capped at the window's own light-shade
         # threshold so heat protection can never demand MORE solar than the lightest
         # comfort shade.  With the defaults (glare min 100, light threshold 150) the
         # effective floor is 100 W/m²; the field case (effective ~5 W/m²) is below it,

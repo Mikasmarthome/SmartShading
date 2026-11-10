@@ -126,10 +126,10 @@
           "active_months": "Aktive måneder (avansert)"
         },
         "data_description": {
-          "night_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen nattetidspunktet ovenfor. Demring og skumring bruker borgerlig skumring (solen ved -6°).",
+          "night_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen det angitte nattetidspunktet. Demring og skumring bruker borgerlig skumring (solen ved -6°).",
           "night_not_before": "Valgfritt. Hvis den beregnede nattutløseren ville inntreffe tidligere enn dette tidspunktet, utsettes den til dette tidspunktet i stedet.",
           "night_not_after": "Valgfritt. Hvis den beregnede nattutlöseren ville inntreffe senere enn dette tidspunktet, fremskyndes den til dette tidspunktet i stedet.",
-          "morning_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen morgentidspunktet ovenfor. Demring og skumring bruker borgerlig skumring (solen ved -6°).",
+          "morning_sun_event": "Valgfritt. Hvis angitt, erstatter denne astronomiske hendelsen det angitte morgentidspunktet. Demring og skumring bruker borgerlig skumring (solen ved -6°).",
           "morning_not_before": "Valgfritt. Hvis den beregnede morgenutløseren ville inntreffe tidligere enn dette tidspunktet, utsettes den til dette tidspunktet i stedet.",
           "morning_not_after": "Valgfritt. Hvis den beregnede morgenutløseren ville inntreffe senere enn dette tidspunktet, fremskyndes den til dette tidspunktet i stedet.",
           "active_months": "La stå tomt for å bruke denne tidsplanen hver måned. Velg bestemte måneder for å begrense den — for eksempel september til mars for en vintertidsplan."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Innetemperatursensorer (valgfritt)",
           "heat_protection_enabled": "Aktiver varmebeskyttelse",
           "glare_protection_enabled": "Aktiver blendingsbeskyttelse",
-          "solar_gain_enabled": "Aktiver solinnstråling (vintersol)",
-          "glare_min_exposure_wm2": "Minimum eksponering for blendingsbeskyttelse",
-          "heat_protection_hysteresis_c": "Frigivelsesmargin for varmebeskyttelse"
+          "solar_gain_enabled": "Aktiver solinnstråling (vintersol)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "En eller flere innesensorer. Når flere sensorer er konfigurert, brukes gjennomsnittet av alle gyldige avlesninger.",
           "heat_protection_enabled": "Forhindrer overoppheting ved å skjerme proaktivt basert på solposisjon, vær og temperaturer.",
           "glare_protection_enabled": "Reduserer direkte sollys når solen treffer vinduet.",
-          "solar_gain_enabled": "Holder solskjermingen mer åpen i kjølig vær for å støtte passiv oppvarming. Varmebeskyttelse har prioritet.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Hvor mange grader temperaturen må falle under varmebeskyttelsens terskel før skjermingen frigis igjen. Forhindrer rask veksling nær terskelen. Med 0 frigis den nøyaktig ved terskelen (tidligere oppførsel)."
+          "solar_gain_enabled": "Holder solskjermingen mer åpen i kjølig vær for å støtte passiv oppvarming. Varmebeskyttelse har prioritet."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "\"Blokkert fra høyde\" må ikke være større enn \"Blokkert til høyde\".",
       "contact_sensor_required_for_block": "Alternativ A krever at en kontaktsensor er valgt.",
       "contact_sensor_required_for_lift": "Alternativ B krever at en kontaktsensor er valgt.",
-      "invalid_glare_min_exposure": "Angi en minimum blendingseksponering mellom 0 og 500 W/m².",
-      "invalid_heat_hysteresis": "Angi en frigivelsesmargin mellom 0 og 5 °C.",
       "night_clamp_window_invalid": "Tidligste nattutløser kan ikke være senere enn seneste.",
       "morning_clamp_window_invalid": "Tidligste morgenutløser kan ikke være senere enn seneste.",
       "override_fixed_until_required": "Angi et fast sluttidspunkt når varighet er satt til \"Fast tid\".",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Innetemperatursensorer (valgfritt)",
           "heat_protection_enabled": "Aktiver varmebeskyttelse",
           "glare_protection_enabled": "Aktiver blendingsbeskyttelse",
-          "solar_gain_enabled": "Aktiver solinnstråling (vintersol)",
-          "glare_min_exposure_wm2": "Minimum eksponering for blendingsbeskyttelse",
-          "heat_protection_hysteresis_c": "Frigivelsesmargin for varmebeskyttelse"
+          "solar_gain_enabled": "Aktiver solinnstråling (vintersol)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "En eller flere innesensorer. Når flere sensorer er konfigurert, brukes gjennomsnittet av alle gyldige avlesninger.",
           "heat_protection_enabled": "Forhindrer overoppheting ved å skjerme proaktivt basert på solposisjon, vær og temperaturer.",
           "glare_protection_enabled": "Reduserer direkte sollys når solen treffer vinduet.",
-          "solar_gain_enabled": "Holder solskjermingen mer åpen i kjølig vær for å støtte passiv oppvarming. Varmebeskyttelse har prioritet.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Hvor mange grader temperaturen må falle under varmebeskyttelsens terskel før skjermingen frigis igjen. Forhindrer rask veksling nær terskelen. Med 0 frigis den nøyaktig ved terskelen (tidligere oppførsel)."
+          "solar_gain_enabled": "Holder solskjermingen mer åpen i kjølig vær for å støtte passiv oppvarming. Varmebeskyttelse har prioritet."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "\"Blokkert fra høyde\" må ikke være større enn \"Blokkert til høyde\".",
       "contact_sensor_required_for_block": "Alternativ A krever at en kontaktsensor er valgt.",
       "contact_sensor_required_for_lift": "Alternativ B krever at en kontaktsensor er valgt.",
-      "invalid_glare_min_exposure": "Angi en minimum blendingseksponering mellom 0 og 500 W/m².",
-      "invalid_heat_hysteresis": "Angi en frigivelsesmargin mellom 0 og 5 °C.",
       "night_clamp_window_invalid": "Tidligste nattutløser kan ikke være senere enn seneste.",
       "morning_clamp_window_invalid": "Tidligste morgenutløser kan ikke være senere enn seneste.",
       "cover_already_assigned": "Minst ett valgt dekke er allerede tilordnet et annet SmartShading-vindu. Et dekke kan bare tilordnes én gang."

@@ -409,7 +409,7 @@ class TestRealRestartAfterMissedTriggerReachesDispatch:
         window, zone = _window(), _zone()
         hot = ComfortConfig(
             heat_protection_enabled=True, heat_protection_outdoor_temp_c=25.0,
-            heat_protection_indoor_temp_c=24.0, heat_protection_hysteresis_c=1.0,
+            heat_protection_indoor_temp_c=24.0,
         )
         state, decision = _decide_via_real_coordinator_engine(
             coord, _LATE_MORNING, window, zone,

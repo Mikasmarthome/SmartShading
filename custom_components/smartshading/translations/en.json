@@ -126,10 +126,10 @@
           "active_months": "Active months (advanced)"
         },
         "data_description": {
-          "night_sun_event": "Optional. If set, this astronomical event replaces the night time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "night_sun_event": "Optional. If set, this astronomical event replaces the configured night time. Dawn and dusk use civil twilight (sun at -6°).",
           "night_not_before": "Optional. If the resolved night trigger would occur earlier than this, it is delayed to this time instead.",
           "night_not_after": "Optional. If the resolved night trigger would occur later than this, it is brought forward to this time instead.",
-          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "morning_sun_event": "Optional. If set, this astronomical event replaces the configured morning time. Dawn and dusk use civil twilight (sun at -6°).",
           "morning_not_before": "Optional. If the resolved morning trigger would occur earlier than this, it is delayed to this time instead.",
           "morning_not_after": "Optional. If the resolved morning trigger would occur later than this, it is brought forward to this time instead.",
           "active_months": "Leave empty to apply this schedule in every month. Select specific months to restrict it — for example September through March for a winter schedule."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Indoor temperature sensors (optional)",
           "heat_protection_enabled": "Enable heat protection",
           "glare_protection_enabled": "Enable glare protection",
-          "solar_gain_enabled": "Enable solar gain (winter sun)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
-          "heat_protection_hysteresis_c": "Heat protection release margin"
+          "solar_gain_enabled": "Enable solar gain (winter sun)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "One or more indoor sensors. When multiple sensors are configured, the average of all valid readings is used.",
           "heat_protection_enabled": "Prevents overheating by shading proactively based on sun position, weather, and temperatures.",
           "glare_protection_enabled": "Reduces direct sunlight when the sun hits the window.",
-          "solar_gain_enabled": "Keeps shading more open in cool weather to support passive warming. Heat protection has priority.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "How many degrees the temperature must drop below the heat protection threshold before shading is released again. Prevents rapid toggling near the threshold. Set to 0 to release exactly at the threshold (legacy behavior)."
+          "solar_gain_enabled": "Keeps shading more open in cool weather to support passive warming. Heat protection has priority."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "\"Blocked from elevation\" must not be greater than \"Blocked until elevation\".",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
-      "invalid_heat_hysteresis": "Enter a heat protection release margin between 0 and 5 °C.",
       "night_clamp_window_invalid": "Night earliest trigger must not be later than night latest trigger.",
       "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger.",
       "override_fixed_until_required": "Enter a fixed end time when duration is set to \"Fixed time\".",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Indoor temperature sensors (optional)",
           "heat_protection_enabled": "Enable heat protection",
           "glare_protection_enabled": "Enable glare protection",
-          "solar_gain_enabled": "Enable solar gain (winter sun)",
-          "glare_min_exposure_wm2": "Minimum exposure for glare protection",
-          "heat_protection_hysteresis_c": "Heat protection release margin"
+          "solar_gain_enabled": "Enable solar gain (winter sun)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "One or more indoor sensors. When multiple sensors are configured, the average of all valid readings is used.",
           "heat_protection_enabled": "Prevents overheating by shading proactively based on sun position, weather, and temperatures.",
           "glare_protection_enabled": "Reduces direct sunlight when the sun hits the window.",
-          "solar_gain_enabled": "Keeps shading more open in cool weather to support passive warming. Heat protection has priority.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "How many degrees the temperature must drop below the heat protection threshold before shading is released again. Prevents rapid toggling near the threshold. Set to 0 to release exactly at the threshold (legacy behavior)."
+          "solar_gain_enabled": "Keeps shading more open in cool weather to support passive warming. Heat protection has priority."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "\"Blocked from elevation\" must not be greater than \"Blocked until elevation\".",
       "contact_sensor_required_for_block": "Option A requires a contact sensor to be selected.",
       "contact_sensor_required_for_lift": "Option B requires a contact sensor to be selected.",
-      "invalid_glare_min_exposure": "Enter a glare minimum exposure between 0 and 500 W/m².",
-      "invalid_heat_hysteresis": "Enter a heat protection release margin between 0 and 5 °C.",
       "night_clamp_window_invalid": "Night earliest trigger must not be later than night latest trigger.",
       "morning_clamp_window_invalid": "Morning earliest trigger must not be later than morning latest trigger.",
       "cover_already_assigned": "One or more selected covers are already assigned to another SmartShading window. A cover can be assigned only once."

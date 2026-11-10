@@ -126,10 +126,10 @@
           "active_months": "Actieve maanden (geavanceerd)"
         },
         "data_description": {
-          "night_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande nachttijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
+          "night_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de ingestelde nachttijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
           "night_not_before": "Optioneel. Als de opgeloste nachttrigger eerder dan dit tijdstip zou vallen, wordt deze in plaats daarvan uitgesteld tot dit tijdstip.",
           "night_not_after": "Optioneel. Als de opgeloste nachttrigger later dan dit tijdstip zou vallen, wordt deze in plaats daarvan vervroegd naar dit tijdstip.",
-          "morning_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de bovenstaande ochtendtijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
+          "morning_sun_event": "Optioneel. Indien ingesteld, vervangt deze astronomische gebeurtenis de ingestelde ochtendtijd. Schemering (ochtend en avond) gebruikt de burgerlijke schemering (zon op -6°).",
           "morning_not_before": "Optioneel. Als de opgeloste ochtendtrigger eerder dan dit tijdstip zou vallen, wordt deze in plaats daarvan uitgesteld tot dit tijdstip.",
           "morning_not_after": "Optioneel. Als de opgeloste ochtendtrigger later dan dit tijdstip zou vallen, wordt deze in plaats daarvan vervroegd naar dit tijdstip.",
           "active_months": "Laat leeg om dit schema elke maand toe te passen. Selecteer specifieke maanden om het te beperken — bijvoorbeeld september tot en met maart voor een winterschema."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Binnentemperatuursensoren (optioneel)",
           "heat_protection_enabled": "Hittebescherming inschakelen",
           "glare_protection_enabled": "Verblindingsbescherming inschakelen",
-          "solar_gain_enabled": "Zonnewinst inschakelen (winterzon)",
-          "glare_min_exposure_wm2": "Minimale blootstelling voor verblindingsbescherming",
-          "heat_protection_hysteresis_c": "Vrijgavemarge van de hittebescherming"
+          "solar_gain_enabled": "Zonnewinst inschakelen (winterzon)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Een of meer binnensensoren. Als er meerdere sensoren zijn geconfigureerd, wordt het gemiddelde van alle geldige metingen gebruikt.",
           "heat_protection_enabled": "Voorkomt oververhitting door proactief te schermen op basis van zonpositie, weer en temperaturen.",
           "glare_protection_enabled": "Vermindert direct zonlicht wanneer de zon op het venster valt.",
-          "solar_gain_enabled": "Houdt de zonwering bij koel weer meer open om passieve opwarming te ondersteunen. Hittebescherming heeft voorrang.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Hoeveel graden de temperatuur onder de hittebeschermingsdrempel moet zakken voordat de bescherming weer wordt vrijgegeven. Voorkomt snel schakelen rond de drempel. Bij 0 wordt precies op de drempel vrijgegeven (vorig gedrag)."
+          "solar_gain_enabled": "Houdt de zonwering bij koel weer meer open om passieve opwarming te ondersteunen. Hittebescherming heeft voorrang."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "\"Geblokkeerd vanaf hoogte\" mag niet groter zijn dan \"Geblokkeerd tot hoogte\".",
       "contact_sensor_required_for_block": "Optie A vereist dat er een contactsensor is geselecteerd.",
       "contact_sensor_required_for_lift": "Optie B vereist dat er een contactsensor is geselecteerd.",
-      "invalid_glare_min_exposure": "Voer een minimale verblindingsblootstelling tussen 0 en 500 W/m² in.",
-      "invalid_heat_hysteresis": "Voer een vrijgavemarge in tussen 0 en 5 °C.",
       "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
       "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste.",
       "override_fixed_until_required": "Voer een vaste eindtijd in wanneer de duur is ingesteld op \"Vaste tijd\".",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Binnentemperatuursensoren (optioneel)",
           "heat_protection_enabled": "Hittebescherming inschakelen",
           "glare_protection_enabled": "Verblindingsbescherming inschakelen",
-          "solar_gain_enabled": "Zonnewinst inschakelen (winterzon)",
-          "glare_min_exposure_wm2": "Minimale blootstelling voor verblindingsbescherming",
-          "heat_protection_hysteresis_c": "Vrijgavemarge van de hittebescherming"
+          "solar_gain_enabled": "Zonnewinst inschakelen (winterzon)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Een of meer binnensensoren. Als er meerdere sensoren zijn geconfigureerd, wordt het gemiddelde van alle geldige metingen gebruikt.",
           "heat_protection_enabled": "Voorkomt oververhitting door proactief te schermen op basis van zonpositie, weer en temperaturen.",
           "glare_protection_enabled": "Vermindert direct zonlicht wanneer de zon op het venster valt.",
-          "solar_gain_enabled": "Houdt de zonwering bij koel weer meer open om passieve opwarming te ondersteunen. Hittebescherming heeft voorrang.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Hoeveel graden de temperatuur onder de hittebeschermingsdrempel moet zakken voordat de bescherming weer wordt vrijgegeven. Voorkomt snel schakelen rond de drempel. Bij 0 wordt precies op de drempel vrijgegeven (vorig gedrag)."
+          "solar_gain_enabled": "Houdt de zonwering bij koel weer meer open om passieve opwarming te ondersteunen. Hittebescherming heeft voorrang."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "\"Geblokkeerd vanaf hoogte\" mag niet groter zijn dan \"Geblokkeerd tot hoogte\".",
       "contact_sensor_required_for_block": "Optie A vereist dat er een contactsensor is geselecteerd.",
       "contact_sensor_required_for_lift": "Optie B vereist dat er een contactsensor is geselecteerd.",
-      "invalid_glare_min_exposure": "Voer een minimale verblindingsblootstelling tussen 0 en 500 W/m² in.",
-      "invalid_heat_hysteresis": "Voer een vrijgavemarge in tussen 0 en 5 °C.",
       "night_clamp_window_invalid": "De vroegste nachttrigger mag niet later zijn dan de laatste.",
       "morning_clamp_window_invalid": "De vroegste ochtendtrigger mag niet later zijn dan de laatste.",
       "cover_already_assigned": "Minstens één geselecteerde afdekking is al aan een ander SmartShading-raam toegewezen. Een afdekking kan maar één keer worden toegewezen."

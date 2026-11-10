@@ -126,10 +126,10 @@
           "active_months": "Aktivni meseci (napredno)"
         },
         "data_description": {
-          "night_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji nočni čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
+          "night_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti nastavljeni nočni čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
           "night_not_before": "Neobvezno. Če bi razrešeni nočni sprožilec nastopil prej kot ob tem času, se namesto tega zamakne na ta čas.",
           "night_not_after": "Neobvezno. Če bi razrešeni nočni sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas.",
-          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
+          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti nastavljeni jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
           "morning_not_before": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil prej kot ob tem času, se namesto tega zamakne na ta čas.",
           "morning_not_after": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas.",
           "active_months": "Pustite prazno, če naj ta urnik velja vsak mesec. Izberite določene mesece za omejitev — na primer od septembra do marca za zimski urnik."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Senzorji notranje temperature (neobvezno)",
           "heat_protection_enabled": "Omogoči zaščito pred vročino",
           "glare_protection_enabled": "Omogoči zaščito pred bleščanjem",
-          "solar_gain_enabled": "Omogoči sončni dobitek (zimsko sonce)",
-          "glare_min_exposure_wm2": "Najmanjša osvetljenost za zaščito pred bleščanjem",
-          "heat_protection_hysteresis_c": "Razpon sprostitve toplotne zaščite"
+          "solar_gain_enabled": "Omogoči sončni dobitek (zimsko sonce)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "En ali več notranjih senzorjev. Ko je konfiguriranih več senzorjev, se uporabi povprečje vseh veljavnih meritev.",
           "heat_protection_enabled": "Preprečuje pregrevanje s proaktivnim senčenjem glede na položaj sonca, vreme in temperature.",
           "glare_protection_enabled": "Zmanjšuje neposredno sončno svetlobo, ko sonce zadene okno.",
-          "solar_gain_enabled": "V hladnem vremenu ohranja senčenje bolj odprto za podporo pasivnemu ogrevanju. Zaščita pred vročino ima prednost.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Za koliko stopinj mora temperatura pasti pod prag toplotne zaščite, preden se senčenje ponovno sprosti. Preprečuje hitro preklapljanje blízu praga. Pri 0 se sprosti natanko na pragu (prejšnje vedenje)."
+          "solar_gain_enabled": "V hladnem vremenu ohranja senčenje bolj odprto za podporo pasivnemu ogrevanju. Zaščita pred vročino ima prednost."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "»Blokirano od višine« ne sme biti večje od »Blokirano do višine«.",
       "contact_sensor_required_for_block": "Možnost A zahteva izbiro kontaktnega senzorja.",
       "contact_sensor_required_for_lift": "Možnost B zahteva izbiro kontaktnega senzorja.",
-      "invalid_glare_min_exposure": "Vnesite najmanjšo osvetljenost za bleščanje med 0 in 500 W/m².",
-      "invalid_heat_hysteresis": "Vnesite razpon sprostitve med 0 in 5 °C.",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
       "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega.",
       "override_fixed_until_required": "Vnesite fiksni čas zaključka, ko je trajanje nastavljeno na \"Fiksni čas\".",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Senzorji notranje temperature (neobvezno)",
           "heat_protection_enabled": "Omogoči zaščito pred vročino",
           "glare_protection_enabled": "Omogoči zaščito pred bleščanjem",
-          "solar_gain_enabled": "Omogoči sončni dobitek (zimsko sonce)",
-          "glare_min_exposure_wm2": "Najmanjša osvetljenost za zaščito pred bleščanjem",
-          "heat_protection_hysteresis_c": "Razpon sprostitve toplotne zaščite"
+          "solar_gain_enabled": "Omogoči sončni dobitek (zimsko sonce)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "En ali več notranjih senzorjev. Ko je konfiguriranih več senzorjev, se uporabi povprečje vseh veljavnih meritev.",
           "heat_protection_enabled": "Preprečuje pregrevanje s proaktivnim senčenjem glede na položaj sonca, vreme in temperature.",
           "glare_protection_enabled": "Zmanjšuje neposredno sončno svetlobo, ko sonce zadene okno.",
-          "solar_gain_enabled": "V hladnem vremenu ohranja senčenje bolj odprto za podporo pasivnemu ogrevanju. Zaščita pred vročino ima prednost.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Za koliko stopinj mora temperatura pasti pod prag toplotne zaščite, preden se senčenje ponovno sprosti. Preprečuje hitro preklapljanje blízu praga. Pri 0 se sprosti natanko na pragu (prejšnje vedenje)."
+          "solar_gain_enabled": "V hladnem vremenu ohranja senčenje bolj odprto za podporo pasivnemu ogrevanju. Zaščita pred vročino ima prednost."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "»Blokirano od višine« ne sme biti večje od »Blokirano do višine«.",
       "contact_sensor_required_for_block": "Možnost A zahteva izbiro kontaktnega senzorja.",
       "contact_sensor_required_for_lift": "Možnost B zahteva izbiro kontaktnega senzorja.",
-      "invalid_glare_min_exposure": "Vnesite najmanjšo osvetljenost za bleščanje med 0 in 500 W/m².",
-      "invalid_heat_hysteresis": "Vnesite razpon sprostitve med 0 in 5 °C.",
       "night_clamp_window_invalid": "Najzgodnejši nočni sprožilec ne sme biti kasnejši od najkasnejšega.",
       "morning_clamp_window_invalid": "Najzgodnejši jutranji sprožilec ne sme biti kasnejši od najkasnejšega.",
       "cover_already_assigned": "Vsaj eno izbrano senčilo je že dodeljeno drugemu oknu SmartShading. Senčilo je mogoče dodeliti samo enkrat."

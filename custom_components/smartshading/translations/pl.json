@@ -126,10 +126,10 @@
           "active_months": "Aktywne miesiące (zaawansowane)"
         },
         "data_description": {
-          "night_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas nocny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
+          "night_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje ustawiony czas nocny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
           "night_not_before": "Opcjonalne. Jeśli rozwiązany wyzwalacz nocny wypadałby wcześniej niż ta godzina, zostanie opóźniony do tej godziny.",
           "night_not_after": "Opcjonalne. Jeśli rozwiązany wyzwalacz nocny wypadałby później niż ta godzina, zostanie przesunięty na tę godzinę.",
-          "morning_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje powyższy czas poranny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
+          "morning_sun_event": "Opcjonalne. Jeśli ustawione, to zdarzenie astronomiczne zastępuje ustawiony czas poranny. Świt i zmierzch wykorzystują zmierzch cywilny (słońce na -6°).",
           "morning_not_before": "Opcjonalne. Jeśli rozwiązany wyzwalacz poranny wypadałby wcześniej niż ta godzina, zostanie opóźniony do tej godziny.",
           "morning_not_after": "Opcjonalne. Jeśli rozwiązany wyzwalacz poranny wypadałby później niż ta godzina, zostanie przesunięty na tę godzinę.",
           "active_months": "Pozostaw puste, aby ten harmonogram obowiązywał w każdym miesiącu. Wybierz konkretne miesiące, aby go ograniczyć — na przykład od września do marca dla harmonogramu zimowego."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Czujniki temperatury wewnętrznej (opcjonalne)",
           "heat_protection_enabled": "Włącz ochronę przed ciepłem",
           "glare_protection_enabled": "Włącz ochronę przed olśnieniem",
-          "solar_gain_enabled": "Włącz zysk słoneczny (zimowe słońce)",
-          "glare_min_exposure_wm2": "Minimalne natężenie dla ochrony przed olśnieniem",
-          "heat_protection_hysteresis_c": "Margines zwolnienia ochrony przed upałem"
+          "solar_gain_enabled": "Włącz zysk słoneczny (zimowe słońce)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Jeden lub więcej czujników wewnętrznych. Gdy skonfigurowano wiele czujników, używana jest średnia wszystkich prawidłowych odczytów.",
           "heat_protection_enabled": "Zapobiega przegrzewaniu, zacieniając proaktywnie na podstawie pozycji słońca, pogody i temperatur.",
           "glare_protection_enabled": "Redukuje bezpośrednie światło słoneczne, gdy słońce pada na okno.",
-          "solar_gain_enabled": "Utrzymuje osłonę bardziej otwartą przy chłodnej pogodzie, aby wspomóc pasywne nagrzewanie. Ochrona przed ciepłem ma priorytet.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "O ile stopni temperatura musi spaść poniżej progu ochrony przed upałem, zanim zacienienie zostanie ponownie zwolnione. Zapobiega szybkiemu przełączaniu w pobliżu progu. Przy 0 zwolnienie następuje dokładnie na progu (poprzednie zachowanie)."
+          "solar_gain_enabled": "Utrzymuje osłonę bardziej otwartą przy chłodnej pogodzie, aby wspomóc pasywne nagrzewanie. Ochrona przed ciepłem ma priorytet."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "„Blokowana od wysokości” nie może być większa niż „Blokowana do wysokości”.",
       "contact_sensor_required_for_block": "Opcja A wymaga wybrania czujnika kontaktowego.",
       "contact_sensor_required_for_lift": "Opcja B wymaga wybrania czujnika kontaktowego.",
-      "invalid_glare_min_exposure": "Wprowadź minimalne natężenie olśnienia w zakresie od 0 do 500 W/m².",
-      "invalid_heat_hysteresis": "Podaj margines zwolnienia od 0 do 5 °C.",
       "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
       "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy.",
       "override_fixed_until_required": "Podaj stałą godzinę zakończenia, gdy czas trwania jest ustawiony na \"Stała godzina\".",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Czujniki temperatury wewnętrznej (opcjonalne)",
           "heat_protection_enabled": "Włącz ochronę przed ciepłem",
           "glare_protection_enabled": "Włącz ochronę przed olśnieniem",
-          "solar_gain_enabled": "Włącz zysk słoneczny (zimowe słońce)",
-          "glare_min_exposure_wm2": "Minimalne natężenie dla ochrony przed olśnieniem",
-          "heat_protection_hysteresis_c": "Margines zwolnienia ochrony przed upałem"
+          "solar_gain_enabled": "Włącz zysk słoneczny (zimowe słońce)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Jeden lub więcej czujników wewnętrznych. Gdy skonfigurowano wiele czujników, używana jest średnia wszystkich prawidłowych odczytów.",
           "heat_protection_enabled": "Zapobiega przegrzewaniu, zacieniając proaktywnie na podstawie pozycji słońca, pogody i temperatur.",
           "glare_protection_enabled": "Redukuje bezpośrednie światło słoneczne, gdy słońce pada na okno.",
-          "solar_gain_enabled": "Utrzymuje osłonę bardziej otwartą przy chłodnej pogodzie, aby wspomóc pasywne nagrzewanie. Ochrona przed ciepłem ma priorytet.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "O ile stopni temperatura musi spaść poniżej progu ochrony przed upałem, zanim zacienienie zostanie ponownie zwolnione. Zapobiega szybkiemu przełączaniu w pobliżu progu. Przy 0 zwolnienie następuje dokładnie na progu (poprzednie zachowanie)."
+          "solar_gain_enabled": "Utrzymuje osłonę bardziej otwartą przy chłodnej pogodzie, aby wspomóc pasywne nagrzewanie. Ochrona przed ciepłem ma priorytet."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "„Blokowana od wysokości” nie może być większa niż „Blokowana do wysokości”.",
       "contact_sensor_required_for_block": "Opcja A wymaga wybrania czujnika kontaktowego.",
       "contact_sensor_required_for_lift": "Opcja B wymaga wybrania czujnika kontaktowego.",
-      "invalid_glare_min_exposure": "Wprowadź minimalne natężenie olśnienia w zakresie od 0 do 500 W/m².",
-      "invalid_heat_hysteresis": "Podaj margines zwolnienia od 0 do 5 °C.",
       "night_clamp_window_invalid": "Najwcześniejszy wyzwalacz nocny nie może być późniejszy niż najpóźniejszy.",
       "morning_clamp_window_invalid": "Najwcześniejszy wyzwalacz poranny nie może być późniejszy niż najpóźniejszy.",
       "cover_already_assigned": "Co najmniej jedna wybrana osłona jest już przypisana do innego okna SmartShading. Osłonę można przypisać tylko raz."

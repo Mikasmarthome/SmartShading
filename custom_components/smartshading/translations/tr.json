@@ -126,10 +126,10 @@
           "active_months": "Aktif aylar (gelişmiş)"
         },
         "data_description": {
-          "night_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki gece saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
+          "night_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı ayarlanan gece saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
           "night_not_before": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
           "night_not_after": "İsteğe bağlı. Çözümlenen gece tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
-          "morning_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı yukarıdaki sabah saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
+          "morning_sun_event": "İsteğe bağlı. Ayarlanırsa, bu gök olayı ayarlanan sabah saatinin yerini alır. Tan ve alacakaranlık, sivil alacakaranlığı kullanır (güneş -6° konumunda).",
           "morning_not_before": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha erken gerçekleşecekse, bunun yerine bu saate ertelenir.",
           "morning_not_after": "İsteğe bağlı. Çözümlenen sabah tetikleyicisi bu saatten daha geç gerçekleşecekse, bunun yerine bu saate öne çekilir.",
           "active_months": "Bu programin her ay uygulanmasi icin bos birakin. Kisitlamak icin belirli aylari secin — ornegin kis programi icin Eylul'den Mart'a kadar."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "İç mekân sıcaklık sensörleri (isteğe bağlı)",
           "heat_protection_enabled": "Isı korumasını etkinleştir",
           "glare_protection_enabled": "Parlama korumasını etkinleştir",
-          "solar_gain_enabled": "Güneş kazancını etkinleştir (kış güneşi)",
-          "glare_min_exposure_wm2": "Kamaşma korumasına yönelik minimum maruziyet",
-          "heat_protection_hysteresis_c": "Isı korumasının serbest bırakma payı"
+          "solar_gain_enabled": "Güneş kazancını etkinleştir (kış güneşi)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Bir veya daha fazla iç mekân sensörü. Birden fazla sensör yapılandırıldığında tüm geçerli okumaların ortalaması kullanılır.",
           "heat_protection_enabled": "Güneş konumuna, hava durumuna ve sıcaklıklara göre proaktif gölgeleme yaparak aşırı ısınmayı önler.",
           "glare_protection_enabled": "Güneş pencereye vurduğunda doğrudan güneş ışığını azaltır.",
-          "solar_gain_enabled": "Pasif ısınmayı desteklemek için serin havalarda gölgelemeyi daha açık tutar. Isı koruması önceliklidir.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Gölgelemenin tekrar serbest bırakılmasından önce sıcaklığın ısı koruma eşiğinin kaç derece altına düşmesi gerektiği. Eşiğe yakın hızlı geçişleri önler. 0 değerinde serbest bırakma tam olarak eşikte gerçekleşir (önceki davranış)."
+          "solar_gain_enabled": "Pasif ısınmayı desteklemek için serin havalarda gölgelemeyi daha açık tutar. Isı koruması önceliklidir."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "„Şu yükseklikten itibaren engellenir“, „Şu yüksekliğe kadar engellenir“ değerinden büyük olmamalıdır.",
       "contact_sensor_required_for_block": "Seçenek A için bir kontak sensörü seçilmesi gerekir.",
       "contact_sensor_required_for_lift": "Seçenek B için bir kontak sensörü seçilmesi gerekir.",
-      "invalid_glare_min_exposure": "0 ile 500 W/m² arasında bir kamaşma minimum maruziyeti girin.",
-      "invalid_heat_hysteresis": "0 ile 5 °C arasında bir serbest bırakma payı girin.",
       "night_clamp_window_invalid": "En erken gece tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
       "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
       "override_fixed_until_required": "Süre \"Sabit saat\" olarak ayarlandığında sabit bir bitiş saati girin.",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "İç mekân sıcaklık sensörleri (isteğe bağlı)",
           "heat_protection_enabled": "Isı korumasını etkinleştir",
           "glare_protection_enabled": "Parlama korumasını etkinleştir",
-          "solar_gain_enabled": "Güneş kazancını etkinleştir (kış güneşi)",
-          "glare_min_exposure_wm2": "Kamaşma korumasına yönelik minimum maruziyet",
-          "heat_protection_hysteresis_c": "Isı korumasının serbest bırakma payı"
+          "solar_gain_enabled": "Güneş kazancını etkinleştir (kış güneşi)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Bir veya daha fazla iç mekân sensörü. Birden fazla sensör yapılandırıldığında tüm geçerli okumaların ortalaması kullanılır.",
           "heat_protection_enabled": "Güneş konumuna, hava durumuna ve sıcaklıklara göre proaktif gölgeleme yaparak aşırı ısınmayı önler.",
           "glare_protection_enabled": "Güneş pencereye vurduğunda doğrudan güneş ışığını azaltır.",
-          "solar_gain_enabled": "Pasif ısınmayı desteklemek için serin havalarda gölgelemeyi daha açık tutar. Isı koruması önceliklidir.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Gölgelemenin tekrar serbest bırakılmasından önce sıcaklığın ısı koruma eşiğinin kaç derece altına düşmesi gerektiği. Eşiğe yakın hızlı geçişleri önler. 0 değerinde serbest bırakma tam olarak eşikte gerçekleşir (önceki davranış)."
+          "solar_gain_enabled": "Pasif ısınmayı desteklemek için serin havalarda gölgelemeyi daha açık tutar. Isı koruması önceliklidir."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "„Şu yükseklikten itibaren engellenir“, „Şu yüksekliğe kadar engellenir“ değerinden büyük olmamalıdır.",
       "contact_sensor_required_for_block": "Seçenek A için bir kontak sensörü seçilmesi gerekir.",
       "contact_sensor_required_for_lift": "Seçenek B için bir kontak sensörü seçilmesi gerekir.",
-      "invalid_glare_min_exposure": "0 ile 500 W/m² arasında bir kamaşma minimum maruziyeti girin.",
-      "invalid_heat_hysteresis": "0 ile 5 °C arasında bir serbest bırakma payı girin.",
       "night_clamp_window_invalid": "En erken gece tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
       "morning_clamp_window_invalid": "En erken sabah tetikleyicisi, en geç tetikleyiciden sonra olamaz.",
       "cover_already_assigned": "Seçilen kapaklardan en az biri zaten başka bir SmartShading penceresine atanmış. Bir kapak yalnızca bir kez atanabilir."

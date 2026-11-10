@@ -126,10 +126,10 @@
           "active_months": "Meses ativos (avançado)"
         },
         "data_description": {
-          "night_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário noturno acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "night_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário noturno configurado. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
           "night_not_before": "Opcional. Se o gatilho noturno resolvido ocorresse antes deste horário, ele é adiado para este horário.",
           "night_not_after": "Opcional. Se o gatilho noturno resolvido ocorresse depois deste horário, ele é antecipado para este horário.",
-          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal configurado. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
           "morning_not_before": "Opcional. Se o gatilho matinal resolvido ocorresse antes deste horário, ele é adiado para este horário.",
           "morning_not_after": "Opcional. Se o gatilho matinal resolvido ocorresse depois deste horário, ele é antecipado para este horário.",
           "active_months": "Deixe em branco para aplicar este horário todos os meses. Selecione meses específicos para restringi-lo — por exemplo, de setembro a março para um horário de inverno."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Sensores de temperatura interior (opcional)",
           "heat_protection_enabled": "Ativar proteção contra calor",
           "glare_protection_enabled": "Ativar proteção contra encandeamento",
-          "solar_gain_enabled": "Ativar ganho solar (sol de inverno)",
-          "glare_min_exposure_wm2": "Exposição mínima para proteção contra encandeamento",
-          "heat_protection_hysteresis_c": "Margem de libertação da proteção térmica"
+          "solar_gain_enabled": "Ativar ganho solar (sol de inverno)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Um ou mais sensores interiores. Quando vários sensores estão configurados, é usada a média de todas as leituras válidas.",
           "heat_protection_enabled": "Evita o sobreaquecimento sombreando proativamente com base na posição do sol, na meteorologia e nas temperaturas.",
           "glare_protection_enabled": "Reduz a luz solar direta quando o sol incide na janela.",
-          "solar_gain_enabled": "Mantém o sombreamento mais aberto em clima fresco para favorecer o aquecimento passivo. A proteção contra calor tem prioridade.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Quantos graus a temperatura deve descer abaixo do limiar de proteção térmica antes de o sombreamento ser novamente libertado. Evita alternâncias rápidas perto do limiar. Com 0 a libertação ocorre exatamente no limiar (comportamento anterior)."
+          "solar_gain_enabled": "Mantém o sombreamento mais aberto em clima fresco para favorecer o aquecimento passivo. A proteção contra calor tem prioridade."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "«Bloqueada a partir da elevação» não pode ser maior do que «Bloqueada até à elevação».",
       "contact_sensor_required_for_block": "A opção A requer a seleção de um sensor de contacto.",
       "contact_sensor_required_for_lift": "A opção B requer a seleção de um sensor de contacto.",
-      "invalid_glare_min_exposure": "Introduza uma exposição mínima de encandeamento entre 0 e 500 W/m².",
-      "invalid_heat_hysteresis": "Introduza uma margem de libertação entre 0 e 5 °C.",
       "night_clamp_window_invalid": "O gatilho noturno mais cedo não pode ser posterior ao mais tarde.",
       "morning_clamp_window_invalid": "O gatilho matinal mais cedo não pode ser posterior ao mais tarde.",
       "override_fixed_until_required": "Indique uma hora de término fixa quando a duração estiver definida como \"Hora fixa\".",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Sensores de temperatura interior (opcional)",
           "heat_protection_enabled": "Ativar proteção contra calor",
           "glare_protection_enabled": "Ativar proteção contra encandeamento",
-          "solar_gain_enabled": "Ativar ganho solar (sol de inverno)",
-          "glare_min_exposure_wm2": "Exposição mínima para proteção contra encandeamento",
-          "heat_protection_hysteresis_c": "Margem de libertação da proteção térmica"
+          "solar_gain_enabled": "Ativar ganho solar (sol de inverno)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Um ou mais sensores interiores. Quando vários sensores estão configurados, é usada a média de todas as leituras válidas.",
           "heat_protection_enabled": "Evita o sobreaquecimento sombreando proativamente com base na posição do sol, na meteorologia e nas temperaturas.",
           "glare_protection_enabled": "Reduz a luz solar direta quando o sol incide na janela.",
-          "solar_gain_enabled": "Mantém o sombreamento mais aberto em clima fresco para favorecer o aquecimento passivo. A proteção contra calor tem prioridade.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Quantos graus a temperatura deve descer abaixo do limiar de proteção térmica antes de o sombreamento ser novamente libertado. Evita alternâncias rápidas perto do limiar. Com 0 a libertação ocorre exatamente no limiar (comportamento anterior)."
+          "solar_gain_enabled": "Mantém o sombreamento mais aberto em clima fresco para favorecer o aquecimento passivo. A proteção contra calor tem prioridade."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "«Bloqueada a partir da elevação» não pode ser maior do que «Bloqueada até à elevação».",
       "contact_sensor_required_for_block": "A opção A requer a seleção de um sensor de contacto.",
       "contact_sensor_required_for_lift": "A opção B requer a seleção de um sensor de contacto.",
-      "invalid_glare_min_exposure": "Introduza uma exposição mínima de encandeamento entre 0 e 500 W/m².",
-      "invalid_heat_hysteresis": "Introduza uma margem de libertação entre 0 e 5 °C.",
       "night_clamp_window_invalid": "O gatilho noturno mais cedo não pode ser posterior ao mais tarde.",
       "morning_clamp_window_invalid": "O gatilho matinal mais cedo não pode ser posterior ao mais tarde.",
       "cover_already_assigned": "Pelo menos uma cobertura selecionada já está atribuída a outra janela do SmartShading. Uma cobertura só pode ser atribuída uma vez."

@@ -126,10 +126,10 @@
           "active_months": "Aktiva månader (avancerat)"
         },
         "data_description": {
-          "night_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse natt-tiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "night_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse den inställda nattiden. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
           "night_not_before": "Valfritt. Om den beräknade nattutlösaren skulle inträffa tidigare än denna tid skjuts den upp till denna tid istället.",
           "night_not_after": "Valfritt. Om den beräknade nattutlösaren skulle inträffa senare än denna tid tidigareläggs den till denna tid istället.",
-          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse morgontiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse den inställda morgontiden. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
           "morning_not_before": "Valfritt. Om den beräknade morgonutlösaren skulle inträffa tidigare än denna tid skjuts den upp till denna tid istället.",
           "morning_not_after": "Valfritt. Om den beräknade morgonutlösaren skulle inträffa senare än denna tid tidigareläggs den till denna tid istället.",
           "active_months": "Lämna tomt för att tillämpa detta schema varje månad. Välj specifika månader för att begränsa det — till exempel september till mars för ett vinterschema."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Inomhustemperatursensorer (valfritt)",
           "heat_protection_enabled": "Aktivera värmeskydd",
           "glare_protection_enabled": "Aktivera bländningsskydd",
-          "solar_gain_enabled": "Aktivera solinstrålning (vintersol)",
-          "glare_min_exposure_wm2": "Minsta exponering för bländskydd",
-          "heat_protection_hysteresis_c": "Frigöringsmarginal för värmeskydd"
+          "solar_gain_enabled": "Aktivera solinstrålning (vintersol)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "En eller flera inomhussensorer. När flera sensorer är konfigurerade används medelvärdet av alla giltiga avläsningar.",
           "heat_protection_enabled": "Förhindrar överhettning genom att skugga proaktivt baserat på solposition, väder och temperaturer.",
           "glare_protection_enabled": "Minskar direkt solljus när solen träffar fönstret.",
-          "solar_gain_enabled": "Håller solskyddet mer öppet vid svalt väder för att stödja passiv uppvärmning. Värmeskydd har prioritet.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Hur många grader temperaturen måste sjunka under värmeskyddets tröskelvärde innan avskärmningen frigörs igen. Förhindrar snabb växling nära tröskeln. Vid 0 frigörs den exakt vid tröskeln (tidigare beteende)."
+          "solar_gain_enabled": "Håller solskyddet mer öppet vid svalt väder för att stödja passiv uppvärmning. Värmeskydd har prioritet."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "\"Blockerad från höjd\" får inte vara större än \"Blockerad till höjd\".",
       "contact_sensor_required_for_block": "Alternativ A kräver att en kontaktsensor väljs.",
       "contact_sensor_required_for_lift": "Alternativ B kräver att en kontaktsensor väljs.",
-      "invalid_glare_min_exposure": "Ange en minsta bländningsexponering mellan 0 och 500 W/m².",
-      "invalid_heat_hysteresis": "Ange en frigöringsmarginal mellan 0 och 5 °C.",
       "night_clamp_window_invalid": "Tidigaste nattutlösaren får inte vara senare än senaste.",
       "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste.",
       "override_fixed_until_required": "Ange en fast sluttid när varaktighet är satt till \"Fast tid\".",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Inomhustemperatursensorer (valfritt)",
           "heat_protection_enabled": "Aktivera värmeskydd",
           "glare_protection_enabled": "Aktivera bländningsskydd",
-          "solar_gain_enabled": "Aktivera solinstrålning (vintersol)",
-          "glare_min_exposure_wm2": "Minsta exponering för bländskydd",
-          "heat_protection_hysteresis_c": "Frigöringsmarginal för värmeskydd"
+          "solar_gain_enabled": "Aktivera solinstrålning (vintersol)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "En eller flera inomhussensorer. När flera sensorer är konfigurerade används medelvärdet av alla giltiga avläsningar.",
           "heat_protection_enabled": "Förhindrar överhettning genom att skugga proaktivt baserat på solposition, väder och temperaturer.",
           "glare_protection_enabled": "Minskar direkt solljus när solen träffar fönstret.",
-          "solar_gain_enabled": "Håller solskyddet mer öppet vid svalt väder för att stödja passiv uppvärmning. Värmeskydd har prioritet.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Hur många grader temperaturen måste sjunka under värmeskyddets tröskelvärde innan avskärmningen frigörs igen. Förhindrar snabb växling nära tröskeln. Vid 0 frigörs den exakt vid tröskeln (tidigare beteende)."
+          "solar_gain_enabled": "Håller solskyddet mer öppet vid svalt väder för att stödja passiv uppvärmning. Värmeskydd har prioritet."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "\"Blockerad från höjd\" får inte vara större än \"Blockerad till höjd\".",
       "contact_sensor_required_for_block": "Alternativ A kräver att en kontaktsensor väljs.",
       "contact_sensor_required_for_lift": "Alternativ B kräver att en kontaktsensor väljs.",
-      "invalid_glare_min_exposure": "Ange en minsta bländningsexponering mellan 0 och 500 W/m².",
-      "invalid_heat_hysteresis": "Ange en frigöringsmarginal mellan 0 och 5 °C.",
       "night_clamp_window_invalid": "Tidigaste nattutlösaren får inte vara senare än senaste.",
       "morning_clamp_window_invalid": "Tidigaste morgonutlösaren får inte vara senare än senaste.",
       "cover_already_assigned": "Minst ett valt skydd är redan tilldelat ett annat SmartShading-fönster. Ett skydd kan bara tilldelas en gång."

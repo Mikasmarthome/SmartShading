@@ -272,9 +272,7 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             "solar_gain_enabled": data.comfort_config.solar_gain_enabled,
             "heat_protection_indoor_temp_c": data.comfort_config.heat_protection_indoor_temp_c,
             "heat_protection_outdoor_temp_c": data.comfort_config.heat_protection_outdoor_temp_c,
-            "heat_protection_hysteresis_c": data.comfort_config.heat_protection_hysteresis_c,
             "solar_gain_max_outdoor_temp_c": data.comfort_config.solar_gain_max_outdoor_temp_c,
-            "glare_min_exposure_wm2": data.comfort_config.glare_min_exposure_wm2,
         },
         "override_policy": {
             "release_strategy": data.override_policy.release_strategy.value,
@@ -431,7 +429,12 @@ def _zone_from_storage(raw: dict[str, Any]) -> ZoneConfig:
 def _comfort_config_from_storage(raw: dict[str, Any] | None) -> ComfortConfig:
     """Backwards compatible: ConfigEntries without a comfort_config key (created
     before this round) fall back to full ComfortConfig defaults, never KeyError.
-    Individual missing keys within the dict are likewise handled gracefully."""
+    Individual missing keys within the dict are likewise handled gracefully.
+
+    ``glare_min_exposure_wm2`` and ``heat_protection_hysteresis_c`` are no
+    longer user settings (internal policy in const.py).  Old entries may still
+    carry them; they are deliberately never read, so no stored value - valid
+    or malformed - can change behavior or raise here."""
     if not raw:
         return ComfortConfig()
     return ComfortConfig(
@@ -440,9 +443,7 @@ def _comfort_config_from_storage(raw: dict[str, Any] | None) -> ComfortConfig:
         solar_gain_enabled=raw.get("solar_gain_enabled", True),
         heat_protection_indoor_temp_c=float(raw.get("heat_protection_indoor_temp_c", 24.0)),
         heat_protection_outdoor_temp_c=float(raw.get("heat_protection_outdoor_temp_c", 26.0)),
-        heat_protection_hysteresis_c=float(raw.get("heat_protection_hysteresis_c", 1.0)),
         solar_gain_max_outdoor_temp_c=float(raw.get("solar_gain_max_outdoor_temp_c", 12.0)),
-        glare_min_exposure_wm2=float(raw.get("glare_min_exposure_wm2", 100.0)),
     )
 
 

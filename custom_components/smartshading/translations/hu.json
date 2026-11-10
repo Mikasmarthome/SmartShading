@@ -126,10 +126,10 @@
           "active_months": "Aktív hónapok (speciális)"
         },
         "data_description": {
-          "night_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti éjszakai időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
+          "night_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a beállított éjszakai időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
           "night_not_before": "Opcionális. Ha a feloldott éjszakai kiváltás ennél az időpontnál korábban történne, ehelyett erre az időpontra tolódik.",
           "night_not_after": "Opcionális. Ha a feloldott éjszakai kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb.",
-          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
+          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a beállított reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
           "morning_not_before": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál korábban történne, ehelyett erre az időpontra tolódik.",
           "morning_not_after": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb.",
           "active_months": "Hagyja üresen, ha ezt az ütemezést minden hónapban alkalmazni szeretné. Válasszon konkrét hónapokat a korlátozásához — például szeptembertől márciusig egy téli ütemezéshez."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Beltéri hőmérséklet-érzékelők (opcionális)",
           "heat_protection_enabled": "Hővédelem engedélyezése",
           "glare_protection_enabled": "Vakításvédelem engedélyezése",
-          "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)",
-          "glare_min_exposure_wm2": "Minimális megvilágítás a vakításvédelemhez",
-          "heat_protection_hysteresis_c": "Hővédelem feloldási tartománya"
+          "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Egy vagy több beltéri érzékelő. Több érzékelő konfigurálása esetén az összes érvényes mérés átlaga használatos.",
           "heat_protection_enabled": "Megakadályozza a túlmelegedést azzal, hogy a napállás, az időjárás és a hőmérsékletek alapján proaktívan árnyékol.",
           "glare_protection_enabled": "Csökkenti a közvetlen napfényt, amikor a nap az ablakra süt.",
-          "solar_gain_enabled": "Hűvös időben jobban nyitva tartja az árnyékolást a passzív felmelegedés támogatására. A hővédelem elsőbbséget élvez.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Hány fokkal kell a hőmérsékletnek a hővédelmi küszöbérték alá esnie, mielőtt az árnyékolás ismét feloldásra kerül. Megakadályozza a gyors ki-be kapcsolást a küszöbérték közelében. 0 esetén a feloldás pontosan a küszöbértéknél történik (korábbi viselkedés)."
+          "solar_gain_enabled": "Hűvös időben jobban nyitva tartja az árnyékolást a passzív felmelegedés támogatására. A hővédelem elsőbbséget élvez."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”.",
       "contact_sensor_required_for_block": "Az A lehetőséghez kontaktusérzékelő kiválasztása szükséges.",
       "contact_sensor_required_for_lift": "A B lehetőséghez kontaktusérzékelő kiválasztása szükséges.",
-      "invalid_glare_min_exposure": "Adjon meg egy 0 és 500 W/m² közötti minimális vakítási megvilágítást.",
-      "invalid_heat_hysteresis": "Adjon meg egy feloldási tartományt 0 és 5 °C között.",
       "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",
       "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél.",
       "override_fixed_until_required": "Adjon meg egy rögzített befejezési időt, ha az időtartam \"Rögzített idő\"-re van állítva.",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Beltéri hőmérséklet-érzékelők (opcionális)",
           "heat_protection_enabled": "Hővédelem engedélyezése",
           "glare_protection_enabled": "Vakításvédelem engedélyezése",
-          "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)",
-          "glare_min_exposure_wm2": "Minimális megvilágítás a vakításvédelemhez",
-          "heat_protection_hysteresis_c": "Hővédelem feloldási tartománya"
+          "solar_gain_enabled": "Napenergia-nyereség engedélyezése (téli nap)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Egy vagy több beltéri érzékelő. Több érzékelő konfigurálása esetén az összes érvényes mérés átlaga használatos.",
           "heat_protection_enabled": "Megakadályozza a túlmelegedést azzal, hogy a napállás, az időjárás és a hőmérsékletek alapján proaktívan árnyékol.",
           "glare_protection_enabled": "Csökkenti a közvetlen napfényt, amikor a nap az ablakra süt.",
-          "solar_gain_enabled": "Hűvös időben jobban nyitva tartja az árnyékolást a passzív felmelegedés támogatására. A hővédelem elsőbbséget élvez.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "Hány fokkal kell a hőmérsékletnek a hővédelmi küszöbérték alá esnie, mielőtt az árnyékolás ismét feloldásra kerül. Megakadályozza a gyors ki-be kapcsolást a küszöbérték közelében. 0 esetén a feloldás pontosan a küszöbértéknél történik (korábbi viselkedés)."
+          "solar_gain_enabled": "Hűvös időben jobban nyitva tartja az árnyékolást a passzív felmelegedés támogatására. A hővédelem elsőbbséget élvez."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "A „Blokkolva ettől a magasságtól” nem lehet nagyobb, mint a „Blokkolva eddig a magasságig”.",
       "contact_sensor_required_for_block": "Az A lehetőséghez kontaktusérzékelő kiválasztása szükséges.",
       "contact_sensor_required_for_lift": "A B lehetőséghez kontaktusérzékelő kiválasztása szükséges.",
-      "invalid_glare_min_exposure": "Adjon meg egy 0 és 500 W/m² közötti minimális vakítási megvilágítást.",
-      "invalid_heat_hysteresis": "Adjon meg egy feloldási tartományt 0 és 5 °C között.",
       "night_clamp_window_invalid": "A legkorábbi éjszakai kiváltás nem lehet későbbi a legkésőbbinél.",
       "morning_clamp_window_invalid": "A legkorábbi reggeli kiváltás nem lehet későbbi a legkésőbbinél.",
       "cover_already_assigned": "Legalább egy kiválasztott árnyékoló már hozzá van rendelve egy másik SmartShading ablakhoz. Egy árnyékoló csak egyszer rendelhető hozzá."

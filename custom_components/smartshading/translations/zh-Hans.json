@@ -126,10 +126,10 @@
           "active_months": "活跃月份（高级）"
         },
         "data_description": {
-          "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "night_sun_event": "可选。设置后，此天文事件将替代所设置的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
           "night_not_before": "可选。若解析后的夜间触发时间早于此时间，将推迟到此时间。",
           "night_not_after": "可选。若解析后的夜间触发时间晚于此时间，将提前到此时间。",
-          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "morning_sun_event": "可选。设置后，此天文事件将替代所设置的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
           "morning_not_before": "可选。若解析后的早晨触发时间早于此时间，将推迟到此时间。",
           "morning_not_after": "可选。若解析后的早晨触发时间晚于此时间，将提前到此时间。",
           "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。"
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "室内温度传感器（可选）",
           "heat_protection_enabled": "启用隔热保护",
           "glare_protection_enabled": "启用防眩光保护",
-          "solar_gain_enabled": "启用太阳得热（冬季阳光）",
-          "glare_min_exposure_wm2": "眼光防护的最小辐照度",
-          "heat_protection_hysteresis_c": "热保护释放余量"
+          "solar_gain_enabled": "启用太阳得热（冬季阳光）"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "一个或多个室内传感器。配置多个传感器时，使用所有有效读数的平均值。",
           "heat_protection_enabled": "根据太阳位置、天气和温度主动遮阳，从而防止过热。",
           "glare_protection_enabled": "当阳光照射到窗户时减少直射阳光。",
-          "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "温度需要降到热保护阈值以下多少度，邃阳才会再次解除。可防止在阈值附近频繁切换。设为 0 时将在阈值处立即解除（旧行为）。"
+          "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。"
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "“从该高度起被遮挡”不得大于“至该高度止被遮挡”。",
       "contact_sensor_required_for_block": "选项 A 需要选择一个接触传感器。",
       "contact_sensor_required_for_lift": "选项 B 需要选择一个接触传感器。",
-      "invalid_glare_min_exposure": "请输入 0 到 500 W/m² 之间的眼光最小辐照度。",
-      "invalid_heat_hysteresis": "请输入 0 到 5 °C 之间的释放余量。",
       "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
       "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。",
       "override_fixed_until_required": "当持续时间设置为“固定时间”时，请输入固定结束时间。",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "室内温度传感器（可选）",
           "heat_protection_enabled": "启用隔热保护",
           "glare_protection_enabled": "启用防眩光保护",
-          "solar_gain_enabled": "启用太阳得热（冬季阳光）",
-          "glare_min_exposure_wm2": "眼光防护的最小辐照度",
-          "heat_protection_hysteresis_c": "热保护释放余量"
+          "solar_gain_enabled": "启用太阳得热（冬季阳光）"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "一个或多个室内传感器。配置多个传感器时，使用所有有效读数的平均值。",
           "heat_protection_enabled": "根据太阳位置、天气和温度主动遮阳，从而防止过热。",
           "glare_protection_enabled": "当阳光照射到窗户时减少直射阳光。",
-          "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "温度需要降到热保护阈值以下多少度，邃阳才会再次解除。可防止在阈值附近频繁切换。设为 0 时将在阈值处立即解除（旧行为）。"
+          "solar_gain_enabled": "在凉爽天气下让遮阳保持更开放以支持被动升温。隔热保护优先。"
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "“从该高度起被遮挡”不得大于“至该高度止被遮挡”。",
       "contact_sensor_required_for_block": "选项 A 需要选择一个接触传感器。",
       "contact_sensor_required_for_lift": "选项 B 需要选择一个接触传感器。",
-      "invalid_glare_min_exposure": "请输入 0 到 500 W/m² 之间的眼光最小辐照度。",
-      "invalid_heat_hysteresis": "请输入 0 到 5 °C 之间的释放余量。",
       "night_clamp_window_invalid": "夜间最早触发时间不能晚于最晚触发时间。",
       "morning_clamp_window_invalid": "早晨最早触发时间不能晚于最晚触发时间。",
       "cover_already_assigned": "至少有一个所选遮阳设备已分配给另一个 SmartShading 窗口。每个遮阳设备只能分配一次。"

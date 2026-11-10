@@ -126,10 +126,10 @@
           "active_months": "Aktivní měsíce (pokročilé)"
         },
         "data_description": {
-          "night_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený noční čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
+          "night_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí nastavený noční čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
           "night_not_before": "Volitelné. Pokud by vypočtené noční spuštění nastalo dříve než tento čas, je místo toho odloženo na tento čas.",
           "night_not_after": "Volitelné. Pokud by vypočtené noční spuštění nastalo později než tento čas, je místo toho posunuto na tento čas.",
-          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
+          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí nastavený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
           "morning_not_before": "Volitelné. Pokud by vypočtené ranní spuštění nastalo dříve než tento čas, je místo toho odloženo na tento čas.",
           "morning_not_after": "Volitelné. Pokud by vypočtené ranní spuštění nastalo později než tento čas, je místo toho posunuto na tento čas.",
           "active_months": "Ponechte prázdné, pokud se má tento plán použít v každém měsíci. Vyberte konkrétní měsíce pro jeho omezení — například září až březen pro zimní plán."
@@ -157,17 +157,13 @@
           "indoor_temperature_sensor_ids": "Senzory vnitřní teploty (volitelné)",
           "heat_protection_enabled": "Povolit ochranu před teplem",
           "glare_protection_enabled": "Povolit ochranu před oslněním",
-          "solar_gain_enabled": "Povolit solární zisk (zimní slunce)",
-          "glare_min_exposure_wm2": "Minimální osvit pro ochranu proti oslnení",
-          "heat_protection_hysteresis_c": "Rozpětí uvolnění tepelné ochrany"
+          "solar_gain_enabled": "Povolit solární zisk (zimní slunce)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Jeden nebo více vnitřních senzorů. Při konfiguraci více senzorů se použije průměr všech platných hodnot.",
           "heat_protection_enabled": "Zabraňuje přehřívání proaktivním stíněním na základě polohy slunce, počasí a teplot.",
           "glare_protection_enabled": "Snižuje přímé sluneční světlo, když slunce dopadá na okno.",
-          "solar_gain_enabled": "Udržuje stínění více otevřené v chladném počasí pro podporu pasivního ohřevu. Ochrana před teplem má prioritu.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "O kolik stupňů musí teplota klesnout pod prahovou hodnotu tepelné ochrany, než se stínění opět uvolní. Zabraňuje rychlému přepnání v blízkosti prahu. Při 0 se uvolní přesně na prahu (dřívější chování)."
+          "solar_gain_enabled": "Udržuje stínění více otevřené v chladném počasí pro podporu pasivního ohřevu. Ochrana před teplem má prioritu."
         }
       },
       "behavior": {
@@ -440,8 +436,6 @@
       "obstruction_elevation_range_invalid": "„Blokována od výšky“ nesmí být větší než „Blokována do výšky“.",
       "contact_sensor_required_for_block": "Možnost A vyžaduje výběr kontaktního senzoru.",
       "contact_sensor_required_for_lift": "Možnost B vyžaduje výběr kontaktního senzoru.",
-      "invalid_glare_min_exposure": "Zadejte minimální osvit pro oslnení mezi 0 a 500 W/m².",
-      "invalid_heat_hysteresis": "Zadejte rozpětí uvolnění mezi 0 a 5 °C.",
       "night_clamp_window_invalid": "Nejdřívější noční spuštění nesmí být pozdější než nejpozdější.",
       "morning_clamp_window_invalid": "Nejdřívější ranní spuštění nesmí být pozdější než nejpozdější.",
       "override_fixed_until_required": "Zadejte pevný čas ukončení, když je doba trvání nastavena na \"Pevný čas\".",
@@ -623,17 +617,13 @@
           "indoor_temperature_sensor_ids": "Senzory vnitřní teploty (volitelné)",
           "heat_protection_enabled": "Povolit ochranu před teplem",
           "glare_protection_enabled": "Povolit ochranu před oslněním",
-          "solar_gain_enabled": "Povolit solární zisk (zimní slunce)",
-          "glare_min_exposure_wm2": "Minimální osvit pro ochranu proti oslnení",
-          "heat_protection_hysteresis_c": "Rozpětí uvolnění tepelné ochrany"
+          "solar_gain_enabled": "Povolit solární zisk (zimní slunce)"
         },
         "data_description": {
           "indoor_temperature_sensor_ids": "Jeden nebo více vnitřních senzorů. Při konfiguraci více senzorů se použije průměr všech platných hodnot.",
           "heat_protection_enabled": "Zabraňuje přehřívání proaktivním stíněním na základě polohy slunce, počasí a teplot.",
           "glare_protection_enabled": "Snižuje přímé sluneční světlo, když slunce dopadá na okno.",
-          "solar_gain_enabled": "Udržuje stínění více otevřené v chladném počasí pro podporu pasivního ohřevu. Ochrana před teplem má prioritu.",
-          "glare_min_exposure_wm2": "Glare protection only triggers when the window is in the sun's sector and the effective window exposure reaches at least this value. This prevents geometric sun position alone, without meaningful irradiance, from causing unnecessary shading.",
-          "heat_protection_hysteresis_c": "O kolik stupňů musí teplota klesnout pod prahovou hodnotu tepelné ochrany, než se stínění opět uvolní. Zabraňuje rychlému přepnání v blízkosti prahu. Při 0 se uvolní přesně na prahu (dřívější chování)."
+          "solar_gain_enabled": "Udržuje stínění více otevřené v chladném počasí pro podporu pasivního ohřevu. Ochrana před teplem má prioritu."
         }
       }
     },
@@ -644,8 +634,6 @@
       "obstruction_elevation_range_invalid": "„Blokována od výšky“ nesmí být větší než „Blokována do výšky“.",
       "contact_sensor_required_for_block": "Možnost A vyžaduje výběr kontaktního senzoru.",
       "contact_sensor_required_for_lift": "Možnost B vyžaduje výběr kontaktního senzoru.",
-      "invalid_glare_min_exposure": "Zadejte minimální osvit pro oslnení mezi 0 a 500 W/m².",
-      "invalid_heat_hysteresis": "Zadejte rozpětí uvolnění mezi 0 a 5 °C.",
       "night_clamp_window_invalid": "Nejdřívější noční spuštění nesmí být pozdější než nejpozdější.",
       "morning_clamp_window_invalid": "Nejdřívější ranní spuštění nesmí být pozdější než nejpozdější.",
       "cover_already_assigned": "Alespoň jedno vybrané zakrytí je již přiřazeno jinému oknu SmartShading. Zakrytí lze přiřadit pouze jednou."

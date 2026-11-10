@@ -106,7 +106,7 @@ LOW_ANGLE_GLARE_MIN_MEASURED_WM2 = 40.0
 # matters for glare — deeper room penetration at a low sun angle (cot(elevation))
 # and incidence at a side angle (cos(azimuth_delta)) — so a stronger geometric
 # risk yields a larger value.  It is classified relative to the glare threshold
-# (glare_min_exposure_wm2), so the stage scales with how far the real low-angle
+# (GLARE_MIN_EXPOSURE_WM2), so the stage scales with how far the real low-angle
 # beam exceeds the "meaningfully lit" floor.  Per window only; never from another
 # window; monotonic (never weaker than the light floor).
 GLARE_INTENSITY_NORMAL_RATIO = 1.8   # >= 1.8x glare_min  -> NORMAL shade
@@ -141,12 +141,10 @@ MEASURED_SOLAR_UNDERREPRESENTATION_MIN_ELEVATION_DEG = 10.0
 MEASURED_SOLAR_UNDERREPRESENTATION_MAX_WM2 = 100.0
 
 # Heat protection meaningful-exposure floor: HeatEvaluator does NOT introduce its
-# own minimum-exposure constant.  It reuses the user-configurable
-# glare_min_exposure_wm2 ("Minimum exposure for glare protection" in the options
-# flow; default DEFAULT_GLARE_MIN_EXPOSURE_WM2 below), capped at the window's own
-# light-shade threshold — so there is a single visible knob for "is there real sun
-# at this window" instead of a second hidden 100 W/m² value.  See
-# evaluators/heat_evaluator.py.
+# own minimum-exposure constant.  It reuses GLARE_MIN_EXPOSURE_WM2 (below),
+# capped at the window's own light-shade threshold — so there is a single
+# definition of "is there real sun at this window" instead of a second hidden
+# 100 W/m² value.  See evaluators/heat_evaluator.py.
 
 # Per-window manual sun sector override (v1.0).
 CONF_MANUAL_SUN_SECTOR_ENABLED = "manual_sun_sector_enabled"
@@ -312,25 +310,23 @@ CONF_GLARE_PROTECTION_ENABLED = "glare_protection_enabled"
 CONF_SOLAR_GAIN_ENABLED = "solar_gain_enabled"
 CONF_HEAT_PROTECTION_INDOOR_TEMP_C = "heat_protection_indoor_temp_c"
 CONF_HEAT_PROTECTION_OUTDOOR_TEMP_C = "heat_protection_outdoor_temp_c"
-CONF_HEAT_PROTECTION_HYSTERESIS_C = "heat_protection_hysteresis_c"
 CONF_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C = "solar_gain_max_outdoor_temp_c"
-CONF_GLARE_MIN_EXPOSURE_WM2 = "glare_min_exposure_wm2"
 
 DEFAULT_HEAT_PROTECTION_INDOOR_TEMP_C = 24.0
 DEFAULT_HEAT_PROTECTION_OUTDOOR_TEMP_C = 26.0
-# v1.2.0-beta.1, T9: degrees below the heat threshold the temperature must
-# drop before shading is released again (hysteresis). 0 = legacy exact
-# threshold (no hysteresis) — a full backward-compatibility escape hatch.
-DEFAULT_HEAT_PROTECTION_HYSTERESIS_C = 1.0
-HEAT_PROTECTION_HYSTERESIS_MAX_C = 5.0
+# Heat protection release hysteresis (internal policy, not configurable): the
+# degrees below an entry threshold the temperature must drop before shading is
+# released again.  Applied symmetrically to the outdoor and indoor threshold.
+# See engines/heat_hysteresis.py.
+HEAT_RELEASE_HYSTERESIS_C = 1.0
 DEFAULT_SOLAR_GAIN_MAX_OUTDOOR_TEMP_C = 12.0
-# Minimum effective window exposure (W/m²) for glare protection to fire.  Must
-# match models.comfort.ComfortConfig.glare_min_exposure_wm2 default.  The upper
-# bound keeps the value in a sensible glare range (below/around the solar
-# shading thresholds); above it glare would only fire when full solar shading
-# already applies.
-DEFAULT_GLARE_MIN_EXPOSURE_WM2 = 100.0
-GLARE_MIN_EXPOSURE_MAX_WM2 = 500.0
+# Minimum effective window exposure (W/m²) for glare protection to fire (internal
+# policy, not configurable).  Glare must not fire on geometry alone: the window
+# must also be meaningfully lit.  It is also the scale of the glare intensity
+# stages (GLARE_INTENSITY_*_RATIO) and, capped at the light-shade threshold, the
+# exposure floor of heat protection.  Kept below the default solar light-shade
+# threshold (150) so diffuse glare still applies before full solar shading.
+GLARE_MIN_EXPOSURE_WM2 = 100.0
 
 # Manual Override policy (v1.2.0-beta.1, T7; release-strategy architecture T10;
 # simplified 4-concept release-mode UI T21 Phase B — see

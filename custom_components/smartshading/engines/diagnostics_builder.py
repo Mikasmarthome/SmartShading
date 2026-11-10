@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
+from ..const import HEAT_RELEASE_HYSTERESIS_C
 from .diagnostics_privacy import enforce_depth, is_json_safe, truncate_strings
 from ..models.runtime_mode import derive_authority
 
@@ -227,7 +228,7 @@ def build_consolidated_diagnostics(coordinator, *, integration_version: str = "u
         active_latch = getattr(c, "_heat_active", None) or {}
         return {
             "enabled": bool(getattr(comfort, "heat_protection_enabled", True)),
-            "hysteresis_c": getattr(comfort, "heat_protection_hysteresis_c", 1.0),
+            "hysteresis_c": HEAT_RELEASE_HYSTERESIS_C,
             "active_window_count": sum(1 for v in active_latch.values() if v),
         }
 

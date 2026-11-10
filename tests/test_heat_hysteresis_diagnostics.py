@@ -43,11 +43,13 @@ class TestHeatProtectionSummaryPresent:
         )
         assert diag["heat_protection_summary"]["enabled"] is False
 
-    def test_custom_hysteresis_value_reflected(self) -> None:
+    def test_hysteresis_is_the_internal_policy_value(self) -> None:
+        from custom_components.smartshading.const import HEAT_RELEASE_HYSTERESIS_C
+
         diag = build_consolidated_diagnostics(
-            _fake_coordinator(comfort_config=ComfortConfig(heat_protection_hysteresis_c=2.5))
+            _fake_coordinator(comfort_config=ComfortConfig(heat_protection_enabled=False))
         )
-        assert diag["heat_protection_summary"]["hysteresis_c"] == 2.5
+        assert diag["heat_protection_summary"]["hysteresis_c"] == HEAT_RELEASE_HYSTERESIS_C == 1.0
 
     def test_active_window_count_reflects_the_latch(self) -> None:
         diag = build_consolidated_diagnostics(

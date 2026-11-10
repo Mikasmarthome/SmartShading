@@ -13,6 +13,7 @@ Contract:
 """
 from __future__ import annotations
 
+import dataclasses
 import types as _types
 
 import pytest
@@ -69,10 +70,9 @@ def _wdi(
         heat_protection_enabled=heat_protection_enabled,
         heat_protection_outdoor_temp_c=heat_outdoor_threshold_c,
         heat_protection_indoor_temp_c=heat_indoor_threshold_c,
-        heat_protection_hysteresis_c=heat_hysteresis_c,
         glare_protection_enabled=False,
     )
-    return build_window_decision_input(
+    wdi = build_window_decision_input(
         window=window, zone=zone,
         global_defaults=GlobalDefaults(),
         shade_position_defaults=ShadePositionDefaults(normal_shade_position=normal_shade_ha),
@@ -87,6 +87,14 @@ def _wdi(
         comfort_config=comfort_config,
         heat_previously_active=heat_previously_active,
     )
+    if heat_hysteresis_c != wdi.effective_behavior.heat_hysteresis_c:
+        # The production builder pins the hysteresis to the internal policy;
+        # the evaluator's own mechanics (e.g. a 0.0 band) are exercised by
+        # overriding the resolved behavior, as the evaluator receives it.
+        wdi = dataclasses.replace(
+            wdi, effective_behavior=dataclasses.replace(
+                wdi.effective_behavior, heat_hysteresis_c=heat_hysteresis_c))
+    return wdi
 
 
 # ---------------------------------------------------------------------------

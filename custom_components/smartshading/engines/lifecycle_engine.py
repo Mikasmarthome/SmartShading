@@ -127,7 +127,7 @@ the correct NIGHT state after a restart.
 """
 from __future__ import annotations
 
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from typing import NamedTuple
 
 from ..models.lifecycle import (
@@ -611,6 +611,20 @@ class PresenceDebouncer:
 
     def __init__(self) -> None:
         self._absent_since: datetime | None = None
+
+    def resume_absence(self, now: datetime, absence_delay_min: int) -> None:
+        """Continue an absence that was already active before this debouncer
+        existed (Home Assistant restart / integration reload).
+
+        The debouncer is runtime-only, so after a restart it would start the
+        activation delay again although the household never came back.  The
+        caller - which knows from the persisted window states that absence
+        protection was in force - backdates the start by one full delay, so the
+        absence counts as active from the very next ``is_absence_active()``.
+        An absence the debouncer is already tracking is left untouched.
+        """
+        if self._absent_since is None:
+            self._absent_since = now - timedelta(minutes=absence_delay_min)
 
     def is_absence_active(self, present: bool, now: datetime, absence_delay_min: int) -> bool:
         if present:

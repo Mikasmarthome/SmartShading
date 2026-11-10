@@ -1660,6 +1660,13 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # by _read_presence()'s return value and the debouncer's own state.
         self._cycle_presence_reading: PresenceReading | None = None
         self._cycle_absence_active: bool | None = None
+        # True from a restore that brought back at least one window in
+        # ABSENCE_CLOSED until presence is next read definitively (AWAY: the
+        # runtime-only debouncer continues the absence instead of starting its
+        # activation delay over; HOME: the absence ended while we were down).
+        # Runtime-only and one-shot: never persisted, never re-armed except by
+        # a new restore, so it cannot outlive the first definitive reading.
+        self._absence_resume_pending: bool = False
         # Unsubscribe callbacks for presence state change listeners.
         # Populated by async_setup_presence_listeners(); cleared by teardown.
         self._unsub_presence_listeners: list[Callable[[], None]] = []
@@ -4491,6 +4498,8 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                                     self._current_states[_wid] = ShadingState(_sv)
                                 except Exception:
                                     continue
+                                if self._current_states[_wid] is ShadingState.ABSENCE_CLOSED:
+                                    self._absence_resume_pending = True
                         except Exception:
                             _LOGGER.warning("Learning: current-state restore failed (non-fatal)")
                         # B3-010 R12: restore the minimal Morning last-processed
@@ -4742,6 +4751,19 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         # Presence/absence (2026-06-16) does not depend on sun data at all.
         presence_present = self._read_presence()
+        # A restart or reload must not release an absence by itself: the
+        # debouncer is runtime-only, so while the household is still definitively
+        # away it continues the absence the restored ABSENCE_CLOSED state stands
+        # for, instead of starting its activation delay again (during which the
+        # daytime fallback would open the cover).  A definitive reading - either
+        # way - ends the pending resume; an undeterminable one keeps it pending
+        # (the uncertain-presence hold covers that time).
+        if self._absence_resume_pending:
+            if self._cycle_presence_reading is PresenceReading.ABSENT:
+                self._presence_debouncer.resume_absence(now, self._absence_delay_min)
+                self._absence_resume_pending = False
+            elif self._cycle_presence_reading is PresenceReading.PRESENT:
+                self._absence_resume_pending = False
         absence_active = self._presence_debouncer.is_absence_active(
             presence_present, now, self._absence_delay_min
         )

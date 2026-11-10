@@ -247,7 +247,7 @@ class Sim:
 
 def zone_entry(entry_id: str, windows: dict, shade: int, rain=None, learning: bool = False,
                presence=None, absence_position=None, comfort_off: bool = False,
-               solar_sensor=None) -> MockConfigEntry:
+               solar_sensor=None, absence_delay_min: int = 0) -> MockConfigEntry:
     """One zone = one config entry.  ``windows`` maps window id -> cover ids (one
     cover group per window)."""
     zone_id = f"z_{entry_id}"
@@ -263,7 +263,7 @@ def zone_entry(entry_id: str, windows: dict, shade: int, rain=None, learning: bo
     data = SmartShadingConfigEntryData(
         name=entry_id, use_home_location=False, zones=[zone], windows=wins, cover_groups=groups,
         rain_sensor_id=rain, solar_radiation_sensor_id=solar_sensor,
-        presence_entity_ids=list(presence or []), absence_delay_min=0,
+        presence_entity_ids=list(presence or []), absence_delay_min=absence_delay_min,
         **({"comfort_config": ComfortConfig(heat_protection_enabled=False, glare_protection_enabled=False,
                                            solar_gain_enabled=False)} if comfort_off else {}),
         shade_position_defaults=ShadePositionDefaults(
@@ -293,7 +293,7 @@ class ZoneHarness:
         self.entries: dict[str, MockConfigEntry] = {}
         self.rains: list[str] = []
         #: per entry id: extra ``zone_entry`` keywords (``presence``, ``absence_position``,
-        #: ``comfort_off``, ``solar_sensor``)
+        #: ``comfort_off``, ``solar_sensor``, ``absence_delay_min``)
         self.zone_extra: dict[str, dict] = {}
 
     # -- setup -----------------------------------------------------------------

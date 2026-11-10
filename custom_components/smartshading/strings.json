@@ -38,48 +38,101 @@
           "schedule_mode": "\"Same every day\" uses one schedule for the whole week. \"Weekday / Weekend\" lets you set different times and positions for Mon–Fri versus Sat–Sun."
         }
       },
-      "lifecycle_detail": {
-        "title": "Schedule details",
-        "description": "Enter the time or sun elevation for each trigger. Only the fields relevant to your selected trigger are shown.",
+      "lifecycle_night": {
+        "title": "Night",
         "data": {
           "night_fixed_time": "Night time",
           "night_elevation_preset": "Night: sun position",
-          "night_sun_elevation": "Custom night elevation (°) — only used when Custom is selected",
-          "morning_fixed_time": "Morning time",
-          "morning_elevation_preset": "Morning: sun position",
-          "morning_sun_elevation": "Custom morning elevation (°) — only used when Custom is selected",
-          "night_position": "Night position",
-          "morning_position": "Morning position",
-          "weekday_night_fixed_time": "Weekday night time (Mon–Fri)",
-          "weekday_night_position": "Weekday night position (Mon–Fri)",
-          "weekday_morning_fixed_time": "Weekday morning time (Mon–Fri)",
-          "weekday_morning_position": "Weekday morning position (Mon–Fri)",
-          "weekend_night_fixed_time": "Weekend night time (Sat–Sun)",
-          "weekend_night_position": "Weekend night position (Sat–Sun)",
-          "weekend_morning_fixed_time": "Weekend morning time (Sat–Sun)",
-          "weekend_morning_position": "Weekend morning position (Sat–Sun)",
-          "active_months": "Active months (advanced)",
-          "night_sun_event": "Night sun event (optional)",
-          "morning_sun_event": "Morning sun event (optional)",
-          "night_not_before": "Night earliest trigger (optional)",
-          "night_not_after": "Night latest trigger (optional)",
-          "morning_not_before": "Morning earliest trigger (optional)",
-          "morning_not_after": "Morning latest trigger (optional)"
+          "night_position": "Night position"
         },
         "data_description": {
-          "night_position": "Cover position during the night phase (0 = closed, 100 = open).",
-          "morning_position": "Cover position at the start of the morning phase (0 = closed, 100 = open).",
-          "weekday_night_position": "Cover position during the night phase on weekdays (0 = closed, 100 = open).",
-          "weekday_morning_position": "Cover position at the start of the morning phase on weekdays (0 = closed, 100 = open).",
-          "weekend_night_position": "Cover position during the night phase on weekends (0 = closed, 100 = open).",
-          "weekend_morning_position": "Cover position at the start of the morning phase on weekends (0 = closed, 100 = open).",
-          "active_months": "Leave empty to apply this schedule in every month. Select specific months to restrict it — for example September through March for a winter schedule.",
+          "night_position": "Cover position during the night phase (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Night – Weekdays",
+        "data": {
+          "weekday_night_fixed_time": "Weekday night time (Mon–Fri)",
+          "night_elevation_preset": "Night: sun position",
+          "weekday_night_position": "Weekday night position (Mon–Fri)"
+        },
+        "data_description": {
+          "weekday_night_position": "Cover position during the night phase on weekdays (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Night – Weekend",
+        "data": {
+          "weekend_night_fixed_time": "Weekend night time (Sat–Sun)",
+          "weekend_night_position": "Weekend night position (Sat–Sun)"
+        },
+        "data_description": {
+          "weekend_night_position": "Cover position during the night phase on weekends (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Morning",
+        "data": {
+          "morning_fixed_time": "Morning time",
+          "morning_elevation_preset": "Morning: sun position",
+          "morning_position": "Morning position"
+        },
+        "data_description": {
+          "morning_position": "Cover position at the start of the morning phase (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Morning – Weekdays",
+        "data": {
+          "weekday_morning_fixed_time": "Weekday morning time (Mon–Fri)",
+          "morning_elevation_preset": "Morning: sun position",
+          "weekday_morning_position": "Weekday morning position (Mon–Fri)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Cover position at the start of the morning phase on weekdays (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Morning – Weekend",
+        "data": {
+          "weekend_morning_fixed_time": "Weekend morning time (Sat–Sun)",
+          "weekend_morning_position": "Weekend morning position (Sat–Sun)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Cover position at the start of the morning phase on weekends (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Night – Custom sun elevation",
+        "data": {
+          "night_sun_elevation": "Custom night elevation (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Morning – Custom sun elevation",
+        "data": {
+          "morning_sun_elevation": "Custom morning elevation (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Advanced schedule",
+        "data": {
+          "night_sun_event": "Night sun event (optional)",
+          "night_not_before": "Night earliest trigger (optional)",
+          "night_not_after": "Night latest trigger (optional)",
+          "morning_sun_event": "Morning sun event (optional)",
+          "morning_not_before": "Morning earliest trigger (optional)",
+          "morning_not_after": "Morning latest trigger (optional)",
+          "active_months": "Active months (advanced)"
+        },
+        "data_description": {
           "night_sun_event": "Optional. If set, this astronomical event replaces the night time above. Dawn and dusk use civil twilight (sun at -6°).",
-          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°).",
           "night_not_before": "Optional. If the resolved night trigger would occur earlier than this, it is delayed to this time instead.",
           "night_not_after": "Optional. If the resolved night trigger would occur later than this, it is brought forward to this time instead.",
+          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°).",
           "morning_not_before": "Optional. If the resolved morning trigger would occur earlier than this, it is delayed to this time instead.",
-          "morning_not_after": "Optional. If the resolved morning trigger would occur later than this, it is brought forward to this time instead."
+          "morning_not_after": "Optional. If the resolved morning trigger would occur later than this, it is brought forward to this time instead.",
+          "active_months": "Leave empty to apply this schedule in every month. Select specific months to restrict it — for example September through March for a winter schedule."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Advanced",
         "description": "Lifecycle profiles and manual override behavior — settings most installations do not need to change.",
         "menu_options": {
-          "manual_override": "Manual Override"
+          "manual_override": "Manual Override",
+          "lifecycle_advanced": "Advanced schedule"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "\"Same every day\" uses one schedule for the whole week. \"Weekday / Weekend\" lets you set different times and positions for Mon–Fri versus Sat–Sun."
         }
       },
-      "lifecycle_detail": {
-        "title": "Schedule details",
-        "description": "Enter the time or sun elevation for each trigger. Only the fields relevant to your selected trigger are shown.",
+      "lifecycle_night": {
+        "title": "Night",
         "data": {
           "night_fixed_time": "Night time",
           "night_elevation_preset": "Night: sun position",
-          "night_sun_elevation": "Custom night elevation (°) — only used when Custom is selected",
-          "morning_fixed_time": "Morning time",
-          "morning_elevation_preset": "Morning: sun position",
-          "morning_sun_elevation": "Custom morning elevation (°) — only used when Custom is selected",
-          "night_position": "Night position",
-          "morning_position": "Morning position",
-          "weekday_night_fixed_time": "Weekday night time (Mon–Fri)",
-          "weekday_night_position": "Weekday night position (Mon–Fri)",
-          "weekday_morning_fixed_time": "Weekday morning time (Mon–Fri)",
-          "weekday_morning_position": "Weekday morning position (Mon–Fri)",
-          "weekend_night_fixed_time": "Weekend night time (Sat–Sun)",
-          "weekend_night_position": "Weekend night position (Sat–Sun)",
-          "weekend_morning_fixed_time": "Weekend morning time (Sat–Sun)",
-          "weekend_morning_position": "Weekend morning position (Sat–Sun)",
           "night_sun_event": "Night sun event (optional)",
-          "morning_sun_event": "Morning sun event (optional)"
+          "night_position": "Night position"
         },
         "data_description": {
-          "night_position": "Cover position during the night phase (0 = closed, 100 = open).",
-          "morning_position": "Cover position at the start of the morning phase (0 = closed, 100 = open).",
-          "weekday_night_position": "Cover position during the night phase on weekdays (0 = closed, 100 = open).",
-          "weekday_morning_position": "Cover position at the start of the morning phase on weekdays (0 = closed, 100 = open).",
-          "weekend_night_position": "Cover position during the night phase on weekends (0 = closed, 100 = open).",
-          "weekend_morning_position": "Cover position at the start of the morning phase on weekends (0 = closed, 100 = open).",
           "night_sun_event": "Optional. If set, this astronomical event replaces the night time above. Dawn and dusk use civil twilight (sun at -6°).",
-          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°)."
+          "night_position": "Cover position during the night phase (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Night – Weekdays",
+        "data": {
+          "weekday_night_fixed_time": "Weekday night time (Mon–Fri)",
+          "night_elevation_preset": "Night: sun position",
+          "night_sun_event": "Night sun event (optional)",
+          "weekday_night_position": "Weekday night position (Mon–Fri)"
+        },
+        "data_description": {
+          "night_sun_event": "Optional. If set, this astronomical event replaces the night time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "weekday_night_position": "Cover position during the night phase on weekdays (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Night – Weekend",
+        "data": {
+          "weekend_night_fixed_time": "Weekend night time (Sat–Sun)",
+          "weekend_night_position": "Weekend night position (Sat–Sun)"
+        },
+        "data_description": {
+          "weekend_night_position": "Cover position during the night phase on weekends (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Morning",
+        "data": {
+          "morning_fixed_time": "Morning time",
+          "morning_elevation_preset": "Morning: sun position",
+          "morning_sun_event": "Morning sun event (optional)",
+          "morning_position": "Morning position"
+        },
+        "data_description": {
+          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "morning_position": "Cover position at the start of the morning phase (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Morning – Weekdays",
+        "data": {
+          "weekday_morning_fixed_time": "Weekday morning time (Mon–Fri)",
+          "morning_elevation_preset": "Morning: sun position",
+          "morning_sun_event": "Morning sun event (optional)",
+          "weekday_morning_position": "Weekday morning position (Mon–Fri)"
+        },
+        "data_description": {
+          "morning_sun_event": "Optional. If set, this astronomical event replaces the morning time above. Dawn and dusk use civil twilight (sun at -6°).",
+          "weekday_morning_position": "Cover position at the start of the morning phase on weekdays (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Morning – Weekend",
+        "data": {
+          "weekend_morning_fixed_time": "Weekend morning time (Sat–Sun)",
+          "weekend_morning_position": "Weekend morning position (Sat–Sun)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Cover position at the start of the morning phase on weekends (0 = closed, 100 = open)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Night – Custom sun elevation",
+        "data": {
+          "night_sun_elevation": "Custom night elevation (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Morning – Custom sun elevation",
+        "data": {
+          "morning_sun_elevation": "Custom morning elevation (°)"
         }
       },
       "presence": {

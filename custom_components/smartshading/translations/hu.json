@@ -38,48 +38,101 @@
           "schedule_mode": "A „Minden nap ugyanaz” egyetlen ütemezést használ az egész hétre. A „Hétköznap / Hétvége” lehetővé teszi különböző időpontok és pozíciók beállítását hét–pén és szo–vas esetén."
         }
       },
-      "lifecycle_detail": {
-        "title": "Ütemezés részletei",
-        "description": "Adja meg az időt vagy a napmagasságot minden kioldóhoz. Csak a kiválasztott kioldóhoz tartozó mezők jelennek meg.",
+      "lifecycle_night": {
+        "title": "Éjszaka",
         "data": {
           "night_fixed_time": "Éjszakai időpont",
           "night_elevation_preset": "Éjszaka: napállás",
-          "night_sun_elevation": "Egyéni éjszakai magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
-          "morning_fixed_time": "Reggeli időpont",
-          "morning_elevation_preset": "Reggel: napállás",
-          "morning_sun_elevation": "Egyéni reggeli magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
-          "night_position": "Éjszakai pozíció",
-          "morning_position": "Reggeli pozíció",
-          "weekday_night_fixed_time": "Éjszakai időpont hétköznap (hét–pén)",
-          "weekday_night_position": "Éjszakai pozíció hétköznap (hét–pén)",
-          "weekday_morning_fixed_time": "Reggeli időpont hétköznap (hét–pén)",
-          "weekday_morning_position": "Reggeli pozíció hétköznap (hét–pén)",
-          "weekend_night_fixed_time": "Éjszakai időpont hétvégén (szo–vas)",
-          "weekend_night_position": "Éjszakai pozíció hétvégén (szo–vas)",
-          "weekend_morning_fixed_time": "Reggeli időpont hétvégén (szo–vas)",
-          "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)",
-          "active_months": "Aktív hónapok (speciális)",
-          "night_sun_event": "Éjszakai napesemény (opcionális)",
-          "morning_sun_event": "Reggeli napesemény (opcionális)",
-          "night_not_before": "Éjszaka: legkorábbi kiváltás (opcionális)",
-          "night_not_after": "Éjszaka: legkésőbbi kiváltás (opcionális)",
-          "morning_not_before": "Reggel: legkorábbi kiváltás (opcionális)",
-          "morning_not_after": "Reggel: legkésőbbi kiváltás (opcionális)"
+          "night_position": "Éjszakai pozíció"
         },
         "data_description": {
-          "night_position": "Az árnyékoló pozíciója az éjszakai fázisban (0 = zárva, 100 = nyitva).",
-          "morning_position": "Az árnyékoló pozíciója a reggeli fázis elején (0 = zárva, 100 = nyitva).",
-          "weekday_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétköznap (0 = zárva, 100 = nyitva).",
-          "weekday_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétköznap (0 = zárva, 100 = nyitva).",
-          "weekend_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétvégén (0 = zárva, 100 = nyitva).",
-          "weekend_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétvégén (0 = zárva, 100 = nyitva).",
-          "active_months": "Hagyja üresen, ha ezt az ütemezést minden hónapban alkalmazni szeretné. Válasszon konkrét hónapokat a korlátozásához — például szeptembertől márciusig egy téli ütemezéshez.",
+          "night_position": "Az árnyékoló pozíciója az éjszakai fázisban (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Éjszaka – Hétköznapok",
+        "data": {
+          "weekday_night_fixed_time": "Éjszakai időpont hétköznap (hét–pén)",
+          "night_elevation_preset": "Éjszaka: napállás",
+          "weekday_night_position": "Éjszakai pozíció hétköznap (hét–pén)"
+        },
+        "data_description": {
+          "weekday_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétköznap (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Éjszaka – Hétvége",
+        "data": {
+          "weekend_night_fixed_time": "Éjszakai időpont hétvégén (szo–vas)",
+          "weekend_night_position": "Éjszakai pozíció hétvégén (szo–vas)"
+        },
+        "data_description": {
+          "weekend_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétvégén (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Reggel",
+        "data": {
+          "morning_fixed_time": "Reggeli időpont",
+          "morning_elevation_preset": "Reggel: napállás",
+          "morning_position": "Reggeli pozíció"
+        },
+        "data_description": {
+          "morning_position": "Az árnyékoló pozíciója a reggeli fázis elején (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Reggel – Hétköznapok",
+        "data": {
+          "weekday_morning_fixed_time": "Reggeli időpont hétköznap (hét–pén)",
+          "morning_elevation_preset": "Reggel: napállás",
+          "weekday_morning_position": "Reggeli pozíció hétköznap (hét–pén)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétköznap (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Reggel – Hétvége",
+        "data": {
+          "weekend_morning_fixed_time": "Reggeli időpont hétvégén (szo–vas)",
+          "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétvégén (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Éjszaka – Egyéni napmagasság",
+        "data": {
+          "night_sun_elevation": "Egyéni éjszakai magasság (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Reggel – Egyéni napmagasság",
+        "data": {
+          "morning_sun_elevation": "Egyéni reggeli magasság (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Haladó időbeosztás",
+        "data": {
+          "night_sun_event": "Éjszakai napesemény (opcionális)",
+          "night_not_before": "Éjszaka: legkorábbi kiváltás (opcionális)",
+          "night_not_after": "Éjszaka: legkésőbbi kiváltás (opcionális)",
+          "morning_sun_event": "Reggeli napesemény (opcionális)",
+          "morning_not_before": "Reggel: legkorábbi kiváltás (opcionális)",
+          "morning_not_after": "Reggel: legkésőbbi kiváltás (opcionális)",
+          "active_months": "Aktív hónapok (speciális)"
+        },
+        "data_description": {
           "night_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti éjszakai időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
-          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
           "night_not_before": "Opcionális. Ha a feloldott éjszakai kiváltás ennél az időpontnál korábban történne, ehelyett erre az időpontra tolódik.",
           "night_not_after": "Opcionális. Ha a feloldott éjszakai kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb.",
+          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
           "morning_not_before": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál korábban történne, ehelyett erre az időpontra tolódik.",
-          "morning_not_after": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb."
+          "morning_not_after": "Opcionális. Ha a feloldott reggeli kiváltás ennél az időpontnál később történne, ehelyett erre az időpontra kerül előrébb.",
+          "active_months": "Hagyja üresen, ha ezt az ütemezést minden hónapban alkalmazni szeretné. Válasszon konkrét hónapokat a korlátozásához — például szeptembertől márciusig egy téli ütemezéshez."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Speciális",
         "description": "Életciklus-profilok és a kézi felülbírálás viselkedése — olyan beállítások, amelyeket a legtöbb telepítésnél nem kell módosítani.",
         "menu_options": {
-          "manual_override": "Kézi felülbírálás"
+          "manual_override": "Kézi felülbírálás",
+          "lifecycle_advanced": "Haladó időbeosztás"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "A „Minden nap ugyanaz” egyetlen ütemezést használ az egész hétre. A „Hétköznap / Hétvége” lehetővé teszi különböző időpontok és pozíciók beállítását hét–pén és szo–vas esetén."
         }
       },
-      "lifecycle_detail": {
-        "title": "Ütemezés részletei",
-        "description": "Adja meg az időt vagy a napmagasságot minden kioldóhoz. Csak a kiválasztott kioldóhoz tartozó mezők jelennek meg.",
+      "lifecycle_night": {
+        "title": "Éjszaka",
         "data": {
           "night_fixed_time": "Éjszakai időpont",
           "night_elevation_preset": "Éjszaka: napállás",
-          "night_sun_elevation": "Egyéni éjszakai magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
-          "morning_fixed_time": "Reggeli időpont",
-          "morning_elevation_preset": "Reggel: napállás",
-          "morning_sun_elevation": "Egyéni reggeli magasság (°) — csak akkor használatos, ha az Egyéni van kiválasztva",
-          "night_position": "Éjszakai pozíció",
-          "morning_position": "Reggeli pozíció",
-          "weekday_night_fixed_time": "Éjszakai időpont hétköznap (hét–pén)",
-          "weekday_night_position": "Éjszakai pozíció hétköznap (hét–pén)",
-          "weekday_morning_fixed_time": "Reggeli időpont hétköznap (hét–pén)",
-          "weekday_morning_position": "Reggeli pozíció hétköznap (hét–pén)",
-          "weekend_night_fixed_time": "Éjszakai időpont hétvégén (szo–vas)",
-          "weekend_night_position": "Éjszakai pozíció hétvégén (szo–vas)",
-          "weekend_morning_fixed_time": "Reggeli időpont hétvégén (szo–vas)",
-          "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)",
           "night_sun_event": "Éjszakai napesemény (opcionális)",
-          "morning_sun_event": "Reggeli napesemény (opcionális)"
+          "night_position": "Éjszakai pozíció"
         },
         "data_description": {
-          "night_position": "Az árnyékoló pozíciója az éjszakai fázisban (0 = zárva, 100 = nyitva).",
-          "morning_position": "Az árnyékoló pozíciója a reggeli fázis elején (0 = zárva, 100 = nyitva).",
-          "weekday_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétköznap (0 = zárva, 100 = nyitva).",
-          "weekday_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétköznap (0 = zárva, 100 = nyitva).",
-          "weekend_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétvégén (0 = zárva, 100 = nyitva).",
-          "weekend_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétvégén (0 = zárva, 100 = nyitva).",
           "night_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti éjszakai időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
-          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on)."
+          "night_position": "Az árnyékoló pozíciója az éjszakai fázisban (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Éjszaka – Hétköznapok",
+        "data": {
+          "weekday_night_fixed_time": "Éjszakai időpont hétköznap (hét–pén)",
+          "night_elevation_preset": "Éjszaka: napállás",
+          "night_sun_event": "Éjszakai napesemény (opcionális)",
+          "weekday_night_position": "Éjszakai pozíció hétköznap (hét–pén)"
+        },
+        "data_description": {
+          "night_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti éjszakai időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
+          "weekday_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétköznap (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Éjszaka – Hétvége",
+        "data": {
+          "weekend_night_fixed_time": "Éjszakai időpont hétvégén (szo–vas)",
+          "weekend_night_position": "Éjszakai pozíció hétvégén (szo–vas)"
+        },
+        "data_description": {
+          "weekend_night_position": "Az árnyékoló pozíciója az éjszakai fázisban hétvégén (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Reggel",
+        "data": {
+          "morning_fixed_time": "Reggeli időpont",
+          "morning_elevation_preset": "Reggel: napállás",
+          "morning_sun_event": "Reggeli napesemény (opcionális)",
+          "morning_position": "Reggeli pozíció"
+        },
+        "data_description": {
+          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
+          "morning_position": "Az árnyékoló pozíciója a reggeli fázis elején (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Reggel – Hétköznapok",
+        "data": {
+          "weekday_morning_fixed_time": "Reggeli időpont hétköznap (hét–pén)",
+          "morning_elevation_preset": "Reggel: napállás",
+          "morning_sun_event": "Reggeli napesemény (opcionális)",
+          "weekday_morning_position": "Reggeli pozíció hétköznap (hét–pén)"
+        },
+        "data_description": {
+          "morning_sun_event": "Opcionális. Ha be van állítva, ez a csillagászati esemény felülírja a fenti reggeli időt. A pirkadat és a szürkület a polgári szürkületet használja (nap -6°-on).",
+          "weekday_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétköznap (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Reggel – Hétvége",
+        "data": {
+          "weekend_morning_fixed_time": "Reggeli időpont hétvégén (szo–vas)",
+          "weekend_morning_position": "Reggeli pozíció hétvégén (szo–vas)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Az árnyékoló pozíciója a reggeli fázis elején hétvégén (0 = zárva, 100 = nyitva)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Éjszaka – Egyéni napmagasság",
+        "data": {
+          "night_sun_elevation": "Egyéni éjszakai magasság (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Reggel – Egyéni napmagasság",
+        "data": {
+          "morning_sun_elevation": "Egyéni reggeli magasság (°)"
         }
       },
       "presence": {

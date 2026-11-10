@@ -38,48 +38,101 @@
           "schedule_mode": "„Stejně každý den“ používá jeden plán pro celý týden. „Pracovní den / Víkend“ umožňuje nastavit různé časy a polohy pro po–pá a so–ne."
         }
       },
-      "lifecycle_detail": {
-        "title": "Podrobnosti plánu",
-        "description": "Zadejte čas nebo výšku slunce pro každý spouštěč. Zobrazují se pouze pole relevantní pro vybraný spouštěč.",
+      "lifecycle_night": {
+        "title": "Noc",
         "data": {
           "night_fixed_time": "Čas noci",
           "night_elevation_preset": "Noc: poloha slunce",
-          "night_sun_elevation": "Vlastní noční výška (°) — použije se pouze při výběru Vlastní",
-          "morning_fixed_time": "Čas rána",
-          "morning_elevation_preset": "Ráno: poloha slunce",
-          "morning_sun_elevation": "Vlastní ranní výška (°) — použije se pouze při výběru Vlastní",
-          "night_position": "Noční poloha",
-          "morning_position": "Ranní poloha",
-          "weekday_night_fixed_time": "Čas noci v pracovní dny (po–pá)",
-          "weekday_night_position": "Noční poloha v pracovní dny (po–pá)",
-          "weekday_morning_fixed_time": "Čas rána v pracovní dny (po–pá)",
-          "weekday_morning_position": "Ranní poloha v pracovní dny (po–pá)",
-          "weekend_night_fixed_time": "Čas noci o víkendu (so–ne)",
-          "weekend_night_position": "Noční poloha o víkendu (so–ne)",
-          "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
-          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)",
-          "active_months": "Aktivní měsíce (pokročilé)",
-          "night_sun_event": "Noční sluneční událost (volitelné)",
-          "morning_sun_event": "Ranní sluneční událost (volitelné)",
-          "night_not_before": "Noc: nejdřívější spuštění (volitelné)",
-          "night_not_after": "Noc: nejpozdější spuštění (volitelné)",
-          "morning_not_before": "Ráno: nejdřívější spuštění (volitelné)",
-          "morning_not_after": "Ráno: nejpozdější spuštění (volitelné)"
+          "night_position": "Noční poloha"
         },
         "data_description": {
-          "night_position": "Poloha stínění během noční fáze (0 = zavřeno, 100 = otevřeno).",
-          "morning_position": "Poloha stínění na začátku ranní fáze (0 = zavřeno, 100 = otevřeno).",
-          "weekday_night_position": "Poloha stínění během noční fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
-          "weekday_morning_position": "Poloha stínění na začátku ranní fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
-          "weekend_night_position": "Poloha stínění během noční fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
-          "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
-          "active_months": "Ponechte prázdné, pokud se má tento plán použít v každém měsíci. Vyberte konkrétní měsíce pro jeho omezení — například září až březen pro zimní plán.",
+          "night_position": "Poloha stínění během noční fáze (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Noc – Pracovní dny",
+        "data": {
+          "weekday_night_fixed_time": "Čas noci v pracovní dny (po–pá)",
+          "night_elevation_preset": "Noc: poloha slunce",
+          "weekday_night_position": "Noční poloha v pracovní dny (po–pá)"
+        },
+        "data_description": {
+          "weekday_night_position": "Poloha stínění během noční fáze v pracovní dny (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Noc – Víkend",
+        "data": {
+          "weekend_night_fixed_time": "Čas noci o víkendu (so–ne)",
+          "weekend_night_position": "Noční poloha o víkendu (so–ne)"
+        },
+        "data_description": {
+          "weekend_night_position": "Poloha stínění během noční fáze o víkendu (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Ráno",
+        "data": {
+          "morning_fixed_time": "Čas rána",
+          "morning_elevation_preset": "Ráno: poloha slunce",
+          "morning_position": "Ranní poloha"
+        },
+        "data_description": {
+          "morning_position": "Poloha stínění na začátku ranní fáze (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Ráno – Pracovní dny",
+        "data": {
+          "weekday_morning_fixed_time": "Čas rána v pracovní dny (po–pá)",
+          "morning_elevation_preset": "Ráno: poloha slunce",
+          "weekday_morning_position": "Ranní poloha v pracovní dny (po–pá)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Poloha stínění na začátku ranní fáze v pracovní dny (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Ráno – Víkend",
+        "data": {
+          "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
+          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Noc – Vlastní výška slunce",
+        "data": {
+          "night_sun_elevation": "Vlastní noční výška (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Ráno – Vlastní výška slunce",
+        "data": {
+          "morning_sun_elevation": "Vlastní ranní výška (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Pokročilý plán",
+        "data": {
+          "night_sun_event": "Noční sluneční událost (volitelné)",
+          "night_not_before": "Noc: nejdřívější spuštění (volitelné)",
+          "night_not_after": "Noc: nejpozdější spuštění (volitelné)",
+          "morning_sun_event": "Ranní sluneční událost (volitelné)",
+          "morning_not_before": "Ráno: nejdřívější spuštění (volitelné)",
+          "morning_not_after": "Ráno: nejpozdější spuštění (volitelné)",
+          "active_months": "Aktivní měsíce (pokročilé)"
+        },
+        "data_description": {
           "night_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený noční čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
-          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
           "night_not_before": "Volitelné. Pokud by vypočtené noční spuštění nastalo dříve než tento čas, je místo toho odloženo na tento čas.",
           "night_not_after": "Volitelné. Pokud by vypočtené noční spuštění nastalo později než tento čas, je místo toho posunuto na tento čas.",
+          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
           "morning_not_before": "Volitelné. Pokud by vypočtené ranní spuštění nastalo dříve než tento čas, je místo toho odloženo na tento čas.",
-          "morning_not_after": "Volitelné. Pokud by vypočtené ranní spuštění nastalo později než tento čas, je místo toho posunuto na tento čas."
+          "morning_not_after": "Volitelné. Pokud by vypočtené ranní spuštění nastalo později než tento čas, je místo toho posunuto na tento čas.",
+          "active_months": "Ponechte prázdné, pokud se má tento plán použít v každém měsíci. Vyberte konkrétní měsíce pro jeho omezení — například září až březen pro zimní plán."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Pokročilé",
         "description": "Profily životního cyklu a chování ručního přepsání — nastavení, která většina instalací nepotřebuje měnit.",
         "menu_options": {
-          "manual_override": "Ruční přepsání"
+          "manual_override": "Ruční přepsání",
+          "lifecycle_advanced": "Pokročilý plán"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "„Stejně každý den“ používá jeden plán pro celý týden. „Pracovní den / Víkend“ umožňuje nastavit různé časy a polohy pro po–pá a so–ne."
         }
       },
-      "lifecycle_detail": {
-        "title": "Podrobnosti plánu",
-        "description": "Zadejte čas nebo výšku slunce pro každý spouštěč. Zobrazují se pouze pole relevantní pro vybraný spouštěč.",
+      "lifecycle_night": {
+        "title": "Noc",
         "data": {
           "night_fixed_time": "Čas noci",
           "night_elevation_preset": "Noc: poloha slunce",
-          "night_sun_elevation": "Vlastní noční výška (°) — použije se pouze při výběru Vlastní",
-          "morning_fixed_time": "Čas rána",
-          "morning_elevation_preset": "Ráno: poloha slunce",
-          "morning_sun_elevation": "Vlastní ranní výška (°) — použije se pouze při výběru Vlastní",
-          "night_position": "Noční poloha",
-          "morning_position": "Ranní poloha",
-          "weekday_night_fixed_time": "Čas noci v pracovní dny (po–pá)",
-          "weekday_night_position": "Noční poloha v pracovní dny (po–pá)",
-          "weekday_morning_fixed_time": "Čas rána v pracovní dny (po–pá)",
-          "weekday_morning_position": "Ranní poloha v pracovní dny (po–pá)",
-          "weekend_night_fixed_time": "Čas noci o víkendu (so–ne)",
-          "weekend_night_position": "Noční poloha o víkendu (so–ne)",
-          "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
-          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)",
           "night_sun_event": "Noční sluneční událost (volitelné)",
-          "morning_sun_event": "Ranní sluneční událost (volitelné)"
+          "night_position": "Noční poloha"
         },
         "data_description": {
-          "night_position": "Poloha stínění během noční fáze (0 = zavřeno, 100 = otevřeno).",
-          "morning_position": "Poloha stínění na začátku ranní fáze (0 = zavřeno, 100 = otevřeno).",
-          "weekday_night_position": "Poloha stínění během noční fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
-          "weekday_morning_position": "Poloha stínění na začátku ranní fáze v pracovní dny (0 = zavřeno, 100 = otevřeno).",
-          "weekend_night_position": "Poloha stínění během noční fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
-          "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno).",
           "night_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený noční čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
-          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°)."
+          "night_position": "Poloha stínění během noční fáze (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Noc – Pracovní dny",
+        "data": {
+          "weekday_night_fixed_time": "Čas noci v pracovní dny (po–pá)",
+          "night_elevation_preset": "Noc: poloha slunce",
+          "night_sun_event": "Noční sluneční událost (volitelné)",
+          "weekday_night_position": "Noční poloha v pracovní dny (po–pá)"
+        },
+        "data_description": {
+          "night_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený noční čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
+          "weekday_night_position": "Poloha stínění během noční fáze v pracovní dny (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Noc – Víkend",
+        "data": {
+          "weekend_night_fixed_time": "Čas noci o víkendu (so–ne)",
+          "weekend_night_position": "Noční poloha o víkendu (so–ne)"
+        },
+        "data_description": {
+          "weekend_night_position": "Poloha stínění během noční fáze o víkendu (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Ráno",
+        "data": {
+          "morning_fixed_time": "Čas rána",
+          "morning_elevation_preset": "Ráno: poloha slunce",
+          "morning_sun_event": "Ranní sluneční událost (volitelné)",
+          "morning_position": "Ranní poloha"
+        },
+        "data_description": {
+          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
+          "morning_position": "Poloha stínění na začátku ranní fáze (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Ráno – Pracovní dny",
+        "data": {
+          "weekday_morning_fixed_time": "Čas rána v pracovní dny (po–pá)",
+          "morning_elevation_preset": "Ráno: poloha slunce",
+          "morning_sun_event": "Ranní sluneční událost (volitelné)",
+          "weekday_morning_position": "Ranní poloha v pracovní dny (po–pá)"
+        },
+        "data_description": {
+          "morning_sun_event": "Volitelné. Pokud je nastaveno, tato astronomická událost nahradí výše uvedený ranní čas. Svítání a soumrak používají občanský soumrak (slunce na -6°).",
+          "weekday_morning_position": "Poloha stínění na začátku ranní fáze v pracovní dny (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Ráno – Víkend",
+        "data": {
+          "weekend_morning_fixed_time": "Čas rána o víkendu (so–ne)",
+          "weekend_morning_position": "Ranní poloha o víkendu (so–ne)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Poloha stínění na začátku ranní fáze o víkendu (0 = zavřeno, 100 = otevřeno)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Noc – Vlastní výška slunce",
+        "data": {
+          "night_sun_elevation": "Vlastní noční výška (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Ráno – Vlastní výška slunce",
+        "data": {
+          "morning_sun_elevation": "Vlastní ranní výška (°)"
         }
       },
       "presence": {

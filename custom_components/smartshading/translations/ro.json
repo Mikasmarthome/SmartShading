@@ -38,48 +38,101 @@
           "schedule_mode": "„La fel în fiecare zi” folosește un singur program pentru toată săptămâna. „Zi lucrătoare / Weekend” vă permite să setați ore și poziții diferite pentru lun–vin și sâm–dum."
         }
       },
-      "lifecycle_detail": {
-        "title": "Detalii program",
-        "description": "Introduceți ora sau înălțimea soarelui pentru fiecare declanșator. Sunt afișate doar câmpurile relevante pentru declanșatorul selectat.",
+      "lifecycle_night": {
+        "title": "Noapte",
         "data": {
           "night_fixed_time": "Ora de noapte",
           "night_elevation_preset": "Noapte: poziția soarelui",
-          "night_sun_elevation": "Înălțime de noapte personalizată (°) — folosită doar când este selectat Personalizat",
-          "morning_fixed_time": "Ora de dimineață",
-          "morning_elevation_preset": "Dimineață: poziția soarelui",
-          "morning_sun_elevation": "Înălțime de dimineață personalizată (°) — folosită doar când este selectat Personalizat",
-          "night_position": "Poziție de noapte",
-          "morning_position": "Poziție de dimineață",
-          "weekday_night_fixed_time": "Ora de noapte în zilele lucrătoare (lun–vin)",
-          "weekday_night_position": "Poziție de noapte în zilele lucrătoare (lun–vin)",
-          "weekday_morning_fixed_time": "Ora de dimineață în zilele lucrătoare (lun–vin)",
-          "weekday_morning_position": "Poziție de dimineață în zilele lucrătoare (lun–vin)",
-          "weekend_night_fixed_time": "Ora de noapte în weekend (sâm–dum)",
-          "weekend_night_position": "Poziție de noapte în weekend (sâm–dum)",
-          "weekend_morning_fixed_time": "Ora de dimineață în weekend (sâm–dum)",
-          "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)",
-          "active_months": "Luni active (avansat)",
-          "night_sun_event": "Eveniment solar nocturn (opțional)",
-          "morning_sun_event": "Eveniment solar matinal (opțional)",
-          "night_not_before": "Noapte: declanșator cel mai devreme (opțional)",
-          "night_not_after": "Noapte: declanșator cel mai târziu (opțional)",
-          "morning_not_before": "Dimineață: declanșator cel mai devreme (opțional)",
-          "morning_not_after": "Dimineață: declanșator cel mai târziu (opțional)"
+          "night_position": "Poziție de noapte"
         },
         "data_description": {
-          "night_position": "Poziția umbrarului în faza de noapte (0 = închis, 100 = deschis).",
-          "morning_position": "Poziția umbrarului la începutul fazei de dimineață (0 = închis, 100 = deschis).",
-          "weekday_night_position": "Poziția umbrarului în faza de noapte în zilele lucrătoare (0 = închis, 100 = deschis).",
-          "weekday_morning_position": "Poziția umbrarului la începutul fazei de dimineață în zilele lucrătoare (0 = închis, 100 = deschis).",
-          "weekend_night_position": "Poziția umbrarului în faza de noapte în weekend (0 = închis, 100 = deschis).",
-          "weekend_morning_position": "Poziția umbrarului la începutul fazei de dimineață în weekend (0 = închis, 100 = deschis).",
-          "active_months": "Lăsați necompletat pentru a aplica acest program în fiecare lună. Selectați anumite luni pentru a-l restricționa — de exemplu, din septembrie până în martie pentru un program de iarnă.",
+          "night_position": "Poziția umbrarului în faza de noapte (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Noapte – Zile lucrătoare",
+        "data": {
+          "weekday_night_fixed_time": "Ora de noapte în zilele lucrătoare (lun–vin)",
+          "night_elevation_preset": "Noapte: poziția soarelui",
+          "weekday_night_position": "Poziție de noapte în zilele lucrătoare (lun–vin)"
+        },
+        "data_description": {
+          "weekday_night_position": "Poziția umbrarului în faza de noapte în zilele lucrătoare (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Noapte – Weekend",
+        "data": {
+          "weekend_night_fixed_time": "Ora de noapte în weekend (sâm–dum)",
+          "weekend_night_position": "Poziție de noapte în weekend (sâm–dum)"
+        },
+        "data_description": {
+          "weekend_night_position": "Poziția umbrarului în faza de noapte în weekend (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Dimineață",
+        "data": {
+          "morning_fixed_time": "Ora de dimineață",
+          "morning_elevation_preset": "Dimineață: poziția soarelui",
+          "morning_position": "Poziție de dimineață"
+        },
+        "data_description": {
+          "morning_position": "Poziția umbrarului la începutul fazei de dimineață (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Dimineață – Zile lucrătoare",
+        "data": {
+          "weekday_morning_fixed_time": "Ora de dimineață în zilele lucrătoare (lun–vin)",
+          "morning_elevation_preset": "Dimineață: poziția soarelui",
+          "weekday_morning_position": "Poziție de dimineață în zilele lucrătoare (lun–vin)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Poziția umbrarului la începutul fazei de dimineață în zilele lucrătoare (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Dimineață – Weekend",
+        "data": {
+          "weekend_morning_fixed_time": "Ora de dimineață în weekend (sâm–dum)",
+          "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Poziția umbrarului la începutul fazei de dimineață în weekend (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Noapte – Înălțime solară personalizată",
+        "data": {
+          "night_sun_elevation": "Înălțime de noapte personalizată (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Dimineață – Înălțime solară personalizată",
+        "data": {
+          "morning_sun_elevation": "Înălțime de dimineață personalizată (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Program avansat",
+        "data": {
+          "night_sun_event": "Eveniment solar nocturn (opțional)",
+          "night_not_before": "Noapte: declanșator cel mai devreme (opțional)",
+          "night_not_after": "Noapte: declanșator cel mai târziu (opțional)",
+          "morning_sun_event": "Eveniment solar matinal (opțional)",
+          "morning_not_before": "Dimineață: declanșator cel mai devreme (opțional)",
+          "morning_not_after": "Dimineață: declanșator cel mai târziu (opțional)",
+          "active_months": "Luni active (avansat)"
+        },
+        "data_description": {
           "night_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de noapte de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
-          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
           "night_not_before": "Opțional. Dacă declanșatorul de noapte rezolvat ar surveni mai devreme decât această oră, este amânat până la această oră.",
           "night_not_after": "Opțional. Dacă declanșatorul de noapte rezolvat ar surveni mai târziu decât această oră, este devansat la această oră.",
+          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
           "morning_not_before": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai devreme decât această oră, este amânat până la această oră.",
-          "morning_not_after": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai târziu decât această oră, este devansat la această oră."
+          "morning_not_after": "Opțional. Dacă declanșatorul de dimineață rezolvat ar surveni mai târziu decât această oră, este devansat la această oră.",
+          "active_months": "Lăsați necompletat pentru a aplica acest program în fiecare lună. Selectați anumite luni pentru a-l restricționa — de exemplu, din septembrie până în martie pentru un program de iarnă."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Avansat",
         "description": "Profiluri de ciclu de viață și comportamentul suprascrierii manuale — setări pe care majoritatea instalațiilor nu trebuie să le modifice.",
         "menu_options": {
-          "manual_override": "Suprascriere manuală"
+          "manual_override": "Suprascriere manuală",
+          "lifecycle_advanced": "Program avansat"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "„La fel în fiecare zi” folosește un singur program pentru toată săptămâna. „Zi lucrătoare / Weekend” vă permite să setați ore și poziții diferite pentru lun–vin și sâm–dum."
         }
       },
-      "lifecycle_detail": {
-        "title": "Detalii program",
-        "description": "Introduceți ora sau înălțimea soarelui pentru fiecare declanșator. Sunt afișate doar câmpurile relevante pentru declanșatorul selectat.",
+      "lifecycle_night": {
+        "title": "Noapte",
         "data": {
           "night_fixed_time": "Ora de noapte",
           "night_elevation_preset": "Noapte: poziția soarelui",
-          "night_sun_elevation": "Înălțime de noapte personalizată (°) — folosită doar când este selectat Personalizat",
-          "morning_fixed_time": "Ora de dimineață",
-          "morning_elevation_preset": "Dimineață: poziția soarelui",
-          "morning_sun_elevation": "Înălțime de dimineață personalizată (°) — folosită doar când este selectat Personalizat",
-          "night_position": "Poziție de noapte",
-          "morning_position": "Poziție de dimineață",
-          "weekday_night_fixed_time": "Ora de noapte în zilele lucrătoare (lun–vin)",
-          "weekday_night_position": "Poziție de noapte în zilele lucrătoare (lun–vin)",
-          "weekday_morning_fixed_time": "Ora de dimineață în zilele lucrătoare (lun–vin)",
-          "weekday_morning_position": "Poziție de dimineață în zilele lucrătoare (lun–vin)",
-          "weekend_night_fixed_time": "Ora de noapte în weekend (sâm–dum)",
-          "weekend_night_position": "Poziție de noapte în weekend (sâm–dum)",
-          "weekend_morning_fixed_time": "Ora de dimineață în weekend (sâm–dum)",
-          "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)",
           "night_sun_event": "Eveniment solar nocturn (opțional)",
-          "morning_sun_event": "Eveniment solar matinal (opțional)"
+          "night_position": "Poziție de noapte"
         },
         "data_description": {
-          "night_position": "Poziția umbrarului în faza de noapte (0 = închis, 100 = deschis).",
-          "morning_position": "Poziția umbrarului la începutul fazei de dimineață (0 = închis, 100 = deschis).",
-          "weekday_night_position": "Poziția umbrarului în faza de noapte în zilele lucrătoare (0 = închis, 100 = deschis).",
-          "weekday_morning_position": "Poziția umbrarului la începutul fazei de dimineață în zilele lucrătoare (0 = închis, 100 = deschis).",
-          "weekend_night_position": "Poziția umbrarului în faza de noapte în weekend (0 = închis, 100 = deschis).",
-          "weekend_morning_position": "Poziția umbrarului la începutul fazei de dimineață în weekend (0 = închis, 100 = deschis).",
           "night_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de noapte de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
-          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°)."
+          "night_position": "Poziția umbrarului în faza de noapte (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Noapte – Zile lucrătoare",
+        "data": {
+          "weekday_night_fixed_time": "Ora de noapte în zilele lucrătoare (lun–vin)",
+          "night_elevation_preset": "Noapte: poziția soarelui",
+          "night_sun_event": "Eveniment solar nocturn (opțional)",
+          "weekday_night_position": "Poziție de noapte în zilele lucrătoare (lun–vin)"
+        },
+        "data_description": {
+          "night_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de noapte de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "weekday_night_position": "Poziția umbrarului în faza de noapte în zilele lucrătoare (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Noapte – Weekend",
+        "data": {
+          "weekend_night_fixed_time": "Ora de noapte în weekend (sâm–dum)",
+          "weekend_night_position": "Poziție de noapte în weekend (sâm–dum)"
+        },
+        "data_description": {
+          "weekend_night_position": "Poziția umbrarului în faza de noapte în weekend (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Dimineață",
+        "data": {
+          "morning_fixed_time": "Ora de dimineață",
+          "morning_elevation_preset": "Dimineață: poziția soarelui",
+          "morning_sun_event": "Eveniment solar matinal (opțional)",
+          "morning_position": "Poziție de dimineață"
+        },
+        "data_description": {
+          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "morning_position": "Poziția umbrarului la începutul fazei de dimineață (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Dimineață – Zile lucrătoare",
+        "data": {
+          "weekday_morning_fixed_time": "Ora de dimineață în zilele lucrătoare (lun–vin)",
+          "morning_elevation_preset": "Dimineață: poziția soarelui",
+          "morning_sun_event": "Eveniment solar matinal (opțional)",
+          "weekday_morning_position": "Poziție de dimineață în zilele lucrătoare (lun–vin)"
+        },
+        "data_description": {
+          "morning_sun_event": "Opțional. Dacă este setat, acest eveniment astronomic înlocuiește ora de dimineață de mai sus. Zorii și amurgul folosesc amurgul civil (soarele la -6°).",
+          "weekday_morning_position": "Poziția umbrarului la începutul fazei de dimineață în zilele lucrătoare (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Dimineață – Weekend",
+        "data": {
+          "weekend_morning_fixed_time": "Ora de dimineață în weekend (sâm–dum)",
+          "weekend_morning_position": "Poziție de dimineață în weekend (sâm–dum)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Poziția umbrarului la începutul fazei de dimineață în weekend (0 = închis, 100 = deschis)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Noapte – Înălțime solară personalizată",
+        "data": {
+          "night_sun_elevation": "Înălțime de noapte personalizată (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Dimineață – Înălțime solară personalizată",
+        "data": {
+          "morning_sun_elevation": "Înălțime de dimineață personalizată (°)"
         }
       },
       "presence": {

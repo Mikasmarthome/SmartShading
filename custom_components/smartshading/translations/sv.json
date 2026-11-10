@@ -38,48 +38,101 @@
           "schedule_mode": "\"Lika varje dag\" använder ett schema för hela veckan. \"Vardag / Helg\" låter dig ange olika tider och positioner för mån–fre och lör–sön."
         }
       },
-      "lifecycle_detail": {
-        "title": "Schemadetaljer",
-        "description": "Ange tid eller solhöjd för varje utlösare. Endast de fält som är relevanta för den valda utlösaren visas.",
+      "lifecycle_night": {
+        "title": "Natt",
         "data": {
           "night_fixed_time": "Nattid",
           "night_elevation_preset": "Natt: solposition",
-          "night_sun_elevation": "Anpassad natthöjd (°) — används endast när Anpassad är vald",
-          "morning_fixed_time": "Morgontid",
-          "morning_elevation_preset": "Morgon: solposition",
-          "morning_sun_elevation": "Anpassad morgonhöjd (°) — används endast när Anpassad är vald",
-          "night_position": "Nattposition",
-          "morning_position": "Morgonposition",
-          "weekday_night_fixed_time": "Nattid på vardagar (mån–fre)",
-          "weekday_night_position": "Nattposition på vardagar (mån–fre)",
-          "weekday_morning_fixed_time": "Morgontid på vardagar (mån–fre)",
-          "weekday_morning_position": "Morgonposition på vardagar (mån–fre)",
-          "weekend_night_fixed_time": "Nattid på helgen (lör–sön)",
-          "weekend_night_position": "Nattposition på helgen (lör–sön)",
-          "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
-          "weekend_morning_position": "Morgonposition på helgen (lör–sön)",
-          "active_months": "Aktiva månader (avancerat)",
-          "night_sun_event": "Nattens solhändelse (valfri)",
-          "morning_sun_event": "Morgonens solhändelse (valfri)",
-          "night_not_before": "Natt: tidigaste utlösare (valfri)",
-          "night_not_after": "Natt: senaste utlösare (valfri)",
-          "morning_not_before": "Morgon: tidigaste utlösare (valfri)",
-          "morning_not_after": "Morgon: senaste utlösare (valfri)"
+          "night_position": "Nattposition"
         },
         "data_description": {
-          "night_position": "Solskyddets position under nattfasen (0 = stängt, 100 = öppet).",
-          "morning_position": "Solskyddets position vid morgonfasens början (0 = stängt, 100 = öppet).",
-          "weekday_night_position": "Solskyddets position under nattfasen på vardagar (0 = stängt, 100 = öppet).",
-          "weekday_morning_position": "Solskyddets position vid morgonfasens början på vardagar (0 = stängt, 100 = öppet).",
-          "weekend_night_position": "Solskyddets position under nattfasen på helgen (0 = stängt, 100 = öppet).",
-          "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet).",
-          "active_months": "Lämna tomt för att tillämpa detta schema varje månad. Välj specifika månader för att begränsa det — till exempel september till mars för ett vinterschema.",
+          "night_position": "Solskyddets position under nattfasen (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Natt – Vardagar",
+        "data": {
+          "weekday_night_fixed_time": "Nattid på vardagar (mån–fre)",
+          "night_elevation_preset": "Natt: solposition",
+          "weekday_night_position": "Nattposition på vardagar (mån–fre)"
+        },
+        "data_description": {
+          "weekday_night_position": "Solskyddets position under nattfasen på vardagar (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Natt – Helg",
+        "data": {
+          "weekend_night_fixed_time": "Nattid på helgen (lör–sön)",
+          "weekend_night_position": "Nattposition på helgen (lör–sön)"
+        },
+        "data_description": {
+          "weekend_night_position": "Solskyddets position under nattfasen på helgen (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Morgon",
+        "data": {
+          "morning_fixed_time": "Morgontid",
+          "morning_elevation_preset": "Morgon: solposition",
+          "morning_position": "Morgonposition"
+        },
+        "data_description": {
+          "morning_position": "Solskyddets position vid morgonfasens början (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Morgon – Vardagar",
+        "data": {
+          "weekday_morning_fixed_time": "Morgontid på vardagar (mån–fre)",
+          "morning_elevation_preset": "Morgon: solposition",
+          "weekday_morning_position": "Morgonposition på vardagar (mån–fre)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Solskyddets position vid morgonfasens början på vardagar (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Morgon – Helg",
+        "data": {
+          "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
+          "weekend_morning_position": "Morgonposition på helgen (lör–sön)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Natt – Anpassad solhöjd",
+        "data": {
+          "night_sun_elevation": "Anpassad natthöjd (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Morgon – Anpassad solhöjd",
+        "data": {
+          "morning_sun_elevation": "Anpassad morgonhöjd (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Avancerat schema",
+        "data": {
+          "night_sun_event": "Nattens solhändelse (valfri)",
+          "night_not_before": "Natt: tidigaste utlösare (valfri)",
+          "night_not_after": "Natt: senaste utlösare (valfri)",
+          "morning_sun_event": "Morgonens solhändelse (valfri)",
+          "morning_not_before": "Morgon: tidigaste utlösare (valfri)",
+          "morning_not_after": "Morgon: senaste utlösare (valfri)",
+          "active_months": "Aktiva månader (avancerat)"
+        },
+        "data_description": {
           "night_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse natt-tiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
-          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse morgontiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
           "night_not_before": "Valfritt. Om den beräknade nattutlösaren skulle inträffa tidigare än denna tid skjuts den upp till denna tid istället.",
           "night_not_after": "Valfritt. Om den beräknade nattutlösaren skulle inträffa senare än denna tid tidigareläggs den till denna tid istället.",
+          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse morgontiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
           "morning_not_before": "Valfritt. Om den beräknade morgonutlösaren skulle inträffa tidigare än denna tid skjuts den upp till denna tid istället.",
-          "morning_not_after": "Valfritt. Om den beräknade morgonutlösaren skulle inträffa senare än denna tid tidigareläggs den till denna tid istället."
+          "morning_not_after": "Valfritt. Om den beräknade morgonutlösaren skulle inträffa senare än denna tid tidigareläggs den till denna tid istället.",
+          "active_months": "Lämna tomt för att tillämpa detta schema varje månad. Välj specifika månader för att begränsa det — till exempel september till mars för ett vinterschema."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Avancerat",
         "description": "Livscykelprofiler och beteende för manuell åsidosättning — inställningar som de flesta installationer inte behöver ändra.",
         "menu_options": {
-          "manual_override": "Manuell åsidosättning"
+          "manual_override": "Manuell åsidosättning",
+          "lifecycle_advanced": "Avancerat schema"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "\"Lika varje dag\" använder ett schema för hela veckan. \"Vardag / Helg\" låter dig ange olika tider och positioner för mån–fre och lör–sön."
         }
       },
-      "lifecycle_detail": {
-        "title": "Schemadetaljer",
-        "description": "Ange tid eller solhöjd för varje utlösare. Endast de fält som är relevanta för den valda utlösaren visas.",
+      "lifecycle_night": {
+        "title": "Natt",
         "data": {
           "night_fixed_time": "Nattid",
           "night_elevation_preset": "Natt: solposition",
-          "night_sun_elevation": "Anpassad natthöjd (°) — används endast när Anpassad är vald",
-          "morning_fixed_time": "Morgontid",
-          "morning_elevation_preset": "Morgon: solposition",
-          "morning_sun_elevation": "Anpassad morgonhöjd (°) — används endast när Anpassad är vald",
-          "night_position": "Nattposition",
-          "morning_position": "Morgonposition",
-          "weekday_night_fixed_time": "Nattid på vardagar (mån–fre)",
-          "weekday_night_position": "Nattposition på vardagar (mån–fre)",
-          "weekday_morning_fixed_time": "Morgontid på vardagar (mån–fre)",
-          "weekday_morning_position": "Morgonposition på vardagar (mån–fre)",
-          "weekend_night_fixed_time": "Nattid på helgen (lör–sön)",
-          "weekend_night_position": "Nattposition på helgen (lör–sön)",
-          "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
-          "weekend_morning_position": "Morgonposition på helgen (lör–sön)",
           "night_sun_event": "Nattens solhändelse (valfri)",
-          "morning_sun_event": "Morgonens solhändelse (valfri)"
+          "night_position": "Nattposition"
         },
         "data_description": {
-          "night_position": "Solskyddets position under nattfasen (0 = stängt, 100 = öppet).",
-          "morning_position": "Solskyddets position vid morgonfasens början (0 = stängt, 100 = öppet).",
-          "weekday_night_position": "Solskyddets position under nattfasen på vardagar (0 = stängt, 100 = öppet).",
-          "weekday_morning_position": "Solskyddets position vid morgonfasens början på vardagar (0 = stängt, 100 = öppet).",
-          "weekend_night_position": "Solskyddets position under nattfasen på helgen (0 = stängt, 100 = öppet).",
-          "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet).",
           "night_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse natt-tiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
-          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse morgontiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°)."
+          "night_position": "Solskyddets position under nattfasen (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Natt – Vardagar",
+        "data": {
+          "weekday_night_fixed_time": "Nattid på vardagar (mån–fre)",
+          "night_elevation_preset": "Natt: solposition",
+          "night_sun_event": "Nattens solhändelse (valfri)",
+          "weekday_night_position": "Nattposition på vardagar (mån–fre)"
+        },
+        "data_description": {
+          "night_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse natt-tiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "weekday_night_position": "Solskyddets position under nattfasen på vardagar (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Natt – Helg",
+        "data": {
+          "weekend_night_fixed_time": "Nattid på helgen (lör–sön)",
+          "weekend_night_position": "Nattposition på helgen (lör–sön)"
+        },
+        "data_description": {
+          "weekend_night_position": "Solskyddets position under nattfasen på helgen (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Morgon",
+        "data": {
+          "morning_fixed_time": "Morgontid",
+          "morning_elevation_preset": "Morgon: solposition",
+          "morning_sun_event": "Morgonens solhändelse (valfri)",
+          "morning_position": "Morgonposition"
+        },
+        "data_description": {
+          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse morgontiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "morning_position": "Solskyddets position vid morgonfasens början (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Morgon – Vardagar",
+        "data": {
+          "weekday_morning_fixed_time": "Morgontid på vardagar (mån–fre)",
+          "morning_elevation_preset": "Morgon: solposition",
+          "morning_sun_event": "Morgonens solhändelse (valfri)",
+          "weekday_morning_position": "Morgonposition på vardagar (mån–fre)"
+        },
+        "data_description": {
+          "morning_sun_event": "Valfritt. Om angivet ersätter denna astronomiska händelse morgontiden ovan. Gryning och skymning använder borgerlig skymning (solen vid -6°).",
+          "weekday_morning_position": "Solskyddets position vid morgonfasens början på vardagar (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Morgon – Helg",
+        "data": {
+          "weekend_morning_fixed_time": "Morgontid på helgen (lör–sön)",
+          "weekend_morning_position": "Morgonposition på helgen (lör–sön)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Solskyddets position vid morgonfasens början på helgen (0 = stängt, 100 = öppet)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Natt – Anpassad solhöjd",
+        "data": {
+          "night_sun_elevation": "Anpassad natthöjd (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Morgon – Anpassad solhöjd",
+        "data": {
+          "morning_sun_elevation": "Anpassad morgonhöjd (°)"
         }
       },
       "presence": {

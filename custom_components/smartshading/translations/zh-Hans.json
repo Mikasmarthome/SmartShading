@@ -38,48 +38,101 @@
           "schedule_mode": "“每天相同”对整周使用一个计划。“工作日 / 周末”可让您为周一至周五和周六至周日设置不同的时间和位置。"
         }
       },
-      "lifecycle_detail": {
-        "title": "计划详情",
-        "description": "为每个触发输入时间或太阳高度。仅显示与所选触发相关的字段。",
+      "lifecycle_night": {
+        "title": "夜间",
         "data": {
           "night_fixed_time": "夜间时间",
           "night_elevation_preset": "夜间：太阳位置",
-          "night_sun_elevation": "自定义夜间高度（°）— 仅在选择“自定义”时使用",
-          "morning_fixed_time": "早晨时间",
-          "morning_elevation_preset": "早晨：太阳位置",
-          "morning_sun_elevation": "自定义早晨高度（°）— 仅在选择“自定义”时使用",
-          "night_position": "夜间位置",
-          "morning_position": "早晨位置",
-          "weekday_night_fixed_time": "工作日夜间时间（周一至周五）",
-          "weekday_night_position": "工作日夜间位置（周一至周五）",
-          "weekday_morning_fixed_time": "工作日早晨时间（周一至周五）",
-          "weekday_morning_position": "工作日早晨位置（周一至周五）",
-          "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
-          "weekend_night_position": "周末夜间位置（周六至周日）",
-          "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
-          "weekend_morning_position": "周末早晨位置（周六至周日）",
-          "active_months": "活跃月份（高级）",
-          "night_sun_event": "夜间太阳事件（可选）",
-          "morning_sun_event": "早晨太阳事件（可选）",
-          "night_not_before": "夜间：最早触发时间（可选）",
-          "night_not_after": "夜间：最晚触发时间（可选）",
-          "morning_not_before": "早晨：最早触发时间（可选）",
-          "morning_not_after": "早晨：最晚触发时间（可选）"
+          "night_position": "夜间位置"
         },
         "data_description": {
-          "night_position": "夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "morning_position": "早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "weekday_night_position": "工作日夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "weekday_morning_position": "工作日早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "weekend_night_position": "周末夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。",
+          "night_position": "夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "夜间 – 工作日",
+        "data": {
+          "weekday_night_fixed_time": "工作日夜间时间（周一至周五）",
+          "night_elevation_preset": "夜间：太阳位置",
+          "weekday_night_position": "工作日夜间位置（周一至周五）"
+        },
+        "data_description": {
+          "weekday_night_position": "工作日夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "夜间 – 周末",
+        "data": {
+          "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
+          "weekend_night_position": "周末夜间位置（周六至周日）"
+        },
+        "data_description": {
+          "weekend_night_position": "周末夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_morning": {
+        "title": "早晨",
+        "data": {
+          "morning_fixed_time": "早晨时间",
+          "morning_elevation_preset": "早晨：太阳位置",
+          "morning_position": "早晨位置"
+        },
+        "data_description": {
+          "morning_position": "早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "早晨 – 工作日",
+        "data": {
+          "weekday_morning_fixed_time": "工作日早晨时间（周一至周五）",
+          "morning_elevation_preset": "早晨：太阳位置",
+          "weekday_morning_position": "工作日早晨位置（周一至周五）"
+        },
+        "data_description": {
+          "weekday_morning_position": "工作日早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "早晨 – 周末",
+        "data": {
+          "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
+          "weekend_morning_position": "周末早晨位置（周六至周日）"
+        },
+        "data_description": {
+          "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "夜间 – 自定义太阳高度",
+        "data": {
+          "night_sun_elevation": "自定义夜间高度（°）"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "早晨 – 自定义太阳高度",
+        "data": {
+          "morning_sun_elevation": "自定义早晨高度（°）"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "高级日程",
+        "data": {
+          "night_sun_event": "夜间太阳事件（可选）",
+          "night_not_before": "夜间：最早触发时间（可选）",
+          "night_not_after": "夜间：最晚触发时间（可选）",
+          "morning_sun_event": "早晨太阳事件（可选）",
+          "morning_not_before": "早晨：最早触发时间（可选）",
+          "morning_not_after": "早晨：最晚触发时间（可选）",
+          "active_months": "活跃月份（高级）"
+        },
+        "data_description": {
           "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
-          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
           "night_not_before": "可选。若解析后的夜间触发时间早于此时间，将推迟到此时间。",
           "night_not_after": "可选。若解析后的夜间触发时间晚于此时间，将提前到此时间。",
+          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
           "morning_not_before": "可选。若解析后的早晨触发时间早于此时间，将推迟到此时间。",
-          "morning_not_after": "可选。若解析后的早晨触发时间晚于此时间，将提前到此时间。"
+          "morning_not_after": "可选。若解析后的早晨触发时间晚于此时间，将提前到此时间。",
+          "active_months": "留空表示此计划每月都生效。选择特定月份以限制其生效范围——例如冬季计划可选择 9 月至次年 3 月。"
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "高级",
         "description": "生命周期配置文件和手动覆盖行为——大多数安装不需要更改的设置。",
         "menu_options": {
-          "manual_override": "手动覆盖"
+          "manual_override": "手动覆盖",
+          "lifecycle_advanced": "高级日程"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "“每天相同”对整周使用一个计划。“工作日 / 周末”可让您为周一至周五和周六至周日设置不同的时间和位置。"
         }
       },
-      "lifecycle_detail": {
-        "title": "计划详情",
-        "description": "为每个触发输入时间或太阳高度。仅显示与所选触发相关的字段。",
+      "lifecycle_night": {
+        "title": "夜间",
         "data": {
           "night_fixed_time": "夜间时间",
           "night_elevation_preset": "夜间：太阳位置",
-          "night_sun_elevation": "自定义夜间高度（°）— 仅在选择“自定义”时使用",
-          "morning_fixed_time": "早晨时间",
-          "morning_elevation_preset": "早晨：太阳位置",
-          "morning_sun_elevation": "自定义早晨高度（°）— 仅在选择“自定义”时使用",
-          "night_position": "夜间位置",
-          "morning_position": "早晨位置",
-          "weekday_night_fixed_time": "工作日夜间时间（周一至周五）",
-          "weekday_night_position": "工作日夜间位置（周一至周五）",
-          "weekday_morning_fixed_time": "工作日早晨时间（周一至周五）",
-          "weekday_morning_position": "工作日早晨位置（周一至周五）",
-          "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
-          "weekend_night_position": "周末夜间位置（周六至周日）",
-          "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
-          "weekend_morning_position": "周末早晨位置（周六至周日）",
           "night_sun_event": "夜间太阳事件（可选）",
-          "morning_sun_event": "早晨太阳事件（可选）"
+          "night_position": "夜间位置"
         },
         "data_description": {
-          "night_position": "夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "morning_position": "早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "weekday_night_position": "工作日夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "weekday_morning_position": "工作日早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "weekend_night_position": "周末夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。",
-          "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。",
           "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
-          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。"
+          "night_position": "夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "夜间 – 工作日",
+        "data": {
+          "weekday_night_fixed_time": "工作日夜间时间（周一至周五）",
+          "night_elevation_preset": "夜间：太阳位置",
+          "night_sun_event": "夜间太阳事件（可选）",
+          "weekday_night_position": "工作日夜间位置（周一至周五）"
+        },
+        "data_description": {
+          "night_sun_event": "可选。设置后，此天文事件将替代上面的夜间时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "weekday_night_position": "工作日夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "夜间 – 周末",
+        "data": {
+          "weekend_night_fixed_time": "周末夜间时间（周六至周日）",
+          "weekend_night_position": "周末夜间位置（周六至周日）"
+        },
+        "data_description": {
+          "weekend_night_position": "周末夜间阶段的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_morning": {
+        "title": "早晨",
+        "data": {
+          "morning_fixed_time": "早晨时间",
+          "morning_elevation_preset": "早晨：太阳位置",
+          "morning_sun_event": "早晨太阳事件（可选）",
+          "morning_position": "早晨位置"
+        },
+        "data_description": {
+          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "morning_position": "早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "早晨 – 工作日",
+        "data": {
+          "weekday_morning_fixed_time": "工作日早晨时间（周一至周五）",
+          "morning_elevation_preset": "早晨：太阳位置",
+          "morning_sun_event": "早晨太阳事件（可选）",
+          "weekday_morning_position": "工作日早晨位置（周一至周五）"
+        },
+        "data_description": {
+          "morning_sun_event": "可选。设置后，此天文事件将替代上面的早晨时间。曙光和暮光使用民用曙暮光定义（太阳在地平线下 -6°）。",
+          "weekday_morning_position": "工作日早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "早晨 – 周末",
+        "data": {
+          "weekend_morning_fixed_time": "周末早晨时间（周六至周日）",
+          "weekend_morning_position": "周末早晨位置（周六至周日）"
+        },
+        "data_description": {
+          "weekend_morning_position": "周末早晨阶段开始时的遮阳帘位置（0 = 关闭，100 = 打开）。"
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "夜间 – 自定义太阳高度",
+        "data": {
+          "night_sun_elevation": "自定义夜间高度（°）"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "早晨 – 自定义太阳高度",
+        "data": {
+          "morning_sun_elevation": "自定义早晨高度（°）"
         }
       },
       "presence": {

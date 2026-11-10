@@ -38,48 +38,101 @@
           "schedule_mode": "« Identique chaque jour » utilise un seul horaire pour toute la semaine. « Semaine / Week-end » permet de définir des heures et positions différentes pour lun–ven et sam–dim."
         }
       },
-      "lifecycle_detail": {
-        "title": "Détails de l'horaire",
-        "description": "Saisissez l'heure ou l'élévation solaire de chaque déclencheur. Seuls les champs pertinents pour le déclencheur choisi sont affichés.",
+      "lifecycle_night": {
+        "title": "Nuit",
         "data": {
           "night_fixed_time": "Heure de nuit",
           "night_elevation_preset": "Nuit : position du soleil",
-          "night_sun_elevation": "Élévation nocturne personnalisée (°) — utilisée uniquement si Personnalisée est sélectionné",
-          "morning_fixed_time": "Heure du matin",
-          "morning_elevation_preset": "Matin : position du soleil",
-          "morning_sun_elevation": "Élévation matinale personnalisée (°) — utilisée uniquement si Personnalisée est sélectionné",
-          "night_position": "Position de nuit",
-          "morning_position": "Position du matin",
-          "weekday_night_fixed_time": "Heure de nuit en semaine (lun–ven)",
-          "weekday_night_position": "Position de nuit en semaine (lun–ven)",
-          "weekday_morning_fixed_time": "Heure du matin en semaine (lun–ven)",
-          "weekday_morning_position": "Position du matin en semaine (lun–ven)",
-          "weekend_night_fixed_time": "Heure de nuit le week-end (sam–dim)",
-          "weekend_night_position": "Position de nuit le week-end (sam–dim)",
-          "weekend_morning_fixed_time": "Heure du matin le week-end (sam–dim)",
-          "weekend_morning_position": "Position du matin le week-end (sam–dim)",
-          "active_months": "Mois actifs (avancé)",
-          "night_sun_event": "Événement solaire nocturne (optionnel)",
-          "morning_sun_event": "Événement solaire matinal (optionnel)",
-          "night_not_before": "Nuit : déclencheur au plus tôt (optionnel)",
-          "night_not_after": "Nuit : déclencheur au plus tard (optionnel)",
-          "morning_not_before": "Matin : déclencheur au plus tôt (optionnel)",
-          "morning_not_after": "Matin : déclencheur au plus tard (optionnel)"
+          "night_position": "Position de nuit"
         },
         "data_description": {
-          "night_position": "Position du volet pendant la phase de nuit (0 = fermé, 100 = ouvert).",
-          "morning_position": "Position du volet au début de la phase du matin (0 = fermé, 100 = ouvert).",
-          "weekday_night_position": "Position du volet pendant la phase de nuit en semaine (0 = fermé, 100 = ouvert).",
-          "weekday_morning_position": "Position du volet au début de la phase du matin en semaine (0 = fermé, 100 = ouvert).",
-          "weekend_night_position": "Position du volet pendant la phase de nuit le week-end (0 = fermé, 100 = ouvert).",
-          "weekend_morning_position": "Position du volet au début de la phase du matin le week-end (0 = fermé, 100 = ouvert).",
-          "active_months": "Laissez vide pour appliquer ce programme chaque mois. Sélectionnez des mois spécifiques pour le restreindre — par exemple de septembre à mars pour un programme d'hiver.",
+          "night_position": "Position du volet pendant la phase de nuit (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Nuit – Jours de semaine",
+        "data": {
+          "weekday_night_fixed_time": "Heure de nuit en semaine (lun–ven)",
+          "night_elevation_preset": "Nuit : position du soleil",
+          "weekday_night_position": "Position de nuit en semaine (lun–ven)"
+        },
+        "data_description": {
+          "weekday_night_position": "Position du volet pendant la phase de nuit en semaine (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Nuit – Week-end",
+        "data": {
+          "weekend_night_fixed_time": "Heure de nuit le week-end (sam–dim)",
+          "weekend_night_position": "Position de nuit le week-end (sam–dim)"
+        },
+        "data_description": {
+          "weekend_night_position": "Position du volet pendant la phase de nuit le week-end (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Matin",
+        "data": {
+          "morning_fixed_time": "Heure du matin",
+          "morning_elevation_preset": "Matin : position du soleil",
+          "morning_position": "Position du matin"
+        },
+        "data_description": {
+          "morning_position": "Position du volet au début de la phase du matin (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Matin – Jours de semaine",
+        "data": {
+          "weekday_morning_fixed_time": "Heure du matin en semaine (lun–ven)",
+          "morning_elevation_preset": "Matin : position du soleil",
+          "weekday_morning_position": "Position du matin en semaine (lun–ven)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Position du volet au début de la phase du matin en semaine (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Matin – Week-end",
+        "data": {
+          "weekend_morning_fixed_time": "Heure du matin le week-end (sam–dim)",
+          "weekend_morning_position": "Position du matin le week-end (sam–dim)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Position du volet au début de la phase du matin le week-end (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Nuit – Élévation solaire personnalisée",
+        "data": {
+          "night_sun_elevation": "Élévation nocturne personnalisée (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Matin – Élévation solaire personnalisée",
+        "data": {
+          "morning_sun_elevation": "Élévation matinale personnalisée (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Planning avancé",
+        "data": {
+          "night_sun_event": "Événement solaire nocturne (optionnel)",
+          "night_not_before": "Nuit : déclencheur au plus tôt (optionnel)",
+          "night_not_after": "Nuit : déclencheur au plus tard (optionnel)",
+          "morning_sun_event": "Événement solaire matinal (optionnel)",
+          "morning_not_before": "Matin : déclencheur au plus tôt (optionnel)",
+          "morning_not_after": "Matin : déclencheur au plus tard (optionnel)",
+          "active_months": "Mois actifs (avancé)"
+        },
+        "data_description": {
           "night_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure de nuit ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
-          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
           "night_not_before": "Optionnel. Si le déclencheur nocturne résolu survenait plus tôt que cette heure, il est reporté à cette heure.",
           "night_not_after": "Optionnel. Si le déclencheur nocturne résolu survenait plus tard que cette heure, il est avancé à cette heure.",
+          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
           "morning_not_before": "Optionnel. Si le déclencheur matinal résolu survenait plus tôt que cette heure, il est reporté à cette heure.",
-          "morning_not_after": "Optionnel. Si le déclencheur matinal résolu survenait plus tard que cette heure, il est avancé à cette heure."
+          "morning_not_after": "Optionnel. Si le déclencheur matinal résolu survenait plus tard que cette heure, il est avancé à cette heure.",
+          "active_months": "Laissez vide pour appliquer ce programme chaque mois. Sélectionnez des mois spécifiques pour le restreindre — par exemple de septembre à mars pour un programme d'hiver."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Avancé",
         "description": "Profils de cycle de vie et comportement de la prise de contrôle manuelle — des réglages que la plupart des installations n'ont pas besoin de modifier.",
         "menu_options": {
-          "manual_override": "Dérogation manuelle"
+          "manual_override": "Dérogation manuelle",
+          "lifecycle_advanced": "Planning avancé"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "« Identique chaque jour » utilise un seul horaire pour toute la semaine. « Semaine / Week-end » permet de définir des heures et positions différentes pour lun–ven et sam–dim."
         }
       },
-      "lifecycle_detail": {
-        "title": "Détails de l'horaire",
-        "description": "Saisissez l'heure ou l'élévation solaire de chaque déclencheur. Seuls les champs pertinents pour le déclencheur choisi sont affichés.",
+      "lifecycle_night": {
+        "title": "Nuit",
         "data": {
           "night_fixed_time": "Heure de nuit",
           "night_elevation_preset": "Nuit : position du soleil",
-          "night_sun_elevation": "Élévation nocturne personnalisée (°) — utilisée uniquement si Personnalisée est sélectionné",
-          "morning_fixed_time": "Heure du matin",
-          "morning_elevation_preset": "Matin : position du soleil",
-          "morning_sun_elevation": "Élévation matinale personnalisée (°) — utilisée uniquement si Personnalisée est sélectionné",
-          "night_position": "Position de nuit",
-          "morning_position": "Position du matin",
-          "weekday_night_fixed_time": "Heure de nuit en semaine (lun–ven)",
-          "weekday_night_position": "Position de nuit en semaine (lun–ven)",
-          "weekday_morning_fixed_time": "Heure du matin en semaine (lun–ven)",
-          "weekday_morning_position": "Position du matin en semaine (lun–ven)",
-          "weekend_night_fixed_time": "Heure de nuit le week-end (sam–dim)",
-          "weekend_night_position": "Position de nuit le week-end (sam–dim)",
-          "weekend_morning_fixed_time": "Heure du matin le week-end (sam–dim)",
-          "weekend_morning_position": "Position du matin le week-end (sam–dim)",
           "night_sun_event": "Événement solaire nocturne (optionnel)",
-          "morning_sun_event": "Événement solaire matinal (optionnel)"
+          "night_position": "Position de nuit"
         },
         "data_description": {
-          "night_position": "Position du volet pendant la phase de nuit (0 = fermé, 100 = ouvert).",
-          "morning_position": "Position du volet au début de la phase du matin (0 = fermé, 100 = ouvert).",
-          "weekday_night_position": "Position du volet pendant la phase de nuit en semaine (0 = fermé, 100 = ouvert).",
-          "weekday_morning_position": "Position du volet au début de la phase du matin en semaine (0 = fermé, 100 = ouvert).",
-          "weekend_night_position": "Position du volet pendant la phase de nuit le week-end (0 = fermé, 100 = ouvert).",
-          "weekend_morning_position": "Position du volet au début de la phase du matin le week-end (0 = fermé, 100 = ouvert).",
           "night_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure de nuit ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
-          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°)."
+          "night_position": "Position du volet pendant la phase de nuit (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Nuit – Jours de semaine",
+        "data": {
+          "weekday_night_fixed_time": "Heure de nuit en semaine (lun–ven)",
+          "night_elevation_preset": "Nuit : position du soleil",
+          "night_sun_event": "Événement solaire nocturne (optionnel)",
+          "weekday_night_position": "Position de nuit en semaine (lun–ven)"
+        },
+        "data_description": {
+          "night_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure de nuit ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
+          "weekday_night_position": "Position du volet pendant la phase de nuit en semaine (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Nuit – Week-end",
+        "data": {
+          "weekend_night_fixed_time": "Heure de nuit le week-end (sam–dim)",
+          "weekend_night_position": "Position de nuit le week-end (sam–dim)"
+        },
+        "data_description": {
+          "weekend_night_position": "Position du volet pendant la phase de nuit le week-end (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Matin",
+        "data": {
+          "morning_fixed_time": "Heure du matin",
+          "morning_elevation_preset": "Matin : position du soleil",
+          "morning_sun_event": "Événement solaire matinal (optionnel)",
+          "morning_position": "Position du matin"
+        },
+        "data_description": {
+          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
+          "morning_position": "Position du volet au début de la phase du matin (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Matin – Jours de semaine",
+        "data": {
+          "weekday_morning_fixed_time": "Heure du matin en semaine (lun–ven)",
+          "morning_elevation_preset": "Matin : position du soleil",
+          "morning_sun_event": "Événement solaire matinal (optionnel)",
+          "weekday_morning_position": "Position du matin en semaine (lun–ven)"
+        },
+        "data_description": {
+          "morning_sun_event": "Optionnel. Si défini, cet événement astronomique remplace l'heure du matin ci-dessus. L'aube et le crépuscule utilisent le crépuscule civil (soleil à -6°).",
+          "weekday_morning_position": "Position du volet au début de la phase du matin en semaine (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Matin – Week-end",
+        "data": {
+          "weekend_morning_fixed_time": "Heure du matin le week-end (sam–dim)",
+          "weekend_morning_position": "Position du matin le week-end (sam–dim)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Position du volet au début de la phase du matin le week-end (0 = fermé, 100 = ouvert)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Nuit – Élévation solaire personnalisée",
+        "data": {
+          "night_sun_elevation": "Élévation nocturne personnalisée (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Matin – Élévation solaire personnalisée",
+        "data": {
+          "morning_sun_elevation": "Élévation matinale personnalisée (°)"
         }
       },
       "presence": {

@@ -38,48 +38,101 @@
           "schedule_mode": "\"Ens hver dag\" bruger én tidsplan for hele ugen. \"Hverdag / Weekend\" lader dig angive forskellige tidspunkter og positioner for man–fre og lør–søn."
         }
       },
-      "lifecycle_detail": {
-        "title": "Tidsplandetaljer",
-        "description": "Angiv tidspunktet eller solhøjden for hver udløser. Kun de felter, der er relevante for den valgte udløser, vises.",
+      "lifecycle_night": {
+        "title": "Nat",
         "data": {
           "night_fixed_time": "Nattidspunkt",
           "night_elevation_preset": "Nat: solposition",
-          "night_sun_elevation": "Tilpasset nathøjde (°) — bruges kun, når Tilpasset er valgt",
-          "morning_fixed_time": "Morgentidspunkt",
-          "morning_elevation_preset": "Morgen: solposition",
-          "morning_sun_elevation": "Tilpasset morgenhøjde (°) — bruges kun, når Tilpasset er valgt",
-          "night_position": "Natposition",
-          "morning_position": "Morgenposition",
-          "weekday_night_fixed_time": "Nattidspunkt på hverdage (man–fre)",
-          "weekday_night_position": "Natposition på hverdage (man–fre)",
-          "weekday_morning_fixed_time": "Morgentidspunkt på hverdage (man–fre)",
-          "weekday_morning_position": "Morgenposition på hverdage (man–fre)",
-          "weekend_night_fixed_time": "Nattidspunkt i weekenden (lør–søn)",
-          "weekend_night_position": "Natposition i weekenden (lør–søn)",
-          "weekend_morning_fixed_time": "Morgentidspunkt i weekenden (lør–søn)",
-          "weekend_morning_position": "Morgenposition i weekenden (lør–søn)",
-          "active_months": "Aktive måneder (avanceret)",
-          "night_sun_event": "Nattens solbegivenhed (valgfri)",
-          "morning_sun_event": "Morgenens solbegivenhed (valgfri)",
-          "night_not_before": "Nat: tidligste udløser (valgfri)",
-          "night_not_after": "Nat: seneste udløser (valgfri)",
-          "morning_not_before": "Morgen: tidligste udløser (valgfri)",
-          "morning_not_after": "Morgen: seneste udløser (valgfri)"
+          "night_position": "Natposition"
         },
         "data_description": {
-          "night_position": "Afskærmningens position i natfasen (0 = lukket, 100 = åben).",
-          "morning_position": "Afskærmningens position ved starten af morgenfasen (0 = lukket, 100 = åben).",
-          "weekday_night_position": "Afskærmningens position i natfasen på hverdage (0 = lukket, 100 = åben).",
-          "weekday_morning_position": "Afskærmningens position ved starten af morgenfasen på hverdage (0 = lukket, 100 = åben).",
-          "weekend_night_position": "Afskærmningens position i natfasen i weekenden (0 = lukket, 100 = åben).",
-          "weekend_morning_position": "Afskærmningens position ved starten af morgenfasen i weekenden (0 = lukket, 100 = åben).",
-          "active_months": "Lad stå tomt for at anvende denne tidsplan hver måned. Vælg bestemte måneder for at begrænse den — f.eks. september til marts for en vinterplan.",
+          "night_position": "Afskærmningens position i natfasen (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Nat – Hverdage",
+        "data": {
+          "weekday_night_fixed_time": "Nattidspunkt på hverdage (man–fre)",
+          "night_elevation_preset": "Nat: solposition",
+          "weekday_night_position": "Natposition på hverdage (man–fre)"
+        },
+        "data_description": {
+          "weekday_night_position": "Afskærmningens position i natfasen på hverdage (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Nat – Weekend",
+        "data": {
+          "weekend_night_fixed_time": "Nattidspunkt i weekenden (lør–søn)",
+          "weekend_night_position": "Natposition i weekenden (lør–søn)"
+        },
+        "data_description": {
+          "weekend_night_position": "Afskærmningens position i natfasen i weekenden (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Morgen",
+        "data": {
+          "morning_fixed_time": "Morgentidspunkt",
+          "morning_elevation_preset": "Morgen: solposition",
+          "morning_position": "Morgenposition"
+        },
+        "data_description": {
+          "morning_position": "Afskærmningens position ved starten af morgenfasen (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Morgen – Hverdage",
+        "data": {
+          "weekday_morning_fixed_time": "Morgentidspunkt på hverdage (man–fre)",
+          "morning_elevation_preset": "Morgen: solposition",
+          "weekday_morning_position": "Morgenposition på hverdage (man–fre)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Afskærmningens position ved starten af morgenfasen på hverdage (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Morgen – Weekend",
+        "data": {
+          "weekend_morning_fixed_time": "Morgentidspunkt i weekenden (lør–søn)",
+          "weekend_morning_position": "Morgenposition i weekenden (lør–søn)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Afskærmningens position ved starten af morgenfasen i weekenden (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Nat – Tilpasset solhøjde",
+        "data": {
+          "night_sun_elevation": "Tilpasset nathøjde (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Morgen – Tilpasset solhøjde",
+        "data": {
+          "morning_sun_elevation": "Tilpasset morgenhøjde (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Avanceret tidsplan",
+        "data": {
+          "night_sun_event": "Nattens solbegivenhed (valgfri)",
+          "night_not_before": "Nat: tidligste udløser (valgfri)",
+          "night_not_after": "Nat: seneste udløser (valgfri)",
+          "morning_sun_event": "Morgenens solbegivenhed (valgfri)",
+          "morning_not_before": "Morgen: tidligste udløser (valgfri)",
+          "morning_not_after": "Morgen: seneste udløser (valgfri)",
+          "active_months": "Aktive måneder (avanceret)"
+        },
+        "data_description": {
           "night_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed nattetidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
-          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
           "night_not_before": "Valgfrit. Hvis den beregnede natudløser ville indtræffe tidligere end dette tidspunkt, udskydes den til dette tidspunkt i stedet.",
           "night_not_after": "Valgfrit. Hvis den beregnede natudløser ville indtræffe senere end dette tidspunkt, fremrükkes den til dette tidspunkt i stedet.",
+          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
           "morning_not_before": "Valgfrit. Hvis den beregnede morgenudløser ville indtræffe tidligere end dette tidspunkt, udskydes den til dette tidspunkt i stedet.",
-          "morning_not_after": "Valgfrit. Hvis den beregnede morgenudløser ville indtræffe senere end dette tidspunkt, fremrükkes den til dette tidspunkt i stedet."
+          "morning_not_after": "Valgfrit. Hvis den beregnede morgenudløser ville indtræffe senere end dette tidspunkt, fremrükkes den til dette tidspunkt i stedet.",
+          "active_months": "Lad stå tomt for at anvende denne tidsplan hver måned. Vælg bestemte måneder for at begrænse den — f.eks. september til marts for en vinterplan."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Avanceret",
         "description": "Livscyklusprofiler og manuel tilsidesættelsesadfærd — indstillinger, som de fleste installationer ikke behøver at ændre.",
         "menu_options": {
-          "manual_override": "Manuel tilsidesættelse"
+          "manual_override": "Manuel tilsidesættelse",
+          "lifecycle_advanced": "Avanceret tidsplan"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "\"Ens hver dag\" bruger én tidsplan for hele ugen. \"Hverdag / Weekend\" lader dig angive forskellige tidspunkter og positioner for man–fre og lør–søn."
         }
       },
-      "lifecycle_detail": {
-        "title": "Tidsplandetaljer",
-        "description": "Angiv tidspunktet eller solhøjden for hver udløser. Kun de felter, der er relevante for den valgte udløser, vises.",
+      "lifecycle_night": {
+        "title": "Nat",
         "data": {
           "night_fixed_time": "Nattidspunkt",
           "night_elevation_preset": "Nat: solposition",
-          "night_sun_elevation": "Tilpasset nathøjde (°) — bruges kun, når Tilpasset er valgt",
-          "morning_fixed_time": "Morgentidspunkt",
-          "morning_elevation_preset": "Morgen: solposition",
-          "morning_sun_elevation": "Tilpasset morgenhøjde (°) — bruges kun, når Tilpasset er valgt",
-          "night_position": "Natposition",
-          "morning_position": "Morgenposition",
-          "weekday_night_fixed_time": "Nattidspunkt på hverdage (man–fre)",
-          "weekday_night_position": "Natposition på hverdage (man–fre)",
-          "weekday_morning_fixed_time": "Morgentidspunkt på hverdage (man–fre)",
-          "weekday_morning_position": "Morgenposition på hverdage (man–fre)",
-          "weekend_night_fixed_time": "Nattidspunkt i weekenden (lør–søn)",
-          "weekend_night_position": "Natposition i weekenden (lør–søn)",
-          "weekend_morning_fixed_time": "Morgentidspunkt i weekenden (lør–søn)",
-          "weekend_morning_position": "Morgenposition i weekenden (lør–søn)",
           "night_sun_event": "Nattens solbegivenhed (valgfri)",
-          "morning_sun_event": "Morgenens solbegivenhed (valgfri)"
+          "night_position": "Natposition"
         },
         "data_description": {
-          "night_position": "Afskærmningens position i natfasen (0 = lukket, 100 = åben).",
-          "morning_position": "Afskærmningens position ved starten af morgenfasen (0 = lukket, 100 = åben).",
-          "weekday_night_position": "Afskærmningens position i natfasen på hverdage (0 = lukket, 100 = åben).",
-          "weekday_morning_position": "Afskærmningens position ved starten af morgenfasen på hverdage (0 = lukket, 100 = åben).",
-          "weekend_night_position": "Afskærmningens position i natfasen i weekenden (0 = lukket, 100 = åben).",
-          "weekend_morning_position": "Afskærmningens position ved starten af morgenfasen i weekenden (0 = lukket, 100 = åben).",
           "night_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed nattetidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
-          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°)."
+          "night_position": "Afskærmningens position i natfasen (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Nat – Hverdage",
+        "data": {
+          "weekday_night_fixed_time": "Nattidspunkt på hverdage (man–fre)",
+          "night_elevation_preset": "Nat: solposition",
+          "night_sun_event": "Nattens solbegivenhed (valgfri)",
+          "weekday_night_position": "Natposition på hverdage (man–fre)"
+        },
+        "data_description": {
+          "night_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed nattetidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
+          "weekday_night_position": "Afskærmningens position i natfasen på hverdage (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Nat – Weekend",
+        "data": {
+          "weekend_night_fixed_time": "Nattidspunkt i weekenden (lør–søn)",
+          "weekend_night_position": "Natposition i weekenden (lør–søn)"
+        },
+        "data_description": {
+          "weekend_night_position": "Afskærmningens position i natfasen i weekenden (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Morgen",
+        "data": {
+          "morning_fixed_time": "Morgentidspunkt",
+          "morning_elevation_preset": "Morgen: solposition",
+          "morning_sun_event": "Morgenens solbegivenhed (valgfri)",
+          "morning_position": "Morgenposition"
+        },
+        "data_description": {
+          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
+          "morning_position": "Afskærmningens position ved starten af morgenfasen (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Morgen – Hverdage",
+        "data": {
+          "weekday_morning_fixed_time": "Morgentidspunkt på hverdage (man–fre)",
+          "morning_elevation_preset": "Morgen: solposition",
+          "morning_sun_event": "Morgenens solbegivenhed (valgfri)",
+          "weekday_morning_position": "Morgenposition på hverdage (man–fre)"
+        },
+        "data_description": {
+          "morning_sun_event": "Valgfrit. Hvis angivet, erstatter denne astronomiske begivenhed morgentidspunktet ovenfor. Daggry og skumring bruger borgerlig tusmørke (solen ved -6°).",
+          "weekday_morning_position": "Afskærmningens position ved starten af morgenfasen på hverdage (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Morgen – Weekend",
+        "data": {
+          "weekend_morning_fixed_time": "Morgentidspunkt i weekenden (lør–søn)",
+          "weekend_morning_position": "Morgenposition i weekenden (lør–søn)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Afskærmningens position ved starten af morgenfasen i weekenden (0 = lukket, 100 = åben)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Nat – Tilpasset solhøjde",
+        "data": {
+          "night_sun_elevation": "Tilpasset nathøjde (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Morgen – Tilpasset solhøjde",
+        "data": {
+          "morning_sun_elevation": "Tilpasset morgenhøjde (°)"
         }
       },
       "presence": {

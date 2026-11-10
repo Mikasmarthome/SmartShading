@@ -38,48 +38,101 @@
           "schedule_mode": "»Enako vsak dan« uporablja en urnik za cel teden. »Delavnik / Vikend« omogoča nastavitev različnih časov in položajev za pon–pet in sob–ned."
         }
       },
-      "lifecycle_detail": {
-        "title": "Podrobnosti urnika",
-        "description": "Vnesite čas ali višino sonca za vsak sprožilec. Prikazana so samo polja, pomembna za izbrani sprožilec.",
+      "lifecycle_night": {
+        "title": "Noč",
         "data": {
           "night_fixed_time": "Čas noči",
           "night_elevation_preset": "Noč: položaj sonca",
-          "night_sun_elevation": "Lastna nočna višina (°) — uporablja se samo, ko je izbrano Po meri",
-          "morning_fixed_time": "Čas jutra",
-          "morning_elevation_preset": "Jutro: položaj sonca",
-          "morning_sun_elevation": "Lastna jutranja višina (°) — uporablja se samo, ko je izbrano Po meri",
-          "night_position": "Nočni položaj",
-          "morning_position": "Jutranji položaj",
-          "weekday_night_fixed_time": "Čas noči ob delavnikih (pon–pet)",
-          "weekday_night_position": "Nočni položaj ob delavnikih (pon–pet)",
-          "weekday_morning_fixed_time": "Čas jutra ob delavnikih (pon–pet)",
-          "weekday_morning_position": "Jutranji položaj ob delavnikih (pon–pet)",
-          "weekend_night_fixed_time": "Čas noči ob vikendih (sob–ned)",
-          "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)",
-          "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
-          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)",
-          "active_months": "Aktivni meseci (napredno)",
-          "night_sun_event": "Nočni sončni dogodek (neobvezno)",
-          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)",
-          "night_not_before": "Noč: najzgodnejši sprožilec (neobvezno)",
-          "night_not_after": "Noč: najkasnejši sprožilec (neobvezno)",
-          "morning_not_before": "Jutro: najzgodnejši sprožilec (neobvezno)",
-          "morning_not_after": "Jutro: najkasnejši sprožilec (neobvezno)"
+          "night_position": "Nočni položaj"
         },
         "data_description": {
-          "night_position": "Položaj senčila med nočno fazo (0 = zaprto, 100 = odprto).",
-          "morning_position": "Položaj senčila na začetku jutranje faze (0 = zaprto, 100 = odprto).",
-          "weekday_night_position": "Položaj senčila med nočno fazo ob delavnikih (0 = zaprto, 100 = odprto).",
-          "weekday_morning_position": "Položaj senčila na začetku jutranje faze ob delavnikih (0 = zaprto, 100 = odprto).",
-          "weekend_night_position": "Položaj senčila med nočno fazo ob vikendih (0 = zaprto, 100 = odprto).",
-          "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto).",
-          "active_months": "Pustite prazno, če naj ta urnik velja vsak mesec. Izberite določene mesece za omejitev — na primer od septembra do marca za zimski urnik.",
+          "night_position": "Položaj senčila med nočno fazo (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Noč – Delavniki",
+        "data": {
+          "weekday_night_fixed_time": "Čas noči ob delavnikih (pon–pet)",
+          "night_elevation_preset": "Noč: položaj sonca",
+          "weekday_night_position": "Nočni položaj ob delavnikih (pon–pet)"
+        },
+        "data_description": {
+          "weekday_night_position": "Položaj senčila med nočno fazo ob delavnikih (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Noč – Vikend",
+        "data": {
+          "weekend_night_fixed_time": "Čas noči ob vikendih (sob–ned)",
+          "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)"
+        },
+        "data_description": {
+          "weekend_night_position": "Položaj senčila med nočno fazo ob vikendih (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Jutro",
+        "data": {
+          "morning_fixed_time": "Čas jutra",
+          "morning_elevation_preset": "Jutro: položaj sonca",
+          "morning_position": "Jutranji položaj"
+        },
+        "data_description": {
+          "morning_position": "Položaj senčila na začetku jutranje faze (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Jutro – Delavniki",
+        "data": {
+          "weekday_morning_fixed_time": "Čas jutra ob delavnikih (pon–pet)",
+          "morning_elevation_preset": "Jutro: položaj sonca",
+          "weekday_morning_position": "Jutranji položaj ob delavnikih (pon–pet)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Položaj senčila na začetku jutranje faze ob delavnikih (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Jutro – Vikend",
+        "data": {
+          "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
+          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Noč – Lastna višina sonca",
+        "data": {
+          "night_sun_elevation": "Lastna nočna višina (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Jutro – Lastna višina sonca",
+        "data": {
+          "morning_sun_elevation": "Lastna jutranja višina (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Napredni urnik",
+        "data": {
+          "night_sun_event": "Nočni sončni dogodek (neobvezno)",
+          "night_not_before": "Noč: najzgodnejši sprožilec (neobvezno)",
+          "night_not_after": "Noč: najkasnejši sprožilec (neobvezno)",
+          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)",
+          "morning_not_before": "Jutro: najzgodnejši sprožilec (neobvezno)",
+          "morning_not_after": "Jutro: najkasnejši sprožilec (neobvezno)",
+          "active_months": "Aktivni meseci (napredno)"
+        },
+        "data_description": {
           "night_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji nočni čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
-          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
           "night_not_before": "Neobvezno. Če bi razrešeni nočni sprožilec nastopil prej kot ob tem času, se namesto tega zamakne na ta čas.",
           "night_not_after": "Neobvezno. Če bi razrešeni nočni sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas.",
+          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
           "morning_not_before": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil prej kot ob tem času, se namesto tega zamakne na ta čas.",
-          "morning_not_after": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas."
+          "morning_not_after": "Neobvezno. Če bi razrešeni jutranji sprožilec nastopil kasneje kot ob tem času, se namesto tega premakne na ta čas.",
+          "active_months": "Pustite prazno, če naj ta urnik velja vsak mesec. Izberite določene mesece za omejitev — na primer od septembra do marca za zimski urnik."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Napredno",
         "description": "Profili življenjskega cikla in obnašanje ročnega preglasitve — nastavitve, ki jih večina namestitev ne potrebuje spreminjati.",
         "menu_options": {
-          "manual_override": "Ročna preglasitev"
+          "manual_override": "Ročna preglasitev",
+          "lifecycle_advanced": "Napredni urnik"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "»Enako vsak dan« uporablja en urnik za cel teden. »Delavnik / Vikend« omogoča nastavitev različnih časov in položajev za pon–pet in sob–ned."
         }
       },
-      "lifecycle_detail": {
-        "title": "Podrobnosti urnika",
-        "description": "Vnesite čas ali višino sonca za vsak sprožilec. Prikazana so samo polja, pomembna za izbrani sprožilec.",
+      "lifecycle_night": {
+        "title": "Noč",
         "data": {
           "night_fixed_time": "Čas noči",
           "night_elevation_preset": "Noč: položaj sonca",
-          "night_sun_elevation": "Lastna nočna višina (°) — uporablja se samo, ko je izbrano Po meri",
-          "morning_fixed_time": "Čas jutra",
-          "morning_elevation_preset": "Jutro: položaj sonca",
-          "morning_sun_elevation": "Lastna jutranja višina (°) — uporablja se samo, ko je izbrano Po meri",
-          "night_position": "Nočni položaj",
-          "morning_position": "Jutranji položaj",
-          "weekday_night_fixed_time": "Čas noči ob delavnikih (pon–pet)",
-          "weekday_night_position": "Nočni položaj ob delavnikih (pon–pet)",
-          "weekday_morning_fixed_time": "Čas jutra ob delavnikih (pon–pet)",
-          "weekday_morning_position": "Jutranji položaj ob delavnikih (pon–pet)",
-          "weekend_night_fixed_time": "Čas noči ob vikendih (sob–ned)",
-          "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)",
-          "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
-          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)",
           "night_sun_event": "Nočni sončni dogodek (neobvezno)",
-          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)"
+          "night_position": "Nočni položaj"
         },
         "data_description": {
-          "night_position": "Položaj senčila med nočno fazo (0 = zaprto, 100 = odprto).",
-          "morning_position": "Položaj senčila na začetku jutranje faze (0 = zaprto, 100 = odprto).",
-          "weekday_night_position": "Položaj senčila med nočno fazo ob delavnikih (0 = zaprto, 100 = odprto).",
-          "weekday_morning_position": "Položaj senčila na začetku jutranje faze ob delavnikih (0 = zaprto, 100 = odprto).",
-          "weekend_night_position": "Položaj senčila med nočno fazo ob vikendih (0 = zaprto, 100 = odprto).",
-          "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto).",
           "night_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji nočni čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
-          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°)."
+          "night_position": "Položaj senčila med nočno fazo (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Noč – Delavniki",
+        "data": {
+          "weekday_night_fixed_time": "Čas noči ob delavnikih (pon–pet)",
+          "night_elevation_preset": "Noč: položaj sonca",
+          "night_sun_event": "Nočni sončni dogodek (neobvezno)",
+          "weekday_night_position": "Nočni položaj ob delavnikih (pon–pet)"
+        },
+        "data_description": {
+          "night_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji nočni čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
+          "weekday_night_position": "Položaj senčila med nočno fazo ob delavnikih (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Noč – Vikend",
+        "data": {
+          "weekend_night_fixed_time": "Čas noči ob vikendih (sob–ned)",
+          "weekend_night_position": "Nočni položaj ob vikendih (sob–ned)"
+        },
+        "data_description": {
+          "weekend_night_position": "Položaj senčila med nočno fazo ob vikendih (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Jutro",
+        "data": {
+          "morning_fixed_time": "Čas jutra",
+          "morning_elevation_preset": "Jutro: položaj sonca",
+          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)",
+          "morning_position": "Jutranji položaj"
+        },
+        "data_description": {
+          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
+          "morning_position": "Položaj senčila na začetku jutranje faze (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Jutro – Delavniki",
+        "data": {
+          "weekday_morning_fixed_time": "Čas jutra ob delavnikih (pon–pet)",
+          "morning_elevation_preset": "Jutro: položaj sonca",
+          "morning_sun_event": "Jutranji sončni dogodek (neobvezno)",
+          "weekday_morning_position": "Jutranji položaj ob delavnikih (pon–pet)"
+        },
+        "data_description": {
+          "morning_sun_event": "Neobvezno. Če je nastavljeno, ta astronomski dogodek nadomesti zgornji jutranji čas. Zora in mrak uporabljata civilni mrak (sonce na -6°).",
+          "weekday_morning_position": "Položaj senčila na začetku jutranje faze ob delavnikih (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Jutro – Vikend",
+        "data": {
+          "weekend_morning_fixed_time": "Čas jutra ob vikendih (sob–ned)",
+          "weekend_morning_position": "Jutranji položaj ob vikendih (sob–ned)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Položaj senčila na začetku jutranje faze ob vikendih (0 = zaprto, 100 = odprto)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Noč – Lastna višina sonca",
+        "data": {
+          "night_sun_elevation": "Lastna nočna višina (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Jutro – Lastna višina sonca",
+        "data": {
+          "morning_sun_elevation": "Lastna jutranja višina (°)"
         }
       },
       "presence": {

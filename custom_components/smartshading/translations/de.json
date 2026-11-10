@@ -38,48 +38,101 @@
           "schedule_mode": "\"Gleich jeden Tag\" verwendet einen Zeitplan für die gesamte Woche. \"Wochentag / Wochenende\" ermöglicht unterschiedliche Uhrzeiten und Positionen für Mo–Fr und Sa–So."
         }
       },
-      "lifecycle_detail": {
-        "title": "Zeitplan-Details",
-        "description": "Gib Uhrzeit oder Sonnenhöhe für den gewählten Auslöser ein. Es werden nur die Felder für den ausgewählten Auslöser angezeigt.",
+      "lifecycle_night": {
+        "title": "Nacht",
         "data": {
           "night_fixed_time": "Nacht-Uhrzeit",
           "night_elevation_preset": "Nacht: Sonnenstand",
-          "night_sun_elevation": "Eigener Nacht-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
-          "morning_fixed_time": "Morgen-Uhrzeit",
-          "morning_elevation_preset": "Morgen: Sonnenstand",
-          "morning_sun_elevation": "Eigener Morgen-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
-          "night_position": "Nachtposition",
-          "morning_position": "Morgenposition",
-          "weekday_night_fixed_time": "Nacht-Uhrzeit Wochentag (Mo–Fr)",
-          "weekday_night_position": "Nachtposition Wochentag (Mo–Fr)",
-          "weekday_morning_fixed_time": "Morgen-Uhrzeit Wochentag (Mo–Fr)",
-          "weekday_morning_position": "Morgenposition Wochentag (Mo–Fr)",
-          "weekend_night_fixed_time": "Nacht-Uhrzeit Wochenende (Sa–So)",
-          "weekend_night_position": "Nachtposition Wochenende (Sa–So)",
-          "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
-          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)",
-          "active_months": "Aktive Monate (erweitert)",
-          "night_sun_event": "Nächtliches Sonnenereignis (optional)",
-          "morning_sun_event": "Morgendliches Sonnenereignis (optional)",
-          "night_not_before": "Nacht: frühester Auslöser (optional)",
-          "night_not_after": "Nacht: spätester Auslöser (optional)",
-          "morning_not_before": "Morgen: frühester Auslöser (optional)",
-          "morning_not_after": "Morgen: spätester Auslöser (optional)"
+          "night_position": "Nachtposition"
         },
         "data_description": {
-          "night_position": "Behangsposition in der Nachtphase (0 = geschlossen, 100 = offen).",
-          "morning_position": "Behangsposition zu Beginn der Morgenphase (0 = geschlossen, 100 = offen).",
-          "weekday_night_position": "Behangsposition in der Nachtphase an Wochentagen (0 = geschlossen, 100 = offen).",
-          "weekday_morning_position": "Behangsposition zu Beginn der Morgenphase an Wochentagen (0 = geschlossen, 100 = offen).",
-          "weekend_night_position": "Behangsposition in der Nachtphase am Wochenende (0 = geschlossen, 100 = offen).",
-          "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen).",
-          "active_months": "Leer lassen, um diesen Zeitplan in jedem Monat anzuwenden. Wähle bestimmte Monate aus, um ihn einzuschränken — zum Beispiel September bis März für einen Winter-Zeitplan.",
+          "night_position": "Behangsposition in der Nachtphase (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Nacht – Wochentage",
+        "data": {
+          "weekday_night_fixed_time": "Nacht-Uhrzeit Wochentag (Mo–Fr)",
+          "night_elevation_preset": "Nacht: Sonnenstand",
+          "weekday_night_position": "Nachtposition Wochentag (Mo–Fr)"
+        },
+        "data_description": {
+          "weekday_night_position": "Behangsposition in der Nachtphase an Wochentagen (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Nacht – Wochenende",
+        "data": {
+          "weekend_night_fixed_time": "Nacht-Uhrzeit Wochenende (Sa–So)",
+          "weekend_night_position": "Nachtposition Wochenende (Sa–So)"
+        },
+        "data_description": {
+          "weekend_night_position": "Behangsposition in der Nachtphase am Wochenende (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Morgen",
+        "data": {
+          "morning_fixed_time": "Morgen-Uhrzeit",
+          "morning_elevation_preset": "Morgen: Sonnenstand",
+          "morning_position": "Morgenposition"
+        },
+        "data_description": {
+          "morning_position": "Behangsposition zu Beginn der Morgenphase (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Morgen – Wochentage",
+        "data": {
+          "weekday_morning_fixed_time": "Morgen-Uhrzeit Wochentag (Mo–Fr)",
+          "morning_elevation_preset": "Morgen: Sonnenstand",
+          "weekday_morning_position": "Morgenposition Wochentag (Mo–Fr)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Behangsposition zu Beginn der Morgenphase an Wochentagen (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Morgen – Wochenende",
+        "data": {
+          "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
+          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Nacht – Eigener Sonnenstand",
+        "data": {
+          "night_sun_elevation": "Eigener Nacht-Sonnenwert (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Morgen – Eigener Sonnenstand",
+        "data": {
+          "morning_sun_elevation": "Eigener Morgen-Sonnenwert (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Zeitplan (erweitert)",
+        "data": {
+          "night_sun_event": "Nächtliches Sonnenereignis (optional)",
+          "night_not_before": "Nacht: frühester Auslöser (optional)",
+          "night_not_after": "Nacht: spätester Auslöser (optional)",
+          "morning_sun_event": "Morgendliches Sonnenereignis (optional)",
+          "morning_not_before": "Morgen: frühester Auslöser (optional)",
+          "morning_not_after": "Morgen: spätester Auslöser (optional)",
+          "active_months": "Aktive Monate (erweitert)"
+        },
+        "data_description": {
           "night_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Nachtzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
-          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
           "night_not_before": "Optional. Würde der aufgelöste nächtliche Auslöser früher als diese Zeit liegen, wird er stattdessen auf diese Zeit verschoben.",
           "night_not_after": "Optional. Würde der aufgelöste nächtliche Auslöser später als diese Zeit liegen, wird er stattdessen auf diese Zeit vorgezogen.",
+          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
           "morning_not_before": "Optional. Würde der aufgelöste morgendliche Auslöser früher als diese Zeit liegen, wird er stattdessen auf diese Zeit verschoben.",
-          "morning_not_after": "Optional. Würde der aufgelöste morgendliche Auslöser später als diese Zeit liegen, wird er stattdessen auf diese Zeit vorgezogen."
+          "morning_not_after": "Optional. Würde der aufgelöste morgendliche Auslöser später als diese Zeit liegen, wird er stattdessen auf diese Zeit vorgezogen.",
+          "active_months": "Leer lassen, um diesen Zeitplan in jedem Monat anzuwenden. Wähle bestimmte Monate aus, um ihn einzuschränken — zum Beispiel September bis März für einen Winter-Zeitplan."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Erweitert",
         "description": "Lifecycle-Profile und Verhalten der manuellen Übersteuerung — Einstellungen, die die meisten Installationen nicht ändern müssen.",
         "menu_options": {
-          "manual_override": "Manuelle Übersteuerung"
+          "manual_override": "Manuelle Übersteuerung",
+          "lifecycle_advanced": "Zeitplan (erweitert)"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "\"Gleich jeden Tag\" verwendet einen Zeitplan für die gesamte Woche. \"Wochentag / Wochenende\" ermöglicht unterschiedliche Uhrzeiten und Positionen für Mo–Fr und Sa–So."
         }
       },
-      "lifecycle_detail": {
-        "title": "Zeitplan-Details",
-        "description": "Gib Uhrzeit oder Sonnenhöhe für den gewählten Auslöser ein. Es werden nur die Felder für den ausgewählten Auslöser angezeigt.",
+      "lifecycle_night": {
+        "title": "Nacht",
         "data": {
           "night_fixed_time": "Nacht-Uhrzeit",
           "night_elevation_preset": "Nacht: Sonnenstand",
-          "night_sun_elevation": "Eigener Nacht-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
-          "morning_fixed_time": "Morgen-Uhrzeit",
-          "morning_elevation_preset": "Morgen: Sonnenstand",
-          "morning_sun_elevation": "Eigener Morgen-Sonnenwert (°) – nur bei 'Benutzerdefiniert' verwendet",
-          "night_position": "Nachtposition",
-          "morning_position": "Morgenposition",
-          "weekday_night_fixed_time": "Nacht-Uhrzeit Wochentag (Mo–Fr)",
-          "weekday_night_position": "Nachtposition Wochentag (Mo–Fr)",
-          "weekday_morning_fixed_time": "Morgen-Uhrzeit Wochentag (Mo–Fr)",
-          "weekday_morning_position": "Morgenposition Wochentag (Mo–Fr)",
-          "weekend_night_fixed_time": "Nacht-Uhrzeit Wochenende (Sa–So)",
-          "weekend_night_position": "Nachtposition Wochenende (Sa–So)",
-          "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
-          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)",
           "night_sun_event": "Nächtliches Sonnenereignis (optional)",
-          "morning_sun_event": "Morgendliches Sonnenereignis (optional)"
+          "night_position": "Nachtposition"
         },
         "data_description": {
-          "night_position": "Behangsposition in der Nachtphase (0 = geschlossen, 100 = offen).",
-          "morning_position": "Behangsposition zu Beginn der Morgenphase (0 = geschlossen, 100 = offen).",
-          "weekday_night_position": "Behangsposition in der Nachtphase an Wochentagen (0 = geschlossen, 100 = offen).",
-          "weekday_morning_position": "Behangsposition zu Beginn der Morgenphase an Wochentagen (0 = geschlossen, 100 = offen).",
-          "weekend_night_position": "Behangsposition in der Nachtphase am Wochenende (0 = geschlossen, 100 = offen).",
-          "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen).",
           "night_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Nachtzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
-          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°)."
+          "night_position": "Behangsposition in der Nachtphase (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Nacht – Wochentage",
+        "data": {
+          "weekday_night_fixed_time": "Nacht-Uhrzeit Wochentag (Mo–Fr)",
+          "night_elevation_preset": "Nacht: Sonnenstand",
+          "night_sun_event": "Nächtliches Sonnenereignis (optional)",
+          "weekday_night_position": "Nachtposition Wochentag (Mo–Fr)"
+        },
+        "data_description": {
+          "night_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Nachtzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
+          "weekday_night_position": "Behangsposition in der Nachtphase an Wochentagen (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Nacht – Wochenende",
+        "data": {
+          "weekend_night_fixed_time": "Nacht-Uhrzeit Wochenende (Sa–So)",
+          "weekend_night_position": "Nachtposition Wochenende (Sa–So)"
+        },
+        "data_description": {
+          "weekend_night_position": "Behangsposition in der Nachtphase am Wochenende (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Morgen",
+        "data": {
+          "morning_fixed_time": "Morgen-Uhrzeit",
+          "morning_elevation_preset": "Morgen: Sonnenstand",
+          "morning_sun_event": "Morgendliches Sonnenereignis (optional)",
+          "morning_position": "Morgenposition"
+        },
+        "data_description": {
+          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
+          "morning_position": "Behangsposition zu Beginn der Morgenphase (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Morgen – Wochentage",
+        "data": {
+          "weekday_morning_fixed_time": "Morgen-Uhrzeit Wochentag (Mo–Fr)",
+          "morning_elevation_preset": "Morgen: Sonnenstand",
+          "morning_sun_event": "Morgendliches Sonnenereignis (optional)",
+          "weekday_morning_position": "Morgenposition Wochentag (Mo–Fr)"
+        },
+        "data_description": {
+          "morning_sun_event": "Optional. Wenn gesetzt, ersetzt dieses astronomische Ereignis die obige Morgenzeit. Morgen- und Abenddämmerung nutzen die bürgerliche Dämmerung (Sonne bei -6°).",
+          "weekday_morning_position": "Behangsposition zu Beginn der Morgenphase an Wochentagen (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Morgen – Wochenende",
+        "data": {
+          "weekend_morning_fixed_time": "Morgen-Uhrzeit Wochenende (Sa–So)",
+          "weekend_morning_position": "Morgenposition Wochenende (Sa–So)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Behangsposition zu Beginn der Morgenphase am Wochenende (0 = geschlossen, 100 = offen)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Nacht – Eigener Sonnenstand",
+        "data": {
+          "night_sun_elevation": "Eigener Nacht-Sonnenwert (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Morgen – Eigener Sonnenstand",
+        "data": {
+          "morning_sun_elevation": "Eigener Morgen-Sonnenwert (°)"
         }
       },
       "presence": {

@@ -38,48 +38,101 @@
           "schedule_mode": "«Igual cada dia» fa servir un únic horari per a tota la setmana. «Entre setmana / Cap de setmana» permet definir hores i posicions diferents per a dl–dv i ds–dg."
         }
       },
-      "lifecycle_detail": {
-        "title": "Detalls de l'horari",
-        "description": "Introdueix l'hora o l'elevació solar de cada activador. Només es mostren els camps rellevants per a l'activador seleccionat.",
+      "lifecycle_night": {
+        "title": "Nit",
         "data": {
           "night_fixed_time": "Hora de nit",
           "night_elevation_preset": "Nit: posició del sol",
-          "night_sun_elevation": "Elevació nocturna personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
-          "morning_fixed_time": "Hora de matí",
-          "morning_elevation_preset": "Matí: posició del sol",
-          "morning_sun_elevation": "Elevació matinal personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
-          "night_position": "Posició de nit",
-          "morning_position": "Posició de matí",
-          "weekday_night_fixed_time": "Hora de nit entre setmana (dl–dv)",
-          "weekday_night_position": "Posició de nit entre setmana (dl–dv)",
-          "weekday_morning_fixed_time": "Hora de matí entre setmana (dl–dv)",
-          "weekday_morning_position": "Posició de matí entre setmana (dl–dv)",
-          "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
-          "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)",
-          "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
-          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)",
-          "active_months": "Mesos actius (avançat)",
-          "night_sun_event": "Esdeveniment solar nocturn (opcional)",
-          "morning_sun_event": "Esdeveniment solar matinal (opcional)",
-          "night_not_before": "Nit: activador més aviat (opcional)",
-          "night_not_after": "Nit: activador més tard (opcional)",
-          "morning_not_before": "Matí: activador més aviat (opcional)",
-          "morning_not_after": "Matí: activador més tard (opcional)"
+          "night_position": "Posició de nit"
         },
         "data_description": {
-          "night_position": "Posició de la persiana durant la fase nocturna (0 = tancada, 100 = oberta).",
-          "morning_position": "Posició de la persiana a l'inici de la fase matinal (0 = tancada, 100 = oberta).",
-          "weekday_night_position": "Posició de la persiana durant la fase nocturna entre setmana (0 = tancada, 100 = oberta).",
-          "weekday_morning_position": "Posició de la persiana a l'inici de la fase matinal entre setmana (0 = tancada, 100 = oberta).",
-          "weekend_night_position": "Posició de la persiana durant la fase nocturna el cap de setmana (0 = tancada, 100 = oberta).",
-          "weekend_morning_position": "Posició de la persiana a l'inici de la fase matinal el cap de setmana (0 = tancada, 100 = oberta).",
-          "active_months": "Deixeu-ho buit per aplicar aquest horari cada mes. Seleccioneu mesos concrets per restringir-lo — per exemple, de setembre a març per a un horari d'hivern.",
+          "night_position": "Posició de la persiana durant la fase nocturna (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Nit – Dies laborables",
+        "data": {
+          "weekday_night_fixed_time": "Hora de nit entre setmana (dl–dv)",
+          "night_elevation_preset": "Nit: posició del sol",
+          "weekday_night_position": "Posició de nit entre setmana (dl–dv)"
+        },
+        "data_description": {
+          "weekday_night_position": "Posició de la persiana durant la fase nocturna entre setmana (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Nit – Cap de setmana",
+        "data": {
+          "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
+          "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)"
+        },
+        "data_description": {
+          "weekend_night_position": "Posició de la persiana durant la fase nocturna el cap de setmana (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Matí",
+        "data": {
+          "morning_fixed_time": "Hora de matí",
+          "morning_elevation_preset": "Matí: posició del sol",
+          "morning_position": "Posició de matí"
+        },
+        "data_description": {
+          "morning_position": "Posició de la persiana a l'inici de la fase matinal (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Matí – Dies laborables",
+        "data": {
+          "weekday_morning_fixed_time": "Hora de matí entre setmana (dl–dv)",
+          "morning_elevation_preset": "Matí: posició del sol",
+          "weekday_morning_position": "Posició de matí entre setmana (dl–dv)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Posició de la persiana a l'inici de la fase matinal entre setmana (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Matí – Cap de setmana",
+        "data": {
+          "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
+          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Posició de la persiana a l'inici de la fase matinal el cap de setmana (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Nit – Elevació solar personalitzada",
+        "data": {
+          "night_sun_elevation": "Elevació nocturna personalitzada (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Matí – Elevació solar personalitzada",
+        "data": {
+          "morning_sun_elevation": "Elevació matinal personalitzada (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Programació avançada",
+        "data": {
+          "night_sun_event": "Esdeveniment solar nocturn (opcional)",
+          "night_not_before": "Nit: activador més aviat (opcional)",
+          "night_not_after": "Nit: activador més tard (opcional)",
+          "morning_sun_event": "Esdeveniment solar matinal (opcional)",
+          "morning_not_before": "Matí: activador més aviat (opcional)",
+          "morning_not_after": "Matí: activador més tard (opcional)",
+          "active_months": "Mesos actius (avançat)"
+        },
+        "data_description": {
           "night_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora nocturna anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
-          "morning_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora matinal anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
           "night_not_before": "Opcional. Si l'activador nocturn resolt es produís abans d'aquesta hora, s'ajorna fins a aquesta hora.",
           "night_not_after": "Opcional. Si l'activador nocturn resolt es produís després d'aquesta hora, s'avança a aquesta hora.",
+          "morning_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora matinal anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
           "morning_not_before": "Opcional. Si l'activador matinal resolt es produís abans d'aquesta hora, s'ajorna fins a aquesta hora.",
-          "morning_not_after": "Opcional. Si l'activador matinal resolt es produís després d'aquesta hora, s'avança a aquesta hora."
+          "morning_not_after": "Opcional. Si l'activador matinal resolt es produís després d'aquesta hora, s'avança a aquesta hora.",
+          "active_months": "Deixeu-ho buit per aplicar aquest horari cada mes. Seleccioneu mesos concrets per restringir-lo — per exemple, de setembre a març per a un horari d'hivern."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Avançat",
         "description": "Perfils de cicle de vida i comportament de la substitució manual — configuracions que la majoria d'instal·lacions no necessiten canviar.",
         "menu_options": {
-          "manual_override": "Anul·lació manual"
+          "manual_override": "Anul·lació manual",
+          "lifecycle_advanced": "Programació avançada"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "«Igual cada dia» fa servir un únic horari per a tota la setmana. «Entre setmana / Cap de setmana» permet definir hores i posicions diferents per a dl–dv i ds–dg."
         }
       },
-      "lifecycle_detail": {
-        "title": "Detalls de l'horari",
-        "description": "Introdueix l'hora o l'elevació solar de cada activador. Només es mostren els camps rellevants per a l'activador seleccionat.",
+      "lifecycle_night": {
+        "title": "Nit",
         "data": {
           "night_fixed_time": "Hora de nit",
           "night_elevation_preset": "Nit: posició del sol",
-          "night_sun_elevation": "Elevació nocturna personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
-          "morning_fixed_time": "Hora de matí",
-          "morning_elevation_preset": "Matí: posició del sol",
-          "morning_sun_elevation": "Elevació matinal personalitzada (°) — només s'utilitza quan se selecciona Personalitzada",
-          "night_position": "Posició de nit",
-          "morning_position": "Posició de matí",
-          "weekday_night_fixed_time": "Hora de nit entre setmana (dl–dv)",
-          "weekday_night_position": "Posició de nit entre setmana (dl–dv)",
-          "weekday_morning_fixed_time": "Hora de matí entre setmana (dl–dv)",
-          "weekday_morning_position": "Posició de matí entre setmana (dl–dv)",
-          "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
-          "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)",
-          "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
-          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)",
           "night_sun_event": "Esdeveniment solar nocturn (opcional)",
-          "morning_sun_event": "Esdeveniment solar matinal (opcional)"
+          "night_position": "Posició de nit"
         },
         "data_description": {
-          "night_position": "Posició de la persiana durant la fase nocturna (0 = tancada, 100 = oberta).",
-          "morning_position": "Posició de la persiana a l'inici de la fase matinal (0 = tancada, 100 = oberta).",
-          "weekday_night_position": "Posició de la persiana durant la fase nocturna entre setmana (0 = tancada, 100 = oberta).",
-          "weekday_morning_position": "Posició de la persiana a l'inici de la fase matinal entre setmana (0 = tancada, 100 = oberta).",
-          "weekend_night_position": "Posició de la persiana durant la fase nocturna el cap de setmana (0 = tancada, 100 = oberta).",
-          "weekend_morning_position": "Posició de la persiana a l'inici de la fase matinal el cap de setmana (0 = tancada, 100 = oberta).",
           "night_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora nocturna anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
-          "morning_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora matinal anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°)."
+          "night_position": "Posició de la persiana durant la fase nocturna (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Nit – Dies laborables",
+        "data": {
+          "weekday_night_fixed_time": "Hora de nit entre setmana (dl–dv)",
+          "night_elevation_preset": "Nit: posició del sol",
+          "night_sun_event": "Esdeveniment solar nocturn (opcional)",
+          "weekday_night_position": "Posició de nit entre setmana (dl–dv)"
+        },
+        "data_description": {
+          "night_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora nocturna anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
+          "weekday_night_position": "Posició de la persiana durant la fase nocturna entre setmana (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Nit – Cap de setmana",
+        "data": {
+          "weekend_night_fixed_time": "Hora de nit el cap de setmana (ds–dg)",
+          "weekend_night_position": "Posició de nit el cap de setmana (ds–dg)"
+        },
+        "data_description": {
+          "weekend_night_position": "Posició de la persiana durant la fase nocturna el cap de setmana (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Matí",
+        "data": {
+          "morning_fixed_time": "Hora de matí",
+          "morning_elevation_preset": "Matí: posició del sol",
+          "morning_sun_event": "Esdeveniment solar matinal (opcional)",
+          "morning_position": "Posició de matí"
+        },
+        "data_description": {
+          "morning_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora matinal anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
+          "morning_position": "Posició de la persiana a l'inici de la fase matinal (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Matí – Dies laborables",
+        "data": {
+          "weekday_morning_fixed_time": "Hora de matí entre setmana (dl–dv)",
+          "morning_elevation_preset": "Matí: posició del sol",
+          "morning_sun_event": "Esdeveniment solar matinal (opcional)",
+          "weekday_morning_position": "Posició de matí entre setmana (dl–dv)"
+        },
+        "data_description": {
+          "morning_sun_event": "Opcional. Si s'estableix, aquest esdeveniment astronòmic substitueix l'hora matinal anterior. L'alba i el capvespre utilitzen el crepuscle civil (sol a -6°).",
+          "weekday_morning_position": "Posició de la persiana a l'inici de la fase matinal entre setmana (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Matí – Cap de setmana",
+        "data": {
+          "weekend_morning_fixed_time": "Hora de matí el cap de setmana (ds–dg)",
+          "weekend_morning_position": "Posició de matí el cap de setmana (ds–dg)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Posició de la persiana a l'inici de la fase matinal el cap de setmana (0 = tancada, 100 = oberta)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Nit – Elevació solar personalitzada",
+        "data": {
+          "night_sun_elevation": "Elevació nocturna personalitzada (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Matí – Elevació solar personalitzada",
+        "data": {
+          "morning_sun_elevation": "Elevació matinal personalitzada (°)"
         }
       },
       "presence": {

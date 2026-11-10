@@ -38,48 +38,101 @@
           "schedule_mode": "”Sama joka päivä” käyttää yhtä aikataulua koko viikolle. ”Arki / Viikonloppu” antaa asettaa eri ajat ja sijainnit ma–pe ja la–su."
         }
       },
-      "lifecycle_detail": {
-        "title": "Aikataulun tiedot",
-        "description": "Anna aika tai auringon korkeus jokaiselle laukaisimelle. Vain valittuun laukaisimeen liittyvät kentät näytetään.",
+      "lifecycle_night": {
+        "title": "Yö",
         "data": {
           "night_fixed_time": "Yön aika",
           "night_elevation_preset": "Yö: auringon sijainti",
-          "night_sun_elevation": "Mukautettu yön korkeus (°) — käytetään vain, kun Mukautettu on valittu",
-          "morning_fixed_time": "Aamun aika",
-          "morning_elevation_preset": "Aamu: auringon sijainti",
-          "morning_sun_elevation": "Mukautettu aamun korkeus (°) — käytetään vain, kun Mukautettu on valittu",
-          "night_position": "Yön sijainti",
-          "morning_position": "Aamun sijainti",
-          "weekday_night_fixed_time": "Yön aika arkisin (ma–pe)",
-          "weekday_night_position": "Yön sijainti arkisin (ma–pe)",
-          "weekday_morning_fixed_time": "Aamun aika arkisin (ma–pe)",
-          "weekday_morning_position": "Aamun sijainti arkisin (ma–pe)",
-          "weekend_night_fixed_time": "Yön aika viikonloppuisin (la–su)",
-          "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)",
-          "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
-          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)",
-          "active_months": "Aktiiviset kuukaudet (lisäasetus)",
-          "night_sun_event": "Yön aurinkotapahtuma (valinnainen)",
-          "morning_sun_event": "Aamun aurinkotapahtuma (valinnainen)",
-          "night_not_before": "Yö: aikaisin laukaisu (valinnainen)",
-          "night_not_after": "Yö: myöhäisin laukaisu (valinnainen)",
-          "morning_not_before": "Aamu: aikaisin laukaisu (valinnainen)",
-          "morning_not_after": "Aamu: myöhäisin laukaisu (valinnainen)"
+          "night_position": "Yön sijainti"
         },
         "data_description": {
-          "night_position": "Varjostimen sijainti yövaiheessa (0 = suljettu, 100 = avoin).",
-          "morning_position": "Varjostimen sijainti aamuvaiheen alussa (0 = suljettu, 100 = avoin).",
-          "weekday_night_position": "Varjostimen sijainti yövaiheessa arkisin (0 = suljettu, 100 = avoin).",
-          "weekday_morning_position": "Varjostimen sijainti aamuvaiheen alussa arkisin (0 = suljettu, 100 = avoin).",
-          "weekend_night_position": "Varjostimen sijainti yövaiheessa viikonloppuisin (0 = suljettu, 100 = avoin).",
-          "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin).",
-          "active_months": "Jätä tyhjäksi, jos tätä aikataulua käytetään joka kuukausi. Valitse tietyt kuukaudet rajoittaaksesi sitä — esimerkiksi syyskuusta maaliskuuhun talviaikataululle.",
+          "night_position": "Varjostimen sijainti yövaiheessa (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Yö – Arkipäivät",
+        "data": {
+          "weekday_night_fixed_time": "Yön aika arkisin (ma–pe)",
+          "night_elevation_preset": "Yö: auringon sijainti",
+          "weekday_night_position": "Yön sijainti arkisin (ma–pe)"
+        },
+        "data_description": {
+          "weekday_night_position": "Varjostimen sijainti yövaiheessa arkisin (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Yö – Viikonloppu",
+        "data": {
+          "weekend_night_fixed_time": "Yön aika viikonloppuisin (la–su)",
+          "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)"
+        },
+        "data_description": {
+          "weekend_night_position": "Varjostimen sijainti yövaiheessa viikonloppuisin (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Aamu",
+        "data": {
+          "morning_fixed_time": "Aamun aika",
+          "morning_elevation_preset": "Aamu: auringon sijainti",
+          "morning_position": "Aamun sijainti"
+        },
+        "data_description": {
+          "morning_position": "Varjostimen sijainti aamuvaiheen alussa (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Aamu – Arkipäivät",
+        "data": {
+          "weekday_morning_fixed_time": "Aamun aika arkisin (ma–pe)",
+          "morning_elevation_preset": "Aamu: auringon sijainti",
+          "weekday_morning_position": "Aamun sijainti arkisin (ma–pe)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Varjostimen sijainti aamuvaiheen alussa arkisin (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Aamu – Viikonloppu",
+        "data": {
+          "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
+          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Yö – Mukautettu auringon korkeus",
+        "data": {
+          "night_sun_elevation": "Mukautettu yön korkeus (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Aamu – Mukautettu auringon korkeus",
+        "data": {
+          "morning_sun_elevation": "Mukautettu aamun korkeus (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Aikataulun lisäasetukset",
+        "data": {
+          "night_sun_event": "Yön aurinkotapahtuma (valinnainen)",
+          "night_not_before": "Yö: aikaisin laukaisu (valinnainen)",
+          "night_not_after": "Yö: myöhäisin laukaisu (valinnainen)",
+          "morning_sun_event": "Aamun aurinkotapahtuma (valinnainen)",
+          "morning_not_before": "Aamu: aikaisin laukaisu (valinnainen)",
+          "morning_not_after": "Aamu: myöhäisin laukaisu (valinnainen)",
+          "active_months": "Aktiiviset kuukaudet (lisäasetus)"
+        },
+        "data_description": {
           "night_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan yöajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
-          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
           "night_not_before": "Valinnainen. Jos ratkaistu yölaukaisu tapahtuisi tätä aikaa aiemmin, se siirretään tähän aikaan.",
           "night_not_after": "Valinnainen. Jos ratkaistu yölaukaisu tapahtuisi tätä aikaa myöhemmin, se aikaistetaan tähän aikaan.",
+          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
           "morning_not_before": "Valinnainen. Jos ratkaistu aamulaukaisu tapahtuisi tätä aikaa aiemmin, se siirretään tähän aikaan.",
-          "morning_not_after": "Valinnainen. Jos ratkaistu aamulaukaisu tapahtuisi tätä aikaa myöhemmin, se aikaistetaan tähän aikaan."
+          "morning_not_after": "Valinnainen. Jos ratkaistu aamulaukaisu tapahtuisi tätä aikaa myöhemmin, se aikaistetaan tähän aikaan.",
+          "active_months": "Jätä tyhjäksi, jos tätä aikataulua käytetään joka kuukausi. Valitse tietyt kuukaudet rajoittaaksesi sitä — esimerkiksi syyskuusta maaliskuuhun talviaikataululle."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Lisäasetukset",
         "description": "Elinkaariprofiilit ja manuaalisen ohituksen käyttäytyminen — asetuksia, joita useimpien asennusten ei tarvitse muuttaa.",
         "menu_options": {
-          "manual_override": "Manuaalinen ohitus"
+          "manual_override": "Manuaalinen ohitus",
+          "lifecycle_advanced": "Aikataulun lisäasetukset"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "”Sama joka päivä” käyttää yhtä aikataulua koko viikolle. ”Arki / Viikonloppu” antaa asettaa eri ajat ja sijainnit ma–pe ja la–su."
         }
       },
-      "lifecycle_detail": {
-        "title": "Aikataulun tiedot",
-        "description": "Anna aika tai auringon korkeus jokaiselle laukaisimelle. Vain valittuun laukaisimeen liittyvät kentät näytetään.",
+      "lifecycle_night": {
+        "title": "Yö",
         "data": {
           "night_fixed_time": "Yön aika",
           "night_elevation_preset": "Yö: auringon sijainti",
-          "night_sun_elevation": "Mukautettu yön korkeus (°) — käytetään vain, kun Mukautettu on valittu",
-          "morning_fixed_time": "Aamun aika",
-          "morning_elevation_preset": "Aamu: auringon sijainti",
-          "morning_sun_elevation": "Mukautettu aamun korkeus (°) — käytetään vain, kun Mukautettu on valittu",
-          "night_position": "Yön sijainti",
-          "morning_position": "Aamun sijainti",
-          "weekday_night_fixed_time": "Yön aika arkisin (ma–pe)",
-          "weekday_night_position": "Yön sijainti arkisin (ma–pe)",
-          "weekday_morning_fixed_time": "Aamun aika arkisin (ma–pe)",
-          "weekday_morning_position": "Aamun sijainti arkisin (ma–pe)",
-          "weekend_night_fixed_time": "Yön aika viikonloppuisin (la–su)",
-          "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)",
-          "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
-          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)",
           "night_sun_event": "Yön aurinkotapahtuma (valinnainen)",
-          "morning_sun_event": "Aamun aurinkotapahtuma (valinnainen)"
+          "night_position": "Yön sijainti"
         },
         "data_description": {
-          "night_position": "Varjostimen sijainti yövaiheessa (0 = suljettu, 100 = avoin).",
-          "morning_position": "Varjostimen sijainti aamuvaiheen alussa (0 = suljettu, 100 = avoin).",
-          "weekday_night_position": "Varjostimen sijainti yövaiheessa arkisin (0 = suljettu, 100 = avoin).",
-          "weekday_morning_position": "Varjostimen sijainti aamuvaiheen alussa arkisin (0 = suljettu, 100 = avoin).",
-          "weekend_night_position": "Varjostimen sijainti yövaiheessa viikonloppuisin (0 = suljettu, 100 = avoin).",
-          "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin).",
           "night_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan yöajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
-          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa)."
+          "night_position": "Varjostimen sijainti yövaiheessa (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Yö – Arkipäivät",
+        "data": {
+          "weekday_night_fixed_time": "Yön aika arkisin (ma–pe)",
+          "night_elevation_preset": "Yö: auringon sijainti",
+          "night_sun_event": "Yön aurinkotapahtuma (valinnainen)",
+          "weekday_night_position": "Yön sijainti arkisin (ma–pe)"
+        },
+        "data_description": {
+          "night_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan yöajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "weekday_night_position": "Varjostimen sijainti yövaiheessa arkisin (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Yö – Viikonloppu",
+        "data": {
+          "weekend_night_fixed_time": "Yön aika viikonloppuisin (la–su)",
+          "weekend_night_position": "Yön sijainti viikonloppuisin (la–su)"
+        },
+        "data_description": {
+          "weekend_night_position": "Varjostimen sijainti yövaiheessa viikonloppuisin (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Aamu",
+        "data": {
+          "morning_fixed_time": "Aamun aika",
+          "morning_elevation_preset": "Aamu: auringon sijainti",
+          "morning_sun_event": "Aamun aurinkotapahtuma (valinnainen)",
+          "morning_position": "Aamun sijainti"
+        },
+        "data_description": {
+          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "morning_position": "Varjostimen sijainti aamuvaiheen alussa (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Aamu – Arkipäivät",
+        "data": {
+          "weekday_morning_fixed_time": "Aamun aika arkisin (ma–pe)",
+          "morning_elevation_preset": "Aamu: auringon sijainti",
+          "morning_sun_event": "Aamun aurinkotapahtuma (valinnainen)",
+          "weekday_morning_position": "Aamun sijainti arkisin (ma–pe)"
+        },
+        "data_description": {
+          "morning_sun_event": "Valinnainen. Jos asetettu, tämä tähtitieteellinen tapahtuma korvaa yllä olevan aamuajan. Aamu- ja iltahämärä käyttävät siviilihämärää (aurinko -6°:ssa).",
+          "weekday_morning_position": "Varjostimen sijainti aamuvaiheen alussa arkisin (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Aamu – Viikonloppu",
+        "data": {
+          "weekend_morning_fixed_time": "Aamun aika viikonloppuisin (la–su)",
+          "weekend_morning_position": "Aamun sijainti viikonloppuisin (la–su)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Varjostimen sijainti aamuvaiheen alussa viikonloppuisin (0 = suljettu, 100 = avoin)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Yö – Mukautettu auringon korkeus",
+        "data": {
+          "night_sun_elevation": "Mukautettu yön korkeus (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Aamu – Mukautettu auringon korkeus",
+        "data": {
+          "morning_sun_elevation": "Mukautettu aamun korkeus (°)"
         }
       },
       "presence": {

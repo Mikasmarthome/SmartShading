@@ -112,7 +112,7 @@ from custom_components.smartshading.const import CONF_ENTRY_TYPE, ENTRY_TYPE_SYS
 _INTEGRATION_ROOT = Path(__file__).parent.parent / "custom_components" / "smartshading"
 
 _WINDOWS_LEAF_STEPS = {"add_window", "edit_window", "remove_window"}
-_ADVANCED_LEAF_STEPS = {"manual_override"}
+_ADVANCED_LEAF_STEPS = {"manual_override", "lifecycle_advanced"}
 _DIRECT_LEAF_STEPS = {"weather", "lifecycle", "presence", "comfort", "behavior"}
 _SYSTEM_INIT_LEAF_STEPS = {"system_manual_override", "system_presence"}
 
@@ -153,7 +153,7 @@ class TestWindowsSubmenu:
 
 
 class TestAdvancedSubmenu:
-    def test_advanced_menu_lists_all_three_grouped_steps(self) -> None:
+    def test_advanced_menu_lists_all_grouped_steps(self) -> None:
         flow = _make_options_flow(data={})
         result = asyncio.run(flow.async_step_advanced(user_input=None))
         assert result["type"] == "menu"

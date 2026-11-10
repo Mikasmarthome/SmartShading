@@ -38,48 +38,101 @@
           "schedule_mode": "«Uguale ogni giorno» usa un'unica programmazione per tutta la settimana. «Settimana / Fine settimana» consente orari e posizioni diverse per lun–ven e sab–dom."
         }
       },
-      "lifecycle_detail": {
-        "title": "Dettagli della programmazione",
-        "description": "Inserisci l'ora o l'elevazione solare per ciascun trigger. Vengono mostrati solo i campi pertinenti al trigger selezionato.",
+      "lifecycle_night": {
+        "title": "Notte",
         "data": {
           "night_fixed_time": "Ora notturna",
           "night_elevation_preset": "Notte: posizione del sole",
-          "night_sun_elevation": "Elevazione notturna personalizzata (°) — usata solo quando è selezionato Personalizzata",
-          "morning_fixed_time": "Ora mattutina",
-          "morning_elevation_preset": "Mattino: posizione del sole",
-          "morning_sun_elevation": "Elevazione mattutina personalizzata (°) — usata solo quando è selezionato Personalizzata",
-          "night_position": "Posizione notturna",
-          "morning_position": "Posizione mattutina",
-          "weekday_night_fixed_time": "Ora notturna nei giorni feriali (lun–ven)",
-          "weekday_night_position": "Posizione notturna nei giorni feriali (lun–ven)",
-          "weekday_morning_fixed_time": "Ora mattutina nei giorni feriali (lun–ven)",
-          "weekday_morning_position": "Posizione mattutina nei giorni feriali (lun–ven)",
-          "weekend_night_fixed_time": "Ora notturna nel fine settimana (sab–dom)",
-          "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)",
-          "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
-          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)",
-          "active_months": "Mesi attivi (avanzato)",
-          "night_sun_event": "Evento solare notturno (opzionale)",
-          "morning_sun_event": "Evento solare mattutino (opzionale)",
-          "night_not_before": "Notte: attivazione più presto (opzionale)",
-          "night_not_after": "Notte: attivazione più tardi (opzionale)",
-          "morning_not_before": "Mattina: attivazione più presto (opzionale)",
-          "morning_not_after": "Mattina: attivazione più tardi (opzionale)"
+          "night_position": "Posizione notturna"
         },
         "data_description": {
-          "night_position": "Posizione della tapparella durante la fase notturna (0 = chiusa, 100 = aperta).",
-          "morning_position": "Posizione della tapparella all'inizio della fase mattutina (0 = chiusa, 100 = aperta).",
-          "weekday_night_position": "Posizione della tapparella durante la fase notturna nei giorni feriali (0 = chiusa, 100 = aperta).",
-          "weekday_morning_position": "Posizione della tapparella all'inizio della fase mattutina nei giorni feriali (0 = chiusa, 100 = aperta).",
-          "weekend_night_position": "Posizione della tapparella durante la fase notturna nel fine settimana (0 = chiusa, 100 = aperta).",
-          "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta).",
-          "active_months": "Lascia vuoto per applicare questa pianificazione ogni mese. Seleziona mesi specifici per limitarla — ad esempio da settembre a marzo per una pianificazione invernale.",
+          "night_position": "Posizione della tapparella durante la fase notturna (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Notte – Giorni feriali",
+        "data": {
+          "weekday_night_fixed_time": "Ora notturna nei giorni feriali (lun–ven)",
+          "night_elevation_preset": "Notte: posizione del sole",
+          "weekday_night_position": "Posizione notturna nei giorni feriali (lun–ven)"
+        },
+        "data_description": {
+          "weekday_night_position": "Posizione della tapparella durante la fase notturna nei giorni feriali (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Notte – Fine settimana",
+        "data": {
+          "weekend_night_fixed_time": "Ora notturna nel fine settimana (sab–dom)",
+          "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)"
+        },
+        "data_description": {
+          "weekend_night_position": "Posizione della tapparella durante la fase notturna nel fine settimana (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Mattina",
+        "data": {
+          "morning_fixed_time": "Ora mattutina",
+          "morning_elevation_preset": "Mattino: posizione del sole",
+          "morning_position": "Posizione mattutina"
+        },
+        "data_description": {
+          "morning_position": "Posizione della tapparella all'inizio della fase mattutina (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Mattina – Giorni feriali",
+        "data": {
+          "weekday_morning_fixed_time": "Ora mattutina nei giorni feriali (lun–ven)",
+          "morning_elevation_preset": "Mattino: posizione del sole",
+          "weekday_morning_position": "Posizione mattutina nei giorni feriali (lun–ven)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Posizione della tapparella all'inizio della fase mattutina nei giorni feriali (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Mattina – Fine settimana",
+        "data": {
+          "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
+          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Notte – Elevazione solare personalizzata",
+        "data": {
+          "night_sun_elevation": "Elevazione notturna personalizzata (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Mattina – Elevazione solare personalizzata",
+        "data": {
+          "morning_sun_elevation": "Elevazione mattutina personalizzata (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Programma avanzato",
+        "data": {
+          "night_sun_event": "Evento solare notturno (opzionale)",
+          "night_not_before": "Notte: attivazione più presto (opzionale)",
+          "night_not_after": "Notte: attivazione più tardi (opzionale)",
+          "morning_sun_event": "Evento solare mattutino (opzionale)",
+          "morning_not_before": "Mattina: attivazione più presto (opzionale)",
+          "morning_not_after": "Mattina: attivazione più tardi (opzionale)",
+          "active_months": "Mesi attivi (avanzato)"
+        },
+        "data_description": {
           "night_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario notturno sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
-          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
           "night_not_before": "Opzionale. Se l'attivazione notturna risolta avvenisse prima di quest'ora, viene posticipata a quest'ora.",
           "night_not_after": "Opzionale. Se l'attivazione notturna risolta avvenisse dopo quest'ora, viene anticipata a quest'ora.",
+          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
           "morning_not_before": "Opzionale. Se l'attivazione mattutina risolta avvenisse prima di quest'ora, viene posticipata a quest'ora.",
-          "morning_not_after": "Opzionale. Se l'attivazione mattutina risolta avvenisse dopo quest'ora, viene anticipata a quest'ora."
+          "morning_not_after": "Opzionale. Se l'attivazione mattutina risolta avvenisse dopo quest'ora, viene anticipata a quest'ora.",
+          "active_months": "Lascia vuoto per applicare questa pianificazione ogni mese. Seleziona mesi specifici per limitarla — ad esempio da settembre a marzo per una pianificazione invernale."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Avanzate",
         "description": "Profili del ciclo di vita e comportamento dell'override manuale — impostazioni che la maggior parte delle installazioni non deve modificare.",
         "menu_options": {
-          "manual_override": "Override manuale"
+          "manual_override": "Override manuale",
+          "lifecycle_advanced": "Programma avanzato"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "«Uguale ogni giorno» usa un'unica programmazione per tutta la settimana. «Settimana / Fine settimana» consente orari e posizioni diverse per lun–ven e sab–dom."
         }
       },
-      "lifecycle_detail": {
-        "title": "Dettagli della programmazione",
-        "description": "Inserisci l'ora o l'elevazione solare per ciascun trigger. Vengono mostrati solo i campi pertinenti al trigger selezionato.",
+      "lifecycle_night": {
+        "title": "Notte",
         "data": {
           "night_fixed_time": "Ora notturna",
           "night_elevation_preset": "Notte: posizione del sole",
-          "night_sun_elevation": "Elevazione notturna personalizzata (°) — usata solo quando è selezionato Personalizzata",
-          "morning_fixed_time": "Ora mattutina",
-          "morning_elevation_preset": "Mattino: posizione del sole",
-          "morning_sun_elevation": "Elevazione mattutina personalizzata (°) — usata solo quando è selezionato Personalizzata",
-          "night_position": "Posizione notturna",
-          "morning_position": "Posizione mattutina",
-          "weekday_night_fixed_time": "Ora notturna nei giorni feriali (lun–ven)",
-          "weekday_night_position": "Posizione notturna nei giorni feriali (lun–ven)",
-          "weekday_morning_fixed_time": "Ora mattutina nei giorni feriali (lun–ven)",
-          "weekday_morning_position": "Posizione mattutina nei giorni feriali (lun–ven)",
-          "weekend_night_fixed_time": "Ora notturna nel fine settimana (sab–dom)",
-          "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)",
-          "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
-          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)",
           "night_sun_event": "Evento solare notturno (opzionale)",
-          "morning_sun_event": "Evento solare mattutino (opzionale)"
+          "night_position": "Posizione notturna"
         },
         "data_description": {
-          "night_position": "Posizione della tapparella durante la fase notturna (0 = chiusa, 100 = aperta).",
-          "morning_position": "Posizione della tapparella all'inizio della fase mattutina (0 = chiusa, 100 = aperta).",
-          "weekday_night_position": "Posizione della tapparella durante la fase notturna nei giorni feriali (0 = chiusa, 100 = aperta).",
-          "weekday_morning_position": "Posizione della tapparella all'inizio della fase mattutina nei giorni feriali (0 = chiusa, 100 = aperta).",
-          "weekend_night_position": "Posizione della tapparella durante la fase notturna nel fine settimana (0 = chiusa, 100 = aperta).",
-          "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta).",
           "night_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario notturno sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
-          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°)."
+          "night_position": "Posizione della tapparella durante la fase notturna (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Notte – Giorni feriali",
+        "data": {
+          "weekday_night_fixed_time": "Ora notturna nei giorni feriali (lun–ven)",
+          "night_elevation_preset": "Notte: posizione del sole",
+          "night_sun_event": "Evento solare notturno (opzionale)",
+          "weekday_night_position": "Posizione notturna nei giorni feriali (lun–ven)"
+        },
+        "data_description": {
+          "night_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario notturno sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "weekday_night_position": "Posizione della tapparella durante la fase notturna nei giorni feriali (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Notte – Fine settimana",
+        "data": {
+          "weekend_night_fixed_time": "Ora notturna nel fine settimana (sab–dom)",
+          "weekend_night_position": "Posizione notturna nel fine settimana (sab–dom)"
+        },
+        "data_description": {
+          "weekend_night_position": "Posizione della tapparella durante la fase notturna nel fine settimana (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Mattina",
+        "data": {
+          "morning_fixed_time": "Ora mattutina",
+          "morning_elevation_preset": "Mattino: posizione del sole",
+          "morning_sun_event": "Evento solare mattutino (opzionale)",
+          "morning_position": "Posizione mattutina"
+        },
+        "data_description": {
+          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "morning_position": "Posizione della tapparella all'inizio della fase mattutina (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Mattina – Giorni feriali",
+        "data": {
+          "weekday_morning_fixed_time": "Ora mattutina nei giorni feriali (lun–ven)",
+          "morning_elevation_preset": "Mattino: posizione del sole",
+          "morning_sun_event": "Evento solare mattutino (opzionale)",
+          "weekday_morning_position": "Posizione mattutina nei giorni feriali (lun–ven)"
+        },
+        "data_description": {
+          "morning_sun_event": "Opzionale. Se impostato, questo evento astronomico sostituisce l'orario mattutino sopra indicato. Alba e crepuscolo usano il crepuscolo civile (sole a -6°).",
+          "weekday_morning_position": "Posizione della tapparella all'inizio della fase mattutina nei giorni feriali (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Mattina – Fine settimana",
+        "data": {
+          "weekend_morning_fixed_time": "Ora mattutina nel fine settimana (sab–dom)",
+          "weekend_morning_position": "Posizione mattutina nel fine settimana (sab–dom)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Posizione della tapparella all'inizio della fase mattutina nel fine settimana (0 = chiusa, 100 = aperta)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Notte – Elevazione solare personalizzata",
+        "data": {
+          "night_sun_elevation": "Elevazione notturna personalizzata (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Mattina – Elevazione solare personalizzata",
+        "data": {
+          "morning_sun_elevation": "Elevazione mattutina personalizzata (°)"
         }
       },
       "presence": {

@@ -38,48 +38,101 @@
           "schedule_mode": "«Igual todos os dias» usa uma única agenda para toda a semana. «Dias úteis / Fim de semana» permite definir horas e posições diferentes para seg–sex e sáb–dom."
         }
       },
-      "lifecycle_detail": {
-        "title": "Detalhes da agenda",
-        "description": "Introduza a hora ou a elevação solar de cada acionador. Apenas são mostrados os campos relevantes para o acionador selecionado.",
+      "lifecycle_night": {
+        "title": "Noite",
         "data": {
           "night_fixed_time": "Hora da noite",
           "night_elevation_preset": "Noite: posição do sol",
-          "night_sun_elevation": "Elevação noturna personalizada (°) — usada apenas quando Personalizada está selecionada",
-          "morning_fixed_time": "Hora da manhã",
-          "morning_elevation_preset": "Manhã: posição do sol",
-          "morning_sun_elevation": "Elevação matinal personalizada (°) — usada apenas quando Personalizada está selecionada",
-          "night_position": "Posição de noite",
-          "morning_position": "Posição de manhã",
-          "weekday_night_fixed_time": "Hora da noite em dias úteis (seg–sex)",
-          "weekday_night_position": "Posição de noite em dias úteis (seg–sex)",
-          "weekday_morning_fixed_time": "Hora da manhã em dias úteis (seg–sex)",
-          "weekday_morning_position": "Posição de manhã em dias úteis (seg–sex)",
-          "weekend_night_fixed_time": "Hora da noite ao fim de semana (sáb–dom)",
-          "weekend_night_position": "Posição de noite ao fim de semana (sáb–dom)",
-          "weekend_morning_fixed_time": "Hora da manhã ao fim de semana (sáb–dom)",
-          "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)",
-          "active_months": "Meses ativos (avançado)",
-          "night_sun_event": "Evento solar noturno (opcional)",
-          "morning_sun_event": "Evento solar matinal (opcional)",
-          "night_not_before": "Noite: gatilho mais cedo (opcional)",
-          "night_not_after": "Noite: gatilho mais tarde (opcional)",
-          "morning_not_before": "Manhã: gatilho mais cedo (opcional)",
-          "morning_not_after": "Manhã: gatilho mais tarde (opcional)"
+          "night_position": "Posição de noite"
         },
         "data_description": {
-          "night_position": "Posição do estore durante a fase noturna (0 = fechado, 100 = aberto).",
-          "morning_position": "Posição do estore no início da fase matinal (0 = fechado, 100 = aberto).",
-          "weekday_night_position": "Posição do estore durante a fase noturna em dias úteis (0 = fechado, 100 = aberto).",
-          "weekday_morning_position": "Posição do estore no início da fase matinal em dias úteis (0 = fechado, 100 = aberto).",
-          "weekend_night_position": "Posição do estore durante a fase noturna ao fim de semana (0 = fechado, 100 = aberto).",
-          "weekend_morning_position": "Posição do estore no início da fase matinal ao fim de semana (0 = fechado, 100 = aberto).",
-          "active_months": "Deixe em branco para aplicar este horário todos os meses. Selecione meses específicos para restringi-lo — por exemplo, de setembro a março para um horário de inverno.",
+          "night_position": "Posição do estore durante a fase noturna (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Noite – Dias úteis",
+        "data": {
+          "weekday_night_fixed_time": "Hora da noite em dias úteis (seg–sex)",
+          "night_elevation_preset": "Noite: posição do sol",
+          "weekday_night_position": "Posição de noite em dias úteis (seg–sex)"
+        },
+        "data_description": {
+          "weekday_night_position": "Posição do estore durante a fase noturna em dias úteis (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Noite – Fim de semana",
+        "data": {
+          "weekend_night_fixed_time": "Hora da noite ao fim de semana (sáb–dom)",
+          "weekend_night_position": "Posição de noite ao fim de semana (sáb–dom)"
+        },
+        "data_description": {
+          "weekend_night_position": "Posição do estore durante a fase noturna ao fim de semana (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Manhã",
+        "data": {
+          "morning_fixed_time": "Hora da manhã",
+          "morning_elevation_preset": "Manhã: posição do sol",
+          "morning_position": "Posição de manhã"
+        },
+        "data_description": {
+          "morning_position": "Posição do estore no início da fase matinal (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Manhã – Dias úteis",
+        "data": {
+          "weekday_morning_fixed_time": "Hora da manhã em dias úteis (seg–sex)",
+          "morning_elevation_preset": "Manhã: posição do sol",
+          "weekday_morning_position": "Posição de manhã em dias úteis (seg–sex)"
+        },
+        "data_description": {
+          "weekday_morning_position": "Posição do estore no início da fase matinal em dias úteis (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Manhã – Fim de semana",
+        "data": {
+          "weekend_morning_fixed_time": "Hora da manhã ao fim de semana (sáb–dom)",
+          "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Posição do estore no início da fase matinal ao fim de semana (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Noite – Elevação solar personalizada",
+        "data": {
+          "night_sun_elevation": "Elevação noturna personalizada (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Manhã – Elevação solar personalizada",
+        "data": {
+          "morning_sun_elevation": "Elevação matinal personalizada (°)"
+        }
+      },
+      "lifecycle_advanced": {
+        "title": "Horário avançado",
+        "data": {
+          "night_sun_event": "Evento solar noturno (opcional)",
+          "night_not_before": "Noite: gatilho mais cedo (opcional)",
+          "night_not_after": "Noite: gatilho mais tarde (opcional)",
+          "morning_sun_event": "Evento solar matinal (opcional)",
+          "morning_not_before": "Manhã: gatilho mais cedo (opcional)",
+          "morning_not_after": "Manhã: gatilho mais tarde (opcional)",
+          "active_months": "Meses ativos (avançado)"
+        },
+        "data_description": {
           "night_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário noturno acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
-          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
           "night_not_before": "Opcional. Se o gatilho noturno resolvido ocorresse antes deste horário, ele é adiado para este horário.",
           "night_not_after": "Opcional. Se o gatilho noturno resolvido ocorresse depois deste horário, ele é antecipado para este horário.",
+          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
           "morning_not_before": "Opcional. Se o gatilho matinal resolvido ocorresse antes deste horário, ele é adiado para este horário.",
-          "morning_not_after": "Opcional. Se o gatilho matinal resolvido ocorresse depois deste horário, ele é antecipado para este horário."
+          "morning_not_after": "Opcional. Se o gatilho matinal resolvido ocorresse depois deste horário, ele é antecipado para este horário.",
+          "active_months": "Deixe em branco para aplicar este horário todos os meses. Selecione meses específicos para restringi-lo — por exemplo, de setembro a março para um horário de inverno."
         }
       },
       "presence": {
@@ -297,7 +350,8 @@
         "title": "Avançado",
         "description": "Perfis de ciclo de vida e comportamento de substituição manual — definições que a maioria das instalações não precisa de alterar.",
         "menu_options": {
-          "manual_override": "Substituição manual"
+          "manual_override": "Substituição manual",
+          "lifecycle_advanced": "Horário avançado"
         }
       },
       "manual_override_custom": {
@@ -432,38 +486,88 @@
           "schedule_mode": "«Igual todos os dias» usa uma única agenda para toda a semana. «Dias úteis / Fim de semana» permite definir horas e posições diferentes para seg–sex e sáb–dom."
         }
       },
-      "lifecycle_detail": {
-        "title": "Detalhes da agenda",
-        "description": "Introduza a hora ou a elevação solar de cada acionador. Apenas são mostrados os campos relevantes para o acionador selecionado.",
+      "lifecycle_night": {
+        "title": "Noite",
         "data": {
           "night_fixed_time": "Hora da noite",
           "night_elevation_preset": "Noite: posição do sol",
-          "night_sun_elevation": "Elevação noturna personalizada (°) — usada apenas quando Personalizada está selecionada",
-          "morning_fixed_time": "Hora da manhã",
-          "morning_elevation_preset": "Manhã: posição do sol",
-          "morning_sun_elevation": "Elevação matinal personalizada (°) — usada apenas quando Personalizada está selecionada",
-          "night_position": "Posição de noite",
-          "morning_position": "Posição de manhã",
-          "weekday_night_fixed_time": "Hora da noite em dias úteis (seg–sex)",
-          "weekday_night_position": "Posição de noite em dias úteis (seg–sex)",
-          "weekday_morning_fixed_time": "Hora da manhã em dias úteis (seg–sex)",
-          "weekday_morning_position": "Posição de manhã em dias úteis (seg–sex)",
-          "weekend_night_fixed_time": "Hora da noite ao fim de semana (sáb–dom)",
-          "weekend_night_position": "Posição de noite ao fim de semana (sáb–dom)",
-          "weekend_morning_fixed_time": "Hora da manhã ao fim de semana (sáb–dom)",
-          "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)",
           "night_sun_event": "Evento solar noturno (opcional)",
-          "morning_sun_event": "Evento solar matinal (opcional)"
+          "night_position": "Posição de noite"
         },
         "data_description": {
-          "night_position": "Posição do estore durante a fase noturna (0 = fechado, 100 = aberto).",
-          "morning_position": "Posição do estore no início da fase matinal (0 = fechado, 100 = aberto).",
-          "weekday_night_position": "Posição do estore durante a fase noturna em dias úteis (0 = fechado, 100 = aberto).",
-          "weekday_morning_position": "Posição do estore no início da fase matinal em dias úteis (0 = fechado, 100 = aberto).",
-          "weekend_night_position": "Posição do estore durante a fase noturna ao fim de semana (0 = fechado, 100 = aberto).",
-          "weekend_morning_position": "Posição do estore no início da fase matinal ao fim de semana (0 = fechado, 100 = aberto).",
           "night_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário noturno acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
-          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°)."
+          "night_position": "Posição do estore durante a fase noturna (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_night_weekday": {
+        "title": "Noite – Dias úteis",
+        "data": {
+          "weekday_night_fixed_time": "Hora da noite em dias úteis (seg–sex)",
+          "night_elevation_preset": "Noite: posição do sol",
+          "night_sun_event": "Evento solar noturno (opcional)",
+          "weekday_night_position": "Posição de noite em dias úteis (seg–sex)"
+        },
+        "data_description": {
+          "night_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário noturno acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "weekday_night_position": "Posição do estore durante a fase noturna em dias úteis (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_night_weekend": {
+        "title": "Noite – Fim de semana",
+        "data": {
+          "weekend_night_fixed_time": "Hora da noite ao fim de semana (sáb–dom)",
+          "weekend_night_position": "Posição de noite ao fim de semana (sáb–dom)"
+        },
+        "data_description": {
+          "weekend_night_position": "Posição do estore durante a fase noturna ao fim de semana (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_morning": {
+        "title": "Manhã",
+        "data": {
+          "morning_fixed_time": "Hora da manhã",
+          "morning_elevation_preset": "Manhã: posição do sol",
+          "morning_sun_event": "Evento solar matinal (opcional)",
+          "morning_position": "Posição de manhã"
+        },
+        "data_description": {
+          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "morning_position": "Posição do estore no início da fase matinal (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_morning_weekday": {
+        "title": "Manhã – Dias úteis",
+        "data": {
+          "weekday_morning_fixed_time": "Hora da manhã em dias úteis (seg–sex)",
+          "morning_elevation_preset": "Manhã: posição do sol",
+          "morning_sun_event": "Evento solar matinal (opcional)",
+          "weekday_morning_position": "Posição de manhã em dias úteis (seg–sex)"
+        },
+        "data_description": {
+          "morning_sun_event": "Opcional. Se definido, este evento astronômico substitui o horário matinal acima. O amanhecer e o anoitecer usam o crepúsculo civil (sol a -6°).",
+          "weekday_morning_position": "Posição do estore no início da fase matinal em dias úteis (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_morning_weekend": {
+        "title": "Manhã – Fim de semana",
+        "data": {
+          "weekend_morning_fixed_time": "Hora da manhã ao fim de semana (sáb–dom)",
+          "weekend_morning_position": "Posição de manhã ao fim de semana (sáb–dom)"
+        },
+        "data_description": {
+          "weekend_morning_position": "Posição do estore no início da fase matinal ao fim de semana (0 = fechado, 100 = aberto)."
+        }
+      },
+      "lifecycle_night_elevation": {
+        "title": "Noite – Elevação solar personalizada",
+        "data": {
+          "night_sun_elevation": "Elevação noturna personalizada (°)"
+        }
+      },
+      "lifecycle_morning_elevation": {
+        "title": "Manhã – Elevação solar personalizada",
+        "data": {
+          "morning_sun_elevation": "Elevação matinal personalizada (°)"
         }
       },
       "presence": {

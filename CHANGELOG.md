@@ -1,5 +1,88 @@
 # Changelog
 
+## v1.2.0-beta.3.2
+
+**This is a pre-release.** It is intended for testing on suitable Home
+Assistant systems, not for production use. Please take a backup before
+installing. Stable users should stay on the current stable release (v1.1.13);
+installing the beta requires deliberately opting into a pre-release.
+
+Practical verification of this exact Beta 3.2 release on real devices in a live
+installation is still pending. Feedback and diagnostics exports are welcome via
+[GitHub Issues](https://github.com/Mikasmarthome/SmartShading/issues).
+
+Existing installations upgrade without reconfiguration. Stored settings keep
+working; no manual migration is required. The one deliberate behaviour change
+is described under "Fixed comfort thresholds" below.
+
+### Changes since v1.2.0-beta.3.1
+
+- **Absence position 0 %.** An absence position of 0 % is kept in the presence
+  options. Previously the form showed the default of 10 for a stored 0, and
+  saving the step unchanged wrote that default over your value.
+- **Return home.** When everyone is home again, a cover closed by an absence is
+  released on the first evaluation triggered by the presence change, also for
+  a window inside its solar sector. Heat, glare and solar protection, manual
+  override, window contact and Safety keep their priority.
+- **Absence across a restart or reload.** If the household was still away when
+  Home Assistant restarted or the integration was reloaded, the absence stays
+  in force instead of starting its activation delay over. A genuine return home
+  still releases at once.
+- **Sensor smoothing (EMA) removed.** The optional smoothing was off by default
+  and is gone, including its setup and options fields. Sensor values reach the
+  evaluators exactly as read. Entries that still carry the old keys load
+  unchanged; the keys have no effect and are dropped the next time any options
+  step is saved.
+- **System entry removal.** The System entry cannot be removed by hand in Home
+  Assistant. It is now removed automatically together with the last zone, so
+  the integration can be uninstalled cleanly (GitHub issue #5). A System entry
+  left over by an earlier version is removed when it is set up with no zone
+  present; adding a zone in the meantime keeps it.
+- **Simpler schedule options.** The schedule details are split into one page per
+  enabled phase (Night, Morning, and weekday/weekend where used), showing only
+  the fields that apply. A custom sun elevation is asked only when "Custom" is
+  chosen. Sun events, earliest/latest limits and active months moved to
+  "Advanced". The stored schedule format is unchanged.
+- **Fixed comfort thresholds.** The minimum exposure for glare protection and
+  the heat-protection release hysteresis are no longer settings. SmartShading
+  now always uses a glare minimum of **100 W/m²** and a heat-release hysteresis
+  of **1.0 °C**. **Values you configured earlier for these two settings no
+  longer take effect**, including a hysteresis of 0. The stored values are
+  ignored safely and are removed from the stored entry the next time the
+  comfort options are saved. Diagnostics report the values in use.
+- **Simpler Manual Override options.** The release choice is one selection with
+  five options: after a duration, at a fixed clock time, at the next schedule
+  transition, at the next matching comfort or protection decision (any,
+  comfort only or protection only), or only when you clear it. Only the page a
+  choice needs is shown; the schedule-transition and manual choices need none.
+  Daytime and night durations, the safety timeout and the comfort/protection
+  passthrough remain available, and values that are not shown are kept as
+  stored. The seven internal release strategies, the stored format and the
+  override runtime behaviour are unchanged.
+- **Tests.** Regression tests were added or extended for each of the points
+  above, including real Home Assistant tests for restart/reload and System
+  entry removal.
+
+### Notes
+
+- GitHub issue #4 (rain safety) was corrected in v1.2.0-beta.3.1 and is not
+  part of this list.
+- Radio-controlled (RTS) covers without reliable physical feedback keep their
+  existing limitations.
+
+### Please test
+
+Before installing, take a backup. After installing, check in your own
+installation, where it can be done safely:
+
+1. Set an absence position of 0 %, save the presence options unchanged and
+   check that 0 % is still shown.
+2. Leave the house, restart or reload while away, return home: the covers stay
+   closed while away and open when you return.
+3. Open the comfort options and the Manual Override options and check that the
+   pages match your expectations.
+4. Remove the last zone and check that the System entry disappears with it.
+
 ## v1.2.0-beta.3.1
 
 **This is a pre-release.** It is intended for testing on suitable Home

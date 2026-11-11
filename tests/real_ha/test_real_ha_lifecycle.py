@@ -16,15 +16,27 @@ Assistant's runner imports the POSIX-only ``fcntl``)::
 """
 from __future__ import annotations
 
+from datetime import timedelta
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from custom_components.smartshading import services as svc
 from custom_components.smartshading.config_entry_data import (
     SmartShadingConfigEntryData,
     to_storage_dict,
 )
-from custom_components.smartshading.const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_TYPE_ZONE
+from custom_components.smartshading.const import (
+    CONF_ENTRY_TYPE,
+    DEFAULT_UPDATE_INTERVAL,
+    DOMAIN,
+    ENTRY_TYPE_ZONE,
+)
 from custom_components.smartshading.models.cover_group import CoverGroup
 from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.zone import ZoneConfig
@@ -280,3 +292,82 @@ class TestSetupReloadUnloadSetupCycle:
         again = entry.runtime_data.coordinator
         assert again is not old
         assert again.lifecycle_diagnostics()["listeners_active"] == baseline
+
+
+class TestPeriodicRefreshStopsWithTheCoordinator:
+    """Home Assistant's DataUpdateCoordinator keeps its own refresh timer for as long as
+    an entity listens.  The integration's ``async_shutdown`` must stop it through the
+    base class: unloading the platforms removes the entities (and with them the timer)
+    only later, after the learning data was flushed.
+
+    Observed through behaviour, with no private Home Assistant attribute: the timer is
+    fired by moving the clock, and the coordinator's update method is counted.  The
+    update method is replaced by a mock that returns the current data, so a refresh that
+    wrongly runs has no side effect on covers.  Each test first proves, with the same
+    clock move, that the timer is alive - otherwise "no refresh" would prove nothing.
+    """
+
+    @staticmethod
+    def _move_the_clock_past_one_interval(hass) -> None:
+        async_fire_time_changed(hass, dt_util.utcnow() + DEFAULT_UPDATE_INTERVAL + timedelta(seconds=30))
+
+    async def _loaded_zone(self, hass, entry_id: str):
+        hass.states.async_set("cover.test_cover", "closed", {"current_position": 0})
+        entry = _make_entry(entry_id)
+        entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        coordinator = entry.runtime_data.coordinator
+        update = AsyncMock(return_value=coordinator.data)
+        return entry, coordinator, update
+
+    async def test_the_timer_is_alive_while_the_coordinator_runs(self, hass) -> None:
+        entry, coordinator, update = await self._loaded_zone(hass, "entry_timer_alive")
+        with patch.object(coordinator, "_async_update_data", update):
+            self._move_the_clock_past_one_interval(hass)
+            await hass.async_block_till_done()
+            assert update.await_count == 1, "the scheduled refresh ran"
+
+            self._move_the_clock_past_one_interval(hass)
+            await hass.async_block_till_done()
+            assert update.await_count == 2, "and it rescheduled itself"
+
+    async def test_shutting_the_coordinator_down_cancels_the_timer_and_ignores_new_runs(self, hass) -> None:
+        entry, coordinator, update = await self._loaded_zone(hass, "entry_timer_shutdown")
+        with patch.object(coordinator, "_async_update_data", update):
+            self._move_the_clock_past_one_interval(hass)
+            await hass.async_block_till_done()
+            assert update.await_count == 1, "control: the timer is alive before the shutdown"
+
+            await coordinator.async_shutdown()
+
+            self._move_the_clock_past_one_interval(hass)
+            await hass.async_block_till_done()
+            await coordinator.async_refresh()
+            await coordinator.async_request_refresh()
+            await hass.async_block_till_done()
+            assert update.await_count == 1, "no scheduled and no requested refresh runs after the shutdown"
+
+    async def test_unloading_stops_the_timer_before_the_learning_data_is_flushed(self, hass) -> None:
+        """While the unload flushes, the entities still listen: only the shutdown of the
+        coordinator itself keeps the timer from running another refresh in that window."""
+        entry, coordinator, update = await self._loaded_zone(hass, "entry_timer_unload")
+        real_flush = coordinator.async_flush_learning
+        counts: dict[str, int] = {}
+
+        async def flush_after_trying_to_refresh() -> None:
+            self._move_the_clock_past_one_interval(hass)
+            counts["during_flush"] = update.await_count
+            await real_flush()
+
+        with patch.object(coordinator, "_async_update_data", update):
+            self._move_the_clock_past_one_interval(hass)
+            await hass.async_block_till_done()
+            assert update.await_count == 1, "control: the timer is alive before the unload"
+
+            with patch.object(coordinator, "async_flush_learning", flush_after_trying_to_refresh):
+                assert await hass.config_entries.async_unload(entry.entry_id)
+            await hass.async_block_till_done()
+
+        assert counts == {"during_flush": 1}, "no refresh was started while the unload was flushing"
+        assert update.await_count == 1

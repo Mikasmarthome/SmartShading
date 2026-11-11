@@ -23,7 +23,7 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, patch
 
-from homeassistant.config_entries import ConfigEntryState
+from homeassistant.config_entries import ConfigEntryDisabler, ConfigEntryState
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -36,7 +36,9 @@ from custom_components.smartshading.config_entry_data import (
     to_storage_dict,
 )
 from custom_components.smartshading.const import (
+    CONF_DEBUG_LOGGING,
     CONF_ENTRY_TYPE,
+    DATA_DEBUG_LOGGING,
     DOMAIN,
     ENTRY_TYPE_SYSTEM,
     ENTRY_TYPE_ZONE,
@@ -46,7 +48,7 @@ from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.zone import ZoneConfig
 
 
-def _zone(entry_id: str) -> MockConfigEntry:
+def _zone(entry_id: str, disabled_by=None) -> MockConfigEntry:
     zone = ZoneConfig(id=f"zone_{entry_id}", name=f"Zone {entry_id}")
     window = WindowConfig(
         id=f"window_{entry_id}", name="South", zone_id=zone.id, azimuth=180.0, floor_level=0,
@@ -57,7 +59,7 @@ def _zone(entry_id: str) -> MockConfigEntry:
         zones=[zone], windows=[window], cover_groups=[group])
     return MockConfigEntry(
         domain=DOMAIN, data={**to_storage_dict(data), CONF_ENTRY_TYPE: ENTRY_TYPE_ZONE},
-        entry_id=entry_id)
+        entry_id=entry_id, disabled_by=disabled_by)
 
 
 async def _add_zone(hass, entry_id: str) -> MockConfigEntry:
@@ -85,10 +87,10 @@ async def _remove(hass, entry_id: str):
     return result
 
 
-def _system_entry(entry_id: str = "system") -> MockConfigEntry:
+def _system_entry(entry_id: str = "system", options: dict | None = None) -> MockConfigEntry:
     return MockConfigEntry(
         domain=DOMAIN, data={CONF_ENTRY_TYPE: ENTRY_TYPE_SYSTEM}, source="system",
-        entry_id=entry_id, title="SmartShading System")
+        entry_id=entry_id, title="SmartShading System", options=options or {})
 
 
 def _cover(hass, *names: str) -> None:
@@ -280,7 +282,9 @@ class TestRaceAndReinstall:
         assert _systems(hass)[0].state is ConfigEntryState.LOADED
 
     async def test_a_zone_added_while_the_system_entry_is_being_removed_gets_one_again(self, hass) -> None:
-        """The zone found the System entry still present and did not recreate it."""
+        """Last resort: a zone that appears after the final recount, with the removal
+        already called, found the System entry still present and did not recreate it,
+        so the integration heals by creating one (the original is gone by then)."""
         a = await _add_zone(hass, "za")
         hass.states.async_set("cover.test_zb", "closed", {"current_position": 0})
         b = _zone("zb")
@@ -418,19 +422,19 @@ class TestOrphans:
         assert [e.entry_id for e in _systems(hass)] == ["system"], "the very same entry survives"
         assert system.state is ConfigEntryState.LOADED and zone.state is ConfigEntryState.LOADED
 
-    async def test_a_zone_added_after_the_orphan_decision_still_ends_with_one_system_entry(self, hass) -> None:
+    async def test_a_zone_added_after_the_orphan_decision_keeps_the_original_system_entry(self, hass) -> None:
         """The real race: the System entry is set up with no zone, so its removal task
         decides "orphan"; a zone is then added and set up while that removal still
         waits for the System entry's setup to finish.  The zone is injected inside the
         System entry's own setup (after the removal task exists, before its setup lock
         is released), which is deterministic and does not depend on task order.
 
-        Whether the removal re-checks or removes and the integration heals does not
-        matter to the user: what must hold once everything settled is one loaded
-        System entry next to the loaded zone."""
+        The very same entry must survive: id, data and options."""
         _cover(hass, "za")
         await _load_domain(hass)
-        system = _system_entry()
+        options = {CONF_DEBUG_LOGGING: True}
+        system = _system_entry(options=options)
+        original_data = dict(system.data)
         system.add_to_hass(hass)
         zone = _zone("za")
         seen = {}
@@ -450,9 +454,100 @@ class TestOrphans:
 
         assert seen == {"zones_when_decided": 0, "zone_set_up": True}, "the race was really set up"
         assert [e.entry_id for e in _zones(hass)] == ["za"] and zone.state is ConfigEntryState.LOADED
-        assert len(_systems(hass)) == 1, "exactly one System entry"
-        assert _systems(hass)[0].state is ConfigEntryState.LOADED
+        assert _systems(hass) == [system], "exactly the original System entry"
+        assert system.entry_id == "system" and system.state is ConfigEntryState.LOADED
+        assert system.data == original_data and system.options == options
         assert hass.services.has_service(DOMAIN, svc.SERVICE_CLEAR_MANUAL_OVERRIDE)
+
+    async def test_a_zone_added_while_the_orphan_is_unloading_keeps_the_original_system_entry(self, hass) -> None:
+        """The last moment before the removal: the orphan decision was taken, the removal
+        got the setup lock and is unloading the System entry when a zone is added and
+        set up.  Home Assistant would delete the entry right after that unload, so the
+        integration counts the zones again after it and sets the same entry up again."""
+        import custom_components.smartshading as integration
+
+        _cover(hass, "za")
+        await _load_domain(hass)
+        options = {CONF_DEBUG_LOGGING: True}
+        system = _system_entry(options=options)
+        original_data = dict(system.data)
+        system.add_to_hass(hass)
+        unrelated = _add_unrelated(hass)
+        zone = _zone("za")
+        seen = {}
+        real_unload = integration.async_unload_entry
+
+        async def unload_and_add_the_zone(h, entry):
+            result = await real_unload(h, entry)
+            if entry is system and "zone_set_up" not in seen:
+                seen["zones_when_unloaded"] = len(_zones(h))
+                zone.add_to_hass(h)
+                seen["zone_set_up"] = await h.config_entries.async_setup(zone.entry_id)
+            return result
+
+        with patch.object(integration, "async_unload_entry", unload_and_add_the_zone):
+            await hass.config_entries.async_setup(system.entry_id)
+            await hass.async_block_till_done()
+
+        assert seen == {"zones_when_unloaded": 0, "zone_set_up": True}, "the race was really set up"
+        assert _systems(hass) == [system], "exactly the original System entry"
+        assert system.entry_id == "system" and system.state is ConfigEntryState.LOADED
+        assert system.data == original_data and system.options == options
+        assert hass.data[DOMAIN][DATA_DEBUG_LOGGING] is True
+        assert [e.entry_id for e in _zones(hass)] == ["za"] and zone.state is ConfigEntryState.LOADED
+        assert hass.services.has_service(DOMAIN, svc.SERVICE_CLEAR_MANUAL_OVERRIDE)
+        _assert_unrelated_untouched(hass, unrelated)
+
+    async def test_a_disabled_zone_added_while_the_orphan_is_unloading_still_keeps_the_system_entry(self, hass) -> None:
+        """A disabled zone is a zone (it can be enabled again): at the last recount too."""
+        import custom_components.smartshading as integration
+
+        await _load_domain(hass)
+        system = _system_entry(options={CONF_DEBUG_LOGGING: True})
+        system.add_to_hass(hass)
+        zone = _zone("za", disabled_by=ConfigEntryDisabler.USER)
+        seen = {}
+        real_unload = integration.async_unload_entry
+
+        async def unload_and_add_the_zone(h, entry):
+            result = await real_unload(h, entry)
+            if entry is system and "added" not in seen:
+                seen["added"] = True
+                zone.add_to_hass(h)
+            return result
+
+        with patch.object(integration, "async_unload_entry", unload_and_add_the_zone):
+            await hass.config_entries.async_setup(system.entry_id)
+            await hass.async_block_till_done()
+
+        assert seen == {"added": True}, "the race was really set up"
+        assert _systems(hass) == [system] and system.state is ConfigEntryState.LOADED
+        assert system.options == {CONF_DEBUG_LOGGING: True}
+        assert [e.entry_id for e in _zones(hass)] == ["za"]
+        assert zone.state is ConfigEntryState.NOT_LOADED and zone.disabled_by is ConfigEntryDisabler.USER
+
+    async def test_the_last_zone_removal_still_removes_the_system_entry_with_options(self, hass) -> None:
+        """No zone appears: the unload-recount-remove sequence ends in a complete removal
+        and leaves everything else alone."""
+        _cover(hass, "za")
+        await _load_domain(hass)
+        unrelated = _add_unrelated(hass)
+        system = _system_entry(options={CONF_DEBUG_LOGGING: True})
+        system.add_to_hass(hass)
+        zone = _zone("za")
+        zone.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(zone.entry_id)
+        assert await hass.config_entries.async_setup(system.entry_id)
+        await hass.async_block_till_done()
+        coordinator = zone.runtime_data.coordinator
+        assert _systems(hass) == [system] and system.state is ConfigEntryState.LOADED
+
+        await _remove(hass, zone.entry_id)
+
+        assert hass.config_entries.async_entries(DOMAIN) == []
+        assert system.state is ConfigEntryState.NOT_LOADED
+        _assert_released(coordinator)
+        _assert_unrelated_untouched(hass, unrelated)
 
 
 class TestReloadAndCleanup:

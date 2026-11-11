@@ -22,7 +22,13 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.config_entries import SOURCE_IGNORE, ConfigEntry, UnknownEntry
+from homeassistant.config_entries import (
+    SOURCE_IGNORE,
+    ConfigEntry,
+    ConfigEntryState,
+    OperationNotAllowed,
+    UnknownEntry,
+)
 from homeassistant.core import HomeAssistant
 
 from .config_entry_data import (
@@ -186,7 +192,8 @@ async def _async_setup_system_entry(
     # older version, or the removal was interrupted) cannot be removed by the
     # user.  By the time any entry is set up Home Assistant has loaded every
     # stored entry, so "no zone entry" is genuine here.  The removal waits for
-    # this setup to finish (it takes the entry's setup lock) and re-checks.
+    # this setup to finish (it takes the entry's setup lock), unloads the entry and
+    # counts the zones again before it removes it.
     if not _zone_entries(hass):
         hass.async_create_task(_async_remove_orphaned_system_entry(hass))
 
@@ -240,9 +247,19 @@ async def _async_remove_orphaned_system_entry(
 
     Zones are counted at the moment of the decision (the entry being removed is
     no longer listed while Home Assistant calls async_remove_entry; it is
-    excluded explicitly anyway).  A zone added while the removal was in flight
-    may have found the System entry still present and not recreated it; that is
-    healed at the end.  Failures are logged and never propagate: they must not
+    excluded explicitly anyway).
+
+    Home Assistant's own removal waits for the entry's setup lock, unloads it
+    (which suspends) and only then deletes it, so a zone can appear between a
+    decision taken beforehand and the deletion.  The System entry is therefore
+    unloaded first (after any setup in flight has finished) and the zones are counted
+    again without an await before the removal: an entry that is already unloaded
+    is deleted without suspending, so nothing can be added between that count and
+    the deletion unless another task is queued on the entry's setup lock.  If a
+    zone is there after all, the very same entry (id, data, options) is set up
+    again and nothing is removed.  The last resort for the narrow remaining case
+    is the heal at the end: a zone that found the System entry still present did
+    not recreate it.  Failures are logged and never propagate: they must not
     disturb the removal of the zone that triggered this.
     """
     try:
@@ -254,6 +271,18 @@ async def _async_remove_orphaned_system_entry(
             if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM
         ]:
             try:
+                # async_unload refuses an entry whose setup is still running (it checks
+                # the state before it waits for the lock), so wait for that first.
+                async with system.setup_lock:
+                    pass
+                try:
+                    await hass.config_entries.async_unload(system.entry_id)
+                except OperationNotAllowed:
+                    pass                       # not unloadable: removal handles that state
+                if _zone_entries(hass) and system.state is ConfigEntryState.NOT_LOADED:
+                    # A zone appeared while the System entry was unloading: keep it.
+                    await hass.config_entries.async_setup(system.entry_id)
+                    continue
                 await hass.config_entries.async_remove(system.entry_id)
             except UnknownEntry:
                 continue                       # already gone (concurrent removal)

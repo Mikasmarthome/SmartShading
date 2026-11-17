@@ -853,6 +853,9 @@ class SmartShadingConfigFlow(_ScheduleWizard, config_entries.ConfigFlow, domain=
     """ARCHITECTURE.md §7 Config Flow, simplified scope."""
 
     VERSION = 1
+    # 2: zone settings are stored explicitly (PA-2b); entries below are migrated by
+    # async_migrate_entry / the component-level pass.
+    MINOR_VERSION = 2
 
     def __init__(self) -> None:
         self._name: str = "SmartShading"

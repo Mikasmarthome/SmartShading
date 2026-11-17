@@ -73,6 +73,11 @@ from .services import (
     async_setup_services,
     async_unload_services_if_no_zone_entries_remain,
 )
+from .zone_settings_migration import (
+    ZoneMigrationDeferred,
+    ZoneMigrationError,
+    migrate_zone_entry,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -108,8 +113,26 @@ def _prepare_zone_entry(entry: ConfigEntry) -> None:
         )
 
 
+def _migrate_zone_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """PA-2b: materialize the System-derived settings of one zone (see zone_settings_migration).
+
+    True if the entry was written.  A zone that cannot be judged yet (its System
+    defaults do not exist) stays unmigrated without an error; a zone whose legacy
+    values cannot be verified raises SmartShadingPreparationError and stays exactly
+    as it was.  The System entry is only read, never touched.
+    """
+    try:
+        return migrate_zone_entry(hass, entry, _system_entry_data(hass))
+    except ZoneMigrationDeferred as err:
+        _LOGGER.info("SmartShading: zone entry %s stays unmigrated for now (%s)", entry.entry_id, err)
+        return False
+    except ZoneMigrationError as err:
+        raise SmartShadingPreparationError(
+            f"zone entry {entry.entry_id} stays unmigrated: {err}") from err
+
+
 def _prepare_zone_entries(hass: HomeAssistant) -> list[str]:
-    """Run the preparation hook for all zone entries; return the prepared ids.
+    """Prepare and migrate all zone entries; return the ids that went through.
 
     A SmartShadingPreparationError is contained to the zone concerned (logged,
     the other zones are still prepared and loaded).  Nothing else is caught.
@@ -118,6 +141,7 @@ def _prepare_zone_entries(hass: HomeAssistant) -> list[str]:
     for zone in _zone_entries(hass):
         try:
             _prepare_zone_entry(zone)
+            _migrate_zone_entry(hass, zone)
         except SmartShadingPreparationError as err:
             _LOGGER.warning(
                 "SmartShading: zone entry %s was not prepared (%s); continuing",
@@ -138,6 +162,26 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     still created by the zone entry setup exactly as before.
     """
     _prepare_zone_entries(hass)
+    return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Safety net for a zone the component-level pass could not migrate.
+
+    Home Assistant calls this only for entries that are being set up and only while
+    their minor version is behind; it never advances the version by itself.  A zone
+    that still cannot be migrated returns True anyway and loads with its legacy
+    settings (its Tier-1 handling must not depend on the migration).  The System
+    entry has nothing to migrate and is left untouched.
+    """
+    if entry.version > 1:
+        return False
+    if entry.data.get(CONF_ENTRY_TYPE, ENTRY_TYPE_ZONE) == ENTRY_TYPE_SYSTEM:
+        return True
+    try:
+        _migrate_zone_entry(hass, entry)
+    except SmartShadingPreparationError as err:
+        _LOGGER.warning("SmartShading: %s; loading it with its legacy settings", err)
     return True
 
 

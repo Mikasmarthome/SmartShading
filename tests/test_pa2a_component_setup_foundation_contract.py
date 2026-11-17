@@ -1,5 +1,6 @@
 """PA-2a structural contract (AST, no Home Assistant import): the component-level setup
-foundation exists, writes nothing and adds no migration behavior.
+foundation exists and its own code (setup, enumeration, guard) writes nothing; the settings
+migration (PA-2b) is a separate, separately tested step.
 
 Behavior is proven in ``tests/real_ha/test_real_ha_component_setup_foundation.py``.
 """
@@ -61,12 +62,10 @@ def test_only_the_dedicated_preparation_error_is_contained() -> None:
     assert not [h for h in ast.walk(_func("async_setup")) if isinstance(h, ast.ExceptHandler)]
 
 
-def test_no_migration_behavior_and_no_version_change() -> None:
-    assert "async_migrate_entry" not in _SRC
-    assert "MINOR_VERSION" not in _SRC
+def test_the_major_version_is_unchanged() -> None:
     flow = (_ROOT / "config_flow.py").read_text(encoding="utf-8")
-    assert "MINOR_VERSION" not in flow
-    assert "VERSION = 1" in flow
+    assert "    VERSION = 1\n" in flow
+    assert "    MINOR_VERSION = 2\n" in flow  # PA-2b: explicit zone settings
 
 
 def test_component_setup_does_not_touch_the_system_entry_or_shared_runtime() -> None:

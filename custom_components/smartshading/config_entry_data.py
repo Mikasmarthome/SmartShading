@@ -274,16 +274,22 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             "heat_protection_outdoor_temp_c": data.comfort_config.heat_protection_outdoor_temp_c,
             "solar_gain_max_outdoor_temp_c": data.comfort_config.solar_gain_max_outdoor_temp_c,
         },
-        "override_policy": {
-            "release_strategy": data.override_policy.release_strategy.value,
-            "fixed_until": _time_to_storage(data.override_policy.fixed_until),
-            "allow_comfort_actions": data.override_policy.allow_comfort_actions,
-            "allow_protection_actions": data.override_policy.allow_protection_actions,
-            "duration_min": data.override_policy.duration_min,
-            "night_duration_min": data.override_policy.night_duration_min,
-            "detection_tolerance": data.override_policy.detection_tolerance,
-            "safety_timeout_enabled": data.override_policy.safety_timeout_enabled,
-        },
+        "override_policy": override_policy_to_storage(data.override_policy),
+    }
+
+
+def override_policy_to_storage(policy: OverridePolicyConfig) -> dict[str, Any]:
+    """The stored form of an override policy (the single serialization used by
+    to_storage_dict() and by the zone settings materialization)."""
+    return {
+        "release_strategy": policy.release_strategy.value,
+        "fixed_until": _time_to_storage(policy.fixed_until),
+        "allow_comfort_actions": policy.allow_comfort_actions,
+        "allow_protection_actions": policy.allow_protection_actions,
+        "duration_min": policy.duration_min,
+        "night_duration_min": policy.night_duration_min,
+        "detection_tolerance": policy.detection_tolerance,
+        "safety_timeout_enabled": policy.safety_timeout_enabled,
     }
 
 

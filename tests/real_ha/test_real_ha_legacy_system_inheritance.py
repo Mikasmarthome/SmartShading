@@ -20,12 +20,14 @@ from __future__ import annotations
 import copy
 from typing import Any
 
+import pytest
 from homeassistant.config_entries import ConfigEntryDisabler, ConfigEntryState
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+import custom_components.smartshading as ss
 from custom_components.smartshading.config_entry_data import (
     SmartShadingConfigEntryData,
     to_storage_dict,
@@ -53,6 +55,15 @@ _SYSTEM_DATA = {
 # What a zone runs with when nothing is customised anywhere
 _DEFAULTS = {"strategy": "lifecycle", "duration": 120, "night": 720, "tolerance": 10,
              "safety_timeout": True, "absence": 30}
+
+
+@pytest.fixture(autouse=True)
+def _without_the_settings_migration(monkeypatch):
+    """PA-1 characterizes how a zone reads the System entry's stored data (the legacy resolvers and the zone-setup wiring).
+
+    The zone settings migration (PA-2b) is covered by test_real_ha_zone_settings_migration.py;
+    it is switched off here so this module keeps pinning what it was written to pin."""
+    monkeypatch.setattr(ss, "_migrate_zone_entry", lambda hass, entry: False)
 
 
 def _zone(

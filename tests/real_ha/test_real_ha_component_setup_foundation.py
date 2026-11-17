@@ -110,6 +110,15 @@ def _snapshot(hass) -> dict[str, dict[str, Any]]:
     }
 
 
+@pytest.fixture(autouse=True)
+def _without_the_settings_migration(monkeypatch):
+    """PA-2a pins the component-level preparation foundation (enumeration, containment, no writes of its own).
+
+    The zone settings migration (PA-2b) is covered by test_real_ha_zone_settings_migration.py;
+    it is switched off here so this module keeps pinning what it was written to pin."""
+    monkeypatch.setattr(ss, "_migrate_zone_entry", lambda hass, entry: False)
+
+
 @pytest.fixture
 def prepared(monkeypatch):
     """Record every entry id the preparation hook is called for (hook behavior unchanged)."""

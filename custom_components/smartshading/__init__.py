@@ -21,6 +21,7 @@ CONF_ENTRY_TYPE in their data — they are treated as ENTRY_TYPE_ZONE entries.
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 
 from homeassistant.config_entries import (
     SOURCE_IGNORE,
@@ -30,6 +31,8 @@ from homeassistant.config_entries import (
     UnknownEntry,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.typing import ConfigType
 
 from .config_entry_data import (
     from_storage_dict,
@@ -74,6 +77,68 @@ from .services import (
 _LOGGER = logging.getLogger(__name__)
 
 type SmartShadingConfigEntry = ConfigEntry[SmartShadingRuntimeData]
+
+# SmartShading is configured through config entries only (no YAML).
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+# ---------------------------------------------------------------------------
+# Component setup (foundation for the later zone-only migration)
+# ---------------------------------------------------------------------------
+
+
+class SmartShadingPreparationError(Exception):
+    """A zone entry could not be prepared at component setup.
+
+    The only failure type the component-level preparation contains; any other
+    exception is a genuine error and propagates.
+    """
+
+
+def _prepare_zone_entry(entry: ConfigEntry) -> None:
+    """Read-only preparation hook for one zone entry (no migration yet).
+
+    Runs for every zone entry, disabled ones included.  It must not write
+    entry data, options or versions; later milestones extend it.  Raises
+    SmartShadingPreparationError when the entry cannot be prepared.
+    """
+    if not isinstance(entry.data, Mapping):
+        raise SmartShadingPreparationError(
+            f"zone entry {entry.entry_id} has unreadable stored data"
+        )
+
+
+def _prepare_zone_entries(hass: HomeAssistant) -> list[str]:
+    """Run the preparation hook for all zone entries; return the prepared ids.
+
+    A SmartShadingPreparationError is contained to the zone concerned (logged,
+    the other zones are still prepared and loaded).  Nothing else is caught.
+    """
+    prepared: list[str] = []
+    for zone in _zone_entries(hass):
+        try:
+            _prepare_zone_entry(zone)
+        except SmartShadingPreparationError as err:
+            _LOGGER.warning(
+                "SmartShading: zone entry %s was not prepared (%s); continuing",
+                zone.entry_id,
+                err,
+            )
+            continue
+        prepared.append(zone.entry_id)
+    return prepared
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Component setup: runs once, before any SmartShading entry is set up.
+
+    Prepares every zone entry (also disabled ones, which entry setup never
+    reaches).  Stateless and write-free, so entry reloads cannot duplicate
+    anything, and shared runtime state (dispatch, ownership, services) is
+    still created by the zone entry setup exactly as before.
+    """
+    _prepare_zone_entries(hass)
+    return True
 
 
 # ---------------------------------------------------------------------------

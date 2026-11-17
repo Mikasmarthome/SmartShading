@@ -283,3 +283,52 @@ class TestRepeatedSetupAndReload:
         assert sorted(hass.services.async_services().get(DOMAIN, {})) == services
         assert dict(hass.bus.async_listeners()) == listeners   # steady state: nothing accumulates
         assert a.state is ConfigEntryState.LOADED and b.state is ConfigEntryState.LOADED
+
+
+class _NotAMapping:
+    """Readable like stored data (``.get``) but not a Mapping: what the real guard rejects."""
+
+    def get(self, key, default=None):
+        return default
+
+
+class _FakeEntry:
+    def __init__(self, entry_id: str, data: Any) -> None:
+        self.entry_id, self.data, self.source = entry_id, data, "user"
+        self.version, self.minor_version = 1, 1
+
+
+class TestRealPreparationGuard:
+    """The REAL ``_prepare_zone_entry`` guard, with nothing monkeypatched in its place.
+
+    Home Assistant entries always carry mapping data, so the guard can only be exercised
+    with a controlled double; the surrounding enumeration is the real production code."""
+
+    async def test_valid_mapping_data_is_accepted_and_left_untouched(self, hass) -> None:
+        entry = _zone("a")
+        _add(hass, entry)
+        before = (copy.deepcopy(dict(entry.data)), entry.version, entry.minor_version)
+        assert ss._prepare_zone_entry(entry) is None
+        assert (dict(entry.data), entry.version, entry.minor_version) == before
+
+    async def test_non_mapping_data_raise_the_dedicated_error(self) -> None:
+        with pytest.raises(ss.SmartShadingPreparationError, match="bad"):
+            ss._prepare_zone_entry(_FakeEntry("bad", _NotAMapping()))
+        with pytest.raises(ss.SmartShadingPreparationError):
+            ss._prepare_zone_entry(_FakeEntry("bad", ["not", "a", "mapping"]))
+
+    async def test_a_failing_zone_is_not_prepared_but_the_others_are(self, hass, monkeypatch, caplog) -> None:
+        first, last = _zone("first"), _zone("last")
+        _add(hass, first, last)
+        bad = _FakeEntry("bad", _NotAMapping())
+        real = hass.config_entries.async_entries
+        monkeypatch.setattr(
+            hass.config_entries, "async_entries",
+            lambda domain=None, *a, **k: [first, bad, last] if domain == DOMAIN else real(domain, *a, **k))
+        before = {e.entry_id: (copy.deepcopy(dict(e.data)), e.version, e.minor_version) for e in (first, last)}
+        with caplog.at_level(logging.WARNING):
+            prepared = ss._prepare_zone_entries(hass)
+        assert prepared == ["first", "last"]          # "bad" is not reported as prepared
+        assert "bad" in caplog.text
+        assert {e.entry_id: (dict(e.data), e.version, e.minor_version) for e in (first, last)} == before
+        assert bad.data.__class__ is _NotAMapping and (bad.version, bad.minor_version) == (1, 1)

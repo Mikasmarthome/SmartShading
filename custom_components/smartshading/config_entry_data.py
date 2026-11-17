@@ -274,7 +274,9 @@ def to_storage_dict(data: SmartShadingConfigEntryData) -> dict[str, Any]:
             "heat_protection_outdoor_temp_c": data.comfort_config.heat_protection_outdoor_temp_c,
             "solar_gain_max_outdoor_temp_c": data.comfort_config.solar_gain_max_outdoor_temp_c,
         },
-        "override_policy": override_policy_to_storage(data.override_policy),
+        # A zone written from its own typed settings never defers to the System entry; say so
+        # explicitly (PA-2c.1) instead of relying on the absent-marker default.
+        "override_policy": {**override_policy_to_storage(data.override_policy), "use_system_default": False},
     }
 
 

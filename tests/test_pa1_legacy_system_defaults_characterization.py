@@ -175,12 +175,13 @@ class TestOverridePolicyEffectiveMatrix:
 
     def test_a_default_dataclass_zone_stored_by_to_storage_dict_does_not_defer(self) -> None:
         """A zone written by the config flow (to_storage_dict) always stores
-        release_strategy and no use_system_default flag, so it uses its own policy."""
+        release_strategy and (since PA-2c.1) an explicit use_system_default=False, so it uses
+        its own policy."""
         from custom_components.smartshading.config_entry_data import SmartShadingConfigEntryData
 
         stored = to_storage_dict(SmartShadingConfigEntryData(name="Z", use_home_location=False))
         assert "release_strategy" in stored["override_policy"]
-        assert "use_system_default" not in stored["override_policy"]
+        assert stored["override_policy"]["use_system_default"] is False
         resolved = resolve_zone_override_policy(stored, SYSTEMS["present_custom"][0])
         assert _tup(resolved) == DEFAULT  # own default, NOT the System's custom policy
 
@@ -326,13 +327,14 @@ class TestStoredVersusEffective:
         assert resolve_zone_absence_delay_min(zone, system) == 90
         assert resolve_zone_override_policy(zone, system).duration_min == 45
 
-    def test_typed_round_trip_keeps_the_absence_flag_but_drops_the_override_flag(self) -> None:
+    def test_typed_round_trip_keeps_the_absence_flag_but_forgets_the_override_inheritance(self) -> None:
         zone = {"name": "Z", "absence_delay_min": 20, "absence_delay_use_system_default": True,
                 "override_policy": {"release_strategy": "manual", "use_system_default": True}}
         again = to_storage_dict(from_storage_dict(copy.deepcopy(zone)))
         assert again["absence_delay_use_system_default"] is True
-        assert "use_system_default" not in again["override_policy"]
-        # consequence: a typed round trip silently turns a deferring override policy into an own one
+        assert again["override_policy"]["use_system_default"] is False  # PA-2c.1: explicit, not absent
+        # consequence (the options flow's structure save therefore restores the stored policy
+        # itself, see test_pa2c1_system_retirement_gate): a typed round trip silently turns a deferring override policy into an own one
         assert resolve_zone_override_policy(zone, SYSTEMS["present_custom"][0]).duration_min == 45
         assert resolve_zone_override_policy(again, SYSTEMS["present_custom"][0]).duration_min == 120
 

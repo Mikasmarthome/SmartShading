@@ -73,6 +73,7 @@ from .services import (
     async_setup_services,
     async_unload_services_if_no_zone_entries_remain,
 )
+from .system_retirement import RetirementAssessment, assess_system_retirement
 from .zone_settings_migration import (
     ZoneMigrationDeferred,
     ZoneMigrationError,
@@ -153,6 +154,21 @@ def _prepare_zone_entries(hass: HomeAssistant) -> list[str]:
     return prepared
 
 
+def _assess_system_retirement(hass: HomeAssistant) -> RetirementAssessment:
+    """PA-2c.1: may the legacy System entry be retired?  Read-only; judges EVERY zone
+    entry (disabled ones included) from its stored data, never from its version alone."""
+    return assess_system_retirement(_zone_entries(hass), _system_entry_data(hass))
+
+
+def _log_retirement_gate(hass: HomeAssistant) -> None:
+    summary = _assess_system_retirement(hass).summary()
+    if summary["eligible"]:
+        _LOGGER.info("SmartShading: all %s zone entries are independent of the System entry",
+                     summary["zones_checked"])
+    else:
+        _LOGGER.info("SmartShading: System entry still in use by zone entries: %s", summary["blocked"])
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Component setup: runs once, before any SmartShading entry is set up.
 
@@ -162,6 +178,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     still created by the zone entry setup exactly as before.
     """
     _prepare_zone_entries(hass)
+    _log_retirement_gate(hass)
     return True
 
 

@@ -204,7 +204,8 @@ def test_the_data_and_the_version_are_written_in_one_call() -> None:
 
 
 def test_an_already_migrated_entry_is_not_rewritten() -> None:
-    entry, hass = _entry(_zone(), minor=2)
+    # PA-2c.1: "already migrated" is judged by the stored content, not by the version alone.
+    entry, hass = _entry(materialize_zone_settings(_zone(), _SYSTEM), minor=2)
     before = copy.deepcopy(entry.data)
     assert migrate_zone_entry(hass, entry, _SYSTEM) is False
     assert hass.config_entries.calls == [] and entry.data == before

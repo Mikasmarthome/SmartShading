@@ -156,7 +156,7 @@ def _is_migrated(
         verify_materialization(original, system_raw, dict(entry.data))
     except ZoneMigrationError:
         return False
-    return True
+    return not _depends_on_system(entry, system_raw)
 
 
 def _restore(
@@ -173,16 +173,27 @@ def _restore(
             exc_info=True)
 
 
+def _depends_on_system(entry: "ConfigEntry", system_raw: Mapping[str, Any] | None) -> bool:
+    # Local import: system_retirement builds on this module's TARGET_MINOR_VERSION.
+    from .system_retirement import zone_independence_reasons
+
+    return bool(zone_independence_reasons(entry.data, entry.minor_version, system_raw))
+
+
 def migrate_zone_entry(
     hass: "HomeAssistant", entry: "ConfigEntry", system_raw: Mapping[str, Any] | None
 ) -> bool:
-    """Materialize one zone entry.  True if it was written, False if it was already migrated.
+    """Materialize one zone entry.  True if it was written, False if it was already independent.
 
     Raises ZoneMigrationError (ZoneMigrationDeferred when the zone cannot be judged yet);
     in every failure case the entry is left exactly as it was.
     """
-    if entry.minor_version >= TARGET_MINOR_VERSION:
+    if entry.minor_version > TARGET_MINOR_VERSION:
+        return False  # written by a newer version: never touched here (and never judged independent)
+    if entry.minor_version == TARGET_MINOR_VERSION and not _depends_on_system(entry, system_raw):
         return False
+    # A v1 entry is migrated; a v2 entry that depends on the System again (re-enabled
+    # inheritance, dropped flags) is recovered through the very same verified path.
     original = copy.deepcopy(dict(entry.data))
     original_minor = entry.minor_version
     validate_legacy_zone_settings(original, system_raw)

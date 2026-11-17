@@ -32,6 +32,7 @@ Options Flow (post-setup editing via a section menu):
 """
 from __future__ import annotations
 
+import copy
 import uuid
 from datetime import time
 from typing import Any
@@ -58,6 +59,7 @@ from .config_entry_data import (
     from_storage_dict,
     to_storage_dict,
 )
+from .zone_settings_migration import TARGET_MINOR_VERSION as ZONE_LOCAL_MINOR_VERSION
 from .models.comfort import ComfortConfig
 from .models.config import GlobalDefaults, ShadePositionDefaults
 from .models.manual_override import (
@@ -1757,7 +1759,10 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
                     zones[0] = {**zones[0], "absence_position": absence_position}
                 self._pending_presence_updates["zones"] = zones
 
-            use_system_default = bool(user_input.get(CONF_ABSENCE_DELAY_USE_SYSTEM_DEFAULT, False))
+            use_system_default = (
+                False if self._zone_settings_are_local()
+                else bool(user_input.get(CONF_ABSENCE_DELAY_USE_SYSTEM_DEFAULT, False))
+            )
             if use_system_default:
                 self._pending_presence_updates[CONF_ABSENCE_DELAY_USE_SYSTEM_DEFAULT] = True
                 return self._save_and_reload(self._pending_presence_updates)
@@ -1776,10 +1781,14 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
                     CONF_PRESENCE_ENTITY_IDS,
                     default=current.get(CONF_PRESENCE_ENTITY_IDS, []),
                 ): EntitySelector(EntitySelectorConfig(domain="person", multiple=True)),
-                vol.Required(
-                    CONF_ABSENCE_DELAY_USE_SYSTEM_DEFAULT,
-                    default=bool(current.get(CONF_ABSENCE_DELAY_USE_SYSTEM_DEFAULT, False)),
-                ): BooleanSelector(),
+                **(
+                    {} if self._zone_settings_are_local() else {
+                        vol.Required(
+                            CONF_ABSENCE_DELAY_USE_SYSTEM_DEFAULT,
+                            default=bool(current.get(CONF_ABSENCE_DELAY_USE_SYSTEM_DEFAULT, False)),
+                        ): BooleanSelector(),
+                    }
+                ),
                 vol.Optional(
                     CONF_ABSENCE_POSITION,
                     description={"suggested_value": current_absence_position},
@@ -1930,12 +1939,13 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         """
         current = self._config_entry.data
         stored = current.get("override_policy") or {}
-        stored_use_system_default = bool(
+        zone_local = self._zone_settings_are_local()
+        stored_use_system_default = False if zone_local else bool(
             stored.get("use_system_default", "release_strategy" not in stored)
         )
 
         if user_input is not None:
-            use_system_default = bool(
+            use_system_default = False if zone_local else bool(
                 user_input.get(CONF_OVERRIDE_USE_SYSTEM_DEFAULT, stored_use_system_default)
             )
             detection_tolerance = _safe_positive_int(
@@ -1948,23 +1958,21 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
             self._pending_override_detection_tolerance = detection_tolerance
             return await self.async_step_manual_override_custom()
 
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_OVERRIDE_USE_SYSTEM_DEFAULT, default=stored_use_system_default,
-                ): BooleanSelector(),
-                vol.Required(
-                    CONF_OVERRIDE_DETECTION_TOLERANCE,
-                    default=stored.get("detection_tolerance", DEFAULT_OVERRIDE_DETECTION_TOLERANCE),
-                ): NumberSelector(
-                    NumberSelectorConfig(
-                        min=1, max=OVERRIDE_DETECTION_TOLERANCE_MAX, step=1,
-                        mode=NumberSelectorMode.BOX,
-                    )
-                ),
-            }
+        fields: dict[Any, Any] = {}
+        if not zone_local:  # a zone that owns its settings is never offered the System default
+            fields[vol.Required(
+                CONF_OVERRIDE_USE_SYSTEM_DEFAULT, default=stored_use_system_default,
+            )] = BooleanSelector()
+        fields[vol.Required(
+            CONF_OVERRIDE_DETECTION_TOLERANCE,
+            default=stored.get("detection_tolerance", DEFAULT_OVERRIDE_DETECTION_TOLERANCE),
+        )] = NumberSelector(
+            NumberSelectorConfig(
+                min=1, max=OVERRIDE_DETECTION_TOLERANCE_MAX, step=1,
+                mode=NumberSelectorMode.BOX,
+            )
         )
-        return self.async_show_form(step_id="manual_override", data_schema=schema)
+        return self.async_show_form(step_id="manual_override", data_schema=vol.Schema(fields))
 
     # -- Manual Override policy form (Phase 5): shared by the zone's own policy
     # and the System entry's default.  See the module-level comment above
@@ -2677,6 +2685,28 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
 
     # -- Common save helpers --
 
+    def _zone_settings_are_local(self) -> bool:
+        """True for a zone whose settings were materialized (PA-2b): it must never
+        be offered, or silently given back, a dependency on the legacy System entry."""
+        entry = self._config_entry
+        minor = entry.minor_version
+        return (
+            entry.data.get(CONF_ENTRY_TYPE, ENTRY_TYPE_ZONE) != ENTRY_TYPE_SYSTEM
+            and isinstance(minor, int)
+            and not isinstance(minor, bool)
+            and minor >= ZONE_LOCAL_MINOR_VERSION
+        )
+
+    def _refuse_reinheritance(self, updates: dict[str, Any]) -> None:
+        """Last line of defence: a zone-local entry never gets System inheritance written."""
+        if not self._zone_settings_are_local():
+            return
+        policy = updates.get("override_policy")
+        if updates.get(CONF_ABSENCE_DELAY_USE_SYSTEM_DEFAULT) or (
+            isinstance(policy, dict) and policy.get("use_system_default")
+        ):
+            raise ValueError("a zone with its own settings cannot defer to the System entry again")
+
     def _save_and_reload(
         self, updates: dict[str, Any]
     ) -> config_entries.ConfigFlowResult:
@@ -2698,6 +2728,7 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         while a non-default profile was active would silently revert
         behavior to the (possibly different) flat legacy config.
         """
+        self._refuse_reinheritance(updates)
         merged = {**self._config_entry.data, **updates}
         if "lifecycle_config" not in updates and (
             "active_lifecycle_profile_id" in merged or "lifecycle_profiles" in merged
@@ -2743,10 +2774,15 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         current_data = from_storage_dict(self._config_entry.data)
         current_data.windows.extend(self._add_windows)
         current_data.cover_groups.extend(self._add_cover_groups)
-        self.hass.config_entries.async_update_entry(
-            self._config_entry,
-            data=to_storage_dict(current_data),
-        )
+        new_data = to_storage_dict(current_data)
+        # The typed round trip knows nothing about the inheritance marker: keep the stored
+        # override policy exactly as it is (an absent one stays absent), otherwise adding a
+        # window would silently turn a deferring zone into one with different settings.
+        if "override_policy" in self._config_entry.data:
+            new_data["override_policy"] = copy.deepcopy(self._config_entry.data["override_policy"])
+        else:
+            new_data.pop("override_policy", None)
+        self.hass.config_entries.async_update_entry(self._config_entry, data=new_data)
         self.hass.async_create_task(
             self.hass.config_entries.async_reload(self._config_entry.entry_id)
         )

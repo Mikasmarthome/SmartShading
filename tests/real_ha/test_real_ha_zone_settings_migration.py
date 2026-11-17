@@ -214,13 +214,14 @@ class TestSystemEntryStaysUntouched:
         assert _effective(zone)["absence"] == 90
 
     async def test_a_mix_of_migrated_and_unmigrated_zones_is_safe(self, hass, writes) -> None:
-        done = _zone("done", override_policy=None, absence_flag=True, minor=2)   # already at 2, still deferring
+        # PA-2c.1: a zone at version 2 that still defers is no longer trusted by its version;
+        # it goes through the same verified write and keeps its effective values.
+        done = _zone("done", override_policy=None, absence_flag=True, minor=2)
         todo = _zone("todo", override_policy=None, absence_flag=True)
         _add(hass, done, todo, _system())
-        before = copy.deepcopy(dict(done.data))
         assert await _start(hass)
-        assert dict(done.data) == before and done.minor_version == 2           # never rewritten
-        assert [w[0] for w in writes] == ["todo"]
+        assert done.minor_version == 2 and _migrated(done)
+        assert sorted(w[0] for w in writes) == ["done", "todo"]
         assert done.state is ConfigEntryState.LOADED and todo.state is ConfigEntryState.LOADED
         assert _effective(done) == _effective(todo) == _SYSTEM_EFFECTIVE
 

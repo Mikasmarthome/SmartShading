@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Volet affecté deux fois avec des réglages identiques",
       "description": "Le volet {cover} apparaît plusieurs fois avec des réglages identiques : {locations}. SmartShading ne le pilote qu'à partir d'une de ces affectations. Supprimez le doublon dans les options SmartShading pour que chaque volet ne soit affecté qu'une fois."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Anciens réglages Système encore utilisés",
+      "description": "La zone SmartShading {zone} dépend encore des anciens réglages partagés du Système, ou ses réglages n'ont pas pu être vérifiés ; l'ancienne entrée Système est donc conservée. Rien n'a été modifié automatiquement et la zone continue de fonctionner. Ouvrez les options SmartShading de la zone, parcourez les étapes de dérogation manuelle et de présence, enregistrez chacune une fois, puis redémarrez Home Assistant. Si ce n'est pas possible, supprimez la zone et ajoutez-la de nouveau."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Réglages de la zone non enregistrés",
+      "description": "SmartShading n'a pas pu enregistrer les réglages convertis de la zone {zone}, car l'écriture de la configuration a échoué. L'ancienne entrée Système est conservée et la zone continue de fonctionner sans changement. Vérifiez l'espace disque libre et les droits d'accès de la configuration de Home Assistant, puis redémarrez Home Assistant ; la conversion sera retentée automatiquement."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zone enregistrée par une version plus récente",
+      "description": "La zone {zone} a été enregistrée par une version de SmartShading plus récente que celle installée ; SmartShading ne peut pas l'évaluer et conserve l'ancienne entrée Système. Mettez SmartShading à jour vers la dernière version."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Impossible de supprimer l'ancienne entrée Système",
+      "description": "SmartShading n'a pas pu supprimer l'ancienne entrée Système devenue inutile (voir le journal de Home Assistant). Elle reste active et aucune zone n'est affectée. Redémarrez Home Assistant pour réessayer ; si le problème persiste, signalez-le avec l'extrait du journal."
     }
   }
 }

@@ -35,10 +35,14 @@ from .config_entry_data import (
 from .models.manual_override import OverrideReleaseStrategy
 from .zone_settings_migration import TARGET_MINOR_VERSION
 
+# The only major ConfigEntry version this code can read (the flow's VERSION).
+SUPPORTED_ENTRY_VERSION = 1
+
 if TYPE_CHECKING:  # pragma: no cover
     from homeassistant.config_entries import ConfigEntry
 
 # Reason codes.
+ENTRY_VERSION_UNSUPPORTED = "entry_version_unsupported"
 DATA_UNREADABLE = "data_unreadable"
 MINOR_VERSION_INVALID = "minor_version_invalid"
 MINOR_VERSION_UNMIGRATED = "minor_version_unmigrated"
@@ -185,6 +189,13 @@ class RetirementAssessment:
         }
 
 
+def _entry_version_reasons(version: Any) -> tuple[str, ...]:
+    """A zone saved with another major version has a layout this code cannot judge."""
+    if isinstance(version, bool) or version != SUPPORTED_ENTRY_VERSION:
+        return (ENTRY_VERSION_UNSUPPORTED,)
+    return ()
+
+
 def assess_system_retirement(
     zone_entries: Iterable["ConfigEntry"], system_raw: Mapping[str, Any] | None
 ) -> RetirementAssessment:
@@ -194,7 +205,8 @@ def assess_system_retirement(
             entry_id=entry.entry_id,
             enabled=entry.disabled_by is None,
             minor_version=entry.minor_version,
-            reasons=zone_independence_reasons(entry.data, entry.minor_version, system_raw),
+            reasons=_entry_version_reasons(entry.version)
+            + zone_independence_reasons(entry.data, entry.minor_version, system_raw),
         )
         for entry in zone_entries
     )

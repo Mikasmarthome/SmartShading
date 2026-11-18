@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Az árnyékoló kétszer van hozzárendelve azonos beállításokkal",
       "description": "A(z) {cover} árnyékoló többször szerepel azonos beállításokkal: {locations}. A SmartShading csak az egyik hozzárendelésből vezérli. Távolítsa el a duplikátumot a SmartShading beállításaiban, hogy minden árnyékoló csak egyszer legyen hozzárendelve."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "A régi Rendszerbeállítások még használatban vannak",
+      "description": "A(z) {zone} SmartShading-zóna még a régi közös Rendszerbeállításokra támaszkodik, vagy a beállításait nem sikerült ellenőrizni, ezért a régi Rendszer-bejegyzés megmarad. Semmi sem változott automatikusan, és a zóna tovább működik. Nyissa meg a zóna SmartShading-beállításait, menjen végig a kézi felülbírálás és a jelenlét lépésein, mindegyiket mentse egyszer, majd indítsa újra a Home Assistantot. Ha ez nem lehetséges, távolítsa el a zónát, és vegye fel újra."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "A zóna beállításait nem sikerült menteni",
+      "description": "A SmartShading nem tudta menteni a(z) {zone} zóna átalakított beállításait, mert a konfiguráció írása sikertelen volt. A régi Rendszer-bejegyzés megmarad, és a zóna változatlanul tovább működik. Ellenőrizze a szabad lemezterületet és a Home Assistant konfigurációjának fájlengedélyeit, majd indítsa újra a Home Assistantot; az átalakítást automatikusan újra megkísérli."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Újabb verzió mentette a zónát",
+      "description": "A(z) {zone} zónát a telepítettnél újabb SmartShading-verzió mentette, ezért a SmartShading nem tudja megítélni, és megtartja a régi Rendszer-bejegyzést. Frissítse a SmartShadinget a legújabb verzióra."
+    },
+    "system_retirement_removal_failed": {
+      "title": "A régi Rendszer-bejegyzést nem sikerült eltávolítani",
+      "description": "A SmartShading nem tudta eltávolítani a már nem szükséges régi Rendszer-bejegyzést (lásd a Home Assistant naplóját). Aktív marad, és egyetlen zónát sem érint. Indítsa újra a Home Assistantot az újrapróbálkozáshoz; ha a hiba megmarad, jelentse a naplórészlettel együtt."
     }
   }
 }

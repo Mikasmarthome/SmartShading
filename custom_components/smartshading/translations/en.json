@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Cover assigned twice with identical settings",
       "description": "The cover {cover} appears more than once with identical settings: {locations}. SmartShading controls it from only one of these assignments. Remove the duplicate in the SmartShading options so that each cover is assigned only once."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Old System settings still in use",
+      "description": "The SmartShading zone {zone} still relies on the old shared System settings, or its settings could not be verified, so the old System entry is kept. Nothing was changed automatically and the zone keeps working. Open the SmartShading options of the zone, go through the manual override and presence steps, save each once, then restart Home Assistant. If that is not possible, remove the zone and add it again."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Zone settings could not be saved",
+      "description": "SmartShading could not save the converted settings of the zone {zone} because writing the configuration failed. The old System entry is kept and the zone keeps running unchanged. Check the free disk space and the file permissions of the Home Assistant configuration, then restart Home Assistant; the conversion is retried automatically."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zone saved by a newer version",
+      "description": "The zone {zone} was saved by a newer SmartShading version than the one installed, so SmartShading cannot judge it and keeps the old System entry. Update SmartShading to the latest version."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Old System entry could not be removed",
+      "description": "SmartShading could not remove the old System entry that is no longer needed (see the Home Assistant log). It stays active and no zone is affected. Restart Home Assistant to try again; if the problem remains, report it together with the log excerpt."
     }
   }
 }

@@ -9,11 +9,13 @@ SmartShading uses two distinct config entry types:
                        window/zone sensor entities, and zone switches.
                        Platforms: sensor, binary_sensor, switch.
 
-  ENTRY_TYPE_SYSTEM — exactly one entry for the whole integration; owns
-                       global entities (export button) and future system-
-                       level entities.  Created automatically when the first
-                       zone entry is set up.
-                       Platforms: button.
+  ENTRY_TYPE_SYSTEM — LEGACY (being retired).  At most one entry that older
+                       versions created automatically; it owns the export button
+                       and the debug switch and the global defaults the zones used
+                       to inherit.  Nothing creates it any more, and it is removed
+                       automatically as soon as every zone entry is verifiably
+                       independent of it (system_retirement_lifecycle.py).
+                       Platforms: button, switch.
 
 Backward compatibility: zone entries created before this change have no
 CONF_ENTRY_TYPE in their data — they are treated as ENTRY_TYPE_ZONE entries.
@@ -74,9 +76,17 @@ from .services import (
     async_unload_services_if_no_zone_entries_remain,
 )
 from .system_retirement import RetirementAssessment, assess_system_retirement
+from .system_retirement_lifecycle import (
+    FAILURE_PERSISTENCE,
+    FAILURE_UNVERIFIABLE,
+    RetirementOps,
+    async_retire_system_entry,
+    migration_failures,
+)
 from .zone_settings_migration import (
     ZoneMigrationDeferred,
     ZoneMigrationError,
+    ZoneMigrationPersistenceError,
     migrate_zone_entry,
 )
 
@@ -122,14 +132,21 @@ def _migrate_zone_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     values cannot be verified raises SmartShadingPreparationError and stays exactly
     as it was.  The System entry is only read, never touched.
     """
+    failures = migration_failures(hass)
     try:
-        return migrate_zone_entry(hass, entry, _system_entry_data(hass))
+        written = migrate_zone_entry(hass, entry, _system_entry_data(hass))
     except ZoneMigrationDeferred as err:
+        failures.pop(entry.entry_id, None)
         _LOGGER.info("SmartShading: zone entry %s stays unmigrated for now (%s)", entry.entry_id, err)
         return False
     except ZoneMigrationError as err:
+        failures[entry.entry_id] = (
+            FAILURE_PERSISTENCE if isinstance(err, ZoneMigrationPersistenceError)
+            else FAILURE_UNVERIFIABLE)
         raise SmartShadingPreparationError(
             f"zone entry {entry.entry_id} stays unmigrated: {err}") from err
+    failures.pop(entry.entry_id, None)
+    return written
 
 
 def _prepare_zone_entries(hass: HomeAssistant) -> list[str]:
@@ -160,25 +177,37 @@ def _assess_system_retirement(hass: HomeAssistant) -> RetirementAssessment:
     return assess_system_retirement(_zone_entries(hass), _system_entry_data(hass))
 
 
-def _log_retirement_gate(hass: HomeAssistant) -> None:
-    summary = _assess_system_retirement(hass).summary()
-    if summary["eligible"]:
-        _LOGGER.info("SmartShading: all %s zone entries are independent of the System entry",
-                     summary["zones_checked"])
-    else:
-        _LOGGER.info("SmartShading: System entry still in use by zone entries: %s", summary["blocked"])
+def _retirement_ops() -> RetirementOps:
+    return RetirementOps(
+        zone_entries=_zone_entries,
+        system_entries=_system_entries,
+        assess=_assess_system_retirement,
+    )
+
+
+async def _async_retire_system_entry(hass: HomeAssistant) -> str:
+    """PA-2c.2: remove the legacy System entry once every zone is verified independent."""
+    return await async_retire_system_entry(hass, _retirement_ops())
+
+
+async def _async_retire_after_zone_setup(hass: HomeAssistant) -> None:
+    """Background attempt after a zone was set up (e.g. a blocker was fixed without a restart)."""
+    await _async_retire_system_entry(hass)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Component setup: runs once, before any SmartShading entry is set up.
 
     Prepares every zone entry (also disabled ones, which entry setup never
-    reaches).  Stateless and write-free, so entry reloads cannot duplicate
-    anything, and shared runtime state (dispatch, ownership, services) is
-    still created by the zone entry setup exactly as before.
+    reaches) and then retires the legacy System entry when every zone is verified
+    independent of it.  Idempotent, so repeated setups cannot duplicate anything,
+    and shared runtime state (dispatch, ownership, services) is still created by
+    the zone entry setup exactly as before.
     """
     _prepare_zone_entries(hass)
-    _log_retirement_gate(hass)
+    # No entry is set up yet, so the System entry is still unloaded and nothing can run
+    # against it while it is judged and (if every zone is independent) removed.
+    await _async_retire_system_entry(hass)
     return True
 
 
@@ -296,6 +325,12 @@ async def async_remove_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
         # Even if the storage cleanup failed, the last zone must not leave the
         # System entry orphaned.
         await _async_remove_orphaned_system_entry(hass, removed_entry_id=entry.entry_id)
+        # Removing the one zone that still depended on the System entry may be what
+        # makes the System entry retirable (and clears that zone's Repairs issue).
+        try:
+            await _async_retire_system_entry(hass)
+        except Exception:  # noqa: BLE001 - never break the removal of the zone
+            _LOGGER.warning("SmartShading: retiring the System entry failed", exc_info=True)
 
 
 # ---------------------------------------------------------------------------
@@ -383,10 +418,10 @@ async def _async_remove_orphaned_system_entry(
     is deleted without suspending, so nothing can be added between that count and
     the deletion unless another task is queued on the entry's setup lock.  If a
     zone is there after all, the very same entry (id, data, options) is set up
-    again and nothing is removed.  The last resort for the narrow remaining case
-    is the heal at the end: a zone that found the System entry still present did
-    not recreate it.  Failures are logged and never propagate: they must not
-    disturb the removal of the zone that triggered this.
+    again and nothing is removed.  Nothing creates a System entry any more, so a
+    zone that appeared in that narrow window simply keeps working without one.
+    Failures are logged and never propagate: they must not disturb the removal of
+    the zone that triggered this.
     """
     try:
         if _zone_entries(hass, removed_entry_id):
@@ -412,30 +447,17 @@ async def _async_remove_orphaned_system_entry(
                 await hass.config_entries.async_remove(system.entry_id)
             except UnknownEntry:
                 continue                       # already gone (concurrent removal)
-        if _zone_entries(hass):
-            _ensure_system_entry(hass)
     except Exception:  # noqa: BLE001 - never break the zone removal
         _LOGGER.warning("SmartShading: removing the orphaned System entry failed", exc_info=True)
 
 
-def _ensure_system_entry(hass: HomeAssistant) -> None:
-    """Schedule creation of the SmartShading System entry if it doesn't exist.
-
-    Safe to call multiple times — the config flow's async_step_system aborts
-    immediately if a system entry already exists, so concurrent calls from
-    multiple zone entries on startup produce exactly one system entry.
-    """
-    existing = [
+def _system_entries(hass: HomeAssistant) -> list[ConfigEntry]:
+    """Every legacy System entry that exists (normally one, usually none)."""
+    return [
         e
         for e in hass.config_entries.async_entries(DOMAIN)
         if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM
     ]
-    if not existing:
-        hass.async_create_task(
-            hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": "system"}
-            )
-        )
 
 
 def _system_entry_data(hass: HomeAssistant) -> dict[str, Any] | None:
@@ -453,8 +475,8 @@ async def _async_setup_zone_entry(
     """Set up a SmartShading zone entry.
 
     Parses zone/window/cover-group config, starts the coordinator, sets up
-    forecast learning, and registers zone/window entities.  Also ensures the
-    SmartShading System entry exists (creates it if missing).
+    forecast learning, and registers zone/window entities.  Nothing here creates a
+    System entry any more; after setup the legacy one is retired if it can be.
     """
     entry_data = from_storage_dict(entry.data)
     _system_raw = _system_entry_data(hass)
@@ -621,9 +643,11 @@ async def _async_setup_zone_entry(
         target_position_adapter=coordinator.target_position_adapter,
     )
 
-    # Ensure the global SmartShading System entry exists.  On first-time setup
-    # this triggers its creation.  On subsequent reloads it is a no-op.
-    _ensure_system_entry(hass)
-
     await hass.config_entries.async_forward_entry_setups(entry, ZONE_PLATFORMS)
+    # A zone that just became independent (a blocker fixed without a restart) may make
+    # the legacy System entry retirable; a no-op when it is gone or still needed.
+    # A plain task, not an entry-bound background task: an entry unload must never cancel
+    # a retirement half way through its removal.
+    hass.async_create_task(
+        _async_retire_after_zone_setup(hass), "smartshading_retire_system_entry")
     return True

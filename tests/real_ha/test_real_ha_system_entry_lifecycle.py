@@ -5,6 +5,12 @@ Remove button.  It used to stay behind after the last zone was deleted, and the
 integration could not be uninstalled cleanly.  Real config entries, the real
 config-entries API, flow manager, entity/device registries and service registry.
 
+PA-2c.2: nothing creates the System entry any more and it is retired as soon as every
+zone is independent of it (tests/real_ha/test_real_ha_system_retirement.py).  This file keeps
+covering the legacy lifecycle of an install that still HAS a System entry (a zone that is
+not retirable yet, or a stored orphan): the retirement is switched off here by the autouse
+fixture below, so the orphan cleanup and the removal hook are exercised in isolation.
+
 Run with the rest of the real-HA suite (Linux, macOS or WSL)::
 
     python -m pytest tests/real_ha --confcutdir=tests/real_ha -q -rs
@@ -23,6 +29,7 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from homeassistant.config_entries import ConfigEntryDisabler, ConfigEntryState
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr
@@ -48,6 +55,15 @@ from custom_components.smartshading.models.window import WindowConfig
 from custom_components.smartshading.models.zone import ZoneConfig
 
 
+@pytest.fixture(autouse=True)
+def _legacy_install(monkeypatch):
+    """An install whose System entry is not retirable yet (PA-2c.2 retires it otherwise)."""
+    async def not_retirable(hass):
+        return "blocked"
+
+    monkeypatch.setattr("custom_components.smartshading._async_retire_system_entry", not_retirable)
+
+
 def _zone(entry_id: str, disabled_by=None) -> MockConfigEntry:
     zone = ZoneConfig(id=f"zone_{entry_id}", name=f"Zone {entry_id}")
     window = WindowConfig(
@@ -63,7 +79,10 @@ def _zone(entry_id: str, disabled_by=None) -> MockConfigEntry:
 
 
 async def _add_zone(hass, entry_id: str) -> MockConfigEntry:
+    """A zone next to the legacy System entry that older versions created for it."""
     hass.states.async_set(f"cover.test_{entry_id}", "closed", {"current_position": 0})
+    if not _systems(hass):
+        _system_entry().add_to_hass(hass)
     entry = _zone(entry_id)
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
@@ -139,54 +158,34 @@ def _assert_unrelated_untouched(hass, unrelated) -> None:
     assert hass.states.get("sensor.unrelated").state == "7"
 
 
-class TestCreation:
-    async def test_the_first_zone_creates_exactly_one_system_entry(self, hass) -> None:
-        await _add_zone(hass, "za")
-        systems = _systems(hass)
-        assert len(systems) == 1
-        assert systems[0].source == "system"
-        assert systems[0].state is ConfigEntryState.LOADED
+class TestNothingCreatesTheSystemEntry:
+    async def test_a_zone_never_creates_a_system_entry(self, hass) -> None:
+        _cover(hass, "za")
+        zone = _zone("za")
+        zone.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(zone.entry_id)
+        await hass.async_block_till_done()
+        assert _systems(hass) == [] and zone.state is ConfigEntryState.LOADED
 
-    async def test_two_zones_still_have_exactly_one_system_entry(self, hass) -> None:
-        await _add_zone(hass, "za")
-        await _add_zone(hass, "zb")
-        assert len(_systems(hass)) == 1 and len(_zones(hass)) == 2
-
-    async def test_zones_started_with_home_assistant_create_one_system_entry(self, hass) -> None:
-        """The complete-domain start-up: Home Assistant sets every stored entry up."""
+    async def test_zones_started_with_home_assistant_create_no_system_entry(self, hass) -> None:
         _cover(hass, "za", "zb", "zc")
         entries = [_zone(name) for name in ("za", "zb", "zc")]
         for entry in entries:
             entry.add_to_hass(hass)
-
         assert await async_setup_component(hass, DOMAIN, {})
         await hass.async_block_till_done()
-
-        assert len(_systems(hass)) == 1 and _systems(hass)[0].state is ConfigEntryState.LOADED
-        assert sorted(e.entry_id for e in _zones(hass)) == ["za", "zb", "zc"]
+        assert _systems(hass) == []
         assert all(e.state is ConfigEntryState.LOADED for e in entries)
 
-    async def test_zones_set_up_concurrently_create_one_system_entry(self, hass) -> None:
-        """Three first zones race to create the System entry.  The domain is loaded
-        first, so each explicit ``async_setup`` really runs on its own (own setup lock)
-        and none of them is set up implicitly by another."""
+    async def test_zones_set_up_concurrently_create_no_system_entry(self, hass) -> None:
         _cover(hass, "za", "zb", "zc")
         await _load_domain(hass)
         entries = [_zone(name) for name in ("za", "zb", "zc")]
         for entry in entries:
             entry.add_to_hass(hass)
-
         results = await asyncio.gather(*(hass.config_entries.async_setup(e.entry_id) for e in entries))
         await hass.async_block_till_done()
-
-        assert results == [True, True, True]
-        assert len(_systems(hass)) == 1, "the racing zones created exactly one System entry"
-        assert _systems(hass)[0].state is ConfigEntryState.LOADED
-        assert _systems(hass)[0].source == "system"
-        assert sorted(e.entry_id for e in _zones(hass)) == ["za", "zb", "zc"]
-        assert all(e.state is ConfigEntryState.LOADED for e in entries)
-
-        # and a clean end: nothing of the three zones outlives their removal
+        assert results == [True, True, True] and _systems(hass) == []
         coordinators = [e.runtime_data.coordinator for e in entries]
         await asyncio.gather(*(hass.config_entries.async_remove(e.entry_id) for e in entries))
         await hass.async_block_till_done()
@@ -194,24 +193,13 @@ class TestCreation:
         for coordinator in coordinators:
             _assert_released(coordinator)
 
-
-    async def test_system_flows_started_together_create_exactly_one_entry(self, hass) -> None:
-        """The flow's own guard.  Zones normally find the System entry through
-        ``_ensure_system_entry``; should several of them ask for it in the same moment,
-        the flow itself lets exactly one of the requests create it."""
+    async def test_a_system_flow_can_no_longer_be_started(self, hass) -> None:
         await _load_domain(hass)
-        _zone("za").add_to_hass(hass)           # a zone exists (not set up): no orphan removal
-
-        results = await asyncio.gather(*(
-            hass.config_entries.flow.async_init(DOMAIN, context={"source": "system"})
-            for _ in range(3)))
+        _zone("za").add_to_hass(hass)
+        with pytest.raises(Exception):
+            await hass.config_entries.flow.async_init(DOMAIN, context={"source": "system"})
         await hass.async_block_till_done()
-
-        types = [r["type"] for r in results]
-        assert types.count(FlowResultType.CREATE_ENTRY) == 1, results
-        assert types.count(FlowResultType.ABORT) == 2, results
-        assert {r["reason"] for r in results if r["type"] is FlowResultType.ABORT} == {"system_already_exists"}
-        assert len(_systems(hass)) == 1 and _systems(hass)[0].state is ConfigEntryState.LOADED
+        assert _systems(hass) == []
 
 
 class TestRemoval:
@@ -281,10 +269,9 @@ class TestRaceAndReinstall:
         assert len(_systems(hass)) == 1
         assert _systems(hass)[0].state is ConfigEntryState.LOADED
 
-    async def test_a_zone_added_while_the_system_entry_is_being_removed_gets_one_again(self, hass) -> None:
-        """Last resort: a zone that appears after the final recount, with the removal
-        already called, found the System entry still present and did not recreate it,
-        so the integration heals by creating one (the original is gone by then)."""
+    async def test_a_zone_added_while_the_system_entry_is_being_removed_is_not_given_a_new_one(self, hass) -> None:
+        """A zone that appears after the final recount, with the removal already called, simply
+        keeps working: nothing recreates the System entry any more (zones do not need it)."""
         a = await _add_zone(hass, "za")
         hass.states.async_set("cover.test_zb", "closed", {"current_position": 0})
         b = _zone("zb")
@@ -294,24 +281,28 @@ class TestRaceAndReinstall:
             if entry_id != "za":                 # the System entry is still listed: a zone arrives now
                 b.add_to_hass(hass)
                 await hass.config_entries.async_setup(b.entry_id)
-                assert len(_systems(hass)) == 1, "the new zone saw it and did not create another"
+                assert len(_systems(hass)) == 1
             return await real_remove(entry_id)
 
         with patch.object(hass.config_entries, "async_remove", add_then_remove):
             await real_remove(a.entry_id)
             await hass.async_block_till_done()
         await hass.async_block_till_done()
-        assert [e.entry_id for e in _zones(hass)] == ["zb"]
-        assert len(_systems(hass)) == 1
+        assert [e.entry_id for e in _zones(hass)] == ["zb"] and b.state is ConfigEntryState.LOADED
+        assert _systems(hass) == []
 
-    async def test_reinstalling_after_complete_removal_works(self, hass) -> None:
+    async def test_reinstalling_after_complete_removal_works_without_a_system_entry(self, hass) -> None:
         a = await _add_zone(hass, "za")
         await _remove(hass, a.entry_id)
         assert hass.config_entries.async_entries(DOMAIN) == []
 
-        await _add_zone(hass, "zb")
+        _cover(hass, "zb")
+        b = _zone("zb")
+        b.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(b.entry_id)
+        await hass.async_block_till_done()
 
-        assert len(_systems(hass)) == 1 and _systems(hass)[0].state is ConfigEntryState.LOADED
+        assert _systems(hass) == [] and b.state is ConfigEntryState.LOADED
         assert hass.services.has_service(DOMAIN, svc.SERVICE_CLEAR_MANUAL_OVERRIDE)
 
 
@@ -614,11 +605,10 @@ class TestRecursionAndFailures:
         from custom_components.smartshading import async_remove_entry
 
         with patch("custom_components.smartshading._async_remove_orphaned_system_entry",
-                   AsyncMock()) as hook, patch(
-                "custom_components.smartshading._ensure_system_entry") as ensure:
+                   AsyncMock()) as hook:
             await async_remove_entry(hass, system)
         hook.assert_not_called()
-        ensure.assert_not_called()
+        assert _systems(hass) == [system]
         assert a.state is ConfigEntryState.LOADED
 
     async def test_removing_the_system_entry_directly_leaves_the_zone_alone(self, hass) -> None:
@@ -627,6 +617,9 @@ class TestRecursionAndFailures:
         assert a.state is ConfigEntryState.LOADED
         assert [e.entry_id for e in _zones(hass)] == ["za"]
         assert _systems(hass) == []                  # nothing recreates it behind the caller's back
+        await hass.config_entries.async_reload(a.entry_id)
+        await hass.async_block_till_done()
+        assert _systems(hass) == []
 
     async def test_removal_is_requested_exactly_once_for_the_last_zone(self, hass) -> None:
         a = await _add_zone(hass, "za")

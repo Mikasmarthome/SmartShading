@@ -221,21 +221,21 @@ class TestZoneSetupReadsTheSystemEntryData:
         await _setup(hass, zone)
         assert dict(zone.data) == before  # stored config is not the effective config
 
-    async def test_a_missing_system_entry_means_defaults_at_the_first_setup(self, hass) -> None:
-        """Zone setup schedules creation of the System entry; the zone resolved its values
-        BEFORE it existed, so the first setup runs with the code defaults."""
+    async def test_a_missing_system_entry_means_defaults_and_none_is_created(self, hass) -> None:
+        """PA-2c.2: zone setup no longer creates a System entry; the zone runs with the code
+        defaults (the very same values the old empty System entry produced)."""
         assert _systems(hass) == []
         zone = _zone("a", override_policy=None, absence_delay=20, absence_flag=True)
         await _setup(hass, zone)
         assert _effective(zone) == _DEFAULTS
-        created = _systems(hass)
-        assert len(created) == 1
-        assert dict(created[0].data) == {CONF_ENTRY_TYPE: ENTRY_TYPE_SYSTEM}  # created empty
+        assert _systems(hass) == []
 
     async def test_a_present_but_empty_system_entry_means_defaults_after_a_reload(self, hass) -> None:
+        system = _system(data={CONF_ENTRY_TYPE: ENTRY_TYPE_SYSTEM})
+        system.add_to_hass(hass)
         zone = _zone("a", override_policy=None, absence_delay=20, absence_flag=True)
         await _setup(hass, zone)
-        assert len(_systems(hass)) == 1
+        assert _effective(zone) == _DEFAULTS
         assert await hass.config_entries.async_reload(zone.entry_id)
         await hass.async_block_till_done()
         assert _effective(zone) == _DEFAULTS

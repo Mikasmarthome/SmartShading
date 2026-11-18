@@ -117,6 +117,17 @@ def _system_untouched(hass) -> None:
     assert dict(system.data) == _SYSTEM_DATA and system.minor_version == 1
 
 
+@pytest.fixture(autouse=True)
+def _assessment_only(monkeypatch):
+    """PA-2c.1 pins the ASSESSMENT (eligibility, recovery, closed flow paths).  The retirement
+    that acts on it (PA-2c.2) is covered by test_real_ha_system_retirement.py and is switched
+    off here, so these tests keep examining the System entry next to fully independent zones."""
+    async def not_retired(_hass):
+        return "blocked"
+
+    monkeypatch.setattr(ss, "_async_retire_system_entry", not_retired)
+
+
 @pytest.fixture
 def writes(monkeypatch, hass):
     log: list[tuple[str, list[str]]] = []
@@ -229,7 +240,7 @@ class TestRetirementEligibility:
         first = [_gate(hass) for _ in range(3)]
         assert first[0] == first[1] == first[2] and writes == []
 
-    async def test_independent_zones_never_cause_the_system_entry_to_be_removed(self, hass, writes) -> None:
+    async def test_the_assessment_alone_never_removes_the_system_entry(self, hass, writes) -> None:
         _add(hass, _independent_zone("a"), _independent_zone("b"), _system())
         assert await _start(hass)
         assert _gate(hass)["eligible"] is True

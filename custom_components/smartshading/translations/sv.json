@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Skydd tilldelat två gånger med identiska inställningar",
       "description": "Skyddet {cover} förekommer flera gånger med identiska inställningar: {locations}. SmartShading styr det bara från en av dessa tilldelningar. Ta bort dubbletten i SmartShading-alternativen så att varje skydd bara tilldelas en gång."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Gamla systeminställningar används fortfarande",
+      "description": "SmartShading-zonen {zone} använder fortfarande de gamla gemensamma systeminställningarna, eller så kunde dess inställningar inte verifieras, därför behålls den gamla systemposten. Inget har ändrats automatiskt och zonen fortsätter att fungera. Öppna zonens SmartShading-alternativ, gå igenom stegen för manuell åsidosättning och närvaro, spara varje steg en gång och starta om Home Assistant. Om det inte går, ta bort zonen och lägg till den igen."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Zoninställningarna kunde inte sparas",
+      "description": "SmartShading kunde inte spara de konverterade inställningarna för zonen {zone} eftersom det misslyckades att skriva konfigurationen. Den gamla systemposten behålls och zonen fortsätter oförändrad. Kontrollera ledigt diskutrymme och filbehörigheter för Home Assistant-konfigurationen och starta om Home Assistant; konverteringen försöks automatiskt igen."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zon sparad av en nyare version",
+      "description": "Zonen {zone} sparades av en nyare SmartShading-version än den installerade, så SmartShading kan inte bedöma den och behåller den gamla systemposten. Uppdatera SmartShading till den senaste versionen."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Den gamla systemposten kunde inte tas bort",
+      "description": "SmartShading kunde inte ta bort den gamla systemposten som inte längre behövs (se Home Assistant-loggen). Den förblir aktiv och ingen zon påverkas. Starta om Home Assistant för att försöka igen; om problemet kvarstår, rapportera det tillsammans med loggutdraget."
     }
   }
 }

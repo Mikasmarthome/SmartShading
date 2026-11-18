@@ -1285,29 +1285,6 @@ class SmartShadingConfigFlow(_ScheduleWizard, config_entries.ConfigFlow, domain=
             description_placeholders={"window_count": str(len(self._windows))},
         )
 
-    # -- System entry auto-creation --
-
-    async def async_step_system(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Auto-create the SmartShading System entry (no user interaction).
-
-        Triggered by _ensure_system_entry() in __init__.py when a zone entry
-        is set up and no system entry exists yet.  Aborts immediately if a
-        system entry already exists (race-condition guard for multi-zone restarts).
-        """
-        existing = [
-            e
-            for e in self.hass.config_entries.async_entries(DOMAIN)
-            if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM
-        ]
-        if existing:
-            return self.async_abort(reason="system_already_exists")
-        return self.async_create_entry(
-            title="SmartShading System",
-            data={CONF_ENTRY_TYPE: ENTRY_TYPE_SYSTEM},
-        )
-
     @classmethod
     def async_get_options_flow(
         cls, config_entry: config_entries.ConfigEntry

@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Dekke tilordnet to ganger med identiske innstillinger",
       "description": "Dekket {cover} forekommer flere ganger med identiske innstillinger: {locations}. SmartShading styrer det bare fra én av disse tilordningene. Fjern duplikatet i SmartShading-alternativene slik at hvert dekke bare tilordnes én gang."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Gamle systeminnstillinger er fortsatt i bruk",
+      "description": "SmartShading-sonen {zone} bruker fortsatt de gamle felles systeminnstillingene, eller innstillingene kunne ikke bekreftes, så den gamle systemoppføringen beholdes. Ingenting er endret automatisk, og sonen fortsetter å fungere. Åpne SmartShading-alternativene for sonen, gå gjennom trinnene for manuell overstyring og tilstedeværelse, lagre hvert trinn én gang og start Home Assistant på nytt. Hvis det ikke er mulig, fjern sonen og legg den til på nytt."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Soneinnstillingene kunne ikke lagres",
+      "description": "SmartShading kunne ikke lagre de konverterte innstillingene for sonen {zone} fordi skriving av konfigurasjonen mislyktes. Den gamle systemoppføringen beholdes, og sonen fortsetter uendret. Sjekk ledig diskplass og filtillatelser for Home Assistant-konfigurasjonen, og start Home Assistant på nytt; konverteringen prøves automatisk igjen."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Sone lagret av en nyere versjon",
+      "description": "Sonen {zone} ble lagret av en nyere SmartShading-versjon enn den installerte, så SmartShading kan ikke vurdere den og beholder den gamle systemoppføringen. Oppdater SmartShading til nyeste versjon."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Den gamle systemoppføringen kunne ikke fjernes",
+      "description": "SmartShading kunne ikke fjerne den gamle systemoppføringen som ikke lenger trengs (se Home Assistant-loggen). Den forblir aktiv, og ingen soner påvirkes. Start Home Assistant på nytt for å prøve igjen; hvis problemet vedvarer, meld det sammen med loggutdraget."
     }
   }
 }

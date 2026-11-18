@@ -193,20 +193,30 @@ class TestMaterialization:
 
 
 class TestSystemEntryStaysUntouched:
-    async def test_the_system_entry_is_neither_changed_nor_retired(self, hass, writes) -> None:
+    async def test_the_system_entry_is_never_written_and_is_retired_only_after_the_migration(self, hass, writes) -> None:
+        # PA-2c.2: once every zone is materialized and verified the legacy System entry is removed
+        # (through the supported API); it is never written to, and it was the migration's source.
         system = _system()
-        _add(hass, _zone("a", override_policy=None, absence_flag=True), system)
+        zone = _zone("a", override_policy=None, absence_flag=True)
+        _add(hass, zone, system)
+        data_before = dict(system.data)
         assert await _start(hass)
-        assert hass.config_entries.async_get_entry("system") is system
-        assert system.state is ConfigEntryState.LOADED
-        assert dict(system.data) == _SYSTEM_DATA and (system.version, system.minor_version) == (1, 1)
+        assert _migrated(zone) and zone.state is ConfigEntryState.LOADED
+        assert hass.config_entries.async_get_entry("system") is None
+        assert data_before == _SYSTEM_DATA and (system.version, system.minor_version) == (1, 1)
         assert all(w[0] != "system" for w in writes)
+        assert _effective(zone) == _SYSTEM_EFFECTIVE            # the values came from the System entry
 
-    async def test_a_changed_system_default_no_longer_reaches_a_migrated_zone(self, hass) -> None:
+    async def test_a_changed_system_default_no_longer_reaches_a_migrated_zone(self, hass, monkeypatch) -> None:
         """Documented consequence: once materialized the zone owns its values."""
         system = _system()
         zone = _zone("a", override_policy=None, absence_flag=True)
         _add(hass, zone, system)
+
+        async def not_retired(_hass):                  # keep the System entry to change it
+            return "blocked"
+
+        monkeypatch.setattr(ss, "_async_retire_system_entry", not_retired)
         assert await _start(hass)
         hass.config_entries.async_update_entry(system, data={**system.data, "system_absence_delay_min": 5})
         await hass.config_entries.async_reload("a")
@@ -227,20 +237,20 @@ class TestSystemEntryStaysUntouched:
 
 
 class TestFailureContainment:
-    async def test_a_missing_system_entry_leaves_a_dependent_zone_unmigrated_until_one_exists(self, hass) -> None:
+    async def test_a_missing_system_entry_leaves_a_dependent_zone_unmigrated_and_none_is_created(self, hass) -> None:
         zone = _zone("a", override_policy=None, absence_flag=True)
         explicit = _zone("b")
         _add(hass, zone, explicit)
         assert await _start(hass)
-        assert zone.minor_version == 1 and not _migrated(zone)           # cannot be judged yet
+        assert zone.minor_version == 1 and not _migrated(zone)           # cannot be judged
         assert _migrated(explicit)                                       # independent zone unaffected
         assert zone.state is ConfigEntryState.LOADED and _effective(zone) == _DEFAULTS
-        # zone setup created the (empty) System entry: now the next setup can judge it
-        assert len([e for e in hass.config_entries.async_entries(DOMAIN)
-                    if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM]) == 1
+        # PA-2c.2: nothing recreates the System entry, so the zone stays unmigrated (and keeps the gate closed)
+        assert not [e for e in hass.config_entries.async_entries(DOMAIN)
+                    if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM]
         assert await hass.config_entries.async_reload("a")
         await hass.async_block_till_done()
-        assert _migrated(zone) and _effective(zone) == _DEFAULTS
+        assert zone.minor_version == 1 and not _migrated(zone) and _effective(zone) == _DEFAULTS
 
     @pytest.mark.parametrize("shape,running", [
         (dict(override_policy="manual"), None),                          # cannot even be resolved

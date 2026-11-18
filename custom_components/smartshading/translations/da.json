@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Dæksel tildelt to gange med identiske indstillinger",
       "description": "Dækslet {cover} optræder flere gange med identiske indstillinger: {locations}. SmartShading styrer det kun fra én af disse tildelinger. Fjern dubletten i SmartShading-indstillingerne, så hvert dæksel kun tildeles én gang."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Gamle systemindstillinger er stadig i brug",
+      "description": "SmartShading-zonen {zone} bruger stadig de gamle fælles systemindstillinger, eller dens indstillinger kunne ikke bekræftes, så den gamle systempost beholdes. Intet er ændret automatisk, og zonen fortsætter med at virke. Åbn zonens SmartShading-indstillinger, gå gennem trinnene for manuel tilsidesættelse og tilstedeværelse, gem hvert trin én gang, og genstart Home Assistant. Hvis det ikke er muligt, fjern zonen og tilføj den igen."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Zoneindstillinger kunne ikke gemmes",
+      "description": "SmartShading kunne ikke gemme de konverterede indstillinger for zonen {zone}, fordi skrivning af konfigurationen mislykkedes. Den gamle systempost beholdes, og zonen kører uændret videre. Tjek ledig diskplads og filrettigheder for Home Assistant-konfigurationen, og genstart Home Assistant; konverteringen forsøges automatisk igen."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zone gemt af en nyere version",
+      "description": "Zonen {zone} blev gemt af en nyere SmartShading-version end den installerede, så SmartShading kan ikke vurdere den og beholder den gamle systempost. Opdater SmartShading til den nyeste version."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Den gamle systempost kunne ikke fjernes",
+      "description": "SmartShading kunne ikke fjerne den gamle systempost, som ikke længere er nødvendig (se Home Assistant-loggen). Den forbliver aktiv, og ingen zone er berørt. Genstart Home Assistant for at prøve igen; hvis problemet fortsætter, så meld det sammen med logudtrækket."
     }
   }
 }

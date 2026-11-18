@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "遮阳设备被重复分配且设置相同",
       "description": "遮阳设备 {cover} 以相同设置多次出现：{locations}。SmartShading 仅通过其中一个分配进行控制。请在 SmartShading 选项中删除重复分配，使每个遮阳设备只分配一次。"
+    },
+    "system_retirement_zone_blocked": {
+      "title": "仍在使用旧的系统设置",
+      "description": "SmartShading 区域 {zone} 仍依赖旧的共享系统设置，或其设置无法验证，因此保留旧的系统条目。未自动更改任何内容，该区域继续正常工作。请打开该区域的 SmartShading 选项，依次查看手动覆盖和人员在场步骤，各保存一次，然后重启 Home Assistant。如果无法做到，请删除该区域并重新添加。"
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "无法保存区域设置",
+      "description": "由于写入配置失败，SmartShading 无法保存区域 {zone} 转换后的设置。旧的系统条目已保留，该区域保持原样继续运行。请检查磁盘可用空间和 Home Assistant 配置的文件权限，然后重启 Home Assistant；转换将自动重试。"
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "区域由更新版本保存",
+      "description": "区域 {zone} 由比已安装版本更新的 SmartShading 保存，因此 SmartShading 无法判断它，并保留旧的系统条目。请将 SmartShading 更新到最新版本。"
+    },
+    "system_retirement_removal_failed": {
+      "title": "无法移除旧的系统条目",
+      "description": "SmartShading 无法移除不再需要的旧系统条目（请查看 Home Assistant 日志）。它保持启用，所有区域不受影响。请重启 Home Assistant 重试；如果问题仍然存在，请附上日志片段进行反馈。"
     }
   }
 }

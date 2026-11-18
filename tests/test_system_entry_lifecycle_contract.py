@@ -49,15 +49,10 @@ class TestSystemEntryLifecycleContract:
         ]
         assert sorted(callers) == ["_async_setup_system_entry", "async_remove_entry"]
 
-    def test_entry_creation_stays_in_the_zone_setup_path(self):
-        callers = [
-            node.name for node in ast.walk(_TREE)
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-            and node.name != "_ensure_system_entry"
-            and "_ensure_system_entry(" in ast.get_source_segment(_SRC, node)
-        ]
-        # the zone setup, and the one-time heal after a removal raced with a new zone
-        assert sorted(callers) == ["_async_remove_orphaned_system_entry", "_async_setup_zone_entry"]
+    def test_nothing_creates_a_system_entry_any_more(self):
+        # PA-2c.2: the legacy System entry is retired, never (re)created.
+        assert "_ensure_system_entry" not in _SRC
+        assert "flow.async_init" not in _SRC
 
     def test_zones_are_counted_without_ignored_entries(self):
         body = _segment("_zone_entries")

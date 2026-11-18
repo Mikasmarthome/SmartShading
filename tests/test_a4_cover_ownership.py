@@ -391,7 +391,7 @@ class TestTranslations:
         data = self._all()
         assert len(data) == 25
         for name, d in data.items():
-            assert set(d["issues"]) == {
+            assert {k for k in d["issues"] if k.startswith("duplicate_cover")} == {
                 "duplicate_cover_conflict", "duplicate_cover_conflict_no_safety", "duplicate_cover_identical"}, name
             for issue in d["issues"].values():
                 assert issue["title"].strip() and issue["description"].strip()
@@ -401,5 +401,7 @@ class TestTranslations:
     def test_placeholders_are_preserved_in_every_language(self):
         for name, d in self._all().items():
             for key, issue in d["issues"].items():
+                if not key.startswith("duplicate_cover"):
+                    continue          # the System-retirement issues have their own placeholders
                 assert "{cover}" in issue["description"] and "{locations}" in issue["description"], (name, key)
                 assert "{" not in issue["title"], (name, key)

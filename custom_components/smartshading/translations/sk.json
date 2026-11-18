@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Zakrytie priradené dvakrát s rovnakým nastavením",
       "description": "Zakrytie {cover} sa vyskytuje viackrát s rovnakým nastavením: {locations}. SmartShading ho ovláda iba z jedného z týchto priradení. Odstráňte duplicitu v možnostiach SmartShading, aby bolo každé zakrytie priradené iba raz."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Staré nastavenia Systému sa stále používajú",
+      "description": "Zóna SmartShading {zone} stále využíva staré zdieľané nastavenia Systému, alebo sa jej nastavenia nepodarilo overiť, preto sa stará položka Systému zachováva. Nič sa automaticky nezmenilo a zóna naďalej funguje. Otvorte možnosti SmartShading tejto zóny, prejdite kroky ručného prepísania a prítomnosti, každý raz uložte a reštartujte Home Assistant. Ak to nejde, zónu odstráňte a pridajte znova."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Nastavenia zóny sa nepodarilo uložiť",
+      "description": "SmartShading nemohol uložiť prevedené nastavenia zóny {zone}, pretože zápis konfigurácie zlyhal. Stará položka Systému sa zachováva a zóna beží bez zmeny. Skontrolujte voľné miesto na disku a oprávnenia súborov konfigurácie Home Assistant a reštartujte Home Assistant; prevod sa automaticky zopakuje."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zóna uložená novšou verziou",
+      "description": "Zónu {zone} uložila novšia verzia SmartShading, než je nainštalovaná, takže ju SmartShading nemôže posúdiť a ponecháva starú položku Systému. Aktualizujte SmartShading na najnovšiu verziu."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Starú položku Systému sa nepodarilo odstrániť",
+      "description": "SmartShading nemohol odstrániť starú, už nepotrebnú položku Systému (pozrite denník Home Assistant). Zostáva aktívna a žiadna zóna nie je dotknutá. Reštartujte Home Assistant a skúste to znova; ak problém pretrváva, nahláste ho s výňatkom z denníka."
     }
   }
 }

@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Cover doppelt mit identischen Einstellungen zugeordnet",
       "description": "Das Cover {cover} kommt mehrfach mit identischen Einstellungen vor: {locations}. SmartShading steuert es nur aus einer dieser Zuordnungen. Die doppelte Zuordnung in den SmartShading-Optionen entfernen, damit jedes Cover nur einmal zugeordnet ist."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Alte System-Einstellungen noch in Benutzung",
+      "description": "Die SmartShading-Zone {zone} verwendet noch die alten gemeinsamen System-Einstellungen oder ihre Einstellungen konnten nicht überprüft werden; deshalb bleibt der alte System-Eintrag erhalten. Es wurde nichts automatisch geändert, die Zone arbeitet weiter. Öffne die SmartShading-Optionen der Zone, gehe die Schritte für manuelle Übersteuerung und Anwesenheit durch, speichere jeden einmal und starte Home Assistant neu. Ist das nicht möglich, entferne die Zone und lege sie neu an."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Zoneneinstellungen konnten nicht gespeichert werden",
+      "description": "SmartShading konnte die umgestellten Einstellungen der Zone {zone} nicht speichern, weil das Schreiben der Konfiguration fehlgeschlagen ist. Der alte System-Eintrag bleibt erhalten und die Zone läuft unverändert weiter. Prüfe freien Speicherplatz und Dateirechte der Home-Assistant-Konfiguration und starte Home Assistant neu; die Umstellung wird automatisch erneut versucht."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zone von neuerer Version gespeichert",
+      "description": "Die Zone {zone} wurde von einer neueren SmartShading-Version gespeichert als der installierten. SmartShading kann sie deshalb nicht beurteilen und behält den alten System-Eintrag. Aktualisiere SmartShading auf die neueste Version."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Alter System-Eintrag konnte nicht entfernt werden",
+      "description": "SmartShading konnte den nicht mehr benötigten alten System-Eintrag nicht entfernen (Details im Home-Assistant-Log). Er bleibt aktiv, keine Zone ist betroffen. Starte Home Assistant neu, um es erneut zu versuchen; bleibt das Problem bestehen, melde es mit dem Log-Auszug."
     }
   }
 }

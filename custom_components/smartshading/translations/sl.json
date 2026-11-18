@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Senčilo dvakrat dodeljeno z enakimi nastavitvami",
       "description": "Senčilo {cover} se pojavi večkrat z enakimi nastavitvami: {locations}. SmartShading ga upravlja samo iz ene od teh dodelitev. Odstranite dvojnik v možnostih SmartShading, da je vsako senčilo dodeljeno samo enkrat."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Stare nastavitve Sistema so še v uporabi",
+      "description": "Cona SmartShading {zone} še vedno uporablja stare skupne nastavitve Sistema ali pa njenih nastavitev ni bilo mogoče preveriti, zato se stari vnos Sistema ohrani. Nič ni bilo samodejno spremenjeno in cona še naprej deluje. Odprite možnosti SmartShading te cone, preglejte koraka ročnega preglasitve in prisotnosti, vsakega enkrat shranite in znova zaženite Home Assistant. Če to ni mogoče, odstranite cono in jo dodajte znova."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Nastavitev cone ni bilo mogoče shraniti",
+      "description": "SmartShading ni mogel shraniti pretvorjenih nastavitev cone {zone}, ker pisanje konfiguracije ni uspelo. Stari vnos Sistema se ohrani in cona deluje nespremenjeno. Preverite prosti prostor na disku in dovoljenja datotek konfiguracije Home Assistant ter znova zaženite Home Assistant; pretvorba se samodejno ponovi."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Cono je shranila novejša različica",
+      "description": "Cono {zone} je shranila novejša različica SmartShading od nameščene, zato je SmartShading ne more oceniti in ohrani stari vnos Sistema. Posodobite SmartShading na najnovejšo različico."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Starega vnosa Sistema ni bilo mogoče odstraniti",
+      "description": "SmartShading ni mogel odstraniti starega, nepotrebnega vnosa Sistema (glejte dnevnik Home Assistant). Ostane aktiven in nobena cona ni prizadeta. Znova zaženite Home Assistant, da poskusite znova; če težava ostane, jo prijavite z izvlečkom dnevnika."
     }
   }
 }

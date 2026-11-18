@@ -192,8 +192,8 @@ def test_checking_twice_gives_the_same_answer_and_changes_nothing() -> None:
 
 # --- the assessment over several entries ---------------------------------------------------------
 
-def _entry(entry_id, data, minor=2, disabled=None):
-    return SimpleNamespace(entry_id=entry_id, data=data, minor_version=minor, disabled_by=disabled)
+def _entry(entry_id, data, minor=2, disabled=None, version=1):
+    return SimpleNamespace(entry_id=entry_id, data=data, minor_version=minor, disabled_by=disabled, version=version)
 
 
 def test_all_independent_zones_open_the_gate() -> None:
@@ -354,11 +354,11 @@ def test_the_eligibility_module_is_side_effect_free_and_swallows_nothing() -> No
 def test_the_retirement_helpers_never_remove_or_unload_the_system_entry() -> None:
     src = (_ROOT / "__init__.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
-    for name in ("_assess_system_retirement", "_log_retirement_gate"):
+    for name in ("_assess_system_retirement",):
         fn = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == name)
         assert not {c.func.attr for c in ast.walk(fn)
                     if isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)} & _FORBIDDEN
-    assert "_assess_system_retirement(hass)" in src and "_zone_entries(hass)" in src
+    assert "assess=_assess_system_retirement" in src and "_zone_entries(hass)" in src
 
 
 def test_both_gate_steps_and_the_structure_save_are_guarded_in_the_options_flow() -> None:

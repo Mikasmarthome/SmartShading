@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Peite liitetty kahdesti identtisillä asetuksilla",
       "description": "Peite {cover} esiintyy useammin kuin kerran identtisillä asetuksilla: {locations}. SmartShading ohjaa sitä vain yhdestä näistä liitoksista. Poista kaksoiskappale SmartShading-asetuksista, jotta jokainen peite liitetään vain kerran."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Vanhat järjestelmäasetukset ovat yhä käytössä",
+      "description": "SmartShading-alue {zone} nojaa yhä vanhoihin yhteisiin järjestelmäasetuksiin, tai sen asetuksia ei voitu varmistaa, joten vanha järjestelmämerkintä säilytetään. Mitään ei muutettu automaattisesti ja alue toimii edelleen. Avaa alueen SmartShading-asetukset, käy läpi manuaalisen ohituksen ja läsnäolon vaiheet, tallenna kumpikin kerran ja käynnistä Home Assistant uudelleen. Jos se ei onnistu, poista alue ja lisää se uudelleen."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Alueen asetuksia ei voitu tallentaa",
+      "description": "SmartShading ei voinut tallentaa alueen {zone} muunnettuja asetuksia, koska asetusten kirjoitus epäonnistui. Vanha järjestelmämerkintä säilytetään ja alue toimii muuttumattomana. Tarkista vapaa levytila ja Home Assistantin asetustiedostojen käyttöoikeudet ja käynnistä Home Assistant uudelleen; muunnosta yritetään automaattisesti uudelleen."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Uudempi versio tallensi alueen",
+      "description": "Alueen {zone} tallensi uudempi SmartShading-versio kuin asennettu, joten SmartShading ei voi arvioida sitä ja säilyttää vanhan järjestelmämerkinnän. Päivitä SmartShading uusimpaan versioon."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Vanhaa järjestelmämerkintää ei voitu poistaa",
+      "description": "SmartShading ei voinut poistaa vanhaa, enää tarpeetonta järjestelmämerkintää (katso Home Assistantin loki). Se pysyy aktiivisena eikä mikään alue ole vaikutuksen alaisena. Käynnistä Home Assistant uudelleen yrittääksesi uudelleen; jos ongelma jatkuu, ilmoita siitä lokiotteen kanssa."
     }
   }
 }

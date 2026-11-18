@@ -49,6 +49,11 @@ class ZoneMigrationError(Exception):
     """A zone's settings could not be materialized; the zone stays unmigrated."""
 
 
+class ZoneMigrationPersistenceError(ZoneMigrationError):
+    """The verified settings could not be persisted (the write failed or did not verify);
+    the zone was rolled back to exactly what it was."""
+
+
 class ZoneMigrationDeferred(ZoneMigrationError):
     """Not an error: the zone cannot be judged yet (its System defaults are not available)."""
 
@@ -209,8 +214,8 @@ def migrate_zone_entry(
                 "SmartShading: %s was migrated although the update reported %r", entry.entry_id, err)
             return True
         _restore(hass, entry, original, original_minor)
-        raise ZoneMigrationError(f"writing the migrated settings failed: {err!r}") from err
+        raise ZoneMigrationPersistenceError(f"writing the migrated settings failed: {err!r}") from err
     if not _is_migrated(entry, original, system_raw):
         _restore(hass, entry, original, original_minor)
-        raise ZoneMigrationError("the persisted settings did not verify; rolled back")
+        raise ZoneMigrationPersistenceError("the persisted settings did not verify; rolled back")
     return True

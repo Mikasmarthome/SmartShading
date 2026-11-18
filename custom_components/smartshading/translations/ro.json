@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Acoperire atribuită de două ori cu setări identice",
       "description": "Acoperirea {cover} apare de mai multe ori cu setări identice: {locations}. SmartShading o controlează doar dintr-una dintre aceste atribuiri. Eliminați duplicatul în opțiunile SmartShading, astfel încât fiecare acoperire să fie atribuită o singură dată."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Setările vechi ale Sistemului sunt încă în uz",
+      "description": "Zona SmartShading {zone} depinde încă de vechile setări comune ale Sistemului sau setările ei nu au putut fi verificate, de aceea vechea intrare de Sistem este păstrată. Nimic nu a fost modificat automat, iar zona continuă să funcționeze. Deschideți opțiunile SmartShading ale zonei, parcurgeți pașii pentru suprascriere manuală și prezență, salvați fiecare o dată și reporniți Home Assistant. Dacă nu este posibil, eliminați zona și adăugați-o din nou."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Setările zonei nu au putut fi salvate",
+      "description": "SmartShading nu a putut salva setările convertite ale zonei {zone}, deoarece scrierea configurației a eșuat. Vechea intrare de Sistem este păstrată, iar zona continuă nemodificată. Verificați spațiul liber pe disc și permisiunile fișierelor configurației Home Assistant și reporniți Home Assistant; conversia va fi reîncercată automat."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zonă salvată de o versiune mai nouă",
+      "description": "Zona {zone} a fost salvată de o versiune SmartShading mai nouă decât cea instalată, deci SmartShading nu o poate evalua și păstrează vechea intrare de Sistem. Actualizați SmartShading la cea mai recentă versiune."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Vechea intrare de Sistem nu a putut fi eliminată",
+      "description": "SmartShading nu a putut elimina vechea intrare de Sistem care nu mai este necesară (consultați jurnalul Home Assistant). Rămâne activă și nicio zonă nu este afectată. Reporniți Home Assistant pentru a încerca din nou; dacă problema persistă, raportați-o împreună cu extrasul din jurnal."
     }
   }
 }

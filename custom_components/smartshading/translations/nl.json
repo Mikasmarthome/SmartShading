@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Afdekking twee keer toegewezen met identieke instellingen",
       "description": "De afdekking {cover} komt meerdere keren voor met identieke instellingen: {locations}. SmartShading bestuurt haar vanuit slechts één van deze toewijzingen. Verwijder de dubbele toewijzing in de SmartShading-opties zodat elke afdekking maar één keer wordt toegewezen."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Oude Systeeminstellingen nog in gebruik",
+      "description": "De SmartShading-zone {zone} vertrouwt nog op de oude gedeelde Systeeminstellingen, of de instellingen konden niet worden gecontroleerd, daarom blijft de oude Systeeminvoer behouden. Er is niets automatisch gewijzigd en de zone blijft werken. Open de SmartShading-opties van de zone, doorloop de stappen voor handmatige overschrijving en aanwezigheid, sla elk eenmaal op en herstart Home Assistant. Lukt dat niet, verwijder de zone dan en voeg hem opnieuw toe."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Zone-instellingen konden niet worden opgeslagen",
+      "description": "SmartShading kon de omgezette instellingen van de zone {zone} niet opslaan omdat het schrijven van de configuratie mislukte. De oude Systeeminvoer blijft behouden en de zone blijft ongewijzigd werken. Controleer de vrije schijfruimte en de bestandsrechten van de Home Assistant-configuratie en herstart Home Assistant; de omzetting wordt automatisch opnieuw geprobeerd."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zone opgeslagen door een nieuwere versie",
+      "description": "De zone {zone} is opgeslagen door een nieuwere SmartShading-versie dan de geïnstalleerde, daarom kan SmartShading hem niet beoordelen en behoudt de oude Systeeminvoer. Werk SmartShading bij naar de nieuwste versie."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Oude Systeeminvoer kon niet worden verwijderd",
+      "description": "SmartShading kon de niet meer benodigde oude Systeeminvoer niet verwijderen (zie het Home Assistant-logboek). Hij blijft actief en geen enkele zone wordt geraakt. Herstart Home Assistant om het opnieuw te proberen; blijft het probleem bestaan, meld het dan met het logfragment."
     }
   }
 }

@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Kapak aynı ayarlarla iki kez atanmış",
       "description": "{cover} kapağı aynı ayarlarla birden fazla kez görünüyor: {locations}. SmartShading onu yalnızca bu atamalardan birinden kontrol eder. Her kapağın yalnızca bir kez atanması için SmartShading seçeneklerinde yinelenen atamayı kaldırın."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Eski Sistem ayarları hâlâ kullanılıyor",
+      "description": "{zone} SmartShading bölgesi hâlâ eski ortak Sistem ayarlarına dayanıyor veya ayarları doğrulanamadı; bu yüzden eski Sistem girişi korunuyor. Otomatik olarak hiçbir şey değiştirilmedi ve bölge çalışmaya devam ediyor. Bölgenin SmartShading seçeneklerini açın, manuel geçersiz kılma ve varlık adımlarını gözden geçirin, her birini bir kez kaydedin ve Home Assistant'ı yeniden başlatın. Bu mümkün değilse bölgeyi kaldırıp yeniden ekleyin."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Bölge ayarları kaydedilemedi",
+      "description": "SmartShading, yapılandırma yazma işlemi başarısız olduğu için {zone} bölgesinin dönüştürülen ayarlarını kaydedemedi. Eski Sistem girişi korunuyor ve bölge değişmeden çalışmaya devam ediyor. Home Assistant yapılandırmasının boş disk alanını ve dosya izinlerini kontrol edin, ardından Home Assistant'ı yeniden başlatın; dönüştürme otomatik olarak yeniden denenecek."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Bölge daha yeni bir sürümle kaydedildi",
+      "description": "{zone} bölgesi, kurulu olandan daha yeni bir SmartShading sürümüyle kaydedildi; bu yüzden SmartShading onu değerlendiremiyor ve eski Sistem girişini koruyor. SmartShading'i en son sürüme güncelleyin."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Eski Sistem girişi kaldırılamadı",
+      "description": "SmartShading artık gerekmeyen eski Sistem girişini kaldıramadı (Home Assistant günlüğüne bakın). Etkin kalır ve hiçbir bölge etkilenmez. Yeniden denemek için Home Assistant'ı yeniden başlatın; sorun sürerse günlük alıntısıyla birlikte bildirin."
     }
   }
 }

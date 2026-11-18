@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Copertura assegnata due volte con impostazioni identiche",
       "description": "La copertura {cover} compare più volte con impostazioni identiche: {locations}. SmartShading la controlla da una sola di queste assegnazioni. Rimuovere il duplicato nelle opzioni di SmartShading in modo che ogni copertura sia assegnata una sola volta."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Vecchie impostazioni di Sistema ancora in uso",
+      "description": "La zona SmartShading {zone} dipende ancora dalle vecchie impostazioni condivise del Sistema, oppure le sue impostazioni non sono state verificabili, quindi la vecchia voce di Sistema viene mantenuta. Nulla è stato modificato automaticamente e la zona continua a funzionare. Apri le opzioni SmartShading della zona, passa attraverso i passaggi di override manuale e presenza, salva ciascuno una volta e riavvia Home Assistant. Se non è possibile, rimuovi la zona e aggiungila di nuovo."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Impossibile salvare le impostazioni della zona",
+      "description": "SmartShading non è riuscito a salvare le impostazioni convertite della zona {zone} perché la scrittura della configurazione non è riuscita. La vecchia voce di Sistema viene mantenuta e la zona continua a funzionare invariata. Controlla lo spazio libero su disco e i permessi dei file della configurazione di Home Assistant, poi riavvia Home Assistant; la conversione verrà ritentata automaticamente."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zona salvata da una versione più recente",
+      "description": "La zona {zone} è stata salvata da una versione di SmartShading più recente di quella installata, quindi SmartShading non può valutarla e mantiene la vecchia voce di Sistema. Aggiorna SmartShading all'ultima versione."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Impossibile rimuovere la vecchia voce di Sistema",
+      "description": "SmartShading non è riuscito a rimuovere la vecchia voce di Sistema non più necessaria (vedi il log di Home Assistant). Resta attiva e nessuna zona è interessata. Riavvia Home Assistant per riprovare; se il problema persiste, segnalalo insieme all'estratto del log."
     }
   }
 }

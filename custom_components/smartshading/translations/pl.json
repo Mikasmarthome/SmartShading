@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Osłona przypisana dwukrotnie z identycznymi ustawieniami",
       "description": "Osłona {cover} występuje więcej niż raz z identycznymi ustawieniami: {locations}. SmartShading steruje nią tylko z jednego z tych przypisań. Usuń duplikat w opcjach SmartShading, aby każda osłona była przypisana tylko raz."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Stare ustawienia Systemu nadal w użyciu",
+      "description": "Strefa SmartShading {zone} nadal korzysta ze starych wspólnych ustawień Systemu albo jej ustawień nie udało się zweryfikować, dlatego stary wpis Systemu zostaje zachowany. Nic nie zostało zmienione automatycznie, a strefa nadal działa. Otwórz opcje SmartShading tej strefy, przejdź przez kroki ręcznego zastąpienia i obecności, zapisz każdy raz i uruchom ponownie Home Assistanta. Jeśli to niemożliwe, usuń strefę i dodaj ją ponownie."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Nie udało się zapisać ustawień strefy",
+      "description": "SmartShading nie mógł zapisać przekonwertowanych ustawień strefy {zone}, ponieważ zapis konfiguracji się nie powiódł. Stary wpis Systemu zostaje zachowany, a strefa działa bez zmian. Sprawdź wolne miejsce na dysku i uprawnienia plików konfiguracji Home Assistanta, a następnie uruchom ponownie Home Assistanta; konwersja zostanie ponowiona automatycznie."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Strefa zapisana przez nowszą wersję",
+      "description": "Strefa {zone} została zapisana przez nowszą wersję SmartShading niż zainstalowana, więc SmartShading nie może jej ocenić i zachowuje stary wpis Systemu. Zaktualizuj SmartShading do najnowszej wersji."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Nie udało się usunąć starego wpisu Systemu",
+      "description": "SmartShading nie mógł usunąć starego, już niepotrzebnego wpisu Systemu (zobacz dziennik Home Assistanta). Pozostaje aktywny, a żadna strefa nie jest dotknięta. Uruchom ponownie Home Assistanta, aby spróbować ponownie; jeśli problem się utrzymuje, zgłoś go wraz z fragmentem dziennika."
     }
   }
 }

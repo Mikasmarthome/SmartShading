@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Cobertura atribuída duas vezes com definições idênticas",
       "description": "A cobertura {cover} aparece mais de uma vez com definições idênticas: {locations}. O SmartShading controla-a apenas a partir de uma destas atribuições. Remova a duplicação nas opções do SmartShading para que cada cobertura seja atribuída apenas uma vez."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Definições antigas do Sistema ainda em uso",
+      "description": "A zona SmartShading {zone} ainda depende das antigas definições partilhadas do Sistema, ou as suas definições não puderam ser verificadas, pelo que a antiga entrada do Sistema é mantida. Nada foi alterado automaticamente e a zona continua a funcionar. Abra as opções do SmartShading da zona, percorra os passos de substituição manual e de presença, guarde cada um uma vez e reinicie o Home Assistant. Se não for possível, remova a zona e adicione-a novamente."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "Não foi possível guardar as definições da zona",
+      "description": "O SmartShading não conseguiu guardar as definições convertidas da zona {zone} porque a escrita da configuração falhou. A antiga entrada do Sistema é mantida e a zona continua a funcionar sem alterações. Verifique o espaço livre em disco e as permissões de ficheiros da configuração do Home Assistant e reinicie o Home Assistant; a conversão será repetida automaticamente."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zona guardada por uma versão mais recente",
+      "description": "A zona {zone} foi guardada por uma versão do SmartShading mais recente do que a instalada, pelo que o SmartShading não a consegue avaliar e mantém a antiga entrada do Sistema. Atualize o SmartShading para a versão mais recente."
+    },
+    "system_retirement_removal_failed": {
+      "title": "Não foi possível remover a antiga entrada do Sistema",
+      "description": "O SmartShading não conseguiu remover a antiga entrada do Sistema que já não é necessária (veja o registo do Home Assistant). Continua ativa e nenhuma zona é afetada. Reinicie o Home Assistant para tentar novamente; se o problema persistir, comunique-o com o excerto do registo."
     }
   }
 }

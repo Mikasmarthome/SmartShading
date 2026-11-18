@@ -943,6 +943,22 @@
     "duplicate_cover_identical": {
       "title": "Cubierta asignada dos veces con ajustes idénticos",
       "description": "La cubierta {cover} aparece más de una vez con ajustes idénticos: {locations}. SmartShading la controla solo desde una de estas asignaciones. Elimine el duplicado en las opciones de SmartShading para que cada cubierta se asigne una sola vez."
+    },
+    "system_retirement_zone_blocked": {
+      "title": "Ajustes antiguos del Sistema aún en uso",
+      "description": "La zona de SmartShading {zone} aún depende de los antiguos ajustes compartidos del Sistema, o no se pudieron verificar sus ajustes, por lo que se conserva la antigua entrada del Sistema. No se cambió nada automáticamente y la zona sigue funcionando. Abra las opciones de SmartShading de la zona, recorra los pasos de anulación manual y de presencia, guarde cada uno una vez y reinicie Home Assistant. Si no es posible, elimine la zona y añádala de nuevo."
+    },
+    "system_retirement_zone_not_saved": {
+      "title": "No se pudieron guardar los ajustes de la zona",
+      "description": "SmartShading no pudo guardar los ajustes convertidos de la zona {zone} porque falló la escritura de la configuración. Se conserva la antigua entrada del Sistema y la zona sigue funcionando sin cambios. Compruebe el espacio libre en disco y los permisos de archivo de la configuración de Home Assistant y reinicie Home Assistant; la conversión se reintentará automáticamente."
+    },
+    "system_retirement_zone_unsupported_version": {
+      "title": "Zona guardada por una versión más reciente",
+      "description": "La zona {zone} fue guardada por una versión de SmartShading más reciente que la instalada, por lo que SmartShading no puede evaluarla y conserva la antigua entrada del Sistema. Actualice SmartShading a la última versión."
+    },
+    "system_retirement_removal_failed": {
+      "title": "No se pudo eliminar la antigua entrada del Sistema",
+      "description": "SmartShading no pudo eliminar la antigua entrada del Sistema que ya no se necesita (consulte el registro de Home Assistant). Sigue activa y ninguna zona se ve afectada. Reinicie Home Assistant para intentarlo de nuevo; si el problema continúa, notifíquelo junto con el extracto del registro."
     }
   }
 }

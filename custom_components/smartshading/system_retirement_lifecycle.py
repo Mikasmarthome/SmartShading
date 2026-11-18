@@ -151,8 +151,17 @@ def _gone(hass: "HomeAssistant", entry_id: str) -> bool:
 
 
 async def _restore_loaded(hass: "HomeAssistant", system: "ConfigEntry") -> None:
-    """A kept System entry that was unloaded for the attempt is set up again."""
+    """A kept System entry that was unloaded for the attempt is set up again.
+
+    While the component setup itself is still running (the start-up retirement) the entry
+    must NOT be set up from here: ``ConfigEntries.async_setup`` then waits for the component
+    setup that is waiting for this very call, which hangs until Home Assistant's setup timeout
+    and fails the whole integration.  Home Assistant sets up every stored entry of the domain
+    as soon as the component setup returns, so there is nothing to restore in that window.
+    """
     if _gone(hass, system.entry_id) or system.state is not ConfigEntryState.NOT_LOADED:
+        return
+    if DOMAIN not in hass.config.components:
         return
     try:
         await hass.config_entries.async_setup(system.entry_id)
@@ -175,8 +184,7 @@ async def _remove_system_entry(
         # Fresh assessment right before the removal.  Not atomic with it (see the module
         # docstring); safety comes from the persisted-data invariants, not from timing.
         if not ops.assess(hass).eligible:
-            if system.state is ConfigEntryState.NOT_LOADED:
-                await hass.config_entries.async_setup(entry_id)
+            await _restore_loaded(hass, system)
             return BLOCKED
         result = await hass.config_entries.async_remove(entry_id)
     except UnknownEntry:

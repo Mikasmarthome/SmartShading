@@ -115,6 +115,7 @@ class _Hass:
                             setup_lock=asyncio.Lock())
             for i in range(systems)
         ]
+        self.config = SimpleNamespace(components={"smartshading"})   # the component is set up
         self.calls: list[tuple] = []
         self.remove_error: Exception | None = None
         self.unload_error: Exception | None = None
@@ -351,6 +352,15 @@ class TestFailureAndRetry:
         _retire(lifecycle, hass)
         assert hass.system_list[0].state is _State.LOADED
         assert [c[0] for c in hass.calls] == ["unload", "remove", "setup"]
+
+    def test_a_failed_removal_during_the_component_setup_does_not_set_the_entry_up_from_inside_it(self, lifecycle):
+        """PA-4: ConfigEntries.async_setup waits for the component setup that runs this very
+        code (a hang until HA's setup timeout); HA sets the stored entry up itself afterwards."""
+        hass = _Hass([_zone("a")])
+        hass.config.components = set()               # the start-up retirement: component not set up yet
+        hass.remove_error = RuntimeError("boom")
+        assert _retire(lifecycle, hass) == lifecycle.FAILED
+        assert [c[0] for c in hass.calls] == ["unload", "remove"]      # no "setup"
 
     def test_the_retry_after_a_failure_succeeds_and_clears_the_issue(self, lifecycle):
         hass = _Hass([_zone("a")])

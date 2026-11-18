@@ -73,6 +73,7 @@ from .services import (
     async_setup_services,
     async_unload_services_if_no_zone_entries_remain,
 )
+from .legacy_registry_cleanup import async_remove_legacy_system_registry_rows
 from .system_retirement import RetirementAssessment, assess_system_retirement
 from .system_retirement_lifecycle import (
     FAILURE_PERSISTENCE,
@@ -204,10 +205,24 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """
     _prepare_zone_entries(hass)
     await _async_cleanup_legacy_exports(hass)
+    _cleanup_legacy_system_registry_rows(hass)
     # No entry is set up yet, so the System entry is still unloaded and nothing can run
     # against it while it is judged and (if every zone is independent) removed.
     await _async_retire_system_entry(hass)
     return True
+
+
+def _cleanup_legacy_system_registry_rows(hass: HomeAssistant) -> None:
+    """PA-4: drop the entity/device rows of the retired System platforms (see the module).
+
+    Runs once per start, before the System entry is judged, so rows of a System entry that
+    has to stay (and rows left by an interrupted removal) do not linger.  A failure is only
+    logged: housekeeping must never break the component setup.
+    """
+    try:
+        async_remove_legacy_system_registry_rows(hass)
+    except Exception:  # noqa: BLE001
+        _LOGGER.warning("SmartShading: legacy System registry clean-up failed", exc_info=True)
 
 
 async def _async_cleanup_legacy_exports(hass: HomeAssistant) -> None:

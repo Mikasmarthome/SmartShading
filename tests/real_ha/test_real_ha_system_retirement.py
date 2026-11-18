@@ -182,10 +182,10 @@ class TestRetirementAtStart:
         assert b.data["absence_delay_min"] == 90 and b.data["override_policy"]["duration_min"] == 45
         assert b.data["absence_delay_use_system_default"] is False
 
-    async def test_blocked_system_entry_registers_nothing_and_old_rows_go_with_retirement(self, hass) -> None:
-        """PA-3: the System entry forwards no platform, so while it is kept it creates no
-        entity and no device.  Rows an older version left in the registries are not touched
-        while the entry exists (registry cleanup is PA-4) and vanish with its retirement."""
+    async def test_blocked_system_entry_registers_nothing_and_old_rows_are_cleaned_at_start(self, hass) -> None:
+        """PA-3/PA-4: the System entry forwards no platform, so while it is kept it creates no
+        entity and no device, and the rows an older version left in the registries are removed
+        at the start (they can never come alive again) without touching the entry or any zone."""
         blocked = _zone("bad", override_policy="not a mapping", absence_flag=False)   # unverifiable
         good = _independent("good")
         system_entry = _system()
@@ -201,11 +201,9 @@ class TestRetirementAtStart:
             config_entry_id="system", identifiers={(DOMAIN, SYSTEM_DEVICE_IDENTIFIER)})
         assert await _start(hass)
         system = hass.config_entries.async_get_entry("system")
-        assert system.state is ConfigEntryState.LOADED
-        # the kept System entry added nothing: only the seeded legacy rows exist for it,
-        # and no state is written for them (no platform runs for this entry)
-        rows = sorted(e.entity_id for e in reg.entities.values() if e.config_entry_id == "system")
-        assert rows == sorted(legacy_rows)
+        assert system.state is ConfigEntryState.LOADED                      # kept: a zone is blocked
+        assert not [e for e in reg.entities.values() if e.config_entry_id == "system"]
+        assert not dr.async_get(hass).async_get_device(identifiers={(DOMAIN, SYSTEM_DEVICE_IDENTIFIER)})
         assert all(hass.states.get(entity_id) is None for entity_id in legacy_rows)
         assert hass.states.async_entity_ids("button") == []
         zone_rows = [e.entity_id for e in reg.entities.values() if e.config_entry_id == "good"]

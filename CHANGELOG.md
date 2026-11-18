@@ -24,8 +24,19 @@ it used to show. This is not a feature loss: nothing a zone does depends on thes
   deleting the zone only as a last resort, with the loss of configuration, learned data and entity
   identities that implies. Translated in all languages.
 - Old public export files in `/config/www` are still cleaned up at every start, now independently of
-  the System entry. Entity and device registry rows an earlier version left for the System entry
-  disappear with that entry.
+  the System entry.
+- **Leftover registry rows.** The entities (two export buttons, the debug switch) and the device
+  an earlier version registered for the System entry are removed at start, also while the System
+  entry itself has to stay because a zone still depends on it, and also when an interrupted
+  removal left them behind. Only these exact rows are matched; zone entities, devices and
+  settings are never touched.
+
+### Fixed
+
+- If the automatic removal of the old System entry failed while Home Assistant was starting,
+  restoring the kept entry waited for the integration's own start-up, which blocked the setup
+  until Home Assistant's 300 second setup timeout. The kept entry is now simply set up by Home
+  Assistant together with the other entries.
 
 ## v1.2.0-beta.3.2
 

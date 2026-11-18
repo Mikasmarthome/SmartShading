@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+### Removed: the legacy System entry's interface
+
+The old System entry (created by earlier versions, no longer created or needed) has lost everything
+it used to show. This is not a feature loss: nothing a zone does depends on these controls.
+
+- **Export buttons.** *Create Support Export* and *Create Research Export* are gone. Their content is
+  unchanged and stays in the standard Home Assistant diagnostics download (open the menu of a zone
+  entry, then *Download diagnostics*): Support and Research sections, one shared size budget.
+- **Debug logging switch.** The switch and its stored option are gone. SmartShading follows the
+  standard Home Assistant logger configuration, e.g.
+  `logger: logs: custom_components.smartshading: debug`. Detailed per-cycle log lines appear exactly
+  when that logger level allows them; SmartShading never changes your logger settings. If the old
+  switch was on, the detail lines stop until you configure the logger as above.
+- **System options menu.** The Manual Override and Presence defaults of the System entry can no longer
+  be edited. A zone that still follows them is changed in the zone's own options (*Manual Override*
+  and *Presence*, switch off *Use System default*); once no zone depends on the System entry any more
+  it is removed automatically.
+- **Repair guidance.** The notice for a zone that still depends on the System entry no longer suggests
+  deleting and re-adding the zone as the fix. It points to the zone's own options, and mentions
+  deleting the zone only as a last resort, with the loss of configuration, learned data and entity
+  identities that implies. Translated in all languages.
+- Old public export files in `/config/www` are still cleaned up at every start, now independently of
+  the System entry. Entity and device registry rows an earlier version left for the System entry
+  disappear with that entry.
+
 ## v1.2.0-beta.3.2
 
 **This is a pre-release.** It is intended for testing on suitable Home

@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Abre uma página adicional. Só importa para transição de horário, decisão e limpeza manual."
         }
       },
-      "system_manual_override": {
-        "title": "Predefinições de substituição manual",
-        "description": "O valor predefinido para todas as zonas sem definições próprias: escolha quando o SmartShading retoma o controlo depois de um estore ser movido à mão. Os detalhes só são pedidos nas opções que deles precisam.",
-        "data": {
-          "override_release_choice": "Devolver o controlo",
-          "override_allow_comfort_actions": "Permitir ações de conforto durante a substituição",
-          "override_allow_protection_actions": "Permitir ações de proteção durante a substituição",
-          "override_edit_timeouts": "Ajustar também o limite de segurança"
-        },
-        "data_description": {
-          "override_release_choice": "Quando o SmartShading volta a controlar o estore.",
-          "override_allow_comfort_actions": "Quando ativado, o sombreamento de conforto normal ainda pode ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
-          "override_allow_protection_actions": "Quando ativado, as ações de proteção (ausência, calor, encandeamento) ainda podem ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
-          "override_edit_timeouts": "Abre uma página adicional. Só importa para transição de horário, decisão e limpeza manual."
-        }
-      },
       "override_duration": {
         "title": "Duração da substituição manual",
         "description": "O SmartShading retoma o controlo passado este tempo. Uma alteração de dia usa a duração diurna; de noite, a noturna.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Quanto tempo uma alteração feita de noite é mantida. As outras opções usam-na como limite de segurança noturno e como tempo de retenção de um estore parado à mão."
         }
       },
-      "system_init": {
-        "title": "Definições do sistema SmartShading",
-        "description": "Predefinições globais que cada zona segue, a menos que use as suas próprias definições.",
-        "menu_options": {
-          "system_manual_override": "Predefinições de substituição manual",
-          "system_presence": "Predefinição de presença"
-        }
-      },
       "presence_custom": {
         "title": "Presença — atraso de ausência desta zona",
         "description": "Quanto tempo uma ausência deve durar antes desta zona ser considerada vazia.",
-        "data": {
-          "absence_delay_min": "Atraso de ausência"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Predefinição de presença",
-        "description": "O atraso de ausência que cada zona segue, a menos que utilize um valor próprio: quanto tempo uma ausência deve durar antes da casa ser considerada vazia.",
         "data": {
           "absence_delay_min": "Atraso de ausência"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Pelo menos uma cobertura selecionada já está atribuída a outra janela do SmartShading. Uma cobertura só pode ser atribuída uma vez."
     },
     "abort": {
-      "no_options_for_system_entry": "A entrada de Sistema do SmartShading não tem opções configuráveis."
+      "legacy_system_entry": "Esta é a antiga entrada do Sistema do SmartShading. Já não tem definições próprias e é removida automaticamente assim que nenhuma zona dependa dela. Para alterar a substituição manual ou a presença, abra as opções da própria zona."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Criar exportação de suporte"
-      },
-      "export_research_data": {
-        "name": "Criar exportação de investigação"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Modo de aprendizagem",
@@ -812,9 +770,6 @@
           "on": "Ativo",
           "off": "Inativo"
         }
-      },
-      "debug_logging": {
-        "name": "Registo de depuração"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Definições antigas do Sistema ainda em uso",
-      "description": "A zona SmartShading {zone} ainda depende das antigas definições partilhadas do Sistema, ou as suas definições não puderam ser verificadas, pelo que a antiga entrada do Sistema é mantida. Nada foi alterado automaticamente e a zona continua a funcionar. Abra as opções do SmartShading da zona, percorra os passos de substituição manual e de presença, guarde cada um uma vez e reinicie o Home Assistant. Se não for possível, remova a zona e adicione-a novamente."
+      "description": "A zona SmartShading {zone} ainda depende das antigas definições partilhadas do Sistema, ou as suas definições não puderam ser verificadas; por isso a antiga entrada do Sistema é mantida. Nada foi alterado automaticamente e a zona continua a funcionar. Para corrigir, abra as opções desta zona e depois «Substituição manual» e «Presença»: desative em cada uma «Usar predefinição do sistema», conclua os ecrãs seguintes e guarde. Reinicie depois o Home Assistant. Eliminar e voltar a criar a zona é apenas o último recurso: a configuração da zona, os seus dados aprendidos e a identidade das suas entidades perdem-se de forma permanente, pelo que as automações e os painéis que usam as suas entidades terão de ser configurados novamente."
     },
     "system_retirement_zone_not_saved": {
       "title": "Não foi possível guardar as definições da zona",

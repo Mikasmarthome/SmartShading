@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Åbner en ekstra side. Har kun betydning for tidsplanskift, beslutning og manuel rydning."
         }
       },
-      "system_manual_override": {
-        "title": "Standarder for manuel tilsidesættelse",
-        "description": "Standarden for alle zoner uden egne indstillinger: Vælg, hvornår SmartShading overtager styringen igen, efter et betræk er flyttet i hånden. Detaljer spørges kun om for valg, der har brug for dem.",
-        "data": {
-          "override_release_choice": "Returnér styringen",
-          "override_allow_comfort_actions": "Tillad komforthandlinger under tilsidesættelse",
-          "override_allow_protection_actions": "Tillad beskyttelseshandlinger under tilsidesættelse",
-          "override_edit_timeouts": "Juster også sikkerhedsgrænsen"
-        },
-        "data_description": {
-          "override_release_choice": "Hvornår SmartShading styrer betrækket igen.",
-          "override_allow_comfort_actions": "Når aktiveret, kan almindelig komfortafskærmning stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
-          "override_allow_protection_actions": "Når aktiveret, kan beskyttelseshandlinger (fravær, varme, blænding) stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
-          "override_edit_timeouts": "Åbner en ekstra side. Har kun betydning for tidsplanskift, beslutning og manuel rydning."
-        }
-      },
       "override_duration": {
         "title": "Varighed af manuel tilsidesættelse",
         "description": "SmartShading overtager igen efter denne tid. En ændring om dagen bruger dagsvarigheden, en ændring om natten natvarigheden.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Hvor længe en ændring om natten holdes. De andre valg bruger værdien som natlig sikkerhedsgrænse og som holdetid for et manuelt stoppet betræk."
         }
       },
-      "system_init": {
-        "title": "SmartShading systemindstillinger",
-        "description": "Globale standarder, som hver zone følger, medmindre den bruger sine egne indstillinger.",
-        "menu_options": {
-          "system_manual_override": "Standarder for manuel tilsidesættelse",
-          "system_presence": "Standard for tilstedeværelse"
-        }
-      },
       "presence_custom": {
         "title": "Tilstedeværelse — denne zones fraværsforsinkelse",
         "description": "Hvor længe et fravær skal vare, før denne zone anses for tom.",
-        "data": {
-          "absence_delay_min": "Fraværsforsinkelse"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Standard for tilstedeværelse",
-        "description": "Fraværsforsinkelsen, som hver zone følger, medmindre den bruger sin egen værdi: hvor længe et fravær skal vare, før huset anses for tomt.",
         "data": {
           "absence_delay_min": "Fraværsforsinkelse"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Mindst ét valgt dæksel er allerede tildelt et andet SmartShading-vindue. Et dæksel kan kun tildeles én gang."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading-systemposten har ingen konfigurerbare indstillinger."
+      "legacy_system_entry": "Dette er den gamle SmartShading-systempost. Den har ikke længere egne indstillinger og fjernes automatisk, så snart ingen zone afhænger af den. Åbn selve zonens indstillinger for at ændre manuel tilsidesættelse eller tilstedeværelse."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Opret supporteksport"
-      },
-      "export_research_data": {
-        "name": "Opret forskningseksport"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Læringstilstand",
@@ -812,9 +770,6 @@
           "on": "Aktiv",
           "off": "Inaktiv"
         }
-      },
-      "debug_logging": {
-        "name": "Fejlfindingslog"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Gamle systemindstillinger er stadig i brug",
-      "description": "SmartShading-zonen {zone} bruger stadig de gamle fælles systemindstillinger, eller dens indstillinger kunne ikke bekræftes, så den gamle systempost beholdes. Intet er ændret automatisk, og zonen fortsætter med at virke. Åbn zonens SmartShading-indstillinger, gå gennem trinnene for manuel tilsidesættelse og tilstedeværelse, gem hvert trin én gang, og genstart Home Assistant. Hvis det ikke er muligt, fjern zonen og tilføj den igen."
+      "description": "SmartShading-zonen {zone} bruger stadig de gamle fælles systemindstillinger, eller dens indstillinger kunne ikke kontrolleres; derfor bevares den gamle systempost. Intet er ændret automatisk, og zonen fungerer stadig. For at løse det skal du åbne zonens indstillinger og derefter »Manuel tilsidesættelse« og »Tilstedeværelse«: slå »Brug systemstandard« fra i hver af dem, gennemfør de følgende skærmbilleder og gem. Genstart derefter Home Assistant. At slette zonen og oprette den igen er kun den sidste udvej: zonens konfiguration, dens indlærte data og dens enhedsidentiteter går permanent tabt, så automatiseringer og dashboards, der bruger dens enheder, skal opsættes igen."
     },
     "system_retirement_zone_not_saved": {
       "title": "Zoneindstillinger kunne ikke gemmes",

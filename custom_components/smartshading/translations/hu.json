@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Egy további oldalt nyit meg. Csak a menetrendváltás, a döntés és a kézi törlés választásnál számít."
         }
       },
-      "system_manual_override": {
-        "title": "Kézi felülbírálás alapértelmezései",
-        "description": "Az alapértelmezés minden saját beállítás nélküli zónához: válassza ki, mikor veszi vissza a SmartShading az irányítást, miután kézzel elmozdítottak egy árnyékolót. Részleteket csak az ezeket igénylő választásoknál kér.",
-        "data": {
-          "override_release_choice": "Irányítás visszaadása",
-          "override_allow_comfort_actions": "Kényelmi műveletek engedélyezése felülbírálás alatt",
-          "override_allow_protection_actions": "Védelmi műveletek engedélyezése felülbírálás alatt",
-          "override_edit_timeouts": "A biztonsági korlát módosítása is"
-        },
-        "data_description": {
-          "override_release_choice": "Mikor vezérli újra a SmartShading az árnyékolót.",
-          "override_allow_comfort_actions": "Ha engedélyezve van, a szokásos kényelmi árnyékolás továbbra is futhat aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
-          "override_allow_protection_actions": "Ha engedélyezve van, a védelmi műveletek (távollét, hőség, vakítás) továbbra is futhatnak aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
-          "override_edit_timeouts": "Egy további oldalt nyit meg. Csak a menetrendváltás, a döntés és a kézi törlés választásnál számít."
-        }
-      },
       "override_duration": {
         "title": "A kézi felülbírálás időtartama",
         "description": "A SmartShading ennyi idő után veszi vissza az irányítást. A nappali módosítás a nappali, az éjszakai az éjszakai időtartamot használja.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Meddig marad érvényben az éjszaka végzett módosítás. A többi választásnál ez az éjszakai biztonsági korlát és a kézzel megállított árnyékoló tartási ideje."
         }
       },
-      "system_init": {
-        "title": "SmartShading rendszerbeállítások",
-        "description": "Globális alapértelmezések, amelyeket minden zóna követ, hacsak nem használ saját beállításokat.",
-        "menu_options": {
-          "system_manual_override": "Kézi felülbírálás alapértelmezései",
-          "system_presence": "Jelenlét alapértelmezése"
-        }
-      },
       "presence_custom": {
         "title": "Jelenlét — a zóna távolléti késleltetése",
         "description": "Mennyi ideig kell tartania a távollétnek, mielőtt ezt a zónát üresnek tekintjük.",
-        "data": {
-          "absence_delay_min": "Távollét késleltetése"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Jelenlét alapértelmezése",
-        "description": "A távolléti késleltetés, amelyet minden zóna követ, hacsak nem használ saját értéket: mennyi ideig kell tartania a távollétnek, mielőtt a házat üresnek tekintjük.",
         "data": {
           "absence_delay_min": "Távollét késleltetése"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Legalább egy kiválasztott árnyékoló már hozzá van rendelve egy másik SmartShading ablakhoz. Egy árnyékoló csak egyszer rendelhető hozzá."
     },
     "abort": {
-      "no_options_for_system_entry": "A SmartShading rendszerbejegyzésnek nincsenek konfigurálható beállításai."
+      "legacy_system_entry": "Ez a régi SmartShading Rendszer-bejegyzés. Már nincsenek saját beállításai, és automatikusan törlődik, amint egyetlen zóna sem függ tőle. A kézi felülbírálás vagy a jelenlét módosításához nyissa meg magának a zónának a beállításait."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Támogatási exportálás létrehozása"
-      },
-      "export_research_data": {
-        "name": "Kutatási exportálás létrehozása"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Tanulási mód",
@@ -812,9 +770,6 @@
           "on": "Aktív",
           "off": "Inaktív"
         }
-      },
-      "debug_logging": {
-        "name": "Hibakeresési napló"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "A régi Rendszerbeállítások még használatban vannak",
-      "description": "A(z) {zone} SmartShading-zóna még a régi közös Rendszerbeállításokra támaszkodik, vagy a beállításait nem sikerült ellenőrizni, ezért a régi Rendszer-bejegyzés megmarad. Semmi sem változott automatikusan, és a zóna tovább működik. Nyissa meg a zóna SmartShading-beállításait, menjen végig a kézi felülbírálás és a jelenlét lépésein, mindegyiket mentse egyszer, majd indítsa újra a Home Assistantot. Ha ez nem lehetséges, távolítsa el a zónát, és vegye fel újra."
+      "description": "A(z) {zone} SmartShading-zóna még a régi közös Rendszer-beállításokat használja, vagy a beállításait nem sikerült ellenőrizni, ezért a régi Rendszer-bejegyzés megmarad. Semmi sem változott automatikusan, és a zóna tovább működik. A javításhoz nyissa meg a zóna beállításait, majd a „Kézi felülbírálás” és a „Jelenlét” lépést: mindkettőben kapcsolja ki a „Rendszer-alapértelmezés használata” opciót, lépjen végig a következő képernyőkön, és mentse. Ezután indítsa újra a Home Assistantet. A zóna törlése és újbóli hozzáadása csak a végső megoldás: a zóna konfigurációja, a tanult adatai és az entitásainak azonosítói véglegesen elvesznek, így az entitásait használó automatizálásokat és irányítópultokat újra be kell állítani."
     },
     "system_retirement_zone_not_saved": {
       "title": "A zóna beállításait nem sikerült menteni",

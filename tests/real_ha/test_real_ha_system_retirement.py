@@ -34,7 +34,6 @@ from custom_components.smartshading.config_entry_data import (
 )
 from custom_components.smartshading.const import (
     CONF_ENTRY_TYPE,
-    DATA_DEBUG_LOGGING,
     DATA_GLOBAL_DISPATCH,
     DOMAIN,
     ENTRY_TYPE_SYSTEM,
@@ -183,17 +182,32 @@ class TestRetirementAtStart:
         assert b.data["absence_delay_min"] == 90 and b.data["override_policy"]["duration_min"] == 45
         assert b.data["absence_delay_use_system_default"] is False
 
-    async def test_blocked_zone_keeps_system_entities_and_device_until_retirement(self, hass) -> None:
+    async def test_blocked_system_entry_registers_nothing_and_old_rows_go_with_retirement(self, hass) -> None:
+        """PA-3: the System entry forwards no platform, so while it is kept it creates no
+        entity and no device.  Rows an older version left in the registries are not touched
+        while the entry exists (registry cleanup is PA-4) and vanish with its retirement."""
         blocked = _zone("bad", override_policy="not a mapping", absence_flag=False)   # unverifiable
         good = _independent("good")
-        _add(hass, _system(), blocked, good)
+        system_entry = _system()
+        _add(hass, system_entry, blocked, good)
+        reg = er.async_get(hass)
+        legacy_rows = [
+            reg.async_get_or_create("button", DOMAIN, "system_system_export_support_data",
+                                    config_entry=system_entry).entity_id,
+            reg.async_get_or_create("switch", DOMAIN, "system_debug_logging",
+                                    config_entry=system_entry).entity_id,
+        ]
+        dr.async_get(hass).async_get_or_create(
+            config_entry_id="system", identifiers={(DOMAIN, SYSTEM_DEVICE_IDENTIFIER)})
         assert await _start(hass)
         system = hass.config_entries.async_get_entry("system")
         assert system.state is ConfigEntryState.LOADED
-        reg = er.async_get(hass)
-        rows = [e for e in reg.entities.values() if e.config_entry_id == "system"]
-        assert rows, "the System entry registered its entities"
-        assert dr.async_get(hass).async_get_device(identifiers={(DOMAIN, SYSTEM_DEVICE_IDENTIFIER)})
+        # the kept System entry added nothing: only the seeded legacy rows exist for it,
+        # and no state is written for them (no platform runs for this entry)
+        rows = sorted(e.entity_id for e in reg.entities.values() if e.config_entry_id == "system")
+        assert rows == sorted(legacy_rows)
+        assert all(hass.states.get(entity_id) is None for entity_id in legacy_rows)
+        assert hass.states.async_entity_ids("button") == []
         zone_rows = [e.entity_id for e in reg.entities.values() if e.config_entry_id == "good"]
         assert zone_rows
         # fix the blocker: the next zone setup retires the System entry live
@@ -509,11 +523,10 @@ class TestFailureRetryAndRaces:
         assert await ss._async_retire_system_entry(hass) == life.RETIRED
         assert "restart" in caplog.text
 
-    async def test_the_debug_flag_follows_the_retired_entry(self, hass) -> None:
+    async def test_retirement_leaves_no_custom_debug_flag_behind(self, hass) -> None:
         system, bad = await self._blocked_then_ready(hass)
-        hass.data[DOMAIN][DATA_DEBUG_LOGGING] = True
         assert await ss._async_retire_system_entry(hass) == life.RETIRED
-        assert hass.data[DOMAIN][DATA_DEBUG_LOGGING] is False
+        assert "debug_logging" not in hass.data[DOMAIN]
 
     async def test_a_blocked_assessment_never_touches_the_system_entry(self, hass, removals) -> None:
         bad = _zone("bad", override_policy="not a mapping", absence_flag=False)

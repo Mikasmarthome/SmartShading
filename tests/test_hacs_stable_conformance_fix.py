@@ -5,7 +5,7 @@ https://github.com/hacs/default/pull/8691:
   - hacs.json declares a Home Assistant minimum version.
   - README's HA badge matches the declared minimum.
   - The Support/Research Export buttons no longer write an unauthenticated
-    file to /config/www/ (entities/button.py).
+    file to /config/www/ (and are gone altogether since PA-3).
   - The same export data is aggregated into the standard Home Assistant
     Diagnostics download instead (diagnostics.py), with the manifest read
     that used to block the event loop now run in the executor.
@@ -42,7 +42,7 @@ class TestManifestDeclaresDeviceIntegrationType:
     def test_integration_type_is_device(self) -> None:
         """v1.1.11: a SmartShading config entry is treated as a logical
         shading controller, and its entity platforms (base.py, switch.py,
-        button.py, zone_summary.py) already declare a real DeviceInfo --
+        zone_summary.py) already declare a real DeviceInfo --
         so integration_type is "device"."""
         data = json.loads(
             (_INTEGRATION_ROOT / "manifest.json").read_text(encoding="utf-8")
@@ -64,60 +64,40 @@ def _stub_mod(name: str, **attrs):
     return m
 
 
-class TestSupportResearchExportButtonsNoLongerWriteFiles:
-    """entities/button.py must never touch /config/www/ or the filesystem at
-    all anymore -- the export data now lives in the standard HA Diagnostics
-    download (diagnostics.py) instead of an unauthenticated public file."""
+class TestSupportResearchExportButtonsAreGone:
+    """The Support/Research export buttons never wrote a file again after the HACS review
+    and were removed together with the legacy System entry's UI (PA-3): the export data
+    lives only in the standard, authenticated HA Diagnostics download (diagnostics.py)."""
 
-    def test_file_writing_symbols_are_gone(self) -> None:
-        source = (_INTEGRATION_ROOT / "entities" / "button.py").read_text(encoding="utf-8")
-        for forbidden in (
-            "_write_export_file", "www_dir",
-            "_export_filename", "_research_export_filename",
-            "write_text(", ".mkdir(",
-        ):
-            assert forbidden not in source, f"{forbidden!r} must not appear in button.py anymore"
+    def test_button_modules_and_platform_are_gone(self) -> None:
+        assert not (_INTEGRATION_ROOT / "entities" / "button.py").exists()
+        assert not (_INTEGRATION_ROOT / "button.py").exists()
+        assert not (_INTEGRATION_ROOT / "entities" / "system_switch.py").exists()
+        from custom_components.smartshading.const import ZONE_PLATFORMS
+        assert "button" not in ZONE_PLATFORMS
+        import custom_components.smartshading.const as const
+        assert not hasattr(const, "SYSTEM_PLATFORMS")
 
-    def test_async_press_creates_only_a_notification(self) -> None:
-        sys.modules.pop("custom_components.smartshading.entities.button", None)
+    def test_no_code_writes_export_files_to_www(self) -> None:
+        for path in _INTEGRATION_ROOT.rglob("*.py"):
+            source = path.read_text(encoding="utf-8")
+            for forbidden in ("_write_export_file", "_export_filename", "_research_export_filename"):
+                assert forbidden not in source, f"{forbidden!r} in {path.name}"
 
-        notifications: list[dict] = []
+    def test_diagnostics_aggregates_only_live_zone_coordinators(self) -> None:
+        from types import SimpleNamespace
 
-        def _fake_pn_create(hass, *, message, title, notification_id):
-            notifications.append(
-                {"message": message, "title": title, "notification_id": notification_id}
-            )
+        from custom_components.smartshading import diagnostics as diagnostics_mod
 
-        sys.modules["homeassistant.components.persistent_notification"] = _stub_mod(
-            "homeassistant.components.persistent_notification",
-            async_create=_fake_pn_create,
-        )
-
-        from custom_components.smartshading.entities import button as button_mod
-
-        class _FakeConfig:
-            language = "en"
-
-        class _FakeHass:
-            config = _FakeConfig()
-
-        class _FakeEntry:
-            entry_id = "sys1"
-
-        btn = button_mod.SmartShadingExportButton(_FakeHass(), _FakeEntry())
-        asyncio.run(btn.async_press())
-
-        assert len(notifications) == 1
-        assert "Diagnostics" in notifications[0]["message"] or (
-            "Diagnose" in notifications[0]["message"]
-        )
-        # The message may explain (in prose) that the old path is gone --
-        # what matters is that async_press() itself never touches the
-        # filesystem, verified separately by test_file_writing_symbols_are_gone.
-
-        research_btn = button_mod.SmartShadingResearchExportButton(_FakeHass(), _FakeEntry())
-        asyncio.run(research_btn.async_press())
-        assert len(notifications) == 2
+        zone = SimpleNamespace(
+            data={}, runtime_data=SimpleNamespace(coordinator="zone-coordinator"))
+        legacy = SimpleNamespace(
+            data={"entry_type": "system"},
+            runtime_data=SimpleNamespace(coordinator="never-used"))
+        idle = SimpleNamespace(data={}, runtime_data=None)
+        hass = SimpleNamespace(config_entries=SimpleNamespace(
+            async_entries=lambda domain: [zone, legacy, idle]))
+        assert diagnostics_mod._active_zone_coordinators(hass) == ["zone-coordinator"]
 
 
 class TestDiagnosticsIncludesSupportAndResearchExport:
@@ -127,8 +107,7 @@ class TestDiagnosticsIncludesSupportAndResearchExport:
 
     def test_build_support_and_research_sections_uses_executor_for_version_read(self) -> None:
         sys.modules.pop("custom_components.smartshading.diagnostics", None)
-        sys.modules.pop("custom_components.smartshading.entities.button", None)
-
+        
         executor_calls: list = []
 
         class _FakeHass:

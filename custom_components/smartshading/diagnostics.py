@@ -29,6 +29,8 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from .const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_TYPE_ZONE
+
 if TYPE_CHECKING:
     from .coordinator import SmartShadingRuntimeData
 
@@ -241,12 +243,29 @@ async def _drain(gen):
         gen.close()
 
 
+def _active_zone_coordinators(hass: HomeAssistant) -> list:
+    """Return the live coordinators of ALL active SmartShading zone entries.
+
+    The Support/Research sections aggregate every zone (a real install has many
+    zones/windows), never just the first.  Skips the legacy System entry and any
+    zone entry without a live coordinator.
+    """
+    coords: list = []
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.data.get(CONF_ENTRY_TYPE, ENTRY_TYPE_ZONE) != ENTRY_TYPE_ZONE:
+            continue
+        coordinator = getattr(getattr(entry, "runtime_data", None), "coordinator", None)
+        if coordinator is not None:
+            coords.append(coordinator)
+    return coords
+
+
 async def _build_support_and_research_sections(hass: HomeAssistant) -> dict:
     """Aggregate the Support/Research Export payloads for the official HA
     diagnostics download — the only place they are exposed.  They used to be
-    written to an unauthenticated public file by (now-removed) /config/www
-    export buttons — see entities/button.py's own module docstring for why that
-    path was removed.  Reuses the existing, already privacy-safe builders
+    written to an unauthenticated public file by /config/www export buttons, later
+    pointed at this download by buttons of the legacy System entry; both are gone.
+    Reuses the existing, already privacy-safe builders
     (no entity IDs, no room/window names, no device IDs — see
     build_support_export_all_zones's and build_research_export_all_zones's own
     docstrings); this is additive aggregation for the standard HA diagnostics
@@ -270,7 +289,6 @@ async def _build_support_and_research_sections(hass: HomeAssistant) -> dict:
         from .engines.embedded_exports import fit_embedded_exports, support_history_factor
         from .engines.research_export_v3 import iter_research_export_all_zones
         from .engines.support_export import iter_support_export_all_zones
-        from .entities.button import _active_zone_coordinators
 
         now = datetime.now(timezone.utc)
         coordinators = _active_zone_coordinators(hass)

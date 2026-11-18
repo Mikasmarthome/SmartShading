@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Öffnet eine zusätzliche Seite. Sie ist nur für Zeitplanwechsel, Entscheidung und manuelles Aufheben relevant."
         }
       },
-      "system_manual_override": {
-        "title": "Übersteuerungs-Systemstandard",
-        "description": "Die Vorgabe für alle Zonen ohne eigene Einstellungen: Lege fest, wann SmartShading die Steuerung zurückbekommt, nachdem eine Beschattung von Hand bewegt wurde. Details werden nur für die Auswahl abgefragt, die sie braucht.",
-        "data": {
-          "override_release_choice": "Steuerung zurückgeben",
-          "override_allow_comfort_actions": "Komfortaktionen während der Übersteuerung erlauben",
-          "override_allow_protection_actions": "Schutzaktionen während der Übersteuerung erlauben",
-          "override_edit_timeouts": "Auch die Sicherheitsfrist anpassen"
-        },
-        "data_description": {
-          "override_release_choice": "Wann SmartShading die Beschattung wieder selbst steuert.",
-          "override_allow_comfort_actions": "Wenn aktiviert, dürfen reguläre Komfortbeschattungen auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
-          "override_allow_protection_actions": "Wenn aktiviert, dürfen Schutzaktionen (Abwesenheit, Hitze, Blendschutz) auch bei aktiver Übersteuerung weiterhin ausgeführt werden. Die Übersteuerung selbst bleibt aktiv.",
-          "override_edit_timeouts": "Öffnet eine zusätzliche Seite. Sie ist nur für Zeitplanwechsel, Entscheidung und manuelles Aufheben relevant."
-        }
-      },
       "override_duration": {
         "title": "Dauer der Übersteuerung",
         "description": "SmartShading übernimmt nach dieser Zeit wieder. Eine Änderung am Tag nutzt die Tagesdauer, eine Änderung in der Nacht die Nachtdauer.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Wie lange eine Änderung in der Nacht gehalten wird. Die anderen Auswahlmöglichkeiten nutzen den Wert als nächtliche Sicherheitsfrist und als Haltezeit eines von Hand gestoppten Behangs."
         }
       },
-      "system_init": {
-        "title": "SmartShading-Systemeinstellungen",
-        "description": "Globale Standardwerte, denen jede Zone folgt, sofern sie keine eigenen Einstellungen verwendet.",
-        "menu_options": {
-          "system_manual_override": "Übersteuerungs-Systemstandard",
-          "system_presence": "Präsenz-Standard"
-        }
-      },
       "presence_custom": {
         "title": "Präsenz — Abwesenheitsverzögerung dieser Zone",
         "description": "Wie lange eine Abwesenheit andauern muss, bevor diese Zone als leer gilt.",
-        "data": {
-          "absence_delay_min": "Abwesenheitsverzögerung"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Präsenz-Standard",
-        "description": "Die Abwesenheitsverzögerung, der jede Zone folgt, sofern sie keinen eigenen Wert verwendet: wie lange eine Abwesenheit andauern muss, bevor das Haus als leer gilt.",
         "data": {
           "absence_delay_min": "Abwesenheitsverzögerung"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Mindestens ein ausgewähltes Cover ist bereits einem anderen SmartShading-Fenster zugeordnet. Ein Cover kann nur einmal zugeordnet werden."
     },
     "abort": {
-      "no_options_for_system_entry": "Der SmartShading-System-Eintrag hat keine konfigurierbaren Optionen."
+      "legacy_system_entry": "Dies ist der alte SmartShading-System-Eintrag. Er hat keine eigenen Einstellungen mehr und wird automatisch entfernt, sobald keine Zone mehr von ihm abhängt. Um die manuelle Übersteuerung oder die Präsenz zu ändern, öffne die Optionen der Zone selbst."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Support-Export erstellen"
-      },
-      "export_research_data": {
-        "name": "Research-Export erstellen"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Lernmodus",
@@ -812,9 +770,6 @@
           "on": "Aktiv",
           "off": "Inaktiv"
         }
-      },
-      "debug_logging": {
-        "name": "Debug-Log"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Alte System-Einstellungen noch in Benutzung",
-      "description": "Die SmartShading-Zone {zone} verwendet noch die alten gemeinsamen System-Einstellungen oder ihre Einstellungen konnten nicht überprüft werden; deshalb bleibt der alte System-Eintrag erhalten. Es wurde nichts automatisch geändert, die Zone arbeitet weiter. Öffne die SmartShading-Optionen der Zone, gehe die Schritte für manuelle Übersteuerung und Anwesenheit durch, speichere jeden einmal und starte Home Assistant neu. Ist das nicht möglich, entferne die Zone und lege sie neu an."
+      "description": "Die SmartShading-Zone {zone} verwendet noch die alten gemeinsamen System-Einstellungen oder ihre Einstellungen konnten nicht überprüft werden; deshalb bleibt der alte System-Eintrag erhalten. Es wurde nichts automatisch geändert, die Zone arbeitet weiter. Öffne zur Behebung die Optionen dieser Zone, dann „Manuelle Übersteuerung“ und „Präsenz“: Schalte jeweils „Systemstandard verwenden“ aus, durchlaufe die folgenden Seiten und speichere. Starte danach Home Assistant neu. Die Zone zu löschen und neu anzulegen ist nur der letzte Ausweg: Dabei gehen die Konfiguration der Zone, ihre gelernten Daten und ihre Entitätsidentitäten dauerhaft verloren, sodass Automationen und Dashboards, die ihre Entitäten verwenden, neu eingerichtet werden müssen."
     },
     "system_retirement_zone_not_saved": {
       "title": "Zoneneinstellungen konnten nicht gespeichert werden",

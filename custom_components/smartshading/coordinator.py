@@ -415,7 +415,6 @@ from .cover_control.shading_group_harmonizer import (
 )
 from .models.execution_diagnostics import WindowExecutionDiagnostics
 from .const import (
-    DATA_DEBUG_LOGGING,
     DEFAULT_WINDOW_OPEN_NIGHT_POSITION_HA as _DEFAULT_VENT_POS_HA,
     DOMAIN,
     MEASURED_SOLAR_UNDERREPRESENTATION_MAX_WM2,
@@ -1917,16 +1916,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
     @property
     def _debug_logging_enabled(self) -> bool:
-        """Return True when the system-level debug logging switch is active.
+        """Return True when this module's logger emits DEBUG records.
 
-        Reads from hass.data[DOMAIN][DATA_DEBUG_LOGGING] — a bool set by the
-        DebugLoggingSwitch entity and propagated by async_setup_system_entry.
-        Defaults to False when the key is absent (no system entry loaded yet,
-        or system entry was not set up before the first zone cycle).
+        The verbose per-cycle diagnostics follow the standard Home Assistant logger
+        configuration (``logger:`` in configuration.yaml or the ``logger.set_level``
+        action for ``custom_components.smartshading``); there is no separate
+        integration switch.  The check only avoids building debug payloads that
+        would be discarded.
         """
-        return bool(
-            self.hass.data.get(DOMAIN, {}).get(DATA_DEBUG_LOGGING, False)
-        )
+        return _LOGGER.isEnabledFor(logging.DEBUG)
 
     @property
     def learning_store(self) -> LearningStore:

@@ -114,7 +114,6 @@ _INTEGRATION_ROOT = Path(__file__).parent.parent / "custom_components" / "smarts
 _WINDOWS_LEAF_STEPS = {"add_window", "edit_window", "remove_window"}
 _ADVANCED_LEAF_STEPS = {"manual_override", "lifecycle_advanced"}
 _DIRECT_LEAF_STEPS = {"weather", "lifecycle", "presence", "comfort", "behavior"}
-_SYSTEM_INIT_LEAF_STEPS = {"system_manual_override", "system_presence"}
 
 
 def _make_entry(data: dict | None = None):
@@ -165,20 +164,28 @@ class TestAdvancedSubmenu:
             assert hasattr(flow, f"async_step_{step}"), step
 
 
-class TestSystemEntryHasRealOptions:
-    """T21 Phase C2: the System entry no longer aborts — it now owns real
-    global settings (Manual Override defaults, Cover Dispatch)."""
+class TestLegacySystemEntryHasNoOptionsMenu:
+    """PA-3: the legacy System entry has no options of its own any more.  Opening its
+    options explains where the settings live now (the abort text is translated) instead
+    of showing the removed System menu; nothing is saved."""
 
-    def test_system_entry_options_flow_shows_a_real_menu(self) -> None:
+    def test_system_entry_options_flow_aborts_with_guidance(self) -> None:
         flow = _make_options_flow(data={CONF_ENTRY_TYPE: ENTRY_TYPE_SYSTEM})
         result = asyncio.run(flow.async_step_init(user_input=None))
-        assert result["type"] == "menu"
-        assert set(result["menu_options"]) == _SYSTEM_INIT_LEAF_STEPS
+        assert result["type"] == "abort"
+        assert result["reason"] == "legacy_system_entry"
+        assert not flow.hass.config_entries.async_update_entry.called
 
-    def test_every_system_init_leaf_step_is_directly_callable(self) -> None:
-        flow = _make_options_flow(data={CONF_ENTRY_TYPE: ENTRY_TYPE_SYSTEM})
-        for step in _SYSTEM_INIT_LEAF_STEPS:
-            assert hasattr(flow, f"async_step_{step}"), step
+    def test_no_system_step_remains(self) -> None:
+        for name in dir(SmartShadingOptionsFlow):
+            assert not name.startswith("async_step_system"), name
+
+    def test_the_abort_reason_is_translated_in_every_file(self) -> None:
+        for path in [_INTEGRATION_ROOT / "strings.json",
+                     *sorted((_INTEGRATION_ROOT / "translations").glob("*.json"))]:
+            abort = json.loads(path.read_text(encoding="utf-8"))["options"]["abort"]
+            assert set(abort) == {"legacy_system_entry"}, path.name
+            assert abort["legacy_system_entry"].strip(), path.name
 
 
 class TestNoStepWasDroppedDuringRegrouping:

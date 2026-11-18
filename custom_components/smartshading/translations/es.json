@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Abre una página adicional. Solo importa para transición de horario, decisión y borrado manual."
         }
       },
-      "system_manual_override": {
-        "title": "Valores predeterminados de anulación manual",
-        "description": "El valor por defecto de todas las zonas sin ajustes propios: elige cuándo SmartShading recupera el control después de mover una persiana a mano. Solo se piden detalles para las opciones que los necesitan.",
-        "data": {
-          "override_release_choice": "Devolver el control",
-          "override_allow_comfort_actions": "Permitir acciones de confort durante la anulación",
-          "override_allow_protection_actions": "Permitir acciones de protección durante la anulación",
-          "override_edit_timeouts": "Ajustar también el tiempo de seguridad"
-        },
-        "data_description": {
-          "override_release_choice": "Cuándo SmartShading vuelve a controlar la persiana.",
-          "override_allow_comfort_actions": "Si está activado, el sombreado de confort habitual puede seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
-          "override_allow_protection_actions": "Si está activado, las acciones de protección (ausencia, calor, deslumbramiento) pueden seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
-          "override_edit_timeouts": "Abre una página adicional. Solo importa para transición de horario, decisión y borrado manual."
-        }
-      },
       "override_duration": {
         "title": "Duración de la anulación manual",
         "description": "SmartShading recupera el control pasado este tiempo. Un cambio de día usa la duración diurna; un cambio de noche, la nocturna.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Cuánto se mantiene un cambio hecho de noche. Las otras opciones lo usan como tiempo de seguridad nocturno y como tiempo de retención de una persiana detenida a mano."
         }
       },
-      "system_init": {
-        "title": "Ajustes del sistema SmartShading",
-        "description": "Valores predeterminados globales que sigue cada zona a menos que use su propia configuración.",
-        "menu_options": {
-          "system_manual_override": "Valores predeterminados de anulación manual",
-          "system_presence": "Valor predeterminado de presencia"
-        }
-      },
       "presence_custom": {
         "title": "Presencia — retardo de ausencia de esta zona",
         "description": "Cuánto debe durar una ausencia antes de que esta zona se considere vacía.",
-        "data": {
-          "absence_delay_min": "Retardo de ausencia"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Valor predeterminado de presencia",
-        "description": "El retardo de ausencia que sigue cada zona a menos que use su propio valor: cuánto debe durar una ausencia antes de que la casa se considere vacía.",
         "data": {
           "absence_delay_min": "Retardo de ausencia"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Al menos una cubierta seleccionada ya está asignada a otra ventana de SmartShading. Una cubierta solo puede asignarse una vez."
     },
     "abort": {
-      "no_options_for_system_entry": "La entrada de Sistema de SmartShading no tiene opciones configurables."
+      "legacy_system_entry": "Esta es la antigua entrada del Sistema de SmartShading. Ya no tiene ajustes propios y se elimina automáticamente en cuanto ninguna zona depende de ella. Para cambiar la anulación manual o la presencia, abre las opciones de la propia zona."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Crear exportación de soporte"
-      },
-      "export_research_data": {
-        "name": "Crear exportación de investigación"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Modo de aprendizaje",
@@ -812,9 +770,6 @@
           "on": "Activo",
           "off": "Inactivo"
         }
-      },
-      "debug_logging": {
-        "name": "Registro de depuración"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Ajustes antiguos del Sistema aún en uso",
-      "description": "La zona de SmartShading {zone} aún depende de los antiguos ajustes compartidos del Sistema, o no se pudieron verificar sus ajustes, por lo que se conserva la antigua entrada del Sistema. No se cambió nada automáticamente y la zona sigue funcionando. Abra las opciones de SmartShading de la zona, recorra los pasos de anulación manual y de presencia, guarde cada uno una vez y reinicie Home Assistant. Si no es posible, elimine la zona y añádala de nuevo."
+      "description": "La zona SmartShading {zone} todavía depende de los antiguos ajustes compartidos del Sistema, o no se pudieron verificar sus ajustes, por lo que se conserva la antigua entrada del Sistema. No se cambió nada automáticamente y la zona sigue funcionando. Para solucionarlo, abre las opciones de esta zona y, después, «Anulación manual» y «Presencia»: desactiva en cada una «Usar valor predeterminado del sistema», completa las pantallas siguientes y guarda. Después reinicia Home Assistant. Eliminar la zona y volver a crearla es solo el último recurso: se pierden de forma permanente la configuración de la zona, sus datos aprendidos y la identidad de sus entidades, por lo que habrá que volver a configurar las automatizaciones y los paneles que usen sus entidades."
     },
     "system_retirement_zone_not_saved": {
       "title": "No se pudieron guardar los ajustes de la zona",

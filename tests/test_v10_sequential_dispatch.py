@@ -10,7 +10,7 @@ Verifies:
     exactly like non-safety commands (v1.0.8 hardening — no timing bypass;
     safety's only privilege is cycle-ordering priority, see coordinator.py)
   - Non-safety commands sleep until the throttle allows the next dispatch
-  - const.py exports DATA_GLOBAL_DISPATCH, DATA_DEBUG_LOGGING, CONF_DEBUG_LOGGING
+  - const.py exports DATA_GLOBAL_DISPATCH (the custom debug-logging keys are gone, PA-3)
   - Coordinator constructor accepts global_serial_dispatch parameter
   - __init__.py initialises shared GlobalSerialDispatch in hass.data
 """
@@ -24,8 +24,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from custom_components.smartshading.const import (
-    CONF_DEBUG_LOGGING,
-    DATA_DEBUG_LOGGING,
     DATA_GLOBAL_DISPATCH,
     DOMAIN,
 )
@@ -324,20 +322,12 @@ class TestConstExports:
         assert DATA_GLOBAL_DISPATCH is not None
         assert isinstance(DATA_GLOBAL_DISPATCH, str)
 
-    def test_data_debug_logging_exists(self):
-        assert DATA_DEBUG_LOGGING is not None
-        assert isinstance(DATA_DEBUG_LOGGING, str)
-
-    def test_conf_debug_logging_exists(self):
-        assert CONF_DEBUG_LOGGING is not None
-        assert isinstance(CONF_DEBUG_LOGGING, str)
-
-    def test_data_global_dispatch_and_debug_logging_differ(self):
-        assert DATA_GLOBAL_DISPATCH != DATA_DEBUG_LOGGING
-
-    def test_conf_debug_logging_equals_data_debug_logging(self):
-        # Both key names must match so options[CONF] == hass.data key semantics align
-        assert CONF_DEBUG_LOGGING == DATA_DEBUG_LOGGING
+    def test_custom_debug_logging_keys_are_gone(self):
+        """PA-3: verbose logging follows the standard HA logger configuration; the
+        integration owns no debug flag, option or hass.data key any more."""
+        import custom_components.smartshading.const as const
+        assert not hasattr(const, "DATA_DEBUG_LOGGING")
+        assert not hasattr(const, "CONF_DEBUG_LOGGING")
 
 
 # ---------------------------------------------------------------------------
@@ -403,18 +393,10 @@ class TestInitGlobalDispatch:
         text = src.read_text(encoding="utf-8")
         assert "global_serial_dispatch=serial_dispatch" in text
 
-    def test_init_sets_default_debug_logging(self):
+    def test_init_has_no_custom_debug_flag(self):
         src = Path(__file__).resolve().parent.parent / "custom_components" / "smartshading" / "__init__.py"
         text = src.read_text(encoding="utf-8")
-        assert "DATA_DEBUG_LOGGING" in text
-
-    def test_system_entry_propagates_debug_flag(self):
-        """System entry reads CONF_DEBUG_LOGGING from options and writes to hass.data."""
-        src = Path(__file__).resolve().parent.parent / "custom_components" / "smartshading" / "__init__.py"
-        text = src.read_text(encoding="utf-8")
-        assert "CONF_DEBUG_LOGGING" in text
-        # Propagated to hass.data[DOMAIN][DATA_DEBUG_LOGGING]
-        assert f"DATA_DEBUG_LOGGING" in text
+        assert "DEBUG_LOGGING" not in text
 
 
 # ---------------------------------------------------------------------------

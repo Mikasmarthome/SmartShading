@@ -273,12 +273,8 @@ class TestLegacyDispatchIsGone:
         tree = ast.parse((PKG / "config_flow.py").read_text(encoding="utf-8"))
         steps = {n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
         assert not [s for s in steps if "dispatch" in s]
-        menus = [
-            ast.literal_eval(n) for n in ast.walk(tree)
-            if isinstance(n, ast.List) and all(isinstance(e, ast.Constant) for e in n.elts)
-            and any(isinstance(e.value, str) and e.value.startswith("system_") for e in n.elts)
-        ]
-        assert ["system_manual_override", "system_presence"] in menus
+        # PA-3: the legacy System entry has no options menu any more.
+        assert not [s for s in steps if s.startswith("async_step_system")]
 
     def test_execution_result_has_no_batch_fields(self) -> None:
         from dataclasses import fields

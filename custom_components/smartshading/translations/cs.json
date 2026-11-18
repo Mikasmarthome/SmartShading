@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Otevře další stránku. Týká se jen voleb změna rozvrhu, rozhodnutí a ruční zrušení."
         }
       },
-      "system_manual_override": {
-        "title": "Výchozí nastavení ručního přepsání",
-        "description": "Výchozí nastavení pro všechny zóny bez vlastního nastavení: zvolte, kdy SmartShading převezme řízení zpět poté, co byla žaluzie posunuta ručně. Podrobnosti se ptají jen u voleb, které je potřebují.",
-        "data": {
-          "override_release_choice": "Vrácení řízení",
-          "override_allow_comfort_actions": "Povolit akce komfortu během přepsání",
-          "override_allow_protection_actions": "Povolit ochranné akce během přepsání",
-          "override_edit_timeouts": "Upravit také bezpečnostní limit"
-        },
-        "data_description": {
-          "override_release_choice": "Kdy SmartShading znovu převezme řízení žaluzie.",
-          "override_allow_comfort_actions": "Je-li povoleno, běžné komfortní stínění může stále probíhat během aktivního přepsání. Samotné přepsání zůstává aktivní.",
-          "override_allow_protection_actions": "Je-li povoleno, ochranné akce (nepřítomnost, horko, oslnění) mohou stále probíhat během aktivního přepsání. Samotné přepsání zůstává aktivní.",
-          "override_edit_timeouts": "Otevře další stránku. Týká se jen voleb změna rozvrhu, rozhodnutí a ruční zrušení."
-        }
-      },
       "override_duration": {
         "title": "Doba ručního zásahu",
         "description": "SmartShading převezme řízení po této době. Změna ve dne používá denní dobu, změna v noci noční dobu.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Jak dlouho se drží změna provedená v noci. Ostatní volby ji používají jako noční bezpečnostní limit a jako dobu podržení ručně zastavené žaluzie."
         }
       },
-      "system_init": {
-        "title": "Systémová nastavení SmartShading",
-        "description": "Globální výchozí hodnoty, kterými se řídí každá zóna, pokud nepoužívá vlastní nastavení.",
-        "menu_options": {
-          "system_manual_override": "Výchozí nastavení ručního přepsání",
-          "system_presence": "Výchozí nastavení přítomnosti"
-        }
-      },
       "presence_custom": {
         "title": "Přítomnost — zpoždění nepřítomnosti této zóny",
         "description": "Jak dlouho musí nepřítomnost trvat, než je tato zóna považována za prázdnou.",
-        "data": {
-          "absence_delay_min": "Zpoždění nepřítomnosti"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Výchozí nastavení přítomnosti",
-        "description": "Zpoždění nepřítomnosti, kterým se řídí každá zóna, pokud nepoužívá vlastní hodnotu: jak dlouho musí nepřítomnost trvat, než je dům považován za prázdný.",
         "data": {
           "absence_delay_min": "Zpoždění nepřítomnosti"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Alespoň jedno vybrané zakrytí je již přiřazeno jinému oknu SmartShading. Zakrytí lze přiřadit pouze jednou."
     },
     "abort": {
-      "no_options_for_system_entry": "Systémová položka SmartShading nemá žádné konfigurovatelné možnosti."
+      "legacy_system_entry": "Toto je stará systémová položka SmartShading. Už nemá vlastní nastavení a bude automaticky odstraněna, jakmile na ní nebude záviset žádná zóna. Chcete-li změnit ruční přepsání nebo přítomnost, otevřete možnosti samotné zóny."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Vytvořit export podpory"
-      },
-      "export_research_data": {
-        "name": "Vytvořit výzkumný export"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Režim učení",
@@ -812,9 +770,6 @@
           "on": "Aktivní",
           "off": "Neaktivní"
         }
-      },
-      "debug_logging": {
-        "name": "Protokol ladění"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Stará nastavení Systému jsou stále používána",
-      "description": "Zóna SmartShading {zone} stále využívá stará sdílená nastavení Systému, nebo se její nastavení nepodařilo ověřit, proto je stará položka Systému zachována. Nic se automaticky nezměnilo a zóna dál funguje. Otevřete možnosti SmartShading této zóny, projděte kroky ručního přepsání a přítomnosti, každý jednou uložte a restartujte Home Assistant. Pokud to nejde, zónu odstraňte a přidejte znovu."
+      "description": "Zóna SmartShading {zone} stále používá staré sdílené systémové nastavení, nebo se její nastavení nepodařilo ověřit, proto je stará systémová položka zachována. Nic se automaticky nezměnilo a zóna dále funguje. Pro nápravu otevřete možnosti této zóny a poté „Ruční přepsání“ a „Přítomnost“: v obou vypněte „Použít systémové výchozí nastavení“, projděte následující obrazovky a uložte. Poté restartujte Home Assistant. Smazání zóny a její opětovné přidání je jen poslední možnost: konfigurace zóny, její naučená data a identity jejích entit se trvale ztratí, takže automatizace a přehledy, které její entity používají, bude nutné nastavit znovu."
     },
     "system_retirement_zone_not_saved": {
       "title": "Nastavení zóny se nepodařilo uložit",

@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Opens an extra page. It only matters for the schedule-transition, decision and manual-clear choices."
         }
       },
-      "system_manual_override": {
-        "title": "Manual Override defaults",
-        "description": "The default for all zones without their own settings: choose when SmartShading takes control back after you move a cover by hand. Only the choices that need details ask for them.",
-        "data": {
-          "override_release_choice": "Release control",
-          "override_allow_comfort_actions": "Allow comfort actions during override",
-          "override_allow_protection_actions": "Allow protection actions during override",
-          "override_edit_timeouts": "Also adjust the safety timeout"
-        },
-        "data_description": {
-          "override_release_choice": "When SmartShading takes control of the cover again.",
-          "override_allow_comfort_actions": "When enabled, regular comfort shading may still run while an override is active. The override itself stays active.",
-          "override_allow_protection_actions": "When enabled, protection actions (absence, heat, glare) may still run while an override is active. The override itself stays active.",
-          "override_edit_timeouts": "Opens an extra page. It only matters for the schedule-transition, decision and manual-clear choices."
-        }
-      },
       "override_duration": {
         "title": "Override duration",
         "description": "SmartShading takes control back after this time. A change made during the day uses the daytime duration, a change made at night uses the night duration.",
@@ -428,24 +412,6 @@
           "override_night_duration_min": "How long a change made at night is held. Other release choices use it as the night safety timeout and as the hold time of a manually stopped cover."
         }
       },
-      "system_init": {
-        "title": "SmartShading System settings",
-        "description": "Global defaults every zone follows unless it opts into its own settings.",
-        "menu_options": {
-          "system_manual_override": "Manual Override defaults",
-          "system_presence": "Presence default"
-        }
-      },
-      "system_presence": {
-        "title": "Presence default",
-        "description": "The absence delay every zone follows unless it opts into its own value: how long an absence must persist before the house is considered empty.",
-        "data": {
-          "absence_delay_min": "Absence delay (minutes)"
-        },
-        "data_description": {
-          "absence_delay_min": "How long presence must be continuously absent before SmartShading treats the zone as empty."
-        }
-      },
       "presence_custom": {
         "title": "Presence — this zone's absence delay",
         "description": "How long an absence must persist before this zone is considered empty.",
@@ -470,7 +436,7 @@
       "cover_already_assigned": "One or more selected covers are already assigned to another SmartShading window. A cover can be assigned only once."
     },
     "abort": {
-      "no_options_for_system_entry": "The SmartShading System entry has no configurable options."
+      "legacy_system_entry": "This is the old SmartShading System entry. It no longer has settings of its own and is removed automatically as soon as no zone depends on it. To change Manual Override or Presence settings, open the options of the zone itself."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Create Support Export"
-      },
-      "export_research_data": {
-        "name": "Create Research Export"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Learning Mode",
@@ -812,9 +770,6 @@
           "on": "Active",
           "off": "Inactive"
         }
-      },
-      "debug_logging": {
-        "name": "Debug logging"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Old System settings still in use",
-      "description": "The SmartShading zone {zone} still relies on the old shared System settings, or its settings could not be verified, so the old System entry is kept. Nothing was changed automatically and the zone keeps working. Open the SmartShading options of the zone, go through the manual override and presence steps, save each once, then restart Home Assistant. If that is not possible, remove the zone and add it again."
+      "description": "The SmartShading zone {zone} still relies on the old shared System settings, or its settings could not be verified, so the old System entry is kept. Nothing was changed automatically and the zone keeps working. To fix this, open the options of this zone, then Manual Override and Presence settings: switch off “Use System default” in each, complete the following screens and save. Then restart Home Assistant. Deleting and re-adding the zone is only a last resort: it permanently discards the zone's configuration, its learned data and its entity identities, so automations and dashboards that use its entities must be set up again."
     },
     "system_retirement_zone_not_saved": {
       "title": "Zone settings could not be saved",

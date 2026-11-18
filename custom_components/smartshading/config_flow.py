@@ -261,8 +261,8 @@ def _safe_positive_int(value: Any, default: int, *, maximum: int) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Manual Override policy form (Phase 5).  The System entry's default and a
-# zone's own policy share the same pages:
+# Manual Override policy form (Phase 5).  A zone's own policy is edited on these pages
+# (the legacy System entry's default used to share them):
 #
 #   page 1  release choice (5 options) + allow comfort / protection actions
 #           + "also adjust the safety timeout"
@@ -1393,26 +1393,19 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         # Presence gate->custom flow state (T21 Phase C3)
         self._pending_presence_updates: dict[str, Any] = {}
 
-    # -- Init: section menu — branches into the System entry's own menu
-    # (T21 Phase C2) or the zone menu, depending on entry type. --
+    # -- Init: the zone section menu; a legacy System entry only gets an
+    # explanatory abort (it has no options of its own any more). --
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
         if self._config_entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM:
-            return await self.async_step_system_init()
+            # The legacy System entry has no options of its own any more.  The settings
+            # a zone still takes from it are changed in that zone's own options
+            # (Manual override / Presence: "use own settings"), which is what lets the
+            # System entry retire; the abort text says so.
+            return self.async_abort(reason="legacy_system_entry")
         return await self._async_step_zone_init(user_input)
-
-    async def async_step_system_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """The System entry owns the global defaults every zone follows unless
-        it opts into its own settings: the Manual Override default policy and
-        the Presence default."""
-        return self.async_show_menu(
-            step_id="system_init",
-            menu_options=["system_manual_override", "system_presence"],
-        )
 
     async def _async_step_zone_init(
         self, user_input: dict[str, Any] | None = None
@@ -1816,32 +1809,6 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         )
         return self.async_show_form(step_id="presence_custom", data_schema=schema)
 
-    # -- Presence — System entry default (T21 Phase C3) --
-
-    async def async_step_system_presence(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        current = self._config_entry.data
-
-        if user_input is not None:
-            new_value = int(user_input.get(CONF_ABSENCE_DELAY_MIN, DEFAULT_ABSENCE_DELAY_MIN))
-            return self._save_system_default_and_reload({"system_absence_delay_min": new_value})
-
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_ABSENCE_DELAY_MIN,
-                    default=current.get("system_absence_delay_min", DEFAULT_ABSENCE_DELAY_MIN),
-                ): NumberSelector(
-                    NumberSelectorConfig(
-                        min=0, max=1440, step=5,
-                        mode=NumberSelectorMode.BOX, unit_of_measurement="min",
-                    )
-                ),
-            }
-        )
-        return self.async_show_form(step_id="system_presence", data_schema=schema)
-
     # -- Comfort settings --
 
     async def async_step_comfort(
@@ -1952,12 +1919,11 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         return self.async_show_form(step_id="manual_override", data_schema=vol.Schema(fields))
 
     # -- Manual Override policy form (Phase 5): shared by the zone's own policy
-    # and the System entry's default.  See the module-level comment above
+    # (the System entry's default was removed with its options menu).  See the module-level comment above
     # _OVERRIDE_POLICY_DEFAULTS for the page structure. --
 
     def _override_stored(self) -> dict[str, Any]:
-        key = "system_override_policy" if self._override_scope == "system" else "override_policy"
-        stored = self._config_entry.data.get(key)
+        stored = self._config_entry.data.get("override_policy")
         return dict(stored) if isinstance(stored, dict) else {}
 
     def _override_values(self) -> dict[str, Any]:
@@ -1981,8 +1947,6 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
 
     def _override_finish(self) -> config_entries.ConfigFlowResult:
         policy = {**_OVERRIDE_POLICY_DEFAULTS, **self._override_values()}
-        if self._override_scope == "system":
-            return self._save_system_default_and_reload({"system_override_policy": policy})
         tolerance = self._pending_override_detection_tolerance
         if tolerance is None:
             tolerance = _safe_positive_int(
@@ -2022,13 +1986,6 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         """Reached only when the gate step (above) is answered with "use my
         own settings"."""
         return await self._override_choice_step("manual_override_custom", "zone", user_input)
-
-    # -- Manual Override policy — System entry default (T21 Phase C2) --
-
-    async def async_step_system_manual_override(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        return await self._override_choice_step("system_manual_override", "system", user_input)
 
     async def async_step_override_duration(
         self, user_input: dict[str, Any] | None = None
@@ -2721,26 +2678,6 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
             )
         }
         self.hass.config_entries.async_update_entry(self._config_entry, data=new_data)
-        self.hass.async_create_task(
-            self.hass.config_entries.async_reload(self._config_entry.entry_id)
-        )
-        return self.async_create_entry(data={**self._config_entry.options})
-
-    def _save_system_default_and_reload(
-        self, updates: dict[str, Any]
-    ) -> config_entries.ConfigFlowResult:
-        """Like _save_and_reload, but also reloads every zone entry so a
-        changed System-entry global default (T21 Phase C2) takes effect
-        immediately for every zone still deferring to it, instead of only on
-        that zone's own next reload."""
-        new_data = {**self._config_entry.data, **updates}
-        self.hass.config_entries.async_update_entry(self._config_entry, data=new_data)
-        for entry in self.hass.config_entries.async_entries(DOMAIN):
-            if entry.entry_id == self._config_entry.entry_id:
-                continue
-            if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM:
-                continue
-            self.hass.async_create_task(self.hass.config_entries.async_reload(entry.entry_id))
         self.hass.async_create_task(
             self.hass.config_entries.async_reload(self._config_entry.entry_id)
         )

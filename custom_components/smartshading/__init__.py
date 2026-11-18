@@ -10,12 +10,13 @@ SmartShading uses two distinct config entry types:
                        Platforms: sensor, binary_sensor, switch.
 
   ENTRY_TYPE_SYSTEM — LEGACY (being retired).  At most one entry that older
-                       versions created automatically; it owns the export button
-                       and the debug switch and the global defaults the zones used
-                       to inherit.  Nothing creates it any more, and it is removed
-                       automatically as soon as every zone entry is verifiably
-                       independent of it (system_retirement_lifecycle.py).
-                       Platforms: button, switch.
+                       versions created automatically; it only carries the global
+                       defaults the zones used to inherit.  It has no platform, no
+                       entity, no device and no options menu any more.  Nothing
+                       creates it, and it is removed automatically as soon as every
+                       zone entry is verifiably independent of it
+                       (system_retirement_lifecycle.py).  Until then it stays loadable
+                       (empty), so a zone that still depends on it keeps working.
 
 Backward compatibility: zone entries created before this change have no
 CONF_ENTRY_TYPE in their data — they are treated as ENTRY_TYPE_ZONE entries.
@@ -42,14 +43,11 @@ from .config_entry_data import (
     resolve_zone_override_policy,
 )
 from .const import (
-    CONF_DEBUG_LOGGING,
     CONF_ENTRY_TYPE,
-    DATA_DEBUG_LOGGING,
     DATA_GLOBAL_DISPATCH,
     DOMAIN,
     ENTRY_TYPE_SYSTEM,
     ENTRY_TYPE_ZONE,
-    SYSTEM_PLATFORMS,
     ZONE_PLATFORMS,
 )
 from .cover_control.global_dispatch_throttle import GlobalSerialDispatch
@@ -205,10 +203,30 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     the zone entry setup exactly as before.
     """
     _prepare_zone_entries(hass)
+    await _async_cleanup_legacy_exports(hass)
     # No entry is set up yet, so the System entry is still unloaded and nothing can run
     # against it while it is judged and (if every zone is independent) removed.
     await _async_retire_system_entry(hass)
     return True
+
+
+async def _async_cleanup_legacy_exports(hass: HomeAssistant) -> None:
+    """Delete expired SmartShading export files that older versions left in /config/www.
+
+    Those files were publicly readable, so retention still matters on installations
+    upgraded from such a version.  It used to run from the System entry's setup; it now
+    runs once per Home Assistant start from the component setup, whether or not that
+    entry still exists.  Failures are logged and never propagate.
+    """
+    import pathlib
+
+    from .engines.export_retention import cleanup_old_exports
+
+    www_dir = pathlib.Path(hass.config.config_dir) / "www"
+    try:
+        await hass.async_add_executor_job(cleanup_old_exports, www_dir)
+    except Exception:  # noqa: BLE001 - housekeeping must never break the setup
+        _LOGGER.warning("SmartShading: startup export retention cleanup failed")
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -248,7 +266,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
     """Unload a SmartShading config entry."""
     entry_type = entry.data.get(CONF_ENTRY_TYPE, ENTRY_TYPE_ZONE)
     if entry_type == ENTRY_TYPE_SYSTEM:
-        return await hass.config_entries.async_unload_platforms(entry, SYSTEM_PLATFORMS)
+        return True  # the legacy System entry forwards no platform: nothing to unload
 
     # Zone entry: cancel forecast timers and flush pending learning data.
     if cancel := getattr(entry.runtime_data, "forecast_cancel", None):
@@ -341,13 +359,11 @@ async def async_remove_entry(hass: HomeAssistant, entry: SmartShadingConfigEntry
 async def _async_setup_system_entry(
     hass: HomeAssistant, entry: SmartShadingConfigEntry
 ) -> bool:
-    """Set up the SmartShading System entry.
+    """Set up the legacy SmartShading System entry.
 
-    The system entry owns only global system entities (export button, debug
-    logging switch).  It has no coordinator and does not parse zone/window data.
-
-    Propagates the persisted debug_logging flag to hass.data so zone
-    coordinators can read it without re-looking up the system entry each cycle.
+    The entry owns no entity, no device and no platform and has no coordinator; it
+    only keeps the stored global defaults that a zone which has not been migrated yet
+    still depends on.  Setting it up merely lets Home Assistant treat it as loaded.
     """
     # A System entry with no zone behind it (its last zone was removed by an
     # older version, or the removal was interrupted) cannot be removed by the
@@ -358,20 +374,6 @@ async def _async_setup_system_entry(
     if not _zone_entries(hass):
         hass.async_create_task(_async_remove_orphaned_system_entry(hass))
 
-    # Propagate the debug flag to hass.data so zone coordinators can read it.
-    hass.data.setdefault(DOMAIN, {})[DATA_DEBUG_LOGGING] = entry.options.get(
-        CONF_DEBUG_LOGGING, False
-    )
-    # Run export retention cleanup on every startup/reload.
-    import pathlib
-    from .engines.export_retention import cleanup_old_exports as _cleanup_exports
-    _www_dir = pathlib.Path(hass.config.config_dir) / "www"
-    try:
-        await hass.async_add_executor_job(_cleanup_exports, _www_dir)
-    except Exception:
-        _LOGGER.warning("SmartShading: startup export retention cleanup failed")
-
-    await hass.config_entries.async_forward_entry_setups(entry, SYSTEM_PLATFORMS)
     return True
 
 
@@ -532,9 +534,6 @@ async def _async_setup_zone_entry(
     if DATA_GLOBAL_DISPATCH not in hass.data[DOMAIN]:
         hass.data[DOMAIN][DATA_GLOBAL_DISPATCH] = GlobalSerialDispatch()
     serial_dispatch: GlobalSerialDispatch = hass.data[DOMAIN][DATA_GLOBAL_DISPATCH]
-
-    # Debug logging flag: default False until the system entry sets it.
-    hass.data[DOMAIN].setdefault(DATA_DEBUG_LOGGING, False)
 
     # A4: which window may command which cover.  Computed from the stored
     # config of ALL zone entries (never from setup order) before this entry's

@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Åpner en ekstra side. Har bare betydning for tidsplanskifte, beslutning og manuell fjerning."
         }
       },
-      "system_manual_override": {
-        "title": "Standarder for manuell overstyring",
-        "description": "Standarden for alle soner uten egne innstillinger: Velg når SmartShading overtar styringen igjen etter at en solskjerming er flyttet for hånd. Detaljer spørres bare om for valg som trenger dem.",
-        "data": {
-          "override_release_choice": "Gi tilbake styringen",
-          "override_allow_comfort_actions": "Tillat komforthandlinger under overstyring",
-          "override_allow_protection_actions": "Tillat beskyttelseshandlinger under overstyring",
-          "override_edit_timeouts": "Juster også sikkerhetsgrensen"
-        },
-        "data_description": {
-          "override_release_choice": "Når SmartShading styrer solskjermingen igjen.",
-          "override_allow_comfort_actions": "Når aktivert, kan vanlig komfortskygging fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
-          "override_allow_protection_actions": "Når aktivert, kan beskyttelseshandlinger (fravær, varme, blending) fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
-          "override_edit_timeouts": "Åpner en ekstra side. Har bare betydning for tidsplanskifte, beslutning og manuell fjerning."
-        }
-      },
       "override_duration": {
         "title": "Varighet for manuell overstyring",
         "description": "SmartShading overtar igjen etter denne tiden. En endring på dagtid bruker dagsvarigheten, en endring om natten nattvarigheten.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Hvor lenge en endring om natten holdes. De andre valgene bruker verdien som nattlig sikkerhetsgrense og som holdetid for en manuelt stoppen solskjerming."
         }
       },
-      "system_init": {
-        "title": "SmartShading systeminnstillinger",
-        "description": "Globale standarder som hver sone følger med mindre den bruker sine egne innstillinger.",
-        "menu_options": {
-          "system_manual_override": "Standarder for manuell overstyring",
-          "system_presence": "Standard for tilstedeværelse"
-        }
-      },
       "presence_custom": {
         "title": "Tilstedeværelse — denne sonens fraværsforsinkelse",
         "description": "Hvor lenge et fravær må vare før denne sonen anses som tom.",
-        "data": {
-          "absence_delay_min": "Fraværsforsinkelse"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Standard for tilstedeværelse",
-        "description": "Fraværsforsinkelsen som hver sone følger med mindre den bruker sin egen verdi: hvor lenge et fravær må vare før huset anses som tomt.",
         "data": {
           "absence_delay_min": "Fraværsforsinkelse"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Minst ett valgt dekke er allerede tilordnet et annet SmartShading-vindu. Et dekke kan bare tilordnes én gang."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading-systemoppføringen har ingen konfigurerbare alternativer."
+      "legacy_system_entry": "Dette er den gamle SmartShading-systemoppføringen. Den har ikke lenger egne innstillinger og fjernes automatisk så snart ingen sone avhenger av den. Åpne innstillingene for selve sonen for å endre manuell overstyring eller tilstedeværelse."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Opprett støtteeksport"
-      },
-      "export_research_data": {
-        "name": "Opprett forskningseksport"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Læringsmodus",
@@ -812,9 +770,6 @@
           "on": "Aktiv",
           "off": "Inaktiv"
         }
-      },
-      "debug_logging": {
-        "name": "Feilsøkingslogg"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Gamle systeminnstillinger er fortsatt i bruk",
-      "description": "SmartShading-sonen {zone} bruker fortsatt de gamle felles systeminnstillingene, eller innstillingene kunne ikke bekreftes, så den gamle systemoppføringen beholdes. Ingenting er endret automatisk, og sonen fortsetter å fungere. Åpne SmartShading-alternativene for sonen, gå gjennom trinnene for manuell overstyring og tilstedeværelse, lagre hvert trinn én gang og start Home Assistant på nytt. Hvis det ikke er mulig, fjern sonen og legg den til på nytt."
+      "description": "SmartShading-sonen {zone} bruker fortsatt de gamle felles systeminnstillingene, eller innstillingene kunne ikke kontrolleres; derfor beholdes den gamle systemoppføringen. Ingenting er endret automatisk, og sonen fungerer fortsatt. For å løse dette åpner du innstillingene for sonen og deretter «Manuell overstyring» og «Tilstedeværelse»: slå av «Bruk systemstandard» i hver av dem, gå gjennom de neste skjermbildene og lagre. Start deretter Home Assistant på nytt. Å slette sonen og opprette den på nytt er bare siste utvei: sonens konfigurasjon, de innlærte dataene og enhetsidentitetene går permanent tapt, slik at automatiseringer og dashbord som bruker enhetene må settes opp på nytt."
     },
     "system_retirement_zone_not_saved": {
       "title": "Soneinnstillingene kunne ikke lagres",

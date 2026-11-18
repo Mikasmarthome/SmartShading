@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Apre una pagina aggiuntiva. Conta solo per transizione di programma, decisione e cancellazione manuale."
         }
       },
-      "system_manual_override": {
-        "title": "Valori predefiniti dell'override manuale",
-        "description": "Il valore predefinito per tutte le zone senza impostazioni proprie: scegli quando SmartShading riprende il controllo dopo che una tapparella è stata spostata a mano. I dettagli vengono chiesti solo per le scelte che li richiedono.",
-        "data": {
-          "override_release_choice": "Restituzione del controllo",
-          "override_allow_comfort_actions": "Consenti azioni di comfort durante l'override",
-          "override_allow_protection_actions": "Consenti azioni di protezione durante l'override",
-          "override_edit_timeouts": "Regola anche il tempo di sicurezza"
-        },
-        "data_description": {
-          "override_release_choice": "Quando SmartShading torna a controllare la tapparella.",
-          "override_allow_comfort_actions": "Se abilitato, l'ombreggiatura di comfort regolare può continuare durante un override attivo. L'override stesso rimane attivo.",
-          "override_allow_protection_actions": "Se abilitato, le azioni di protezione (assenza, calore, abbagliamento) possono continuare durante un override attivo. L'override stesso rimane attivo.",
-          "override_edit_timeouts": "Apre una pagina aggiuntiva. Conta solo per transizione di programma, decisione e cancellazione manuale."
-        }
-      },
       "override_duration": {
         "title": "Durata dell'override",
         "description": "SmartShading riprende il controllo dopo questo tempo. Una modifica di giorno usa la durata diurna, una di notte la durata notturna.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Per quanto tempo viene mantenuta una modifica fatta di notte. Le altre scelte la usano come tempo di sicurezza notturno e come tempo di mantenimento di una tapparella fermata a mano."
         }
       },
-      "system_init": {
-        "title": "Impostazioni di sistema SmartShading",
-        "description": "Valori predefiniti globali seguiti da ogni zona a meno che non usi impostazioni proprie.",
-        "menu_options": {
-          "system_manual_override": "Valori predefiniti dell'override manuale",
-          "system_presence": "Valore predefinito di presenza"
-        }
-      },
       "presence_custom": {
         "title": "Presenza — ritardo assenza di questa zona",
         "description": "Per quanto tempo deve durare un'assenza prima che questa zona sia considerata vuota.",
-        "data": {
-          "absence_delay_min": "Ritardo di assenza"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Valore predefinito di presenza",
-        "description": "Il ritardo assenza seguito da ogni zona a meno che non usi un valore proprio: per quanto tempo deve durare un'assenza prima che la casa sia considerata vuota.",
         "data": {
           "absence_delay_min": "Ritardo di assenza"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Almeno una copertura selezionata è già assegnata a un'altra finestra SmartShading. Una copertura può essere assegnata una sola volta."
     },
     "abort": {
-      "no_options_for_system_entry": "La voce Sistema di SmartShading non ha opzioni configurabili."
+      "legacy_system_entry": "Questa è la vecchia voce Sistema di SmartShading. Non ha più impostazioni proprie e viene rimossa automaticamente non appena nessuna zona dipende da essa. Per modificare l'override manuale o la presenza, apri le opzioni della zona stessa."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Crea export di supporto"
-      },
-      "export_research_data": {
-        "name": "Crea export di ricerca"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Modalità di apprendimento",
@@ -812,9 +770,6 @@
           "on": "Attivo",
           "off": "Inattivo"
         }
-      },
-      "debug_logging": {
-        "name": "Log di debug"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Vecchie impostazioni di Sistema ancora in uso",
-      "description": "La zona SmartShading {zone} dipende ancora dalle vecchie impostazioni condivise del Sistema, oppure le sue impostazioni non sono state verificabili, quindi la vecchia voce di Sistema viene mantenuta. Nulla è stato modificato automaticamente e la zona continua a funzionare. Apri le opzioni SmartShading della zona, passa attraverso i passaggi di override manuale e presenza, salva ciascuno una volta e riavvia Home Assistant. Se non è possibile, rimuovi la zona e aggiungila di nuovo."
+      "description": "La zona SmartShading {zone} dipende ancora dalle vecchie impostazioni condivise del Sistema, oppure le sue impostazioni non hanno potuto essere verificate; per questo la vecchia voce Sistema viene mantenuta. Nulla è stato modificato automaticamente e la zona continua a funzionare. Per risolvere, apri le opzioni di questa zona e poi «Override manuale» e «Presenza»: disattiva in ciascuna «Usa il valore predefinito di sistema», completa le schermate successive e salva. Riavvia quindi Home Assistant. Eliminare e ricreare la zona è solo l'ultima risorsa: la configurazione della zona, i suoi dati appresi e l'identità delle sue entità vengono persi in modo permanente, quindi le automazioni e le dashboard che usano le sue entità andranno riconfigurate."
     },
     "system_retirement_zone_not_saved": {
       "title": "Impossibile salvare le impostazioni della zona",

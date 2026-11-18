@@ -33,17 +33,13 @@ CONF_ENTRY_TYPE = "entry_type"
 ENTRY_TYPE_SYSTEM = "system"
 ENTRY_TYPE_ZONE = "zone"
 
-# Platform lists per entry type.
-# Zone entries own sensors, binary sensors, and zone-level switches.
-# The system entry owns the export button and the system-level debug switch.
+# Platforms of a zone entry: sensors, binary sensors and the zone-level switches.
+# The legacy System entry forwards NO platform (it owns no entity of its own any more).
 ZONE_PLATFORMS: list[str] = ["sensor", "binary_sensor", "switch"]
-SYSTEM_PLATFORMS: list[str] = ["button", "switch"]
 
-# Union for reference and backward-compatible test assertions.
-PLATFORMS: list[str] = [*ZONE_PLATFORMS, *SYSTEM_PLATFORMS]
-
-# Identifier for the SmartShading System device in the HA device registry.
-# Fixed string so the device remains stable regardless of which entry owns it.
+# Identifier the legacy SmartShading System device carried in the HA device registry.
+# No code registers it any more; it is kept only so cleanup checks can recognise that
+# device (Home Assistant removes it together with the System entry).
 SYSTEM_DEVICE_IDENTIFIER = "smartshading_system"
 
 # hass.data[DOMAIN] key — legacy; no longer used functionally.  Kept so that
@@ -52,13 +48,9 @@ DATA_SYSTEM_ENTRY_ID = "system_entry_id"
 
 # hass.data[DOMAIN] keys for integration-wide runtime state.
 DATA_GLOBAL_DISPATCH = "global_dispatch"   # GlobalSerialDispatch instance
-DATA_DEBUG_LOGGING = "debug_logging"       # bool: debug logging enabled
 DATA_RETIREMENT_LOCK = "system_retirement_lock"        # asyncio.Lock: one retirement at a time
 DATA_ZONE_MIGRATION_FAILURES = "zone_migration_failures"  # entry_id -> "persistence" | "unverifiable"
 DATA_COVER_OWNERSHIP = "cover_ownership"   # CoverOwnershipRegistry instance (A4)
-
-# config_entry.options key for the debug logging switch (system entry only).
-CONF_DEBUG_LOGGING = "debug_logging"
 
 # Zone control persistence key in config_entry.options (Step 9G11).
 # Stores per-zone learning_enabled / active_control_enabled so switch

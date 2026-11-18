@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Öppnar en extra sida. Spelar bara roll för schemabyte, beslut och manuell rensning."
         }
       },
-      "system_manual_override": {
-        "title": "Standarder för manuell åsidosättning",
-        "description": "Standard för alla zoner utan egna inställningar: välj när SmartShading tar över styrningen igen efter att ett solskydd flyttats för hand. Detaljer frågas bara efter för val som behöver dem.",
-        "data": {
-          "override_release_choice": "Lämna tillbaka styrningen",
-          "override_allow_comfort_actions": "Tillåt komfortåtgärder under åsidosättning",
-          "override_allow_protection_actions": "Tillåt skyddsåtgärder under åsidosättning",
-          "override_edit_timeouts": "Justera även säkerhetsgränsen"
-        },
-        "data_description": {
-          "override_release_choice": "När SmartShading styr solskyddet igen.",
-          "override_allow_comfort_actions": "När aktiverad kan vanlig komfortskuggning fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
-          "override_allow_protection_actions": "När aktiverad kan skyddsåtgärder (frånvaro, värme, bländning) fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
-          "override_edit_timeouts": "Öppnar en extra sida. Spelar bara roll för schemabyte, beslut och manuell rensning."
-        }
-      },
       "override_duration": {
         "title": "Varaktighet för manuell åsidosättning",
         "description": "SmartShading tar över igen efter denna tid. En ändring på dagen använder dagsvaraktigheten, en ändring på natten nattvaraktigheten.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Hur länge en ändring på natten hålls. De andra valen använder värdet som nattlig säkerhetsgräns och som hålltid för ett manuellt stoppat solskydd."
         }
       },
-      "system_init": {
-        "title": "SmartShading-systeminställningar",
-        "description": "Globala standarder som varje zon följer om den inte använder egna inställningar.",
-        "menu_options": {
-          "system_manual_override": "Standarder för manuell åsidosättning",
-          "system_presence": "Närvarostandard"
-        }
-      },
       "presence_custom": {
         "title": "Närvaro — denna zons frånvarofördröjning",
         "description": "Hur länge en frånvaro måste vara innan denna zon anses tom.",
-        "data": {
-          "absence_delay_min": "Frånvarofördröjning"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Närvarostandard",
-        "description": "Frånvarofördröjningen som varje zon följer om den inte använder ett eget värde: hur länge en frånvaro måste vara innan huset anses tomt.",
         "data": {
           "absence_delay_min": "Frånvarofördröjning"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Minst ett valt skydd är redan tilldelat ett annat SmartShading-fönster. Ett skydd kan bara tilldelas en gång."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading-systemposten har inga konfigurerbara alternativ."
+      "legacy_system_entry": "Detta är den gamla SmartShading-systemposten. Den har inte längre egna inställningar och tas bort automatiskt så snart ingen zon är beroende av den. Öppna själva zonens alternativ för att ändra manuell åsidosättning eller närvaro."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Skapa supportexport"
-      },
-      "export_research_data": {
-        "name": "Skapa forskningsexport"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Inlärningsläge",
@@ -812,9 +770,6 @@
           "on": "Aktiv",
           "off": "Inaktiv"
         }
-      },
-      "debug_logging": {
-        "name": "Felsökningslogg"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Gamla systeminställningar används fortfarande",
-      "description": "SmartShading-zonen {zone} använder fortfarande de gamla gemensamma systeminställningarna, eller så kunde dess inställningar inte verifieras, därför behålls den gamla systemposten. Inget har ändrats automatiskt och zonen fortsätter att fungera. Öppna zonens SmartShading-alternativ, gå igenom stegen för manuell åsidosättning och närvaro, spara varje steg en gång och starta om Home Assistant. Om det inte går, ta bort zonen och lägg till den igen."
+      "description": "SmartShading-zonen {zone} använder fortfarande de gamla gemensamma systeminställningarna, eller så kunde dess inställningar inte kontrolleras; därför behålls den gamla systemposten. Inget har ändrats automatiskt och zonen fortsätter att fungera. Åtgärda det genom att öppna zonens alternativ och sedan ”Manuell åsidosättning” och ”Närvaro”: stäng av ”Använd systemstandard” i båda, gå igenom de följande sidorna och spara. Starta sedan om Home Assistant. Att ta bort zonen och lägga till den igen är bara sista utvägen: zonens konfiguration, dess inlärda data och dess entitetsidentiteter går permanent förlorade, så automationer och instrumentpaneler som använder dess entiteter måste ställas in på nytt."
     },
     "system_retirement_zone_not_saved": {
       "title": "Zoninställningarna kunde inte sparas",

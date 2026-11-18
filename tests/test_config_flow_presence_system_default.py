@@ -14,8 +14,7 @@ Coverage:
   CFPS-04 use_system_default=False advances to the custom step.
   CFPS-05 Custom step save persists absence_delay_min + the fields collected
           on the gate step + use_system_default=False.
-  CFPS-06 System entry's async_step_system_presence round-trips
-          "system_absence_delay_min".
+  CFPS-06 The legacy System entry's presence step is gone (PA-3).
   CFPS-07 Form render (user_input=None) never mutates ConfigEntry.data.
 """
 from __future__ import annotations
@@ -216,18 +215,18 @@ class TestCustomStepSave:
         assert saved[CONF_PRESENCE_POLICY] == "all_home"
 
 
-class TestSystemPresenceStep:
-    def test_round_trips_system_absence_delay_min(self):
-        flow = _make_options_flow(data={})
-        asyncio.run(flow.async_step_system_presence(user_input={CONF_ABSENCE_DELAY_MIN: 90}))
-        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
-        assert kwargs["data"]["system_absence_delay_min"] == 90
+class TestSystemPresenceStepIsGone:
+    def test_the_step_no_longer_exists(self):
+        assert not hasattr(SmartShadingOptionsFlow, "async_step_system_presence")
 
-    def test_defaults_when_nothing_stored(self):
+    def test_a_zone_presence_save_never_writes_the_system_default_key(self):
         flow = _make_options_flow(data={})
-        result = asyncio.run(flow.async_step_system_presence(user_input=None))
-        schema: vol.Schema = result["data_schema"]
-        assert _schema_field_key(schema, CONF_ABSENCE_DELAY_MIN).default() == DEFAULT_ABSENCE_DELAY_MIN
+        asyncio.run(flow.async_step_presence(user_input={
+            CONF_PRESENCE_ENTITY_IDS: [], CONF_ABSENCE_DELAY_USE_SYSTEM_DEFAULT: False,
+            CONF_PRESENCE_POLICY: "any_home"}))
+        asyncio.run(flow.async_step_presence_custom(user_input={CONF_ABSENCE_DELAY_MIN: 55}))
+        _, kwargs = flow.hass.config_entries.async_update_entry.call_args
+        assert "system_absence_delay_min" not in kwargs["data"]
 
 
 class TestNoMutationOnRender:

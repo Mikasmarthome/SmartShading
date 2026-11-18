@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Ouvre une page supplémentaire. Ne concerne que le changement de programme, la décision et l'effacement manuel."
         }
       },
-      "system_manual_override": {
-        "title": "Valeurs par défaut de la prise de contrôle manuelle",
-        "description": "La valeur par défaut de toutes les zones sans réglages propres : choisissez quand SmartShading reprend le contrôle après un déplacement manuel d'un volet. Les détails ne sont demandés que pour les choix qui en ont besoin.",
-        "data": {
-          "override_release_choice": "Rendre le contrôle",
-          "override_allow_comfort_actions": "Autoriser les actions de confort pendant la dérogation",
-          "override_allow_protection_actions": "Autoriser les actions de protection pendant la dérogation",
-          "override_edit_timeouts": "Régler aussi le délai de sécurité"
-        },
-        "data_description": {
-          "override_release_choice": "Quand SmartShading pilote de nouveau le volet.",
-          "override_allow_comfort_actions": "Si activé, les mouvements de confort réguliers peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
-          "override_allow_protection_actions": "Si activé, les actions de protection (absence, chaleur, éblouissement) peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
-          "override_edit_timeouts": "Ouvre une page supplémentaire. Ne concerne que le changement de programme, la décision et l'effacement manuel."
-        }
-      },
       "override_duration": {
         "title": "Durée de la priorité manuelle",
         "description": "SmartShading reprend le contrôle après ce délai. Un changement de jour utilise la durée de jour, un changement de nuit la durée de nuit.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Durée pendant laquelle un changement fait de nuit est maintenu. Les autres choix l'utilisent comme délai de sécurité nocturne et comme durée de maintien d'un volet arrêté à la main."
         }
       },
-      "system_init": {
-        "title": "Paramètres système SmartShading",
-        "description": "Valeurs par défaut globales que suit chaque zone à moins qu'elle n'utilise ses propres réglages.",
-        "menu_options": {
-          "system_manual_override": "Valeurs par défaut de la prise de contrôle manuelle",
-          "system_presence": "Valeur par défaut de présence"
-        }
-      },
       "presence_custom": {
         "title": "Présence — délai d'absence de cette zone",
         "description": "Combien de temps une absence doit durer avant que cette zone soit considérée comme vide.",
-        "data": {
-          "absence_delay_min": "Délai d'absence"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Valeur par défaut de présence",
-        "description": "Le délai d'absence que suit chaque zone à moins qu'elle n'utilise sa propre valeur : combien de temps une absence doit durer avant que la maison soit considérée comme vide.",
         "data": {
           "absence_delay_min": "Délai d'absence"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Au moins un volet sélectionné est déjà affecté à une autre fenêtre SmartShading. Un volet ne peut être affecté qu'une seule fois."
     },
     "abort": {
-      "no_options_for_system_entry": "L'entrée Système de SmartShading n'a aucune option configurable."
+      "legacy_system_entry": "Ceci est l'ancienne entrée Système de SmartShading. Elle n'a plus de réglages propres et est supprimée automatiquement dès qu'aucune zone n'en dépend. Pour modifier la dérogation manuelle ou la présence, ouvrez les options de la zone elle-même."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Créer un export d'assistance"
-      },
-      "export_research_data": {
-        "name": "Créer un export de recherche"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Mode d'apprentissage",
@@ -812,9 +770,6 @@
           "on": "Actif",
           "off": "Inactif"
         }
-      },
-      "debug_logging": {
-        "name": "Journalisation de débogage"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Anciens réglages Système encore utilisés",
-      "description": "La zone SmartShading {zone} dépend encore des anciens réglages partagés du Système, ou ses réglages n'ont pas pu être vérifiés ; l'ancienne entrée Système est donc conservée. Rien n'a été modifié automatiquement et la zone continue de fonctionner. Ouvrez les options SmartShading de la zone, parcourez les étapes de dérogation manuelle et de présence, enregistrez chacune une fois, puis redémarrez Home Assistant. Si ce n'est pas possible, supprimez la zone et ajoutez-la de nouveau."
+      "description": "La zone SmartShading {zone} dépend encore des anciens réglages partagés du Système, ou ses réglages n'ont pas pu être vérifiés ; l'ancienne entrée Système est donc conservée. Rien n'a été modifié automatiquement et la zone continue de fonctionner. Pour corriger cela, ouvrez les options de cette zone, puis « Dérogation manuelle » et « Présence » : désactivez à chaque fois « Utiliser la valeur par défaut du système », parcourez les écrans suivants et enregistrez. Redémarrez ensuite Home Assistant. Supprimer la zone puis la recréer n'est qu'un dernier recours : cela supprime définitivement la configuration de la zone, ses données apprises et l'identité de ses entités, de sorte que les automatisations et tableaux de bord qui utilisent ses entités devront être reconfigurés."
     },
     "system_retirement_zone_not_saved": {
       "title": "Réglages de la zone non enregistrés",

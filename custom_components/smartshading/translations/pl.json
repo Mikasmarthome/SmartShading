@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Otwiera dodatkową stronę. Ma znaczenie tylko dla zmiany harmonogramu, decyzji i ręcznego czyszczenia."
         }
       },
-      "system_manual_override": {
-        "title": "Ustawienia domyślne ręcznego zastąpienia",
-        "description": "Ustawienie domyślne dla wszystkich stref bez własnych ustawień: wybierz, kiedy SmartShading przejmuje sterowanie po ręcznym przesunięciu osłony. Szczegóły są pytane tylko przy wyborach, które ich potrzebują.",
-        "data": {
-          "override_release_choice": "Zwrot sterowania",
-          "override_allow_comfort_actions": "Zezwól na działania komfortu podczas zastąpienia",
-          "override_allow_protection_actions": "Zezwól na działania ochrony podczas zastąpienia",
-          "override_edit_timeouts": "Dostosuj także limit bezpieczeństwa"
-        },
-        "data_description": {
-          "override_release_choice": "Kiedy SmartShading ponownie steruje osłoną.",
-          "override_allow_comfort_actions": "Jeśli włączone, zwykłe zacienianie komfortowe może nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
-          "override_allow_protection_actions": "Jeśli włączone, działania ochronne (nieobecność, upał, olśnienie) mogą nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
-          "override_edit_timeouts": "Otwiera dodatkową stronę. Ma znaczenie tylko dla zmiany harmonogramu, decyzji i ręcznego czyszczenia."
-        }
-      },
       "override_duration": {
         "title": "Czas trwania ręcznej zmiany",
         "description": "SmartShading przejmuje sterowanie po tym czasie. Zmiana w dzień używa czasu dziennego, zmiana w nocy – nocnego.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Jak długo utrzymywana jest zmiana wykonana w nocy. Pozostałe wybory używają tej wartości jako nocnego limitu bezpieczeństwa i czasu przytrzymania ręcznie zatrzymanej osłony."
         }
       },
-      "system_init": {
-        "title": "Ustawienia systemowe SmartShading",
-        "description": "Globalne ustawienia domyślne, których przestrzega każda strefa, chyba że używa własnych ustawień.",
-        "menu_options": {
-          "system_manual_override": "Ustawienia domyślne ręcznego zastąpienia",
-          "system_presence": "Domyślne ustawienie obecności"
-        }
-      },
       "presence_custom": {
         "title": "Obecność — opóźnienie nieobecności tej strefy",
         "description": "Jak długo musi trwać nieobecność, zanim ta strefa zostanie uznana za pustą.",
-        "data": {
-          "absence_delay_min": "Opóźnienie nieobecności"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Domyślne ustawienie obecności",
-        "description": "Opóźnienie nieobecności, którego przestrzega każda strefa, chyba że używa własnej wartości: jak długo musi trwać nieobecność, zanim dom zostanie uznany za pusty.",
         "data": {
           "absence_delay_min": "Opóźnienie nieobecności"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Co najmniej jedna wybrana osłona jest już przypisana do innego okna SmartShading. Osłonę można przypisać tylko raz."
     },
     "abort": {
-      "no_options_for_system_entry": "Wpis systemowy SmartShading nie ma konfigurowalnych opcji."
+      "legacy_system_entry": "To jest stary wpis Systemu SmartShading. Nie ma już własnych ustawień i zostanie automatycznie usunięty, gdy tylko żadna strefa nie będzie od niego zależeć. Aby zmienić ręczne zastąpienie lub obecność, otwórz opcje samej strefy."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Utwórz eksport pomocy technicznej"
-      },
-      "export_research_data": {
-        "name": "Utwórz eksport badawczy"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Tryb uczenia",
@@ -812,9 +770,6 @@
           "on": "Aktywne",
           "off": "Nieaktywne"
         }
-      },
-      "debug_logging": {
-        "name": "Dziennik debugowania"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Stare ustawienia Systemu nadal w użyciu",
-      "description": "Strefa SmartShading {zone} nadal korzysta ze starych wspólnych ustawień Systemu albo jej ustawień nie udało się zweryfikować, dlatego stary wpis Systemu zostaje zachowany. Nic nie zostało zmienione automatycznie, a strefa nadal działa. Otwórz opcje SmartShading tej strefy, przejdź przez kroki ręcznego zastąpienia i obecności, zapisz każdy raz i uruchom ponownie Home Assistanta. Jeśli to niemożliwe, usuń strefę i dodaj ją ponownie."
+      "description": "Strefa SmartShading {zone} nadal korzysta ze starych, wspólnych ustawień Systemu albo jej ustawień nie udało się zweryfikować, dlatego stary wpis Systemu zostaje zachowany. Nic nie zostało zmienione automatycznie, a strefa nadal działa. Aby to naprawić, otwórz opcje tej strefy, a następnie „Ręczne zastąpienie” i „Obecność”: w każdej wyłącz „Użyj ustawienia systemowego”, przejdź przez kolejne ekrany i zapisz. Następnie uruchom ponownie Home Assistant. Usunięcie strefy i dodanie jej od nowa to tylko ostateczność: konfiguracja strefy, jej wyuczone dane i tożsamości jej encji zostają trwale utracone, więc automatyzacje i pulpity korzystające z jej encji trzeba będzie skonfigurować ponownie."
     },
     "system_retirement_zone_not_saved": {
       "title": "Nie udało się zapisać ustawień strefy",

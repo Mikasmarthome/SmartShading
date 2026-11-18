@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Opent een extra pagina. Alleen relevant voor schemawissel, beslissing en handmatig wissen."
         }
       },
-      "system_manual_override": {
-        "title": "Standaardinstellingen handmatige overschrijving",
-        "description": "De standaard voor alle zones zonder eigen instellingen: kies wanneer SmartShading de sturing terugneemt nadat een zonwering met de hand is verplaatst. Details worden alleen gevraagd voor keuzes die ze nodig hebben.",
-        "data": {
-          "override_release_choice": "Sturing teruggeven",
-          "override_allow_comfort_actions": "Comfortacties toestaan tijdens overschrijving",
-          "override_allow_protection_actions": "Beschermingsacties toestaan tijdens overschrijving",
-          "override_edit_timeouts": "Ook de veiligheidslimiet aanpassen"
-        },
-        "data_description": {
-          "override_release_choice": "Wanneer SmartShading de zonwering weer zelf aanstuurt.",
-          "override_allow_comfort_actions": "Indien ingeschakeld, kan de reguliere comfortbeschaduwing nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
-          "override_allow_protection_actions": "Indien ingeschakeld, kunnen beschermingsacties (afwezigheid, hitte, verblinding) nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
-          "override_edit_timeouts": "Opent een extra pagina. Alleen relevant voor schemawissel, beslissing en handmatig wissen."
-        }
-      },
       "override_duration": {
         "title": "Duur van de handmatige overname",
         "description": "SmartShading neemt na deze tijd de sturing terug. Een wijziging overdag gebruikt de dagduur, een wijziging 's nachts de nachtduur.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Hoelang een wijziging 's nachts wordt vastgehouden. De andere keuzes gebruiken de waarde als nachtelijke veiligheidslimiet en als houdtijd van een met de hand gestopte zonwering."
         }
       },
-      "system_init": {
-        "title": "SmartShading-systeeminstellingen",
-        "description": "Algemene standaardinstellingen die elke zone volgt, tenzij deze eigen instellingen gebruikt.",
-        "menu_options": {
-          "system_manual_override": "Standaardinstellingen handmatige overschrijving",
-          "system_presence": "Aanwezigheidsstandaard"
-        }
-      },
       "presence_custom": {
         "title": "Aanwezigheid — afwezigheidsvertraging van deze zone",
         "description": "Hoe lang een afwezigheid moet duren voordat deze zone als leeg wordt beschouwd.",
-        "data": {
-          "absence_delay_min": "Afwezigheidsvertraging"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Aanwezigheidsstandaard",
-        "description": "De afwezigheidsvertraging die elke zone volgt, tenzij deze een eigen waarde gebruikt: hoe lang een afwezigheid moet duren voordat het huis als leeg wordt beschouwd.",
         "data": {
           "absence_delay_min": "Afwezigheidsvertraging"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Minstens één geselecteerde afdekking is al aan een ander SmartShading-raam toegewezen. Een afdekking kan maar één keer worden toegewezen."
     },
     "abort": {
-      "no_options_for_system_entry": "De SmartShading-systeeminvoer heeft geen configureerbare opties."
+      "legacy_system_entry": "Dit is het oude SmartShading-Systeemitem. Het heeft geen eigen instellingen meer en wordt automatisch verwijderd zodra geen enkele zone ervan afhangt. Open de opties van de zone zelf om de handmatige overschrijving of de aanwezigheid te wijzigen."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Support-export maken"
-      },
-      "export_research_data": {
-        "name": "Onderzoeksexport maken"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Leermodus",
@@ -812,9 +770,6 @@
           "on": "Actief",
           "off": "Inactief"
         }
-      },
-      "debug_logging": {
-        "name": "Foutopsporingslogboek"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Oude Systeeminstellingen nog in gebruik",
-      "description": "De SmartShading-zone {zone} vertrouwt nog op de oude gedeelde Systeeminstellingen, of de instellingen konden niet worden gecontroleerd, daarom blijft de oude Systeeminvoer behouden. Er is niets automatisch gewijzigd en de zone blijft werken. Open de SmartShading-opties van de zone, doorloop de stappen voor handmatige overschrijving en aanwezigheid, sla elk eenmaal op en herstart Home Assistant. Lukt dat niet, verwijder de zone dan en voeg hem opnieuw toe."
+      "description": "De SmartShading-zone {zone} gebruikt nog de oude gedeelde Systeeminstellingen, of de instellingen konden niet worden gecontroleerd; daarom blijft het oude Systeemitem bestaan. Er is niets automatisch gewijzigd en de zone blijft werken. Om dit op te lossen opent u de opties van deze zone en vervolgens ‘Handmatige overschrijving’ en ‘Aanwezigheid’: schakel bij beide ‘Systeemstandaard gebruiken’ uit, doorloop de volgende schermen en sla op. Start daarna Home Assistant opnieuw. De zone verwijderen en opnieuw toevoegen is slechts een laatste redmiddel: de configuratie van de zone, de geleerde gegevens en de entiteitsidentiteiten gaan dan definitief verloren, waardoor automatiseringen en dashboards die de entiteiten gebruiken opnieuw moeten worden ingesteld."
     },
     "system_retirement_zone_not_saved": {
       "title": "Zone-instellingen konden niet worden opgeslagen",

@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Obre una pàgina addicional. Només importa per a transició d'horari, decisió i esborrat manual."
         }
       },
-      "system_manual_override": {
-        "title": "Valors predeterminats de substitució manual",
-        "description": "El valor per defecte de totes les zones sense configuració pròpia: trieu quan SmartShading recupera el control després que es mogui una persiana a mà. Només es demanen detalls per a les opcions que els necessiten.",
-        "data": {
-          "override_release_choice": "Retorn del control",
-          "override_allow_comfort_actions": "Permet accions de confort durant l'anul·lació",
-          "override_allow_protection_actions": "Permet accions de protecció durant l'anul·lació",
-          "override_edit_timeouts": "Ajusta també el temps de seguretat"
-        },
-        "data_description": {
-          "override_release_choice": "Quan SmartShading torna a controlar la persiana.",
-          "override_allow_comfort_actions": "Si està activat, l'ombreig de confort habitual pot continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
-          "override_allow_protection_actions": "Si està activat, les accions de protecció (absència, calor, enlluernament) poden continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
-          "override_edit_timeouts": "Obre una pàgina addicional. Només importa per a transició d'horari, decisió i esborrat manual."
-        }
-      },
       "override_duration": {
         "title": "Durada de l'anul·lació manual",
         "description": "SmartShading recupera el control passat aquest temps. Un canvi de dia usa la durada diürna; un canvi de nit, la nocturna.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Quant temps es manté un canvi fet de nit. Les altres opcions l'usen com a temps de seguretat nocturn i com a retenció d'una persiana aturada a mà."
         }
       },
-      "system_init": {
-        "title": "Configuració del sistema SmartShading",
-        "description": "Valors predeterminats globals que segueix cada zona llevat que utilitzi la seva pròpia configuració.",
-        "menu_options": {
-          "system_manual_override": "Valors predeterminats de substitució manual",
-          "system_presence": "Valor predeterminat de presència"
-        }
-      },
       "presence_custom": {
         "title": "Presència — retard d'absència d'aquesta zona",
         "description": "Quant temps ha de durar una absència abans que aquesta zona es consideri buida.",
-        "data": {
-          "absence_delay_min": "Retard d'absència"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Valor predeterminat de presència",
-        "description": "El retard d'absència que segueix cada zona llevat que utilitzi un valor propi: quant temps ha de durar una absència abans que la casa es consideri buida.",
         "data": {
           "absence_delay_min": "Retard d'absència"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Almenys una coberta seleccionada ja està assignada a una altra finestra de SmartShading. Una coberta només es pot assignar una vegada."
     },
     "abort": {
-      "no_options_for_system_entry": "L'entrada de Sistema de SmartShading no té opcions configurables."
+      "legacy_system_entry": "Aquesta és l'antiga entrada del Sistema de SmartShading. Ja no té ajustos propis i s'elimina automàticament tan bon punt cap zona en depèn. Per canviar l'anul·lació manual o la presència, obre les opcions de la mateixa zona."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Crea exportació de suport"
-      },
-      "export_research_data": {
-        "name": "Crea exportació de recerca"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Mode d'aprenentatge",
@@ -812,9 +770,6 @@
           "on": "Actiu",
           "off": "Inactiu"
         }
-      },
-      "debug_logging": {
-        "name": "Registre de depuració"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Ajustos antics del Sistema encara en ús",
-      "description": "La zona de SmartShading {zone} encara depèn dels antics ajustos compartits del Sistema, o no s'han pogut verificar els seus ajustos, per això es conserva l'antiga entrada del Sistema. No s'ha canviat res automàticament i la zona continua funcionant. Obriu les opcions de SmartShading de la zona, recorreu els passos de substitució manual i de presència, deseu-ne cadascun una vegada i reinicieu Home Assistant. Si no és possible, elimineu la zona i afegiu-la de nou."
+      "description": "La zona SmartShading {zone} encara depèn dels antics ajustos compartits del Sistema, o no s'han pogut verificar els seus ajustos, i per això es conserva l'antiga entrada del Sistema. No s'ha canviat res automàticament i la zona continua funcionant. Per solucionar-ho, obre les opcions d'aquesta zona i després «Anul·lació manual» i «Presència»: desactiva a cadascuna «Utilitza el valor predeterminat del sistema», completa les pantalles següents i desa. Després reinicia Home Assistant. Eliminar la zona i tornar-la a crear és només l'últim recurs: la configuració de la zona, les seves dades apreses i la identitat de les seves entitats es perden de manera permanent, de manera que caldrà tornar a configurar les automatitzacions i els tauleres que facin servir les seves entitats."
     },
     "system_retirement_zone_not_saved": {
       "title": "No s'han pogut desar els ajustos de la zona",

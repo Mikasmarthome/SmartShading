@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Avaa lisäsivun. Vaikuttaa vain aikataulun vaihdon, päätöksen ja käsin poiston valintoihin."
         }
       },
-      "system_manual_override": {
-        "title": "Manuaalisen ohituksen oletukset",
-        "description": "Oletus kaikille vyöhykkeille, joilla ei ole omia asetuksia: valitse, milloin SmartShading ottaa ohjauksen takaisin, kun peitettä on siirretty käsin. Lisätietoja kysytään vain valinnoista, jotka niitä tarvitsevat.",
-        "data": {
-          "override_release_choice": "Ohjauksen palautus",
-          "override_allow_comfort_actions": "Salli mukavuustoiminnot ohituksen aikana",
-          "override_allow_protection_actions": "Salli suojaustoiminnot ohituksen aikana",
-          "override_edit_timeouts": "Säädä myös turvaraja"
-        },
-        "data_description": {
-          "override_release_choice": "Milloin SmartShading ohjaa peitettä taas itse.",
-          "override_allow_comfort_actions": "Kun käytössä, tavallinen mukavuusvarjostus voi silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
-          "override_allow_protection_actions": "Kun käytössä, suojaustoiminnot (poissaolo, kuumuus, häikäisy) voivat silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
-          "override_edit_timeouts": "Avaa lisäsivun. Vaikuttaa vain aikataulun vaihdon, päätöksen ja käsin poiston valintoihin."
-        }
-      },
       "override_duration": {
         "title": "Ohituksen kesto",
         "description": "SmartShading ottaa ohjauksen takaisin tämän ajan jälkeen. Päivällä tehty muutos käyttää päiväkestoa, yöllä tehty yökestoa.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Kuinka kauan yöllä tehtyä muutosta pidetään. Muut valinnat käyttävät arvoa yön turvarajana ja käsin pysäytetyn peitteen pitoaikana."
         }
       },
-      "system_init": {
-        "title": "SmartShading-järjestelmäasetukset",
-        "description": "Yleiset oletukset, joita jokainen vyöhyke noudattaa, ellei se käytä omia asetuksiaan.",
-        "menu_options": {
-          "system_manual_override": "Manuaalisen ohituksen oletukset",
-          "system_presence": "Läsnäolon oletus"
-        }
-      },
       "presence_custom": {
         "title": "Läsnäolo — tämän vyöhykkeen poissaolon viive",
         "description": "Kuinka kauan poissaolon on kestettävä, ennen kuin tämä vyöhyke katsotaan tyhjäksi.",
-        "data": {
-          "absence_delay_min": "Poissaoloviive"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Läsnäolon oletus",
-        "description": "Poissaolon viive, jota jokainen vyöhyke noudattaa, ellei se käytä omaa arvoaan: kuinka kauan poissaolon on kestettävä, ennen kuin talo katsotaan tyhjäksi.",
         "data": {
           "absence_delay_min": "Poissaoloviive"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Vähintään yksi valittu peite on jo liitetty toiseen SmartShading-ikkunaan. Peite voidaan liittää vain kerran."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading-järjestelmämerkinnällä ei ole määritettäviä asetuksia."
+      "legacy_system_entry": "Tämä on SmartShadingin vanha järjestelmämerkintä. Sillä ei ole enää omia asetuksia, ja se poistetaan automaattisesti heti, kun mikään vyöhyke ei enää riipu siitä. Muuta manuaalista ohitusta tai läsnäoloa avaamalla itse vyöhykkeen asetukset."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Luo tukivienti"
-      },
-      "export_research_data": {
-        "name": "Luo tutkimusvienti"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Oppimistila",
@@ -812,9 +770,6 @@
           "on": "Aktiivinen",
           "off": "Ei-aktiivinen"
         }
-      },
-      "debug_logging": {
-        "name": "Virheenkorjausloki"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Vanhat järjestelmäasetukset ovat yhä käytössä",
-      "description": "SmartShading-alue {zone} nojaa yhä vanhoihin yhteisiin järjestelmäasetuksiin, tai sen asetuksia ei voitu varmistaa, joten vanha järjestelmämerkintä säilytetään. Mitään ei muutettu automaattisesti ja alue toimii edelleen. Avaa alueen SmartShading-asetukset, käy läpi manuaalisen ohituksen ja läsnäolon vaiheet, tallenna kumpikin kerran ja käynnistä Home Assistant uudelleen. Jos se ei onnistu, poista alue ja lisää se uudelleen."
+      "description": "SmartShading-vyöhyke {zone} käyttää yhä vanhoja yhteisiä järjestelmäasetuksia, tai sen asetuksia ei voitu tarkistaa; siksi vanha järjestelmämerkintä säilytetään. Mitään ei muutettu automaattisesti, ja vyöhyke toimii edelleen. Korjaa tämä avaamalla vyöhykkeen asetukset ja sitten ”Manuaalinen ohitus” ja ”Läsnäolo”: poista kummassakin käytöstä ”Käytä järjestelmän oletusta”, käy läpi seuraavat näkymät ja tallenna. Käynnistä sen jälkeen Home Assistant uudelleen. Vyöhykkeen poistaminen ja lisääminen uudelleen on vasta viimeinen keino: vyöhykkeen asetukset, opitut tiedot ja entiteettien tunnisteet menetetään pysyvästi, joten sen entiteettejä käyttävät automaatiot ja kojelaudat on määritettävä uudelleen."
     },
     "system_retirement_zone_not_saved": {
       "title": "Alueen asetuksia ei voitu tallentaa",

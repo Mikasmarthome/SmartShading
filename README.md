@@ -58,9 +58,12 @@ including covers that do not report a reliable position.
 
 ### System Entry and Zone Entries
 
-SmartShading uses two kinds of configuration entries: a single **System Entry** holds system-wide actions
-(Support Export, Research Export, Debug logging), and **one Zone Entry per zone** holds that zone's
-configuration and all of its zone and window entities. The System Entry is set up automatically.
+SmartShading uses **one Zone Entry per zone**; it holds that zone's configuration and all of its zone and
+window entities. There is no separate system-wide entry, device or entity any more. Installations created
+by an earlier version may still show a legacy **System Entry**: it has no entities or options of its own,
+and SmartShading removes it automatically as soon as every zone no longer depends on it. If a zone still
+does, a Repairs notice names that zone and explains the safe fix (open the zone's options, then
+**Manual Override** and **Presence**, and switch off **Use System default**).
 
 ### Zones, windows, and covers
 
@@ -230,31 +233,31 @@ not exposed.
 | Solar sector | Binary sensor | Whether the window is currently within the sun's sector (geometry only). |
 | Override active | Binary sensor | Whether a manual override is currently holding the window's cover. |
 
-### System entities
-
-| Entity | Type | Description |
-|--------|------|-------------|
-| Create Support Export | Button | Points you at the Home Assistant Diagnostics download. |
-| Create Research Export | Button | Points you at the Home Assistant Diagnostics download. |
-| Debug logging | Switch | Temporarily increases log detail for diagnosis. |
-
 ## Diagnostics and exports
 
 SmartShading's Support and Research data is part of the standard Home Assistant Diagnostics download —
-open **Settings → Devices & Services → SmartShading → the System device → Download diagnostics**. Pressing
-**Create Support Export** or **Create Research Export** on the System Entry doesn't write a file itself; it
-just points you at that same download (a persistent notification with the exact path above). The download
-is authenticated by Home Assistant itself, like any other integration's diagnostics — SmartShading never
-uploads it anywhere.
+open **Settings → Devices & Services → SmartShading**, open the menu (⋮) of a zone entry and choose
+**Download diagnostics**. The download is authenticated by Home Assistant itself, like any other
+integration's diagnostics — SmartShading never uploads it anywhere. (Older versions had export buttons on a
+System device; they are gone, the data is unchanged.)
 
-The diagnostics download contains two sections, matching the two export buttons:
+The diagnostics download contains two sections, the Support and the Research export:
 
 - **Support** — a focused snapshot intended to help with troubleshooting. Reflects recent activity.
 - **Research** — a more detailed, anonymized technical view of learning and decision relationships,
   intended for you to review before sharing.
 
-The **Debug logging** switch is a temporary diagnostic aid — turn it on while investigating an issue and
-off again afterwards.
+**Logging** — the former *Debug logging* switch was removed. SmartShading now follows the standard Home
+Assistant logger configuration. To see its detailed diagnostic log lines while investigating an issue, add
+this to `configuration.yaml` (or call the `logger.set_level` action) and remove it again afterwards:
+
+```yaml
+logger:
+  logs:
+    custom_components.smartshading: debug
+```
+
+Nothing in SmartShading changes your logger settings; a level you configured yourself stays as you set it.
 
 Both sections include the **installed integration version** and a **history-metadata** block so the time span
 and coverage are explicit:
@@ -285,7 +288,7 @@ records were truncated or capped rather than implying that a full 365 days is al
 - No SmartShading cloud account is required.
 - SmartShading does not automatically upload the diagnostics download or any other data.
 - Support and Research data are part of the standard, authenticated Home Assistant Diagnostics download —
-  available only when you request it (Settings → Devices & Services → SmartShading → the System device →
+  available only when you request it (Settings → Devices & Services → SmartShading → a zone entry's menu →
   Download diagnostics).
 - The Research section contains anonymized technical learning data.
 - Review the diagnostics download before sharing it, so you can confirm it contains only what you intend
@@ -322,12 +325,11 @@ experience, no extra step is needed — follow the instructions below as-is.
 
 ## Initial setup
 
-1. Create the SmartShading **System Entry** (system-wide actions).
-2. Add your first **Zone**.
-3. Add one or more **Windows** and their **Covers** to the zone.
-4. Optionally configure weather, solar, presence, and comfort inputs.
-5. Keep **Learning Mode** enabled so SmartShading produces recommendations and can adapt.
-6. Enable **Active Control** only when you want SmartShading to move covers automatically.
+1. Add your first **Zone**.
+2. Add one or more **Windows** and their **Covers** to the zone.
+3. Optionally configure weather, solar, presence, and comfort inputs.
+4. Keep **Learning Mode** enabled so SmartShading produces recommendations and can adapt.
+5. Enable **Active Control** only when you want SmartShading to move covers automatically.
 
 Every controllable shading element belongs to a zone, and there is one Zone Entry per zone. A minimal setup
 needs only your covers, the window configuration, and Home Assistant's own sun and location data. Optional
@@ -498,20 +500,21 @@ physical position is consistently off.
 **Optional sensors are unavailable** — weather, solar, indoor temperature, and presence inputs are optional;
 if one is unavailable, SmartShading falls back to its normal logic and continues to produce recommendations.
 
-**Creating a Support Export** — press **Create Support Export** on the System Entry, then open
-**Settings → Devices & Services → SmartShading → the System device → Download diagnostics**. For anything
+**Creating a Support Export** — open **Settings → Devices & Services → SmartShading**, open the menu (⋮)
+of a zone entry and choose **Download diagnostics**. For anything
 you cannot explain from the Recommendation/State sensor attributes alone, the diagnostics download's
 Support section is the better starting point — it bundles the relevant context in one place instead of raw
 sensor attributes, and is a better format to attach when [asking for help](#contributing). Review the
 download yourself before sharing it, and avoid posting one publicly unless you have checked its contents
 first.
 
-**Debug logging** — turn on the **Debug logging** switch only while investigating an issue, and turn it off
-again afterwards.
+**Detailed logging** — enable the standard Home Assistant logger for `custom_components.smartshading` only
+while investigating an issue (see *Logging* above), and remove it again afterwards.
 
 ## Uninstallation
 
-1. Remove the SmartShading Zone Entries and the System Entry from **Settings → Devices & Services**.
+1. Remove the SmartShading Zone Entries from **Settings → Devices & Services** (a legacy System Entry, if
+   your installation still has one, is removed automatically with the last zone).
    Removing the entries also removes their stored learning data.
 2. If you installed manually, delete the `custom_components/smartshading` directory and restart Home
    Assistant. If you installed through HACS, remove it from HACS.

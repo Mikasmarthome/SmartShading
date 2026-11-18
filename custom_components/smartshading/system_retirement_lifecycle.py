@@ -13,16 +13,30 @@ Safety design
   effective values do not depend on the System entry at all), so a concurrent zone setup,
   reload or options save cannot make a verified zone depend on the System entry again.
 * The System entry is unloaded first (after any setup in flight finished); the zones are
-  assessed again WITHOUT an await and ``async_remove`` is called right away.  An unloaded
-  entry is removed without suspending, so no zone change fits between that assessment and
-  the removal.  If the assessment no longer passes, nothing is removed and the very same
+  assessed again and ``async_remove`` is called right after.  This is NOT an atomic
+  operation and none is claimed: ``ConfigEntries.async_remove`` awaits internally (the
+  entry's setup lock, its unload, the integration's own removal hook), so other tasks may
+  run around it.  What makes the removal safe is not timing but the PA-2c.1 invariants:
+  (1) a zone that was judged independent holds all its effective settings in its own stored
+  data and the options flow can never write System inheritance back into it (see
+  ``_refuse_reinheritance``), (2) nothing creates a System entry or a new dependency on it,
+  and (3) the fresh assessment right before the call refuses to remove while any zone is
+  not verified.  If that assessment no longer passes, nothing is removed and the very same
   entry is set up again.
+* The wait for the entry's setup lock before the unload is required, not redundant:
+  ``ConfigEntries.async_unload`` rejects an entry in the non-recoverable SETUP_IN_PROGRESS
+  state with ``OperationNotAllowed`` BEFORE it takes the lock, so without the wait a setup in
+  flight would make the unload fail and the removal would run against an entry that is still
+  being set up.  ``async_remove`` itself takes the same lock again for the actual deletion.
 * One ``asyncio.Lock`` serializes concurrent retirement attempts (idempotent: the second
   finds no System entry).  Home Assistant offers no cross-entry transaction; this module
   never claims one.  A crash between the removal and the delayed storage save simply leaves
   the entry in place, and the next start repeats the (idempotent) retirement.
-* Success is reported only after the entry is verifiably gone from the registry.  A failed
-  removal keeps the entry, is logged with its traceback and raises a Repairs issue.
+* Success is reported only after the entry is verifiably gone from the registry.  Home
+  Assistant's ``async_remove`` either deletes the entry or raises, so the check cannot fail
+  with today's API; it is kept as a cheap guard because the whole retirement (and the
+  Repairs issue it clears) rests on this fact.  A failed removal keeps the entry, is logged
+  with its traceback and raises a Repairs issue.
 * Blocked zones raise one stable, non-sensitive Repairs issue each; resolved issues are
   deleted on the next assessment.  Repairs are informational (not fixable): no automatic
   repair action exists, and no malformed setting is ever changed.
@@ -39,7 +53,6 @@ from homeassistant.config_entries import ConfigEntryState, OperationNotAllowed, 
 from homeassistant.helpers import issue_registry as ir
 
 from .const import (
-    DATA_DEBUG_LOGGING,
     DATA_RETIREMENT_LOCK,
     DATA_ZONE_MIGRATION_FAILURES,
     DOMAIN,
@@ -159,7 +172,8 @@ async def _remove_system_entry(
             await hass.config_entries.async_unload(entry_id)
         except OperationNotAllowed:
             pass  # not unloadable (e.g. failed unload): removal handles that state itself
-        # ---- no await between this assessment and the removal call ---------------
+        # Fresh assessment right before the removal.  Not atomic with it (see the module
+        # docstring); safety comes from the persisted-data invariants, not from timing.
         if not ops.assess(hass).eligible:
             if system.state is ConfigEntryState.NOT_LOADED:
                 await hass.config_entries.async_setup(entry_id)
@@ -174,6 +188,7 @@ async def _remove_system_entry(
         return FAILED
     if not _gone(hass, entry_id):
         _LOGGER.error("SmartShading: the System entry is still registered after its removal")
+        await _restore_loaded(hass, system)      # it stays: leave it as it was before the attempt
         return FAILED
     if isinstance(result, dict) and result.get("require_restart"):
         _LOGGER.warning(
@@ -204,7 +219,5 @@ async def async_retire_system_entry(hass: "HomeAssistant", ops: RetirementOps) -
                 break
         sync_retirement_issues(hass, ops, ops.assess(hass), removal_failed=outcome == FAILED)
         if outcome == RETIRED:
-            # The persisted debug option went with the entry: the runtime flag follows it.
-            hass.data[DOMAIN][DATA_DEBUG_LOGGING] = False
             _LOGGER.info("SmartShading: the legacy System entry was retired")
         return outcome

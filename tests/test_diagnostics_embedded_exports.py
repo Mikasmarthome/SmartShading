@@ -566,7 +566,6 @@ class _Hass:
 
 def _diagnostics_module():
     sys.modules.pop("custom_components.smartshading.diagnostics", None)
-    sys.modules.pop("custom_components.smartshading.entities.button", None)
     from custom_components.smartshading import diagnostics as diagnostics_mod
     return diagnostics_mod
 

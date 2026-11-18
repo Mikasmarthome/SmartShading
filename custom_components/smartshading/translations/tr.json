@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Ek bir sayfa açar. Yalnızca program geçişi, karar ve elle temizleme seçimleri için önemlidir."
         }
       },
-      "system_manual_override": {
-        "title": "Manuel geçersiz kılma varsayılanları",
-        "description": "Kendi ayarı olmayan tüm bölgeler için varsayılan: bir panjur elle hareket ettirildikten sonra SmartShading'in kontrolü ne zaman geri alacağını seçin. Ayrıntılar yalnızca ihtiyaç duyan seçimler için sorulur.",
-        "data": {
-          "override_release_choice": "Kontrolü geri verme",
-          "override_allow_comfort_actions": "Geçersiz kılma sırasında konfor eylemlerine izin ver",
-          "override_allow_protection_actions": "Geçersiz kılma sırasında koruma eylemlerine izin ver",
-          "override_edit_timeouts": "Güvenlik sınırını da ayarla"
-        },
-        "data_description": {
-          "override_release_choice": "SmartShading'in panjuru ne zaman yeniden yönettiği.",
-          "override_allow_comfort_actions": "Etkinleştirildiğinde, normal konfor gölgelemesi aktif bir geçersiz kılma sırasında hâlâ çalışabilir. Geçersiz kılmanın kendisi aktif kalır.",
-          "override_allow_protection_actions": "Etkinleştirildiğinde, koruma eylemleri (yokluk, sıcaklık, parlama) aktif bir geçersiz kılma sırasında hâlâ çalışabilir. Geçersiz kılmanın kendisi aktif kalır.",
-          "override_edit_timeouts": "Ek bir sayfa açar. Yalnızca program geçişi, karar ve elle temizleme seçimleri için önemlidir."
-        }
-      },
       "override_duration": {
         "title": "Elle müdahale süresi",
         "description": "SmartShading bu süre sonunda kontrolü geri alır. Gündüz yapılan değişiklik gündüz süresini, gece yapılan değişiklik gece süresini kullanır.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Gece yapılan bir değişikliğin ne kadar süre korunacağı. Diğer seçimler bu değeri gece güvenlik sınırı ve elle durdurulmuş panjurun tutulma süresi olarak kullanır."
         }
       },
-      "system_init": {
-        "title": "SmartShading sistem ayarları",
-        "description": "Kendi ayarlarını kullanmadığı sürece her bölgenin izlediği genel varsayılanlar.",
-        "menu_options": {
-          "system_manual_override": "Manuel geçersiz kılma varsayılanları",
-          "system_presence": "Bulunma varsayılanı"
-        }
-      },
       "presence_custom": {
         "title": "Bulunma — bu bölgenin yokluk gecikmesi",
         "description": "Bu bölgenin boş sayılması için yokluğun ne kadar sürmesi gerektiği.",
-        "data": {
-          "absence_delay_min": "Yokluk gecikmesi"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Bulunma varsayılanı",
-        "description": "Kendi değerini kullanmadığı sürece her bölgenin izlediği yokluk gecikmesi: evin boş sayılması için yokluğun ne kadar sürmesi gerektiği.",
         "data": {
           "absence_delay_min": "Yokluk gecikmesi"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Seçilen kapaklardan en az biri zaten başka bir SmartShading penceresine atanmış. Bir kapak yalnızca bir kez atanabilir."
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading Sistem girişinin yapılandırılabilir seçeneği yoktur."
+      "legacy_system_entry": "Bu, eski SmartShading Sistem girdisidir. Artık kendi ayarları yoktur ve hiçbir bölge ona bağlı kalmadığında otomatik olarak kaldırılır. Manuel geçersiz kılmayı veya bulunma ayarını değiştirmek için bölgenin kendi seçeneklerini açın."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Destek dışa aktarımı oluştur"
-      },
-      "export_research_data": {
-        "name": "Araştırma dışa aktarımı oluştur"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Öğrenme modu",
@@ -812,9 +770,6 @@
           "on": "Etkin",
           "off": "Etkin değil"
         }
-      },
-      "debug_logging": {
-        "name": "Hata ayıklama günlüğü"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Eski Sistem ayarları hâlâ kullanılıyor",
-      "description": "{zone} SmartShading bölgesi hâlâ eski ortak Sistem ayarlarına dayanıyor veya ayarları doğrulanamadı; bu yüzden eski Sistem girişi korunuyor. Otomatik olarak hiçbir şey değiştirilmedi ve bölge çalışmaya devam ediyor. Bölgenin SmartShading seçeneklerini açın, manuel geçersiz kılma ve varlık adımlarını gözden geçirin, her birini bir kez kaydedin ve Home Assistant'ı yeniden başlatın. Bu mümkün değilse bölgeyi kaldırıp yeniden ekleyin."
+      "description": "{zone} SmartShading bölgesi hâlâ eski ortak Sistem ayarlarını kullanıyor ya da ayarları doğrulanamadı; bu nedenle eski Sistem girdisi korunuyor. Otomatik olarak hiçbir şey değiştirilmedi ve bölge çalışmaya devam ediyor. Düzeltmek için bu bölgenin seçeneklerini, ardından “Manuel geçersiz kılma” ve “Bulunma” adımlarını açın: her ikisinde de “Sistem varsayılanını kullan” seçeneğini kapatın, sonraki ekranları tamamlayın ve kaydedin. Ardından Home Assistant'ı yeniden başlatın. Bölgeyi silip yeniden eklemek yalnızca son çaredir: bölgenin yapılandırması, öğrendiği veriler ve varlık kimlikleri kalıcı olarak kaybolur; bu nedenle varlıklarını kullanan otomasyonlar ve panolar yeniden kurulmalıdır."
     },
     "system_retirement_zone_not_saved": {
       "title": "Bölge ayarları kaydedilemedi",

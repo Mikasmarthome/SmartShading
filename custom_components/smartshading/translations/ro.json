@@ -366,22 +366,6 @@
           "override_edit_timeouts": "Deschide o pagină suplimentară. Contează doar pentru schimbarea programului, decizie și ștergere manuală."
         }
       },
-      "system_manual_override": {
-        "title": "Valori implicite pentru suprascrierea manuală",
-        "description": "Valoarea implicită pentru toate zonele fără setări proprii: alegeți când preia SmartShading din nou controlul după ce o jaluzea a fost mutată manual. Detaliile se cer doar pentru opțiunile care le necesită.",
-        "data": {
-          "override_release_choice": "Returnarea controlului",
-          "override_allow_comfort_actions": "Permite acțiuni de confort în timpul suprascrierii",
-          "override_allow_protection_actions": "Permite acțiuni de protecție în timpul suprascrierii",
-          "override_edit_timeouts": "Reglați și limita de siguranță"
-        },
-        "data_description": {
-          "override_release_choice": "Când controlează SmartShading din nou jaluzeaua.",
-          "override_allow_comfort_actions": "Dacă este activat, umbrirea obișnuită de confort poate rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
-          "override_allow_protection_actions": "Dacă este activat, acțiunile de protecție (absență, căldură, orbire) pot rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
-          "override_edit_timeouts": "Deschide o pagină suplimentară. Contează doar pentru schimbarea programului, decizie și ștergere manuală."
-        }
-      },
       "override_duration": {
         "title": "Durata suprascrierii manuale",
         "description": "SmartShading preia controlul după acest timp. O modificare ziua folosește durata de zi, una noaptea durata de noapte.",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "Cât timp este păstrată o modificare făcută noaptea. Celelalte opțiuni o folosesc ca limită de siguranță nocturnă și ca timp de reținere a unei jaluzele oprite manual."
         }
       },
-      "system_init": {
-        "title": "Setări de sistem SmartShading",
-        "description": "Valori implicite globale pe care le urmează fiecare zonă, cu excepția cazului în care utilizează propriile setări.",
-        "menu_options": {
-          "system_manual_override": "Valori implicite pentru suprascrierea manuală",
-          "system_presence": "Valoare implicită de prezență"
-        }
-      },
       "presence_custom": {
         "title": "Prezență — întârzierea absenței acestei zone",
         "description": "Cât timp trebuie să dureze o absență înainte ca această zonă să fie considerată goală.",
-        "data": {
-          "absence_delay_min": "Întârziere de absență"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "Valoare implicită de prezență",
-        "description": "Întârzierea absenței pe care o urmează fiecare zonă, cu excepția cazului în care utilizează o valoare proprie: cât timp trebuie să dureze o absență înainte ca locuința să fie considerată goală.",
         "data": {
           "absence_delay_min": "Întârziere de absență"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "Cel puțin o acoperire selectată este deja atribuită altei ferestre SmartShading. O acoperire poate fi atribuită o singură dată."
     },
     "abort": {
-      "no_options_for_system_entry": "Intrarea de Sistem SmartShading nu are opțiuni configurabile."
+      "legacy_system_entry": "Aceasta este vechea intrare Sistem SmartShading. Nu mai are setări proprii și este eliminată automat de îndată ce nicio zonă nu depinde de ea. Pentru a modifica suprascrierea manuală sau prezența, deschide opțiunile zonei însăși."
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "Creați export de asistență"
-      },
-      "export_research_data": {
-        "name": "Creați export de cercetare"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "Mod de învățare",
@@ -812,9 +770,6 @@
           "on": "Activ",
           "off": "Inactiv"
         }
-      },
-      "debug_logging": {
-        "name": "Jurnal de depanare"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "Setările vechi ale Sistemului sunt încă în uz",
-      "description": "Zona SmartShading {zone} depinde încă de vechile setări comune ale Sistemului sau setările ei nu au putut fi verificate, de aceea vechea intrare de Sistem este păstrată. Nimic nu a fost modificat automat, iar zona continuă să funcționeze. Deschideți opțiunile SmartShading ale zonei, parcurgeți pașii pentru suprascriere manuală și prezență, salvați fiecare o dată și reporniți Home Assistant. Dacă nu este posibil, eliminați zona și adăugați-o din nou."
+      "description": "Zona SmartShading {zone} folosește încă vechile setări comune ale Sistemului sau setările ei nu au putut fi verificate, de aceea vechea intrare Sistem este păstrată. Nimic nu a fost modificat automat, iar zona continuă să funcționeze. Pentru remediere, deschide opțiunile acestei zone, apoi „Suprascriere manuală” și „Prezență”: dezactivează în fiecare „Utilizează valoarea implicită a sistemului”, parcurge ecranele următoare și salvează. Apoi repornește Home Assistant. Ștergerea zonei și adăugarea ei din nou este doar ultima soluție: configurația zonei, datele ei învățate și identitățile entităților ei se pierd definitiv, astfel încât automatizările și tablourile de bord care folosesc entitățile ei trebuie configurate din nou."
     },
     "system_retirement_zone_not_saved": {
       "title": "Setările zonei nu au putut fi salvate",

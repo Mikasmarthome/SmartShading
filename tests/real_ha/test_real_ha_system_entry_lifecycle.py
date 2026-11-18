@@ -43,9 +43,7 @@ from custom_components.smartshading.config_entry_data import (
     to_storage_dict,
 )
 from custom_components.smartshading.const import (
-    CONF_DEBUG_LOGGING,
     CONF_ENTRY_TYPE,
-    DATA_DEBUG_LOGGING,
     DOMAIN,
     ENTRY_TYPE_SYSTEM,
     ENTRY_TYPE_ZONE,
@@ -423,23 +421,25 @@ class TestOrphans:
         The very same entry must survive: id, data and options."""
         _cover(hass, "za")
         await _load_domain(hass)
-        options = {CONF_DEBUG_LOGGING: True}
+        options = {"debug_logging": True}
         system = _system_entry(options=options)
         original_data = dict(system.data)
         system.add_to_hass(hass)
         zone = _zone("za")
         seen = {}
-        real_forward = hass.config_entries.async_forward_entry_setups
+        import custom_components.smartshading as integration
+        real_setup = integration._async_setup_system_entry
 
-        async def forward_and_add_the_zone(entry, platforms):
+        async def setup_and_add_the_zone(h, entry):
+            result = await real_setup(h, entry)              # the orphan removal task exists now
             if "zones_when_decided" not in seen:             # only the first System entry's setup
                 seen["zones_when_decided"] = len(
                     [e for e in hass.config_entries.async_entries(DOMAIN) if e is not entry])
                 zone.add_to_hass(hass)
                 seen["zone_set_up"] = await hass.config_entries.async_setup(zone.entry_id)
-            return await real_forward(entry, platforms)
+            return result
 
-        with patch.object(hass.config_entries, "async_forward_entry_setups", forward_and_add_the_zone):
+        with patch.object(integration, "_async_setup_system_entry", setup_and_add_the_zone):
             await hass.config_entries.async_setup(system.entry_id)
             await hass.async_block_till_done()
 
@@ -459,7 +459,7 @@ class TestOrphans:
 
         _cover(hass, "za")
         await _load_domain(hass)
-        options = {CONF_DEBUG_LOGGING: True}
+        options = {"debug_logging": True}
         system = _system_entry(options=options)
         original_data = dict(system.data)
         system.add_to_hass(hass)
@@ -484,7 +484,7 @@ class TestOrphans:
         assert _systems(hass) == [system], "exactly the original System entry"
         assert system.entry_id == "system" and system.state is ConfigEntryState.LOADED
         assert system.data == original_data and system.options == options
-        assert hass.data[DOMAIN][DATA_DEBUG_LOGGING] is True
+        assert "debug_logging" not in hass.data[DOMAIN], "the flag is gone: logging follows the HA logger"
         assert [e.entry_id for e in _zones(hass)] == ["za"] and zone.state is ConfigEntryState.LOADED
         assert hass.services.has_service(DOMAIN, svc.SERVICE_CLEAR_MANUAL_OVERRIDE)
         _assert_unrelated_untouched(hass, unrelated)
@@ -494,7 +494,7 @@ class TestOrphans:
         import custom_components.smartshading as integration
 
         await _load_domain(hass)
-        system = _system_entry(options={CONF_DEBUG_LOGGING: True})
+        system = _system_entry(options={"debug_logging": True})
         system.add_to_hass(hass)
         zone = _zone("za", disabled_by=ConfigEntryDisabler.USER)
         seen = {}
@@ -513,7 +513,7 @@ class TestOrphans:
 
         assert seen == {"added": True}, "the race was really set up"
         assert _systems(hass) == [system] and system.state is ConfigEntryState.LOADED
-        assert system.options == {CONF_DEBUG_LOGGING: True}
+        assert system.options == {"debug_logging": True}
         assert [e.entry_id for e in _zones(hass)] == ["za"]
         assert zone.state is ConfigEntryState.NOT_LOADED and zone.disabled_by is ConfigEntryDisabler.USER
 
@@ -523,7 +523,7 @@ class TestOrphans:
         _cover(hass, "za")
         await _load_domain(hass)
         unrelated = _add_unrelated(hass)
-        system = _system_entry(options={CONF_DEBUG_LOGGING: True})
+        system = _system_entry(options={"debug_logging": True})
         system.add_to_hass(hass)
         zone = _zone("za")
         zone.add_to_hass(hass)

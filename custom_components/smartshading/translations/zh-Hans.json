@@ -366,22 +366,6 @@
           "override_edit_timeouts": "打开额外页面。仅对日程切换、决策和手动清除这几个选项有意义。"
         }
       },
-      "system_manual_override": {
-        "title": "手动覆盖默认值",
-        "description": "适用于所有没有自有设置的区域的默认值：选择在手动移动遮阳后，SmartShading 何时重新接管控制。仅对需要详细设置的选项才会询问细节。",
-        "data": {
-          "override_release_choice": "归还控制权",
-          "override_allow_comfort_actions": "覆盖期间允许舒适动作",
-          "override_allow_protection_actions": "覆盖期间允许保护动作",
-          "override_edit_timeouts": "同时调整安全超时"
-        },
-        "data_description": {
-          "override_release_choice": "SmartShading 何时重新控制遮阳。",
-          "override_allow_comfort_actions": "启用后，常规舒适遮阳仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
-          "override_allow_protection_actions": "启用后，保护动作（离家、高温、眩光）仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
-          "override_edit_timeouts": "打开额外页面。仅对日程切换、决策和手动清除这几个选项有意义。"
-        }
-      },
       "override_duration": {
         "title": "手动干预时长",
         "description": "超过此时间后 SmartShading 重新接管。白天所做的更改使用白天时长，夜间所做的更改使用夜间时长。",
@@ -428,27 +412,9 @@
           "override_night_duration_min": "夜间所做更改的保持时间。其他选项将其用作夜间安全超时，以及手动停止的遮阳的保持时间。"
         }
       },
-      "system_init": {
-        "title": "SmartShading 系统设置",
-        "description": "除非某区域使用自己的设置，否则每个区域都遵循的全局默认值。",
-        "menu_options": {
-          "system_manual_override": "手动覆盖默认值",
-          "system_presence": "在场状态默认值"
-        }
-      },
       "presence_custom": {
         "title": "在场状态——此区域的离开延迟",
         "description": "在此区域被视为空置之前，离开状态必须持续多长时间。",
-        "data": {
-          "absence_delay_min": "离开延迟"
-        },
-        "data_description": {
-          "absence_delay_min": ""
-        }
-      },
-      "system_presence": {
-        "title": "在场状态默认值",
-        "description": "除非某区域使用自己的值，否则每个区域都遵循的离开延迟：在住宅被视为空置之前，离开状态必须持续多长时间。",
         "data": {
           "absence_delay_min": "离开延迟"
         },
@@ -470,7 +436,7 @@
       "cover_already_assigned": "至少有一个所选遮阳设备已分配给另一个 SmartShading 窗口。每个遮阳设备只能分配一次。"
     },
     "abort": {
-      "no_options_for_system_entry": "SmartShading 系统条目没有可配置的选项。"
+      "legacy_system_entry": "这是旧的 SmartShading 系统条目。它不再有自己的设置，一旦没有任何区域依赖它，就会被自动移除。要更改手动覆盖或在场状态，请打开区域本身的选项。"
     }
   },
   "config": {
@@ -790,14 +756,6 @@
     }
   },
   "entity": {
-    "button": {
-      "export_support_data": {
-        "name": "创建支持导出"
-      },
-      "export_research_data": {
-        "name": "创建研究导出"
-      }
-    },
     "switch": {
       "learning_mode": {
         "name": "学习模式",
@@ -812,9 +770,6 @@
           "on": "已启用",
           "off": "未启用"
         }
-      },
-      "debug_logging": {
-        "name": "调试日志"
       }
     },
     "sensor": {
@@ -946,7 +901,7 @@
     },
     "system_retirement_zone_blocked": {
       "title": "仍在使用旧的系统设置",
-      "description": "SmartShading 区域 {zone} 仍依赖旧的共享系统设置，或其设置无法验证，因此保留旧的系统条目。未自动更改任何内容，该区域继续正常工作。请打开该区域的 SmartShading 选项，依次查看手动覆盖和人员在场步骤，各保存一次，然后重启 Home Assistant。如果无法做到，请删除该区域并重新添加。"
+      "description": "SmartShading 区域 {zone} 仍在使用旧的共享系统设置，或其设置无法验证，因此保留了旧的系统条目。未自动更改任何内容，该区域继续正常工作。要解决此问题，请打开该区域的选项，然后进入“手动覆盖”和“在场状态”：在每一项中关闭“使用系统默认值”，完成后续页面并保存，然后重启 Home Assistant。删除并重新添加该区域只是最后手段：该区域的配置、已学习的数据及其实体标识将永久丢失，使用其实体的自动化和仪表板需要重新设置。"
     },
     "system_retirement_zone_not_saved": {
       "title": "无法保存区域设置",

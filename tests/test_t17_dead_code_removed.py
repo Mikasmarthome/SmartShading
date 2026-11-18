@@ -60,7 +60,6 @@ class TestDeadSymbolsRemainRemoved:
         ("models/shading_strategy.py", {"STRATEGY_STATES"}),
         ("models/window_contribution.py", {"_clamp01"}),
         ("models/state.py", {"ShadeState", "StateLock", "LockReason"}),
-        ("entities/button.py", {"_collect_zone_entries", "_resolve_zone_coordinator"}),
         ("evaluators/glare_evaluator.py", {"is_low_angle_direct_sun"}),
         ("state_machine/states.py", {"is_higher_priority"}),
         ("engines/diagnostics_privacy.py", {

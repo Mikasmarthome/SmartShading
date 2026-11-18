@@ -411,17 +411,12 @@ class TestFailureAndRetry:
         with pytest.raises(TypeError):
             _run(lifecycle.async_retire_system_entry(hass, broken_ops))
 
-    def test_the_debug_flag_follows_the_retired_entry(self, lifecycle):
-        hass = _Hass([_zone("a")])
-        hass.data["smartshading"] = {"debug_logging": True}
-        _retire(lifecycle, hass)
-        assert hass.data["smartshading"]["debug_logging"] is False
-
-    def test_a_kept_entry_keeps_the_debug_flag(self, lifecycle):
-        hass = _Hass([_zone("a", minor=1)])
-        hass.data["smartshading"] = {"debug_logging": True}
-        _retire(lifecycle, hass)
-        assert hass.data["smartshading"]["debug_logging"] is True
+    def test_retirement_neither_creates_nor_reads_a_custom_debug_flag(self, lifecycle):
+        """PA-3: verbose logging is the standard HA logger level; there is no flag."""
+        for zones in ([_zone("a")], [_zone("a", minor=1)]):
+            hass = _Hass(zones)
+            _retire(lifecycle, hass)
+            assert "debug_logging" not in hass.data.get("smartshading", {})
 
 
 # ---------------------------------------------------------------------------

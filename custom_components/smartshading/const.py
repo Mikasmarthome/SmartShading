@@ -42,10 +42,6 @@ ZONE_PLATFORMS: list[str] = ["sensor", "binary_sensor", "switch"]
 # device (Home Assistant removes it together with the System entry).
 SYSTEM_DEVICE_IDENTIFIER = "smartshading_system"
 
-# hass.data[DOMAIN] key — legacy; no longer used functionally.  Kept so that
-# any external code referencing the constant does not break at import time.
-DATA_SYSTEM_ENTRY_ID = "system_entry_id"
-
 # hass.data[DOMAIN] keys for integration-wide runtime state.
 DATA_GLOBAL_DISPATCH = "global_dispatch"   # GlobalSerialDispatch instance
 DATA_RETIREMENT_LOCK = "system_retirement_lock"        # asyncio.Lock: one retirement at a time

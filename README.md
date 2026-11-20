@@ -9,7 +9,7 @@
   <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg" alt="HACS Default"/></a>
   <a href="https://github.com/Mikasmarthome/SmartShading/releases/latest"><img src="https://img.shields.io/badge/stable-v1.1.11-brightgreen.svg" alt="Stable release"/></a>
   <img src="https://img.shields.io/badge/status-stable-brightgreen.svg" alt="Stable"/>
-  <img src="https://img.shields.io/badge/HA-2024.6%2B-brightgreen.svg" alt="Home Assistant 2024.6+"/>
+  <img src="https://img.shields.io/badge/HA-2026.8%2B-brightgreen.svg" alt="Home Assistant 2026.8+"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/></a>
 </p>
 
@@ -298,6 +298,8 @@ The diagnostics download is designed to avoid raw private data, but it can't be 
 anonymous — please review before sharing.
 
 ## Installation
+
+**Requirements:** Home Assistant 2026.8.0 or newer.
 
 ### Stable vs. beta
 

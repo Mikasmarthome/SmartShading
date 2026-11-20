@@ -30,12 +30,24 @@ _INTEGRATION_ROOT = _REPO_ROOT / "custom_components" / "smartshading"
 
 class TestHacsJsonDeclaresMinimumHomeAssistantVersion:
     def test_homeassistant_key_present_and_matches_real_code_requirement(self) -> None:
-        """__init__.py uses a PEP 695 `type` statement (Python 3.12+, shipped
-        in Home Assistant 2024.6) and entry.runtime_data (introduced in
-        2024.6) -- hacs.json must declare that real minimum so HACS never
-        offers this integration to an HA version that cannot import it."""
+        """The agreed minimum for v1.2.0 is Home Assistant 2026.8.0 (the one
+        the code relies on: homeassistant.helpers.target and the zone-only
+        architecture) -- hacs.json must declare it so HACS never offers this
+        integration to an older HA, and every other place that states a
+        minimum has to agree with it."""
         data = json.loads((_REPO_ROOT / "hacs.json").read_text(encoding="utf-8"))
-        assert data.get("homeassistant") == "2024.6.0"
+        assert data.get("homeassistant") == "2026.8.0"
+
+    def test_the_readme_states_the_same_minimum(self) -> None:
+        readme = (_REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        assert "alt=\"Home Assistant 2026.8+\"" in readme
+        assert "Home Assistant 2026.8.0 or newer" in readme
+        assert "2024.6" not in readme and "2024.1" not in readme
+
+    def test_no_source_comment_or_code_keeps_an_older_minimum_alive(self) -> None:
+        services = (_INTEGRATION_ROOT / "services.py").read_text(encoding="utf-8")
+        assert "2024." not in services and "ImportError" not in services
+        assert "helpers.service" not in services
 
 
 class TestManifestDeclaresDeviceIntegrationType:
@@ -51,10 +63,10 @@ class TestManifestDeclaresDeviceIntegrationType:
 
 
 class TestReadmeBadgeMatchesDeclaredMinimum:
-    def test_ha_badge_says_2024_6_plus_not_2024_1(self) -> None:
+    def test_ha_badge_says_2026_8_plus(self) -> None:
         readme = (_REPO_ROOT / "README.md").read_text(encoding="utf-8")
-        assert "2024.1" not in readme
-        assert "HA-2024.6" in readme
+        assert "2024.1" not in readme and "HA-2024" not in readme
+        assert "HA-2026.8" in readme
 
 
 def _stub_mod(name: str, **attrs):

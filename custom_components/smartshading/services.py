@@ -30,58 +30,23 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.target import TargetSelection as _TargetSelection
+from homeassistant.helpers.target import (
+    async_extract_referenced_entity_ids as _ha_async_extract_referenced_entity_ids,
+)
 
 from .const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_TYPE_ZONE
 
 _LOGGER = logging.getLogger(__name__)
 
-# HA compatibility adapter — target/entity-ID resolution for a ServiceCall.
-#
-# Home Assistant moved target-selector resolution out of
-# homeassistant.helpers.service into a dedicated homeassistant.helpers.target
-# module (adding floor/label targeting alongside the existing entity/device/
-# area targeting). The old helpers.service.async_extract_referenced_entity_ids
-# (hass, service_call, expand_group=True) -> SelectedEntities was removed
-# entirely once the migration landed — importing it now raises ImportError
-# and prevents SmartShading from loading at all under a current Home
-# Assistant release (confirmed against a real homeassistant 2026.8.0
-# install: homeassistant.helpers.service no longer defines the symbol; it
-# lives in homeassistant.helpers.target.async_extract_referenced_entity_ids
-# (hass, target_selection, expand_group=True, *, primary_entities_only=True)
-# -> SelectedEntities instead, and now takes a TargetSelection object built
-# from the raw service-call data rather than the ServiceCall itself).
-#
-# README.md documents "Home Assistant 2024.1+" as SmartShading's supported
-# minimum. Verified against a real homeassistant 2024.1.0 install: at that
-# version homeassistant.helpers.target does not exist yet, and
-# helpers.service.async_extract_referenced_entity_ids(hass, service_call,
-# expand_group=True) -> SelectedEntities (the ServiceCall itself, not a
-# TargetSelection) is the only implementation — i.e. the code this module
-# had before this fix. A real, currently-supported HA version therefore
-# genuinely lacks the new API, so a fallback is objectively required, not
-# hypothetical. Both branches call ONLY Home Assistant's own real target-
-# resolution function — this module implements no target-resolution logic
-# of its own in either branch, old or new.
-try:
-    from homeassistant.helpers.target import TargetSelection as _TargetSelection
-    from homeassistant.helpers.target import (
-        async_extract_referenced_entity_ids as _ha_async_extract_referenced_entity_ids,
-    )
+# Target/entity-ID resolution for a ServiceCall is Home Assistant's own
+# homeassistant.helpers.target (the only implementation in every supported Home
+# Assistant version, 2026.8.0 and newer): a TargetSelection built from the raw
+# service-call data. This module implements no target-resolution logic of its own.
+def _extract_referenced_entity_ids(hass: HomeAssistant, call: ServiceCall):
+    """Resolve a ServiceCall's target into SelectedEntities."""
+    return _ha_async_extract_referenced_entity_ids(hass, _TargetSelection(call.data))
 
-    def _extract_referenced_entity_ids(hass: HomeAssistant, call: ServiceCall):
-        """Resolve a ServiceCall's target into SelectedEntities (current HA)."""
-        return _ha_async_extract_referenced_entity_ids(hass, _TargetSelection(call.data))
-
-except ImportError:
-    from homeassistant.helpers.service import (
-        async_extract_referenced_entity_ids as _ha_async_extract_referenced_entity_ids_legacy,
-    )
-
-    def _extract_referenced_entity_ids(hass: HomeAssistant, call: ServiceCall):
-        """Resolve a ServiceCall's target into SelectedEntities (HA < the
-        release that introduced homeassistant.helpers.target; still within
-        README's documented "Home Assistant 2024.1+" minimum)."""
-        return _ha_async_extract_referenced_entity_ids_legacy(hass, call)
 
 SERVICE_CLEAR_MANUAL_OVERRIDE = "clear_manual_override"
 

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed: minimum Home Assistant version is 2026.8.0
+
+SmartShading v1.2.0 requires Home Assistant 2026.8.0 or newer (HACS and the README now say so). The
+compatibility code for older Home Assistant versions in the `clear_manual_override` service was removed;
+its behavior on supported versions is unchanged.
+
 ### Fixed: a damaged Manual Override setting can be repaired from the zone's options
 
 If a zone's stored Manual Override settings were damaged (for example by hand editing or a faulty

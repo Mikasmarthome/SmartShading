@@ -601,12 +601,12 @@ class TestSourceContracts:
     def test_the_lifecycle_never_removes_or_creates_entities_or_devices(self):
         assert "entity_registry" not in _LIFE and "device_registry" not in _LIFE
 
-    def test_the_manifest_minimum_version_is_untouched(self):
+    def test_the_minimum_version_is_declared_in_hacs_json_only(self):
+        # PRE-ARCH PA-REL applied the agreed minimum; manifest.json has no such key.
         manifest = (_PKG / "manifest.json").read_text(encoding="utf-8")
         assert "homeassistant" not in manifest
         hacs = Path(__file__).resolve().parent.parent / "hacs.json"
-        if hacs.exists():
-            assert "2026.8" not in hacs.read_text(encoding="utf-8")
+        assert '"homeassistant": "2026.8.0"' in hacs.read_text(encoding="utf-8")
 
     def test_the_migration_records_failures_for_the_repairs(self):
         body = ast.get_source_segment(_INIT, _init_function("_migrate_zone_entry"))

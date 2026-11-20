@@ -182,8 +182,7 @@ GOLDEN: dict[str, list] = {
     "rain_after_start": [(0.0, "cover.a1->50"), (22.0, "cover.b1->50"),
                          (42.0, "cover.a1->0"), (42.0, "cover.a1->0"), (42.0, "cover.a1->0")],
     "rain_at_start": [(0.0, "cover.a1->0"), (0.0, "cover.a1->0"), (0.0, "cover.a1->0")],
-    "absence": [(330.0, "cover.b1->20"), (352.0, "cover.a1->20"), (374.0, "cover.a2->20"),
-                (874.0, "cover.b1->100"), (876.0, "cover.a1->100"), (878.0, "cover.a2->100")],
+    "absence": None,        # order-insensitive across zones, see check_absence_log()
     "manual_stop": [(0.0, "cover.a1->50")],
     "restart_cycle": [(0.0, "cover.a1->50"), (22.0, "cover.b1->50")],
     "shared_cover": [(0.0, "cover.s1->50")],
@@ -191,11 +190,39 @@ GOLDEN: dict[str, list] = {
 }
 
 
+#: Absence: both zones reach their (equal) delay at the same virtual instant.  Which independent
+#: zone the shared dispatcher serves first is NOT a contract (observed: either "B, A1, A2" or
+#: "A1, A2, B" - same in both installation modes, in both phases).  What IS contractual and is
+#: checked exactly: the shared pacing slots (virtual seconds), the multiset of commands, every
+#: cover's own ordered sequence, the order of covers inside one zone, and that closing finishes
+#: before the reopening starts.
+ABSENCE_SLOTS = [330.0, 352.0, 374.0, 874.0, 876.0, 878.0]
+ABSENCE_CLOSE = ["cover.a1->20", "cover.a2->20", "cover.b1->20"]
+ABSENCE_OPEN = ["cover.a1->100", "cover.a2->100", "cover.b1->100"]
+MIN_SLOT_GAP_S = 2.0                                  # global dispatch interval
+
+
+def check_absence_log(got: list) -> None:
+    assert [t for t, _ in got] == ABSENCE_SLOTS, got          # delay + pacing, exact
+    gaps = [b - a for a, b in zip(ABSENCE_SLOTS, ABSENCE_SLOTS[1:])]
+    assert all(g >= MIN_SLOT_GAP_S for g in gaps), gaps
+    closing, opening = [c for _, c in got[:3]], [c for _, c in got[3:]]
+    assert sorted(closing) == ABSENCE_CLOSE, got              # targets, multiplicity, none missing
+    assert sorted(opening) == ABSENCE_OPEN, got
+    for cover in ("cover.a1", "cover.a2", "cover.b1"):        # per-cover sequence: close, then open
+        assert [c.split("->")[1] for _, c in got if c.startswith(cover + "->")] == ["20", "100"], got
+    for phase in (closing, opening):                          # one zone's covers keep their order
+        assert phase.index(next(c for c in phase if c.startswith("cover.a1"))) <             phase.index(next(c for c in phase if c.startswith("cover.a2"))), got
+
+
 @pytest.mark.parametrize("name", list(SCENARIOS))
 async def test_the_scenario_runs_identically_for_a_fresh_and_an_upgraded_installation(uz, name) -> None:
     h = await SCENARIOS[name](uz)
     got = h.commands()
-    assert got == GOLDEN[name], (uz.mode, name)
+    if name == "absence":
+        check_absence_log(got)
+    else:
+        assert got == GOLDEN[name], (uz.mode, name)
 
 
 async def test_a_restart_of_a_settled_installation_sends_no_duplicate_command(uz) -> None:
@@ -207,7 +234,8 @@ async def test_the_comparison_is_sensitive_to_an_inherited_value(uz_control) -> 
     """Control: when the System entry's absence delay differs, the upgraded run differs from the
     golden log - proving that equality above is not vacuous."""
     h = await scenario_absence_inherited(uz_control)
-    assert h.commands() != GOLDEN["absence"]
+    with pytest.raises(AssertionError):
+        check_absence_log(h.commands())
 
 
 async def scenario_absence_inherited(h):
@@ -220,3 +248,42 @@ async def scenario_absence_inherited(h):
     h.hass.states.async_set(PERSON, "home")
     await _event_cycles(h)
     return h
+
+
+# ---------------------------------------------------------------------------
+# Fault probes for the order-insensitive absence check: each defect must be a real assertion failure
+# while both legitimate cross-zone orders pass.
+# ---------------------------------------------------------------------------
+
+_B_FIRST = [(330.0, "cover.b1->20"), (352.0, "cover.a1->20"), (374.0, "cover.a2->20"),
+            (874.0, "cover.b1->100"), (876.0, "cover.a1->100"), (878.0, "cover.a2->100")]
+_A_FIRST = [(330.0, "cover.a1->20"), (352.0, "cover.a2->20"), (374.0, "cover.b1->20"),
+            (874.0, "cover.a1->100"), (876.0, "cover.a2->100"), (878.0, "cover.b1->100")]
+
+
+def _with(log, index, value=None, time=None):
+    out = list(log)
+    out[index] = (out[index][0] if time is None else time, out[index][1] if value is None else value)
+    return out
+
+
+@pytest.mark.parametrize("log", [_B_FIRST, _A_FIRST])
+def test_both_legitimate_cross_zone_orders_are_accepted(log) -> None:
+    check_absence_log(log)
+
+
+@pytest.mark.parametrize("defect", {
+    "wrong_target": _with(_A_FIRST, 1, "cover.a2->30"),
+    "missing_command": _A_FIRST[:-1],
+    "duplicate_command": _A_FIRST + [(880.0, "cover.b1->100")],
+    "duplicate_in_place": _with(_A_FIRST, 2, "cover.a2->20"),
+    "wrong_inherited_delay": [(t + 60.0 if t < 800 else t, c) for t, c in _A_FIRST],
+    "pacing_violation": _with(_A_FIRST, 4, time=875.0),
+    "reopen_before_close_done": _with(_A_FIRST, 3, "cover.a1->100", 340.0),
+    "zone_order_swapped": [(330.0, "cover.a2->20"), (352.0, "cover.a1->20"), (374.0, "cover.b1->20"),
+                           (874.0, "cover.a1->100"), (876.0, "cover.a2->100"), (878.0, "cover.b1->100")],
+    "cover_never_reopened": _with(_A_FIRST, 5, "cover.b1->20"),
+}.values(), ids=lambda v: None)
+def test_every_absence_defect_is_a_genuine_assertion_failure(defect) -> None:
+    with pytest.raises(AssertionError):
+        check_absence_log(defect)

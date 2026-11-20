@@ -120,6 +120,7 @@ def virtual_completion_clock(monkeypatch):
 
 
 import asyncio
+import copy
 import heapq
 import itertools
 from datetime import datetime, timedelta, timezone
@@ -128,7 +129,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry, async_
 
 from custom_components.smartshading import coordinator as cm
 from custom_components.smartshading.config_entry_data import SmartShadingConfigEntryData, to_storage_dict
-from custom_components.smartshading.const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_TYPE_ZONE
+from custom_components.smartshading.const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_TYPE_SYSTEM, ENTRY_TYPE_ZONE
 from custom_components.smartshading.cover_control.dispatch_completion import (
     wait_for_travel_completion as real_wait,
 )
@@ -431,6 +432,113 @@ async def zones(hass, monkeypatch):
 
     with freeze_time(NOON, real_asyncio=True) as frozen:
         harness = ZoneHarness(hass, monkeypatch, frozen)
+        try:
+            yield harness
+        finally:
+            await harness.cleanup()
+
+
+# --- PA-5: fresh vs. upgraded installation harness ----------------------------------------
+_POLICY = {"release_strategy": "duration", "duration_min": 45, "night_duration_min": 300,
+           "detection_tolerance": 10, "allow_comfort_actions": True,
+           "allow_protection_actions": True, "safety_timeout_enabled": False}
+ABSENCE_MIN = 2
+
+class _KeepList(list):
+    """The harness clears the event log after the boot; keep what the start-up itself did."""
+
+    history: list = []
+
+    def clear(self) -> None:            # noqa: D401 - list API
+        self.history = list(self)
+        super().clear()
+
+
+class UpgradeHarness(ZoneHarness):
+    def __init__(self, hass, monkeypatch, frozen, mode: str, system_absence: int = ABSENCE_MIN) -> None:
+        super().__init__(hass, monkeypatch, frozen)
+        self.mode = mode
+        self.system_absence = system_absence
+        self.clock.log = _KeepList()
+        self.expected = 0
+        self.rain_on_at_start = False
+        self.system_entry: MockConfigEntry | None = None
+
+    async def boot(self, specs, **kwargs):
+        self.expected = len(specs)
+        return await super().boot(specs, **kwargs)
+
+    async def add_zone(self, entry_id, windows, shade, rain=None, learning=False):
+        extra = dict(self.zone_extra.get(entry_id, {}))
+        extra.pop("absence_delay_min", None)
+        base = zone_entry(entry_id, windows, shade, rain, learning, **extra)
+        data = copy.deepcopy(dict(base.data))
+        if self.mode == "legacy_upgrade":
+            data["override_policy"] = {"use_system_default": True}        # beta.3.2: defers
+            data["absence_delay_use_system_default"] = True
+            data["absence_delay_min"] = 99                                 # stale, must be ignored
+            minor = 1
+            if self.system_entry is None:
+                self.system_entry = MockConfigEntry(
+                    domain=DOMAIN, source="system", entry_id="system", title="SmartShading System",
+                    data={CONF_ENTRY_TYPE: ENTRY_TYPE_SYSTEM, "system_override_policy": copy.deepcopy(_POLICY),
+                          "system_absence_delay_min": self.system_absence})
+                self.system_entry.add_to_hass(self.hass)
+        else:
+            data["override_policy"] = {**_POLICY, "use_system_default": False}
+            data["absence_delay_use_system_default"] = False
+            data["absence_delay_min"] = ABSENCE_MIN
+            minor = 2
+        entry = MockConfigEntry(domain=DOMAIN, data=data, entry_id=entry_id, minor_version=minor,
+                                title=base.title)
+        if self.rain_on_at_start and rain:
+            self.hass.states.async_set(rain, "on")
+        entry.add_to_hass(self.hass)
+        self.entries[entry_id] = entry
+        if len(self.entries) == self.expected:                # every entry is stored: start the domain
+            first = next(iter(self.entries))
+            assert await self.hass.config_entries.async_setup(first)
+            await self.hass.async_block_till_done()
+        return entry
+
+    # -- observation -------------------------------------------------------------
+    def commands(self) -> list[tuple[float, str]]:
+        log = list(self.clock.log.history) + list(self.clock.log)
+        return [(round(t, 1), w) for t, k, w in log if k == "CALL"]
+
+    def effective(self, entry_id: str) -> dict:
+        c = self.coord(entry_id)
+        return {"strategy": c._override_release_strategy.value, "duration": c._override_duration_min,
+                "night": c._override_night_duration_min, "tolerance": c._override_detection_tolerance,
+                "absence": c._absence_delay_min}
+
+    def systems(self):
+        return [e for e in self.hass.config_entries.async_entries(DOMAIN)
+                if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_SYSTEM]
+
+
+
+@pytest.fixture(params=["zone_only", "legacy_upgrade"])
+async def uz(request, hass, monkeypatch):
+    """The multi-zone harness in two modes: zones that carry their own settings, and the published
+    beta.3.2 model (legacy System entry + deferring zones, all stored before the start)."""
+    from freezegun import freeze_time
+
+    with freeze_time(NOON, real_asyncio=True) as frozen:
+        harness = UpgradeHarness(hass, monkeypatch, frozen, request.param)
+        try:
+            yield harness
+        finally:
+            await harness.cleanup()
+
+
+@pytest.fixture
+async def uz_control(hass, monkeypatch):
+    """Control for the comparison: the System entry's absence delay differs."""
+    from freezegun import freeze_time
+
+    with freeze_time(NOON, real_asyncio=True) as frozen:
+        harness = UpgradeHarness(hass, monkeypatch, frozen, "legacy_upgrade", system_absence=40)
         try:
             yield harness
         finally:

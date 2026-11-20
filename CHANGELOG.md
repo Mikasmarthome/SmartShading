@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Fixed: a damaged Manual Override setting can be repaired from the zone's options
+
+If a zone's stored Manual Override settings were damaged (for example by hand editing or a faulty
+restore) so that they were no longer a settings block, the zone could not start and its Manual Override
+page crashed, so the damage could not be repaired in the interface. The page now opens, writes nothing
+until you save, does not pre-select "use the System default" for settings it cannot read, and saving
+your own settings repairs the zone. Adding a window to such a zone no longer fails either. A zone with
+damaged settings still does not run with invented values. Damaged System settings are never rewritten:
+the zones that depend on them can each choose their own settings, and the System entry is retired once
+no zone depends on it any more.
+
 ### Removed: the legacy System entry's interface
 
 The old System entry (created by earlier versions, no longer created or needed) has lost everything

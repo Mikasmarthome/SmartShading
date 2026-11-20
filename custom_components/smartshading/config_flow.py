@@ -1882,9 +1882,12 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         which is also what an unconfigured System entry resolves to).
         """
         current = self._config_entry.data
-        stored = current.get("override_policy") or {}
+        stored = self._override_stored()    # a stored value that is not a mapping reads as empty here
+        # Data that cannot be read (not a mapping) is never silently turned into an inheritance
+        # choice: the form then offers "use my own settings" and nothing is written until it is sent.
+        unreadable = bool(current.get("override_policy")) and not isinstance(current.get("override_policy"), dict)
         zone_local = self._zone_settings_are_local()
-        stored_use_system_default = False if zone_local else bool(
+        stored_use_system_default = False if (zone_local or unreadable) else bool(
             stored.get("use_system_default", "release_strategy" not in stored)
         )
 
@@ -2685,7 +2688,11 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
 
     def _save_structure_and_reload(self) -> config_entries.ConfigFlowResult:
         """Merge newly collected windows/cover_groups into this entry's data and reload."""
-        current_data = from_storage_dict(self._config_entry.data)
+        # The typed round trip below cannot read a stored override policy that is not a mapping
+        # (it is restored untouched further down), so it is left out of what is parsed.
+        readable = {k: v for k, v in self._config_entry.data.items()
+                    if k != "override_policy" or isinstance(v, dict)}
+        current_data = from_storage_dict(readable)
         current_data.windows.extend(self._add_windows)
         current_data.cover_groups.extend(self._add_cover_groups)
         new_data = to_storage_dict(current_data)

@@ -36,6 +36,15 @@ wait ("already_at_target").  Covers without usable feedback use the estimate alo
 ("time_estimate").  The fixed settle pause that follows every intermediate travel
 is applied by the dispatch executor.  A timeout is never a completion.
 
+Responsiveness (DT-1): the end of an OBSERVED travel is noticed as soon as the cover
+reports it.  The state is polled every ``DEFAULT_POLL_INTERVAL_S`` (0.25 s) and, when the
+caller supplies ``subscribe_state_changes``, every state change of the cover also wakes the
+wait at once and is recorded as evidence of movement, so a short moving state or an
+intermediate position between two polls is not lost.  Neither changes WHAT counts as a
+finished travel: the judgment is still taken on the cover's current state after the
+same trust rules, a reported target without observed travel is still a jump that waits for
+the estimate, and a cover without trustworthy feedback still waits by estimate.
+
 Abortable (A2): a caller may pass ``cancellation`` (anything with the
 asyncio.Event interface) and/or ``abort_check`` (returns None while the wait
 is still wanted, else the reason it is not).  Every sleep is then raced
@@ -56,7 +65,10 @@ from typing import Callable, Protocol
 
 from .cover_entity_snapshot import build_cover_entity_snapshot
 
-DEFAULT_POLL_INTERVAL_S = 1.0
+DEFAULT_POLL_INTERVAL_S = 0.25
+"""How often a cover with trustworthy feedback is looked at.  Only the delay between the
+cover's own report and our noticing it is affected (at most this long); it never makes a
+travel count as finished any earlier than the cover reported it."""
 DEFAULT_POSITION_TOLERANCE = 5
 MAX_TRAVEL_WAIT_S = 40.0
 """Fixed upper bound for one cover's completion wait.  Comfortably above the
@@ -142,6 +154,9 @@ class CompletionResult:
     """True when real travel was seen (movement state or an intermediate position);
     False when the target was reported without any observed travel (a jump);
     None for waits that never watch the cover (no feedback)."""
+    first_movement_s: float | None = None
+    """Seconds after the start of the wait at which the first trustworthy sign of real
+    travel (moving state or intermediate position) was seen; None if never."""
 
     def __post_init__(self) -> None:
         if self.status is None:
@@ -156,24 +171,37 @@ class CompletionResult:
         return self.status is CompletionStatus.COMPLETED
 
 
-async def _sleep_or_abort(sleep, seconds: float, cancellation: CancellationSignal | None) -> None:
-    """``sleep(seconds)``, ended early when ``cancellation`` fires.  The loser
-    is always cancelled and awaited, so no task outlives the call; an external
-    CancelledError propagates normally."""
-    if cancellation is None:
+async def _sleep_or_abort(
+    sleep, seconds: float, cancellation: CancellationSignal | None,
+    wake: "asyncio.Event | None" = None,
+) -> None:
+    """``sleep(seconds)``, ended early when ``cancellation`` fires or ``wake`` is set
+    (a state change of the watched cover; cleared here).  The losers are always
+    cancelled and awaited, so no task outlives the call; an external CancelledError
+    propagates normally."""
+    if cancellation is None and wake is None:
         await sleep(seconds)
         return
-    if cancellation.is_set():
+    if cancellation is not None and cancellation.is_set():
+        return
+    if wake is not None and wake.is_set():
+        wake.clear()
         return
     work = asyncio.ensure_future(sleep(seconds))
-    watch = asyncio.ensure_future(cancellation.wait())
+    watchers = []
+    if cancellation is not None:
+        watchers.append(asyncio.ensure_future(cancellation.wait()))
+    if wake is not None:
+        watchers.append(asyncio.ensure_future(wake.wait()))
     try:
-        await asyncio.wait({work, watch}, return_when=asyncio.FIRST_COMPLETED)
+        await asyncio.wait({work, *watchers}, return_when=asyncio.FIRST_COMPLETED)
     finally:
-        for task in (work, watch):
+        for task in (work, *watchers):
             if not task.done():
                 task.cancel()
-        await asyncio.gather(work, watch, return_exceptions=True)
+        await asyncio.gather(work, *watchers, return_exceptions=True)
+    if wake is not None:
+        wake.clear()
     if work.done() and not work.cancelled() and work.exception() is not None:
         raise work.exception()
 
@@ -237,6 +265,55 @@ def evaluate_travel_status(
     return None
 
 
+async def _watch_reliable_cover(
+    hass, *, entity_id, target_position_ha, invert_position, start_position_ha, max_wait_s,
+    poll_interval_s, position_tolerance, mono_clock, sleep, cancellation, started, estimated_s,
+    evidence, observe, wake, aborted,
+) -> CompletionResult:
+    """The tier-1 loop: look at the cover's current state (on every poll and, when the
+    caller subscribed, at once when it changes) and decide with the A5 trust rules."""
+    while True:
+        elapsed = mono_clock() - started
+        seen = evidence["moving"] or evidence["intermediate"]
+        if elapsed >= max_wait_s:
+            return CompletionResult(
+                CompletionMethod.TIMEOUT, elapsed, True, expected_s=estimated_s,
+                movement_observed=seen, first_movement_s=evidence["first_s"])
+        entity_state = hass.states.get(entity_id)
+        state = entity_state.state if entity_state is not None else None
+        attributes = entity_state.attributes if entity_state is not None else {}
+        observe(entity_state)
+        seen = evidence["moving"] or evidence["intermediate"]
+        method = evaluate_travel_status(
+            state=state, attributes=attributes, invert=invert_position,
+            has_reliable_position_feedback=True, target_position_ha=target_position_ha,
+            position_tolerance=position_tolerance,
+        )
+        if method is not None:
+            now_elapsed = mono_clock() - started
+            if seen:
+                return CompletionResult(
+                    method, now_elapsed, False, expected_s=estimated_s, movement_observed=True,
+                    first_movement_s=evidence["first_s"])
+            # Target reported, but no travel was ever observed: a jump.
+            if estimated_s <= 0:
+                return CompletionResult(
+                    CompletionMethod.ALREADY_AT_TARGET, now_elapsed, False,
+                    expected_s=estimated_s, movement_observed=False)
+            if now_elapsed >= estimated_s:
+                return CompletionResult(
+                    CompletionMethod.COMBINED, now_elapsed, False,
+                    expected_s=estimated_s, movement_observed=False)
+        remaining = max_wait_s - (mono_clock() - started)
+        step = min(poll_interval_s, max(0.0, remaining))
+        if method is not None:           # waiting out the estimate after a jump
+            step = min(step, max(0.0, estimated_s - (mono_clock() - started)) or step)
+        await _sleep_or_abort(sleep, step, cancellation, wake)
+        verdict = aborted()
+        if verdict is not None:
+            return verdict
+
+
 async def wait_for_travel_completion(
     hass,
     *,
@@ -254,12 +331,18 @@ async def wait_for_travel_completion(
     sleep=asyncio.sleep,
     cancellation: CancellationSignal | None = None,
     abort_check: AbortCheck | None = None,
+    subscribe_state_changes: "Callable[[str, Callable], Callable[[], None]] | None" = None,
 ) -> CompletionResult:
     """Wait for one cover's travel to complete, tiered per the module
     docstring. Always returns (never raises) — a timeout is a normal,
     expected outcome the caller (coordinator.py) records in diagnostics and
     continues the queue from, per the T11 spec's "robust: document and
-    continue" default."""
+    continue" default.
+
+    ``subscribe_state_changes(entity_id, on_change)`` (optional) registers ``on_change(event)``
+    for the cover's state changes and returns the function that removes it; the
+    subscription lives exactly as long as this call.  ``on_change`` runs in the event loop
+    (the caller wraps it as a Home Assistant callback)."""
     started = mono_clock()
 
     def _aborted() -> CompletionResult | None:
@@ -285,60 +368,52 @@ async def wait_for_travel_completion(
     )
 
     if has_reliable_position_feedback:
-        saw_moving = False
-        saw_intermediate = False
-        while True:
-            elapsed = mono_clock() - started
-            if elapsed >= max_wait_s:
-                return CompletionResult(
-                    CompletionMethod.TIMEOUT, elapsed, True,
-                    expected_s=estimated_s, movement_observed=saw_moving or saw_intermediate)
-            entity_state = hass.states.get(entity_id)
+        evidence = {"moving": False, "intermediate": False, "first_s": None}
+        wake = asyncio.Event() if subscribe_state_changes is not None else None
+
+        def observe(entity_state) -> None:
+            """Record a sign of REAL travel in this reading (a moving state, or a position
+            strictly between start and target).  Reaching the target is never evidence."""
             state = entity_state.state if entity_state is not None else None
             attributes = entity_state.attributes if entity_state is not None else {}
             snap = build_cover_entity_snapshot(
                 entity_id="_dispatch_completion_check", state=state, attributes=attributes,
                 invert=invert_position, has_reliable_position_feedback=True)
-            if snap.available:
-                if snap.is_moving:
-                    saw_moving = True
-                pos = snap.current_position_ha
-                if (
-                    pos is not None
-                    and abs(pos - target_position_ha) > position_tolerance
-                    and (start_position_ha is None or abs(pos - start_position_ha) > position_tolerance)
-                ):
-                    saw_intermediate = True
-            method = evaluate_travel_status(
-                state=state,
-                attributes=attributes,
-                invert=invert_position,
-                has_reliable_position_feedback=True,
-                target_position_ha=target_position_ha,
-                position_tolerance=position_tolerance,
-            )
-            if method is not None:
-                now_elapsed = mono_clock() - started
-                if saw_moving or saw_intermediate:
-                    return CompletionResult(
-                        method, now_elapsed, False, expected_s=estimated_s, movement_observed=True)
-                # Target reported, but no travel was ever observed: a jump.
-                if estimated_s <= 0:
-                    return CompletionResult(
-                        CompletionMethod.ALREADY_AT_TARGET, now_elapsed, False,
-                        expected_s=estimated_s, movement_observed=False)
-                if now_elapsed >= estimated_s:
-                    return CompletionResult(
-                        CompletionMethod.COMBINED, now_elapsed, False,
-                        expected_s=estimated_s, movement_observed=False)
-            remaining = max_wait_s - (mono_clock() - started)
-            step = min(poll_interval_s, max(0.0, remaining))
-            if method is not None:           # waiting out the estimate after a jump
-                step = min(step, max(0.0, estimated_s - (mono_clock() - started)) or step)
-            await _sleep_or_abort(sleep, step, cancellation)
-            aborted = _aborted()
-            if aborted is not None:
-                return aborted
+            if not snap.available:
+                return
+            moved = False
+            if snap.is_moving:
+                evidence["moving"] = moved = True
+            pos = snap.current_position_ha
+            if (
+                pos is not None
+                and abs(pos - target_position_ha) > position_tolerance
+                and (start_position_ha is None or abs(pos - start_position_ha) > position_tolerance)
+            ):
+                evidence["intermediate"] = moved = True
+            if moved and evidence["first_s"] is None:
+                evidence["first_s"] = mono_clock() - started
+
+        def on_change(event) -> None:
+            data = getattr(event, "data", None) or {}
+            observe(data.get("new_state"))
+            if wake is not None:
+                wake.set()
+
+        unsubscribe = None
+        if subscribe_state_changes is not None:
+            unsubscribe = subscribe_state_changes(entity_id, on_change)
+        try:
+            return await _watch_reliable_cover(
+                hass, entity_id=entity_id, target_position_ha=target_position_ha,
+                invert_position=invert_position, start_position_ha=start_position_ha,
+                max_wait_s=max_wait_s, poll_interval_s=poll_interval_s,
+                position_tolerance=position_tolerance, mono_clock=mono_clock, sleep=sleep,
+                cancellation=cancellation, started=started, estimated_s=estimated_s,
+                evidence=evidence, observe=observe, wake=wake, aborted=_aborted)
+        finally:
+            if unsubscribe is not None:
+                unsubscribe()
 
     # No reliable feedback: a single bounded wait for the estimated duration
     # — never poll real state for these covers (tier 2/3 of the module

@@ -205,27 +205,47 @@ class Sim:
     """Simulated covers: they report ``opening``/``closing`` and a moving position
     (a *silent* cover accepts commands but never reports anything new)."""
 
-    def __init__(self, hass, clock, covers, initial=None, silent=()) -> None:
+    def __init__(self, hass, clock, covers, initial=None, silent=(), behaviours=None,
+                 travel=None, delay=None) -> None:
         self.hass, self.clock = hass, clock
         self.covers = list(covers)
         self.pos = {c: (initial or {}).get(c, 100) for c in self.covers}
         self.motion: dict = {}
         self.silent = set(silent)
+        #: per cover (default "real"): "real" reports opening/closing and a moving position;
+        #: "jump" reports the TARGET position at once and never a moving state (an optimistic
+        #: integration - the motor still runs for the travel time); "assumed" reports no state
+        #: at all (assumed_state); "delayed" reports nothing new for ``delay`` seconds first.
+        self.behaviours = dict(behaviours or {})
+        self.travel_s = dict(travel or {})        # per cover real travel time (default TRAVEL_S)
+        self.delay_s = dict(delay or {})          # per cover: seconds before the motor reports anything
 
     def publish(self, cover: str) -> None:
         if cover in self.silent and cover in self.motion:
+            return
+        behaviour = self.behaviours.get(cover, "real")
+        if behaviour == "assumed":
+            self.hass.states.async_set(cover, "open", {"supported_features": 15, "assumed_state": True})
             return
         pos, state = self.pos[cover], "open" if self.pos[cover] else "closed"
         motion = self.motion.get(cover)
         if motion:
             t0, start, target = motion
-            frac = min(1.0, (self.clock.t - t0) / TRAVEL_S)
-            pos = round(start + (target - start) * frac)
-            if frac < 1.0:
-                state = "opening" if target > start else "closing"
-            else:
+            travel = self.travel_s.get(cover, TRAVEL_S)
+            waited = self.clock.t - t0 - self.delay_s.get(cover, 0.0)
+            if behaviour == "jump":
+                pos, state = target, "open" if target else "closed"
                 self.pos[cover] = target
-                state = "open" if target else "closed"
+            elif waited < 0:
+                pass                                     # "delayed": still the old, idle state
+            else:
+                frac = min(1.0, waited / travel)
+                pos = round(start + (target - start) * frac)
+                if frac < 1.0:
+                    state = "opening" if target > start else "closing"
+                else:
+                    self.pos[cover] = target
+                    state = "open" if target else "closed"
         self.hass.states.async_set(cover, state, {"supported_features": 15, "current_position": pos})
 
     def tick(self) -> None:
@@ -298,9 +318,13 @@ class ZoneHarness:
         self.zone_extra: dict[str, dict] = {}
 
     # -- setup -----------------------------------------------------------------
-    async def boot(self, specs, *, initial=None, silent=(), learning=()):
+    async def boot(self, specs, *, initial=None, silent=(), learning=(), behaviours=None,
+                   travel=None, delay=None, poll_interval_s=1.0):
         """``specs``: list of ``(entry_id, windows, shade, rain_entity_or_None)``;
-        ``learning``: entry ids whose zone has Learning Mode on."""
+        ``learning``: entry ids whose zone has Learning Mode on.  ``poll_interval_s``: the cover
+        polling step of the completion wait; the suite runs at 1.0 s (a finer production step only
+        multiplies the virtual-time cycles of tests that do not examine it) - the DT-1 timing tests
+        pass the production value explicitly."""
         hass, clock = self.hass, self.clock
         await hass.config.async_set_time_zone("UTC")
         hass.states.async_set("sun.sun", "above_horizon", {**SUN, "azimuth": 0.0, "elevation": 30.0})
@@ -308,7 +332,8 @@ class ZoneHarness:
         for rain in self.rains:
             hass.states.async_set(rain, "off")
         covers = [c for _, w, _, _ in specs for cs in w.values() for c in cs]
-        self.sim = Sim(hass, clock, covers, initial=initial, silent=silent)
+        self.sim = Sim(hass, clock, covers, initial=initial, silent=silent, behaviours=behaviours,
+                       travel=travel, delay=delay)
         self.sim.install()
         self.sim.tick()
         self.monkeypatch.setattr(cm, "asyncio", _AsyncioProxy(clock))
@@ -324,8 +349,11 @@ class ZoneHarness:
                 sim.tick()
 
             kwargs.update(mono_clock=lambda: clock.t, sleep=vsleep)
+            kwargs["poll_interval_s"] = poll_interval_s
             outcome = await real_wait(*args, **kwargs)
             clock.event("WAIT_END", f"{cover} {outcome.status.value}/{outcome.method.value}")
+            clock.event("WAIT_DETAIL", f"{cover} first_movement_s={outcome.first_movement_s} "
+                                       f"observed={outcome.movement_observed} expected_s={outcome.expected_s}")
             return outcome
 
         self.monkeypatch.setattr(cm, "wait_for_travel_completion", wrapped)

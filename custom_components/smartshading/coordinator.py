@@ -8711,6 +8711,12 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
             oldest = sorted(self._research_daily_buckets)[0]
             del self._research_daily_buckets[oldest]
 
+    def _subscribe_cover_state_changes(self, entity_id: str, on_change):
+        """State-change feed of one cover for a completion wait (DT-1): the wait is woken
+        by every change and keeps the evidence of real travel.  Returns the remover; the
+        wait calls it when it ends, so nothing outlives it."""
+        return async_track_state_change_event(self.hass, entity_id, callback(on_change))
+
     def _completion_abort_check(
         self, dispatch_gen: int, is_safety: bool, *,
         window_id: str | None = None, cover_id: str | None = None,
@@ -9133,6 +9139,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
                 abort_check=self._completion_abort_check(
                     this_dispatch_gen, False,
                     window_id=window_id, cover_id=intent.cover_entity_id),
+                subscribe_state_changes=self._subscribe_cover_state_changes,
             )
             exec_result_by_entity[plan_item.cover_entity_id] = replace(
                 prior,

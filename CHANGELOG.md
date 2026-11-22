@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Changed: the next cover starts sooner after an intermediate position was reached
+
+While a cover travels to an intermediate position, SmartShading now checks it every 0.25 s (was 1 s)
+and reacts at once to the cover's own state changes, so the next cover starts about 0.5 s sooner after
+the travel really ended. The safeguards are unchanged: a cover that reports its target without ever
+having been seen moving is still waited for by the distance-scaled travel estimate, covers without
+trustworthy position feedback still wait by estimate, the 2 s pause after each intermediate travel and
+the 2 s spacing between full open/close commands stay, and Safety still takes over immediately.
+
 ### Changed: minimum Home Assistant version is 2026.8.0
 
 SmartShading v1.2.0 requires Home Assistant 2026.8.0 or newer (HACS and the README now say so). The

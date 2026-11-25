@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Changed: absence starts at the configured delay, not at the next periodic update
+
+When nobody is home, the absence delay counts from the first evaluation that finds the household away.
+Previously the evaluation that found the delay elapsed was the next periodic update, up to five minutes
+later. SmartShading now asks for an evaluation exactly when the delay ends. The evaluation goes through the
+same path as every other one: Safety, manual overrides, window contacts, shared-cover ownership and the
+shared dispatch order decide as before, and a cover can still start moving a little later when the
+dispatch is busy. Coming home, an unavailable presence entity, a reload, an unload or a changed delay
+cancels or replaces the pending deadline. A restart still counts a pending (not yet active) delay again
+from the first evaluation after the restart; an absence that was already active continues as before.
+
 ### Changed: the next cover starts sooner after an intermediate position was reached
 
 While a cover travels to an intermediate position, SmartShading now checks it every 0.25 s (was 1 s)

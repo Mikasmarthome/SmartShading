@@ -612,6 +612,14 @@ class PresenceDebouncer:
     def __init__(self) -> None:
         self._absent_since: datetime | None = None
 
+    @property
+    def absent_since(self) -> datetime | None:
+        """When the current absence started to count (``None`` while present).
+
+        Read-only: the coordinator derives the activation deadline from it
+        (``absent_since + absence_delay_min``) instead of keeping a second copy."""
+        return self._absent_since
+
     def resume_absence(self, now: datetime, absence_delay_min: int) -> None:
         """Continue an absence that was already active before this debouncer
         existed (Home Assistant restart / integration reload).

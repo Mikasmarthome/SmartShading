@@ -1747,6 +1747,15 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         # scheduler so those time-based moves fire promptly, not at the next
         # periodic cycle.  Diagnostic fields record the scheduled/last boundary.
         self._unsub_lifecycle_boundary: Callable[[], None] | None = None
+        # DT-2: one point-in-time timer for the absence activation deadline
+        # (``absent_since + absence_delay_min``).  It only asks for an evaluation
+        # at that moment; the decision and every command stay in the normal cycle.
+        self._unsub_absence_deadline: Callable[[], None] | None = None
+        self._absence_deadline_utc: datetime | None = None
+        self._absence_deadline_stats: dict[str, Any] = {
+            "armed": 0, "cancelled": 0, "fired": 0,
+            "last_armed_utc": None, "last_cancelled_utc": None, "last_fired_utc": None,
+        }
         self._next_lifecycle_boundary_utc: datetime | None = None
         self._next_lifecycle_boundary_reason: str | None = None
         self._last_lifecycle_boundary_refresh_utc: datetime | None = None
@@ -2426,6 +2435,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         narrow, accepted residual race, unchanged from the T16 audit.
         """
         self._unloading = True
+        self._cancel_absence_deadline_timer()
         self._own_motion.clear()
         self._lifecycle_stats["shutdowns"] += 1
         self._lifecycle_stats["last_shutdown_reason"] = "unload"
@@ -3548,6 +3558,65 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
 
         self._unsub_lifecycle_boundary = async_track_point_in_time(
             self.hass, _on_boundary, self._next_lifecycle_boundary_utc)
+
+    # ------------------------------------------------------------------
+    # DT-2: exact absence activation deadline
+    # ------------------------------------------------------------------
+
+    def _sync_absence_deadline_timer(self, absence_active: bool) -> None:
+        """Keep exactly one timer on the pending absence deadline, or none.
+
+        Called once per evaluation with the debouncer's verdict.  While an absence is
+        counting but not yet active, a single point-in-time timer sits on
+        ``absent_since + absence_delay_min`` and, when it fires, only requests a normal
+        evaluation (the same path as a presence change, no generation bump, no
+        cancellation of running work, no direct command).  Present, already active,
+        undeterminable (the debouncer was reset) or unloading: no timer.  An unchanged
+        deadline keeps its timer, so repeated evaluations never stack timers."""
+        since = self._presence_debouncer.absent_since
+        if self._unloading or absence_active or since is None:
+            self._cancel_absence_deadline_timer()
+            return
+        deadline = dt_util.as_utc(since + timedelta(minutes=self._absence_delay_min))
+        if self._unsub_absence_deadline is not None and self._absence_deadline_utc == deadline:
+            return
+        self._cancel_absence_deadline_timer()
+        try:  # never let scheduling break an evaluation (same rule as the lifecycle boundary)
+            self._arm_absence_deadline_timer(deadline)
+        except Exception:
+            _LOGGER.warning("SmartShading: arming the absence deadline timer failed", exc_info=True)
+
+    def _arm_absence_deadline_timer(self, deadline: datetime) -> None:
+        from homeassistant.helpers.event import async_track_point_in_time
+
+        token = deadline
+
+        @callback
+        def _on_deadline(_fire_time: datetime) -> None:
+            # A callback that outlived its timer (cancelled or replaced) does nothing.
+            if self._absence_deadline_utc != token or self._unsub_absence_deadline is None:
+                return
+            self._unsub_absence_deadline = None
+            self._absence_deadline_utc = None
+            stats = self._absence_deadline_stats
+            stats["fired"] += 1
+            stats["last_fired_utc"] = dt_util.utcnow()
+            self._request_refresh(self.config_entry, "smartshading_absence_deadline")
+
+        self._absence_deadline_utc = deadline
+        self._unsub_absence_deadline = async_track_point_in_time(self.hass, _on_deadline, deadline)
+        self._absence_deadline_stats["armed"] += 1
+        self._absence_deadline_stats["last_armed_utc"] = dt_util.utcnow()
+
+    def _cancel_absence_deadline_timer(self) -> None:
+        """Cancel the absence-deadline timer.  Idempotent."""
+        if self._unsub_absence_deadline is None:
+            return
+        self._unsub_absence_deadline()
+        self._unsub_absence_deadline = None
+        self._absence_deadline_utc = None
+        self._absence_deadline_stats["cancelled"] += 1
+        self._absence_deadline_stats["last_cancelled_utc"] = dt_util.utcnow()
 
     def async_teardown_lifecycle_boundary_timer(self) -> None:
         """Cancel the pending lifecycle-boundary timer.  Idempotent."""
@@ -4765,6 +4834,7 @@ class SmartShadingCoordinator(DataUpdateCoordinator[SmartShadingData]):
         absence_active = self._presence_debouncer.is_absence_active(
             presence_present, now, self._absence_delay_min
         )
+        self._sync_absence_deadline_timer(absence_active)
         # Diagnostics-only (v1.2.0-beta.1, T5) — see diagnostics_builder.py
         # presence_summary. Never read by any decision logic.
         self._cycle_absence_active = absence_active

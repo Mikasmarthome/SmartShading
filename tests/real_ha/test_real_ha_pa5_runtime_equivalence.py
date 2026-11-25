@@ -196,7 +196,10 @@ GOLDEN: dict[str, list] = {
 #: checked exactly: the shared pacing slots (virtual seconds), the multiset of commands, every
 #: cover's own ordered sequence, the order of covers inside one zone, and that closing finishes
 #: before the reopening starts.
-ABSENCE_SLOTS = [330.0, 352.0, 374.0, 874.0, 876.0, 878.0]
+#: DT-2: the closing starts at the absence deadline itself (ABSENCE_MIN = 2 minutes = 120 s after the
+#: household left), not at the next periodic update (it used to be 330 s); the pacing between the
+#: covers (travel + settle) and the reopening after coming home follow from that.
+ABSENCE_SLOTS = [120.0, 142.0, 164.0, 574.0, 576.0, 578.0]
 ABSENCE_CLOSE = ["cover.a1->20", "cover.a2->20", "cover.b1->20"]
 ABSENCE_OPEN = ["cover.a1->100", "cover.a2->100", "cover.b1->100"]
 MIN_SLOT_GAP_S = 2.0                                  # global dispatch interval
@@ -255,10 +258,10 @@ async def scenario_absence_inherited(h):
 # while both legitimate cross-zone orders pass.
 # ---------------------------------------------------------------------------
 
-_B_FIRST = [(330.0, "cover.b1->20"), (352.0, "cover.a1->20"), (374.0, "cover.a2->20"),
-            (874.0, "cover.b1->100"), (876.0, "cover.a1->100"), (878.0, "cover.a2->100")]
-_A_FIRST = [(330.0, "cover.a1->20"), (352.0, "cover.a2->20"), (374.0, "cover.b1->20"),
-            (874.0, "cover.a1->100"), (876.0, "cover.a2->100"), (878.0, "cover.b1->100")]
+_B_FIRST = [(120.0, "cover.b1->20"), (142.0, "cover.a1->20"), (164.0, "cover.a2->20"),
+            (574.0, "cover.b1->100"), (576.0, "cover.a1->100"), (578.0, "cover.a2->100")]
+_A_FIRST = [(120.0, "cover.a1->20"), (142.0, "cover.a2->20"), (164.0, "cover.b1->20"),
+            (574.0, "cover.a1->100"), (576.0, "cover.a2->100"), (578.0, "cover.b1->100")]
 
 
 def _with(log, index, value=None, time=None):
@@ -275,13 +278,13 @@ def test_both_legitimate_cross_zone_orders_are_accepted(log) -> None:
 @pytest.mark.parametrize("defect", {
     "wrong_target": _with(_A_FIRST, 1, "cover.a2->30"),
     "missing_command": _A_FIRST[:-1],
-    "duplicate_command": _A_FIRST + [(880.0, "cover.b1->100")],
+    "duplicate_command": _A_FIRST + [(580.0, "cover.b1->100")],
     "duplicate_in_place": _with(_A_FIRST, 2, "cover.a2->20"),
-    "wrong_inherited_delay": [(t + 60.0 if t < 800 else t, c) for t, c in _A_FIRST],
-    "pacing_violation": _with(_A_FIRST, 4, time=875.0),
-    "reopen_before_close_done": _with(_A_FIRST, 3, "cover.a1->100", 340.0),
-    "zone_order_swapped": [(330.0, "cover.a2->20"), (352.0, "cover.a1->20"), (374.0, "cover.b1->20"),
-                           (874.0, "cover.a1->100"), (876.0, "cover.a2->100"), (878.0, "cover.b1->100")],
+    "wrong_inherited_delay": [(t + 60.0 if t < 400 else t, c) for t, c in _A_FIRST],
+    "pacing_violation": _with(_A_FIRST, 4, time=575.0),
+    "reopen_before_close_done": _with(_A_FIRST, 3, "cover.a1->100", 130.0),
+    "zone_order_swapped": [(120.0, "cover.a2->20"), (142.0, "cover.a1->20"), (164.0, "cover.b1->20"),
+                           (574.0, "cover.a1->100"), (576.0, "cover.a2->100"), (578.0, "cover.b1->100")],
     "cover_never_reopened": _with(_A_FIRST, 5, "cover.b1->20"),
 }.values(), ids=lambda v: None)
 def test_every_absence_defect_is_a_genuine_assertion_failure(defect) -> None:

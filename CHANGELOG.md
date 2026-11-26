@@ -1,6 +1,23 @@
 # Changelog
 
-## Unreleased
+## v1.2.0-beta.3.3
+
+**This is a pre-release.** It is intended for testing on suitable Home
+Assistant systems, not for production use. Please take a Home Assistant backup
+before installing. Stable users should stay on the current stable release
+(v1.1.13); installing the beta requires deliberately opting into a pre-release.
+
+It requires Home Assistant 2026.8.0 or newer.
+
+Practical verification of this exact Beta 3.3 release on real devices in a live
+installation is still pending. Feedback and diagnostics exports are welcome via
+[GitHub Issues](https://github.com/Mikasmarthome/SmartShading/issues).
+
+When upgrading, zones that still take their Manual Override or absence delay
+settings from the old System entry get the values they run with written into
+their own configuration at start; no manual migration is required in that case.
+The System entry is removed once no zone depends on it any more. A zone whose
+stored values cannot be verified is left as it was.
 
 ### Changed: absence starts at the configured delay, not at the next periodic update
 

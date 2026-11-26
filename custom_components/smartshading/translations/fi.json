@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Läsnäolo",
-        "description": "Määrittää, mitä läsnäolokohteita tämä vyöhyke käyttää ja noudattaako se järjestelmän poissaolon viiveen oletusta vai käyttääkö se omaa arvoaan.",
+        "description": "Määritä tämän vyöhykkeen läsnäolokohteet ja niiden yhdistämistapa. Nämä asetukset ja poissaolon viive kuuluvat tälle vyöhykkeelle. Poissaolon viive asetetaan seuraavalla näytöllä.",
         "data": {
           "presence_entity_ids": "Läsnäoloentiteetit",
           "absence_position": "Poissaolosijainti",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Varjostimen sijainti, kun vyöhyke on tyhjä, ellei vahvempi suojauspäätös ole voimassa (0 = täysin suljettu, 100 = täysin avoin). Koskee kaikkia tämän vyöhykkeen ikkunoita.",
           "presence_policy": "Määrittää, miten useat läsnäoloentiteetit yhdistetään yhdeksi signaaliksi. Joku kotona (oletus): läsnä heti kun yksi valituista henkilöistä on kotona. Kaikki kotona: läsnä vain, kun kaikki valitut henkilöt ovat kotona. Käänteinen: kääntää merkityksen \"joku kotona\" — läsnä vasta, kun jonkun on vahvistettu olevan poissa.",
-          "absence_delay_use_system_default": "Kun käytössä, tämä vyöhyke noudattaa järjestelmämerkinnässä määritettyä poissaolon viiveen oletusta. Kun pois käytöstä, määrität tämän vyöhykkeen oman arvon seuraavalla näytöllä."
+          "absence_delay_use_system_default": "Näytetään vain, kun tällä vyöhykkeellä on yhä muuntamattomia vanhemman version asetuksia. Kun käytössä, vyöhyke ottaa poissaolon viiveen edelleen vanhasta järjestelmämerkinnästä. Poista käytöstä, niin voit määrittää vyöhykkeen oman arvon seuraavalla näytöllä. Vanhaan järjestelmämerkintään ei tarvitse luoda tai muuttaa mitään."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Manuaalinen ohitus",
-        "description": "Valitse, noudattaako tämä vyöhyke järjestelmän manuaalisen ohituksen oletusta vai käyttääkö se omia asetuksiaan.",
+        "description": "Nämä asetukset kuuluvat tälle vyöhykkeelle. Aseta tässä tunnistustoleranssi ja vahvista: seuraavalla näytöllä valitset, milloin ohjaus palautetaan ja mitä saa jatkaa ohituksen aikana. Kesto, päättymisaika ja muut tiedot seuraavat valinnan mukaan.",
         "data": {
           "override_use_system_default": "Käytä järjestelmän oletusta",
           "override_detection_tolerance": "Tunnistustoleranssi"
         },
         "data_description": {
-          "override_use_system_default": "Kun käytössä, tämä vyöhyke noudattaa järjestelmämerkinnässä määritettyä manuaalisen ohituksen oletusta. Kun pois käytöstä, määrität tämän vyöhykkeen omat asetukset seuraavalla näytöllä.",
+          "override_use_system_default": "Näytetään vain, kun tällä vyöhykkeellä on yhä muuntamattomia vanhemman version asetuksia. Kun käytössä, vyöhyke ottaa manuaalisen ohituksen asetukset edelleen vanhasta järjestelmämerkinnästä. Poista käytöstä, niin voit määrittää vyöhykkeen omat asetukset seuraavalla näytöllä. Vanhaan järjestelmämerkintään ei tarvitse luoda tai muuttaa mitään.",
           "override_detection_tolerance": "Pienin sallittu asennon muutos (prosentteina) ennen kuin manuaalinen liike tunnistetaan ohitukseksi."
         }
       },

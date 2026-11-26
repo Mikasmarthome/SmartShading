@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Tilstedeværelse",
-        "description": "Angiver hvilke tilstedeværelsesenheder denne zone bruger, og om den følger systemets standard for fraværsforsinkelse, eller bruger sin egen værdi.",
+        "description": "Konfigurer zonens tilstedeværelsesenheder, og hvordan de kombineres. Disse indstillinger og fraværsforsinkelsen hører til denne zone. Fraværsforsinkelsen indstilles på næste skærm.",
         "data": {
           "presence_entity_ids": "Tilstedeværelsesentiteter",
           "absence_position": "Fraværsposition",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Afskærmningens position, mens zonen er ubenyttet, medmindre en stærkere beskyttelsesbeslutning gælder (0 = helt lukket, 100 = helt åben). Gælder for alle vinduer i denne zone.",
           "presence_policy": "Styrer, hvordan flere tilstedeværelsesenheder kombineres til ét signal. Nogen hjemme (standard): til stede så snart én valgt person er hjemme. Alle hjemme: kun til stede når alle valgte personer er hjemme. Inverteret: vender betydningen af \"nogen hjemme\" om — til stede først, når nogen er bekræftet væk.",
-          "absence_delay_use_system_default": "Når aktiveret, følger denne zone standarden for fraværsforsinkelse, der er konfigureret på systemindgangen. Når deaktiveret, konfigurerer du zonens egen værdi på næste skærm."
+          "absence_delay_use_system_default": "Vises kun, så længe denne zone stadig har indstillinger fra en ældre version, der ikke er konverteret. Når aktiveret, henter zonen fortsat sin fraværsforsinkelse fra den gamle systemindgang. Slå det fra for at angive zonens egen værdi på næste skærm. Der skal ikke oprettes eller ændres noget i den gamle systemindgang."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Manuel tilsidesættelse",
-        "description": "Vælg om denne zone følger systemets standard for manuel tilsidesættelse, eller bruger sine egne indstillinger.",
+        "description": "Disse indstillinger hører til denne zone. Angiv registreringstolerancen her og bekræft: på næste skærm vælger du, hvornår styringen gives tilbage, og hvad der fortsat må køre under en tilsidesættelse. Varighed, sluttidspunkt og andre detaljer følger afhængigt af valget.",
         "data": {
           "override_use_system_default": "Brug systemstandard",
           "override_detection_tolerance": "Detektionstolerance"
         },
         "data_description": {
-          "override_use_system_default": "Når aktiveret, følger denne zone den manuelle tilsidesættelsesstandard, der er konfigureret på systemindgangen. Når deaktiveret, konfigurerer du zonens egne indstillinger på næste skærm.",
+          "override_use_system_default": "Vises kun, så længe denne zone stadig har indstillinger fra en ældre version, der ikke er konverteret. Når aktiveret, henter zonen fortsat sine indstillinger for manuel tilsidesættelse fra den gamle systemindgang. Slå det fra for at angive zonens egne indstillinger på næste skærm. Der skal ikke oprettes eller ændres noget i den gamle systemindgang.",
           "override_detection_tolerance": "Mindste positionsændring (i procent), før en manuel bevægelse genkendes som en tilsidesættelse."
         }
       },

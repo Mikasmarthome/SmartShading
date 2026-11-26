@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Přítomnost",
-        "description": "Určuje, které entity přítomnosti tato zóna používá a zda se řídí systémovým výchozím zpožděním nepřítomnosti, nebo používá vlastní hodnotu.",
+        "description": "Nastavte entity přítomnosti této zóny a způsob jejich vyhodnocení. Tato nastavení i zpoždění nepřítomnosti patří této zóně. Zpoždění nepřítomnosti se nastavuje na další obrazovce.",
         "data": {
           "presence_entity_ids": "Entity přítomnosti",
           "absence_position": "Poloha při nepřítomnosti",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Poloha stínění, když je zóna neobsazená, pokud neplatí silnější ochranné rozhodnutí (0 = zcela zavřeno, 100 = zcela otevřeno). Platí pro všechna okna v této zóně.",
           "presence_policy": "Určuje, jak se více entit přítomnosti kombinuje do jednoho signálu. Někdo doma (výchozí): přítomnost, jakmile je doma jedna vybraná osoba. Všichni doma: přítomnost pouze, když jsou doma všechny vybrané osoby. Invertováno: obrací význam „nněkdo doma“ — přítomnost až po potvrzení, že je někdo pryč.",
-          "absence_delay_use_system_default": "Když je zapnuto, tato zóna se řídí výchozím zpožděním nepřítomnosti nastaveným v systémovém záznamu. Když je vypnuto, na další obrazovce nastavíte vlastní hodnotu této zóny."
+          "absence_delay_use_system_default": "Zobrazuje se jen tehdy, když tato zóna má stále nepřevedená nastavení ze starší verze. Když je zapnuto, zóna dál přebírá zpoždění nepřítomnosti ze starého systémového záznamu. Vypněte jej a na další obrazovce nastavte vlastní hodnotu této zóny. Ve starém systémovém záznamu není třeba nic vytvářet ani měnit."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Ruční přepsání",
-        "description": "Vyberte, zda se tato zóna řídí systémovým výchozím nastavením ručního přepsání, nebo používá vlastní nastavení.",
+        "description": "Tato nastavení patří této zóně. Zde nastavte toleranci detekce a potvrďte: na další obrazovce zvolíte, kdy se řízení vrátí a co smí během ručního přepsání dál běžet. Doba trvání, čas ukončení a další podrobnosti následují podle této volby.",
         "data": {
           "override_use_system_default": "Použít systémové výchozí nastavení",
           "override_detection_tolerance": "Tolerance detekce"
         },
         "data_description": {
-          "override_use_system_default": "Když je zapnuto, tato zóna se řídí výchozím nastavením ručního přepsání nakonfigurovaným v systémovém záznamu. Když je vypnuto, na další obrazovce nastavíte vlastní nastavení této zóny.",
+          "override_use_system_default": "Zobrazuje se jen tehdy, když tato zóna má stále nepřevedená nastavení ze starší verze. Když je zapnuto, zóna dál přebírá nastavení ručního přepsání ze starého systémového záznamu. Vypněte jej a na další obrazovce nastavte vlastní nastavení této zóny. Ve starém systémovém záznamu není třeba nic vytvářet ani měnit.",
           "override_detection_tolerance": "Minimální změna polohy (v procentech), než je ruční pohyb rozpoznán jako přepsání."
         }
       },

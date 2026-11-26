@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Presencia",
-        "description": "Define qué entidades de presencia usa esta zona y si sigue el valor predeterminado de retardo de ausencia de la entrada del sistema, o usa su propio valor.",
+        "description": "Configure las entidades de presencia de esta zona y cómo se combinan. Estos ajustes y el retardo de ausencia pertenecen a esta zona. El retardo de ausencia se define en la siguiente pantalla.",
         "data": {
           "presence_entity_ids": "Entidades de presencia",
           "absence_position": "Posición de ausencia",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Posición de la persiana mientras la zona está desocupada, salvo que aplique una decisión de protección más fuerte (0 = totalmente cerrada, 100 = totalmente abierta). Se aplica a todas las ventanas de esta zona.",
           "presence_policy": "Controla cómo se combinan varias entidades de presencia en una sola señal. Alguien en casa (predeterminado): presente en cuanto una persona seleccionada está en casa. Todos en casa: presente solo cuando todas las personas seleccionadas están en casa. Invertido: invierte el significado de «alguien en casa» — presente solo cuando se confirma que alguien está ausente.",
-          "absence_delay_use_system_default": "Cuando está activado, esta zona sigue el valor predeterminado de retardo de ausencia configurado en la entrada del sistema. Cuando está desactivado, configurará el valor propio de esta zona en la siguiente pantalla."
+          "absence_delay_use_system_default": "Solo se muestra mientras esta zona conserve ajustes de una versión anterior sin convertir. Cuando está activado, la zona sigue tomando su retardo de ausencia de la antigua entrada del sistema. Desactívelo para definir el valor propio de esta zona en la siguiente pantalla. No es necesario crear ni cambiar nada en la antigua entrada del sistema."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Anulación manual",
-        "description": "Elija si esta zona sigue el valor predeterminado de anulación manual del sistema, o usa su propia configuración.",
+        "description": "Estos ajustes pertenecen a esta zona. Defina aquí la tolerancia de detección y confirme: en la siguiente pantalla elegirá cuándo se devuelve el control y qué puede seguir ejecutándose durante una anulación. La duración, la hora de fin y otros detalles vienen después, según esa elección.",
         "data": {
           "override_use_system_default": "Usar valor predeterminado del sistema",
           "override_detection_tolerance": "Tolerancia de detección"
         },
         "data_description": {
-          "override_use_system_default": "Cuando está activado, esta zona sigue el valor predeterminado de anulación manual configurado en la entrada del sistema. Cuando está desactivado, configurará los ajustes propios de esta zona en la siguiente pantalla.",
+          "override_use_system_default": "Solo se muestra mientras esta zona conserve ajustes de una versión anterior sin convertir. Cuando está activado, la zona sigue tomando su configuración de anulación manual de la antigua entrada del sistema. Desactívelo para definir los ajustes propios de esta zona en la siguiente pantalla. No es necesario crear ni cambiar nada en la antigua entrada del sistema.",
           "override_detection_tolerance": "Cambio mínimo de posición (en porcentaje) antes de que un movimiento manual se reconozca como anulación."
         }
       },

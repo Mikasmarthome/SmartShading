@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Präsenz",
-        "description": "Legt fest, welche Präsenz-Entitäten diese Zone verwendet und ob sie dem Abwesenheitsverzögerungs-Standard des System-Eintrags folgt oder einen eigenen Wert verwendet.",
+        "description": "Konfigurieren Sie die Präsenz-Entitäten dieser Zone und wie sie ausgewertet werden. Diese Einstellungen und die Abwesenheitsverzögerung gehören zu dieser Zone. Die Abwesenheitsverzögerung stellen Sie auf dem nächsten Bildschirm ein.",
         "data": {
           "presence_entity_ids": "Anwesenheits-Entitäten",
           "absence_position": "Abwesenheitsposition",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Position der Beschattung bei Abwesenheit, sofern keine stärkere Schutzentscheidung greift (0 = vollständig geschlossen, 100 = vollständig geöffnet). Gilt für alle Fenster dieser Zone.",
           "presence_policy": "Legt fest, wie mehrere Presence-Entities zu einem Signal zusammengeführt werden. Jemand zuhause (Standard): anwesend, sobald eine ausgewählte Person zuhause ist. Alle zuhause: anwesend nur, wenn alle ausgewählten Personen zuhause sind. Invertiert: kehrt die Bedeutung von „jemand zuhause“ um — anwesend erst, wenn jemand nachweislich abwesend ist.",
-          "absence_delay_use_system_default": "Wenn aktiviert, folgt diese Zone dem auf dem SmartShading-System-Eintrag konfigurierten Abwesenheitsverzögerungs-Standard. Wenn deaktiviert, konfigurieren Sie auf dem nächsten Bildschirm den eigenen Wert dieser Zone."
+          "absence_delay_use_system_default": "Wird nur angezeigt, solange diese Zone noch nicht umgestellte Einstellungen einer älteren Version hat. Wenn aktiviert, übernimmt die Zone ihre Abwesenheitsverzögerung weiterhin aus dem alten System-Eintrag. Deaktivieren Sie die Option, um auf dem nächsten Bildschirm einen eigenen Wert für diese Zone festzulegen. Im alten System-Eintrag muss nichts angelegt oder geändert werden."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Manuelle Übersteuerung",
-        "description": "Wählen Sie, ob diese Zone dem Übersteuerungs-Systemstandard des System-Eintrags folgt oder eigene Einstellungen verwendet.",
+        "description": "Diese Einstellungen gehören zu dieser Zone. Legen Sie hier die Erkennungstoleranz fest und bestätigen Sie: Auf dem nächsten Bildschirm wählen Sie, wann die Steuerung zurückgegeben wird und was während einer Übersteuerung weiterlaufen darf. Dauer, Endzeit und weitere Details folgen je nach Auswahl.",
         "data": {
           "override_use_system_default": "Systemstandard verwenden",
           "override_detection_tolerance": "Erkennungstoleranz"
         },
         "data_description": {
-          "override_use_system_default": "Wenn aktiviert, folgt diese Zone dem auf dem SmartShading-System-Eintrag konfigurierten Übersteuerungs-Systemstandard. Wenn deaktiviert, konfigurieren Sie auf dem nächsten Bildschirm die eigenen Einstellungen dieser Zone.",
+          "override_use_system_default": "Wird nur angezeigt, solange diese Zone noch nicht umgestellte Einstellungen einer älteren Version hat. Wenn aktiviert, übernimmt die Zone ihre Übersteuerungs-Einstellungen weiterhin aus dem alten System-Eintrag. Deaktivieren Sie die Option, um auf dem nächsten Bildschirm eigene Einstellungen für diese Zone festzulegen. Im alten System-Eintrag muss nichts angelegt oder geändert werden.",
           "override_detection_tolerance": "Minimale Positionsänderung (in Prozent), bevor eine manuelle Bewegung als Übersteuerung erkannt wird."
         }
       },

@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Presença",
-        "description": "Define quais entidades de presença esta zona utiliza e se segue a predefinição de atraso de ausência do sistema, ou utiliza um valor próprio.",
+        "description": "Configure as entidades de presença desta zona e a forma como são combinadas. Estas definições e o atraso de ausência pertencem a esta zona. O atraso de ausência é definido no ecrã seguinte.",
         "data": {
           "presence_entity_ids": "Entidades de presença",
           "absence_position": "Posição de ausência",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Posição do estore enquanto a zona está desocupada, exceto se for aplicada uma decisão de proteção mais forte (0 = totalmente fechado, 100 = totalmente aberto). Aplica-se a todas as janelas desta zona.",
           "presence_policy": "Controla como várias entidades de presença são combinadas num único sinal. Alguém em casa (padrão): presente assim que uma pessoa selecionada está em casa. Todos em casa: presente apenas quando todas as pessoas selecionadas estão em casa. Invertido: inverte o significado de \"alguém em casa\" — presente apenas quando se confirma que alguém está ausente.",
-          "absence_delay_use_system_default": "Quando ativado, esta zona segue a predefinição de atraso de ausência configurada na entrada do sistema. Quando desativado, configurará o valor próprio desta zona no ecrã seguinte."
+          "absence_delay_use_system_default": "Só é apresentado enquanto esta zona ainda tiver definições não convertidas de uma versão anterior. Quando ativado, a zona continua a obter o atraso de ausência da antiga entrada do sistema. Desative para configurar o valor próprio desta zona no ecrã seguinte. Não é necessário criar nem alterar nada na antiga entrada do sistema."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Substituição manual",
-        "description": "Escolha se esta zona segue a predefinição do sistema para substituição manual, ou usa as suas próprias definições.",
+        "description": "Estas definições pertencem a esta zona. Defina aqui a tolerância de deteção e confirme: no ecrã seguinte escolhe quando o controlo é devolvido e o que pode continuar a ser executado durante uma substituição. A duração, a hora de fim e outros detalhes surgem depois, conforme essa escolha.",
         "data": {
           "override_use_system_default": "Usar predefinição do sistema",
           "override_detection_tolerance": "Tolerância de deteção"
         },
         "data_description": {
-          "override_use_system_default": "Quando ativado, esta zona segue a predefinição de substituição manual configurada na entrada do sistema. Quando desativado, configurará as definições próprias desta zona no ecrã seguinte.",
+          "override_use_system_default": "Só é apresentado enquanto esta zona ainda tiver definições não convertidas de uma versão anterior. Quando ativado, a zona continua a obter as definições de substituição manual da antiga entrada do sistema. Desative para configurar as definições próprias desta zona no ecrã seguinte. Não é necessário criar nem alterar nada na antiga entrada do sistema.",
           "override_detection_tolerance": "Alteração mínima de posição (em percentagem) antes de um movimento manual ser reconhecido como substituição."
         }
       },

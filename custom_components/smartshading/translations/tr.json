@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Bulunma",
-        "description": "Bu bölgenin hangi bulunma varlıklarını kullandığını ve sistemin yokluk gecikmesi varsayılanını mı izleyeceğini yoksa kendi değerini mi kullanacağını tanımlar.",
+        "description": "Bu bölgenin bulunma varlıklarını ve nasıl birleştirileceklerini yapılandırın. Bu ayarlar ve yokluk gecikmesi bu bölgeye aittir. Yokluk gecikmesi bir sonraki ekranda ayarlanır.",
         "data": {
           "presence_entity_ids": "Mevcudiyet varlıkları",
           "absence_position": "Yokluk konumu",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Daha güçlü bir koruma kararı geçerli olmadıkça, bölge boşken gölgeliğin konumu (0 = tamamen kapalı, 100 = tamamen açık). Bu bölgedeki tüm pencerelere uygulanır.",
           "presence_policy": "Birden fazla bulunma varlığının tek bir sinyalde nasıl birleştirileceğini belirler. Biri evde (varsayılan): seçilen kişilerden biri evde olur olmaz bulunuluyor sayılır. Herkes evde: yalnızca seçilen tüm kişiler evdeyken bulunuluyor sayılır. Ters çevrilmiş: \"biri evde\" anlamını tersine çevirir — yalnızca birinin dışarıda olduğu doğrulanınca bulunuluyor sayılır.",
-          "absence_delay_use_system_default": "Etkinleştirildiğinde, bu bölge sistem girişinde yapılandırılan yokluk gecikmesi varsayılanını izler. Devre dışı bırakıldığında, bir sonraki ekranda bu bölgenin kendi değerini yapılandırırsınız."
+          "absence_delay_use_system_default": "Yalnızca bu bölgede eski bir sürümden kalan, dönüştürülmemiş ayarlar bulunduğu sürece gösterilir. Etkinleştirildiğinde, bölge yokluk gecikmesini eski sistem girişinden almaya devam eder. Bir sonraki ekranda bu bölgenin kendi değerini ayarlamak için kapatın. Eski sistem girişinde bir şey oluşturmanız veya değiştirmeniz gerekmez."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Manuel geçersiz kılma",
-        "description": "Bu bölgenin sistemin manuel geçersiz kılma varsayılanını mı izleyeceğini yoksa kendi ayarlarını mı kullanacağını seçin.",
+        "description": "Bu ayarlar bu bölgeye aittir. Algılama toleransını burada belirleyip onaylayın: bir sonraki ekranda kontrolün ne zaman geri verileceğini ve geçersiz kılma sırasında nelerin çalışmaya devam edebileceğini seçersiniz. Süre, bitiş saati ve diğer ayrıntılar bu seçime göre gelir.",
         "data": {
           "override_use_system_default": "Sistem varsayılanını kullan",
           "override_detection_tolerance": "Algılama toleransı"
         },
         "data_description": {
-          "override_use_system_default": "Etkinleştirildiğinde, bu bölge sistem girişinde yapılandırılan manuel geçersiz kılma varsayılanını izler. Devre dışı bırakıldığında, bir sonraki ekranda bu bölgenin kendi ayarlarını yapılandırırsınız.",
+          "override_use_system_default": "Yalnızca bu bölgede eski bir sürümden kalan, dönüştürülmemiş ayarlar bulunduğu sürece gösterilir. Etkinleştirildiğinde, bölge manuel geçersiz kılma ayarlarını eski sistem girişinden almaya devam eder. Bir sonraki ekranda bu bölgenin kendi ayarlarını yapmak için kapatın. Eski sistem girişinde bir şey oluşturmanız veya değiştirmeniz gerekmez.",
           "override_detection_tolerance": "Manuel bir hareketin geçersiz kılma olarak tanınmasından önceki minimum konum değişikliği (yüzde olarak)."
         }
       },

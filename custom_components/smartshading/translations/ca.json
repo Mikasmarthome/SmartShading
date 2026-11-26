@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Presència",
-        "description": "Defineix quines entitats de presència utilitza aquesta zona i si segueix el valor predeterminat de retard d'absència de l'entrada del sistema, o utilitza un valor propi.",
+        "description": "Configureu les entitats de presència d'aquesta zona i com es combinen. Aquests paràmetres i el retard d'absència pertanyen a aquesta zona. El retard d'absència es defineix a la pantalla següent.",
         "data": {
           "presence_entity_ids": "Entitats de presència",
           "absence_position": "Posició d'absència",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Posició de la persiana mentre la zona està desocupada, llevat que s'apliqui una decisió de protecció més forta (0 = totalment tancada, 100 = totalment oberta). S'aplica a totes les finestres d'aquesta zona.",
           "presence_policy": "Controla com es combinen diverses entitats de presència en un sol senyal. Algú a casa (per defecte): present tan bon punt una persona seleccionada és a casa. Tothom a casa: present només quan totes les persones seleccionades són a casa. Invertit: inverteix el significat d'\"algú a casa\" — present només quan es confirma que algú és absent.",
-          "absence_delay_use_system_default": "Quan està activat, aquesta zona segueix el valor predeterminat de retard d'absència configurat a l'entrada del sistema. Quan està desactivat, configurareu el valor propi d'aquesta zona a la pantalla següent."
+          "absence_delay_use_system_default": "Només es mostra mentre aquesta zona encara té paràmetres no convertits d'una versió anterior. Quan està activat, la zona continua prenent el retard d'absència de l'antiga entrada del sistema. Desactiveu-lo per definir el valor propi d'aquesta zona a la pantalla següent. No cal crear ni canviar res a l'antiga entrada del sistema."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Anul·lació manual",
-        "description": "Trieu si aquesta zona segueix el valor predeterminat de substitució manual de l'entrada del sistema, o utilitza la seva pròpia configuració.",
+        "description": "Aquests paràmetres pertanyen a aquesta zona. Definiu aquí la tolerància de detecció i confirmeu: a la pantalla següent trieu quan es retorna el control i què pot continuar funcionant durant una substitució manual. La durada, l'hora final i els altres detalls vénen després, segons aquesta elecció.",
         "data": {
           "override_use_system_default": "Utilitza el valor predeterminat del sistema",
           "override_detection_tolerance": "Tolerància de detecció"
         },
         "data_description": {
-          "override_use_system_default": "Quan està activat, aquesta zona segueix el valor predeterminat de substitució manual configurat a l'entrada del sistema. Quan està desactivat, configurareu la configuració pròpia d'aquesta zona a la pantalla següent.",
+          "override_use_system_default": "Només es mostra mentre aquesta zona encara té paràmetres no convertits d'una versió anterior. Quan està activat, la zona continua prenent la configuració de substitució manual de l'antiga entrada del sistema. Desactiveu-lo per definir la configuració pròpia d'aquesta zona a la pantalla següent. No cal crear ni canviar res a l'antiga entrada del sistema.",
           "override_detection_tolerance": "Canvi mínim de posició (en percentatge) abans que un moviment manual es reconegui com una anul·lació."
         }
       },

@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Tilstedeværelse",
-        "description": "Angir hvilke tilstedeværelsesenheter denne sonen bruker, og om den følger systemets standard for fraværsforsinkelse, eller bruker sin egen verdi.",
+        "description": "Konfigurer sonens tilstedeværelsesenheter og hvordan de kombineres. Disse innstillingene og fraværsforsinkelsen hører til denne sonen. Fraværsforsinkelsen stilles inn på neste skjerm.",
         "data": {
           "presence_entity_ids": "Tilstedeværelsesentiteter",
           "absence_position": "Fraværsposisjon",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Solskjermingens posisjon mens sonen er ubebodd, med mindre en sterkere beskyttelsesbeslutning gjelder (0 = helt lukket, 100 = helt åpen). Gjelder alle vinduer i denne sonen.",
           "presence_policy": "Styrer hvordan flere tilstedeværelsesenheter kombineres til ett signal. Noen hjemme (standard): til stede så snart én valgt person er hjemme. Alle hjemme: til stede bare når alle valgte personer er hjemme. Invertert: snur betydningen av \"noen hjemme\" — til stede først når noen er bekreftet borte.",
-          "absence_delay_use_system_default": "Når aktivert, følger denne sonen standarden for fraværsforsinkelse konfigurert på systeminnføringen. Når deaktivert, konfigurerer du sonens egen verdi på neste skjerm."
+          "absence_delay_use_system_default": "Vises bare så lenge denne sonen fortsatt har innstillinger fra en eldre versjon som ikke er konvertert. Når aktivert, henter sonen fortsatt fraværsforsinkelsen fra den gamle systeminnføringen. Slå det av for å angi sonens egen verdi på neste skjerm. Ingenting må opprettes eller endres i den gamle systeminnføringen."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Manuell overstyring",
-        "description": "Velg om denne sonen følger systemets standard for manuell overstyring, eller bruker sine egne innstillinger.",
+        "description": "Disse innstillingene hører til denne sonen. Angi deteksjonstoleransen her og bekreft: på neste skjerm velger du når styringen gis tilbake, og hva som fortsatt kan kjøre under en overstyring. Varighet, sluttidspunkt og andre detaljer følger avhengig av valget.",
         "data": {
           "override_use_system_default": "Bruk systemstandard",
           "override_detection_tolerance": "Deteksjonstoleranse"
         },
         "data_description": {
-          "override_use_system_default": "Når aktivert, følger denne sonen standarden for manuell overstyring konfigurert på systeminnføringen. Når deaktivert, konfigurerer du sonens egne innstillinger på neste skjerm.",
+          "override_use_system_default": "Vises bare så lenge denne sonen fortsatt har innstillinger fra en eldre versjon som ikke er konvertert. Når aktivert, henter sonen fortsatt innstillingene for manuell overstyring fra den gamle systeminnføringen. Slå det av for å angi sonens egne innstillinger på neste skjerm. Ingenting må opprettes eller endres i den gamle systeminnføringen.",
           "override_detection_tolerance": "Minste posisjonsendring (i prosent) før en manuell bevegelse gjenkjennes som en overstyring."
         }
       },

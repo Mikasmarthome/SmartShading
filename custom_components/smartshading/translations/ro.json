@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Prezență",
-        "description": "Definește ce entități de prezență utilizează această zonă și dacă urmează valoarea implicită de sistem pentru întârzierea absenței, sau utilizează o valoare proprie.",
+        "description": "Configurați entitățile de prezență ale acestei zone și modul în care sunt combinate. Aceste setări și întârzierea absenței aparțin acestei zone. Întârzierea absenței se stabilește pe ecranul următor.",
         "data": {
           "presence_entity_ids": "Entități de prezență",
           "absence_position": "Poziție de absență",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Poziția umbrarului cât timp zona este neocupată, cu excepția cazului în care se aplică o decizie de protecție mai puternică (0 = complet închis, 100 = complet deschis). Se aplică tuturor ferestrelor din această zonă.",
           "presence_policy": "Controlează modul în care mai multe entități de prezență sunt combinate într-un singur semnal. Cineva acasă (implicit): prezent imediat ce o persoană selectată este acasă. Toți acasă: prezent doar când toate persoanele selectate sunt acasă. Inversat: inversează semnificația „cineva acasă” — prezent doar după ce se confirmă că cineva este plecat.",
-          "absence_delay_use_system_default": "Când este activată, această zonă urmează valoarea implicită a întârzierii absenței configurată pe intrarea de sistem. Când este dezactivată, veți configura valoarea proprie a acestei zone pe ecranul următor."
+          "absence_delay_use_system_default": "Afișat doar cât timp această zonă mai are setări neconvertite dintr-o versiune mai veche. Când este activată, zona preia în continuare întârzierea absenței din vechea intrare de sistem. Dezactivați pentru a configura valoarea proprie a zonei pe ecranul următor. Nu trebuie creat sau modificat nimic în vechea intrare de sistem."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Suprascriere manuală",
-        "description": "Alegeți dacă această zonă urmează valoarea implicită de sistem pentru suprascrierea manuală, sau utilizează propriile setări.",
+        "description": "Aceste setări aparțin acestei zone. Stabiliți aici toleranța de detectare și confirmați: pe ecranul următor alegeți când este returnat controlul și ce poate rula în continuare în timpul unei suprascrieri. Durata, ora de final și alte detalii urmează în funcție de această alegere.",
         "data": {
           "override_use_system_default": "Utilizează valoarea implicită a sistemului",
           "override_detection_tolerance": "Toleranță de detectare"
         },
         "data_description": {
-          "override_use_system_default": "Când este activată, această zonă urmează valoarea implicită de suprascriere manuală configurată pe intrarea de sistem. Când este dezactivată, veți configura setările proprii ale acestei zone pe ecranul următor.",
+          "override_use_system_default": "Afișat doar cât timp această zonă mai are setări neconvertite dintr-o versiune mai veche. Când este activată, zona preia în continuare setările de suprascriere manuală din vechea intrare de sistem. Dezactivați pentru a configura setările proprii ale zonei pe ecranul următor. Nu trebuie creat sau modificat nimic în vechea intrare de sistem.",
           "override_detection_tolerance": "Schimbare minimă de poziție (în procente) înainte ca o mișcare manuală să fie recunoscută ca suprascriere."
         }
       },

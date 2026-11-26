@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Présence",
-        "description": "Définit quelles entités de présence cette zone utilise et si elle suit la valeur par défaut de délai d'absence du système, ou utilise sa propre valeur.",
+        "description": "Configurez les entités de présence de cette zone et la manière de les combiner. Ces réglages et le délai d'absence appartiennent à cette zone. Le délai d'absence se règle à l'écran suivant.",
         "data": {
           "presence_entity_ids": "Entités de présence",
           "absence_position": "Position d'absence",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Position du volet lorsque la zone est inoccupée, sauf si une décision de protection plus forte s'applique (0 = entièrement fermé, 100 = entièrement ouvert). S'applique à toutes les fenêtres de cette zone.",
           "presence_policy": "Détermine comment plusieurs entités de présence sont combinées en un seul signal. Quelqu'un à la maison (par défaut) : présent dès qu'une personne sélectionnée est à la maison. Tout le monde à la maison : présent uniquement si toutes les personnes sélectionnées sont à la maison. Inversé : inverse la signification de « quelqu'un à la maison » — présent seulement une fois qu'une personne est confirmée absente.",
-          "absence_delay_use_system_default": "Lorsque activé, cette zone suit la valeur par défaut de délai d'absence configurée sur l'entrée système. Lorsque désactivé, vous configurez la valeur propre à cette zone à l'écran suivant."
+          "absence_delay_use_system_default": "Affiché uniquement tant que cette zone conserve des réglages non convertis d'une version antérieure. Lorsque activé, la zone continue de reprendre son délai d'absence de l'ancienne entrée système. Désactivez-le pour définir la valeur propre à cette zone à l'écran suivant. Rien n'est à créer ou à modifier dans l'ancienne entrée système."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Dérogation manuelle",
-        "description": "Choisissez si cette zone suit la valeur par défaut du système pour la prise de contrôle manuelle, ou utilise ses propres réglages.",
+        "description": "Ces réglages appartiennent à cette zone. Définissez ici la tolérance de détection puis validez : à l'écran suivant, vous choisissez quand le contrôle est rendu et ce qui peut continuer pendant une prise de contrôle manuelle. La durée, l'heure de fin et les autres détails suivent selon ce choix.",
         "data": {
           "override_detection_tolerance": "Tolérance de détection",
           "override_use_system_default": "Utiliser la valeur par défaut du système"
         },
         "data_description": {
-          "override_use_system_default": "Lorsque activé, cette zone suit la valeur par défaut de prise de contrôle manuelle configurée sur l'entrée système. Lorsque désactivé, vous configurez les réglages propres à cette zone à l'écran suivant.",
+          "override_use_system_default": "Affiché uniquement tant que cette zone conserve des réglages non convertis d'une version antérieure. Lorsque activé, la zone continue de reprendre ses réglages de prise de contrôle manuelle de l'ancienne entrée système. Désactivez-le pour définir les réglages propres à cette zone à l'écran suivant. Rien n'est à créer ou à modifier dans l'ancienne entrée système.",
           "override_detection_tolerance": "Changement de position minimal (en pourcentage) avant qu'un mouvement manuel soit reconnu comme une dérogation."
         }
       },

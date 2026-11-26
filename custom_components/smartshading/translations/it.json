@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Presenza",
-        "description": "Definisce quali entità di presenza usa questa zona e se segue il valore predefinito di ritardo assenza del sistema, oppure usa un valore proprio.",
+        "description": "Configura le entità di presenza di questa zona e come vengono combinate. Queste impostazioni e il ritardo assenza appartengono a questa zona. Il ritardo assenza si imposta nella schermata successiva.",
         "data": {
           "presence_entity_ids": "Entità di presenza",
           "absence_position": "Posizione di assenza",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Posizione della tapparella quando la zona è non occupata, salvo che si applichi una decisione di protezione più forte (0 = completamente chiusa, 100 = completamente aperta). Si applica a tutte le finestre di questa zona.",
           "presence_policy": "Determina come vengono combinate più entità di presenza in un unico segnale. Qualcuno a casa (predefinito): presente non appena una persona selezionata è a casa. Tutti a casa: presente solo quando tutte le persone selezionate sono a casa. Invertito: inverte il significato di \"qualcuno a casa\" — presente solo quando è confermato che qualcuno è assente.",
-          "absence_delay_use_system_default": "Se attivato, questa zona segue il valore predefinito di ritardo assenza configurato sulla voce di sistema. Se disattivato, configurerai il valore proprio di questa zona nella schermata successiva."
+          "absence_delay_use_system_default": "Mostrato solo finché questa zona ha ancora impostazioni non convertite di una versione precedente. Se attivato, la zona continua a prendere il ritardo assenza dalla vecchia voce di sistema. Disattivalo per definire il valore proprio di questa zona nella schermata successiva. Non occorre creare o modificare nulla nella vecchia voce di sistema."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Override manuale",
-        "description": "Scegli se questa zona segue il valore predefinito di sistema per l'override manuale, oppure usa impostazioni proprie.",
+        "description": "Queste impostazioni appartengono a questa zona. Imposta qui la tolleranza di rilevamento e conferma: nella schermata successiva scegli quando il controllo viene restituito e cosa può continuare durante un override. Durata, orario di fine e altri dettagli seguono in base a questa scelta.",
         "data": {
           "override_use_system_default": "Usa il valore predefinito di sistema",
           "override_detection_tolerance": "Tolleranza di rilevamento"
         },
         "data_description": {
-          "override_use_system_default": "Se attivato, questa zona segue il valore predefinito di override manuale configurato sulla voce di sistema. Se disattivato, configurerai le impostazioni proprie di questa zona nella schermata successiva.",
+          "override_use_system_default": "Mostrato solo finché questa zona ha ancora impostazioni non convertite di una versione precedente. Se attivato, la zona continua a prendere le impostazioni di override manuale dalla vecchia voce di sistema. Disattivalo per definire le impostazioni proprie di questa zona nella schermata successiva. Non occorre creare o modificare nulla nella vecchia voce di sistema.",
           "override_detection_tolerance": "Variazione minima di posizione (in percentuale) prima che un movimento manuale sia riconosciuto come override."
         }
       },

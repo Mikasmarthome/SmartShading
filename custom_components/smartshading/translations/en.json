@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Presence settings",
-        "description": "Configure which presence entities this zone uses, and whether it follows the System entry's absence-delay default or its own.",
+        "description": "Configure the presence entities of this zone and how they are combined. These settings and the absence delay belong to this zone. The absence delay is set on the next screen.",
         "data": {
           "presence_entity_ids": "Presence entities",
           "absence_position": "Absence position",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Cover position while the zone is unoccupied, unless a stronger protection decision applies (0 = fully closed, 100 = fully open). Applies to all windows in this zone.",
           "presence_policy": "Controls how multiple presence entities are combined into one signal. Anyone home (default): present as soon as one selected person is home. Everyone home: present only when all selected people are home. Inverted: reverses the meaning of \"anyone home\" — present only once someone is confirmed away.",
-          "absence_delay_use_system_default": "When enabled, this zone follows the absence-delay default configured on the SmartShading System entry. When disabled, you configure this zone's own value on the next screen."
+          "absence_delay_use_system_default": "Only shown while this zone still has settings from an older version that have not been converted. When enabled, the zone keeps taking its absence delay from the old System entry. Switch it off to set this zone's own value on the next screen. Nothing has to be created or changed in the old System entry."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Manual Override",
-        "description": "Choose whether this zone follows the System entry's Manual Override default, or uses its own settings.",
+        "description": "These settings belong to this zone. Set the detection tolerance here, then submit to continue: on the next screen you choose the release strategy and what may still run during an override. Duration, end time and other details follow, depending on that choice.",
         "data": {
           "override_use_system_default": "Use System default",
           "override_detection_tolerance": "Detection tolerance"
         },
         "data_description": {
-          "override_use_system_default": "When enabled, this zone follows the Manual Override default configured on the SmartShading System entry. When disabled, you configure this zone's own Manual Override behavior on the next screen.",
+          "override_use_system_default": "Only shown while this zone still has settings from an older version that have not been converted. When enabled, the zone keeps taking its Manual Override settings from the old System entry. Switch it off to set up this zone's own settings on the next screen. Nothing has to be created or changed in the old System entry.",
           "override_detection_tolerance": "Minimum position change (in percent) before a manual movement is recognized as an override."
         }
       },

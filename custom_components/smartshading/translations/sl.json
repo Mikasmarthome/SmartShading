@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Prisotnost",
-        "description": "Določa, katere entitete prisotnosti uporablja ta cona in ali sledi sistemski privzeti vrednosti zamika odsotnosti, ali uporablja lastno vrednost.",
+        "description": "Nastavite entitete prisotnosti te cone in način njihovega združevanja. Te nastavitve in zamik odsotnosti pripadajo tej coni. Zamik odsotnosti nastavite na naslednjem zaslonu.",
         "data": {
           "presence_entity_ids": "Entitete prisotnosti",
           "absence_position": "Položaj ob odsotnosti",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Položaj senčila, ko je območje nezasedeno, razen če velja močnejša zaščitna odločitev (0 = popolnoma zaprto, 100 = popolnoma odprto). Velja za vsa okna v tem območju.",
           "presence_policy": "Nadzoruje, kako se več entitet prisotnosti združi v en signal. Nekdo doma (privzeto): prisotnost, takoj ko je doma ena izbrana oseba. Vsi doma: prisotnost samo, ko so doma vse izbrane osebe. Obrnjeno: obrne pomen \"nekdo doma\" — prisotnost šele, ko je potrjeno, da je nekdo odsoten.",
-          "absence_delay_use_system_default": "Če je omogočeno, ta cona sledi privzeti vrednosti zamika odsotnosti, nastavljeni na sistemskem vnosu. Če je onemogočeno, boste na naslednjem zaslonu nastavili lastno vrednost te cone."
+          "absence_delay_use_system_default": "Prikazano le, dokler ima ta cona še nepretvorjene nastavitve iz starejše različice. Če je omogočeno, cona zamik odsotnosti še naprej prevzema iz starega sistemskega vnosa. Onemogočite, da na naslednjem zaslonu nastavite lastno vrednost te cone. V starem sistemskem vnosu ni treba ničesar ustvariti ali spremeniti."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Ročna preglasitev",
-        "description": "Izberite, ali ta cona sledi sistemski privzeti vrednosti ročne preglasitve ali uporablja lastne nastavitve.",
+        "description": "Te nastavitve pripadajo tej coni. Tukaj nastavite toleranco zaznavanja in potrdite: na naslednjem zaslonu izberete, kdaj se nadzor vrne in kaj se lahko med preglasitvijo še izvaja. Trajanje, končni čas in druge podrobnosti sledijo glede na to izbiro.",
         "data": {
           "override_use_system_default": "Uporabi sistemsko privzeto vrednost",
           "override_detection_tolerance": "Toleranca zaznavanja"
         },
         "data_description": {
-          "override_use_system_default": "Če je omogočeno, ta cona sledi privzeti vrednosti ročne preglasitve, nastavljeni na sistemskem vnosu. Če je onemogočeno, boste na naslednjem zaslonu nastavili lastne nastavitve te cone.",
+          "override_use_system_default": "Prikazano le, dokler ima ta cona še nepretvorjene nastavitve iz starejše različice. Če je omogočeno, cona nastavitve ročne preglasitve še naprej prevzema iz starega sistemskega vnosa. Onemogočite, da na naslednjem zaslonu nastavite lastne nastavitve te cone. V starem sistemskem vnosu ni treba ničesar ustvariti ali spremeniti.",
           "override_detection_tolerance": "Najmanjša sprememba položaja (v odstotkih), preden je ročni premik prepoznan kot preglasitev."
         }
       },

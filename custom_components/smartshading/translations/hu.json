@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Jelenlét",
-        "description": "Meghatározza, mely jelenlétentitásokat használja ez a zóna, és hogy a rendszer távolléti késleltetési alapértelmezését követi-e, vagy saját értéket használ.",
+        "description": "Állítsa be a zóna jelenlétentitásait és azok összevonásának módját. Ezek a beállítások és a távolléti késleltetés ehhez a zónához tartoznak. A távolléti késleltetés a következő képernyőn adható meg.",
         "data": {
           "presence_entity_ids": "Jelenlét-entitások",
           "absence_position": "Távolléti pozíció",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Az árnyékoló pozíciója, amíg a zóna üres, hacsak nem érvényes erősebb védelmi döntés (0 = teljesen zárva, 100 = teljesen nyitva). A zóna összes ablakára vonatkozik.",
           "presence_policy": "Meghatározza, hogyan kombinálódik több jelenlét-entitás egyetlen jelzéssé. Valaki otthon (alapértelmezett): jelenlét, amint egy kiválasztott személy otthon van. Mindenki otthon: jelenlét csak akkor, ha minden kiválasztott személy otthon van. Fordított: megfordítja a „valaki otthon“ jelentését — jelenlét csak akkor, ha megerősítést nyer, hogy valaki távol van.",
-          "absence_delay_use_system_default": "Ha be van kapcsolva, ez a zóna a rendszerbejegyzésen beállított távolléti késleltetési alapértelmezést követi. Ha ki van kapcsolva, a következő képernyőn beállíthatja a zóna saját értékét."
+          "absence_delay_use_system_default": "Csak addig jelenik meg, amíg ennek a zónának egy régebbi verzióból származó, át nem alakított beállításai vannak. Ha be van kapcsolva, a zóna a távolléti késleltetést továbbra is a régi rendszerbejegyzésből veszi. Kapcsolja ki, hogy a következő képernyőn a zóna saját értékét adja meg. A régi rendszerbejegyzésben semmit sem kell létrehozni vagy módosítani."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Kézi felülbírálás",
-        "description": "Válassza ki, hogy ez a zóna a rendszer kézi felülbírálási alapértelmezését követi-e, vagy saját beállításokat használ.",
+        "description": "Ezek a beállítások ehhez a zónához tartoznak. Itt adja meg az észlelési tűrést, majd erősítse meg: a következő képernyőn kiválaszthatja, mikor kapja vissza a vezérlést, és mi futhat tovább a felülbírálás alatt. Az időtartam, a befejezési idő és a további részletek a választástól függően következnek.",
         "data": {
           "override_use_system_default": "Rendszer-alapértelmezés használata",
           "override_detection_tolerance": "Érzékelési tolerancia"
         },
         "data_description": {
-          "override_use_system_default": "Ha be van kapcsolva, ez a zóna a rendszerbejegyzésen beállított kézi felülbírálási alapértelmezést követi. Ha ki van kapcsolva, a következő képernyőn beállíthatja a zóna saját beállításait.",
+          "override_use_system_default": "Csak addig jelenik meg, amíg ennek a zónának egy régebbi verzióból származó, át nem alakított beállításai vannak. Ha be van kapcsolva, a zóna a kézi felülbírálás beállításait továbbra is a régi rendszerbejegyzésből veszi. Kapcsolja ki, hogy a következő képernyőn a zóna saját beállításait adja meg. A régi rendszerbejegyzésben semmit sem kell létrehozni vagy módosítani.",
           "override_detection_tolerance": "Minimális pozícióváltozás (százalékban), mielőtt egy kézi mozgást felülbírálásként ismer fel a rendszer."
         }
       },

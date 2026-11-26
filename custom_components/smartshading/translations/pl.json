@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Obecność",
-        "description": "Określa, których encji obecności używa ta strefa i czy korzysta z systemowego domyślnego opóźnienia nieobecności, czy używa własnej wartości.",
+        "description": "Skonfiguruj encje obecności tej strefy i sposób ich łączenia. Te ustawienia oraz opóźnienie nieobecności należą do tej strefy. Opóźnienie nieobecności ustawia się na następnym ekranie.",
         "data": {
           "presence_entity_ids": "Encje obecności",
           "absence_position": "Pozycja przy nieobecności",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Pozycja osłony, gdy strefa jest niezajęta, chyba że obowiązuje silniejsza decyzja ochronna (0 = całkowicie zamknięta, 100 = całkowicie otwarta). Dotyczy wszystkich okien w tej strefie.",
           "presence_policy": "Określa, jak wiele encji obecności jest łączonych w jeden sygnał. Ktoś w domu (domyślnie): obecność, gdy tylko jedna wybrana osoba jest w domu. Wszyscy w domu: obecność tylko, gdy wszystkie wybrane osoby są w domu. Odwrócone: odwraca znaczenie \"ktoś w domu\" — obecność dopiero, gdy potwierdzono, że ktoś jest nieobecny.",
-          "absence_delay_use_system_default": "Gdy włączone, ta strefa korzysta z domyślnego opóźnienia nieobecności skonfigurowanego we wpisie systemowym. Gdy wyłączone, na następnym ekranie skonfigurujesz własną wartość tej strefy."
+          "absence_delay_use_system_default": "Widoczne tylko wtedy, gdy ta strefa ma jeszcze nieprzekonwertowane ustawienia ze starszej wersji. Gdy włączone, strefa nadal pobiera opóźnienie nieobecności ze starego wpisu systemowego. Wyłącz, aby na następnym ekranie ustawić własną wartość tej strefy. W starym wpisie systemowym nie trzeba niczego tworzyć ani zmieniać."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Ręczne zastąpienie",
-        "description": "Wybierz, czy ta strefa korzysta z systemowego ustawienia domyślnego ręcznego zastąpienia, czy używa własnych ustawień.",
+        "description": "Te ustawienia należą do tej strefy. Ustaw tutaj tolerancję wykrywania i zatwierdź: na następnym ekranie wybierzesz, kiedy sterowanie zostanie zwrócone i co może nadal działać podczas ręcznego zastąpienia. Czas trwania, godzina zakończenia i inne szczegóły pojawią się zależnie od tego wyboru.",
         "data": {
           "override_use_system_default": "Użyj ustawienia systemowego",
           "override_detection_tolerance": "Tolerancja wykrywania"
         },
         "data_description": {
-          "override_use_system_default": "Gdy włączone, ta strefa korzysta z domyślnego ręcznego zastąpienia skonfigurowanego we wpisie systemowym. Gdy wyłączone, na następnym ekranie skonfigurujesz własne ustawienia tej strefy.",
+          "override_use_system_default": "Widoczne tylko wtedy, gdy ta strefa ma jeszcze nieprzekonwertowane ustawienia ze starszej wersji. Gdy włączone, strefa nadal pobiera ustawienia ręcznego zastąpienia ze starego wpisu systemowego. Wyłącz, aby na następnym ekranie ustawić własne ustawienia tej strefy. W starym wpisie systemowym nie trzeba niczego tworzyć ani zmieniać.",
           "override_detection_tolerance": "Minimalna zmiana pozycji (w procentach), zanim ręczny ruch zostanie rozpoznany jako zastąpienie."
         }
       },

@@ -137,7 +137,7 @@
       },
       "presence": {
         "title": "Aanwezigheid",
-        "description": "Bepaalt welke aanwezigheidsentiteiten deze zone gebruikt en of deze de systeemstandaard voor afwezigheidsvertraging volgt, of een eigen waarde gebruikt.",
+        "description": "Stel de aanwezigheidsentiteiten van deze zone in en hoe ze worden gecombineerd. Deze instellingen en de afwezigheidsvertraging horen bij deze zone. De afwezigheidsvertraging stelt u op het volgende scherm in.",
         "data": {
           "presence_entity_ids": "Aanwezigheidsentiteiten",
           "absence_position": "Afwezigheidspositie",
@@ -147,7 +147,7 @@
         "data_description": {
           "absence_position": "Positie van de zonwering terwijl de zone onbezet is, tenzij een sterkere beschermingsbeslissing geldt (0 = volledig dicht, 100 = volledig open). Geldt voor alle vensters in deze zone.",
           "presence_policy": "Bepaalt hoe meerdere aanwezigheidsentiteiten tot één signaal worden gecombineerd. Iemand thuis (standaard): aanwezig zodra een geselecteerde persoon thuis is. Iedereen thuis: alleen aanwezig als alle geselecteerde personen thuis zijn. Omgekeerd: keert de betekenis van \"iemand thuis\" om — pas aanwezig zodra iemand bevestigd afwezig is.",
-          "absence_delay_use_system_default": "Indien ingeschakeld, volgt deze zone de afwezigheidsvertraging-standaard die is ingesteld op de systeeminvoer. Indien uitgeschakeld, stelt u op het volgende scherm de eigen waarde van deze zone in."
+          "absence_delay_use_system_default": "Alleen zichtbaar zolang deze zone nog niet-omgezette instellingen uit een oudere versie heeft. Indien ingeschakeld, neemt de zone de afwezigheidsvertraging nog steeds over uit de oude systeeminvoer. Schakel dit uit om op het volgende scherm een eigen waarde voor deze zone in te stellen. In de oude systeeminvoer hoeft niets te worden aangemaakt of gewijzigd."
         }
       },
       "comfort": {
@@ -323,13 +323,13 @@
       },
       "manual_override": {
         "title": "Handmatige overschrijving",
-        "description": "Kies of deze zone de systeemstandaard voor handmatige overschrijving volgt, of eigen instellingen gebruikt.",
+        "description": "Deze instellingen horen bij deze zone. Stel hier de detectietolerantie in en bevestig: op het volgende scherm kiest u wanneer de sturing wordt teruggegeven en wat tijdens een overschrijving mag blijven lopen. Duur, eindtijd en andere details volgen afhankelijk van die keuze.",
         "data": {
           "override_use_system_default": "Systeemstandaard gebruiken",
           "override_detection_tolerance": "Detectietolerantie"
         },
         "data_description": {
-          "override_use_system_default": "Indien ingeschakeld, volgt deze zone de handmatige-overschrijving-standaard die is ingesteld op de systeeminvoer. Indien uitgeschakeld, stelt u op het volgende scherm de eigen instellingen van deze zone in.",
+          "override_use_system_default": "Alleen zichtbaar zolang deze zone nog niet-omgezette instellingen uit een oudere versie heeft. Indien ingeschakeld, neemt de zone de instellingen voor handmatige overschrijving nog steeds over uit de oude systeeminvoer. Schakel dit uit om op het volgende scherm eigen instellingen voor deze zone in te stellen. In de oude systeeminvoer hoeft niets te worden aangemaakt of gewijzigd.",
           "override_detection_tolerance": "Minimale positieverandering (in procenten) voordat een handmatige beweging als overschrijving wordt herkend."
         }
       },

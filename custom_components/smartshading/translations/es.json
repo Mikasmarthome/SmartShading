@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Avanzado",
-        "description": "Perfiles de ciclo de vida y comportamiento de la anulación manual — ajustes que la mayoría de las instalaciones no necesitan cambiar.",
+        "description": "Horario avanzado y comportamiento de la anulación manual — ajustes que la mayoría de las instalaciones no necesitan cambiar.",
         "menu_options": {
           "manual_override": "Anulación manual",
           "lifecycle_advanced": "Horario avanzado"

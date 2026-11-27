@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Avançat",
-        "description": "Perfils de cicle de vida i comportament de la substitució manual — configuracions que la majoria d'instal·lacions no necessiten canviar.",
+        "description": "Programació avançada i comportament de la substitució manual — configuracions que la majoria d'instal·lacions no necessiten canviar.",
         "menu_options": {
           "manual_override": "Anul·lació manual",
           "lifecycle_advanced": "Programació avançada"

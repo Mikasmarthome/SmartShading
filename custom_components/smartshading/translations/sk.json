@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Pokročilé",
-        "description": "Profily životného cyklu a správanie ručného prepísania — nastavenia, ktoré väčšina inštalácií nemusí meniť.",
+        "description": "Pokročilý plán a správanie ručného prepísania — nastavenia, ktoré väčšina inštalácií nemusí meniť.",
         "menu_options": {
           "manual_override": "Ručné prepísanie",
           "lifecycle_advanced": "Pokročilý plán"

@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Geavanceerd",
-        "description": "Levenscyclusprofielen en gedrag van handmatige overschrijving — instellingen die de meeste installaties niet hoeven te wijzigen.",
+        "description": "Geavanceerd schema en gedrag van handmatige overschrijving — instellingen die de meeste installaties niet hoeven te wijzigen.",
         "menu_options": {
           "manual_override": "Handmatige overschrijving",
           "lifecycle_advanced": "Geavanceerd schema"

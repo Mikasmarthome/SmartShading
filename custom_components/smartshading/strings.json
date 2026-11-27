@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Advanced",
-        "description": "Lifecycle profiles and manual override behavior — settings most installations do not need to change.",
+        "description": "Advanced schedule and manual override settings — options most installations do not need to change.",
         "menu_options": {
           "manual_override": "Manual Override",
           "lifecycle_advanced": "Advanced schedule"

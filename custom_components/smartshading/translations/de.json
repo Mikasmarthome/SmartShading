@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Erweitert",
-        "description": "Lifecycle-Profile und Verhalten der manuellen Übersteuerung — Einstellungen, die die meisten Installationen nicht ändern müssen.",
+        "description": "Erweiterter Zeitplan und Verhalten der manuellen Übersteuerung — Einstellungen, die die meisten Installationen nicht ändern müssen.",
         "menu_options": {
           "manual_override": "Manuelle Übersteuerung",
           "lifecycle_advanced": "Zeitplan (erweitert)"

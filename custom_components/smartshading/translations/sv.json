@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Avancerat",
-        "description": "Livscykelprofiler och beteende för manuell åsidosättning — inställningar som de flesta installationer inte behöver ändra.",
+        "description": "Avancerat schema och beteende för manuell åsidosättning — inställningar som de flesta installationer inte behöver ändra.",
         "menu_options": {
           "manual_override": "Manuell åsidosättning",
           "lifecycle_advanced": "Avancerat schema"

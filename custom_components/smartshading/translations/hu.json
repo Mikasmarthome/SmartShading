@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Speciális",
-        "description": "Életciklus-profilok és a kézi felülbírálás viselkedése — olyan beállítások, amelyeket a legtöbb telepítésnél nem kell módosítani.",
+        "description": "Haladó időbeosztás és a kézi felülbírálás viselkedése — olyan beállítások, amelyeket a legtöbb telepítésnél nem kell módosítani.",
         "menu_options": {
           "manual_override": "Kézi felülbírálás",
           "lifecycle_advanced": "Haladó időbeosztás"

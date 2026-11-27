@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Avancé",
-        "description": "Profils de cycle de vie et comportement de la prise de contrôle manuelle — des réglages que la plupart des installations n'ont pas besoin de modifier.",
+        "description": "Planning avancé et comportement de la prise de contrôle manuelle — des réglages que la plupart des installations n'ont pas besoin de modifier.",
         "menu_options": {
           "manual_override": "Dérogation manuelle",
           "lifecycle_advanced": "Planning avancé"

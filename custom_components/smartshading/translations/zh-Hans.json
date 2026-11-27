@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "高级",
-        "description": "生命周期配置文件和手动覆盖行为——大多数安装不需要更改的设置。",
+        "description": "高级日程和手动覆盖行为——大多数安装不需要更改的设置。",
         "menu_options": {
           "manual_override": "手动覆盖",
           "lifecycle_advanced": "高级日程"

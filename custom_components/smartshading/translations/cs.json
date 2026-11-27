@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Pokročilé",
-        "description": "Profily životního cyklu a chování ručního přepsání — nastavení, která většina instalací nepotřebuje měnit.",
+        "description": "Pokročilý plán a chování ručního přepsání — nastavení, která většina instalací nepotřebuje měnit.",
         "menu_options": {
           "manual_override": "Ruční přepsání",
           "lifecycle_advanced": "Pokročilý plán"

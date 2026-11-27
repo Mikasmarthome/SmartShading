@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Zaawansowane",
-        "description": "Profile cyklu życia i zachowanie ręcznego zastąpienia — ustawienia, których większość instalacji nie musi zmieniać.",
+        "description": "Harmonogram zaawansowany i zachowanie ręcznego zastąpienia — ustawienia, których większość instalacji nie musi zmieniać.",
         "menu_options": {
           "manual_override": "Ręczne zastąpienie",
           "lifecycle_advanced": "Harmonogram zaawansowany"

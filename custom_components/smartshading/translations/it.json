@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Avanzate",
-        "description": "Profili del ciclo di vita e comportamento dell'override manuale — impostazioni che la maggior parte delle installazioni non deve modificare.",
+        "description": "Programma avanzato e comportamento dell'override manuale — impostazioni che la maggior parte delle installazioni non deve modificare.",
         "menu_options": {
           "manual_override": "Override manuale",
           "lifecycle_advanced": "Programma avanzato"

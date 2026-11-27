@@ -107,3 +107,65 @@ def test_the_english_pages_say_what_follows() -> None:
     override = steps["manual_override"]["description"]
     assert "next screen" in override and "release strategy" in override
     assert "absence delay is set on the next screen" in steps["presence"]["description"]
+
+
+# ---------------------------------------------------------------------------
+# The "Advanced" menu: it holds the advanced schedule and Manual Override only
+# ---------------------------------------------------------------------------
+
+# "lifecycle (profiles)", removed long ago, as every language used to name it.
+LIFECYCLE_WORD = re.compile(
+    "lifecycle|life cycle|жизнения цикъл|cicle de vida|životního cyklu|livscyklus|κύκλου ζωής|"
+    "ciclo de vida|elinkaari|cycle de vie|életciklus|ciclo di vita|livssyklus|levenscyclus|"
+    "cyklu życia|ciclu de viață|жизненного цикла|životného cyklu|življenjskega cikla|livscykel|"
+    "yaşam döngüsü|життєвого циклу|生命周期", re.IGNORECASE)
+
+# language: (how the description names the advanced schedule, how it names Manual Override)
+ADVANCED = {
+    "bg": ("Разширен график", "ръчното изместване"),
+    "ca": ("Programació avançada", "substitució manual"),
+    "cs": ("Pokročilý plán", "ručního přepsání"),
+    "da": ("Avanceret tidsplan", "manuel tilsidesættelse"),
+    "de": ("Erweiterter Zeitplan", "manuellen Übersteuerung"),
+    "el": ("Σύνθετο πρόγραμμα", "χειροκίνητης παράκαμψης"),
+    "en": ("Advanced schedule", "manual override"),
+    "es": ("Horario avanzado", "anulación manual"),
+    "fi": ("Aikataulun lisäasetukset", "manuaalisen ohituksen"),
+    "fr": ("Planning avancé", "prise de contrôle manuelle"),
+    "hu": ("Haladó időbeosztás", "kézi felülbírálás"),
+    "it": ("Programma avanzato", "override manuale"),
+    "nb": ("Avansert tidsplan", "manuell overstyring"),
+    "nl": ("Geavanceerd schema", "handmatige overschrijving"),
+    "pl": ("Harmonogram zaawansowany", "ręcznego zastąpienia"),
+    "pt": ("Horário avançado", "substituição manual"),
+    "ro": ("Program avansat", "suprascrierii manuale"),
+    "ru": ("Дополнительное расписание", "ручного переопределения"),
+    "sk": ("Pokročilý plán", "ručného prepísania"),
+    "sl": ("Napredni urnik", "ročne preglasitve"),
+    "sv": ("Avancerat schema", "manuell åsidosättning"),
+    "tr": ("Gelişmiş zamanlama", "manuel geçersiz kılma"),
+    "uk": ("Розширений розклад", "ручного перевизначення"),
+    "zh-Hans": ("高级日程", "手动覆盖"),
+}
+
+
+@pytest.mark.parametrize("path", FILES, ids=lambda p: p.name)
+class TestAdvancedMenuText:
+    def test_it_names_what_the_menu_holds_and_no_lifecycle_profiles(self, path) -> None:
+        page = _steps(path)["advanced"]
+        assert set(page["menu_options"]) == {"manual_override", "lifecycle_advanced"}
+        description = page["description"]
+        assert not LIFECYCLE_WORD.search(description), description
+        for phrase in ADVANCED[_language(path)]:
+            assert phrase in description, (phrase, description)
+
+
+def test_the_english_advanced_texts() -> None:
+    for name in ("strings.json", "translations/en.json"):
+        page = _steps(ROOT / name)["advanced"]
+        assert page["description"] == (
+            "Advanced schedule and manual override settings — options most installations "
+            "do not need to change.")
+        assert page["title"] == "Advanced"
+        assert page["menu_options"] == {
+            "manual_override": "Manual Override", "lifecycle_advanced": "Advanced schedule"}

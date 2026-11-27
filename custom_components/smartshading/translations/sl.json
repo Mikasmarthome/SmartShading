@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Napredno",
-        "description": "Profili življenjskega cikla in obnašanje ročnega preglasitve — nastavitve, ki jih večina namestitev ne potrebuje spreminjati.",
+        "description": "Napredni urnik in obnašanje ročne preglasitve — nastavitve, ki jih večina namestitev ne potrebuje spreminjati.",
         "menu_options": {
           "manual_override": "Ročna preglasitev",
           "lifecycle_advanced": "Napredni urnik"

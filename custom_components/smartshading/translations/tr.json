@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Gelişmiş",
-        "description": "Yaşam döngüsü profilleri ve manuel geçersiz kılma davranışı — çoğu kurulumun değiştirmesi gerekmeyen ayarlar.",
+        "description": "Gelişmiş zamanlama ve manuel geçersiz kılma davranışı — çoğu kurulumun değiştirmesi gerekmeyen ayarlar.",
         "menu_options": {
           "manual_override": "Manuel geçersiz kılma",
           "lifecycle_advanced": "Gelişmiş zamanlama"

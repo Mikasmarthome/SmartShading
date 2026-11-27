@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Avançado",
-        "description": "Perfis de ciclo de vida e comportamento de substituição manual — definições que a maioria das instalações não precisa de alterar.",
+        "description": "Horário avançado e comportamento de substituição manual — definições que a maioria das instalações não precisa de alterar.",
         "menu_options": {
           "manual_override": "Substituição manual",
           "lifecycle_advanced": "Horário avançado"

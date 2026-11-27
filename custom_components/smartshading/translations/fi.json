@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Lisäasetukset",
-        "description": "Elinkaariprofiilit ja manuaalisen ohituksen käyttäytyminen — asetuksia, joita useimpien asennusten ei tarvitse muuttaa.",
+        "description": "Aikataulun lisäasetukset ja manuaalisen ohituksen käyttäytyminen — asetuksia, joita useimpien asennusten ei tarvitse muuttaa.",
         "menu_options": {
           "manual_override": "Manuaalinen ohitus",
           "lifecycle_advanced": "Aikataulun lisäasetukset"

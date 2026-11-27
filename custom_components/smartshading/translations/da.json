@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Avanceret",
-        "description": "Livscyklusprofiler og manuel tilsidesættelsesadfærd — indstillinger, som de fleste installationer ikke behøver at ændre.",
+        "description": "Avanceret tidsplan og adfærd ved manuel tilsidesættelse — indstillinger, som de fleste installationer ikke behøver at ændre.",
         "menu_options": {
           "manual_override": "Manuel tilsidesættelse",
           "lifecycle_advanced": "Avanceret tidsplan"

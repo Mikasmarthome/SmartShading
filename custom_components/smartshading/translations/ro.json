@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Avansat",
-        "description": "Profiluri de ciclu de viață și comportamentul suprascrierii manuale — setări pe care majoritatea instalațiilor nu trebuie să le modifice.",
+        "description": "Program avansat și comportamentul suprascrierii manuale — setări pe care majoritatea instalațiilor nu trebuie să le modifice.",
         "menu_options": {
           "manual_override": "Suprascriere manuală",
           "lifecycle_advanced": "Program avansat"

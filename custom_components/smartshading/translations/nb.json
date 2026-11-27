@@ -344,7 +344,7 @@
       },
       "advanced": {
         "title": "Avansert",
-        "description": "Livssyklusprofiler og oppførsel for manuell overstyring — innstillinger de fleste installasjoner ikke trenger å endre.",
+        "description": "Avansert tidsplan og oppførsel for manuell overstyring — innstillinger de fleste installasjoner ikke trenger å endre.",
         "menu_options": {
           "manual_override": "Manuell overstyring",
           "lifecycle_advanced": "Avansert tidsplan"

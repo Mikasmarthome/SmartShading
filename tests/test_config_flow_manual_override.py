@@ -718,7 +718,9 @@ class TestTranslationCompleteness:
                 "override_decision": {"override_decision_filter"},
                 "override_timeout": {"override_safety_timeout_enabled", "override_duration_min",
                                      "override_night_duration_min"},
-                "manual_override": {"override_use_system_default", "override_detection_tolerance"},
+                "manual_override": {"override_use_system_default", "override_detection_tolerance",
+                                    "override_release_choice", "override_allow_comfort_actions",
+                                    "override_allow_protection_actions", "override_edit_timeouts"},
             }
             for step_id, fields in expected.items():
                 step = opt["step"][step_id]

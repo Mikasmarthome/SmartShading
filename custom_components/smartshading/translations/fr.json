@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Dérogation manuelle",
-        "description": "Ces réglages appartiennent à cette zone. Définissez ici la tolérance de détection puis validez : à l'écran suivant, vous choisissez quand le contrôle est rendu et ce qui peut continuer pendant une prise de contrôle manuelle. La durée, l'heure de fin et les autres détails suivent selon ce choix.",
+        "description": "Ces réglages appartiennent à cette zone : la tolérance de détection, la restitution du contrôle et ce qui peut continuer pendant une prise de contrôle manuelle. La durée, l'heure de fin et les autres détails suivent à l'écran suivant lorsque le choix les exige. Une zone pas encore convertie définit les réglages de restitution à l'écran suivant.",
         "data": {
           "override_detection_tolerance": "Tolérance de détection",
-          "override_use_system_default": "Utiliser la valeur par défaut du système"
+          "override_use_system_default": "Utiliser la valeur par défaut du système",
+          "override_release_choice": "Rendre le contrôle",
+          "override_allow_comfort_actions": "Autoriser les actions de confort pendant la dérogation",
+          "override_allow_protection_actions": "Autoriser les actions de protection pendant la dérogation",
+          "override_edit_timeouts": "Régler aussi le délai de sécurité"
         },
         "data_description": {
           "override_use_system_default": "Affiché uniquement tant que cette zone conserve des réglages non convertis d'une version antérieure. Lorsque activé, la zone continue de reprendre ses réglages de prise de contrôle manuelle de l'ancienne entrée système. Désactivez-le pour définir les réglages propres à cette zone à l'écran suivant. Rien n'est à créer ou à modifier dans l'ancienne entrée système.",
-          "override_detection_tolerance": "Changement de position minimal (en pourcentage) avant qu'un mouvement manuel soit reconnu comme une dérogation."
+          "override_detection_tolerance": "Changement de position minimal (en pourcentage) avant qu'un mouvement manuel soit reconnu comme une dérogation.",
+          "override_release_choice": "Quand SmartShading pilote de nouveau le volet.",
+          "override_allow_comfort_actions": "Si activé, les mouvements de confort réguliers peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
+          "override_allow_protection_actions": "Si activé, les actions de protection (absence, chaleur, éblouissement) peuvent toujours s'exécuter pendant une dérogation active. La dérogation elle-même reste active.",
+          "override_edit_timeouts": "Ouvre une page supplémentaire. Ne concerne que le changement de programme, la décision et l'effacement manuel."
         }
       },
       "windows": {

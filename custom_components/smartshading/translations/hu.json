@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Kézi felülbírálás",
-        "description": "Ezek a beállítások ehhez a zónához tartoznak. Itt adja meg az észlelési tűrést, majd erősítse meg: a következő képernyőn kiválaszthatja, mikor kapja vissza a vezérlést, és mi futhat tovább a felülbírálás alatt. Az időtartam, a befejezési idő és a további részletek a választástól függően következnek.",
+        "description": "Ezek a beállítások ehhez a zónához tartoznak: az észlelési tűrés, a vezérlés visszaadása és hogy mi futhat tovább a felülbírálás alatt. Az időtartam, a befejezési idő és a további részletek a következő képernyőn következnek, ha a választás igényli őket. A még át nem alakított zóna a visszaadás beállításait a következő képernyőn végzi el.",
         "data": {
           "override_use_system_default": "Rendszer-alapértelmezés használata",
-          "override_detection_tolerance": "Érzékelési tolerancia"
+          "override_detection_tolerance": "Érzékelési tolerancia",
+          "override_release_choice": "Irányítás visszaadása",
+          "override_allow_comfort_actions": "Kényelmi műveletek engedélyezése felülbírálás alatt",
+          "override_allow_protection_actions": "Védelmi műveletek engedélyezése felülbírálás alatt",
+          "override_edit_timeouts": "A biztonsági korlát módosítása is"
         },
         "data_description": {
           "override_use_system_default": "Csak addig jelenik meg, amíg ennek a zónának egy régebbi verzióból származó, át nem alakított beállításai vannak. Ha be van kapcsolva, a zóna a kézi felülbírálás beállításait továbbra is a régi rendszerbejegyzésből veszi. Kapcsolja ki, hogy a következő képernyőn a zóna saját beállításait adja meg. A régi rendszerbejegyzésben semmit sem kell létrehozni vagy módosítani.",
-          "override_detection_tolerance": "Minimális pozícióváltozás (százalékban), mielőtt egy kézi mozgást felülbírálásként ismer fel a rendszer."
+          "override_detection_tolerance": "Minimális pozícióváltozás (százalékban), mielőtt egy kézi mozgást felülbírálásként ismer fel a rendszer.",
+          "override_release_choice": "Mikor vezérli újra a SmartShading az árnyékolót.",
+          "override_allow_comfort_actions": "Ha engedélyezve van, a szokásos kényelmi árnyékolás továbbra is futhat aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
+          "override_allow_protection_actions": "Ha engedélyezve van, a védelmi műveletek (távollét, hőség, vakítás) továbbra is futhatnak aktív felülbírálás alatt. Maga a felülbírálás aktív marad.",
+          "override_edit_timeouts": "Egy további oldalt nyit meg. Csak a menetrendváltás, a döntés és a kézi törlés választásnál számít."
         }
       },
       "windows": {

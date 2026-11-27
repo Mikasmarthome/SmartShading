@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Handmatige overschrijving",
-        "description": "Deze instellingen horen bij deze zone. Stel hier de detectietolerantie in en bevestig: op het volgende scherm kiest u wanneer de sturing wordt teruggegeven en wat tijdens een overschrijving mag blijven lopen. Duur, eindtijd en andere details volgen afhankelijk van die keuze.",
+        "description": "Deze instellingen horen bij deze zone: de detectietolerantie, het teruggeven van de sturing en wat tijdens een overschrijving mag blijven lopen. Duur, eindtijd en andere details volgen op het volgende scherm wanneer de keuze ze nodig heeft. Een nog niet omgezette zone stelt het teruggeven op het volgende scherm in.",
         "data": {
           "override_use_system_default": "Systeemstandaard gebruiken",
-          "override_detection_tolerance": "Detectietolerantie"
+          "override_detection_tolerance": "Detectietolerantie",
+          "override_release_choice": "Sturing teruggeven",
+          "override_allow_comfort_actions": "Comfortacties toestaan tijdens overschrijving",
+          "override_allow_protection_actions": "Beschermingsacties toestaan tijdens overschrijving",
+          "override_edit_timeouts": "Ook de veiligheidslimiet aanpassen"
         },
         "data_description": {
           "override_use_system_default": "Alleen zichtbaar zolang deze zone nog niet-omgezette instellingen uit een oudere versie heeft. Indien ingeschakeld, neemt de zone de instellingen voor handmatige overschrijving nog steeds over uit de oude systeeminvoer. Schakel dit uit om op het volgende scherm eigen instellingen voor deze zone in te stellen. In de oude systeeminvoer hoeft niets te worden aangemaakt of gewijzigd.",
-          "override_detection_tolerance": "Minimale positieverandering (in procenten) voordat een handmatige beweging als overschrijving wordt herkend."
+          "override_detection_tolerance": "Minimale positieverandering (in procenten) voordat een handmatige beweging als overschrijving wordt herkend.",
+          "override_release_choice": "Wanneer SmartShading de zonwering weer zelf aanstuurt.",
+          "override_allow_comfort_actions": "Indien ingeschakeld, kan de reguliere comfortbeschaduwing nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
+          "override_allow_protection_actions": "Indien ingeschakeld, kunnen beschermingsacties (afwezigheid, hitte, verblinding) nog steeds plaatsvinden tijdens een actieve overschrijving. De overschrijving zelf blijft actief.",
+          "override_edit_timeouts": "Opent een extra pagina. Alleen relevant voor schemawissel, beslissing en handmatig wissen."
         }
       },
       "windows": {

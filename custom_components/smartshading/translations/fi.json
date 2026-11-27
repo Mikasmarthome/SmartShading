@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Manuaalinen ohitus",
-        "description": "Nämä asetukset kuuluvat tälle vyöhykkeelle. Aseta tässä tunnistustoleranssi ja vahvista: seuraavalla näytöllä valitset, milloin ohjaus palautetaan ja mitä saa jatkaa ohituksen aikana. Kesto, päättymisaika ja muut tiedot seuraavat valinnan mukaan.",
+        "description": "Nämä asetukset kuuluvat tälle vyöhykkeelle: tunnistustoleranssi, ohjauksen palautus ja mitä saa jatkaa ohituksen aikana. Kesto, päättymisaika ja muut tiedot seuraavat seuraavalla näytöllä, kun valinta tarvitsee niitä. Vielä muuntamaton vyöhyke tekee palautusasetukset seuraavalla näytöllä.",
         "data": {
           "override_use_system_default": "Käytä järjestelmän oletusta",
-          "override_detection_tolerance": "Tunnistustoleranssi"
+          "override_detection_tolerance": "Tunnistustoleranssi",
+          "override_release_choice": "Ohjauksen palautus",
+          "override_allow_comfort_actions": "Salli mukavuustoiminnot ohituksen aikana",
+          "override_allow_protection_actions": "Salli suojaustoiminnot ohituksen aikana",
+          "override_edit_timeouts": "Säädä myös turvaraja"
         },
         "data_description": {
           "override_use_system_default": "Näytetään vain, kun tällä vyöhykkeellä on yhä muuntamattomia vanhemman version asetuksia. Kun käytössä, vyöhyke ottaa manuaalisen ohituksen asetukset edelleen vanhasta järjestelmämerkinnästä. Poista käytöstä, niin voit määrittää vyöhykkeen omat asetukset seuraavalla näytöllä. Vanhaan järjestelmämerkintään ei tarvitse luoda tai muuttaa mitään.",
-          "override_detection_tolerance": "Pienin sallittu asennon muutos (prosentteina) ennen kuin manuaalinen liike tunnistetaan ohitukseksi."
+          "override_detection_tolerance": "Pienin sallittu asennon muutos (prosentteina) ennen kuin manuaalinen liike tunnistetaan ohitukseksi.",
+          "override_release_choice": "Milloin SmartShading ohjaa peitettä taas itse.",
+          "override_allow_comfort_actions": "Kun käytössä, tavallinen mukavuusvarjostus voi silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
+          "override_allow_protection_actions": "Kun käytössä, suojaustoiminnot (poissaolo, kuumuus, häikäisy) voivat silti käydä aktiivisen ohituksen aikana. Ohitus itse pysyy aktiivisena.",
+          "override_edit_timeouts": "Avaa lisäsivun. Vaikuttaa vain aikataulun vaihdon, päätöksen ja käsin poiston valintoihin."
         }
       },
       "windows": {

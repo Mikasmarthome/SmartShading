@@ -160,6 +160,17 @@ class TestAdvancedMenuText:
             assert phrase in description, (phrase, description)
 
 
+@pytest.mark.parametrize("path", FILES, ids=lambda p: p.name)
+def test_the_first_override_page_carries_the_choice_texts(path) -> None:
+    """The same texts as on the page an unconverted zone reaches behind its gate."""
+    steps = _steps(path)
+    page, source = steps["manual_override"], steps["manual_override_custom"]
+    for block in ("data", "data_description"):
+        for key in ("override_release_choice", "override_allow_comfort_actions",
+                    "override_allow_protection_actions", "override_edit_timeouts"):
+            assert page[block][key] == source[block][key], (block, key)
+
+
 def test_the_english_advanced_texts() -> None:
     for name in ("strings.json", "translations/en.json"):
         page = _steps(ROOT / name)["advanced"]

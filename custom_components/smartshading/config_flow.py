@@ -321,6 +321,17 @@ def _override_minutes_default(values: dict[str, Any], key: str, default: int) ->
     return _safe_positive_int(values.get(key), default, maximum=OVERRIDE_DURATION_MIN_MAX)
 
 
+def _override_tolerance_field(default: Any) -> dict[Any, Any]:
+    return {
+        vol.Required(CONF_OVERRIDE_DETECTION_TOLERANCE, default=default): NumberSelector(
+            NumberSelectorConfig(
+                min=1, max=OVERRIDE_DETECTION_TOLERANCE_MAX, step=1,
+                mode=NumberSelectorMode.BOX,
+            )
+        )
+    }
+
+
 def _override_choice_schema(values: dict[str, Any]) -> vol.Schema:
     choice, _ = release_strategy_to_choice(_override_policy_from_storage(values).release_strategy)
     return vol.Schema(
@@ -1866,12 +1877,17 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
     async def async_step_manual_override(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Gate step (T21 Phase C2): a zone either defers its whole Manual
-        Override policy to the System entry's default, or opts into its own
-        (async_step_manual_override_custom, the unchanged T21 Phase B form).
-        detection_tolerance stays zone-only regardless (hardware-noise
-        property of this zone's own covers — see ownership analysis) and is
-        always collected here.
+        """First Manual Override page.
+
+        A zone that owns its settings gets the detection tolerance together with
+        the release choice and the options every choice needs; only the pages a
+        choice needs details on follow.
+
+        A zone that has not been converted keeps the gate step (T21 Phase C2): it
+        either defers its whole policy to the System entry's default, or opts into
+        its own (async_step_manual_override_custom).  detection_tolerance stays
+        zone-only regardless (hardware-noise property of this zone's own covers)
+        and is always collected here.
 
         Migration: a zone with an explicit pre-C2 "release_strategy" key
         already stored starts out with its own settings preserved
@@ -1881,18 +1897,20 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
         implicitly using the hardcoded OverridePolicyConfig() defaults,
         which is also what an unconfigured System entry resolves to).
         """
+        if self._zone_settings_are_local():
+            return await self._async_step_manual_override_local(user_input)
+
         current = self._config_entry.data
         stored = self._override_stored()    # a stored value that is not a mapping reads as empty here
         # Data that cannot be read (not a mapping) is never silently turned into an inheritance
         # choice: the form then offers "use my own settings" and nothing is written until it is sent.
         unreadable = bool(current.get("override_policy")) and not isinstance(current.get("override_policy"), dict)
-        zone_local = self._zone_settings_are_local()
-        stored_use_system_default = False if (zone_local or unreadable) else bool(
+        stored_use_system_default = False if unreadable else bool(
             stored.get("use_system_default", "release_strategy" not in stored)
         )
 
         if user_input is not None:
-            use_system_default = False if zone_local else bool(
+            use_system_default = bool(
                 user_input.get(CONF_OVERRIDE_USE_SYSTEM_DEFAULT, stored_use_system_default)
             )
             detection_tolerance = _safe_positive_int(
@@ -1905,21 +1923,37 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
             self._pending_override_detection_tolerance = detection_tolerance
             return await self.async_step_manual_override_custom()
 
-        fields: dict[Any, Any] = {}
-        if not zone_local:  # a zone that owns its settings is never offered the System default
-            fields[vol.Required(
+        fields: dict[Any, Any] = {
+            vol.Required(
                 CONF_OVERRIDE_USE_SYSTEM_DEFAULT, default=stored_use_system_default,
-            )] = BooleanSelector()
-        fields[vol.Required(
-            CONF_OVERRIDE_DETECTION_TOLERANCE,
-            default=stored.get("detection_tolerance", DEFAULT_OVERRIDE_DETECTION_TOLERANCE),
-        )] = NumberSelector(
-            NumberSelectorConfig(
-                min=1, max=OVERRIDE_DETECTION_TOLERANCE_MAX, step=1,
-                mode=NumberSelectorMode.BOX,
-            )
-        )
+            ): BooleanSelector(),
+            **_override_tolerance_field(
+                stored.get("detection_tolerance", DEFAULT_OVERRIDE_DETECTION_TOLERANCE)),
+        }
         return self.async_show_form(step_id="manual_override", data_schema=vol.Schema(fields))
+
+    async def _async_step_manual_override_local(
+        self, user_input: dict[str, Any] | None
+    ) -> config_entries.ConfigFlowResult:
+        """Tolerance and release choice on one page; nothing is written before the last page."""
+        if user_input is None:
+            self._override_begin("zone")
+            tolerance = _safe_positive_int(
+                self._override_stored().get("detection_tolerance"), DEFAULT_OVERRIDE_DETECTION_TOLERANCE,
+                maximum=OVERRIDE_DETECTION_TOLERANCE_MAX,
+            )
+            return self.async_show_form(
+                step_id="manual_override",
+                data_schema=vol.Schema({
+                    **_override_tolerance_field(tolerance),
+                    **_override_choice_schema(self._override_values()).schema,
+                }),
+            )
+        self._pending_override_detection_tolerance = _safe_positive_int(
+            user_input.get(CONF_OVERRIDE_DETECTION_TOLERANCE), DEFAULT_OVERRIDE_DETECTION_TOLERANCE,
+            maximum=OVERRIDE_DETECTION_TOLERANCE_MAX,
+        )
+        return await self._override_choice_step("manual_override", "zone", user_input)
 
     # -- Manual Override policy form (Phase 5): shared by the zone's own policy
     # (the System entry's default was removed with its options menu).  See the module-level comment above
@@ -1986,8 +2020,8 @@ class SmartShadingOptionsFlow(_ScheduleWizard, config_entries.OptionsFlow):
     async def async_step_manual_override_custom(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Reached only when the gate step (above) is answered with "use my
-        own settings"."""
+        """Reached only from the gate step of a zone that has not been converted,
+        answered with "use my own settings"."""
         return await self._override_choice_step("manual_override_custom", "zone", user_input)
 
     async def async_step_override_duration(

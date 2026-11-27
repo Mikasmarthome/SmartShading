@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Ročna preglasitev",
-        "description": "Te nastavitve pripadajo tej coni. Tukaj nastavite toleranco zaznavanja in potrdite: na naslednjem zaslonu izberete, kdaj se nadzor vrne in kaj se lahko med preglasitvijo še izvaja. Trajanje, končni čas in druge podrobnosti sledijo glede na to izbiro.",
+        "description": "Te nastavitve pripadajo tej coni: toleranca zaznavanja, vrnitev nadzora in kaj se lahko med preglasitvijo še izvaja. Trajanje, končni čas in druge podrobnosti sledijo na naslednjem zaslonu, kadar jih izbira potrebuje. Še nepretvorjena cona nastavitve vrnitve opravi na naslednjem zaslonu.",
         "data": {
           "override_use_system_default": "Uporabi sistemsko privzeto vrednost",
-          "override_detection_tolerance": "Toleranca zaznavanja"
+          "override_detection_tolerance": "Toleranca zaznavanja",
+          "override_release_choice": "Vrnitev nadzora",
+          "override_allow_comfort_actions": "Dovoli dejanja udobja med preglasitvijo",
+          "override_allow_protection_actions": "Dovoli zaščitna dejanja med preglasitvijo",
+          "override_edit_timeouts": "Prilagodi tudi varnostno omejitev"
         },
         "data_description": {
           "override_use_system_default": "Prikazano le, dokler ima ta cona še nepretvorjene nastavitve iz starejše različice. Če je omogočeno, cona nastavitve ročne preglasitve še naprej prevzema iz starega sistemskega vnosa. Onemogočite, da na naslednjem zaslonu nastavite lastne nastavitve te cone. V starem sistemskem vnosu ni treba ničesar ustvariti ali spremeniti.",
-          "override_detection_tolerance": "Najmanjša sprememba položaja (v odstotkih), preden je ročni premik prepoznan kot preglasitev."
+          "override_detection_tolerance": "Najmanjša sprememba položaja (v odstotkih), preden je ročni premik prepoznan kot preglasitev.",
+          "override_release_choice": "Kdaj SmartShading spet upravlja senčilo.",
+          "override_allow_comfort_actions": "Če je omogočeno, lahko običajno senčenje udobja še vedno poteka med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
+          "override_allow_protection_actions": "Če je omogočeno, lahko zaščitna dejanja (odsotnost, vročina, bleščanje) še vedno potekajo med aktivno preglasitvijo. Preglasitev sama ostane aktivna.",
+          "override_edit_timeouts": "Odpre dodatno stran. Pomembno le za spremembo urnika, odločitev in ročno počiščenje."
         }
       },
       "windows": {

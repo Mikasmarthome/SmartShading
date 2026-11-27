@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Ręczne zastąpienie",
-        "description": "Te ustawienia należą do tej strefy. Ustaw tutaj tolerancję wykrywania i zatwierdź: na następnym ekranie wybierzesz, kiedy sterowanie zostanie zwrócone i co może nadal działać podczas ręcznego zastąpienia. Czas trwania, godzina zakończenia i inne szczegóły pojawią się zależnie od tego wyboru.",
+        "description": "Te ustawienia należą do tej strefy: tolerancja wykrywania, zwrot sterowania i to, co może nadal działać podczas ręcznego zastąpienia. Czas trwania, godzina zakończenia i inne szczegóły pojawią się na następnym ekranie, gdy wymaga ich wybór. Strefa jeszcze nieprzekonwertowana ustawia zwrot sterowania na następnym ekranie.",
         "data": {
           "override_use_system_default": "Użyj ustawienia systemowego",
-          "override_detection_tolerance": "Tolerancja wykrywania"
+          "override_detection_tolerance": "Tolerancja wykrywania",
+          "override_release_choice": "Zwrot sterowania",
+          "override_allow_comfort_actions": "Zezwól na działania komfortu podczas zastąpienia",
+          "override_allow_protection_actions": "Zezwól na działania ochrony podczas zastąpienia",
+          "override_edit_timeouts": "Dostosuj także limit bezpieczeństwa"
         },
         "data_description": {
           "override_use_system_default": "Widoczne tylko wtedy, gdy ta strefa ma jeszcze nieprzekonwertowane ustawienia ze starszej wersji. Gdy włączone, strefa nadal pobiera ustawienia ręcznego zastąpienia ze starego wpisu systemowego. Wyłącz, aby na następnym ekranie ustawić własne ustawienia tej strefy. W starym wpisie systemowym nie trzeba niczego tworzyć ani zmieniać.",
-          "override_detection_tolerance": "Minimalna zmiana pozycji (w procentach), zanim ręczny ruch zostanie rozpoznany jako zastąpienie."
+          "override_detection_tolerance": "Minimalna zmiana pozycji (w procentach), zanim ręczny ruch zostanie rozpoznany jako zastąpienie.",
+          "override_release_choice": "Kiedy SmartShading ponownie steruje osłoną.",
+          "override_allow_comfort_actions": "Jeśli włączone, zwykłe zacienianie komfortowe może nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
+          "override_allow_protection_actions": "Jeśli włączone, działania ochronne (nieobecność, upał, olśnienie) mogą nadal działać podczas aktywnego zastąpienia. Samo zastąpienie pozostaje aktywne.",
+          "override_edit_timeouts": "Otwiera dodatkową stronę. Ma znaczenie tylko dla zmiany harmonogramu, decyzji i ręcznego czyszczenia."
         }
       },
       "windows": {

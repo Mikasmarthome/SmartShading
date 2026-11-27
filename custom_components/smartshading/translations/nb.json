@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Manuell overstyring",
-        "description": "Disse innstillingene hører til denne sonen. Angi deteksjonstoleransen her og bekreft: på neste skjerm velger du når styringen gis tilbake, og hva som fortsatt kan kjøre under en overstyring. Varighet, sluttidspunkt og andre detaljer følger avhengig av valget.",
+        "description": "Disse innstillingene hører til denne sonen: deteksjonstoleransen, tilbakegivelsen av styringen og hva som fortsatt kan kjøre under en overstyring. Varighet, sluttidspunkt og andre detaljer følger på neste skjerm når valget krever det. En sone som ennå ikke er konvertert, angir innstillingene for tilbakegivelse på neste skjerm.",
         "data": {
           "override_use_system_default": "Bruk systemstandard",
-          "override_detection_tolerance": "Deteksjonstoleranse"
+          "override_detection_tolerance": "Deteksjonstoleranse",
+          "override_release_choice": "Gi tilbake styringen",
+          "override_allow_comfort_actions": "Tillat komforthandlinger under overstyring",
+          "override_allow_protection_actions": "Tillat beskyttelseshandlinger under overstyring",
+          "override_edit_timeouts": "Juster også sikkerhetsgrensen"
         },
         "data_description": {
           "override_use_system_default": "Vises bare så lenge denne sonen fortsatt har innstillinger fra en eldre versjon som ikke er konvertert. Når aktivert, henter sonen fortsatt innstillingene for manuell overstyring fra den gamle systeminnføringen. Slå det av for å angi sonens egne innstillinger på neste skjerm. Ingenting må opprettes eller endres i den gamle systeminnføringen.",
-          "override_detection_tolerance": "Minste posisjonsendring (i prosent) før en manuell bevegelse gjenkjennes som en overstyring."
+          "override_detection_tolerance": "Minste posisjonsendring (i prosent) før en manuell bevegelse gjenkjennes som en overstyring.",
+          "override_release_choice": "Når SmartShading styrer solskjermingen igjen.",
+          "override_allow_comfort_actions": "Når aktivert, kan vanlig komfortskygging fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
+          "override_allow_protection_actions": "Når aktivert, kan beskyttelseshandlinger (fravær, varme, blending) fortsatt kjøre under en aktiv overstyring. Selve overstyringen forblir aktiv.",
+          "override_edit_timeouts": "Åpner en ekstra side. Har bare betydning for tidsplanskifte, beslutning og manuell fjerning."
         }
       },
       "windows": {

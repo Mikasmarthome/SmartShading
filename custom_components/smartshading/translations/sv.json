@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Manuell åsidosättning",
-        "description": "Dessa inställningar hör till denna zon. Ange detekteringstoleransen här och bekräfta: på nästa skärm väljer du när styrningen lämnas tillbaka och vad som får fortsätta köras under en åsidosättning. Varaktighet, sluttid och andra detaljer följer beroende på valet.",
+        "description": "Dessa inställningar hör till denna zon: detekteringstoleransen, återlämnandet av styrningen och vad som får fortsätta köras under en åsidosättning. Varaktighet, sluttid och andra detaljer följer på nästa skärm när valet kräver det. En zon som ännu inte konverterats gör återlämningsinställningarna på nästa skärm.",
         "data": {
           "override_use_system_default": "Använd systemstandard",
-          "override_detection_tolerance": "Detekteringstolerans"
+          "override_detection_tolerance": "Detekteringstolerans",
+          "override_release_choice": "Lämna tillbaka styrningen",
+          "override_allow_comfort_actions": "Tillåt komfortåtgärder under åsidosättning",
+          "override_allow_protection_actions": "Tillåt skyddsåtgärder under åsidosättning",
+          "override_edit_timeouts": "Justera även säkerhetsgränsen"
         },
         "data_description": {
           "override_use_system_default": "Visas bara så länge denna zon fortfarande har okonverterade inställningar från en äldre version. När aktiverat hämtar zonen fortfarande inställningarna för manuell åsidosättning från den gamla systemposten. Stäng av för att ange zonens egna inställningar på nästa skärm. Inget behöver skapas eller ändras i den gamla systemposten.",
-          "override_detection_tolerance": "Minsta positionsändring (i procent) innan en manuell rörelse känns igen som en åsidosättning."
+          "override_detection_tolerance": "Minsta positionsändring (i procent) innan en manuell rörelse känns igen som en åsidosättning.",
+          "override_release_choice": "När SmartShading styr solskyddet igen.",
+          "override_allow_comfort_actions": "När aktiverad kan vanlig komfortskuggning fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
+          "override_allow_protection_actions": "När aktiverad kan skyddsåtgärder (frånvaro, värme, bländning) fortfarande köras under en aktiv åsidosättning. Själva åsidosättningen förblir aktiv.",
+          "override_edit_timeouts": "Öppnar en extra sida. Spelar bara roll för schemabyte, beslut och manuell rensning."
         }
       },
       "windows": {

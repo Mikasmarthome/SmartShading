@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Manual Override",
-        "description": "These settings belong to this zone. Set the detection tolerance here, then submit to continue: on the next screen you choose the release strategy and what may still run during an override. Duration, end time and other details follow, depending on that choice.",
+        "description": "These settings belong to this zone: the detection tolerance, the release strategy and what may still run during an override. Duration, end time and other details follow on the next screen when the chosen strategy needs them. A zone that has not been converted yet makes the release settings on the next screen instead.",
         "data": {
           "override_use_system_default": "Use System default",
-          "override_detection_tolerance": "Detection tolerance"
+          "override_detection_tolerance": "Detection tolerance",
+          "override_release_choice": "Release control",
+          "override_allow_comfort_actions": "Allow comfort actions during override",
+          "override_allow_protection_actions": "Allow protection actions during override",
+          "override_edit_timeouts": "Also adjust the safety timeout"
         },
         "data_description": {
           "override_use_system_default": "Only shown while this zone still has settings from an older version that have not been converted. When enabled, the zone keeps taking its Manual Override settings from the old System entry. Switch it off to set up this zone's own settings on the next screen. Nothing has to be created or changed in the old System entry.",
-          "override_detection_tolerance": "Minimum position change (in percent) before a manual movement is recognized as an override."
+          "override_detection_tolerance": "Minimum position change (in percent) before a manual movement is recognized as an override.",
+          "override_release_choice": "When SmartShading takes control of the cover again.",
+          "override_allow_comfort_actions": "When enabled, regular comfort shading may still run while an override is active. The override itself stays active.",
+          "override_allow_protection_actions": "When enabled, protection actions (absence, heat, glare) may still run while an override is active. The override itself stays active.",
+          "override_edit_timeouts": "Opens an extra page. It only matters for the schedule-transition, decision and manual-clear choices."
         }
       },
       "windows": {

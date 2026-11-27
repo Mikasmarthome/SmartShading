@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Ruční přepsání",
-        "description": "Tato nastavení patří této zóně. Zde nastavte toleranci detekce a potvrďte: na další obrazovce zvolíte, kdy se řízení vrátí a co smí během ručního přepsání dál běžet. Doba trvání, čas ukončení a další podrobnosti následují podle této volby.",
+        "description": "Tato nastavení patří této zóně: tolerance detekce, vrácení řízení a co smí během ručního přepsání dál běžet. Doba trvání, čas ukončení a další podrobnosti následují na další obrazovce, pokud je volba vyžaduje. Dosud nepřevedená zóna nastavuje vrácení řízení až na další obrazovce.",
         "data": {
           "override_use_system_default": "Použít systémové výchozí nastavení",
-          "override_detection_tolerance": "Tolerance detekce"
+          "override_detection_tolerance": "Tolerance detekce",
+          "override_release_choice": "Vrácení řízení",
+          "override_allow_comfort_actions": "Povolit akce komfortu během přepsání",
+          "override_allow_protection_actions": "Povolit ochranné akce během přepsání",
+          "override_edit_timeouts": "Upravit také bezpečnostní limit"
         },
         "data_description": {
           "override_use_system_default": "Zobrazuje se jen tehdy, když tato zóna má stále nepřevedená nastavení ze starší verze. Když je zapnuto, zóna dál přebírá nastavení ručního přepsání ze starého systémového záznamu. Vypněte jej a na další obrazovce nastavte vlastní nastavení této zóny. Ve starém systémovém záznamu není třeba nic vytvářet ani měnit.",
-          "override_detection_tolerance": "Minimální změna polohy (v procentech), než je ruční pohyb rozpoznán jako přepsání."
+          "override_detection_tolerance": "Minimální změna polohy (v procentech), než je ruční pohyb rozpoznán jako přepsání.",
+          "override_release_choice": "Kdy SmartShading znovu převezme řízení žaluzie.",
+          "override_allow_comfort_actions": "Je-li povoleno, běžné komfortní stínění může stále probíhat během aktivního přepsání. Samotné přepsání zůstává aktivní.",
+          "override_allow_protection_actions": "Je-li povoleno, ochranné akce (nepřítomnost, horko, oslnění) mohou stále probíhat během aktivního přepsání. Samotné přepsání zůstává aktivní.",
+          "override_edit_timeouts": "Otevře další stránku. Týká se jen voleb změna rozvrhu, rozhodnutí a ruční zrušení."
         }
       },
       "windows": {

@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Anul·lació manual",
-        "description": "Aquests paràmetres pertanyen a aquesta zona. Definiu aquí la tolerància de detecció i confirmeu: a la pantalla següent trieu quan es retorna el control i què pot continuar funcionant durant una substitució manual. La durada, l'hora final i els altres detalls vénen després, segons aquesta elecció.",
+        "description": "Aquests paràmetres pertanyen a aquesta zona: la tolerància de detecció, el retorn del control i què pot continuar funcionant durant una substitució manual. La durada, l'hora final i els altres detalls vénen a la pantalla següent quan l'elecció els necessita. Una zona encara no convertida defineix els paràmetres de retorn a la pantalla següent.",
         "data": {
           "override_use_system_default": "Utilitza el valor predeterminat del sistema",
-          "override_detection_tolerance": "Tolerància de detecció"
+          "override_detection_tolerance": "Tolerància de detecció",
+          "override_release_choice": "Retorn del control",
+          "override_allow_comfort_actions": "Permet accions de confort durant l'anul·lació",
+          "override_allow_protection_actions": "Permet accions de protecció durant l'anul·lació",
+          "override_edit_timeouts": "Ajusta també el temps de seguretat"
         },
         "data_description": {
           "override_use_system_default": "Només es mostra mentre aquesta zona encara té paràmetres no convertits d'una versió anterior. Quan està activat, la zona continua prenent la configuració de substitució manual de l'antiga entrada del sistema. Desactiveu-lo per definir la configuració pròpia d'aquesta zona a la pantalla següent. No cal crear ni canviar res a l'antiga entrada del sistema.",
-          "override_detection_tolerance": "Canvi mínim de posició (en percentatge) abans que un moviment manual es reconegui com una anul·lació."
+          "override_detection_tolerance": "Canvi mínim de posició (en percentatge) abans que un moviment manual es reconegui com una anul·lació.",
+          "override_release_choice": "Quan SmartShading torna a controlar la persiana.",
+          "override_allow_comfort_actions": "Si està activat, l'ombreig de confort habitual pot continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
+          "override_allow_protection_actions": "Si està activat, les accions de protecció (absència, calor, enlluernament) poden continuar executant-se durant una anul·lació activa. L'anul·lació en si roman activa.",
+          "override_edit_timeouts": "Obre una pàgina addicional. Només importa per a transició d'horari, decisió i esborrat manual."
         }
       },
       "windows": {

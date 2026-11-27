@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Ručné prepísanie",
-        "description": "Tieto nastavenia patria tejto zóne. Tu nastavte toleranciu detekcie a potvrďte: na ďalšej obrazovke zvolíte, kedy sa riadenie vráti a čo smie počas ručného prepísania ďalej bežať. Trvanie, čas ukončenia a ďalšie podrobnosti nasledujú podľa tejto voľby.",
+        "description": "Tieto nastavenia patria tejto zóne: tolerancia detekcie, vrátenie riadenia a čo smie počas ručného prepísania ďalej bežať. Trvanie, čas ukončenia a ďalšie podrobnosti nasledujú na ďalšej obrazovke, ak ich voľba vyžaduje. Zatiaľ neprevedená zóna nastavuje vrátenie riadenia až na ďalšej obrazovke.",
         "data": {
           "override_use_system_default": "Použiť systémové predvolené nastavenie",
-          "override_detection_tolerance": "Tolerancia detekcie"
+          "override_detection_tolerance": "Tolerancia detekcie",
+          "override_release_choice": "Vrátenie riadenia",
+          "override_allow_comfort_actions": "Povoliť akcie komfortu počas prepísania",
+          "override_allow_protection_actions": "Povoliť ochranné akcie počas prepísania",
+          "override_edit_timeouts": "Upraviť aj bezpečnostný limit"
         },
         "data_description": {
           "override_use_system_default": "Zobrazuje sa len vtedy, keď táto zóna má stále neprevedené nastavenia zo staršej verzie. Keď je zapnuté, zóna naďalej preberá nastavenia ručného prepísania zo starého systémového záznamu. Vypnite ho a na ďalšej obrazovke nastavte vlastné nastavenia tejto zóny. V starom systémovom zázname netreba nič vytvárať ani meniť.",
-          "override_detection_tolerance": "Minimálna zmena polohy (v percentách), kým je ručný pohyb rozpoznaný ako prepísanie."
+          "override_detection_tolerance": "Minimálna zmena polohy (v percentách), kým je ručný pohyb rozpoznaný ako prepísanie.",
+          "override_release_choice": "Kedy SmartShading znova prevezme riadenie žalúzie.",
+          "override_allow_comfort_actions": "Ak je povolené, bežné komfortné tienenie môže naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
+          "override_allow_protection_actions": "Ak je povolené, ochranné akcie (neprítomnosť, teplo, oslnenie) môžu naďalej prebiehať počas aktívneho prepísania. Samotné prepísanie zostáva aktívne.",
+          "override_edit_timeouts": "Otvorí ďalšiu stránku. Týka sa len volieb zmena rozvrhu, rozhodnutie a ručné zrušenie."
         }
       },
       "windows": {

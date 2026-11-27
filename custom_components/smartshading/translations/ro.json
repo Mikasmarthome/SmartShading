@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Suprascriere manuală",
-        "description": "Aceste setări aparțin acestei zone. Stabiliți aici toleranța de detectare și confirmați: pe ecranul următor alegeți când este returnat controlul și ce poate rula în continuare în timpul unei suprascrieri. Durata, ora de final și alte detalii urmează în funcție de această alegere.",
+        "description": "Aceste setări aparțin acestei zone: toleranța de detectare, returnarea controlului și ce poate rula în continuare în timpul unei suprascrieri. Durata, ora de final și alte detalii urmează pe ecranul următor atunci când alegerea le necesită. O zonă încă neconvertită stabilește setările de returnare pe ecranul următor.",
         "data": {
           "override_use_system_default": "Utilizează valoarea implicită a sistemului",
-          "override_detection_tolerance": "Toleranță de detectare"
+          "override_detection_tolerance": "Toleranță de detectare",
+          "override_release_choice": "Returnarea controlului",
+          "override_allow_comfort_actions": "Permite acțiuni de confort în timpul suprascrierii",
+          "override_allow_protection_actions": "Permite acțiuni de protecție în timpul suprascrierii",
+          "override_edit_timeouts": "Reglați și limita de siguranță"
         },
         "data_description": {
           "override_use_system_default": "Afișat doar cât timp această zonă mai are setări neconvertite dintr-o versiune mai veche. Când este activată, zona preia în continuare setările de suprascriere manuală din vechea intrare de sistem. Dezactivați pentru a configura setările proprii ale zonei pe ecranul următor. Nu trebuie creat sau modificat nimic în vechea intrare de sistem.",
-          "override_detection_tolerance": "Schimbare minimă de poziție (în procente) înainte ca o mișcare manuală să fie recunoscută ca suprascriere."
+          "override_detection_tolerance": "Schimbare minimă de poziție (în procente) înainte ca o mișcare manuală să fie recunoscută ca suprascriere.",
+          "override_release_choice": "Când controlează SmartShading din nou jaluzeaua.",
+          "override_allow_comfort_actions": "Dacă este activat, umbrirea obișnuită de confort poate rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
+          "override_allow_protection_actions": "Dacă este activat, acțiunile de protecție (absență, căldură, orbire) pot rula în continuare în timpul unei suprascrieri active. Suprascrierea în sine rămâne activă.",
+          "override_edit_timeouts": "Deschide o pagină suplimentară. Contează doar pentru schimbarea programului, decizie și ștergere manuală."
         }
       },
       "windows": {

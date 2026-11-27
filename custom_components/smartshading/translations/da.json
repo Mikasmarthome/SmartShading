@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Manuel tilsidesættelse",
-        "description": "Disse indstillinger hører til denne zone. Angiv registreringstolerancen her og bekræft: på næste skærm vælger du, hvornår styringen gives tilbage, og hvad der fortsat må køre under en tilsidesættelse. Varighed, sluttidspunkt og andre detaljer følger afhængigt af valget.",
+        "description": "Disse indstillinger hører til denne zone: registreringstolerancen, tilbagegivelsen af styringen og hvad der fortsat må køre under en tilsidesættelse. Varighed, sluttidspunkt og andre detaljer følger på næste skærm, når valget kræver det. En zone, der endnu ikke er konverteret, foretager indstillingerne for tilbagegivelse på næste skærm.",
         "data": {
           "override_use_system_default": "Brug systemstandard",
-          "override_detection_tolerance": "Detektionstolerance"
+          "override_detection_tolerance": "Detektionstolerance",
+          "override_release_choice": "Returnér styringen",
+          "override_allow_comfort_actions": "Tillad komforthandlinger under tilsidesættelse",
+          "override_allow_protection_actions": "Tillad beskyttelseshandlinger under tilsidesættelse",
+          "override_edit_timeouts": "Juster også sikkerhedsgrænsen"
         },
         "data_description": {
           "override_use_system_default": "Vises kun, så længe denne zone stadig har indstillinger fra en ældre version, der ikke er konverteret. Når aktiveret, henter zonen fortsat sine indstillinger for manuel tilsidesættelse fra den gamle systemindgang. Slå det fra for at angive zonens egne indstillinger på næste skærm. Der skal ikke oprettes eller ændres noget i den gamle systemindgang.",
-          "override_detection_tolerance": "Mindste positionsændring (i procent), før en manuel bevægelse genkendes som en tilsidesættelse."
+          "override_detection_tolerance": "Mindste positionsændring (i procent), før en manuel bevægelse genkendes som en tilsidesættelse.",
+          "override_release_choice": "Hvornår SmartShading styrer betrækket igen.",
+          "override_allow_comfort_actions": "Når aktiveret, kan almindelig komfortafskærmning stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
+          "override_allow_protection_actions": "Når aktiveret, kan beskyttelseshandlinger (fravær, varme, blænding) stadig køre under en aktiv tilsidesættelse. Selve tilsidesættelsen forbliver aktiv.",
+          "override_edit_timeouts": "Åbner en ekstra side. Har kun betydning for tidsplanskift, beslutning og manuel rydning."
         }
       },
       "windows": {

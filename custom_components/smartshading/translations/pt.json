@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Substituição manual",
-        "description": "Estas definições pertencem a esta zona. Defina aqui a tolerância de deteção e confirme: no ecrã seguinte escolhe quando o controlo é devolvido e o que pode continuar a ser executado durante uma substituição. A duração, a hora de fim e outros detalhes surgem depois, conforme essa escolha.",
+        "description": "Estas definições pertencem a esta zona: a tolerância de deteção, a devolução do controlo e o que pode continuar a ser executado durante uma substituição. A duração, a hora de fim e outros detalhes surgem no ecrã seguinte quando a escolha os exige. Uma zona ainda não convertida faz as definições de devolução no ecrã seguinte.",
         "data": {
           "override_use_system_default": "Usar predefinição do sistema",
-          "override_detection_tolerance": "Tolerância de deteção"
+          "override_detection_tolerance": "Tolerância de deteção",
+          "override_release_choice": "Devolver o controlo",
+          "override_allow_comfort_actions": "Permitir ações de conforto durante a substituição",
+          "override_allow_protection_actions": "Permitir ações de proteção durante a substituição",
+          "override_edit_timeouts": "Ajustar também o limite de segurança"
         },
         "data_description": {
           "override_use_system_default": "Só é apresentado enquanto esta zona ainda tiver definições não convertidas de uma versão anterior. Quando ativado, a zona continua a obter as definições de substituição manual da antiga entrada do sistema. Desative para configurar as definições próprias desta zona no ecrã seguinte. Não é necessário criar nem alterar nada na antiga entrada do sistema.",
-          "override_detection_tolerance": "Alteração mínima de posição (em percentagem) antes de um movimento manual ser reconhecido como substituição."
+          "override_detection_tolerance": "Alteração mínima de posição (em percentagem) antes de um movimento manual ser reconhecido como substituição.",
+          "override_release_choice": "Quando o SmartShading volta a controlar o estore.",
+          "override_allow_comfort_actions": "Quando ativado, o sombreamento de conforto normal ainda pode ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
+          "override_allow_protection_actions": "Quando ativado, as ações de proteção (ausência, calor, encandeamento) ainda podem ocorrer durante uma substituição ativa. A substituição em si permanece ativa.",
+          "override_edit_timeouts": "Abre uma página adicional. Só importa para transição de horário, decisão e limpeza manual."
         }
       },
       "windows": {

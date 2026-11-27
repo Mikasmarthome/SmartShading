@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Override manuale",
-        "description": "Queste impostazioni appartengono a questa zona. Imposta qui la tolleranza di rilevamento e conferma: nella schermata successiva scegli quando il controllo viene restituito e cosa può continuare durante un override. Durata, orario di fine e altri dettagli seguono in base a questa scelta.",
+        "description": "Queste impostazioni appartengono a questa zona: la tolleranza di rilevamento, la restituzione del controllo e cosa può continuare durante un override. Durata, orario di fine e altri dettagli seguono nella schermata successiva quando la scelta li richiede. Una zona non ancora convertita definisce le impostazioni di restituzione nella schermata successiva.",
         "data": {
           "override_use_system_default": "Usa il valore predefinito di sistema",
-          "override_detection_tolerance": "Tolleranza di rilevamento"
+          "override_detection_tolerance": "Tolleranza di rilevamento",
+          "override_release_choice": "Restituzione del controllo",
+          "override_allow_comfort_actions": "Consenti azioni di comfort durante l'override",
+          "override_allow_protection_actions": "Consenti azioni di protezione durante l'override",
+          "override_edit_timeouts": "Regola anche il tempo di sicurezza"
         },
         "data_description": {
           "override_use_system_default": "Mostrato solo finché questa zona ha ancora impostazioni non convertite di una versione precedente. Se attivato, la zona continua a prendere le impostazioni di override manuale dalla vecchia voce di sistema. Disattivalo per definire le impostazioni proprie di questa zona nella schermata successiva. Non occorre creare o modificare nulla nella vecchia voce di sistema.",
-          "override_detection_tolerance": "Variazione minima di posizione (in percentuale) prima che un movimento manuale sia riconosciuto come override."
+          "override_detection_tolerance": "Variazione minima di posizione (in percentuale) prima che un movimento manuale sia riconosciuto come override.",
+          "override_release_choice": "Quando SmartShading torna a controllare la tapparella.",
+          "override_allow_comfort_actions": "Se abilitato, l'ombreggiatura di comfort regolare può continuare durante un override attivo. L'override stesso rimane attivo.",
+          "override_allow_protection_actions": "Se abilitato, le azioni di protezione (assenza, calore, abbagliamento) possono continuare durante un override attivo. L'override stesso rimane attivo.",
+          "override_edit_timeouts": "Apre una pagina aggiuntiva. Conta solo per transizione di programma, decisione e cancellazione manuale."
         }
       },
       "windows": {

@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Manuel geçersiz kılma",
-        "description": "Bu ayarlar bu bölgeye aittir. Algılama toleransını burada belirleyip onaylayın: bir sonraki ekranda kontrolün ne zaman geri verileceğini ve geçersiz kılma sırasında nelerin çalışmaya devam edebileceğini seçersiniz. Süre, bitiş saati ve diğer ayrıntılar bu seçime göre gelir.",
+        "description": "Bu ayarlar bu bölgeye aittir: algılama toleransı, kontrolün geri verilmesi ve geçersiz kılma sırasında nelerin çalışmaya devam edebileceği. Süre, bitiş saati ve diğer ayrıntılar, seçim gerektirdiğinde bir sonraki ekranda gelir. Henüz dönüştürülmemiş bir bölge, geri verme ayarlarını bir sonraki ekranda yapar.",
         "data": {
           "override_use_system_default": "Sistem varsayılanını kullan",
-          "override_detection_tolerance": "Algılama toleransı"
+          "override_detection_tolerance": "Algılama toleransı",
+          "override_release_choice": "Kontrolü geri verme",
+          "override_allow_comfort_actions": "Geçersiz kılma sırasında konfor eylemlerine izin ver",
+          "override_allow_protection_actions": "Geçersiz kılma sırasında koruma eylemlerine izin ver",
+          "override_edit_timeouts": "Güvenlik sınırını da ayarla"
         },
         "data_description": {
           "override_use_system_default": "Yalnızca bu bölgede eski bir sürümden kalan, dönüştürülmemiş ayarlar bulunduğu sürece gösterilir. Etkinleştirildiğinde, bölge manuel geçersiz kılma ayarlarını eski sistem girişinden almaya devam eder. Bir sonraki ekranda bu bölgenin kendi ayarlarını yapmak için kapatın. Eski sistem girişinde bir şey oluşturmanız veya değiştirmeniz gerekmez.",
-          "override_detection_tolerance": "Manuel bir hareketin geçersiz kılma olarak tanınmasından önceki minimum konum değişikliği (yüzde olarak)."
+          "override_detection_tolerance": "Manuel bir hareketin geçersiz kılma olarak tanınmasından önceki minimum konum değişikliği (yüzde olarak).",
+          "override_release_choice": "SmartShading'in panjuru ne zaman yeniden yönettiği.",
+          "override_allow_comfort_actions": "Etkinleştirildiğinde, normal konfor gölgelemesi aktif bir geçersiz kılma sırasında hâlâ çalışabilir. Geçersiz kılmanın kendisi aktif kalır.",
+          "override_allow_protection_actions": "Etkinleştirildiğinde, koruma eylemleri (yokluk, sıcaklık, parlama) aktif bir geçersiz kılma sırasında hâlâ çalışabilir. Geçersiz kılmanın kendisi aktif kalır.",
+          "override_edit_timeouts": "Ek bir sayfa açar. Yalnızca program geçişi, karar ve elle temizleme seçimleri için önemlidir."
         }
       },
       "windows": {

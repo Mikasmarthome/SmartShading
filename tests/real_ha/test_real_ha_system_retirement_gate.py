@@ -156,14 +156,17 @@ def _fields(result) -> set[str]:
 async def _save_own_override(hass, entry_id: str, tolerance: int = 15):
     result = await _options(hass, entry_id, "advanced", "manual_override")
     assert result["step_id"] == "manual_override"
+    choice = {"override_release_choice": "lifecycle", "override_allow_comfort_actions": False,
+              "override_allow_protection_actions": False, "override_edit_timeouts": False}
     user = {"override_detection_tolerance": tolerance}
-    if "override_use_system_default" in _fields(result):
+    if "override_use_system_default" in _fields(result):     # not converted: gate page first
         user["override_use_system_default"] = False
+        result = await hass.config_entries.options.async_configure(result["flow_id"], user)
+        assert result["step_id"] == "manual_override_custom"
+        user = choice
+    else:                                                    # own settings: one page
+        user |= choice
     result = await hass.config_entries.options.async_configure(result["flow_id"], user)
-    assert result["step_id"] == "manual_override_custom"
-    result = await hass.config_entries.options.async_configure(result["flow_id"], {
-        "override_release_choice": "lifecycle", "override_allow_comfort_actions": False,
-        "override_allow_protection_actions": False, "override_edit_timeouts": False})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
 
@@ -370,7 +373,9 @@ class TestOptionsFlowCannotReInherit:
         _add(hass, _independent_zone("a"), _system())
         assert await _start(hass)
         result = await _options(hass, "a", "advanced", "manual_override")
-        assert _fields(result) == {"override_detection_tolerance"}
+        assert _fields(result) == {
+            "override_detection_tolerance", "override_release_choice", "override_allow_comfort_actions",
+            "override_allow_protection_actions", "override_edit_timeouts"}
 
     async def test_the_presence_gate_of_a_migrated_zone_has_no_system_default_switch(self, hass) -> None:
         _add(hass, _independent_zone("a"), _system())

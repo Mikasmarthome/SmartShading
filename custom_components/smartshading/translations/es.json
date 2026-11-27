@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "Anulación manual",
-        "description": "Estos ajustes pertenecen a esta zona. Defina aquí la tolerancia de detección y confirme: en la siguiente pantalla elegirá cuándo se devuelve el control y qué puede seguir ejecutándose durante una anulación. La duración, la hora de fin y otros detalles vienen después, según esa elección.",
+        "description": "Estos ajustes pertenecen a esta zona: la tolerancia de detección, la devolución del control y qué puede seguir ejecutándose durante una anulación. La duración, la hora de fin y otros detalles vienen en la siguiente pantalla cuando la elección los necesita. Una zona aún no convertida define los ajustes de devolución en la siguiente pantalla.",
         "data": {
           "override_use_system_default": "Usar valor predeterminado del sistema",
-          "override_detection_tolerance": "Tolerancia de detección"
+          "override_detection_tolerance": "Tolerancia de detección",
+          "override_release_choice": "Devolver el control",
+          "override_allow_comfort_actions": "Permitir acciones de confort durante la anulación",
+          "override_allow_protection_actions": "Permitir acciones de protección durante la anulación",
+          "override_edit_timeouts": "Ajustar también el tiempo de seguridad"
         },
         "data_description": {
           "override_use_system_default": "Solo se muestra mientras esta zona conserve ajustes de una versión anterior sin convertir. Cuando está activado, la zona sigue tomando su configuración de anulación manual de la antigua entrada del sistema. Desactívelo para definir los ajustes propios de esta zona en la siguiente pantalla. No es necesario crear ni cambiar nada en la antigua entrada del sistema.",
-          "override_detection_tolerance": "Cambio mínimo de posición (en porcentaje) antes de que un movimiento manual se reconozca como anulación."
+          "override_detection_tolerance": "Cambio mínimo de posición (en porcentaje) antes de que un movimiento manual se reconozca como anulación.",
+          "override_release_choice": "Cuándo SmartShading vuelve a controlar la persiana.",
+          "override_allow_comfort_actions": "Si está activado, el sombreado de confort habitual puede seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
+          "override_allow_protection_actions": "Si está activado, las acciones de protección (ausencia, calor, deslumbramiento) pueden seguir ejecutándose durante una anulación activa. La anulación en sí permanece activa.",
+          "override_edit_timeouts": "Abre una página adicional. Solo importa para transición de horario, decisión y borrado manual."
         }
       },
       "windows": {

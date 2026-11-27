@@ -323,14 +323,22 @@
       },
       "manual_override": {
         "title": "手动覆盖",
-        "description": "这些设置属于此区域。在此设定检测容差并提交：在下一屏幕中选择何时归还控制权，以及手动覆盖期间哪些功能仍可运行。时长、结束时间等其他细节将根据该选择依次显示。",
+        "description": "这些设置属于此区域：检测容差、控制权归还方式，以及手动覆盖期间哪些功能仍可运行。当所选方式需要时，时长、结束时间等细节将在下一屏幕中设置。尚未转换的区域则在下一屏幕中进行归还设置。",
         "data": {
           "override_use_system_default": "使用系统默认值",
-          "override_detection_tolerance": "检测容差"
+          "override_detection_tolerance": "检测容差",
+          "override_release_choice": "归还控制权",
+          "override_allow_comfort_actions": "覆盖期间允许舒适动作",
+          "override_allow_protection_actions": "覆盖期间允许保护动作",
+          "override_edit_timeouts": "同时调整安全超时"
         },
         "data_description": {
           "override_use_system_default": "仅当此区域仍有来自旧版本且尚未转换的设置时显示。启用后，此区域继续从旧的系统条目读取手动覆盖设置。关闭后，可在下一屏幕中配置此区域自己的设置。无需在旧的系统条目中创建或更改任何内容。",
-          "override_detection_tolerance": "手动移动被识别为覆盖之前所需的最小位置变化（百分比）。"
+          "override_detection_tolerance": "手动移动被识别为覆盖之前所需的最小位置变化（百分比）。",
+          "override_release_choice": "SmartShading 何时重新控制遮阳。",
+          "override_allow_comfort_actions": "启用后，常规舒适遮阳仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
+          "override_allow_protection_actions": "启用后，保护动作（离家、高温、眩光）仍可在激活的覆盖期间运行。覆盖本身保持激活状态。",
+          "override_edit_timeouts": "打开额外页面。仅对日程切换、决策和手动清除这几个选项有意义。"
         }
       },
       "windows": {
